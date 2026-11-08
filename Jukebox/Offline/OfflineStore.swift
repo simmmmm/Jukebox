@@ -340,8 +340,7 @@ final class OfflineStore {
     /// Remove Download: the reason goes from its songs; a song another
     /// download or the keep also holds stays.
     func remove(_ reason: OfflineReason) {
-        let freed = manifest.removeReason(reason)
-        deleteFiles(freed)
+        release(manifest.removeReason(reason))
         dropWanted(reason, from: nil)
         collections.removeAll { $0.reason == reason }
         songsChanged()
@@ -385,7 +384,7 @@ final class OfflineStore {
         let added = tracks.filter { !before.contains($0.id) }
         guard !gone.isEmpty || !added.isEmpty else { return }
         if !gone.isEmpty {
-            deleteFiles(manifest.removeReason(reason, from: Array(gone)))
+            release(manifest.removeReason(reason, from: Array(gone)))
             dropWanted(reason, from: gone)
         }
         if !added.isEmpty { want(added, for: reason) }
@@ -551,6 +550,29 @@ private extension OfflineStore {
         OfflineDownloader.shared.cancel { $0.account == account && ids.contains($0.trackID) }
         inFlight.subtract(ids)
         for id in ids { clearProgress(id) }
+    }
+
+    /// The keep is on and its songs can come now.
+    var keepCanRun: Bool {
+        settings.keepSongs && !isOffline && waiting == nil && !isLowPower
+    }
+
+    /// Songs a removed download left with no reason. The keep may want some
+    /// of them: while it can run they go to it, and its plan, a moment
+    /// later, lets go of those it does not want — rather than delete them
+    /// and fetch them again (the kit's OFFLINE.md, "For the app"). Else they go.
+    func release(_ files: [OfflineFile]) {
+        guard !files.isEmpty else { return }
+        guard keepCanRun else {
+            deleteFiles(files)
+            return
+        }
+        for file in files {
+            var kept = file
+            kept.reasons = [.kept]
+            manifest.add(kept)
+        }
+        scheduleKeep(after: 2)
     }
 
     func deleteFiles(_ files: [OfflineFile]) {
@@ -750,7 +772,7 @@ private extension OfflineStore {
         // room for ones that cannot be fetched — and offline the songs it
         // let go of are the only ones that play. It runs again when Wi-Fi or
         // the server is back, and when Low Power Mode ends.
-        guard !isOffline, waiting == nil, !isLowPower else { return }
+        guard keepCanRun else { return }
         // The plan needs the library; it runs again once that has loaded.
         guard !library.tracks.isEmpty else { return }
         let tracks = library.tracks

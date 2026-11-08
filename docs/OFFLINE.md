@@ -87,7 +87,10 @@ The bar of an album's, a playlist's and a mix's page: `arrow.down.circle`,
 then a ring in the accent around a stop square while it comes, then
 `checkmark.circle`; the ring and the checkmark are menus with Remove
 Download, asked first ("It still plays from your server. Songs another
-download holds stay."). A downloaded playlist follows the server each time
+download holds stay."). Its songs that nothing else holds go to the keep
+while it can run, and its plan, a moment later, lets go of those it does
+not want, rather than delete songs it would fetch again (the kit's advice
+above); else they are deleted at once. A downloaded playlist follows the server each time
 its page reads it: songs added there are fetched, songs taken out lose it
 as a reason. A mix is kept as it was the day it was downloaded (MixStore
 makes new mixes, with new ids, every day).
