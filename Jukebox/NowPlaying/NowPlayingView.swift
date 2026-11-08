@@ -1,17 +1,30 @@
-// Now Playing: what plays, full screen and always dark, on Cabinet, flat.
-// As sketch D draws it (docs/design/nowplaying-after.png): in the cover's
-// place the record player (Turntable.swift), the song's cover turning on it
-// as a picture disc — the photographer, 8 November 2026: "dan zou ik ook de
-// plaat willen zien draaien met de album art er op" — with the album's
-// sleeve behind it and the needle on the song's place on the album ("de
-// hoes er achter zetten en de naald zetten op welk nummer het is van het
-// album"); then, from the margin,
-// the title in the serif, the artist, and the station in Glow after its
-// mark; the thumbs as plain glyphs beside the title; the slim scrubber; the
-// transport; while a station plays its dial with its two ends in the place
-// of the volume; and Lyrics, AirPlay and Up Next at the foot. Lyrics and the
-// queue take the record's place at a tap. A pull down anywhere on the
-// record, or on the top, closes it.
+// Now Playing: what plays, full screen and always dark. Sketch E's variant D,
+// as the photographer chose it, 8 November 2026: "Dus ik denk dat d1 en d2
+// vooral d2 het best gaan werken. D1 is reduced motion/batterij besparing d2
+// normaal. F1 toch net iets te extreem denk".
+//
+// In the cover's place, the album's sleeve as printed card with its black
+// record half out of it, the label in the cover's colour turning a turn in
+// 10 s (SleeveRecord.swift) — "de hoes er achter zetten", and of the record
+// player before it, "Het moet minder een los object zijn en meer verweven
+// zitten met de pagina". So the page's ground is the record's world
+// (NowPlayingGround.swift): normally sketch D2, "the side as land" — the
+// album's side as a record far larger than the screen, its grooves crossing
+// the page as a horizon, one band per song, the playing song's band
+// starting under the sleeve and lighter where it has played, moving on one
+// band when the song changes; and when nothing may move (Reduce Motion, Low
+// Power Mode, Settings' Spin the Record off), sketch D1, "the wall" — two
+// flat fields of the cover's own colours (CoverWall), a wall above the
+// sleeve's foot and a floor below it, and nothing turns. A light wall gets
+// dark glyphs at the top and a dark status bar.
+//
+// Then, from the margin, the title in the serif, the artist, and the station
+// in the accent after its mark; the thumbs as plain glyphs beside the title;
+// the slim scrubber; the transport; while a station plays its dial with its
+// two ends in the place of the volume; and Lyrics, AirPlay and Up Next at
+// the foot. Lyrics and the queue take the sleeve's place at a tap. A pull
+// down anywhere on the page, or on the top over the lyrics and the queue,
+// closes it.
 //
 // The controls stay white; the accent marks only what is the radio's or
 // what is on: the progress, the thumbs up given, the station's name, the
@@ -25,13 +38,15 @@
 //
 // Gone with sketch D: the cover's colours blurred behind everything,
 // "Playing From", the station as a spaced label in a capsule, round buttons.
+// Gone with sketch E: the record player — its deck, plinth and arm.
 
+import Combine
 import JukeboxKit
 import SwiftUI
 import UIKit
 
-/// What the big area shows: the record, or in its place the lyrics or the
-/// queue, as Music swaps them.
+/// What the big area shows: the sleeve and its record, or in their place
+/// the lyrics or the queue, as Music swaps them.
 enum NowPlayingPanel: Hashable {
     case cover
     case lyrics
@@ -44,14 +59,23 @@ struct NowPlayingView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
     @Environment(AppModel.self) private var app
+    @Environment(AppSettings.self) private var settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var panel: NowPlayingPanel = .cover
+    /// Low Power Mode, kept up to date by the system's notification.
+    @State private var isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+    /// The iPad sideways (the page's `wide`), for what is decided outside
+    /// the page's layout: the status bar.
+    @State private var isWide = false
     /// The accent shown, and the cover it is of: nil until the first is
     /// worked out. Kept until the next one is, so a song change eases from
     /// the last cover's colour to this one's rather than flashing Glow
     /// between them.
     @State private var shownAccent: (url: URL, color: AccentColor?)?
+    /// D1's wall and floor shown, and the cover they are of; kept as the
+    /// accent is, so they ease from one cover's to the next.
+    @State private var shownWalls: (url: URL, walls: NowPlayingWalls?)?
     /// How far the view has been pulled down to close it.
     @State private var dragOffset: CGFloat = 0
     /// True while a pull is held. SwiftUI resets it when the system cancels
@@ -65,27 +89,36 @@ struct NowPlayingView: View {
     @ScaledMetric(relativeTo: .largeTitle) private var playGlyph: CGFloat = 44
 
     var body: some View {
-        ZStack {
-            // Cabinet, flat: no cover blurred behind it, no vignette
-            // (tells.md, 2).
-            Theme.Arch.cabinet
-                .ignoresSafeArea()
-                .accessibilityHidden(true)
-            GeometryReader { proxy in
-                // An iPad held sideways: the record on the left, the rest on
-                // the right, as Music lays it out. The iPhone is portrait.
-                let wide = proxy.size.width > proxy.size.height && proxy.size.width >= 700
-                VStack(spacing: 0) {
-                    header
-                    if wide {
-                        wideLayout
-                    } else {
-                        tallLayout
-                            .frame(maxWidth: 560)
-                    }
+        GeometryReader { proxy in
+            // An iPad held sideways: the sleeve on the left, the rest on
+            // the right, as Music lays it out. The iPhone is portrait.
+            let wide = proxy.size.width > proxy.size.height && proxy.size.width >= 700
+            VStack(spacing: 0) {
+                header(wide: wide)
+                if wide {
+                    wideLayout
+                } else {
+                    tallLayout
+                        .frame(maxWidth: 560)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .transformPreference(NowPlayingAnchorsKey.self) { anchors in
+                anchors.wide = wide
+            }
+            .onChange(of: wide, initial: true) { _, isNowWide in
+                isWide = isNowWide
+            }
+        }
+        // The ground, behind everything and to the screen's edges: D2's
+        // land or D1's wall, and the sleeve with its record in the room the
+        // page left it (NowPlayingGround). It is told where the sleeve's
+        // room and the title are, as the page lays them out.
+        .backgroundPreferenceValue(NowPlayingAnchorsKey.self) { anchors in
+            GeometryReader { proxy in
+                ground(anchors, in: proxy)
+            }
+            .ignoresSafeArea()
         }
         .overlay(alignment: .top) {
             ZStack {
@@ -109,28 +142,39 @@ struct NowPlayingView: View {
         // The cover's own presentation dark too, so the status bar, the
         // menus and the system's volume and AirPlay views are drawn for dark
         // even when the phone is in light mode. A presentation's preference:
-        // the app under it keeps its own appearance.
-        .preferredColorScheme(.dark)
+        // the app under it keeps its own appearance. Over a light wall (D1)
+        // light, so the status bar's time and battery are dark on it.
+        .preferredColorScheme(wallIsLight ? ColorScheme.light : ColorScheme.dark)
+        // The system says when Low Power Mode changes, on a thread of its
+        // own; the state is changed on the main one.
+        .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)
+            .receive(on: DispatchQueue.main)) { _ in
+            isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+        }
         .onChange(of: player.errorMessage) { _, message in
             if let message {
                 UIAccessibility.post(notification: .announcement, argument: message)
             }
         }
-        // The accent, once per cover (ImagePipeline keeps it), eased in
-        // over half a second rather than switched: the song changed, and
-        // the colour follows it. The first is set at once: Now Playing
-        // opens in its colour.
+        // The accent, once per cover (ImagePipeline keeps it), and D1's
+        // wall and floor with it (their floor keeps the accent readable),
+        // eased in over half a second rather than switched: the song
+        // changed, and the colours follow it. The first are set at once:
+        // Now Playing opens in its colours.
         .task(id: accentURL) {
             guard let url = accentURL else {
                 shownAccent = nil
+                shownWalls = nil
                 return
             }
             let found = await ImagePipeline.shared.accent(for: url)
-            // A newer cover has its own task; this colour is not its.
+            let walls = await NowPlayingWallCache.shared.walls(for: url, accent: found)
+            // A newer cover has its own task; these colours are not its.
             guard !Task.isCancelled, shownAccent?.url != url else { return }
             let first = shownAccent == nil
             withAnimation(first || reduceMotion ? nil : .easeInOut(duration: 0.5)) {
                 shownAccent = (url: url, color: found)
+                shownWalls = (url: url, walls: walls)
             }
         }
         .onChange(of: isPulling) { _, pulling in
@@ -159,9 +203,12 @@ struct NowPlayingView: View {
     private var tallLayout: some View {
         VStack(spacing: 0) {
             if panel == .cover {
-                turntable
-                    .padding(.horizontal, Theme.Space.l)
-                    .padding(.vertical, Theme.Space.s)
+                // Room enough under the sleeve for the playing song's band
+                // to start between its foot and the title (LandGeometry's
+                // 28 points above the title).
+                sleeveRoom
+                    .padding(.top, Theme.Space.xs)
+                    .padding(.bottom, Theme.Space.xxl + Theme.Space.s)
                     .transition(.opacity)
                 titleRow
                     .padding(.horizontal, Theme.Space.xl)
@@ -183,7 +230,7 @@ struct NowPlayingView: View {
             Group {
                 switch panel {
                 case .cover:
-                    turntable
+                    sleeveRoom
                 case .lyrics:
                     LyricsView()
                 case .queue:
@@ -219,21 +266,37 @@ struct NowPlayingView: View {
         }
     }
 
-    /// The record player, the song's cover on its record and its album's
-    /// sleeve behind it (Turntable.swift), the needle on the song's place
-    /// on its album.
-    private var turntable: some View {
-        let side = albumSide
-        return Turntable(artwork: currentTrack?.artwork, isPlaying: player.isPlaying, side: side,
-                         label: recordLabel(disc: side?.disc))
+    /// The sleeve's room: empty on the page, which tells the ground where it
+    /// is. The ground draws the sleeve and its record in it (SleeveLayout),
+    /// behind the page, so they stand on the land or the wall as the page's
+    /// own ground rather than on a card of their own.
+    private var sleeveRoom: some View {
+        Color.clear
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .anchorPreference(key: NowPlayingAnchorsKey.self, value: .bounds) { room in
+                NowPlayingAnchors(sleeveRoom: room)
+            }
+            .accessibilityHidden(true)
+    }
+
+    /// The ground behind the page (NowPlayingGround), with where the page
+    /// put the sleeve's room and the title, in the ground's own space.
+    private func ground(_ anchors: NowPlayingAnchors, in proxy: GeometryProxy) -> some View {
+        let side = albumSide
+        let room: CGRect? = anchors.sleeveRoom.map { proxy[$0] }
+        let title: CGRect? = anchors.title.map { proxy[$0] }
+        return NowPlayingGround(size: proxy.size, sleeveRoom: room, title: title, wide: anchors.wide,
+                                still: isStill, walls: walls, artwork: currentTrack?.artwork,
+                                side: side ?? .alone, label: recordLabel(disc: side?.disc),
+                                isPlaying: player.isPlaying)
     }
 
     /// Where the playing song lies on its album (TurntableSide): the songs
-    /// of its disc, in disc and track order, from the library. Nil when the
-    /// song has no album, the library does not know the album, or the song
-    /// is its disc's only one: then the arm goes by the song alone. Only the
-    /// song is read here, not its clock: the arm reads that itself, so this
+    /// of its disc, in disc and track order, from the library — the bands of
+    /// the record and of the land. Nil when the song has no album, the
+    /// library does not know the album, or the song is its disc's only one:
+    /// then the song is alone on its side. Only the song is read here, not
+    /// its clock: the land's played grooves read that themselves, so this
     /// view is not evaluated again twice a second.
     private var albumSide: TurntableSide? {
         guard let track = currentTrack, let albumID = track.albumID else { return nil }
@@ -246,20 +309,23 @@ struct NowPlayingView: View {
     /// The words on the record's label: the album's title and its artist,
     /// and "Disc 2" when the album has discs. Nil, a plain label, when the
     /// song has neither album nor artist.
-    private func recordLabel(disc: Int?) -> TurntableLabel? {
+    private func recordLabel(disc: Int?) -> RecordLabel? {
         guard let track = currentTrack else { return nil }
         let title = track.albumName ?? ""
         let artist = track.albumArtist?.name ?? track.artistLine
         guard !title.isEmpty || !artist.isEmpty else { return nil }
-        return TurntableLabel(title: title, artist: artist, disc: disc)
+        return RecordLabel(title: title, artist: artist, disc: disc)
     }
 
     // MARK: Top
 
-    private var header: some View {
-        VStack(spacing: Theme.Space.xs) {
+    /// The grabber, Close and More. White, as every glyph here; Ink over a
+    /// light wall (D1), as the status bar is then dark too.
+    private func header(wide: Bool) -> some View {
+        let ink = topInk(wide: wide)
+        return VStack(spacing: Theme.Space.xs) {
             Capsule()
-                .fill(Color.white.opacity(0.35))
+                .fill(ink.opacity(0.35))
                 .frame(width: 36, height: 5)
                 .accessibilityHidden(true)
             HStack(spacing: Theme.Space.m) {
@@ -268,6 +334,7 @@ struct NowPlayingView: View {
                 } label: {
                     Image(systemName: "chevron.down")
                         .font(.title3.weight(.semibold))
+                        .foregroundStyle(ink)
                         .frame(width: 44, height: 44)
                         .contentShape(.rect)
                 }
@@ -282,7 +349,7 @@ struct NowPlayingView: View {
                     } label: {
                         Image(systemName: "ellipsis")
                             .font(.title3.weight(.semibold))
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(ink)
                             .frame(width: 44, height: 44)
                             .contentShape(.rect)
                     }
@@ -299,7 +366,8 @@ struct NowPlayingView: View {
     // MARK: The accent
 
     /// The cover, small, for its colour: the 120 pixels the record's label
-    /// already takes its colour from (Turntable), so it is one download.
+    /// already takes its colour from (NowPlayingGround), so it is one
+    /// download.
     private var accentURL: URL? {
         guard let artwork = currentTrack?.artwork, let client = app.client else { return nil }
         return client.imageURL(artwork, maxPixelSize: 120)
@@ -322,6 +390,42 @@ struct NowPlayingView: View {
         return Color(red: color.red, green: color.green, blue: color.blue)
     }
 
+    // MARK: Still or moving
+
+    /// D1, the wall, where nothing moves: the photographer's "D1 is reduced
+    /// motion/batterij besparing d2 normaal". Reduce Motion asks for less
+    /// movement; Low Power Mode for less work; Settings' Spin the Record
+    /// off (AppSettings.spinRecord) for a record that stands still.
+    private var isStill: Bool {
+        reduceMotion || isLowPower || !settings.spinRecord
+    }
+
+    /// D1's wall and floor: the last worked out (shownWalls), or before any
+    /// is, the ones kept for this cover. Nil — Cabinet, no wall — for a song
+    /// without a cover, and until they are known.
+    private var walls: NowPlayingWalls? {
+        if let shownWalls {
+            return shownWalls.walls
+        }
+        if let url = accentURL, case let .some(kept) = NowPlayingWallCache.shared.cached(url) {
+            return kept
+        }
+        return nil
+    }
+
+    /// A light wall at the top of the screen: D1, the sleeve shown, upright
+    /// (on the iPad sideways the status bar runs over the floor too, and
+    /// the wall there is kept dark enough for white).
+    private var wallIsLight: Bool {
+        guard isStill, panel == .cover, currentTrack != nil, let walls else { return false }
+        return walls.wall(wide: isWide).isLight
+    }
+
+    /// The top's glyphs: Ink over a light wall, else white.
+    private func topInk(wide: Bool) -> Color {
+        wallIsLight && !wide ? Theme.Arch.ink : Color.white
+    }
+
     // MARK: The title
 
     /// From the margin, as a sleeve's back is set: the title in the serif,
@@ -337,6 +441,11 @@ struct NowPlayingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             trackButtons
+        }
+        // Where the title is, for the land: the playing song's band starts
+        // just above it.
+        .anchorPreference(key: NowPlayingAnchorsKey.self, value: .bounds) { bounds in
+            NowPlayingAnchors(title: bounds)
         }
         .padding(.bottom, Theme.Space.xs)
     }
@@ -358,6 +467,10 @@ struct NowPlayingView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             trackButtons
+        }
+        // The land's band starts above this title too, while it is the one.
+        .anchorPreference(key: NowPlayingAnchorsKey.self, value: .bounds) { bounds in
+            NowPlayingAnchors(title: bounds)
         }
     }
 

@@ -1,5 +1,6 @@
 // The pieces Now Playing is made of: the scrubber (Numa's slim slider) and
-// the transport's buttons. The record is Turntable.swift. Named NowPlaying…
+// the transport's buttons. The sleeve and its record are SleeveRecord.swift,
+// the ground under them NowPlayingGround.swift. Named NowPlaying…
 // so they cannot clash with another part's own helpers.
 
 import JukeboxKit

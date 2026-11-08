@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
-# The record player's arithmetic on Linux, in Swift's own Docker image:
-# Jukebox/NowPlaying/TurntableMeasures.swift (Foundation only) compiled as it
-# is, with the app's settings (the main actor by default, approachable
-# concurrency), and run against dev/turntable-test.swift. The rest of the app
-# is SwiftUI and is built only on CI's Mac.
+# Now Playing's arithmetic on Linux, in Swift's own Docker image — the album's
+# side, the land under the page (sketch D2), the sleeve's layout, the motion's
+# numbers and the clock: Jukebox/NowPlaying/TurntableMeasures.swift
+# (Foundation only) compiled as it is, with the app's settings (the main actor
+# by default, approachable concurrency), and run against
+# dev/turntable-test.swift. The rest of the app is SwiftUI and is built only
+# on CI's Mac.
 #
 #   dev/turntable-test.sh
 set -euo pipefail

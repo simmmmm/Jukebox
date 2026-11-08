@@ -1,240 +1,24 @@
-// The record player's measures, as plain arithmetic (Turntable.swift draws
-// them): the deck's geometry; how the deck and the album's sleeve standing
-// behind it share the room Now Playing gives them; and where the playing
-// song lies on its album, which is where the needle goes. The photographer,
-// 8 November 2026: "Kun je de platenspeler iets leuker maken, de hoes er
-// achter zetten en de naald zetten op welk nummer het is van het album".
+// Now Playing's measures, as plain arithmetic (SleeveRecord.swift and
+// NowPlayingGround.swift draw them): where the playing song lies on its
+// album; the giant record under the page, sketch D2's "side as land"; where
+// the sleeve and its record go; how fast things turn, all in one place; and
+// the clock that turns them.
+//
+// The photographer, 8 November 2026, of sketch E: "Dus ik denk dat d1 en d2
+// vooral d2 het best gaan werken. D1 is reduced motion/batterij besparing d2
+// normaal. F1 toch net iets te extreem denk". So D2 is Now Playing: the
+// album's side as a record far larger than the screen, its grooves sweeping
+// across the page as a horizon, one band per song, the playing song's band
+// starting under the sleeve. D1, the same page on a still wall, is
+// NowPlayingGround's and CoverWall's.
 //
 // Foundation only, no SwiftUI, so that it is checked on Linux as well as
 // built on the Mac: dev/turntable-test.sh compiles it as it is, with the
-// app's settings, beside dev/turntable-test.swift.
+// app's settings, beside dev/turntable-test.swift. (The file keeps the
+// turntable's name: the record player it measured before D2 is gone, the
+// album's side it worked out is not.)
 
 import Foundation
-
-// MARK: - The deck
-
-/// The deck's measures, in points, for a plinth `width` wide: where the
-/// platter, the record and the arm are, the arm's angle for a place on the
-/// record, and where the deck is seen once tipped back. Plain numbers,
-/// `nonisolated`, as the arm's Shape reads them.
-nonisolated struct TurntableGeometry: Equatable, Sendable {
-    /// How far the deck is tipped back, in degrees, and the perspective it
-    /// is seen in: sketch D's deck, seen from a little above and in front.
-    static let tilt: Double = 46
-    static let perspective: CGFloat = 0.4
-    /// The plinth's depth to its width.
-    static let depthRatio: CGFloat = 1.08
-    /// The arm at rest beside the platter, off the record: degrees clockwise
-    /// from straight down.
-    static let parkedAngle: Double = -3
-
-    let width: CGFloat
-
-    init(width: CGFloat) {
-        self.width = width
-    }
-
-    var depth: CGFloat { width * Self.depthRatio }
-    /// The platter's and the record's centre, left of the middle to leave
-    /// the arm its room on the right.
-    var center: CGPoint { CGPoint(x: width * 0.44, y: depth * 0.5) }
-    var platterRadius: CGFloat { width * 0.405 }
-    var discRadius: CGFloat { width * 0.385 }
-    var labelRadius: CGFloat { discRadius * 0.34 }
-    var holeRadius: CGFloat { width * 0.011 }
-    /// The arm's pivot, top right, and its length from the pivot to the
-    /// stylus: about as far as from the pivot to the spindle, as a real
-    /// arm's, so the stylus's arc crosses the record from rim to label.
-    var pivot: CGPoint { CGPoint(x: width * 0.885, y: depth * 0.13) }
-    var armLength: CGFloat { width * 0.56 }
-    /// Where the stylus rides: the outermost groove, and the last one
-    /// before the label.
-    var outerGroove: CGFloat { discRadius * 0.94 }
-    var innerGroove: CGFloat { labelRadius * 1.12 }
-
-    /// The groove `place` (0 … 1) of the way from the outer groove to the
-    /// label. The one measure of a place on the record: the arm goes to it
-    /// and the bands between the album's songs are drawn at it.
-    func grooveRadius(at place: Double) -> CGFloat {
-        let p = CGFloat(min(1, max(0, place)))
-        return outerGroove + (innerGroove - outerGroove) * p
-    }
-
-    /// The arm's angle, degrees clockwise from straight down, with the
-    /// stylus in the groove `place` (0 … 1) of the way from the outer
-    /// groove to the label. About 12° at the outer groove and 34° by the
-    /// label.
-    func armAngle(place: Double) -> Double {
-        angle(toRadius: grooveRadius(at: place)) ?? (12 + 22 * min(1, max(0, place)))
-    }
-
-    /// Where the arm's circle about the pivot crosses the groove of
-    /// `radius`: of the two crossings, the one nearer the arm's rest (the
-    /// smaller angle). Nil when they do not cross.
-    private func angle(toRadius radius: CGFloat) -> Double? {
-        let dx = center.x - pivot.x
-        let dy = center.y - pivot.y
-        let distance = (dx * dx + dy * dy).squareRoot()
-        let length = armLength
-        guard distance > 0, abs(distance - radius) <= length, length <= distance + radius else { return nil }
-        let along = (length * length - radius * radius + distance * distance) / (2 * distance)
-        let across = max(0, length * length - along * along).squareRoot()
-        let ux = dx / distance
-        let uy = dy / distance
-        let baseX = pivot.x + along * ux
-        let baseY = pivot.y + along * uy
-        var best: Double?
-        for side in [CGFloat(1), CGFloat(-1)] {
-            let x = baseX - side * across * uy
-            let y = baseY + side * across * ux
-            let degrees = atan2(Double(pivot.x - x), Double(y - pivot.y)) * 180 / Double.pi
-            best = min(best ?? degrees, degrees)
-        }
-        return best
-    }
-
-    /// A line across the deck `y` points from its middle (toward the
-    /// listener when positive) as it is seen once the deck is tipped back:
-    /// how far from the middle, and how much larger or smaller. As
-    /// SwiftUI's rotation3DEffect draws it — a turn about the horizontal
-    /// axis, then perspective with m34 = −perspective ÷ the larger side,
-    /// here the depth. CI's screenshot of d227873 (iPhone 17 Pro) bears it
-    /// out to a point: a plinth 319 wide was seen 279 wide at its far edge,
-    /// 368 at its near edge and 244 deep, where this gives 279, 373 less its
-    /// rounded corners, and 244.
-    func seen(_ y: CGFloat) -> (offset: CGFloat, scale: CGFloat) {
-        guard depth > 0 else { return (y, 1) }
-        let radians = Self.tilt * Double.pi / 180
-        let toward = Double(y) * sin(radians)
-        let w = 1 - Double(Self.perspective) * toward / Double(depth)
-        return (CGFloat(Double(y) * cos(radians) / w), CGFloat(1 / w))
-    }
-
-    /// The far edge, seen: above the middle (a negative offset), narrower.
-    var farEdge: (offset: CGFloat, scale: CGFloat) { seen(-depth / 2) }
-    /// The near edge, seen: below the middle, wider.
-    var nearEdge: (offset: CGFloat, scale: CGFloat) { seen(depth / 2) }
-}
-
-// MARK: - The deck and the sleeve
-
-/// How the deck and the album's sleeve standing behind it share `size`,
-/// the room Now Playing gives the record player.
-///
-/// The sleeve is a square, upright, not tipped: the cover as if the record
-/// had just come out of it. It stands behind the plinth's far edge with its
-/// lower part hidden by the deck, and above the record, a little left of
-/// the middle, clear of the arm's pivot. It is 0.66 of the plinth's width,
-/// about the record's own width seen as far back as the far edge (0.77 ×
-/// 0.87): drawn larger it spanned the whole far edge and read as a wall,
-/// not a sleeve.
-///
-/// Room: the deck first. It is as wide as it fits, as before the sleeve;
-/// the sleeve shows 60% of itself above the far edge when there is room
-/// for that, and the deck gives up to a tenth of its width to make that
-/// room. With less, less of the sleeve shows; under 30% (a strip, not a
-/// sleeve) the sleeve is left out and the deck has all the room. On an
-/// iPhone 17 Pro with a station's dial under the record (370 × 331) the
-/// deck is 285 wide, a tenth less than alone, under a 188-point sleeve;
-/// without the dial (370 × 374) it keeps all its 317 under a sleeve of 209;
-/// on an iPhone SE (343 × 200 to 243) there is no room and no sleeve; in a
-/// 13-inch iPad's left column, 705 under 466 (dev/turntable-test.sh, which
-/// checks each of these on Linux).
-nonisolated struct TurntableLayout: Equatable, Sendable {
-    /// The sleeve's side, its shift from the middle (left is negative), and
-    /// how much of it may show above the far edge: all in the plinth's
-    /// widths, and as seen on the screen.
-    static let sleeveSide: CGFloat = 0.66
-    static let sleeveShift: CGFloat = -0.06
-    static let sleeveShowing: ClosedRange<CGFloat> = 0.3...0.6
-    /// The least of its width the deck keeps when it makes room for the
-    /// sleeve.
-    static let deckKeeps: CGFloat = 0.9
-    /// The sleeve's shadow on the plinth, from a light high above and a
-    /// little behind and to the left: as long as a fifth of the sleeve's
-    /// height above the plinth, leaning right 0.6 of its length, as the
-    /// arm's shadow falls (TonearmView's offset, 0.01 across and 0.016 down
-    /// the deck).
-    static let shadowLength: CGFloat = 0.2
-    static let shadowLean: CGFloat = 0.6
-
-    /// The deck, as wide as it is drawn.
-    let deck: TurntableGeometry
-    /// Where the deck's middle goes in `size`: rotation3DEffect tips it
-    /// about its middle.
-    let deckCenter: CGPoint
-    /// The sleeve's square in `size`; nil when there is no room for it.
-    let sleeve: CGRect?
-    /// The sleeve's shadow on the plinth, in the plinth's own points; nil
-    /// with no sleeve.
-    let shadow: TurntableSleeveShadow?
-
-    init(fitting size: CGSize) {
-        // Per point of the plinth's width: the deck's seen edges scale with
-        // it, and their scales not at all.
-        let unit = TurntableGeometry(width: 1)
-        let far = unit.farEdge
-        let near = unit.nearEdge
-        let deckHeight = near.offset - far.offset
-        let room = CGSize(width: max(0, size.width), height: max(0, size.height))
-        // The deck alone, as wide as fits: its near edge, the widest part,
-        // within the width, and its seen depth within the height.
-        let alone = min(room.width / near.scale, room.height / deckHeight)
-        let side = Self.sleeveSide
-        var width = max(alone * Self.deckKeeps,
-                        min(alone, room.height / (deckHeight + side * Self.sleeveShowing.upperBound)))
-        var showing: CGFloat = 0
-        if width > 0 {
-            showing = min(Self.sleeveShowing.upperBound, (room.height - deckHeight * width) / (side * width))
-        }
-        if showing < Self.sleeveShowing.lowerBound {
-            width = alone
-            showing = 0
-        }
-
-        // Sleeve and deck as one picture, in the middle of the room.
-        let shown = side * width * showing
-        let top = (room.height - deckHeight * width - shown) / 2
-        let farEdgeY = top + shown
-        deck = TurntableGeometry(width: width)
-        deckCenter = CGPoint(x: room.width / 2, y: farEdgeY - far.offset * width)
-        guard showing > 0 else {
-            sleeve = nil
-            shadow = nil
-            return
-        }
-        let sleeveWidth = side * width
-        let midX = room.width / 2 + Self.sleeveShift * width
-        sleeve = CGRect(x: midX - sleeveWidth / 2, y: top, width: sleeveWidth, height: sleeveWidth)
-        // The far edge's points on the plinth: back from the screen by the
-        // far edge's scale. The shadow begins where the sleeve meets the
-        // far edge and falls forward onto the plinth, short of the platter
-        // (0.135 of the width in), which it never reaches: at most 0.6 ×
-        // 0.66 × 0.2 ÷ 0.87 = 0.09.
-        let toPlinth = 1 / far.scale
-        let length = Self.shadowLength * shown * toPlinth
-        shadow = TurntableSleeveShadow(left: width / 2 + (midX - sleeveWidth / 2 - room.width / 2) * toPlinth,
-                                       right: width / 2 + (midX + sleeveWidth / 2 - room.width / 2) * toPlinth,
-                                       length: length, lean: Self.shadowLean * length)
-    }
-}
-
-/// The sleeve's hard shadow on the plinth, in the plinth's own points (its
-/// far edge is y = 0): from `left` to `right` along the far edge, `length`
-/// toward the listener, its near side `lean` to the right.
-nonisolated struct TurntableSleeveShadow: Equatable, Sendable {
-    let left: CGFloat
-    let right: CGFloat
-    let length: CGFloat
-    let lean: CGFloat
-
-    init(left: CGFloat, right: CGFloat, length: CGFloat, lean: CGFloat) {
-        self.left = left
-        self.right = right
-        self.length = length
-        self.lean = lean
-    }
-}
 
 // MARK: - The album's side
 
@@ -254,11 +38,11 @@ nonisolated struct TurntableSong: Equatable, Sendable {
     }
 }
 
-/// Where the playing song lies on its album, as the record shows it. The
-/// songs of the playing song's disc, in disc and track order, are bands
-/// from the outer groove (the first song) to the run-out by the label (the
-/// last), each as wide as the song is long; the needle is in the playing
-/// song's band and creeps inward through it as it plays.
+/// Where the playing song lies on its album. The songs of the playing
+/// song's disc, in disc and track order, are bands from the outer groove
+/// (the first song) to the run-out by the label (the last), each as wide as
+/// the song is long: on the record half out of the sleeve, and on the land
+/// under the page, whose playing band starts under the sleeve.
 nonisolated struct TurntableSide: Equatable, Sendable {
     /// Where one song ends and the next begins, each 0 … 1 of the way from
     /// the outer groove to the label: one fewer than the songs.
@@ -277,21 +61,15 @@ nonisolated struct TurntableSide: Equatable, Sendable {
         self.disc = disc
     }
 
-    /// The needle's place, 0 … 1 from the outer groove to the label, with
-    /// the playing song `progress` (0 … 1) of the way through: (the lengths
-    /// of the side's songs before it + the time played) ÷ the side's
-    /// length. The song's progress is the player's own (elapsed over its
-    /// duration), so the needle stays in the song's band even where the
-    /// player's length and the library's differ.
-    func place(progress: Double) -> Double {
-        start + (end - start) * min(1, max(0, progress))
-    }
+    /// A song alone (no album, or the only song of its disc): one band, the
+    /// whole side.
+    static let alone = TurntableSide(bands: [], start: 0, end: 1, disc: nil)
 
     /// The side of the song `id` among its album's songs, `album` in disc
     /// and track order (LibraryStore.tracks(inAlbum:)): its disc's songs
-    /// only, as a record holds one disc. Nil — no bands, and the arm goes
-    /// by the song alone — when the song is not among them, when it is its
-    /// disc's only song, or when no length on its disc is known.
+    /// only, as a record holds one disc. Nil — the song alone — when the
+    /// song is not among them, when it is its disc's only song, or when no
+    /// length on its disc is known.
     static func of(_ id: String, in album: [TurntableSong]) -> TurntableSide? {
         guard let playing = album.first(where: { $0.id == id }) else { return nil }
         let disc = playing.disc ?? 1
@@ -315,5 +93,333 @@ nonisolated struct TurntableSide: Equatable, Sendable {
                              start: index == 0 ? 0 : bands[index - 1],
                              end: index == bands.count ? 1 : bands[index],
                              disc: discs.count > 1 ? disc : nil)
+    }
+}
+
+// MARK: - The land
+
+/// One ring of the land: a groove, every fifth a little stronger as a
+/// record's grooves catch the light unevenly; the faint light edge where a
+/// song's grooves end and the smooth land before the next begins; the
+/// run-out's edge by the giant label.
+nonisolated struct LandRing: Equatable, Sendable {
+    nonisolated enum Kind: Equatable, Sendable {
+        case groove
+        case strong
+        case edge
+        case runOut
+    }
+
+    let radius: CGFloat
+    let kind: Kind
+
+    init(radius: CGFloat, kind: Kind) {
+        self.radius = radius
+        self.kind = kind
+    }
+}
+
+/// D2's ground: the album's side as a record far larger than the screen,
+/// its centre below the screen and to the right, so its grooves cross the
+/// page as gentle arcs, a horizon. One band of grooves per song of the
+/// album, as wide as the song is long, a smooth land between two songs; the
+/// playing song's band starts just above its title, under the sleeve, and
+/// its grooves played so far are a tone lighter (NowPlayingGround). When the
+/// next song plays, the land moves on one band, so the new song's band
+/// starts where the last one's did.
+///
+/// The numbers are sketch E's (its D2, final.py): on the iPhone 17 Pro, 402
+/// by 874, the record's grooves run from 1440 points from its centre to 420,
+/// its centre 300 from the left, a groove every 5.2 points; on the iPad
+/// sideways, 1180 by 820, from 1900 to 700, its centre 820 from the left,
+/// every 5.6. Other screens take the same in proportion to their diagonal
+/// (and the width, for the centre); the pitch is a texture, and stays.
+nonisolated struct LandGeometry: Equatable, Sendable {
+    /// The smooth land between two songs' grooves.
+    static let land: CGFloat = 26
+    /// The run-out's edge, this far inside the last song's grooves.
+    static let runOut: CGFloat = 60
+    /// How far the playing song's band starts above its title (sketch E:
+    /// 28 points on the iPhone, 30 on the iPad).
+    static let aboveTitle: CGFloat = 28
+    /// The bitmap the land is drawn into, once per album and screen: at
+    /// most 0.75 pixels a point (its grooves are 1.5 points wide, dark on
+    /// dark; drawn at 0.71 and shown at 3 they are as clear as drawn at 3,
+    /// a little softer) and at most 2900 pixels a side, 34 MB. A side of
+    /// 2880 points (the iPhone 17 Pro's land) is 2160 pixels, 19 MB.
+    static let bitmapDensity: CGFloat = 0.75
+    static let bitmapMostPixels: CGFloat = 2900
+
+    /// The outer groove (the first song's start) and the last song's end,
+    /// from the centre.
+    let outerRadius: CGFloat
+    let innerRadius: CGFloat
+    /// The centre's distance from the screen's left edge.
+    let centerX: CGFloat
+    /// From one groove to the next.
+    let pitch: CGFloat
+
+    init(outerRadius: CGFloat, innerRadius: CGFloat, centerX: CGFloat, pitch: CGFloat) {
+        self.outerRadius = outerRadius
+        self.innerRadius = innerRadius
+        self.centerX = centerX
+        self.pitch = pitch
+    }
+
+    /// For a screen of `size`, upright (`wide` false: the iPhone, the iPad
+    /// upright) or the iPad sideways.
+    init(screen size: CGSize, wide: Bool) {
+        let width = max(1, size.width)
+        let height = max(1, size.height)
+        let diagonal = (width * width + height * height).squareRoot()
+        if wide {
+            // 1180 by 820: a diagonal of 1437.
+            self.init(outerRadius: diagonal * 1900 / 1437, innerRadius: diagonal * 700 / 1437,
+                      centerX: width * 820 / 1180, pitch: 5.6)
+        } else {
+            // 402 by 874: a diagonal of 962.
+            self.init(outerRadius: diagonal * 1440 / 962, innerRadius: diagonal * 420 / 962,
+                      centerX: width * 300 / 402, pitch: 5.2)
+        }
+    }
+
+    /// The record's whole width, in points: the bitmap's side.
+    var diameter: CGFloat { outerRadius * 2 }
+
+    /// Pixels a point for the bitmap.
+    var bitmapScale: CGFloat {
+        min(Self.bitmapDensity, Self.bitmapMostPixels / max(1, diameter))
+    }
+
+    /// The radius of a place on the side, 0 (the first song's start) … 1
+    /// (the last song's end).
+    func radius(at place: Double) -> CGFloat {
+        let p = CGFloat(min(1, max(0, place)))
+        return outerRadius - (outerRadius - innerRadius) * p
+    }
+
+    /// Where the centre goes, down the screen, for the band that starts at
+    /// `start` to pass through `anchor`: the land moves, the anchor stays.
+    func centerY(anchor: CGPoint, start: Double) -> CGFloat {
+        let r = radius(at: start)
+        let dx = anchor.x - centerX
+        return anchor.y + max(0, r * r - dx * dx).squareRoot()
+    }
+
+    /// Every ring of the side whose songs end at `bands` (TurntableSide;
+    /// none: one song), outermost first.
+    func rings(bands: [Double]) -> [LandRing] {
+        let bounds = [0] + bands + [1]
+        var rings: [LandRing] = []
+        for k in 0..<(bounds.count - 1) {
+            let isLast = k == bounds.count - 2
+            for (i, r) in grooves(from: bounds[k], to: bounds[k + 1]).enumerated() {
+                rings.append(LandRing(radius: r, kind: i.isMultiple(of: 5) ? .strong : .groove))
+            }
+            if !isLast {
+                rings.append(LandRing(radius: radius(at: bounds[k + 1]) + Self.land / 2 - 1, kind: .edge))
+            }
+        }
+        rings.append(LandRing(radius: innerRadius - Self.runOut, kind: .runOut))
+        return rings
+    }
+
+    /// The grooves of the song from `start` to `end`, outermost first: from
+    /// half the land inside its start (none above the first song) to half
+    /// the land short of its end (none below the last).
+    func grooves(from start: Double, to end: Double) -> [CGFloat] {
+        let top = radius(at: start) - (start > 0 ? Self.land / 2 : 0)
+        let bottom = radius(at: end) + (end < 1 ? Self.land / 2 : 0)
+        var radii: [CGFloat] = []
+        var r = top
+        while r > bottom {
+            radii.append(r)
+            r -= pitch
+        }
+        return radii
+    }
+
+    /// How many of the song's grooves are played with the song `progress`
+    /// (0 … 1) of the way through: those a groove's place in the band has
+    /// reached. Counted in whole grooves, so the lighter grooves change only
+    /// when the song reaches the next one — on a song of four minutes in a
+    /// band of 28 grooves, once in nine seconds.
+    func playedGrooves(from start: Double, to end: Double, progress: Double) -> Int {
+        let a0 = radius(at: start)
+        let a1 = radius(at: end)
+        guard a0 > a1 else { return 0 }
+        let reached = a0 - (a0 - a1) * CGFloat(min(1, max(0, progress)))
+        return grooves(from: start, to: end).filter { $0 >= reached }.count
+    }
+
+    /// The ring that holds the first `count` grooves of the song from
+    /// `start`, as the radii of its outer and inner edges: each half a
+    /// pitch beyond the grooves, so its edges fall between grooves and
+    /// never cut one.
+    func playedRing(from start: Double, to end: Double, count: Int) -> (outer: CGFloat, inner: CGFloat)? {
+        let radii = grooves(from: start, to: end)
+        guard count > 0, let first = radii.first else { return nil }
+        let last = radii[min(count, radii.count) - 1]
+        return (first + pitch / 2, last - pitch / 2)
+    }
+}
+
+// MARK: - The sleeve
+
+/// Where the album's sleeve and its record go in the room Now Playing gives
+/// them: sketch E's sleeve, the record half out of its open edge.
+///
+/// Upright (the iPhone), the sleeve stands at the page's margin and the
+/// record runs off the screen's right edge, showing a third of the sleeve's
+/// width (94 of 284 points on the iPhone 17 Pro, as sketch E). On the iPad
+/// sideways the whole record shows, and sleeve and record are centred in
+/// their column. Either way the sleeve is as large as that allows, and
+/// square; in the middle of the room's height.
+nonisolated struct SleeveLayout: Equatable, Sendable {
+    /// The record across, to the sleeve's side: a record is a little
+    /// smaller than its sleeve.
+    static let recordSide: CGFloat = 0.955
+    /// The record's centre beyond the sleeve's open edge.
+    static let recordBeyond: CGFloat = 8
+    /// Upright: how much of the sleeve's width the record shows beyond it
+    /// before the screen's edge.
+    static let peek: CGFloat = 94.0 / 284.0
+
+    /// The sleeve's square, in the room's points.
+    let sleeve: CGRect
+    /// The record: its centre and its width.
+    let recordCenter: CGPoint
+    let recordDiameter: CGFloat
+
+    init(room size: CGSize, wide: Bool, margin: CGFloat) {
+        let width = max(0, size.width)
+        let height = max(0, size.height)
+        let side: CGFloat
+        let left: CGFloat
+        if wide {
+            // The sleeve, then the record's half beyond its centre.
+            let span = 1 + Self.recordSide / 2
+            side = max(0, min((width - Self.recordBeyond) / span, height))
+            left = (width - (side * span + Self.recordBeyond)) / 2
+        } else {
+            side = max(0, min((width - margin) / (1 + Self.peek), height))
+            left = margin
+        }
+        sleeve = CGRect(x: left, y: (height - side) / 2, width: side, height: side)
+        recordDiameter = side * Self.recordSide
+        recordCenter = CGPoint(x: left + side + Self.recordBeyond, y: sleeve.midY)
+    }
+}
+
+// MARK: - How it moves
+
+/// The motion of Now Playing, all of it, in one place. The record half out
+/// of the sleeve turns its label; the land under the page is a record too,
+/// and will sway as it turns once its next round (sketch H) gives it a pin
+/// off its centre and a shape not quite round. Until then it is round and
+/// pinned at its centre, and turning it would change no pixel: it is not
+/// turned (`landTurns`), and only the label moves.
+nonisolated enum RecordMotion {
+    /// The label: a turn in 10 s, far slower than a real 33⅓ (1.8 s a
+    /// turn) — the photographer, of the first turning record: "mag ie nog
+    /// veel zachter draaien hoor".
+    static let labelDegreesPerSecond: Double = 36
+    /// The land: a real record's speed.
+    static let landRevolutionsPerMinute: Double = 100.0 / 3
+    /// The land's pin, off the record's true centre, in points: right and
+    /// down. Sketch H's to give; 0 until then.
+    static let landPinOffset = CGPoint(x: 0, y: 0)
+    /// How oval the land is: its width over its height, less one, in per
+    /// cent. Sketch H's to give; 0 until then.
+    static let landOvalPercent: Double = 0
+    /// Frames a second while the label alone turns: at 36° a second a frame
+    /// turns it 1.8°, which reads as smooth, for a third fewer frames than
+    /// 30.
+    static let labelFrameRate: Double = 20
+    /// Frames a second while the land turns too: at 33⅓ a minute that is
+    /// 6.7° a frame, the most the page asks for.
+    static let landFrameRate: Double = 30
+    /// How long the turning takes to stop when the music pauses.
+    static let coastSeconds: Double = 0.8
+    /// How long the land takes to move on one band when the song changes,
+    /// eased.
+    static let slideSeconds: Double = 0.6
+
+    /// Whether turning the land shows: a round record pinned at its centre
+    /// looks the same at every angle.
+    static var landTurns: Bool {
+        landPinOffset != .zero || landOvalPercent != 0
+    }
+
+    static var landDegreesPerSecond: Double {
+        landRevolutionsPerMinute * 360 / 60
+    }
+
+    /// The one timeline's rate.
+    static var frameRate: Double {
+        landTurns ? landFrameRate : labelFrameRate
+    }
+}
+
+/// How far the records have turned, as seconds of turning at full speed:
+/// the label's angle is that times its speed, the land's times its own, so
+/// one clock turns both and they stop together. Turning, it runs with the
+/// time; paused, it coasts to a stop over `RecordMotion.coastSeconds`
+/// (evenly slower, so half as far as full speed would go); at rest it
+/// holds.
+nonisolated struct RecordClock: Equatable, Sendable {
+    /// Turned until the last start or stop.
+    private(set) var base: Double = 0
+    /// When it began to turn; nil while it rests or coasts.
+    private(set) var since: Date?
+    /// When it began to coast; nil unless it coasts.
+    private(set) var coastStart: Date?
+
+    init() {}
+
+    /// Turning or coasting: the timeline runs.
+    var isMoving: Bool { since != nil || coastStart != nil }
+
+    func turned(at date: Date) -> Double {
+        if let since {
+            return base + max(0, date.timeIntervalSince(since))
+        }
+        if let coastStart {
+            let seconds = RecordMotion.coastSeconds
+            let t = min(max(0, date.timeIntervalSince(coastStart)), seconds)
+            return base + t - t * t / (2 * seconds)
+        }
+        return base
+    }
+
+    /// The label's angle and the land's, in degrees, 0 ..< 360.
+    func labelAngle(at date: Date) -> Double {
+        (turned(at: date) * RecordMotion.labelDegreesPerSecond).truncatingRemainder(dividingBy: 360)
+    }
+
+    func landAngle(at date: Date) -> Double {
+        (turned(at: date) * RecordMotion.landDegreesPerSecond).truncatingRemainder(dividingBy: 360)
+    }
+
+    /// Starts turning, from wherever it is: at rest, or still coasting.
+    mutating func start(at date: Date) {
+        base = turned(at: date)
+        coastStart = nil
+        since = date
+    }
+
+    /// Stops: coasting when `coasts` and it was turning, else at once.
+    mutating func stop(at date: Date, coasts: Bool) {
+        let wasTurning = since != nil
+        base = turned(at: date)
+        since = nil
+        coastStart = wasTurning && coasts ? date : nil
+    }
+
+    /// The coast is over: at rest where it ended.
+    mutating func settle(at date: Date) {
+        guard since == nil else { return }
+        base = turned(at: date)
+        coastStart = nil
     }
 }
