@@ -51,6 +51,8 @@ enum Stats {
         case settingChanged = "setting_changed"
         case lastFMKey = "lastfm_key"
         case playbackError = "playback_error"
+        case downloadChosen = "download_chosen"
+        case offlinePlayStarted = "offline_play_started"
     }
 
     /// On unless turned off. Read with `bool(forKey:)` once the key is

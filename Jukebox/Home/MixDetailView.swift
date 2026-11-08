@@ -2,7 +2,8 @@
 // in the serif under it (not on a scrim over it), its artists and length,
 // Play and Shuffle, a station that plays on from it, and its songs. Saved as
 // a playlist it stays on the server after today's mixes have made way for
-// tomorrow's.
+// tomorrow's; downloaded (the bar's arrow) it stays on the phone as it was
+// today, in Library › Downloaded.
 
 import JukeboxKit
 import SwiftUI
@@ -18,8 +19,10 @@ struct MixDetailView: View {
     @Environment(RadioController.self) private var radio
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
+    @Environment(OfflineStore.self) private var offline
 
     @State private var showsTitle = false
+    @State private var isConfirmingRemoval = false
     @State private var isNaming = false
     @State private var playlistName = ""
     @State private var isSaving = false
@@ -36,6 +39,7 @@ struct MixDetailView: View {
 
             ForEach(Array(mix.tracks.enumerated()), id: \.offset) { index, track in
                 Button {
+                    guard !player.refusesOffline(track) else { return }
                     player.playMix(mix, from: index)
                 } label: {
                     TrackRow.standard(track)
@@ -58,6 +62,11 @@ struct MixDetailView: View {
             showsTitle = isPast
         }
         .toolbar {
+            if offline.offersDownload(for: .mix(mix.id)) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    OfflineDownloadButton(collection: OfflineCollection(mix: mix), isConfirmingRemoval: $isConfirmingRemoval)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Section {
@@ -84,6 +93,7 @@ struct MixDetailView: View {
                 .disabled(mix.tracks.isEmpty)
             }
         }
+        .offlineRemovalDialog($isConfirmingRemoval, for: .mix(mix.id), name: mix.title)
         // The confirmation, with the name to change if the listener likes.
         .alert("Save as Playlist", isPresented: $isNaming) {
             TextField("Playlist Name", text: $playlistName)

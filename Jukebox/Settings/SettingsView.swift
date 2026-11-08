@@ -19,6 +19,7 @@ struct SettingsView: View {
             Form {
                 SettingsAccountSection()
                 SettingsPlaybackSection()
+                SettingsDownloadsSection()
                 SettingsRadioSection()
                 SettingsLastFMSection(savedKey: settings.lastFMAPIKey)
                 SettingsLyricsSection()
@@ -71,7 +72,7 @@ private struct SettingsAccountSection: View {
                     Task { await app.signOut() }
                 }
             } message: {
-                Text("Playback stops and Jukebox forgets the library and your recent stations on this \(UIDevice.current.model). Your music, playlists and favorites stay on the server.")
+                Text("Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(UIDevice.current.model). Your music, playlists and favorites stay on the server.")
             }
         } header: {
             Text("Account")
@@ -138,6 +139,118 @@ private struct SettingsPlaybackSection: View {
         case .normal: Text("Normal (256 kbit/s)")
         case .low: Text("Low (128 kbit/s)")
         }
+    }
+}
+
+// MARK: - Downloads
+
+/// Music on the phone (OfflineStore). The photographer, asked whether the app
+/// should "automatisch bewaren wat je vaak of kort geleden hebt gespeeld, tot
+/// een grootte die je kiest", answered "Alle drie" (8 November 2026): Keep
+/// Songs I Play, on at 5 GB, beside the albums, playlists and mixes chosen on
+/// their pages. The space each takes, and Remove All Downloads, asked first.
+private struct SettingsDownloadsSection: View {
+    @Environment(AppModel.self) private var app
+    @Environment(AppSettings.self) private var settings
+    @Environment(OfflineStore.self) private var offline
+    @State private var isConfirmingRemoveAll = false
+
+    init() {}
+
+    var body: some View {
+        @Bindable var settings = settings
+        Section {
+            if !offline.downloadsAllowed {
+                // The server's admin turned "Allow media downloading" off
+                // for this user: said once, as a fact.
+                Text("\(serverName) doesn’t allow downloads for this account.")
+                    .foregroundStyle(.secondary)
+            }
+            Toggle(isOn: $settings.keepSongs) {
+                SettingsDetailLabel(title: "Keep Songs I Play",
+                                    detail: "Songs you play often or lately stay on this \(UIDevice.current.model), to play without a connection")
+            }
+            if settings.keepSongs {
+                Picker("Up To", selection: $settings.keepLimitGB) {
+                    ForEach(AppSettings.keepLimits, id: \.self) { gigabytes in
+                        Text("\(gigabytes) GB").tag(gigabytes)
+                    }
+                }
+            }
+            Picker("Download Quality", selection: $settings.downloadQuality) {
+                ForEach(DownloadQuality.allCases, id: \.self) { quality in
+                    label(for: quality)
+                        .tag(quality)
+                }
+            }
+            // Music's words, as Cellular Streaming above.
+            Toggle("Download over Cellular", isOn: $settings.downloadOverCellular)
+            LabeledContent("Downloaded") {
+                Text(offline.chosenBytes, format: .byteCount(style: .file))
+            }
+            LabeledContent("Kept") {
+                Text(keptLine)
+            }
+            if let status {
+                LabeledContent(status) {
+                    Text(LibraryText.songs(offline.queuedCount))
+                }
+            }
+            Button("Remove All Downloads", role: .destructive) {
+                isConfirmingRemoveAll = true
+            }
+            .disabled(offline.songCount == 0 && offline.queuedCount == 0)
+            .confirmationDialog("Remove all downloads from this \(UIDevice.current.model)?",
+                                isPresented: $isConfirmingRemoveAll, titleVisibility: .visible) {
+                Button("Remove All Downloads", role: .destructive) {
+                    offline.removeAll()
+                }
+            } message: {
+                Text("Every downloaded album, playlist, mix and kept song goes, and Keep Songs I Play is turned off. They still play from your server.")
+            }
+        } header: {
+            Text("Downloads")
+        } footer: {
+            Text("Original is each file as it is, or AAC at 256 kbit/s when this \(UIDevice.current.model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
+        }
+    }
+
+    /// The kit's rate for each quality, so the words and the files agree.
+    private func label(for quality: DownloadQuality) -> Text {
+        let kilobits = (quality.aacBitrate ?? 0) / 1000
+        switch quality {
+        case .original: return Text("Original")
+        case .high: return Text("High (\(kilobits) kbit/s)")
+        case .normal: return Text("Normal (\(kilobits) kbit/s)")
+        }
+    }
+
+    private var serverName: String {
+        app.credentials?.serverName ?? String(localized: "Your server")
+    }
+
+    /// "1.2 GB of 5 GB": what the keep holds, against its limit.
+    private var keptLine: String {
+        let kept = offline.keptBytes.formatted(.byteCount(style: .file))
+        guard settings.keepSongs else { return kept }
+        return String(localized: "\(kept) of \(settings.keepLimitGB) GB")
+    }
+
+    /// What the songs still to come are doing, when there are any.
+    private var status: LocalizedStringKey? {
+        guard offline.queuedCount > 0 else { return nil }
+        switch offline.waiting {
+        case .wifi?: return "Waiting for Wi-Fi"
+        case .network?: return "Waiting for a Connection"
+        case .notAllowed?: return "Paused"
+        case nil:
+            if offline.isLowPower && !hasChosenQueued { return "Paused in Low Power Mode" }
+            return "Downloading"
+        }
+    }
+
+    private var hasChosenQueued: Bool {
+        offline.wanted.contains { $0.isChosen }
     }
 }
 

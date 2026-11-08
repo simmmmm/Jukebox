@@ -17,6 +17,14 @@
 // queue follows. Every entry that stops being current is "finished" once:
 // Jellyfin is told it stopped, the history gets how long it was heard
 // (time while playing, so a seek does not count), the radio its feedback.
+//
+// Songs on the phone (OfflineStore) always play from their file: no data,
+// and they start at once. Offline — no network, or a server that does not
+// answer — only those can play: a list starts at its first song on the
+// phone, the others are passed over in the queue, a song that streamed is
+// left once what it had loaded runs out, and a tap on one that is not on
+// the phone says so. The reports Jellyfin would have had wait in the store
+// until it answers again.
 
 import AVFoundation
 import Foundation
@@ -105,6 +113,8 @@ final class AudioPlayer {
     /// Set by AppModel; told when a track was heard to the end, so play
     /// counts and "Recently Played" move without asking the server.
     @ObservationIgnored var library: LibraryStore?
+    /// Set by AppModel: what is on the phone, and whether only that can play.
+    @ObservationIgnored weak var offline: OfflineStore?
 
     // MARK: Inside
 
@@ -177,6 +187,8 @@ final class AudioPlayer {
     @ObservationIgnored private var observations: [NSKeyValueObservation] = []
     @ObservationIgnored private var notificationTokens: [any NSObjectProtocol] = []
     @ObservationIgnored private var timeObserver: Any?
+    /// Offline, waiting on a song that streamed: left after a moment.
+    @ObservationIgnored private var stallTask: Task<Void, Never>?
 
     init(settings: AppSettings, history: HistoryStore) {
         self.settings = settings
@@ -213,6 +225,30 @@ final class AudioPlayer {
     /// anything but 0.
     func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false) {
         guard !tracks.isEmpty else { return }
+        var tracks = tracks
+        var index = index
+        if let offline, offline.isOffline {
+            // Offline, the songs on the phone, in their order. Play (from
+            // the top) starts at the first of them; a song tapped further
+            // down that is not on the phone says why, and nothing changes.
+            let start = min(max(index, 0), tracks.count - 1)
+            let onPhone = tracks.filter { offline.canPlay($0.id) }
+            guard !onPhone.isEmpty else {
+                showError(tracks.count == 1 ? OfflineText.notOnPhone(tracks[0]) : OfflineText.noneOnPhone)
+                return
+            }
+            if offline.canPlay(tracks[start].id) {
+                index = tracks[..<start].filter { offline.canPlay($0.id) }.count
+            } else if start == 0 {
+                index = 0
+            } else {
+                showError(OfflineText.notOnPhone(tracks[start]))
+                return
+            }
+            tracks = onPhone
+            // That music is played offline, and from what kind of thing (Stats).
+            Stats.track(.offlinePlayStarted, ["from": Stats.source(context.kind)])
+        }
         // What music is started from, by its kind (Stats); never the album.
         Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled])
         // Anything but a station ends the station that played.
@@ -242,6 +278,7 @@ final class AudioPlayer {
     func playRadio(_ picks: [RadioPick], station: Station) {
         guard !picks.isEmpty else { return }
         Stats.track(.playStarted, ["from": "station", "shuffled": false])
+        if offline?.isOffline == true { Stats.track(.offlinePlayStarted, ["from": "station"]) }
         currentIndex = nil
         context = QueueContext(.radio(station), title: station.title)
         queue = picks.map { QueueEntry(track: $0.track, reason: $0.reason) }
@@ -321,7 +358,7 @@ final class AudioPlayer {
     }
 
     func playNext(_ tracks: [Track]) {
-        guard !tracks.isEmpty else { return }
+        guard let tracks = playableNow(tracks) else { return }
         guard let currentIndex, hasTrack else {
             play(tracks, context: QueueContext(.other, title: "Up Next"))
             return
@@ -337,7 +374,7 @@ final class AudioPlayer {
     }
 
     func addToQueue(_ tracks: [Track]) {
-        guard !tracks.isEmpty else { return }
+        guard let tracks = playableNow(tracks) else { return }
         guard hasTrack else {
             play(tracks, context: QueueContext(.other, title: "Up Next"))
             return
@@ -409,6 +446,10 @@ final class AudioPlayer {
 
     func skip(to entry: QueueEntry) {
         guard let index = queue.firstIndex(where: { $0.id == entry.id }) else { return }
+        if let offline, !offline.canPlay(entry.track.id) {
+            showError(OfflineText.notOnPhone(entry.track))
+            return
+        }
         if let currentIndex, index < currentIndex {
             goBack(to: index)
         } else {
@@ -540,7 +581,13 @@ final class AudioPlayer {
     /// Make `index` the current entry, from its start, in a fresh engine.
     private func load(_ index: Int, play: Bool) {
         guard queue.indices.contains(index) else { return }
-        let entry = queue[index]
+        // Offline, a song not on the phone cannot play: the next one that
+        // is, in its place; none, and the music stops here.
+        guard let start = playableIndex(from: index) else {
+            noMoreOnPhone()
+            return
+        }
+        let entry = queue[start]
         guard let loaded = makeLoaded(entry) else {
             showError("Not signed in to a server.")
             return
@@ -551,7 +598,7 @@ final class AudioPlayer {
         preloaded = nil
         engine.insert(loaded.item, after: nil)
         wantsToPlay = play
-        begin(entry, at: index, loaded: loaded)
+        begin(entry, at: start, loaded: loaded)
         if play {
             activateAudioSession()
             engine.play()
@@ -564,8 +611,18 @@ final class AudioPlayer {
     /// this": the station is not told the track left was skipped, which
     /// would drop it from Up Next and count against its artist.
     private func goBack(to index: Int) {
+        // Offline, back to the nearest song before it that is on the phone;
+        // none, and the song playing starts again.
+        guard let target = playableIndex(atOrBefore: index) else {
+            if playing != nil {
+                seek(to: 0)
+            } else if let currentIndex {
+                load(currentIndex, play: true)
+            }
+            return
+        }
         isGoingBack = true
-        load(index, play: true)
+        load(target, play: true)
         isGoingBack = false
     }
 
@@ -613,10 +670,17 @@ final class AudioPlayer {
     }
 
     private func makeLoaded(_ entry: QueueEntry) -> Loaded? {
-        guard let client else { return nil }
         let playSessionID = UUID().uuidString
-        let quality = network.isExpensive ? settings.cellularQuality : settings.wifiQuality
-        let url = client.streamURL(trackID: entry.track.id, quality: quality, playSessionID: playSessionID)
+        let url: URL
+        if let file = offline?.localURL(for: entry.track.id) {
+            // On the phone: always its file, online too. No data, and it
+            // starts at once.
+            url = file
+        } else {
+            guard let client else { return nil }
+            let quality = network.isExpensive ? settings.cellularQuality : settings.wifiQuality
+            url = client.streamURL(trackID: entry.track.id, quality: quality, playSessionID: playSessionID)
+        }
         let item = AVPlayerItem(url: url)
         let itemID = ObjectIdentifier(item)
         let observation = PlayerSignals.observeStatus(of: item) { [weak self] in
@@ -626,8 +690,23 @@ final class AudioPlayer {
     }
 
     private func indexAfter(_ index: Int, wrapping: Bool) -> Int? {
-        if index + 1 < queue.count { return index + 1 }
-        if wrapping, !queue.isEmpty { return 0 }
+        guard let offline, offline.isOffline else {
+            if index + 1 < queue.count { return index + 1 }
+            if wrapping, !queue.isEmpty { return 0 }
+            return nil
+        }
+        // Offline, the next song that is on the phone: once round the queue at most.
+        var at = index
+        for _ in 0..<queue.count {
+            if at + 1 < queue.count {
+                at += 1
+            } else if wrapping {
+                at = 0
+            } else {
+                return nil
+            }
+            if offline.canPlay(queue[at].track.id) { return at }
+        }
         return nil
     }
 
@@ -677,7 +756,12 @@ final class AudioPlayer {
             let position = Self.seconds(playing.loaded.item.currentTime()) ?? elapsed
             let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
                                         playSessionID: playing.loaded.playSessionID)
-            Task { await client.reportStopped(report) }
+            if let offline, offline.holdsReports(of: report.playSessionID) {
+                // Told to the server, after its start, once it answers.
+                offline.holdStop(report)
+            } else {
+                Task { await client.reportStopped(report) }
+            }
         }
         guard playing.didPlay else { return nil }
         var track = playing.entry.track
@@ -773,6 +857,7 @@ final class AudioPlayer {
         }
         let buffering = status == .waitingToPlayAtSpecifiedRate
         if isBuffering != buffering { isBuffering = buffering }
+        if buffering { watchOfflineStall() }
         // Playing while waiting for the network too: the button shows Pause.
         let playingNow = status != .paused
         if isPlaying != playingNow {
@@ -840,7 +925,11 @@ final class AudioPlayer {
     private func itemFailed(_ id: ObjectIdentifier) {
         if let playing, ObjectIdentifier(playing.loaded.item) == id {
             // Why, by kind (Stats); never the song or the error's words.
-            Stats.track(.playbackError, ["reason": Stats.playbackFailure(playing.loaded.item.error)])
+            let reason = Stats.playbackFailure(playing.loaded.item.error)
+            Stats.track(.playbackError, ["reason": reason])
+            // The network: is the server still there? If not, offline, and
+            // the next song is one on the phone.
+            if reason == "network" { offline?.checkServer() }
             showError("Could not play “\(playing.entry.track.name)”.")
             consecutiveFailures += 1
             // Five in a row is the server or the network, not a file: stop
@@ -956,7 +1045,13 @@ final class AudioPlayer {
         guard let client else { return true }
         let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
                                     playSessionID: playing.loaded.playSessionID)
-        Task { await client.reportStart(report) }
+        if let offline, offline.holdsReports(of: report.playSessionID) {
+            // Offline: kept, and sent when the server answers, so the play
+            // is counted (and scrobbled) all the same.
+            offline.holdStart(report)
+        } else {
+            Task { await client.reportStart(report) }
+        }
         return true
     }
 
@@ -964,6 +1059,9 @@ final class AudioPlayer {
         guard let playing, playing.startReported else { return }
         self.playing?.lastProgress = Date()
         guard let client else { return }
+        // Offline the server hears of the play when it is back; how far it
+        // got on the way is not kept.
+        if let offline, offline.holdsReports(of: playing.loaded.playSessionID) { return }
         let report = PlaybackReport(trackID: playing.entry.track.id, position: position,
                                     isPaused: engine.timeControlStatus == .paused,
                                     playSessionID: playing.loaded.playSessionID)
@@ -989,6 +1087,70 @@ final class AudioPlayer {
 
     private func publishPlayback() {
         nowPlaying.updatePlayback(elapsed: position, duration: duration, rate: rate)
+    }
+
+    // MARK: Offline
+
+    /// The network went or came back (OfflineStore, through AppModel): what
+    /// is preloaded is chosen again — offline the next song may be a later
+    /// one, back online the very next again — and a song waiting on the
+    /// network is watched.
+    func connectivityChanged() {
+        preloadNext()
+        if isBuffering { watchOfflineStall() }
+    }
+
+    /// `tracks` as far as they can play now: offline, those on the phone;
+    /// nil, and why, briefly, when none of them can.
+    private func playableNow(_ tracks: [Track]) -> [Track]? {
+        guard !tracks.isEmpty else { return nil }
+        guard let offline, offline.isOffline else { return tracks }
+        let onPhone = tracks.filter { offline.canPlay($0.id) }
+        guard !onPhone.isEmpty else {
+            showError(tracks.count == 1 ? OfflineText.notOnPhone(tracks[0]) : OfflineText.noneOnPhone)
+            return nil
+        }
+        return onPhone
+    }
+
+    /// `index`, or offline the first entry from it on that is on the phone.
+    private func playableIndex(from index: Int) -> Int? {
+        guard let offline, offline.isOffline else { return index }
+        return (index..<queue.count).first { offline.canPlay(queue[$0].track.id) }
+    }
+
+    /// `index`, or offline the last entry up to it that is on the phone.
+    private func playableIndex(atOrBefore index: Int) -> Int? {
+        guard let offline, offline.isOffline else { return index }
+        guard queue.indices.contains(index) else { return nil }
+        return stride(from: index, through: 0, by: -1).first { offline.canPlay(queue[$0].track.id) }
+    }
+
+    /// Offline, nothing from here on is on the phone: the music stops where
+    /// it is, and says why.
+    private func noMoreOnPhone() {
+        let finished = finishCurrent()
+        wantsToPlay = false
+        engine.pause()
+        engine.removeAllItems()
+        preloaded = nil
+        deliver(finished)
+        showError(OfflineText.nothingFurther)
+    }
+
+    /// Offline, a song that streams stops when what it had loaded runs out,
+    /// and AVPlayer would wait for the network for ever: after three seconds
+    /// of waiting it is left for the next song on the phone.
+    private func watchOfflineStall() {
+        guard let offline, offline.isOffline, let entry = current, !offline.has(entry.track.id) else { return }
+        let entryID = entry.id
+        stallTask?.cancel()
+        stallTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(3))
+            guard !Task.isCancelled, let self, self.isBuffering, self.current?.id == entryID,
+                  self.offline?.isOffline == true else { return }
+            self.next()
+        }
     }
 
     /// A CMTime's seconds, nil while it is not known (indefinite, NaN).

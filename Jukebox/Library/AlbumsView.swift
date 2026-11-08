@@ -3,7 +3,9 @@
 // artist in the accent to go to them, Play and Shuffle, the album's station
 // under them (as an artist's page has it: "ik vind vooral de radiofunctie
 // echt belangrijk"), the songs by disc, how long it all is, and More by the
-// artist at the end.
+// artist at the end. Download in the bar puts it on the phone
+// (OfflineDownloadButton); offline, a downloaded album the library has not
+// indexed shows the songs it was downloaded with.
 
 import JukeboxKit
 import SwiftUI
@@ -56,16 +58,18 @@ struct AlbumDetailView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
     @Environment(Navigator.self) private var navigator
+    @Environment(OfflineStore.self) private var offline
     /// The album's songs from the server, for an album the library has not
     /// indexed (found by search before the library has loaded).
     @State private var fetched: [Track]?
+    @State private var isConfirmingRemoval = false
 
     var body: some View {
         let shown = library.album(id: album.id) ?? album
-        let own = library.tracks(inAlbum: album.id)
-        let tracks = own.isEmpty ? (fetched ?? []) : own
+        let found = shownSongs()
+        let tracks = found.tracks
+        let isLoading = found.isLoading
         let discs = Self.splitIntoDiscs(tracks)
-        let isLoading = own.isEmpty && fetched == nil
         let moreBy = isLoading ? nil : moreByArtist(shown)
 
         List {
@@ -114,6 +118,14 @@ struct AlbumDetailView: View {
         .listStyle(.plain)
         .libraryScrolledTitle(shown.name)
         .toolbar {
+            // Not when the server does not let this account download,
+            // unless the album is on the phone already, to remove it.
+            if offline.offersDownload(for: .album(album.id)) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: tracks),
+                                          isConfirmingRemoval: $isConfirmingRemoval)
+                }
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     LibraryAlbumMenu(album: shown, tracks: tracks)
@@ -122,6 +134,7 @@ struct AlbumDetailView: View {
                 }
             }
         }
+        .offlineRemovalDialog($isConfirmingRemoval, for: .album(album.id), name: shown.name)
         .task(id: album.id) { await fetchIfNeeded() }
     }
 
@@ -163,6 +176,7 @@ struct AlbumDetailView: View {
 
     private func row(_ track: Track, in tracks: [Track], album shown: Album) -> some View {
         Button {
+            guard !player.refusesOffline(track) else { return }
             let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
             play(tracks, from: i, album: shown, shuffled: false)
         } label: {
@@ -201,6 +215,18 @@ struct AlbumDetailView: View {
         guard let ref = shown.primaryArtist, let artist = library.artist(ref),
               artist.key != NameKey.artist("Various Artists") else { return nil }
         return artist
+    }
+
+    /// The album's songs: the library's; else those the server gave this
+    /// page; else, offline, those it was downloaded with. Loading while none
+    /// of them is there yet.
+    private func shownSongs() -> (tracks: [Track], isLoading: Bool) {
+        let own = library.tracks(inAlbum: album.id)
+        if !own.isEmpty { return (own, false) }
+        if let fetched, !fetched.isEmpty { return (fetched, false) }
+        let saved = offline.collection(for: .album(album.id))?.tracks ?? []
+        if !saved.isEmpty { return (saved, false) }
+        return (fetched ?? [], fetched == nil)
     }
 
     private func fetchIfNeeded() async {

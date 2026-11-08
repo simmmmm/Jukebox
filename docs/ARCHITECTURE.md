@@ -78,6 +78,7 @@ means on air, flat grounds, titles in New York, facts not slogans).
 | App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, Turntable (the record player in the cover's place), QueueView, LyricsView, AirPlay and volume |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController — MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*` — OnboardingView (sign in, Quick Connect), SettingsView, SearchView |
+| App: offline | `Jukebox/Offline/*` — OfflineStore (the songs on the phone per account, the queue, the keep's runs, offline or not, plays heard offline), OfflineDownloader (the background URLSession, JukeboxAppDelegate), OfflineDisk (the folders and files), the download control (OfflineDownloadButton), DownloadedView; `docs/OFFLINE.md`, "In the app" |
 
 ## The views each part must provide (the names others use)
 
@@ -89,6 +90,7 @@ must exist with exactly this initializer:
   `PlaylistsView()`, `PlaylistDetailView(playlist: Playlist)`, `GenresView()`,
   `GenreDetailView(genre: Genre)`, `FavoritesView()`, `RecentlyAddedView()`,
   `AddToPlaylistSheet(tracks: [Track])`.
+- Offline: `DownloadedView()` (`Route.downloaded`, Library › Downloaded).
 - Now playing: `MiniPlayer()` (inside `tabViewBottomAccessory`; reads
   `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
   expanded), `NowPlayingView()` (in a fullScreenCover). In the cover's place
@@ -119,8 +121,10 @@ must exist with exactly this initializer:
 
 `JukeboxApp` puts these in the environment; read them with
 `@Environment(X.self)`: `AppModel`, `Navigator`, `AppSettings`, `LibraryStore`,
-`HistoryStore`, `AudioPlayer`, `RadioController`, `MixStore`. `AppModel.client`
-is the signed-in `JellyfinClient`.
+`HistoryStore`, `AudioPlayer`, `RadioController`, `MixStore`, `OfflineStore`.
+`AppModel.client` is the signed-in `JellyfinClient`. Offline (`OfflineStore.isOffline`)
+only songs on the phone play: a list's row asks `player.refusesOffline(track)`
+before it plays, and `TrackRow` dims what cannot play.
 
 Starting things, from any screen:
 - an album: `player.play(tracks, startingAt: i, context: QueueContext(.album(album.id), title: album.name))`

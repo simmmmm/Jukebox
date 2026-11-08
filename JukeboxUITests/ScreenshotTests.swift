@@ -362,6 +362,10 @@ final class Walk {
         // No usage counts from CI's walk on the photographer's Aptabase
         // (docs/STATS.md): the argument domain turns Share Anonymous Usage off.
         app.launchArguments += ["-shareUsage", "NO"]
+        // The automatic keep off (docs/OFFLINE.md): it would fetch from the
+        // fake server while the walk goes, and the pictures would differ by
+        // how far it got.
+        app.launchArguments += ["-keepSongs", "NO"]
         app.launch()
         try alive("launch")
     }

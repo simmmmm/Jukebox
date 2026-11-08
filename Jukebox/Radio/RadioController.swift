@@ -20,6 +20,14 @@
 // as `begin` chooses a station's first, and keeps the session that chose
 // them; `start(_:preview:from:)` plays that very session, so Play plays the
 // list the page shows, song for song.
+//
+// Offline — no network, or a server that does not answer (OfflineStore) —
+// the radio chooses from the songs on the phone alone, as only those can
+// play: the photographer, of the offline proposal ("offline speelt de app
+// alleen wat op de telefoon staat, ook de radio"), "Alle drie". A station
+// on the air when the network goes is chosen again from them at once, and
+// from the whole library when it comes back; Instant Mix and Last.fm are not
+// asked while offline.
 
 import Foundation
 import JukeboxKit
@@ -48,6 +56,8 @@ final class RadioController {
     private(set) var previewInputs = 0
 
     var client: JellyfinClient?
+    /// Set by AppModel: offline, what the radio may choose from.
+    @ObservationIgnored weak var offline: OfflineStore?
 
     private let player: AudioPlayer
     private let library: LibraryStore
@@ -87,6 +97,16 @@ final class RadioController {
     /// The draw New Picks made for a station, by station id, while the app
     /// runs (`pageSeed(for:)`).
     @ObservationIgnored private var pageSeeds: [String: UInt64] = [:]
+    /// The library's songs that are on the phone, as a snapshot, with what
+    /// it was made from: made again only when one of those moved.
+    @ObservationIgnored private var onPhone: OnPhoneSnapshot?
+
+    private struct OnPhoneSnapshot {
+        let revision: Int
+        let count: Int
+        let loaded: Date?
+        let snapshot: LibrarySnapshot
+    }
 
     init(player: AudioPlayer, library: LibraryStore, history: HistoryStore, settings: AppSettings) {
         self.player = player
@@ -168,7 +188,9 @@ final class RadioController {
                 // played goes on as it was.
                 self.station = previous.station
                 self.session = previous.session
-                if self.library.tracks.isEmpty {
+                if self.offline?.isOffline == true {
+                    self.player.showError(OfflineText.nothingForStation(station.title))
+                } else if self.library.tracks.isEmpty {
                     if case .loading = self.library.state {
                         self.player.showError("Your library is still loading.")
                     } else {
@@ -482,14 +504,17 @@ final class RadioController {
         return (found.key, found.value)
     }
 
-    /// What a station's first songs are chosen from, now.
+    /// What a station's first songs are chosen from, now: offline, the
+    /// songs on the phone alone.
     private func startInputs(playingNow: ItemID?) -> RadioStartInputs {
-        let snapshot = library.snapshot
+        let phone = offline?.isOffline == true ? onPhoneSnapshot() : nil
+        let snapshot = phone ?? library.snapshot
         return RadioStartInputs(snapshot: snapshot,
                                 // The library's index is built after its
                                 // tracks arrive; a station started in that
-                                // moment builds its own rather than find nothing.
-                                fallback: snapshot.isEmpty ? library.tracks : [],
+                                // moment builds its own rather than find
+                                // nothing. Not offline: none on the phone is none.
+                                fallback: phone == nil && snapshot.isEmpty ? library.tracks : [],
                                 history: history.history,
                                 graph: graph,
                                 settings: RadioSettings(adventurousness: settings.adventurousness),
@@ -529,6 +554,8 @@ final class RadioController {
     /// The sources beyond the library, each applied as it arrives, without
     /// holding up the first track.
     private func gatherSources(for station: Station, in index: LibrarySnapshot, generation: Int) {
+        // Offline neither answers, and the station chooses from the phone.
+        if offline?.isOffline == true { return }
         if let client, let seedID = instantMixSeed(for: station.seed) {
             sourceTasks.append(Task { [weak self] in
                 let tracks = (try? await client.instantMix(seedID: seedID, limit: 100)) ?? []
@@ -618,6 +645,64 @@ final class RadioController {
     private func cancelSources() {
         for task in sourceTasks { task.cancel() }
         sourceTasks = []
+    }
+
+    // MARK: Offline
+
+    /// The network went or came back (OfflineStore, through AppModel). The
+    /// stations' pages choose again; a station on the air gets a session
+    /// made from what can play now — offline the songs on the phone, back
+    /// online the whole library — and its songs ahead are chosen from that.
+    /// The song playing stays. What this station's session had learnt from
+    /// skips and thumbs goes with the old session; the history keeps the
+    /// thumbs, and what was heard lately still waits (noRepeatHours).
+    func connectivityChanged() {
+        previewInputs += 1
+        guard !isStarting, let station, session != nil, player.context?.station?.id == station.id else { return }
+        generation += 1
+        let generation = self.generation
+        cancelSources()
+        keepsShownPicks = false
+        let inputs = startInputs(playingNow: player.currentTrack?.id)
+        let randomSeed = UInt64.random(in: 0...UInt64.max)
+        Task { [weak self] in
+            let (made, index) = await Task.detached(priority: .userInitiated) {
+                () async -> (RadioSession, LibrarySnapshot) in
+                let made = inputs.session(for: station, randomSeed: randomSeed)
+                return (made.session, made.index)
+            }.value
+            guard let self, self.generation == generation, self.station?.id == station.id else { return }
+            var session = made
+            let removed = self.player.removeUpcomingRadioPicks()
+            let picks = session.next(max(3, removed.count))
+            self.session = session
+            self.player.appendRadio(picks)
+            self.gatherSources(for: station, in: index, generation: generation)
+        }
+    }
+
+    /// The songs on the phone changed: offline, the stations' pages choose
+    /// again from what is there now.
+    func offlineSongsChanged() {
+        if offline?.isOffline == true { previewInputs += 1 }
+    }
+
+    /// The library's songs that are on the phone, as a snapshot for the
+    /// radio: made here, on the main actor, only when what it is made from
+    /// moved (not measured on a phone yet: one look-up a song of the
+    /// library, then the index of those on the phone), else the one made
+    /// before.
+    private func onPhoneSnapshot() -> LibrarySnapshot {
+        guard let offline else { return library.snapshot }
+        let revision = offline.revision
+        let count = library.tracks.count
+        let loaded = library.lastLoaded
+        if let made = onPhone, made.revision == revision, made.count == count, made.loaded == loaded {
+            return made.snapshot
+        }
+        let snapshot = LibrarySnapshot(tracks: library.tracks.filter { offline.has($0.id) })
+        onPhone = OnPhoneSnapshot(revision: revision, count: count, loaded: loaded, snapshot: snapshot)
+        return snapshot
     }
 
     // MARK: The graph

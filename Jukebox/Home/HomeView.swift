@@ -115,25 +115,29 @@ enum HomeLayout {
 
 // MARK: - The server out of reach
 
-/// The library from last time, while the server does not answer: said once,
-/// small, above the music, with a way to try again. Only when there is a
-/// library on screen; without one HomeLibraryStatus says it full size.
+/// The library from last time, while the server does not answer or there is
+/// no network: said once, small, above the music, with a way to try again.
+/// With songs on the phone it says those still play (OfflineStore): offline,
+/// only they do. Only when there is a library on screen; without one
+/// HomeLibraryStatus says it full size.
 private struct HomeOfflineNotice: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(OfflineStore.self) private var offline
 
     var body: some View {
-        if isFailed {
+        if isFailed || offline.isOffline {
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Label {
-                    Text("Can’t reach \(serverName). Showing your library from last time.")
+                    Text(message)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
                 } icon: {
-                    Image(systemName: "wifi.exclamationmark")
+                    Image(systemName: offline.hasNetwork ? "wifi.exclamationmark" : "wifi.slash")
                         .foregroundStyle(.secondary)
                 }
                 .font(.subheadline)
                 Button("Try Again") {
+                    offline.checkServer()
                     Task { await library.refresh() }
                 }
                 .buttonStyle(.secondary)
@@ -150,6 +154,18 @@ private struct HomeOfflineNotice: View {
     private var isFailed: Bool {
         if case .failed = library.state { return true }
         return false
+    }
+
+    /// Why first — no network at all, or no server on it — then what still
+    /// works: the songs on the phone, else the library from last time.
+    private var message: String {
+        let why = offline.hasNetwork
+            ? String(localized: "Can’t reach \(serverName).")
+            : String(localized: "You’re offline.")
+        let still = offline.songCount > 0
+            ? String(localized: "The songs on this \(UIDevice.current.model) still play.")
+            : String(localized: "Showing your library from last time.")
+        return "\(why) \(still)"
     }
 
     private var serverName: String {
