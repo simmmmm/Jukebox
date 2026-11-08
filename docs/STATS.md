@@ -57,7 +57,7 @@ Buckets:
 | `sign_in_failed` | `reason` (`unreachable`, `not_jellyfin`, `wrong_password`, `other`) | Where people stop before the music | OnboardingView |
 | `signed_out` | none | Do people leave, or move servers | `AppModel.signOut` |
 | `library_loaded` | `tracks` (bucket), `from` (`cache`, `server`), `seconds` (bucket) | How large libraries are; how long a launch and a load take | LibraryStore |
-| `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`), or `now_playing`, `lyrics`, `queue`, `settings` | Which screens are used, which never | MainTabView (tabs), `routeDestinations()` (pushes), the cover, panels and sheet |
+| `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings` | Which screens are used, which never | MainTabView (tabs), `routeDestinations()` (pushes), the cover, panels and sheet |
 | `play_started` | `from` (`album`, `playlist`, `mix`, `songs`, `favorites`, `search`, `artist`, `genre`, `station`, `other`), `shuffled` (bool) | Where music is started from; is Shuffle used | `AudioPlayer.play`, `playRadio` |
 | `station_started` | `seed` (`track`, `artist`, `album`, `genre`, `decade`, `collection`, `personal`, `discovery`, `favorites`), `from` (`page`, `tile_menu`, `hero`, `menu`, `autoplay`, `search`; `picker` is reserved) | Which stations people play, and from where | each Start Radio, Play Station, Your Station's Play, a station's page, Autoplay |
 | `station_page` | `action` (`opened`, `new_picks`, `row`, `play`) | Is the page looked at before playing; is New Picks used | StationDetailView |
@@ -71,9 +71,11 @@ Buckets:
 | `playlist_songs_added` | `from` (`add_songs`, `add_to_playlist`) | How playlists are filled | AddSongsSheet, AddToPlaylistSheet |
 | `favorite_set` | `item` (`track`, `album`, `artist`), `on` (bool) | Are favourites used, and for what | `LibraryStore.setFavorite`, once the server took it |
 | `search_used` | `results` (bucket) | Is search used; how often it finds nothing | SearchView, once a search, when the typing first rests (1.5 s) |
-| `setting_changed` | `name` (`wifi_quality`, `cellular_quality`, `normalize`, `autoplay`, `find_lyrics_online`, `spin_record`, `share_usage`), `value` (`original`, `high`, `normal`, `low`; `on`, `off`; `share_usage` only `off`) | Which settings are changed, to what | AppSettings, whoever changes it (Settings, the queue's Autoplay) |
+| `setting_changed` | `name` (`wifi_quality`, `cellular_quality`, `normalize`, `autoplay`, `find_lyrics_online`, `spin_record`, `share_usage`, `keep_songs`), `value` (`original`, `high`, `normal`, `low`; `on`, `off`; `share_usage` only `off`) | Which settings are changed, to what; is Keep Songs I Play turned off | AppSettings, whoever changes it (Settings, the queue's Autoplay, Remove All Downloads for `keep_songs`) |
 | `lastfm_key` | `state` (`added`, `removed`) | Do people add a Last.fm key | Settings, once Last.fm accepted it, or when emptied |
 | `playback_error` | `reason` (`network`, `server`, `unsupported`, `other`) | How often a song does not play, and why | `AudioPlayer.itemFailed` |
+| `download_chosen` | `kind` (`album`, `playlist`, `mix`) | Are downloads used, and for what | `OfflineStore.download`, each Download on a page |
+| `offline_play_started` | `from` (as `play_started`'s) | Is music played offline, and from what | `AudioPlayer.play`, `playRadio`, while offline (with `play_started`) |
 
 What the `from` of `station_started` means: `page` a station's page (its
 Play or a song on it); `tile_menu` a station's long press, Play Station;
@@ -83,6 +85,10 @@ page's Play); `autoplay` Autoplay after an album or playlist ended; `search`
 a Start Radio or a song in Search. Start a Station (the picker) opens the
 station's page since 8 November 2026, so what it starts counts as `page`;
 `picker` stays in the list for a picker that would play at once.
+
+Downloads count only that one was chosen, of what kind, and that music
+started while offline; not the download quality, the keep's size, Download
+over Cellular, how much is on the phone, or what was removed.
 
 Not counted: what is played, by whom or from where; titles, artists,
 albums, genres, playlists' and mixes' names; what was searched for; server
