@@ -27,6 +27,9 @@ struct JukeboxApp: App {
                 .environment(app.player)
                 .environment(app.radio)
                 .environment(app.mixes)
+                // Every control's tint (toggles, sliders, links, the tab
+                // bar's selection) in Copper or Glow, not the system's blue.
+                .tint(Theme.accent)
                 .task { await app.restore() }
         }
     }

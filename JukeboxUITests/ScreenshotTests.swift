@@ -71,8 +71,15 @@ final class ScreenshotTests: XCTestCase {
         // Choosing a station in the sheet closes it and opens the station's
         // page on the Radio tab.
         var picked = false
-        if picking, let row = walk.firstRow("Start a Station: a suggested station") {
-            picked = try walk.tap(row, "Start a Station: choose a station")
+        // A suggested station's row, by its name ("… Radio"): the first cell
+        // of the sheet can be the space by its search field (run 22).
+        if picking {
+            let station = app.buttons.matching(NSPredicate(format: "label CONTAINS ' Radio'")).firstMatch
+            if station.waitForExistence(timeout: 10) {
+                picked = try walk.tap(station, "Start a Station: choose a station")
+            } else if let row = walk.firstRow("Start a Station: a suggested station") {
+                picked = try walk.tap(row, "Start a Station: choose a station")
+            }
         }
         if picked {
             walk.pause(2)
@@ -532,17 +539,24 @@ final class Walk {
             app.buttons.matching(byLabel).firstMatch,
             app.cells.matching(byLabel).firstMatch,
         ]
-        for (i, candidate) in candidates.enumerated() {
-            guard candidate.waitForExistence(timeout: i == 0 ? 5 : 1) else { continue }
-            if !isHittable(candidate) {
-                // A tab bar minimised by scrolling shows the current tab
-                // only; scrolling back up brings the others back.
-                try swipe(up: false)
+        // A tab bar minimised by scrolling (tabBarMinimizeBehavior) shows the
+        // current tab only, and the others are not there at all, not merely
+        // hidden: scrolling back up brings them back. Seen on run 22, where
+        // every tab after a scrolled station page was "not found".
+        for attempt in 0..<3 {
+            for (i, candidate) in candidates.enumerated() {
+                guard candidate.waitForExistence(timeout: attempt == 0 && i == 0 ? 5 : 1) else { continue }
+                if !isHittable(candidate) {
+                    try swipe(up: false)
+                }
+                if try tap(candidate, "the \(label) tab", timeout: 1) {
+                    pause(2)
+                    return true
+                }
             }
-            if try tap(candidate, "the \(label) tab", timeout: 1) {
-                pause(2)
-                return true
-            }
+            try swipe(up: false)
+            try swipe(up: false)
+            pause(1)
         }
         note("no \(label) tab")
         return false

@@ -36,11 +36,18 @@ enum Theme {
     static let margin: CGFloat = 20
 
     /// The accent: Copper (#A84A17) in light mode, Glow (#FFB54D) in dark —
-    /// the asset catalog's AccentColor. What is chosen, playing or touched:
-    /// tint, selection, the one filled button, a text button. Copper is
-    /// 5.7:1 on white and 5.2:1 on the grouped grey; Glow 12:1 on black and
-    /// 9.7:1 on the dark grouped grey.
-    static let accent = Color.accentColor
+    /// the same pair as the asset catalog's AccentColor. What is chosen,
+    /// playing or touched: tint, selection, the one filled button, a text
+    /// button. Copper is 5.7:1 on white and 5.2:1 on the grouped grey; Glow
+    /// 12:1 on black and 9.7:1 on the dark grouped grey.
+    ///
+    /// Spelled out rather than `Color.accentColor`: on the build with the
+    /// Aptabase package (run 22's screenshots) `Color.accentColor` drew the
+    /// system's blue, though the catalog and its build setting were as
+    /// before. JukeboxApp tints the whole app with this too.
+    static let accent = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0xFFB54D) : UIColor(rgb: 0xA84A17)
+    })
 
     /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
     /// (9.9:1). Glow is a light colour: white on it would all but vanish.
