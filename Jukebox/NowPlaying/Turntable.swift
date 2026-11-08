@@ -19,7 +19,7 @@
 // Battery first ("Als batterij een zorg wordt moeten we ook ff kijken wat we
 // daar aan kunnen doen"). Every choice below that costs or saves power says
 // so where it is made. In short: the record is drawn once and only its
-// rotation changes; it turns at most 30 times a second; it turns only while
+// rotation changes; it turns at most 20 times a second; it turns only while
 // it can be seen and the music plays, never in Low Power Mode or under
 // Reduce Motion, and not when Settings' Spin the Record is off; at rest
 // nothing about it is redrawn at all.
@@ -145,8 +145,13 @@ struct Turntable: View {
         self.isPlaying = isPlaying
     }
 
-    /// 33⅓ turns a minute: 200° a second, a turn in 1.8 s.
-    static let degreesPerSecond: Double = 200
+    /// A turn in 10 s, far slower than a real 33⅓ (1.8 s a turn): the
+    /// photographer, on the first build with the deck, "mag ie nog veel
+    /// zachter draaien hoor". Slower also needs fewer frames (`frameRate`).
+    static let degreesPerSecond: Double = 36
+    /// 20 frames a second: at 36° a second a frame turns the record 1.8°,
+    /// which still reads as smooth, for a third fewer frames than 30.
+    static let frameRate: Double = 20
     /// How long the record takes to come to rest when the music stops: a
     /// real platter's few tenths of a second, no more.
     static let coastSeconds: Double = 0.8
@@ -215,11 +220,11 @@ struct Turntable: View {
             // The record. Battery: `drawingGroup` draws the cover, the
             // grooves and the label once into a single layer; turning it is
             // then a change of that layer's rotation, not a redraw of forty
-            // circles and an image. The timeline asks for at most 30 frames
-            // a second (half the screen's 60), and none at all while the
+            // circles and an image. The timeline asks for at most 20 frames
+            // a second (`frameRate`), and none at all while the
             // record rests: paused, it wakes nothing, and the body is not
             // evaluated again until something else changes.
-            TimelineView(.animation(minimumInterval: 1.0 / 30, paused: spunSince == nil && coast == nil)) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / Self.frameRate, paused: spunSince == nil && coast == nil)) { timeline in
                 TurntableDisc(artwork: artwork, radius: g.discRadius, labelRadius: g.labelRadius,
                               holeRadius: g.holeRadius)
                     .drawingGroup()

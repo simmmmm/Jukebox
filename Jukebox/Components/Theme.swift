@@ -220,9 +220,18 @@ struct Hairline: View {
         self.inset = inset
     }
 
+    @Environment(\.displayScale) private var displayScale
+
     var body: some View {
-        Divider()
+        // Not Divider: in a row's overlay it takes the row's axis and draws
+        // a vertical line down the list (the photographer's phone, Played
+        // lately: "Er zit een streep doorheen"). One pixel high, always.
+        Rectangle()
+            .fill(Color(uiColor: .separator))
+            .frame(height: 1 / displayScale)
+            .frame(maxWidth: .infinity)
             .padding(.leading, inset)
+            .accessibilityHidden(true)
     }
 }
 

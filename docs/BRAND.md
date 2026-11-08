@@ -234,9 +234,10 @@ The battery, as the photographer asked ("Als batterij een zorg wordt…"):
 - The disc — cover, grooves, label — is drawn once into one layer
   (`drawingGroup`); turning it changes only that layer's rotation. Nothing
   else on the deck is redrawn while it turns.
-- It turns on a timeline of at most 30 frames a second, half the screen's
-  rate, and the timeline is paused whenever the record rests: at rest the
-  deck costs nothing.
+- It turns slowly, a turn in 10 s rather than a real 33⅓'s 1.8 s ("mag ie
+  nog veel zachter draaien hoor"), on a timeline of at most 20 frames a
+  second (1.8° a frame), and the timeline is paused whenever the record
+  rests: at rest the deck costs nothing.
 - It turns only while all of these hold: Now Playing shows the record (not
   closed, not the lyrics or the queue), the music plays, the app is active,
   Reduce Motion is off, Low Power Mode is off (`ProcessInfo`, kept up to
