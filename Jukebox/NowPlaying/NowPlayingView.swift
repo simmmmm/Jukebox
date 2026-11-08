@@ -288,7 +288,7 @@ struct NowPlayingView: View {
         return NowPlayingGround(size: proxy.size, sleeveRoom: room, title: titleFrame, wide: anchors.wide,
                                 still: isStill, walls: walls, artwork: currentTrack?.artwork,
                                 side: side ?? .alone, label: recordLabel(disc: side?.disc),
-                                isPlaying: player.isPlaying)
+                                isPlaying: player.isPlaying && !Self.showsLandStill)
     }
 
     /// Where the playing song lies on its album (TurntableSide): the songs
@@ -397,8 +397,14 @@ struct NowPlayingView: View {
     /// movement; Low Power Mode for less work; Settings' Spin the Record
     /// off (AppSettings.spinRecord) for a record that stands still.
     private var isStill: Bool {
-        reduceMotion || isLowPower || !settings.spinRecord
+        if Self.showsLandStill { return false }
+        return reduceMotion || isLowPower || !settings.spinRecord
     }
+
+    /// The screenshot walk's `-showLandStill YES` only: D2's land, standing
+    /// still. The walk's simulator has Reduce Motion on (so XCTest never
+    /// waits on an endless animation), which would show D1 in every picture.
+    private static let showsLandStill = UserDefaults.standard.bool(forKey: "showLandStill")
 
     /// D1's wall and floor: the last worked out (shownWalls), or before any
     /// is, the ones kept for this cover. Nil — Cabinet, no wall — for a song

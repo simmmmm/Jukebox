@@ -40,7 +40,10 @@ final class ScreenshotTests: XCTestCase {
         defer { walk.finish() }
         let app = walk.app
 
-        try walk.launch()
+        // Now Playing as most see it, D2's land, though the simulator has
+        // Reduce Motion on (ci/screenshots.sh), which shows D1: the land
+        // standing still. The light walk keeps D1, the wall.
+        try walk.launch(extra: ["-showLandStill", "YES"])
         guard try walk.signIn(takingPictures: true) else { return }
         walk.waitForLibrary()
 
@@ -217,7 +220,8 @@ final class ScreenshotTests: XCTestCase {
         defer { walk.finish() }
         let app = walk.app
 
-        try walk.launch()
+        // D2's land, standing still (see testPhone).
+        try walk.launch(extra: ["-showLandStill", "YES"])
         guard try walk.signIn(takingPictures: true) else { return }
         walk.waitForLibrary()
         walk.picture("home")
@@ -355,13 +359,15 @@ final class Walk {
 
     // MARK: The app
 
-    func launch() throws {
+    /// `extra`: launch arguments of one walk, such as `-showLandStill YES`.
+    func launch(extra: [String] = []) throws {
         // English and the US region, whatever the simulator was set to: the
         // labels this walk looks for are the app's English words.
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
         // No usage counts from CI's walk on the photographer's Aptabase
         // (docs/STATS.md): the argument domain turns Share Anonymous Usage off.
         app.launchArguments += ["-shareUsage", "NO"]
+        app.launchArguments += extra
         app.launch()
         try alive("launch")
     }
