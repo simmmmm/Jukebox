@@ -72,11 +72,13 @@ means on air, flat grounds, titles in New York, facts not slogans).
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
 | Kit: lyrics | `Lyrics/*` — LRCParser, LyricsQuery, LRCLIBClient, LyricsCache — and their tests |
 | Kit: artwork | `Artwork/CoverAccent.swift` — Now Playing's accent from its cover (BRAND.md) — `Artwork/CoverWall.swift` — the still page's wall and floor from it — their tests, and `dev/accent.py`, the accent in Python for sketches |
+| Kit: offline | `Offline/*` — OfflineManifest, KeepPolicy (the automatic keep), JellyfinClient.downloadURL — their tests, and `docs/OFFLINE.md` but its "In the app" |
 | App: library | `Jukebox/Library/*` — LibraryStore and every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift` — AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
 | App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController — MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*` — OnboardingView (sign in, Quick Connect), SettingsView, SearchView |
+| App: offline | `Jukebox/Offline/*` — OfflineStore (the songs on the phone per account, the queue, the keep's runs, offline or not, plays heard offline), OfflineDownloader (the background URLSession, JukeboxAppDelegate), OfflineDisk (the folders and files), the download control (OfflineDownloadButton), DownloadedView; `docs/OFFLINE.md`, "In the app" |
 
 ## The views each part must provide (the names others use)
 
@@ -88,6 +90,7 @@ must exist with exactly this initializer:
   `PlaylistsView()`, `PlaylistDetailView(playlist: Playlist)`, `GenresView()`,
   `GenreDetailView(genre: Genre)`, `FavoritesView()`, `RecentlyAddedView()`,
   `AddToPlaylistSheet(tracks: [Track])`.
+- Offline: `DownloadedView()` (`Route.downloaded`, Library › Downloaded).
 - Now playing: `MiniPlayer()` (inside `tabViewBottomAccessory`; reads
   `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
   expanded), `NowPlayingView()` (in a fullScreenCover). Sketch E's D2 and
@@ -127,8 +130,10 @@ must exist with exactly this initializer:
 
 `JukeboxApp` puts these in the environment; read them with
 `@Environment(X.self)`: `AppModel`, `Navigator`, `AppSettings`, `LibraryStore`,
-`HistoryStore`, `AudioPlayer`, `RadioController`, `MixStore`. `AppModel.client`
-is the signed-in `JellyfinClient`.
+`HistoryStore`, `AudioPlayer`, `RadioController`, `MixStore`, `OfflineStore`.
+`AppModel.client` is the signed-in `JellyfinClient`. Offline (`OfflineStore.isOffline`)
+only songs on the phone play: a list's row asks `player.refusesOffline(track)`
+before it plays, and `TrackRow` dims what cannot play.
 
 Starting things, from any screen:
 - an album: `player.play(tracks, startingAt: i, context: QueueContext(.album(album.id), title: album.name))`

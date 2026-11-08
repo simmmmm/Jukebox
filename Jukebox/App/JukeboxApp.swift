@@ -7,6 +7,9 @@ import SwiftUI
 
 @main
 struct JukeboxApp: App {
+    /// For the downloads' news while the app is in the background or not
+    /// running (Offline/OfflineDownloader.swift): UIKit's alone.
+    @UIApplicationDelegateAdaptor(JukeboxAppDelegate.self) private var appDelegate
     @State private var app = AppModel()
 
     init() {
@@ -27,6 +30,7 @@ struct JukeboxApp: App {
                 .environment(app.player)
                 .environment(app.radio)
                 .environment(app.mixes)
+                .environment(app.offline)
                 // Every control's tint (toggles, sliders, links, the tab
                 // bar's selection) in Copper or Glow, not the system's blue.
                 .tint(Theme.accent)
@@ -37,8 +41,18 @@ struct JukeboxApp: App {
 
 struct RootView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
+        content
+            // In front again: is the server there (or gone), and do the
+            // downloads that waited go on.
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active { app.offline.appBecameActive() }
+            }
+    }
+
+    @ViewBuilder private var content: some View {
         switch app.phase {
         case .launching:
             // The launch screen's own ground (white, or Cabinet in dark
