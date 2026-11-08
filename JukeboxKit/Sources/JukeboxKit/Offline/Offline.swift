@@ -80,63 +80,101 @@ public struct OfflineManifest: Codable, Sendable {
     public private(set) var files: [ItemID: OfflineFile]
 
     public init() {
-        fatalError("contract")
+        version = Self.version
+        files = [:]
     }
 
     public func has(_ trackID: ItemID) -> Bool {
-        fatalError("contract")
+        files[trackID] != nil
     }
 
     public func file(_ trackID: ItemID) -> OfflineFile? {
-        fatalError("contract")
+        files[trackID]
     }
 
-    /// The songs that have this reason.
+    /// The songs that have this reason, by id: a dictionary has no order of
+    /// its own, and the same manifest must give the same list (the app puts
+    /// an album's songs in the album's order itself).
     public func tracks(with reason: OfflineReason) -> [ItemID] {
-        fatalError("contract")
+        files.values.filter { $0.reasons.contains(reason) }.map(\.trackID).sorted()
     }
 
     /// Bytes of the songs someone chose, and of those only the keep holds.
-    public var chosenBytes: Int64 { fatalError("contract") }
-    public var keptBytes: Int64 { fatalError("contract") }
+    /// A song both chosen and kept is chosen: it stays when the keep lets
+    /// it go, so it is not the keep's room.
+    public var chosenBytes: Int64 { files.values.filter(\.isChosen).reduce(0) { $0 + $1.bytes } }
+    public var keptBytes: Int64 { files.values.filter { !$0.isChosen }.reduce(0) { $0 + $1.bytes } }
 
-    /// A song saved, or a reason added to one already there.
+    /// A song saved, or a reason added to one already there. Saved again
+    /// (another quality, or two downloads of one song that crossed), the
+    /// newest save is the file: its name, size, date and quality, with the
+    /// reasons of both. When the name changed, the older file is no longer
+    /// the manifest's, so the app deletes it (`file(_:)` before `add` names
+    /// it); a name made by `OfflineFile.fileName(trackID:contentType:)` is
+    /// the same for the same song and kind of file, and is overwritten.
     public mutating func add(_ file: OfflineFile) {
-        fatalError("contract")
+        var file = file
+        if let old = files[file.trackID] { file.reasons.formUnion(old.reasons) }
+        files[file.trackID] = file
     }
 
     /// Adds a reason to a song already on the phone. False when it is not.
     @discardableResult
     public mutating func addReason(_ reason: OfflineReason, to trackID: ItemID) -> Bool {
-        fatalError("contract")
+        guard files[trackID] != nil else { return false }
+        files[trackID]?.reasons.insert(reason)
+        return true
     }
 
     /// Takes a reason away from every song that has it; returns the files
     /// left with no reason at all, which the app deletes.
     public mutating func removeReason(_ reason: OfflineReason) -> [OfflineFile] {
-        fatalError("contract")
+        removeReason(reason, from: tracks(with: reason))
     }
 
     /// Takes one reason away from some songs (the keep letting go of a few);
-    /// returns the files left with no reason, which the app deletes.
+    /// returns the files left with no reason, which the app deletes. A song
+    /// asked about that had no reason left already is returned too, so it
+    /// does not stay on the phone for nothing; one not here is passed over.
     public mutating func removeReason(_ reason: OfflineReason, from trackIDs: [ItemID]) -> [OfflineFile] {
-        fatalError("contract")
+        var orphans: [OfflineFile] = []
+        for id in trackIDs {
+            guard var file = files[id] else { continue }
+            file.reasons.remove(reason)
+            if file.reasons.isEmpty {
+                files[id] = nil
+                orphans.append(file)
+            } else {
+                files[id] = file
+            }
+        }
+        return orphans
     }
 
     /// Forgets songs whose files are gone (the app checked the folder).
     public mutating func forget(_ trackIDs: [ItemID]) {
-        fatalError("contract")
+        for id in trackIDs { files[id] = nil }
     }
 
     /// The manifest at `url`; empty when there is none, it does not read, or
     /// it is of another version.
     public static func load(from url: URL) -> OfflineManifest {
-        fatalError("contract")
+        guard let data = try? Data(contentsOf: url),
+              let manifest = try? JSONDecoder().decode(OfflineManifest.self, from: data),
+              manifest.version == Self.version else {
+            return OfflineManifest()
+        }
+        return manifest
     }
 
-    /// Written atomically.
+    /// Written atomically: a crash halfway leaves the old manifest, never
+    /// half a new one (which would read as empty and lose every reason).
+    /// Keys sorted, so the file reads song by song.
     public func save(to url: URL) throws {
-        fatalError("contract")
+        try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys]
+        try encoder.encode(self).write(to: url, options: .atomic)
     }
 }
 
