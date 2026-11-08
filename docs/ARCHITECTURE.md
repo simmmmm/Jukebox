@@ -72,6 +72,7 @@ means on air, flat grounds, titles in New York, facts not slogans).
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
 | Kit: lyrics | `Lyrics/*` — LRCParser, LyricsQuery, LRCLIBClient, LyricsCache — and their tests |
 | Kit: artwork | `Artwork/CoverAccent.swift` — Now Playing's accent from its cover (BRAND.md) — its tests, and `dev/accent.py`, the same in Python for sketches |
+| Kit: offline | `Offline/*` — OfflineManifest, KeepPolicy (the automatic keep), JellyfinClient.downloadURL — their tests, and `docs/OFFLINE.md` but its "In the app" |
 | App: library | `Jukebox/Library/*` — LibraryStore and every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift` — AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
 | App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, Turntable (the record player in the cover's place), QueueView, LyricsView, AirPlay and volume |
