@@ -286,8 +286,14 @@ final class RadioRealServerTests: XCTestCase {
         var genresRequest = URLRequest(url: try XCTUnwrap(genres.url))
         genresRequest.setValue(auth + #", Token="\#(token)""#, forHTTPHeaderField: "Authorization")
         let (genreData, _) = try await URLSession.shared.data(for: genresRequest)
-        let names = try JSONDecoder().decode(LiveItems.self, from: genreData).Items.map(\.Name).sorted()
-        XCTAssertEqual(names, Self.serverGenreNames(fixture))
+        let listed = try JSONDecoder().decode(LiveItems.self, from: genreData).Items.map(\.Name).sorted()
+        // With internet (GitHub's runners) Jellyfin's online providers add the
+        // genres they find for an artist, which no file carries (27 listed
+        // where the files have 25 on CI): the files' own must all be there,
+        // and they are the ones a station is tried from.
+        let fileGenres = Self.serverGenreNames(fixture)
+        XCTAssertTrue(Set(fileGenres).isSubset(of: Set(listed)), "missing: \(Set(fileGenres).subtracting(listed).sorted())")
+        let names = listed.filter { fileGenres.contains($0) }
         let taste = TasteProfile(snapshot: snapshot, history: ListeningHistory(), now: Date())
         let graph = SimilarityGraph.fromLibrary(snapshot)
         var opened = 0
