@@ -71,10 +71,10 @@ means on air, flat grounds, titles in New York, facts not slogans).
 | Kit: radio | `Library/LibrarySnapshot.swift`, `Radio/*`, tests, `docs/RADIO.md` (how it chooses, measured) |
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
 | Kit: lyrics | `Lyrics/*` — LRCParser, LyricsQuery, LRCLIBClient, LyricsCache — and their tests |
-| Kit: artwork | `Artwork/CoverAccent.swift` — Now Playing's accent from its cover (BRAND.md) — its tests, and `dev/accent.py`, the same in Python for sketches |
+| Kit: artwork | `Artwork/CoverAccent.swift` — Now Playing's accent from its cover (BRAND.md) — `Artwork/CoverWall.swift` — the still page's wall and floor from it — their tests, and `dev/accent.py`, the accent in Python for sketches |
 | App: library | `Jukebox/Library/*` — LibraryStore and every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift` — AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
-| App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, Turntable (the record player in the cover's place), QueueView, LyricsView, AirPlay and volume |
+| App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController — MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*` — OnboardingView (sign in, Quick Connect), SettingsView, SearchView |
 
@@ -90,18 +90,27 @@ must exist with exactly this initializer:
   `AddToPlaylistSheet(tracks: [Track])`.
 - Now playing: `MiniPlayer()` (inside `tabViewBottomAccessory`; reads
   `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
-  expanded), `NowPlayingView()` (in a fullScreenCover). In the cover's place
-  `Turntable(artwork:isPlaying:side:label:)` (`NowPlaying/Turntable.swift`):
-  the cover as a picture disc on a drawn deck, tipped back, the album's
-  sleeve standing behind it, its arm on the song's place on its album
-  (`side`: a `TurntableSide` from `LibraryStore.tracks(inAlbum:)`, worked
-  out in NowPlayingView; the arithmetic in `TurntableMeasures.swift`, checked
-  on Linux by `dev/turntable-test.sh`). The disc is drawn once
-  (`drawingGroup`) and only its rotation changes, at most 20 frames a second,
-  and only while Now Playing shows it, the music plays, the app is active,
-  and neither Reduce Motion, Low Power Mode nor
-  Settings' Spin the Record (`AppSettings.spinRecord`) says otherwise; at
-  rest its timeline is paused. `docs/BRAND.md` says why each.
+  expanded), `NowPlayingView()` (in a fullScreenCover). Sketch E's D2 and
+  D1, as the photographer chose them ("D1 is reduced motion/batterij
+  besparing d2 normaal", 8 November 2026): in the cover's place the album's
+  sleeve as printed card with its black record half out of it, the label
+  turning (`NowPlaying/SleeveRecord.swift`); under the whole page
+  `NowPlayingGround` (`NowPlaying/NowPlayingGround.swift`), behind the page
+  through `backgroundPreferenceValue`, told where the page put the sleeve's
+  room and the title (`NowPlayingAnchorsKey`). Normally D2, the album's
+  side as a giant record whose grooves cross the page, one band per song
+  (`TurntableSide`, from `LibraryStore.tracks(inAlbum:)`), the playing
+  song's band starting above its title and lighter where it has played,
+  moving on one band when the song changes: one bitmap drawn once per
+  album and screen, off the main thread. With Reduce Motion, Low Power
+  Mode or Settings' Spin the Record off (`AppSettings.spinRecord`), D1: a
+  wall and a floor of the cover's colours (JukeboxKit's `CoverWall`), and
+  nothing moves. The arithmetic is `TurntableMeasures.swift` (the land,
+  the sleeve's layout, `RecordMotion`'s numbers, the clock), checked on
+  Linux by `dev/turntable-test.sh`. One timeline turns what turns, at most
+  20 frames a second (30 once the land itself turns, sketch H), only while
+  the sleeve shows, the music plays, the app is active and the page is D2;
+  at rest it is paused. `docs/BRAND.md` says why each.
 - Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
   `StationDetailView(station: Station)` (`Route.station(station)`): a
   station's page, what it would play before it plays. Every tile and card of

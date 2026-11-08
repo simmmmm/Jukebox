@@ -70,8 +70,9 @@ its labels: Numa's small grey spaced labels went with sketch D.
    under which every station glowed at once.) Home's mixes, which end, are
    square collages; albums and playlists stay square and uncropped.
 3. **Flat grounds.** Warm paper, #F6F3EE, by day; #121110 by night
-   (`Theme.ground`); Cabinet, #1E0A07, under Now Playing. No vignettes, no
-   gradients behind a screen. The system's own grounds where the system
+   (`Theme.ground`). Under Now Playing the record's own: the album's side
+   as land, or a wall and a floor of the cover's colours, Cabinet where
+   there is no cover (below). No vignettes, no gradients behind a screen. The system's own grounds where the system
    draws a list (Settings, the library's long lists).
 4. **Titles in a serif, as on sleeves.** New York (`Font.serif(_:)`, the
    system font's serif design) at regular weight: the large and inline
@@ -103,8 +104,8 @@ its labels: Numa's small grey spaced labels went with sketch D.
    oranges are for the station on the air and the app icon only. The one
    exception is Now Playing, whose accent is its cover's (below).
 10. **No jukebox cabinet.** No bubble tubes, chrome, grilles or selector
-    buttons — no Wurlitzer. The arch is the whole of it; the record player
-    on Now Playing is drawn, not rendered.
+    buttons — no Wurlitzer. The arch is the whole of it; the sleeve and
+    its record on Now Playing are drawn, not rendered.
 11. **Native first.** The chrome is Apple's: tab bar, lists, sheets, the
     system Slider tinted with the accent, SF Symbols for every glyph but the
     mark.
@@ -121,7 +122,8 @@ accent pair is the asset catalog's `AccentColor`.
 | Ink | `#2A1505` | Words and glyphs on Glow (`Theme.onAccent` in dark mode) | 9.91:1 on Glow |
 | Paper | `#F6F3EE` | The ground of the main screens by day (`Theme.ground`) | — |
 | Night | `#121110` | The ground of the main screens by night (`Theme.ground`) | — |
-| Cabinet | `#1E0A07` | Now Playing's ground, the app icon's, the welcome's mark's tile, a station's room until its cover's colour is known; the launch screen in dark mode | white on it 19.06:1 |
+| Land | `#131010`, `#211A17`, `#3F3127` | Now Playing's ground in D2: the ground, its grooves, the grooves played (below) | white on the played grooves 12.50:1 |
+| Cabinet | `#1E0A07` | Now Playing's ground where there is no cover to take one from, the app icon's, the welcome's mark's tile, a station's room until its cover's colour is known; the launch screen in dark mode | white on it 19.06:1 |
 | Mark core | `#F7A136` / `#FFF1D6` | The flat mark's core, by day / by night (decoration: amber on white is 2.08:1, never for words) | — |
 | Outer tube | `#F07E36` | The station on the air only: its outer tube, and its glow | — |
 | Inner tube | `#FFB44C` | The station on the air only: its inner tube, and its glow | — |
@@ -156,7 +158,9 @@ toggles — takes a colour of the cover that plays
   not the average, which makes red stripes on cream beige;
 - at Glow's lightness, so it weighs on Cabinet what Glow does and only the
   hue changes from album to album; a little darker where a hue has no room
-  there (red), never under Oklab 0.70: 6.7:1 or more on Cabinet;
+  there (red), never under Oklab 0.70: 6.7:1 or more on Cabinet, and as
+  much on D2's land (4.7:1 where it crosses the grooves played); D1's
+  floor is darkened until the accent on it is 4.5:1 or more (below);
 - eased over half a second when the song changes, at once when Now Playing
   opens.
 
@@ -185,7 +189,7 @@ Two bands with round caps and a core, concentric about the spring point
   station played. It went with sketch D: a mark that moves for ever is a
   glow by other means, and beside the turning record it would run the
   screen at 60 frames a second where the record asks for 30 (see the
-  turntable, below).
+  sleeve, below).
 
 `dev/brand/geom.py` is the one source of the geometry; `ArchCut` in
 `ArchMark.swift` carries the same numbers. Change both together.
@@ -236,117 +240,135 @@ draws every station lit; since sketch D only the one on the air is.
 - **Under 60 pt** (rows, the mini player) the bands are heavier and the
   window shows one cover: four would be specks.
 
-## The turntable
+## Now Playing: the sleeve, and the side as land
 
-Now Playing's cover is a record (`NowPlaying/Turntable.swift`; its
-measures, plain arithmetic, in `NowPlaying/TurntableMeasures.swift`). The
-photographer, 8 November 2026: "Ik vind de platenspeler ideeen leuk maar
-dan zou ik ook de plaat willen zien draaien met de album art er op het
-liefst in een soort perspectief van licht erboven." Sketch C rendered it
+Now Playing's cover was first a record player. The photographer, 8
+November 2026: "Ik vind de platenspeler ideeen leuk maar dan zou ik ook de
+plaat willen zien draaien met de album art er op het liefst in een soort
+perspectief van licht erboven." Sketch C rendered it
 ([design/turntable-c.png](design/turntable-c.png)); sketch D drew it
-([design/nowplaying-after.png](design/nowplaying-after.png)), and that is
-what was built first. Then, on the TestFlight build with their own library
-the same day:
+([design/nowplaying-after.png](design/nowplaying-after.png)): the song's
+cover as a picture disc on a deck tipped back, and then, on "Kun je de
+platenspeler iets leuker maken, de hoes er achter zetten en de naald zetten
+op welk nummer het is van het album", the sleeve behind the deck and the
+arm on the song's place on its album. On the TestFlight build it still
+stood apart from the page:
 
-> "Kun je de platenspeler iets leuker maken, de hoes er achter zetten en de
-> naald zetten op welk nummer het is van het album"
+> "Het moet minder een los object zijn en meer verweven zitten met de
+> pagina"
 
-So the sleeve stands behind the deck, the record shows the album's songs,
-and the needle sits on the playing one:
+Sketch E drew the sleeve as the thing itself and the page's ground as the
+record's world ("Maak ook even een hele andere abstractere variant waarbij
+de hoes de hoes is maar de achtergrond helemaal anders"), and the
+photographer chose, the same day:
 
-- **The deck,** tipped back 46° (`rotation3DEffect`, perspective 0.4): a
-  matte plinth with one soft falloff of the light from above, on the
-  plinth only; a matte platter.
-- **The sleeve:** the album's cover, upright behind the deck, as if the
-  record had just come out of it. Not tipped: a flat square, 0.66 of the
-  plinth's width (about the record's own width seen as far back as the far
-  edge; larger, it spanned the far edge and read as a wall), above the
-  record, a little left of the middle and clear of the arm's pivot. Its
-  lower part is hidden behind the plinth's far edge. The one radius for
-  artwork, 6 pt: a sleeve's sharper corner would be a second radius. A
-  little in the shade (black at 0.14), so it does not outshine the record
-  in front of it, and a hard, unblurred shadow cast forward onto the
-  plinth by the same light as the arm's, short of the platter. An image,
-  drawn once.
-- **Room for both** (`TurntableLayout`): the deck as wide as it fits, as
-  before; the sleeve shows 60% of itself above the far edge, and the deck
-  gives up to a tenth of its width for that; with less room less of the
-  sleeve shows, and under 30% it is left out. Sleeve and deck are centred
-  together. On an iPhone 17 Pro with a station's dial (370 × 331 points
-  for the record) the deck is 285 wide under a 188-point sleeve; without
-  the dial it keeps its 317, under 209; on an iPhone SE there is no room,
-  and no sleeve; in a 13-inch iPad's left column, 705 under 466. No cover,
-  no sleeve, and the deck stays where it was.
-- **The picture disc:** the song's cover cut round on vinyl, fine groove
-  rings over it at low opacity. One faint pair of sheen wedges, half a turn
-  apart, that do not turn: the light stays where it is while the record
-  turns under it.
-- **The album's songs as bands** (`TurntableSide`): a darker ring with a
-  faint light edge where one song ends and the next begins, as the smooth
-  vinyl between a record's tracks shows. The songs of the playing song's
-  disc (`LibraryStore.tracks(inAlbum:)`, in disc and track order), from
-  the outer groove (the first) to the run-out by the label (the last), each
-  as wide as it is long. No album, an album the library does not know, or
-  a disc of one song: no bands. The record's three made-up gaps went.
-- **The label:** a flat colour from the cover (its average colour,
-  `ImagePipeline.averageColor`, as a station's room has it: the hue, the
-  saturation held to 0.45, brightness 0.3), and on it, printed straight and
-  small in paper white, the album's title in the serif above the hole and
-  its artist under it; "Disc 2" under them when the album has several
-  discs. No side, no speed: a file has neither. A fine ring in the same
-  ink, where it was Glow. Until the cover's colour is known, the dark brown
-  it was.
-- **The arm:** a flat two-tone shape — a bone tube, a near-black headshell
-  and counterweight, a pivot — with a hard, unblurred shadow. Its angle is
-  where the song is on its album: (the lengths of the disc's songs before
-  it + the time played) ÷ the disc's length, from the outer groove (about
-  12°) to the label (about 34°), so the needle sits in the song's band and
-  creeps inward through it. A song alone goes across the whole record, as
-  before. Down on the record while it plays; lifted (a small rise, a longer
-  shadow) when paused; on its rest beside the platter with nothing to play.
-  Under Reduce Motion it fades between these instead of moving.
-- **The cue:** when the song changes the arm lifts (0.14 s), swings to the
-  new song's band (0.32 s) and drops (0.14 s): 0.6 s, eased. In an album's
-  own order the new band begins where the last one ended, so the arm lifts
-  and drops where it is. Under Reduce Motion it fades to the new place.
-- **The spin:** a turn in 10 s, and a coast to a stop of 0.8 s when the
-  music pauses.
+> "Dus ik denk dat d1 en d2 vooral d2 het best gaan werken. D1 is reduced
+> motion/batterij besparing d2 normaal. F1 toch net iets te extreem denk"
 
-Not built, though sketch C had them: a 33⅓ selector (the record turns at
-six turns a minute, so it would say what is not so) and a pilot light
-while it plays (light means on air, and only a station is).
+So the deck, its plinth and its arm went. What was built:
+`NowPlaying/SleeveRecord.swift` (the sleeve and its record),
+`NowPlaying/NowPlayingGround.swift` (the ground, and the one timeline), the
+arithmetic in `NowPlaying/TurntableMeasures.swift` (checked on Linux by
+`dev/turntable-test.sh`), D1's colours in JukeboxKit's
+`Artwork/CoverWall.swift` (`CoverWallTests`).
+
+- **The sleeve:** the album's cover as printed card, square, at the one
+  radius for artwork (6 pt). A thickness at its foot and a hair of its open
+  edge, in the cover's own colour darkened (its average with 45% black, so
+  a cream sleeve has a light edge); paper grain (a fixed noise, white or
+  black at up to 15%); faint ring wear where a record has pressed it (white
+  at 4%, softened); a little light along its top edge, its open edge a
+  little in shade; and a soft shadow from a light above, four shadows
+  each cast on their own: black at full strength on the land, on a wall the
+  wall's own dark (its hue at saturation 0.55, brightness 0.10) and softer,
+  as a shadow falls on coloured paper. Upright it stands at the margin, as
+  large as leaves a third of its width for the record before the screen's
+  edge: 284 points on an iPhone 17 Pro, with 94 points of record. On the
+  iPad sideways the whole record shows, and the two are centred in their
+  column (`SleeveLayout`). In the middle of the room the page gives it.
+- **The record:** black vinyl half out of the sleeve's open edge, 0.955 of
+  the sleeve, its centre 8 points beyond the edge. Fine grooves (white at
+  4.5%, every third at 7.5%), the album's songs as bands (`TurntableSide`:
+  the songs of the playing song's disc, each as wide as it is long, the
+  smooth darker vinyl between two with a light edge; no album or a disc of
+  one song, no bands), the run-out, and the label: the cover's colour (its
+  average's hue, the saturation held to 0.45, brightness 0.3) with the
+  album's title in the serif above the hole and its artist under it,
+  printed small in paper white, "Disc 2" when the album has discs. Two
+  faint wedges of sheen on the grooves, which do not turn. The label turns
+  a turn in 10 s, as before ("mag ie nog veel zachter draaien hoor"), and
+  coasts to a stop in 0.8 s when the music pauses.
+- **D2, the side as land** — Now Playing as it normally is. The page's
+  ground is the album's side as a record far larger than the screen. On an
+  iPhone 17 Pro its grooves run from 1440 points from its centre to 420,
+  the centre below the screen and 300 from the left, a groove every 5.2
+  points; on the iPad sideways from 1900 to 700, the centre 820 from the
+  left, every 5.6; other screens in proportion to their diagonal
+  (`LandGeometry`). One dark tone (#211A17 on #131010, every fifth groove a
+  little wider), crossing the page as gentle arcs: a horizon. One band per
+  song of the album, as wide as the song is long, 26 points of smooth land
+  between two songs with a faint light edge. The playing song's band starts
+  28 points above its title, under the sleeve; its grooves played so far
+  are a tone lighter (#3F3127), a groove at a time. On a song change the
+  land moves on one band in 0.6 s, eased, so the new song's band starts
+  where the last one's did; another album's land fades in over 0.4 s, and
+  the old one stays where it was until it has. A song with no album, or
+  alone on its disc, is one band: the whole side.
+- **D1, the wall** — the same page when nothing may move: Reduce Motion,
+  Low Power Mode, or Settings › Playback › Spin the Record off. Two flat
+  fields of the cover's own colours (`CoverWall`): a wall from the top of
+  the screen to the sleeve's foot — across the screen upright, across the
+  sleeve's side to the controls' column on the iPad sideways — and a floor
+  under the title and the controls. The wall is the cover's colour that
+  stands out from the sleeve (a dark cover's light, a light cover's ink),
+  between Oklab lightness 0.36 and 0.88, chroma at most 0.12; the floor is
+  the cover's own dark, darkened until the accent on it is 4.5:1 or more and
+  white 7:1 or more. A light wall gets Ink at the top (the grabber, Close,
+  More) and a dark status bar (the presentation turns light; its words stay
+  white); on the iPad sideways, where the status bar runs over the wall and
+  the floor at once, the wall is darkened until white reads on it, 4.5:1.
+  Nothing turns, the label neither. Under the lyrics and the queue, where
+  there is no sleeve to stand on it, all floor. Without a cover, and until
+  its colours are known, Cabinet. Sketch E's Quiet Rooms comes out #B7B38E
+  over #2E2F1F (it drew #C2BD97 over #2F3020), Night Machines #A7614A over
+  #372018 (#A15841 over #331B13).
+
+Not built, though sketch E had it: a faint wedge of light across the land
+(5%, from the land's centre), a full-screen gradient for a change the eye
+does not find on a phone.
 
 The battery, as the photographer asked ("Als batterij een zorg wordt…"):
 
-- The disc — cover, grooves, the bands between the songs, the label and
-  its words — is drawn once into one layer (`drawingGroup`); turning it
-  changes only that layer's rotation. Nothing else on the deck is redrawn
-  while it turns. The values the record is drawn from are taken before the
-  timeline, so each frame hands it the same ones and it is not drawn again;
-  the label's colour arrives once per cover and is not animated.
-- The sleeve is an image, drawn once, outside the turning layer; its
-  shadow is drawn with the plinth.
-- It turns slowly, a turn in 10 s rather than a real 33⅓'s 1.8 s ("mag ie
-  nog veel zachter draaien hoor"), on a timeline of at most 20 frames a
-  second (1.8° a frame), and the timeline is paused whenever the record
-  rests: at rest the deck costs nothing.
-- It turns only while all of these hold: Now Playing shows the record (not
-  closed, not the lyrics or the queue), the music plays, the app is active,
-  Reduce Motion is off, Low Power Mode is off (`ProcessInfo`, kept up to
-  date by its notification), and Settings › Playback › Spin the Record is on
-  (`AppSettings.spinRecord`, on by default). Otherwise it rests at its angle.
-- The arm reads the song's position itself, in steps of a 400th of the way
-  from the outer groove to the label (a twentieth of a degree), so most of
-  the player's twice-a-second ticks redraw nothing: on a forty-minute side
-  the arm moves once in six seconds. Now Playing works out the album's
-  side from the song alone, not its clock, so it is not evaluated twice a
-  second either.
-- The cue is three animations set off by the change of song (`withAnimation`
-  on the arm's state, and the swing keyed to the song), not a timeline;
-  while the arm is up it does not read the clock.
+- The land is one bitmap, drawn once per album's side and screen, off the
+  main thread, never per frame: at most 0.75 pixels a point and 2900 a
+  side — an iPhone 17 Pro's is 2161 pixels, 18 MB, an iPad's at most 32 MB
+  — and let go of in D1. Its grooves are 1.5 points wide, dark on dark:
+  drawn at 0.71 pixels a point and shown at 3 they read as drawn at 3, a
+  little softer. Radio plays a new album nearly every song, and each is
+  drawn once.
+- The grooves played are the same bitmap again in the lighter tone, clipped
+  to a ring that changes only when the song reaches the next groove: on
+  Velvet Songs' fifth song (262 s, a band of 24 grooves) once in 10.5 s.
+  Only the small view that reads the song's clock is evaluated twice a
+  second, and most of those times it changes nothing.
+- One timeline turns all that turns: at most 20 frames a second while the
+  label alone turns (1.8° a frame), 30 when the land turns too, and only
+  while the sleeve is on the screen, the music plays, the app is active and
+  the page is D2. At rest it is paused, and the page costs nothing.
+- The land is ready to turn for sketch H (a record "not quite round", its
+  lines swaying at 33⅓ or on the beat): its bitmap is shown oval first,
+  then turned about a pin that may sit off its true centre, on that same
+  timeline. The numbers are `RecordMotion`'s, in one place: 33⅓ a minute,
+  the pin 0 points off, 0% oval. Round and pinned at its centre, turning it
+  would change no pixel, so until H gives other numbers it is not turned.
+- The record is drawn once into one layer (`drawingGroup`) and only its
+  rotation changes; the values it is drawn from are taken before the
+  timeline, so each frame hands it the same ones. The sleeve, its grain
+  and shadows, the record's shadow and the sheen are drawn once.
 - The mark next to the station's name no longer breathes (see the mark).
 
-The deck is hidden from VoiceOver; every control around it is Apple's.
+The sleeve, the record and the ground are hidden from VoiceOver; every
+control around them is Apple's.
 
 ## The launch screen
 
@@ -369,7 +391,7 @@ launch screen's ground (`RootView`), so there is one step, not two.
 | Station artwork, lit on the air | `Components/StationArtwork.swift`; the cover's colour in `ArtworkView.swift` (`ImagePipeline.averageColor`) |
 | Home: "Tonight", Your Station flat beside its name, Mixes, Played lately | `Home/HomeView.swift` (`HomeStationHero`, also on Radio while nothing plays) |
 | Radio: on air, Stations, the dial | `Radio/RadioView.swift`; `Radio/RadioOnAirCard.swift` (`RadioOnAirCard`, `RadioThumbs`, `RadioDial`, also on a station's page and in Now Playing) |
-| Now Playing: the record, its sleeve, the needle on the album's song, the station's name in Glow after its mark | `NowPlaying/Turntable.swift`, `NowPlaying/TurntableMeasures.swift` (checked by `dev/turntable-test.sh`), `NowPlaying/NowPlayingView.swift` |
+| Now Playing: the sleeve and its record, the side as land (D2) or the wall (D1), the station's name in the accent after its mark | `NowPlaying/SleeveRecord.swift`, `NowPlaying/NowPlayingGround.swift`, `NowPlaying/TurntableMeasures.swift` (checked by `dev/turntable-test.sh`), `NowPlaying/NowPlayingView.swift`; the wall's colours in JukeboxKit's `Artwork/CoverWall.swift` |
 | The mini player's station (11 pt, template, accent) | `NowPlaying/MiniPlayer.swift` |
 | The welcome's mark coming on, About's | `Settings/ShellAppMark.swift`, `Settings/OnboardingView.swift`, `Settings/SettingsView.swift` |
 | Mixes: square, their artists under them | `Components/Tiles.swift` (`MixCard`) |
