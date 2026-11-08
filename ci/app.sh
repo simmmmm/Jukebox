@@ -38,6 +38,11 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   status=$?
   set -e
   grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build.log | sed "s#$PWD/##g" | sort -u | head -200
+  # The app's own warnings too, in the log: the artifact cannot be read from
+  # where the code is written, the log can.
+  grep -E '^/.*\.swift:[0-9]+:[0-9]+: warning:' build/logs/build.log | sed "s#$PWD/##g" | sort -u \
+    | tee build/logs/warnings.txt | head -80
+  echo "$(wc -l < build/logs/warnings.txt | tr -d ' ') distinct Swift warnings"
   report build/logs/build.log "Compile errors"
   exit $status
 fi
