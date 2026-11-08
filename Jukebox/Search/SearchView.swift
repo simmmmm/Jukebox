@@ -102,7 +102,7 @@ private struct SearchResultsList: View {
                         }
                     }
                 } header: {
-                    Eyebrow("Artists")
+                    ListHeading("Artists")
                 }
             }
 
@@ -117,7 +117,7 @@ private struct SearchResultsList: View {
                         }
                     }
                 } header: {
-                    Eyebrow("Albums")
+                    ListHeading("Albums")
                 }
             }
 
@@ -136,7 +136,7 @@ private struct SearchResultsList: View {
                         .buttonStyle(.plain)
                     }
                 } header: {
-                    Eyebrow("Songs")
+                    ListHeading("Songs")
                 }
             }
 
@@ -148,7 +148,7 @@ private struct SearchResultsList: View {
                         }
                     }
                 } header: {
-                    Eyebrow("Playlists")
+                    ListHeading("Playlists")
                 }
             }
         }
@@ -203,7 +203,7 @@ private struct SearchAlbumRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Space.m) {
-            ArtworkView(album.artwork, size: 48, cornerRadius: Theme.Radius.thumbnail)
+            ArtworkView(album.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
             VStack(alignment: .leading, spacing: 2) {
                 Text(album.name)
                     .lineLimit(1)
@@ -230,7 +230,7 @@ private struct SearchPlaylistRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Space.m) {
-            ArtworkView(playlist.artwork, size: 48, cornerRadius: Theme.Radius.thumbnail,
+            ArtworkView(playlist.artwork, size: 48, cornerRadius: Theme.Radius.artwork,
                         placeholder: "music.note.list")
             VStack(alignment: .leading, spacing: 2) {
                 Text(playlist.name)
@@ -278,6 +278,7 @@ private struct SearchBrowse: View {
             }
             .padding(.vertical, Theme.Space.l)
         }
+        .background(Theme.ground)
         .scrollDismissesKeyboard(.immediately)
         .overlay {
             if recents.isEmpty && library.genres.isEmpty {
@@ -293,9 +294,9 @@ private struct SearchBrowse: View {
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: Theme.Space.s) {
             HStack(alignment: .firstTextBaseline) {
-                // SectionHeader's look, with Clear where its chevron would be.
-                Text("Recent Searches")
-                    .font(.title2.bold())
+                // SectionHeader's look, with Clear where See All would be.
+                Text("Recent searches")
+                    .font(.serif(.title2))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button("Clear") { clear() }
@@ -335,8 +336,8 @@ private struct SearchBrowse: View {
 
     private var genreSection: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
-            SectionHeader("Browse Genres", route: .genres)
-            LazyVGrid(columns: genreColumns, spacing: Theme.Space.m) {
+            SectionHeader("Genres", route: .genres)
+            LazyVGrid(columns: genreColumns, spacing: 0) {
                 ForEach(library.genres) { genre in
                     NavigationLink(value: Route.genre(genre)) {
                         SearchGenreTile(name: genre.name)
@@ -361,21 +362,22 @@ private struct SearchBrowse: View {
     }
 }
 
-/// A genre to browse: its name on a grey rounded tile. No colours of its
-/// own — the accent (Copper, Glow) stays the only one.
+/// A genre to browse: its name on the ground over a hairline, no tile
+/// (tells.md, 6). No colours of its own — the accent (Copper, Glow) stays
+/// the only one.
 private struct SearchGenreTile: View {
     let name: String
 
     var body: some View {
-        Text(verbatim: name)
-            .font(.headline)
-            .foregroundStyle(.primary)
-            .multilineTextAlignment(.leading)
-            .lineLimit(2)
-            .frame(maxWidth: .infinity, minHeight: 56, alignment: .bottomLeading)
-            .padding(Theme.Space.m)
-            .background(.quaternary, in: .rect(cornerRadius: Theme.Radius.card))
-            .contentShape(.rect(cornerRadius: Theme.Radius.card))
+        VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: name)
+                .foregroundStyle(.primary)
+                .multilineTextAlignment(.leading)
+                .lineLimit(2)
+                .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+            Divider()
+        }
+        .contentShape(.rect)
     }
 }
 

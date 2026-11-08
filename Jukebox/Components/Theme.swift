@@ -1,14 +1,16 @@
 // Jukebox's few tokens and styles. The chrome is Apple's own (tab bar,
 // navigation bars, lists, menus, sheets: HIG, native); what makes it Jukebox
-// lives in the content — the Arch (docs/BRAND.md): two tubes of light and a
-// core, the arch only ever meaning a station; one accent, Copper in light
-// mode and Glow in dark, one hue seen in two exposures; Cabinet, the warm
-// dark the light stands in; one filled button per screen and it is the
-// accent; small grey spaced section labels. The photographer, 8 November
-// 2026: "Het heeft nu wel heel weinig eigen branding en je hergebruikt nu
-// het numa logo daar mag je wel meer eigen vorm aan geven" — and, of the
-// four directions drawn, "Die arch is leuk." A sibling of Numa in restraint
-// and in care, no longer in its shapes.
+// lives in the content — the Arch (docs/BRAND.md): two bands and a core,
+// the arch only ever meaning a station; one accent, Copper in light mode and
+// Glow in dark, one hue seen in two exposures; titles in New York, as on
+// record sleeves; flat grounds; one radius. The photographer, 8 November
+// 2026: "Het heeft nu wel heel weinig eigen branding" — then, of the Arch's
+// first build, "Ik vind het nogsteeds wel heel erg op Apple Music lijken …
+// zo laat het wel heel erg weinig eigen smaak toe" and "Kun je het design
+// iets minder ai maken?" The rules that came of it are docs/design/tells.md:
+// light means on air, flat grounds, a serif for titles, sentence-case
+// headings, facts rather than slogans, nothing rounded but artwork and the
+// system's controls, one filled button a screen.
 
 import SwiftUI
 import UIKit
@@ -24,12 +26,10 @@ enum Theme {
     }
 
     enum Radius {
-        /// A cover in a row or a grid, as Music has it.
-        static let artwork: CGFloat = 8
-        /// A small cover in a list row.
-        static let thumbnail: CGFloat = 6
-        static let card: CGFloat = 14
-        static let button: CGFloat = 12
+        /// The one radius (tells.md, 6): artwork of every size, and the one
+        /// filled button. Nothing else Jukebox draws is rounded; the
+        /// system's own controls keep theirs.
+        static let artwork: CGFloat = 6
     }
 
     /// A page's side margin, as Music and the system lists use.
@@ -37,9 +37,9 @@ enum Theme {
 
     /// The accent: Copper (#A84A17) in light mode, Glow (#FFB54D) in dark —
     /// the asset catalog's AccentColor. What is chosen, playing or touched:
-    /// tint, selection, the one filled button. Copper is 5.7:1 on white and
-    /// 5.2:1 on the grouped grey; Glow 12:1 on black and 9.7:1 on the dark
-    /// grouped grey.
+    /// tint, selection, the one filled button, a text button. Copper is
+    /// 5.7:1 on white and 5.2:1 on the grouped grey; Glow 12:1 on black and
+    /// 9.7:1 on the dark grouped grey.
     static let accent = Color.accentColor
 
     /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
@@ -48,63 +48,83 @@ enum Theme {
         traits.userInterfaceStyle == .dark ? UIColor(rgb: 0x2A1505) : .white
     })
 
-    /// A near-black (#141414) for what is always dark and takes its colours
-    /// from elsewhere: Now Playing's backdrop behind the cover's own.
-    static let page = Color(white: 0x14 / 255)
+    /// The ground the main screens stand on, flat (tells.md, 2): warm paper,
+    /// #F6F3EE, by day, as a sleeve's card stock; #121110 by night, a black
+    /// with a little warmth in it. No vignette, no gradient. Lists the
+    /// system draws (Settings, the library's long lists) keep the system's
+    /// own grounds.
+    static let ground = Color(uiColor: UIColor { traits in
+        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0x121110) : UIColor(rgb: 0xF6F3EE)
+    })
 
     /// The Arch's own colours (docs/BRAND.md, dev/brand/). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
-    /// only — the icon, a station's artwork, the welcome — never for text.
+    /// only — the station on the air, the icon — never for text.
     enum Arch {
-        /// Cabinet, #1E0A07: the warm dark of a jukebox's cabinet, the
-        /// ground the light stands in — the app icon, the welcome, Your
-        /// Station's card, every lit core. Dark in light mode too.
+        /// Cabinet, #1E0A07: the warm dark of a jukebox's cabinet — the app
+        /// icon, Now Playing's ground, a station's room until its cover's
+        /// colour is known. Dark in light mode too.
         static let cabinet = Color(rgb: 0x1E0A07)
-        /// The cabinet where its tubes light it, #4A1D0F: the top of a lit
-        /// ground's gradient.
-        static let cabinetHaze = Color(rgb: 0x4A1D0F)
-        /// Glow, #FFB54D: the accent in dark mode (AccentColor's dark half).
+        /// Glow, #FFB54D: the accent in dark mode (AccentColor's dark half),
+        /// and the inner band of every arch.
         static let glow = Color(rgb: 0xFFB54D)
         /// Copper, #A84A17: the accent in light mode, Glow's own hue seen by
-        /// day — from the Tonearm direction, in place of a redder ember that
-        /// sat too near Last.fm's red.
+        /// day, and the outer band of every arch.
         static let copper = Color(rgb: 0xA84A17)
         /// Ink, #2A1505: words and glyphs on Glow.
         static let ink = Color(rgb: 0x2A1505)
-        /// Filament, #FFF4DE: the core's light, the brightest thing in the art.
-        static let filament = Color(rgb: 0xFFF4DE)
-        /// The mark's core: amber (#F7A136) on light grounds, where filament
-        /// would vanish; a warm white (#FFF1D6) on dark ones.
+        /// The mark's core: amber (#F7A136) on light grounds, where a warm
+        /// white would vanish; a warm white (#FFF1D6) on dark ones.
         static let markCore = Color(uiColor: UIColor { traits in
             traits.userInterfaceStyle == .dark ? UIColor(rgb: 0xFFF1D6) : UIColor(rgb: 0xF7A136)
         })
 
-        // Art only.
+        // Art only: the station on the air, which alone is lit.
 
-        /// The outer tube, #F07E36, deepening to #D45A22 at its feet in the icon.
+        /// The outer tube lit, #F07E36.
         static let outerTube = Color(rgb: 0xF07E36)
-        static let outerTubeFoot = Color(rgb: 0xD45A22)
-        /// The inner tube, #FFB44C, to #F49A30 at its feet.
+        /// The inner tube lit, #FFB44C.
         static let innerTube = Color(rgb: 0xFFB44C)
-        static let innerTubeFoot = Color(rgb: 0xF49A30)
-        /// The hot line down the middle of each tube, where the gas is brightest.
-        static let outerTubeHeart = Color(rgb: 0xFFC08A)
-        static let innerTubeHeart = Color(rgb: 0xFFE3AE)
-        /// The core lit in art: #FFFBF0 at its top to #FFD58E at its foot,
-        /// and its bloom.
-        static let coreTop = Color(rgb: 0xFFFBF0)
-        static let coreFoot = Color(rgb: 0xFFD58E)
-        static let coreBloom = Color(rgb: 0xFFC46A)
-        /// The light the tubes throw on the room around them, #FF8A2A.
-        static let roomGlow = Color(rgb: 0xFF8A2A)
     }
 
-    /// Numa's section label: 11 pt semibold, spaced, upper case, grey.
-    static let eyebrow = Font.system(size: 11, weight: .semibold)
-    static let eyebrowTracking: CGFloat = 1.1
+    /// The one small label a screen may have ("On air"): sentence case, in
+    /// the accent, as light means on air.
+    static let label = Font.subheadline.weight(.semibold)
+
+    /// The navigation bars' titles in New York too, as every title in the
+    /// content is: the large title at the large title's size, the inline
+    /// one at the body's, both at regular weight. Set once, at launch
+    /// (JukeboxApp), through UIKit's appearance proxy: SwiftUI has no
+    /// modifier for the bar's own title font. The sizes follow the
+    /// reader's text size (UIFontMetrics), as the system's own titles do.
+    static func styleNavigationBars() {
+        let bar = UINavigationBar.appearance()
+        bar.largeTitleTextAttributes = [.font: serifUIFont(.largeTitle)]
+        bar.titleTextAttributes = [.font: serifUIFont(.body)]
+    }
+
+    /// The system font's serif design (New York) for `style`, at the size
+    /// the default text size gives it, scaled for the reader's.
+    private static func serifUIFont(_ style: UIFont.TextStyle) -> UIFont {
+        let standard = UITraitCollection(preferredContentSizeCategory: .large)
+        let base = UIFontDescriptor.preferredFontDescriptor(withTextStyle: style, compatibleWith: standard)
+        let serif = base.withDesign(.serif) ?? base
+        return UIFontMetrics(forTextStyle: style).scaledFont(for: UIFont(descriptor: serif, size: 0))
+    }
 }
 
-/// Numa's small grey spaced label, between groups: "MADE FOR YOU".
+extension Font {
+    /// A title in New York, the system's serif, at regular weight and at a
+    /// text style's size, so it follows Dynamic Type: as on a sleeve, the
+    /// title is set and everything else is SF (tells.md, 3).
+    static func serif(_ style: Font.TextStyle) -> Font {
+        .system(style, design: .serif, weight: .regular)
+    }
+}
+
+/// The one small label a screen may have — "On air" — in sentence case and
+/// in the accent: light means on air. Every other heading is a
+/// SectionHeader, in the serif.
 struct Eyebrow: View {
     let text: String
 
@@ -113,36 +133,43 @@ struct Eyebrow: View {
     }
 
     var body: some View {
-        Text(text.uppercased())
-            .font(Theme.eyebrow)
-            .tracking(Theme.eyebrowTracking)
-            .foregroundStyle(.secondary)
+        Text(text)
+            .font(Theme.label)
+            .foregroundStyle(Theme.accent)
             .accessibilityAddTraits(.isHeader)
     }
 }
 
-/// A shelf's header as Music has it — a bold title, a chevron when it goes
-/// somewhere — with Numa's grey label above it when there is one.
+/// A section's heading on the page's ground: its title in the serif, in
+/// sentence case ("Mixes", "Played lately"), with a fact at its end when
+/// there is one ("Made at 06:00"), and See All when it goes somewhere.
 struct SectionHeader<Destination: Hashable>: View {
     let title: String
-    var eyebrow: String?
+    var fact: String?
     var destination: Destination?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            if let eyebrow { Eyebrow(eyebrow) }
+        HStack(alignment: .firstTextBaseline, spacing: Theme.Space.m) {
+            Text(title)
+                .font(.serif(.title2))
+                .foregroundStyle(.primary)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: 0)
+            if let fact {
+                Text(fact)
+                    .font(.subheadline)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
             if let destination {
                 NavigationLink(value: destination) {
-                    HStack(spacing: 4) {
-                        Text(title).font(.title2.bold()).foregroundStyle(.primary)
-                        Image(systemName: "chevron.right")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(.secondary)
-                    }
+                    Text("See All")
+                        .font(.subheadline)
+                        .foregroundStyle(Theme.accent)
                 }
                 .buttonStyle(.plain)
-            } else {
-                Text(title).font(.title2.bold())
+                .accessibilityLabel(Text("See All \(title)"))
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -151,15 +178,51 @@ struct SectionHeader<Destination: Hashable>: View {
 }
 
 extension SectionHeader where Destination == Route {
-    init(_ title: String, eyebrow: String? = nil, route: Route? = nil) {
+    init(_ title: String, fact: String? = nil, route: Route? = nil) {
         self.title = title
-        self.eyebrow = eyebrow
+        self.fact = fact
         destination = route
     }
 }
 
-/// The one filled button of a screen (Play, Start Radio, Sign In): the
-/// accent, with its own ink on it.
+/// A heading inside a List (a section's, a group of rows'): the serif, in
+/// sentence case, as SectionHeader is on a page. The list gives its margins.
+struct ListHeading: View {
+    let title: String
+
+    init(_ title: String) {
+        self.title = title
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.serif(.title3))
+            .foregroundStyle(.primary)
+            .textCase(nil)
+            .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// A hairline between things on the ground, from `inset` to the trailing
+/// edge, in place of a card (tells.md, 6): content sits on the page,
+/// separated by hairlines and space.
+struct Hairline: View {
+    var inset: CGFloat
+
+    init(inset: CGFloat = Theme.margin) {
+        self.inset = inset
+    }
+
+    var body: some View {
+        Divider()
+            .padding(.leading, inset)
+    }
+}
+
+/// The one filled button of a screen (Play, Sign In): a plain rectangle in
+/// the accent, 6 pt corners, its own ink on it. No glow, no shadow, and no
+/// icon unless the word needs one. Callers that want it compact give it
+/// `.fixedSize()`.
 struct ProminentButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
@@ -167,27 +230,26 @@ struct ProminentButtonStyle: ButtonStyle {
         configuration.label
             .font(.body.weight(.semibold))
             .foregroundStyle(Theme.onAccent)
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .padding(.horizontal, Theme.Space.l)
-            .background(Theme.accent, in: .rect(cornerRadius: Theme.Radius.button))
+            .frame(maxWidth: .infinity, minHeight: 44)
+            .padding(.horizontal, Theme.Space.xl)
+            .background(Theme.accent, in: .rect(cornerRadius: Theme.Radius.artwork))
             .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
-            .contentShape(.rect(cornerRadius: Theme.Radius.button))
+            .contentShape(.rect)
     }
 }
 
-/// Every other button beside it (Shuffle): grey, flat.
+/// Every other action (Shuffle, Stop, New Picks): a word in the accent, no
+/// ground under it — a text button, as the system's own are.
 struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body.weight(.semibold))
-            .foregroundStyle(.primary)
-            .frame(maxWidth: .infinity, minHeight: 48)
-            .padding(.horizontal, Theme.Space.l)
-            .background(.quaternary, in: .rect(cornerRadius: Theme.Radius.button))
-            .opacity(isEnabled ? (configuration.isPressed ? 0.6 : 1) : 0.4)
-            .contentShape(.rect(cornerRadius: Theme.Radius.button))
+            .font(.body)
+            .foregroundStyle(Theme.accent)
+            .frame(minHeight: 44)
+            .opacity(isEnabled ? (configuration.isPressed ? 0.5 : 1) : 0.4)
+            .contentShape(.rect)
     }
 }
 
@@ -199,22 +261,34 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
     static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
 }
 
-/// Play and Shuffle side by side, under an album's or a playlist's header.
+/// Play and Shuffle side by side, under an album's or a playlist's header:
+/// the page's one filled button, and Shuffle as a word beside it.
 struct PlayShuffleButtons: View {
     let play: () -> Void
     let shuffle: () -> Void
 
     var body: some View {
-        HStack(spacing: Theme.Space.m) {
+        HStack(spacing: Theme.Space.xl) {
             Button(action: play) {
-                Label("Play", systemImage: "play.fill")
+                Text("Play")
             }
             .buttonStyle(.prominent)
+            .fixedSize()
             Button(action: shuffle) {
-                Label("Shuffle", systemImage: "shuffle")
+                Text("Shuffle")
             }
             .buttonStyle(.secondary)
         }
+    }
+}
+
+extension View {
+    /// The page's flat ground (Theme.ground) under a ScrollView or a List:
+    /// the List's own ground hidden, Theme.ground in its place, to the
+    /// screen's edges. A List's rows then need `.listRowBackground(Color.clear)`.
+    func pageGround() -> some View {
+        scrollContentBackground(.hidden)
+            .background(Theme.ground)
     }
 }
 

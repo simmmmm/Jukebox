@@ -1,7 +1,8 @@
 // Settings, a sheet from Home and Radio: a Form as the system's own Settings
 // draws one, each section its own view so a change in one (the library's
-// progress, the Last.fm check) redraws only that one. Numa's grey spaced
-// labels over the sections; nothing else of its own.
+// progress, the Last.fm check) redraws only that one. The system's own
+// section headers, as the system's Settings has them; nothing of its own
+// (docs/design/tells.md, 4: no tracked uppercase labels of Jukebox's).
 
 import JukeboxKit
 import SwiftUI
@@ -73,7 +74,7 @@ private struct SettingsAccountSection: View {
                 Text("Playback stops and Jukebox forgets the library and your recent stations on this \(UIDevice.current.model). Your music, playlists and favorites stay on the server.")
             }
         } header: {
-            Eyebrow("Account")
+            Text("Account")
         }
     }
 
@@ -110,8 +111,14 @@ private struct SettingsPlaybackSection: View {
                 SettingsDetailLabel(title: "Autoplay",
                                     detail: "When an album or playlist ends, keep playing similar music")
             }
+            // Now Playing's record (Turntable.swift): off, it rests. It
+            // rests anyway in Low Power Mode and with Reduce Motion.
+            Toggle(isOn: $settings.spinRecord) {
+                SettingsDetailLabel(title: "Spin the Record",
+                                    detail: "The record in Now Playing turns while music plays. It stands still in Low Power Mode and with Reduce Motion.")
+            }
         } header: {
-            Eyebrow("Playback")
+            Text("Playback")
         } footer: {
             Text("Original plays your files as they are. The others have Jellyfin convert them to AAC at that rate, which uses less data.")
         }
@@ -179,7 +186,7 @@ private struct SettingsRadioSection: View {
                 if !isDragging { radio.adventurousnessChanged() }
             }
         } header: {
-            Eyebrow("Radio")
+            Text("Radio")
         } footer: {
             Text("Familiar stays close to where a station started and to songs you know. Adventurous goes further out and plays more that is new to you.")
         }
@@ -244,7 +251,7 @@ private struct SettingsLastFMSection: View {
             statusRow
             Link("Get a Free API Key", destination: Self.createKeyURL)
         } header: {
-            Eyebrow("Last.fm")
+            Text("Last.fm")
         } footer: {
             Text("With a key, the radio knows which artists and songs sound alike. Only artist names and song titles are sent to Last.fm.")
         }
@@ -324,7 +331,7 @@ private struct SettingsLyricsSection: View {
         Section {
             Toggle("Find Lyrics Online", isOn: $settings.findLyricsOnline)
         } header: {
-            Eyebrow("Lyrics")
+            Text("Lyrics")
         } footer: {
             Text("When your server has no lyrics for a song, Jukebox looks them up on LRCLIB (lrclib.net), a free and open lyrics database. It sends the song's title, artist, album and length.")
         }
@@ -358,7 +365,7 @@ private struct SettingsLibrarySection: View {
             }
             .disabled(isLoading)
         } header: {
-            Eyebrow("Library")
+            Text("Library")
         } footer: {
             if let failure {
                 Text(failure)
@@ -433,7 +440,7 @@ private struct SettingsHistorySection: View {
                 Text("The radio and your mixes start learning your taste again from your library and favorites. Play counts on the server stay as they are.")
             }
         } header: {
-            Eyebrow("History")
+            Text("History")
         } footer: {
             Text("What you play, skip and give a thumbs up or down to is how the radio and your mixes learn your taste. It stays on this \(UIDevice.current.model).")
         }
@@ -457,7 +464,7 @@ private struct SettingsPrivacySection: View {
         Section {
             Toggle("Share Anonymous Usage", isOn: $settings.shareUsage)
         } header: {
-            Eyebrow("Privacy")
+            Text("Privacy")
         } footer: {
             Text("Jukebox counts which screens and features are used — never titles, artists, searches, server addresses or names — on the developer's own server, without cookies or a device id. It helps decide what to improve.")
         }
@@ -483,7 +490,7 @@ private struct SettingsAboutSection: View {
             .accessibilityElement(children: .combine)
             LabeledContent("Version", value: version)
         } header: {
-            Eyebrow("About")
+            Text("About")
         }
     }
 

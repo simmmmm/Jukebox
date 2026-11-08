@@ -14,7 +14,9 @@ first. `docs/RADIO.md` is how the radio chooses, with measurements.
 - A commit message with `[testflight]` uploads that build to TestFlight.
 - Native first (HIG, SF Symbols, Apple's controls); Jukebox's own brand, the
   Arch, from `Theme.swift` and `docs/BRAND.md` — Copper and Glow, the mark,
-  lit station art, grey section labels.
+  New York for titles, flat grounds, light only for the station on air, no
+  tracked uppercase labels. Before a screen ships, `docs/design/tells.md`'s
+  checklist ("Kun je het design iets minder ai maken?").
 - Comments say why; the photographer's words where they decided something.
 - Commits are the photographer's: author and committer `simmmmm
   <38768749+simmmmm@users.noreply.github.com>` (set in the clone's git

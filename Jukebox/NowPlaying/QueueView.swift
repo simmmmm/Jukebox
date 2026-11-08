@@ -2,7 +2,8 @@
 // shuffle, repeat and Autoplay, then Up Next — reordered in Edit, a swipe
 // to remove one, Clear for all — and the History of what played, dimmed.
 // A tap on any song plays it. While a station plays, every song in Up Next
-// says why the radio chose it, and there is no shuffle or repeat: the radio
+// says why the radio chose it — the one place the radio's reasons are
+// shown (docs/design/tells.md, 5) — and there is no shuffle or repeat: the radio
 // chooses the order, and keeps choosing as it is listened to. In their place
 // a "…" keeps the station as a playlist: a station that played well is gone
 // once another starts, and this is how an evening of it stays.
@@ -68,9 +69,7 @@ struct QueueView: View {
 
             if !history.isEmpty {
                 Section {
-                    Text("History")
-                        .font(.title3.bold())
-                        .accessibilityAddTraits(.isHeader)
+                    ListHeading("History")
                         .padding(.top, Theme.Space.l)
                         .queueRow()
                     ForEach(history) { entry in
@@ -130,15 +129,14 @@ struct QueueView: View {
     private func playingFrom(_ station: Station?) -> some View {
         HStack(spacing: Theme.Space.m) {
             if let station {
-                StationArtwork(station: station, size: 40, cornerRadius: Theme.Radius.thumbnail)
+                StationArtwork(station: station, size: 40, cornerRadius: Theme.Radius.artwork)
             }
-            VStack(alignment: .leading, spacing: 2) {
-                Eyebrow("Playing From")
-                Text(player.context?.title ?? "")
-                    .font(.headline)
-                    .lineLimit(1)
-            }
-            .accessibilityElement(children: .combine)
+            // Where it plays from, by its name in the serif: no label over
+            // it (tells.md, 4).
+            Text(player.context?.title ?? "")
+                .font(.serif(.title3))
+                .lineLimit(1)
+                .accessibilityLabel(Text("Playing from \(player.context?.title ?? "")"))
             Spacer(minLength: 0)
             if let station {
                 stationMenu(station)
@@ -179,10 +177,9 @@ struct QueueView: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .font(.subheadline.weight(.semibold))
+                .font(.body.weight(.semibold))
                 .foregroundStyle(.primary)
                 .frame(width: 40, height: 32)
-                .background(Color.white.opacity(0.08), in: .rect(cornerRadius: Theme.Radius.thumbnail))
                 .contentShape(.rect)
         }
         .menuStyle(.button)
@@ -193,9 +190,7 @@ struct QueueView: View {
 
     private func upNextTitle(isEmpty: Bool) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.Space.l) {
-            Text("Up Next")
-                .font(.title3.bold())
-                .accessibilityAddTraits(.isHeader)
+            ListHeading("Up next")
             Spacer(minLength: 0)
             if !isEmpty {
                 Button("Clear") {
@@ -228,10 +223,11 @@ struct QueueView: View {
             }
     }
 
-    /// Under Up Next: what happens when it runs out.
+    /// Under Up Next: what happens when it runs out. Nothing for a station:
+    /// its reasons say enough.
     private func footnote(station: Station?, isEmpty: Bool) -> Text? {
         if station != nil {
-            return Text("The radio keeps choosing as you listen")
+            return nil
         }
         if isEmpty {
             return settings.autoplay
@@ -311,7 +307,7 @@ struct QueueView: View {
     }
 }
 
-/// Shuffle, Repeat, Autoplay: a glyph on a faint tile, brighter when on.
+/// Shuffle, Repeat, Autoplay: a plain glyph, in the accent when on.
 private struct QueueToggle: View {
     let symbol: String
     let isOn: Bool
@@ -321,11 +317,10 @@ private struct QueueToggle: View {
     var body: some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isOn ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
+                .font(.body.weight(.semibold))
+                .foregroundStyle(isOn ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 40, height: 32)
-                .background(Color.white.opacity(isOn ? 0.24 : 0.08), in: .rect(cornerRadius: Theme.Radius.thumbnail))
                 .contentShape(.rect)
         }
         // Borderless: in a list row, only this button answers its tap.

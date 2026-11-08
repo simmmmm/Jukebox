@@ -4,8 +4,7 @@
 // before anything is typed. Choosing one closes the sheet and opens the
 // station's page on the Radio tab, where what it would play is to see
 // before it plays, as from every station's tile (StationDetailView). Section
-// headers are Numa's small grey spaced labels (Eyebrow), as Search's and
-// Settings' are.
+// headings in the serif, sentence case, as Search's are (ListHeading).
 
 import JukeboxKit
 import SwiftUI
@@ -66,11 +65,11 @@ struct RadioStationPicker: View {
                 ForEach(suggested) { station in
                     RadioPickerRow(title: station.title, subtitle: station.subtitle,
                                    action: { show(station) }) {
-                        StationArtwork(station: station, size: 40, cornerRadius: Theme.Radius.thumbnail)
+                        StationArtwork(station: station, size: 40, cornerRadius: Theme.Radius.artwork)
                     }
                 }
             } header: {
-                Eyebrow("Suggested")
+                ListHeading("Suggested")
             }
         }
         if !library.genres.isEmpty {
@@ -82,7 +81,7 @@ struct RadioStationPicker: View {
                     }
                 }
             } header: {
-                Eyebrow("Genres")
+                ListHeading("Genres")
             }
         }
     }
@@ -119,7 +118,7 @@ struct RadioStationPicker: View {
                     }
                 }
             } header: {
-                Eyebrow("Artists")
+                ListHeading("Artists")
             }
         }
         if !found.tracks.isEmpty {
@@ -127,11 +126,11 @@ struct RadioStationPicker: View {
                 ForEach(found.tracks) { track in
                     RadioPickerRow(title: track.name, subtitle: track.artistLine,
                                    action: { showSeed(.track(track.id)) }) {
-                        ArtworkView(track.artwork, size: 40, cornerRadius: Theme.Radius.thumbnail)
+                        ArtworkView(track.artwork, size: 40, cornerRadius: Theme.Radius.artwork)
                     }
                 }
             } header: {
-                Eyebrow("Songs")
+                ListHeading("Songs")
             }
         }
         if !found.albums.isEmpty {
@@ -139,11 +138,11 @@ struct RadioStationPicker: View {
                 ForEach(found.albums) { album in
                     RadioPickerRow(title: album.name, subtitle: album.artistLine,
                                    action: { showSeed(.album(album.id)) }) {
-                        ArtworkView(album.artwork, size: 40, cornerRadius: Theme.Radius.thumbnail)
+                        ArtworkView(album.artwork, size: 40, cornerRadius: Theme.Radius.artwork)
                     }
                 }
             } header: {
-                Eyebrow("Albums")
+                ListHeading("Albums")
             }
         }
         if !found.genres.isEmpty {
@@ -155,7 +154,7 @@ struct RadioStationPicker: View {
                     }
                 }
             } header: {
-                Eyebrow("Genres")
+                ListHeading("Genres")
             }
         }
     }
@@ -236,7 +235,7 @@ private struct RadioPickerGlyph: View {
             .font(.body)
             .foregroundStyle(.secondary)
             .frame(width: 40, height: 40)
-            .background(.quaternary, in: .rect(cornerRadius: Theme.Radius.thumbnail))
+            .background(.quaternary, in: .rect(cornerRadius: Theme.Radius.artwork))
             .accessibilityHidden(true)
     }
 }

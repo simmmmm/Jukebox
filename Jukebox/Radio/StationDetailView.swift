@@ -12,6 +12,12 @@
 // from nearer home or further out. Once the station is on the air the page
 // shows what plays and what the radio has queued, which a skip or a thumbs
 // changes as it is listened to.
+//
+// Sketch D's rules (docs/design/tells.md): the title in the serif, the art
+// flat unless the station is on the air, one filled button (Play), New
+// Picks as a word beside it, facts rather than a slogan under the title
+// (what kind of station, when it last played), sentence-case headings and
+// no reasons under the songs — those are the queue's.
 
 import JukeboxKit
 import SwiftUI
@@ -28,6 +34,7 @@ struct StationDetailView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
+    @Environment(HistoryStore.self) private var history
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// The songs the station would start with; nil until they are chosen
@@ -62,6 +69,7 @@ struct StationDetailView: View {
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
                                           bottom: Theme.Space.l, trailing: Theme.margin))
                 .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
             if onAir {
                 onAirRows
             } else {
@@ -69,6 +77,7 @@ struct StationDetailView: View {
             }
         }
         .listStyle(.plain)
+        .pageGround()
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? station.title : "")
@@ -128,34 +137,24 @@ struct StationDetailView: View {
 
     private func header(onAir: Bool) -> some View {
         VStack(spacing: Theme.Space.s) {
-            StationArtwork(station: station, size: 240, cornerRadius: Theme.Radius.card)
-                .overlay(alignment: .topTrailing) {
-                    if onAir {
-                        StationOnAirBadge()
-                            .padding(Theme.Space.m)
-                    }
-                }
-                .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
+            StationArtwork(station: station, size: 240)
                 .padding(.bottom, Theme.Space.m)
             Text(station.title)
-                .font(.title2.bold())
+                .font(.serif(.title))
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
-            if let subtitle = station.subtitle, !subtitle.isEmpty {
-                Text(subtitle)
-                    .font(.title3)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-            Text("Plays on for as long as you listen.")
-                .font(.footnote)
+            // Facts, not "Plays on for as long as you listen": what kind of
+            // station it is, and when it last played on this device.
+            Text(verbatim: "\(StationText.kind(station)) · \(RelativeDay.played(lastPlayed))")
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
             // As wide as on an iPhone on the iPad too: a dial across a
             // whole iPad held sideways is a long way from one end to the other.
-            VStack(spacing: Theme.Space.s) {
+            VStack(spacing: Theme.Space.m) {
                 buttons(onAir: onAir)
                     .padding(.top, Theme.Space.m)
-                dial
+                RadioDial(onDragging: { isDragging = $0 })
                     .padding(.top, Theme.Space.s)
             }
             .frame(maxWidth: Self.controlsWidth)
@@ -165,11 +164,16 @@ struct StationDetailView: View {
 
     private static let controlsWidth: CGFloat = 480
 
-    /// The page's one filled button, Play, and New Picks beside it; on the
-    /// air, Play or Pause, and Stop.
+    /// When the station last played here, from the history.
+    private var lastPlayed: Date? {
+        HomeShelves.stationDates(events: history.history.events)[station.id]
+    }
+
+    /// The page's one filled button, Play, and New Picks beside it as a
+    /// word; on the air, Play or Pause, and Stop.
     @ViewBuilder
     private func buttons(onAir: Bool) -> some View {
-        HStack(spacing: Theme.Space.m) {
+        HStack(spacing: Theme.Space.xl) {
             if onAir {
                 Button {
                     // Its first songs are being chosen (it was started from
@@ -182,19 +186,20 @@ struct StationDetailView: View {
                             .tint(Theme.onAccent)
                             .accessibilityLabel("Starting")
                     } else if player.isPlaying {
-                        Label("Pause", systemImage: "pause.fill")
+                        Text("Pause")
                     } else {
-                        Label("Play", systemImage: "play.fill")
+                        Text("Play")
                     }
                 }
                 .buttonStyle(.prominent)
+                .fixedSize()
                 Button {
                     // The station first, so the song that stops is not taken
-                    // as a skip; then the music. As the Radio tab's card does.
+                    // as a skip; then the music. As the Radio tab does.
                     radio.stop()
                     player.stop()
                 } label: {
-                    Label("Stop", systemImage: "stop.fill")
+                    Text("Stop")
                 }
                 .buttonStyle(.secondary)
             } else {
@@ -202,62 +207,23 @@ struct StationDetailView: View {
                     Stats.track(.stationPage, ["action": "play"])
                     play(from: 0)
                 } label: {
-                    Label("Play", systemImage: "play.fill")
+                    Text("Play")
+                        .frame(minWidth: 64)
                 }
                 .buttonStyle(.prominent)
+                .fixedSize()
                 // Nothing in the library fits the station: nothing to play.
                 .disabled(picks?.isEmpty == true)
                 .accessibilityHint("Plays these songs, then more like them")
                 Button {
                     newPicks()
                 } label: {
-                    Label("New Picks", systemImage: "arrow.clockwise")
+                    Text("New Picks")
                 }
                 .buttonStyle(.secondary)
                 .disabled(picks?.isEmpty != false || isDrawing)
                 .accessibilityHint("Chooses other songs for this station")
             }
-        }
-    }
-
-    /// Familiar ⟷ Adventurous, as on the Radio tab's card: the radio's one
-    /// dial (AppSettings.adventurousness), so it is where it was left for
-    /// every station. Let go, the list is chosen again; a station on the
-    /// air chooses its songs ahead again (as Settings' dial does, whichever
-    /// station that is).
-    @ViewBuilder
-    private var dial: some View {
-        @Bindable var settings = settings
-        VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            // The dial's words in the accent, as on the Radio tab's card.
-            Text(RadioDial.phrase(settings.adventurousness))
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(Theme.accent)
-                .contentTransition(.opacity)
-                .animation(.easeInOut(duration: 0.2), value: RadioDial.phrase(settings.adventurousness))
-                .accessibilityHidden(true)
-            Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: { editing in
-                isDragging = editing
-                if !editing {
-                    radio.adventurousnessChanged()
-                    Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
-                }
-            })
-            .tint(Theme.accent)
-            .accessibilityLabel("Adventurousness")
-            .accessibilityValue(RadioDial.spoken(settings.adventurousness))
-            HStack {
-                Text("Familiar")
-                Spacer()
-                Text("Adventurous")
-            }
-            .font(.caption)
-            .foregroundStyle(.secondary)
-            .accessibilityHidden(true)
-        }
-        .onChange(of: settings.adventurousness) { _, _ in
-            // Steps without a drag (VoiceOver's swipes, another dial).
-            if !isDragging { radio.adventurousnessChanged() }
         }
     }
 
@@ -273,28 +239,28 @@ struct StationDetailView: View {
                 Text("Nothing in your library fits this station yet.")
             }
             .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
         } else {
-            Eyebrow("Up First")
-                .padding(.top, Theme.Space.s)
-                .listRowSeparator(.hidden)
+            heading("Up first")
             if let picks {
                 // By place, not by song: a library of a few songs repeats
-                // them, and the list would have the same song twice.
+                // them, and the list would have the same song twice. No
+                // reasons under them: the radio's reasons are the queue's.
                 ForEach(Array(picks.enumerated()), id: \.offset) { index, pick in
                     Button {
                         Stats.track(.stationPage, ["action": "row"])
                         play(from: index)
                     } label: {
-                        TrackRow(pick.track, subtitle: pick.track.artistLine, reason: pick.reason)
+                        TrackRow(pick.track, subtitle: pick.track.artistLine)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Plays the station from this song")
                 }
                 .opacity(isDrawing ? 0.4 : 1)
+                .listRowBackground(Color.clear)
             } else {
                 StationPlaceholderRows()
             }
-            footer
         }
     }
 
@@ -303,49 +269,43 @@ struct StationDetailView: View {
     @ViewBuilder
     private var onAirRows: some View {
         if radio.isStarting {
-            Eyebrow("Up First")
-                .padding(.top, Theme.Space.s)
-                .listRowSeparator(.hidden)
+            heading("Up first")
             StationPlaceholderRows()
         } else {
             if let current = player.current {
-                Eyebrow("Now Playing")
-                    .padding(.top, Theme.Space.s)
-                    .listRowSeparator(.hidden)
+                heading("Now playing")
                 Button {
                     navigator.isNowPlayingPresented = true
                 } label: {
-                    TrackRow(current.track, subtitle: current.track.artistLine, reason: current.reason)
+                    TrackRow(current.track, subtitle: current.track.artistLine)
                 }
                 .buttonStyle(.plain)
                 .accessibilityHint("Shows Now Playing")
+                .listRowBackground(Color.clear)
             }
             let upNext = player.upNext
             if !upNext.isEmpty {
-                Eyebrow("Up Next")
-                    .padding(.top, Theme.Space.l)
-                    .listRowSeparator(.hidden)
+                heading("Up next")
                 ForEach(upNext) { entry in
                     Button {
                         player.skip(to: entry)
                     } label: {
-                        TrackRow(entry.track, subtitle: entry.track.artistLine, reason: entry.reason)
+                        TrackRow(entry.track, subtitle: entry.track.artistLine)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("Plays this song")
                 }
+                .listRowBackground(Color.clear)
             }
-            footer
         }
     }
 
-    private var footer: some View {
-        Text("The radio keeps choosing as you listen: a skip or a thumbs changes what comes next.")
-            .font(.footnote)
-            .foregroundStyle(.secondary)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.vertical, Theme.Space.s)
+    /// A group's heading in the list, in the serif, as the page's others.
+    private func heading(_ title: String) -> some View {
+        ListHeading(title)
+            .padding(.top, Theme.Space.m)
             .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
     }
 
     // MARK: Choosing
@@ -487,15 +447,13 @@ private struct StationPlaceholderRows: View {
     var body: some View {
         ForEach(0..<6, id: \.self) { _ in
             HStack(spacing: Theme.Space.m) {
-                RoundedRectangle(cornerRadius: Theme.Radius.thumbnail)
+                RoundedRectangle(cornerRadius: Theme.Radius.artwork)
                     .fill(.quaternary)
                     .frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("A song of the station")
                     Text("Its artist")
                         .font(.subheadline)
-                    Text("Why the radio chose it")
-                        .font(.caption)
                 }
                 Spacer(minLength: 0)
             }
@@ -503,5 +461,6 @@ private struct StationPlaceholderRows: View {
             .accessibilityHidden(true)
         }
         .listRowSeparator(.hidden)
+        .listRowBackground(Color.clear)
     }
 }

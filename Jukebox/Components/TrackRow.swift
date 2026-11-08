@@ -41,7 +41,7 @@ struct TrackRow: View {
         HStack(spacing: Theme.Space.m) {
             switch leading {
             case .artwork:
-                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.thumbnail)
+                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
             case let .number(number):
                 Group {
                     if isCurrent {

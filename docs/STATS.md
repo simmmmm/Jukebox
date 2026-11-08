@@ -71,7 +71,7 @@ Buckets:
 | `playlist_songs_added` | `from` (`add_songs`, `add_to_playlist`) | How playlists are filled | AddSongsSheet, AddToPlaylistSheet |
 | `favorite_set` | `item` (`track`, `album`, `artist`), `on` (bool) | Are favourites used, and for what | `LibraryStore.setFavorite`, once the server took it |
 | `search_used` | `results` (bucket) | Is search used; how often it finds nothing | SearchView, once a search, when the typing first rests (1.5 s) |
-| `setting_changed` | `name` (`wifi_quality`, `cellular_quality`, `normalize`, `autoplay`, `find_lyrics_online`, `share_usage`), `value` (`original`, `high`, `normal`, `low`; `on`, `off`; `share_usage` only `off`) | Which settings are changed, to what | AppSettings, whoever changes it (Settings, the queue's Autoplay) |
+| `setting_changed` | `name` (`wifi_quality`, `cellular_quality`, `normalize`, `autoplay`, `find_lyrics_online`, `spin_record`, `share_usage`), `value` (`original`, `high`, `normal`, `low`; `on`, `off`; `share_usage` only `off`) | Which settings are changed, to what | AppSettings, whoever changes it (Settings, the queue's Autoplay) |
 | `lastfm_key` | `state` (`added`, `removed`) | Do people add a Last.fm key | Settings, once Last.fm accepted it, or when emptied |
 | `playback_error` | `reason` (`network`, `server`, `unsupported`, `other`) | How often a song does not play, and why | `AudioPlayer.itemFailed` |
 

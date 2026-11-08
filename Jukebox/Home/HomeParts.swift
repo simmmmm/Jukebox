@@ -1,7 +1,8 @@
 // The pieces Home and Radio share: which station is on the air, what a tab
 // shows while the library loads or when it has nothing, a station's tile
-// that opens its page and its long-press menu, the grey placeholders a
-// shelf shows while the mixes are being made, and a mix's tile and menu.
+// that opens its page and its long-press menu, a station's kind in words,
+// the grey placeholders a shelf shows while the mixes are being made, and a
+// mix's tile and menu.
 // Named Home… or Station… so they cannot clash with another part's helpers.
 
 import JukeboxKit
@@ -83,8 +84,8 @@ struct HomeLibraryStatus: View {
     }
 }
 
-/// The first load: the mark, the words, and the bar when the server has
-/// said how much there is.
+/// The first load: the mark, flat, the words, and the bar when the server
+/// has said how much there is.
 struct HomeLoadingView: View {
     let progress: Double?
 
@@ -120,23 +121,21 @@ struct HomeLoadingView: View {
 
 // MARK: - Stations
 
-/// On a station's artwork while it plays: the waveform in a disc of Glow,
-/// moving with the music unless Reduce Motion is on.
-struct StationOnAirBadge: View {
-    @Environment(AudioPlayer.self) private var player
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    var body: some View {
-        Image(systemName: "waveform")
-            .font(.caption.weight(.bold))
-            .symbolEffect(.variableColor.iterative, isActive: player.isPlaying && !reduceMotion)
-            .foregroundStyle(Theme.onAccent)
-            .padding(6)
-            .background(Theme.accent, in: .circle)
-            // Glow on the station's dark artwork in light mode too: the
-            // art's room is always dark, and Copper would sink into it.
-            .environment(\.colorScheme, .dark)
-            .accessibilityHidden(true)
+/// What kind of station it is, as a fact under a station's name on its
+/// page: "Artist station", "Your Station" says what it is by its name.
+enum StationText {
+    static func kind(_ station: Station) -> String {
+        switch station.seed {
+        case .track: String(localized: "Song station")
+        case .artist: String(localized: "Artist station")
+        case .album: String(localized: "Album station")
+        case .genre: String(localized: "Genre station")
+        case .decade: String(localized: "Decade station")
+        case .collection: String(localized: "Playlist station")
+        case .personal: String(localized: "From your listening")
+        case .discovery: String(localized: "New to you")
+        case .favorites: String(localized: "From your favorites")
+        }
     }
 }
 
@@ -145,7 +144,7 @@ struct StationOnAirBadge: View {
 /// 2026: "Als je nu klikt op een tegel van radio begint er meteen van alles
 /// te spelen ipv dat je kan zien wat je van de playlist gemaakt hebt." A
 /// long press plays it at once. The one on the air opens its page too,
-/// which then shows what plays and what comes next.
+/// which then shows what plays and what comes next; its art is the one lit.
 struct StationTileLink: View {
     let station: Station
 
@@ -160,12 +159,6 @@ struct StationTileLink: View {
         let onAir = radio.stationOnAir(player: player)?.seed == station.seed
         NavigationLink(value: Route.station(station)) {
             StationCard(station: station)
-                .overlay(alignment: .topTrailing) {
-                    if onAir {
-                        StationOnAirBadge()
-                            .padding(Theme.Space.s)
-                    }
-                }
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -229,7 +222,7 @@ struct HomePlaceholderShelf: View {
     var body: some View {
         Shelf(items: Self.items, width: width) { _ in
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                RoundedRectangle(cornerRadius: Theme.Radius.card)
+                RoundedRectangle(cornerRadius: Theme.Radius.artwork)
                     .fill(.quaternary)
                     .aspectRatio(1, contentMode: .fit)
                 Text("Daily Mix 1")
@@ -309,10 +302,6 @@ struct HomeMixMenu: View {
 struct HomeAlbumLink: View {
     let album: Album
 
-    @Environment(AudioPlayer.self) private var player
-    @Environment(RadioController.self) private var radio
-    @Environment(LibraryStore.self) private var library
-
     init(album: Album) {
         self.album = album
     }
@@ -323,17 +312,35 @@ struct HomeAlbumLink: View {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            Section {
-                Button("Play", systemImage: "play.fill") {
-                    play(shuffled: false)
-                }
-                Button("Shuffle", systemImage: "shuffle") {
-                    play(shuffled: true)
-                }
-                Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                    Stats.track(.stationStarted, ["seed": "album", "from": "menu"])
-                    radio.start(.album(album.id))
-                }
+            HomeAlbumMenu(album: album)
+        }
+    }
+}
+
+/// An album's long press, on a shelf's tile and on Played lately's row:
+/// play it, shuffle it, or start its station.
+struct HomeAlbumMenu: View {
+    let album: Album
+
+    @Environment(AudioPlayer.self) private var player
+    @Environment(RadioController.self) private var radio
+    @Environment(LibraryStore.self) private var library
+
+    init(album: Album) {
+        self.album = album
+    }
+
+    var body: some View {
+        Section {
+            Button("Play", systemImage: "play.fill") {
+                play(shuffled: false)
+            }
+            Button("Shuffle", systemImage: "shuffle") {
+                play(shuffled: true)
+            }
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "album", "from": "menu"])
+                radio.start(.album(album.id))
             }
         }
     }

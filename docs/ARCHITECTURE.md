@@ -6,9 +6,10 @@ playlists the app makes up itself on Home and a radio that plays on from
 anything. Asked for on 8 November 2026: "op de homepage wil ik dat de app zelf
 leuke playlists verzint en of een goede radio functie heeft — ik vind vooral
 de radiofunctie echt belangrijk". Design: Apple's HIG and native controls,
-with a brand of its own, the Arch (`docs/BRAND.md`): two tubes of light and
-a core, Copper and Glow, Cabinet — a sibling of Numa in restraint, no
-longer in its shapes.
+with a brand of its own, the Arch (`docs/BRAND.md`): two bands and a core,
+Copper and Glow, Cabinet — a sibling of Numa in restraint, no longer in its
+shapes — drawn by the rules of `docs/design/tells.md` ("less AI": light
+means on air, flat grounds, titles in New York, facts not slogans).
 
 ## Layout
 
@@ -19,7 +20,7 @@ longer in its shapes.
 | `project.yml` | XcodeGen. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
 | `ci/` | What `.github/workflows/ci.yml` runs. The workflow file itself is generic, because the Claude session may not push workflow files. |
 | `dev/` | The test server, the made-up library, the kit tests, the icon (`make-icon.py`) and the brand's drawings (`brand/`). |
-| `docs/` | This, `RADIO.md` (how the radio chooses), `BRAND.md` (the Arch, its rules and colours), `STATS.md` (the anonymous usage counts), `brand/` (the boards). |
+| `docs/` | This, `RADIO.md` (how the radio chooses), `BRAND.md` (the Arch, its rules and colours), `STATS.md` (the anonymous usage counts), `brand/` (the boards), `design/` (sketch D and its rules, `tells.md`: the reference for every screen). |
 
 ## Rules for every part
 
@@ -37,15 +38,20 @@ longer in its shapes.
   the minimum: use its APIs plainly (Tab, `tabViewBottomAccessory`,
   `glassEffect` only where Apple's own apps use glass). No UIKit unless SwiftUI
   has nothing (MPVolumeView, AVRoutePickerView).
-- **The Arch, from `Theme.swift` and `docs/BRAND.md`.** `Theme.accent`
-  (Copper #A84A17 by day, Glow #FFB54D by night) is the one accent, with
-  `Theme.onAccent` on it; one filled button per screen
-  (`.buttonStyle(.prominent)`), others `.secondary`; `Eyebrow` for small grey
-  spaced labels; `SectionHeader` for shelves; `ArchMark` for the mark and
-  `StationArtwork` for a station — the arch only ever means a station, and
-  only the radio is drawn lit ("lit means endless"); mixes, albums and
-  playlists stay square. `Theme.Arch` has Cabinet and the art's colours.
-  Spaces and radii from `Theme`.
+- **The Arch, from `Theme.swift`, `docs/BRAND.md` and `docs/design/tells.md`.**
+  `Theme.accent` (Copper #A84A17 by day, Glow #FFB54D by night) is the one
+  accent, with `Theme.onAccent` on it; one filled button per screen
+  (`.buttonStyle(.prominent)`, a plain rectangle), every other action a
+  word in the accent (`.secondary`) or a plain SF Symbol; titles in New
+  York (`Font.serif(_:)`, and the bars' through `Theme.styleNavigationBars`);
+  `SectionHeader` (a serif heading, a fact, See All) for a page's sections
+  and `ListHeading` in a list; `Eyebrow` only for the one small label a
+  screen may have ("On air"); `Hairline` between things instead of cards;
+  `Theme.ground` under the main screens; one radius, `Theme.Radius.artwork`
+  (6 pt). `ArchMark` for the mark and `StationArtwork` for a station — the
+  arch only ever means a station, and only the station on the air is lit
+  ("light means on air"); mixes, albums and playlists stay square.
+  `RelativeDay` writes the facts ("Played Thursday", "Made at 06:00").
 - **Comments say why**, in plain words; where the photographer decided
   something, quote them. Measurements rather than claims.
 - **English UI**, as Numa's. Strings as literals (`Text("Albums")`); the
@@ -67,7 +73,7 @@ longer in its shapes.
 | Kit: lyrics | `Lyrics/*` — LRCParser, LyricsQuery, LRCLIBClient, LyricsCache — and their tests |
 | App: library | `Jukebox/Library/*` — LibraryStore and every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift` — AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
-| App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, QueueView, LyricsView, AirPlay and volume |
+| App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, Turntable (the record player in the cover's place), QueueView, LyricsView, AirPlay and volume |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController — MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*` — OnboardingView (sign in, Quick Connect), SettingsView, SearchView |
 
@@ -83,7 +89,14 @@ must exist with exactly this initializer:
   `AddToPlaylistSheet(tracks: [Track])`.
 - Now playing: `MiniPlayer()` (inside `tabViewBottomAccessory`; reads
   `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
-  expanded), `NowPlayingView()` (in a fullScreenCover).
+  expanded), `NowPlayingView()` (in a fullScreenCover). In the cover's place
+  `Turntable(artwork:isPlaying:)` (`NowPlaying/Turntable.swift`): the cover as
+  a picture disc on a drawn deck, tipped back, its arm following the song.
+  The disc is drawn once (`drawingGroup`) and only its rotation changes, at
+  most 30 frames a second, and only while Now Playing shows it, the music
+  plays, the app is active, and neither Reduce Motion, Low Power Mode nor
+  Settings' Spin the Record (`AppSettings.spinRecord`) says otherwise; at
+  rest its timeline is paused. `docs/BRAND.md` says why each.
 - Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
   `StationDetailView(station: Station)` (`Route.station(station)`): a
   station's page, what it would play before it plays. Every tile and card of

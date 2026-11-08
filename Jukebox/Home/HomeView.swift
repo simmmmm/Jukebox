@@ -1,11 +1,18 @@
 // Home: the two things the photographer asked for most, first — "op de
 // homepage wil ik dat de app zelf leuke playlists verzint en of een goede
 // radio functie heeft" (8 November 2026). Their own station on top, one tap
-// from playing; the mixes Jukebox made up today; stations to start; then, as
-// Feishin's Home and Music's have them ("Ik vind feishin een fijne desktop
-// app op Linux voor context"), what they chose to play lately, what they
-// play most, albums to explore today, and what is new. Explore needs no
-// history, so Home is full on day one too.
+// from playing; the mixes Jukebox made up today; then, as Feishin's Home and
+// Music's have them ("Ik vind feishin een fijne desktop app op Linux voor
+// context"), what they played lately and when, what they play most, albums
+// to explore today, and what is new. Explore needs no history, so Home is
+// full on day one too.
+//
+// Sketch D (docs/design/home-after.png), approved the same day — "Ja nice
+// dit, maak dit maar dan refinen we later wel": the title in the serif, by
+// the hour ("Tonight"); Your Station as a flat arch beside its name, one
+// fact and the one Play, on the ground rather than on a card; the mixes'
+// collages peeking off the right edge with their artists under them;
+// Played lately as a list on hairlines, each with when it played.
 
 import JukeboxKit
 import SwiftUI
@@ -33,15 +40,12 @@ struct HomeView: View {
                 HomeFeed()
             }
         }
-        .navigationTitle("Home")
+        .background(Theme.ground)
+        // What part of the day it is, in the serif (Theme.styleNavigationBars):
+        // sketch D's "Tonight" in the evening. The tab is still Home.
+        .navigationTitle(RelativeDay.partOfDay())
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                // The mark only, not a button: whose app this is, as a
-                // signature, lit.
-                ArchMark(size: 16)
-            }
-            .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     isShowingSettings = true
@@ -76,13 +80,13 @@ private struct HomeFeed: View {
 
     var body: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Space.xxl) {
+            VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 HomeOfflineNotice()
                 HomeStationHero()
                     .padding(.horizontal, Theme.margin)
+                Hairline()
                 HomeMixesSection()
-                HomeStationsSection()
-                HomeRecentlyPlayedSection()
+                HomePlayedLatelySection()
                 HomeMostPlayedSection()
                 HomeExploreSection()
                 HomeRecentlyAddedSection()
@@ -97,12 +101,16 @@ private struct HomeFeed: View {
     }
 }
 
-private enum HomeLayout {
-    /// The widest the cards on top get: on the iPad, and an iPhone on its
-    /// side, a card across the whole screen leaves the artwork half a
-    /// screen from its words. At 560 the words keep about 400 points beside
-    /// it, room for "Endless music from everything you love" on one line.
-    static let cardWidth: CGFloat = 560
+enum HomeLayout {
+    /// The widest Your Station gets: on the iPad, and an iPhone on its side,
+    /// the art and its words across the whole screen would leave the Play
+    /// half a screen from the name.
+    static let heroWidth: CGFloat = 560
+    /// Your Station's arch, beside its name.
+    static let heroArt: CGFloat = 132
+    /// A shelf's tile: two and a part of the third on an iPhone, so the
+    /// shelf is seen to go on.
+    static let tileWidth: CGFloat = 136
 }
 
 // MARK: - The server out of reach
@@ -115,7 +123,7 @@ private struct HomeOfflineNotice: View {
 
     var body: some View {
         if isFailed {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Label {
                     Text("Can’t reach \(serverName). Showing your library from last time.")
                         .foregroundStyle(.primary)
@@ -129,12 +137,8 @@ private struct HomeOfflineNotice: View {
                     Task { await library.refresh() }
                 }
                 .buttonStyle(.secondary)
-                .fixedSize()
             }
-            .padding(Theme.Space.l)
-            .frame(maxWidth: HomeLayout.cardWidth, alignment: .leading)
-            // The system's grouped-card grey, as the Radio tab's card on the air.
-            .background(Color(uiColor: .secondarySystemBackground), in: .rect(cornerRadius: Theme.Radius.card))
+            .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
             .accessibilityElement(children: .contain)
             .padding(.horizontal, Theme.margin)
         }
@@ -155,46 +159,44 @@ private struct HomeOfflineNotice: View {
 
 // MARK: - Your Station
 
-/// The card on top: the listener's own station on Cabinet, its window with
-/// the core lit (lit means endless: the radio), and the screen's one filled
-/// button, which plays it at once. A tap elsewhere on the card opens Your
-/// Station's page, to see what it would play first, as every station's
-/// tile does. While a station plays it shows that station instead, and a
-/// tap opens Now Playing.
-private struct HomeStationHero: View {
+/// Your Station on top, on the page's ground: its arch beside its name in
+/// the serif, one fact — when it last played — and the screen's one filled
+/// button, which plays it at once. Flat, as every station is that is not on
+/// the air. A tap elsewhere opens Your Station's page, to see what it would
+/// play first, as every station's tile does. While a station plays it shows
+/// that station instead, lit, under the one small label, "On air", with
+/// the song; a tap then opens Now Playing. The Radio tab shows it too, while
+/// nothing is on the air.
+struct HomeStationHero: View {
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
     @Environment(MixStore.self) private var mixes
+    @Environment(HistoryStore.self) private var history
     @Environment(Navigator.self) private var navigator
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    init() {}
+
     var body: some View {
         let onAir = radio.stationOnAir(player: player)
-        // Side by side as a wide card; the art above the words at the
-        // largest text sizes, where side by side leaves the words no room.
+        let shown = onAir ?? yourStation
+        // Side by side; the art above the words at the largest text sizes,
+        // where side by side leaves the words no room.
         let isStacked = dynamicTypeSize.isAccessibilitySize
         let layout = isStacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Space.l))
-            : AnyLayout(HStackLayout(alignment: .center, spacing: Theme.Space.l))
-        // 104: on a 375-point iPhone the words keep about 175 points.
-        let art = StationArtwork(station: onAir ?? yourStation, size: 104, cornerRadius: Theme.Radius.artwork)
+            : AnyLayout(HStackLayout(alignment: .top, spacing: Theme.Space.l))
         layout {
-            if isStacked { art }
+            StationArtwork(station: shown, size: HomeLayout.heroArt)
             words(onAir)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            if !isStacked { art }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         }
-        .padding(Theme.margin)
-        // About 16:9 on an iPhone; taller when the text is larger; no wider
-        // than HomeLayout.cardWidth on the iPad.
-        .frame(maxWidth: HomeLayout.cardWidth, minHeight: 196, alignment: .leading)
-        .background(Theme.Arch.cabinet, in: .rect(cornerRadius: Theme.Radius.card))
-        .overlay {
-            RoundedRectangle(cornerRadius: Theme.Radius.card)
-                .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
-        }
-        .contentShape(.rect(cornerRadius: Theme.Radius.card))
+        // As tall as the art, so the name starts at its top and Play ends
+        // at its foot; taller when the words need it.
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+        .contentShape(.rect)
         .onTapGesture {
             if onAir != nil {
                 navigator.isNowPlayingPresented = true
@@ -204,11 +206,8 @@ private struct HomeStationHero: View {
         }
         // Play now, or its page: on a long press as on every station's tile.
         .contextMenu {
-            StationMenu(station: onAir ?? yourStation)
+            StationMenu(station: shown)
         }
-        // Always Cabinet, the dark the light stands in: its words light and
-        // its accent Glow here in light mode too.
-        .environment(\.colorScheme, .dark)
         .animation(reduceMotion ? nil : .default, value: onAir?.id)
         .accessibilityElement(children: .contain)
     }
@@ -227,9 +226,9 @@ private struct HomeStationHero: View {
     private func words(_ onAir: Station?) -> some View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             if let onAir {
-                Eyebrow("Now Playing")
+                Eyebrow("On air")
                 Text(onAir.title)
-                    .font(.title2.bold())
+                    .font(.serif(.title2))
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                 Group {
@@ -237,25 +236,22 @@ private struct HomeStationHero: View {
                         Text("Choosing the first songs…")
                     } else if let track = player.currentTrack {
                         Text("\(track.name) · \(track.artistLine)")
-                    } else {
-                        Text("Endless music from everything you love")
                     }
                 }
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
             } else {
-                Eyebrow("Radio")
                 Text("Your Station")
-                    .font(.title2.bold())
+                    .font(.serif(.title2))
                     .foregroundStyle(.primary)
-                Text("Endless music from everything you love")
+                // A fact, not a slogan: when it last played on this device.
+                Text(RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
-                    .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: Theme.Space.m)
             playButton(onAir)
-                .padding(.top, Theme.Space.m)
         }
     }
 
@@ -277,17 +273,17 @@ private struct HomeStationHero: View {
                         .tint(Theme.onAccent)
                         .accessibilityLabel("Starting")
                 } else if onAir != nil && player.isPlaying {
-                    Label("Pause", systemImage: "pause.fill")
+                    Text("Pause")
                 } else {
-                    Label("Play", systemImage: "play.fill")
+                    Text("Play")
                 }
             }
-            .frame(minWidth: 88)
+            .frame(minWidth: 64)
         }
         .buttonStyle(.prominent)
         .fixedSize()
         .accessibilityHint(onAir == nil ? Text("Starts Your Station") : Text(verbatim: ""))
-        // The card around it opens the station's page on a tap (while
+        // The words around it open the station's page on a tap (while
         // nothing plays) or a long press; VoiceOver gives a container
         // neither, so the page is offered here, as the long press offers it.
         .accessibilityAction(named: Text("Show Station")) {
@@ -296,7 +292,7 @@ private struct HomeStationHero: View {
     }
 }
 
-// MARK: - Shelves
+// MARK: - Mixes
 
 private struct HomeMixesSection: View {
     @Environment(MixStore.self) private var mixes
@@ -304,67 +300,160 @@ private struct HomeMixesSection: View {
     var body: some View {
         if !mixes.mixes.isEmpty {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Made for You", eyebrow: "Mixes")
-                Shelf(items: mixes.mixes, width: 170) { mix in
+                SectionHeader("Mixes", fact: madeAt)
+                Shelf(items: mixes.mixes, width: HomeLayout.tileWidth) { mix in
                     HomeMixLink(mix: mix)
                 }
             }
         } else if isMaking {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Made for You", eyebrow: "Mixes")
-                HomePlaceholderShelf(kind: .mix, width: 170)
+                SectionHeader("Mixes")
+                HomePlaceholderShelf(kind: .mix, width: HomeLayout.tileWidth)
             }
         }
     }
 
     /// Being made, or about to be (Home's task has not started it yet).
     private var isMaking: Bool { mixes.isBuilding || mixes.builtAt == nil }
+
+    /// "Made at 06:00": when today's mixes were made, a fact in the place
+    /// of "Made for You".
+    private var madeAt: String? {
+        guard let builtAt = mixes.builtAt else { return nil }
+        let time = builtAt.formatted(date: .omitted, time: .shortened)
+        return String(localized: "Made at \(time)")
+    }
 }
 
-private struct HomeStationsSection: View {
-    @Environment(MixStore.self) private var mixes
+// MARK: - Played lately
 
-    var body: some View {
-        // Your Station is the card on top; the shelf has the others.
-        let stations = mixes.stations.filter { $0.seed != .personal }
-        if !stations.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Stations for You")
-                Shelf(items: stations, width: 150) { station in
-                    StationTileLink(station: station)
-                }
-            }
-        } else if mixes.isBuilding || mixes.builtAt == nil {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Stations for You")
-                HomePlaceholderShelf(kind: .station, width: 150)
-            }
+/// One thing played lately: an album the listener chose, or a station.
+private struct HomePlayedItem: Identifiable {
+    enum Kind {
+        case album(Album)
+        case station(Station)
+    }
+
+    let kind: Kind
+    let date: Date
+
+    var id: String {
+        switch kind {
+        case let .album(album): "album-\(album.id)"
+        case let .station(station): "station-\(station.id)"
         }
     }
 }
 
-/// What the listener chose to play, from this device's history: a station's
-/// songs are not in it, so a night of radio does not fill it
-/// (HomeShelves.recentlyPlayed).
-private struct HomeRecentlyPlayedSection: View {
+/// What the listener played lately, newest first, each with when: the
+/// albums they chose (HomeShelves.recentlyPlayedDated: not a station's
+/// songs) and the stations they listened to, as one list on hairlines.
+private struct HomePlayedLatelySection: View {
     @Environment(LibraryStore.self) private var library
     @Environment(HistoryStore.self) private var history
+    @Environment(RadioController.self) private var radio
+
+    private static let limit = 6
 
     var body: some View {
-        let albums = HomeShelves.recentlyPlayed(events: history.history.events, tracks: library.tracks,
-                                                albums: library.albums,
-                                                track: { library.track(id: $0) },
-                                                album: { library.album(id: $0) })
-        if !albums.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Recently Played")
-                Shelf(items: albums, width: 150) { album in
-                    HomeAlbumLink(album: album)
+        let items = played
+        if !items.isEmpty {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                SectionHeader("Played lately")
+                VStack(spacing: 0) {
+                    ForEach(items) { item in
+                        HomePlayedRow(item: item)
+                    }
                 }
             }
         }
     }
+
+    private var played: [HomePlayedItem] {
+        let events = history.history.events
+        let albums = HomeShelves.recentlyPlayedDated(events: events, tracks: library.tracks,
+                                                     albums: library.albums,
+                                                     track: { library.track(id: $0) },
+                                                     album: { library.album(id: $0) },
+                                                     limit: Self.limit)
+        var items = albums.map { HomePlayedItem(kind: .album($0.album), date: $0.date) }
+        // A station is in the list once it has played a song here (the
+        // history knows its songs by the station's id).
+        let dates = HomeShelves.stationDates(events: events)
+        for station in radio.recentStations {
+            if let date = dates[station.id] {
+                items.append(HomePlayedItem(kind: .station(station), date: date))
+            }
+        }
+        items.sort { $0.date > $1.date }
+        return Array(items.prefix(Self.limit))
+    }
 }
+
+/// A row of Played lately: the cover or the station's arch, the name, what
+/// it is, and when, with a hairline under it from the words to the edge.
+/// It opens the album or the station's page; a long press plays it.
+private struct HomePlayedRow: View {
+    let item: HomePlayedItem
+
+    var body: some View {
+        switch item.kind {
+        case let .album(album):
+            NavigationLink(value: Route.album(album)) {
+                row(title: album.name, detail: album.artistLine) {
+                    ArtworkView(album.artwork, size: Self.artSide)
+                }
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                HomeAlbumMenu(album: album)
+            }
+        case let .station(station):
+            NavigationLink(value: Route.station(station)) {
+                row(title: station.title, detail: String(localized: "Station")) {
+                    StationArtwork(station: station, size: Self.artSide)
+                }
+            }
+            .buttonStyle(.plain)
+            .contextMenu {
+                StationMenu(station: station)
+            }
+        }
+    }
+
+    private static let artSide: CGFloat = 48
+
+    private func row<Art: View>(title: String, detail: String, @ViewBuilder art: () -> Art) -> some View {
+        HStack(spacing: Theme.Space.m) {
+            art()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                if !detail.isEmpty {
+                    Text(detail)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                }
+            }
+            Spacer(minLength: Theme.Space.s)
+            Text(RelativeDay.standalone(item.date))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.vertical, Theme.Space.s)
+        .padding(.trailing, Theme.margin)
+        .overlay(alignment: .bottom) {
+            Hairline(inset: Self.artSide + Theme.Space.m)
+        }
+        .padding(.leading, Theme.margin)
+        .contentShape(.rect)
+        .accessibilityElement(children: .combine)
+    }
+}
+
+// MARK: - Albums
 
 /// The albums played most, by the plays of their songs on every device.
 private struct HomeMostPlayedSection: View {
@@ -374,8 +463,8 @@ private struct HomeMostPlayedSection: View {
         let albums = HomeShelves.mostPlayed(tracks: library.tracks, album: { library.album(id: $0) })
         if !albums.isEmpty {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Most Played")
-                Shelf(items: albums, width: 150) { album in
+                SectionHeader("Most played")
+                Shelf(items: albums, width: HomeLayout.tileWidth) { album in
                     HomeAlbumLink(album: album)
                 }
             }
@@ -398,7 +487,7 @@ private struct HomeExploreSection: View {
         if !albums.isEmpty {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 SectionHeader("Explore")
-                Shelf(items: albums, width: 150) { album in
+                Shelf(items: albums, width: HomeLayout.tileWidth) { album in
                     HomeAlbumLink(album: album)
                 }
             }
@@ -413,8 +502,8 @@ private struct HomeRecentlyAddedSection: View {
         let albums = Array(library.recentlyAddedAlbums.prefix(20))
         if !albums.isEmpty {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Recently Added", route: .recentlyAdded)
-                Shelf(items: albums, width: 150) { album in
+                SectionHeader("Recently added", route: .recentlyAdded)
+                Shelf(items: albums, width: HomeLayout.tileWidth) { album in
                     HomeAlbumLink(album: album)
                 }
             }

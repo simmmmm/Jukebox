@@ -85,7 +85,7 @@ struct AlbumDetailView: View {
                             row(track, in: tracks, album: shown)
                         }
                     } header: {
-                        Eyebrow("Disc \(disc.number)")
+                        ListHeading("Disc \(disc.number)")
                     }
                 }
             } else {
@@ -128,10 +128,9 @@ struct AlbumDetailView: View {
     private func header(_ shown: Album, tracks: [Track]) -> some View {
         VStack(spacing: Theme.Space.s) {
             ArtworkView(shown.artwork, size: 260)
-                .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
                 .padding(.bottom, Theme.Space.m)
             Text(shown.name)
-                .font(.title2.bold())
+                .font(.serif(.title))
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
             if !shown.artistLine.isEmpty {

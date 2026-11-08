@@ -1,6 +1,7 @@
 // The mini player: what plays, in iOS 26's bottom accessory above the tab
-// bar, as Music has it — the cover, the title (and the artist while the tab
-// bar is full width), play or pause, and next. A tap anywhere else opens
+// bar, as Music has it — the cover, the title (and under it the artist, or
+// the station after its mark, while the tab bar is full width), play or
+// pause, and next. A tap anywhere else opens
 // Now Playing. When the tab bar is minimised (scrolling down) the accessory
 // sits inline beside it and is narrow: the title and play or pause only.
 //
@@ -72,9 +73,9 @@ struct MiniPlayer: View {
 
     @ViewBuilder private var cover: some View {
         if player.currentTrack == nil, let station = startingStation {
-            StationArtwork(station: station, size: 34, cornerRadius: Theme.Radius.thumbnail)
+            StationArtwork(station: station, size: 34, cornerRadius: Theme.Radius.artwork)
         } else {
-            ArtworkView(player.currentTrack?.artwork, size: 34, cornerRadius: Theme.Radius.thumbnail)
+            ArtworkView(player.currentTrack?.artwork, size: 34, cornerRadius: Theme.Radius.artwork)
         }
     }
 
@@ -83,12 +84,11 @@ struct MiniPlayer: View {
             if let track = player.currentTrack {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: Theme.Space.xs) {
-                        if isStation {
-                            // A station plays: the mark, small, in the
-                            // accent, so the listener knows it is the radio
-                            // and that skips and thumbs teach it.
-                            ArchMark(size: 11, style: .template)
-                                .foregroundStyle(Theme.accent)
+                        if isStation && isInline {
+                            // Beside the minimised tab bar there is no
+                            // second line: the mark before the title says
+                            // it is the radio.
+                            stationMark
                         }
                         Text(track.name)
                             .font(.subheadline.weight(.semibold))
@@ -96,6 +96,17 @@ struct MiniPlayer: View {
                     }
                     if let shownError {
                         errorLine(shownError)
+                    } else if let station = player.context?.station, !isInline {
+                        // A station plays: its mark in the accent and its
+                        // name, as sketch D has it, so the listener knows
+                        // it is the radio and that skips and thumbs teach it.
+                        HStack(spacing: Theme.Space.xs) {
+                            stationMark
+                            Text(station.title)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
                     } else if showsArtist {
                         Text(track.artistLine)
                             .font(.caption)
@@ -135,6 +146,12 @@ struct MiniPlayer: View {
         }
         // The error comes and goes, after five seconds, as a crossfade.
         .animation(.easeInOut(duration: 0.25), value: shownError)
+    }
+
+    /// The mark, small, flat, in the accent: the arch means a station.
+    private var stationMark: some View {
+        ArchMark(size: 11, style: .template)
+            .foregroundStyle(Theme.accent)
     }
 
     /// The error in the artist's place: as quiet as the artist, with the
@@ -220,6 +237,9 @@ struct MiniPlayer: View {
         // What the eyes read on the second line, the ears hear second.
         if let error = player.errorMessage {
             return "\(track.name), \(error)"
+        }
+        if let station = player.context?.station {
+            return "\(track.name), \(station.title)"
         }
         let artist = track.artistLine
         return artist.isEmpty ? track.name : "\(track.name), \(artist)"

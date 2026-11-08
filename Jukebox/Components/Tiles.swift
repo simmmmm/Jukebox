@@ -1,6 +1,6 @@
 // The tiles of a shelf or a grid: an album, a playlist, a mix, a station,
-// an artist. A cover as wide as offered, one or two lines under it, as Music
-// draws them; each a NavigationLink or a button where it is used.
+// an artist. A cover as wide as offered, its corners the one radius, one or
+// two lines under it; each a NavigationLink or a button where it is used.
 
 import JukeboxKit
 import SwiftUI
@@ -61,35 +61,21 @@ struct PlaylistTile: View {
     }
 }
 
-/// A made-up playlist: its collage with the title set on it, Music's daily
-/// mixes' way, and its subtitle under it. Square, and no light of the
-/// arch's: a mix ends, and lit means endless (docs/BRAND.md).
+/// A made-up playlist: its collage, square, and under it its title and its
+/// artists — the names under the art, not on a scrim over it (tells.md, 5:
+/// a mix's artists are its fact). No light of the arch's: a mix ends, and
+/// the arch means a station (docs/BRAND.md).
 struct MixCard: View {
     let mix: Mix
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            CollageArtwork(artworks: mix.artwork, cornerRadius: Theme.Radius.card)
-                .overlay(alignment: .bottomLeading) {
-                    ZStack(alignment: .bottomLeading) {
-                        // A scrim from the bottom, black to clear, so white
-                        // words read over a white cover too: over white, 3.7:1
-                        // where a two-line title starts (large text asks
-                        // 3:1), 5.9:1 behind a one-line title, more below.
-                        LinearGradient(stops: [
-                            .init(color: .black.opacity(0), location: 0.3),
-                            .init(color: .black.opacity(0.4), location: 0.55),
-                            .init(color: .black.opacity(0.8), location: 1),
-                        ], startPoint: .top, endPoint: .bottom)
-                        Text(mix.title)
-                            .font(.title3.weight(.bold))
-                            .foregroundStyle(.white)
-                            .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
-                            .lineLimit(2)
-                            .padding(Theme.Space.m)
-                    }
-                    .clipShape(.rect(cornerRadius: Theme.Radius.card))
-                }
+            CollageArtwork(artworks: mix.artwork)
+                .padding(.bottom, 2)
+            Text(mix.title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.primary)
+                .lineLimit(1)
             Text(mix.subtitle)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -100,24 +86,21 @@ struct MixCard: View {
     }
 }
 
-/// A station: its arch, lit, over its seed's music; its name under it as
-/// real text, which follows the reader's text size.
+/// A station: its arch over its seed's music, flat unless it is on the air;
+/// its name under it as real text, which follows the reader's text size.
+/// No subtitle: "Radiohead and artists like them" only repeats "Radiohead
+/// Radio" (tells.md, 5).
 struct StationCard: View {
     let station: Station
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            StationArtwork(station: station, cornerRadius: Theme.Radius.card)
+            StationArtwork(station: station)
+                .padding(.bottom, 2)
             Text(station.title)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.primary)
                 .lineLimit(1)
-            if let subtitle = station.subtitle {
-                Text(subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-            }
         }
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
@@ -141,7 +124,8 @@ struct ArtistTile: View {
 }
 
 /// A shelf that scrolls sideways, its tiles `width` wide, snapping to them,
-/// starting at the page's margin.
+/// starting at the page's margin and running off the right edge, so the
+/// next tile peeks in (tells.md, 8).
 struct Shelf<Item: Identifiable, Tile: View>: View {
     let items: [Item]
     var width: CGFloat = 160

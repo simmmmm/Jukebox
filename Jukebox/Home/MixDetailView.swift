@@ -1,7 +1,8 @@
-// A mix Jukebox made up, as Music shows a playlist: its collage with the
-// title set on it, what it is, Play and Shuffle, a station that plays on
-// from it, and its songs. Saved as a playlist it stays on the server after
-// today's mixes have made way for tomorrow's.
+// A mix Jukebox made up, as Music shows a playlist: its collage, its title
+// in the serif under it (not on a scrim over it), its artists and length,
+// Play and Shuffle, a station that plays on from it, and its songs. Saved as
+// a playlist it stays on the server after today's mixes have made way for
+// tomorrow's.
 
 import JukeboxKit
 import SwiftUI
@@ -31,6 +32,7 @@ struct MixDetailView: View {
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
                                           bottom: Theme.Space.l, trailing: Theme.margin))
                 .listRowSeparator(.hidden)
+                .listRowBackground(Color.clear)
 
             ForEach(Array(mix.tracks.enumerated()), id: \.offset) { index, track in
                 Button {
@@ -40,8 +42,10 @@ struct MixDetailView: View {
                 }
                 .buttonStyle(.plain)
             }
+            .listRowBackground(Color.clear)
         }
         .listStyle(.plain)
+        .pageGround()
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? mix.title : "")
@@ -105,25 +109,14 @@ struct MixDetailView: View {
 
     private var header: some View {
         VStack(spacing: Theme.Space.s) {
-            CollageArtwork(artworks: mix.artwork, size: 240, cornerRadius: Theme.Radius.card)
-                .overlay(alignment: .bottomLeading) {
-                    // The title on the collage, as the mix's card on Home has it.
-                    ZStack(alignment: .bottomLeading) {
-                        LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .center, endPoint: .bottom)
-                        Text(mix.title)
-                            .font(.title.bold())
-                            .foregroundStyle(.white)
-                            .lineLimit(2)
-                            .minimumScaleFactor(0.7)
-                            .padding(Theme.Space.l)
-                            .accessibilityAddTraits(.isHeader)
-                    }
-                    .clipShape(.rect(cornerRadius: Theme.Radius.card))
-                }
-                .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
+            CollageArtwork(artworks: mix.artwork, size: 240)
                 .padding(.bottom, Theme.Space.m)
+            Text(mix.title)
+                .font(.serif(.title))
+                .multilineTextAlignment(.center)
+                .accessibilityAddTraits(.isHeader)
             Text(mix.subtitle)
-                .font(.title3)
+                .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             Text(HomeText.summary(count: mix.tracks.count, duration: mix.duration))
@@ -137,7 +130,7 @@ struct MixDetailView: View {
                 Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
                 radio.start(mix.stationSeed)
             } label: {
-                Label("Start Radio", systemImage: "dot.radiowaves.left.and.right")
+                Text("Start Radio")
             }
             .buttonStyle(.secondary)
             .accessibilityHint("Plays on from this mix, for as long as you listen")

@@ -1,17 +1,17 @@
-// Jukebox's mark, the Arch (docs/BRAND.md): two tubes of light and a core,
-// concentric — a jukebox cabinet's arch lit from inside, and nothing more of
-// a real cabinet (no bubble tubes, no chrome). The photographer, 8 November
-// 2026, of the four directions drawn: "Die arch is leuk."
+// Jukebox's mark, the Arch (docs/BRAND.md): two bands and a core,
+// concentric — a jukebox cabinet's arch, and nothing more of a real cabinet
+// (no bubble tubes, no chrome). The photographer, 8 November 2026, of the
+// four directions drawn: "Die arch is leuk."
 //
 // The arch only ever means a station: the mark, a station's artwork
-// (StationArtwork.swift), the station's name in Now Playing. Lit means
-// endless: only the radio is drawn lit; finite things (mixes, albums,
-// playlists) stay square.
+// (StationArtwork.swift), the station's name in Now Playing and the mini
+// player. And light means on air (docs/design/tells.md, 1): the mark is
+// drawn flat — Copper outside, Glow inside, a flat core, no blur, no bloom.
+// Only a station's artwork, while that station is on the air, is lit.
 //
 // The geometry is dev/brand/geom.py's, number for number: change both
-// together. Drawn with Path so it can tint, template and animate — the
-// tubes warm up one by one on the welcome screen and breathe while a
-// station plays.
+// together. Drawn with Path so it can tint, template and fade — the bands
+// come on one by one on the welcome screen.
 
 import SwiftUI
 
@@ -149,69 +149,39 @@ nonisolated struct ArchWindow: Shape {
 
 /// The mark at `size` points square: 20 and below in the heavy cut.
 ///
-/// `.lit`: the tubes in the accent (Copper by day, Glow by night), the core
-/// as light, a soft bloom where it is dark around it — Home's toolbar, Now
-/// Playing's station. `.template`: every part in the foreground style, for a
-/// line of text or a glyph's place (the mini player's station).
-///
-/// `breathing`: the tubes dim and brighten one after the other, as a lit
-/// sign hums — while a station plays. Never under Reduce Motion.
+/// `.flat`: the outer band Copper, the inner Glow, the core a warm white by
+/// night and amber by day — the loading screen, the welcome's icon.
+/// `.template`: every part in the foreground style, for a line of text or a
+/// glyph's place (Now Playing's and the mini player's station, in the accent).
 struct ArchMark: View {
     enum Style {
-        case lit
+        case flat
         case template
     }
 
     let size: CGFloat
     let style: Style
-    let breathing: Bool
 
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
-    init(size: CGFloat, style: Style = .lit, breathing: Bool = false) {
+    init(size: CGFloat, style: Style = .flat) {
         self.size = size
         self.style = style
-        self.breathing = breathing
     }
 
     var body: some View {
-        Group {
-            if breathing && !reduceMotion {
-                PhaseAnimator(ArchBreath.allCases) { phase in
-                    ArchMarkFace(size: size, style: style, outer: phase.outer, inner: phase.inner)
-                } animation: { _ in
-                    .easeInOut(duration: 1.4)
-                }
-            } else {
-                ArchMarkFace(size: size, style: style)
-            }
-        }
-        .frame(width: size, height: size)
-        .accessibilityHidden(true)
+        ArchMarkFace(size: size, style: style)
+            .frame(width: size, height: size)
+            .accessibilityHidden(true)
     }
 }
 
-/// A breath: at rest, the outer tube low, then the inner — each one turn of
-/// the cycle, so one tube is always full while the other dims.
-nonisolated private enum ArchBreath: CaseIterable, Equatable, Sendable {
-    case rest
-    case outerLow
-    case innerLow
-
-    var outer: Double { self == .outerLow ? 0.5 : 1 }
-    var inner: Double { self == .innerLow ? 0.5 : 1 }
-}
-
-/// The mark drawn once, each part at its own level: 1 lit, 0 cold glass.
-/// What ArchMark draws at rest and through each breath.
+/// The mark drawn once, each part at its own level: 1 on, 0 cold glass.
+/// What ArchMark draws, and the welcome's icon as its bands come on.
 struct ArchMarkFace: View {
     let size: CGFloat
     let style: ArchMark.Style
     var outer: Double = 1
     var inner: Double = 1
     var core: Double = 1
-
-    @Environment(\.colorScheme) private var colorScheme
 
     init(size: CGFloat, style: ArchMark.Style, outer: Double = 1, inner: Double = 1, core: Double = 1) {
         self.size = size
@@ -225,131 +195,22 @@ struct ArchMarkFace: View {
         let cut = ArchCut.forSize(size)
         let line = StrokeStyle(lineWidth: cut.stroke * size / 32, lineCap: .round)
         ZStack {
-            part(ArchLine(tube: 0, cut: cut).stroke(tubeStyle, style: line), level: outer)
-            part(ArchLine(tube: 1, cut: cut).stroke(tubeStyle, style: line), level: inner)
-            part(ArchCore(cut: cut).fill(coreStyle), level: core)
+            ArchLine(tube: 0, cut: cut).stroke(paint(Theme.Arch.copper), style: line)
+                .opacity(level(outer))
+            ArchLine(tube: 1, cut: cut).stroke(paint(Theme.Arch.glow), style: line)
+                .opacity(level(inner))
+            ArchCore(cut: cut).fill(paint(Theme.Arch.markCore))
+                .opacity(level(core))
         }
         .frame(width: size, height: size)
     }
 
-    /// A part at its level, with its bloom when lit in the dark: a light
-    /// seen at night glows past its edges; by day it does not.
-    private func part<Part: View>(_ drawn: Part, level: Double) -> some View {
-        drawn
-            .background {
-                if style == .lit && colorScheme == .dark {
-                    drawn
-                        .blur(radius: size * 0.07)
-                        .opacity(0.6)
-                }
-            }
-            // Unlit, a tube is still there, as cold glass.
-            .opacity(0.16 + 0.84 * level)
+    /// Off, a part is still there, as cold glass.
+    private func level(_ value: Double) -> Double {
+        0.16 + 0.84 * value
     }
 
-    private var tubeStyle: AnyShapeStyle {
-        style == .lit ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(ForegroundStyle())
-    }
-
-    private var coreStyle: AnyShapeStyle {
-        style == .lit ? AnyShapeStyle(Theme.Arch.markCore) : AnyShapeStyle(ForegroundStyle())
-    }
-}
-
-// MARK: - The app icon, live
-
-/// The app icon drawn live (dev/brand/icon.py, which draws AppIcon.png):
-/// the mark lit on Cabinet, its tubes in the art's oranges with their halos
-/// and hot lines, the room it lights. Each part at its own level, 0 to 1,
-/// for the welcome's warm-up (ShellAppMark). `side`: the tile's.
-struct ArchAppIcon: View {
-    let side: CGFloat
-    var outer: Double = 1
-    var inner: Double = 1
-    var core: Double = 1
-
-    init(side: CGFloat, outer: Double = 1, inner: Double = 1, core: Double = 1) {
-        self.side = side
-        self.outer = outer
-        self.inner = inner
-        self.core = core
-    }
-
-    var body: some View {
-        // icon.py: the 32-unit box at 22.4 units to 1024, centred 12/1024
-        // below the middle; blurs in the icon's own pixels, scaled.
-        let k = side / 1024
-        let markSide = side * 32 * 22.4 / 1024
-        let cut = ArchCut.regular
-        let u = markSide / 32
-        let line = StrokeStyle(lineWidth: cut.stroke * u, lineCap: .round)
-        let outerLine = ArchLine(tube: 0, cut: cut)
-        let innerLine = ArchLine(tube: 1, cut: cut)
-        let coreShape = ArchCore(cut: cut)
-        ZStack {
-            RadialGradient(stops: [
-                .init(color: Color(rgb: 0x46190F), location: 0),
-                .init(color: Color(rgb: 0x260C08), location: 0.55),
-                .init(color: Color(rgb: 0x130605), location: 1),
-            ], center: UnitPoint(x: 0.5, y: 470 / 1024), startRadius: 0, endRadius: 760 * k)
-
-            ZStack {
-                // The room the arch lights: a wide haze round the outer
-                // tube, the floor under it, the light through the window.
-                outerLine
-                    .stroke(Theme.Arch.roomGlow, style: StrokeStyle(lineWidth: cut.stroke * 3 * u, lineCap: .round))
-                    .blur(radius: 60 * k)
-                    .opacity(0.3 * outer)
-                Ellipse()
-                    .fill(Theme.Arch.roomGlow)
-                    .frame(width: 600 * k, height: 52 * k)
-                    .offset(y: (cut.base - 16) * u + 6 * k)
-                    .blur(radius: 26 * k)
-                    .opacity(0.42 * outer)
-                ArchWindow()
-                    .fill(Theme.Arch.innerTube)
-                    .frame(width: cut.innerRadius * 2 * u, height: (cut.base - cut.spring + cut.innerRadius) * u)
-                    .offset(y: (cut.spring - cut.innerRadius + cut.base) / 2 * u - 16 * u)
-                    .blur(radius: 60 * k)
-                    .opacity(0.27 * inner)
-
-                tube(outerLine, line: line, top: Theme.Arch.outerTube, foot: Theme.Arch.outerTubeFoot,
-                     heart: Theme.Arch.outerTubeHeart, from: 2, level: outer, k: k)
-                tube(innerLine, line: line, top: Theme.Arch.innerTube, foot: Theme.Arch.innerTubeFoot,
-                     heart: Theme.Arch.innerTubeHeart, from: 8, level: inner, k: k)
-
-                ZStack {
-                    coreShape.fill(Theme.Arch.coreFoot).blur(radius: 26 * k).opacity(0.75)
-                    coreShape.fill(Theme.Arch.coreFoot).blur(radius: 9 * k).opacity(0.5)
-                    coreShape.fill(LinearGradient(colors: [Theme.Arch.coreTop, Theme.Arch.coreFoot],
-                                                  startPoint: UnitPoint(x: 0.5, y: (cut.spring - cut.coreRadius) / 32),
-                                                  endPoint: UnitPoint(x: 0.5, y: cut.base / 32)))
-                }
-                .opacity(0.1 + 0.9 * core)
-            }
-            .frame(width: markSide, height: markSide)
-            .offset(y: 12 * k)
-        }
-        .frame(width: side, height: side)
-        .clipShape(.rect(cornerRadius: side * 0.2237, style: .continuous))
-    }
-
-    /// A tube: its halos, its glass in a gradient from `top` to `foot`
-    /// (from `from` units down to the base), and the hot line inside it.
-    private func tube(_ shape: ArchLine, line: StrokeStyle, top: Color, foot: Color, heart: Color,
-                      from: CGFloat, level: Double, k: CGFloat) -> some View {
-        let wide = StrokeStyle(lineWidth: line.lineWidth * 1.6, lineCap: .round)
-        let thin = StrokeStyle(lineWidth: line.lineWidth * 0.34, lineCap: .round)
-        return ZStack {
-            shape.stroke(top, style: wide).blur(radius: 26 * k).opacity(0.46 * level)
-            shape.stroke(top, style: line).blur(radius: 9 * k).opacity(0.5 * level)
-            shape.stroke(LinearGradient(colors: [top, foot],
-                                        startPoint: UnitPoint(x: 0.5, y: from / 32),
-                                        endPoint: UnitPoint(x: 0.5, y: 30 / 32)),
-                         style: line)
-                // Unlit: cold glass, a shade of itself.
-                .opacity(0.16 + 0.84 * level)
-            shape.stroke(heart, style: thin).blur(radius: 2.2 * k).opacity(0.38 * level)
-        }
+    private func paint(_ flat: Color) -> AnyShapeStyle {
+        style == .flat ? AnyShapeStyle(flat) : AnyShapeStyle(ForegroundStyle())
     }
 }

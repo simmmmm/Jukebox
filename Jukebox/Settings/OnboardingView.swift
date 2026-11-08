@@ -9,9 +9,9 @@
 // "nas.local" for a fresh install, which listens on 8096 only, then simply
 // works rather than saying there is nothing there.
 //
-// One card of fields on the grouped background, as Settings draws a Form,
-// under the app icon, live, its tubes warming up: the first thing anyone
-// sees of Jukebox is its own light coming on (ShellAppMark).
+// The fields on the page's ground between hairlines, no card (docs/design/
+// tells.md, 6), under the mark, flat, its bands coming on one by one as a
+// fade: the first thing anyone sees of Jukebox is its mark (ShellAppMark).
 // The address and the user name are remembered for the next sign-in (after a
 // sign-out); the password never is — the keychain's AutoFill offers it.
 
@@ -60,7 +60,7 @@ struct OnboardingView: View {
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
-            .background(Color(uiColor: .systemGroupedBackground).ignoresSafeArea())
+            .background(Theme.ground.ignoresSafeArea())
             .navigationBarTitleDisplayMode(.inline)
         }
     }
@@ -69,9 +69,7 @@ struct OnboardingView: View {
 
     private var serverForm: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
-            Eyebrow("Your Server")
-                .padding(.horizontal, Theme.Space.l)
-            OnboardingCard {
+            OnboardingFields {
                 TextField("Server Address", text: $address, prompt: Text(verbatim: "jellyfin.example.com"))
                     .keyboardType(.URL)
                     .textContentType(.URL)
@@ -80,16 +78,13 @@ struct OnboardingView: View {
                     .submitLabel(.go)
                     .focused($isAddressFocused)
                     .onSubmit { connect() }
-                    .padding(.horizontal, Theme.Space.l)
                     .frame(minHeight: 52)
             }
             Text("The address you open Jellyfin at in a browser, such as jellyfin.example.com or 192.168.1.10:8096.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-                .padding(.horizontal, Theme.Space.l)
             if let serverError {
                 OnboardingErrorText(message: serverError)
-                    .padding(.horizontal, Theme.Space.l)
             }
             Button {
                 connect()
@@ -291,9 +286,7 @@ private struct OnboardingAccountForm: View {
 
     private var passwordForm: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
-            Eyebrow("Account")
-                .padding(.horizontal, Theme.Space.l)
-            OnboardingCard {
+            OnboardingFields {
                 TextField("User Name", text: $username)
                     .textContentType(.username)
                     .textInputAutocapitalization(.never)
@@ -301,21 +294,17 @@ private struct OnboardingAccountForm: View {
                     .submitLabel(.next)
                     .focused($focus, equals: .username)
                     .onSubmit { focus = .password }
-                    .padding(.horizontal, Theme.Space.l)
                     .frame(minHeight: 52)
                 Divider()
-                    .padding(.leading, Theme.Space.l)
                 SecureField("Password", text: $password)
                     .textContentType(.password)
                     .submitLabel(.go)
                     .focused($focus, equals: .password)
                     .onSubmit { signIn() }
-                    .padding(.horizontal, Theme.Space.l)
                     .frame(minHeight: 52)
             }
             if let errorMessage {
                 OnboardingErrorText(message: errorMessage)
-                    .padding(.horizontal, Theme.Space.l)
             }
             Button {
                 signIn()
@@ -339,7 +328,6 @@ private struct OnboardingAccountForm: View {
                 Text("Sign in from another Jellyfin app that is already signed in, without typing your password here.")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, Theme.Space.l)
             }
         }
     }
@@ -374,10 +362,9 @@ private struct OnboardingAccountForm: View {
     private var quickConnectPanel: some View {
         VStack(spacing: Theme.Space.m) {
             VStack(spacing: Theme.Space.l) {
-                Eyebrow("Quick Connect")
                 if let code = quickConnectCode {
                     Text(code)
-                        .font(.system(size: codeSize, weight: .bold, design: .rounded))
+                        .font(.system(size: codeSize, weight: .semibold))
                         .monospacedDigit()
                         .tracking(codeSize * 0.12)
                         .lineLimit(1)
@@ -404,9 +391,10 @@ private struct OnboardingAccountForm: View {
                         .multilineTextAlignment(.center)
                 }
             }
-            .padding(Theme.Space.xl)
+            .padding(.vertical, Theme.Space.xl)
             .frame(maxWidth: .infinity)
-            .background(Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.Radius.card))
+            .overlay(alignment: .top) { Divider() }
+            .overlay(alignment: .bottom) { Divider() }
 
             Button {
                 cancelQuickConnect()
@@ -490,19 +478,18 @@ private struct OnboardingAccountForm: View {
 
 // MARK: - Parts
 
-/// The icon warming up, the name, and what Jukebox is in one line.
+/// The mark coming on, the name in the serif, and what Jukebox is for: a
+/// fact, not a slogan.
 private struct OnboardingWelcome: View {
     var body: some View {
         VStack(spacing: Theme.Space.l) {
-            ShellAppMark(side: 128, animatesIn: true)
-                // As the icon sits on the Home Screen: a little lifted.
-                .shadow(color: Color.black.opacity(0.18), radius: 14, y: 6)
+            ShellAppMark(side: 112, animatesIn: true)
             VStack(spacing: Theme.Space.s) {
                 Text("Jukebox")
-                    .font(.system(.largeTitle, design: .rounded, weight: .bold))
+                    .font(.serif(.largeTitle))
                     .accessibilityAddTraits(.isHeader)
-                Text("Your Jellyfin music, and a radio that knows it.")
-                    .font(.title3)
+                Text("Music from your Jellyfin server.")
+                    .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -511,8 +498,9 @@ private struct OnboardingWelcome: View {
     }
 }
 
-/// Fields on one rounded card, as a Form's inset grouped section.
-private struct OnboardingCard<Content: View>: View {
+/// Fields on the page's ground, a hairline above and below them, as a
+/// form's rows without its card.
+private struct OnboardingFields<Content: View>: View {
     let content: Content
 
     init(@ViewBuilder content: () -> Content) {
@@ -521,9 +509,10 @@ private struct OnboardingCard<Content: View>: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            Divider()
             content
+            Divider()
         }
-        .background(Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: Theme.Radius.card))
     }
 }
 

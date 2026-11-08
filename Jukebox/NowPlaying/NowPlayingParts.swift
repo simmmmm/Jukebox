@@ -1,102 +1,10 @@
-// The pieces Now Playing is made of: the blurred cover behind everything,
-// the scrubber (Numa's slim slider), the small round buttons beside the
-// title and the transport's buttons. Named NowPlaying… so they cannot clash
-// with another part's own helpers.
+// The pieces Now Playing is made of: the scrubber (Numa's slim slider) and
+// the transport's buttons. The record is Turntable.swift. Named NowPlaying…
+// so they cannot clash with another part's own helpers.
 
 import JukeboxKit
 import SwiftUI
 import UIKit
-
-// MARK: - Backdrop
-
-/// The current cover, large and blurred past recognition, under a dark
-/// scrim: Now Playing takes its colours from what plays, as Music does,
-/// and white text stays legible over a white cover. A new cover fades in
-/// over the old one, settling from a little larger; under Reduce Motion
-/// it only fades.
-struct NowPlayingBackdrop: View {
-    let artwork: Artwork?
-
-    @Environment(AppModel.self) private var app
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var image: UIImage?
-    /// Which cover `image` is. A new one is a new view, so the old one
-    /// fades out while the new one fades in.
-    @State private var shown: Artwork?
-
-    init(artwork: Artwork?) {
-        self.artwork = artwork
-    }
-
-    var body: some View {
-        ZStack {
-            Theme.page
-            if let image {
-                NowPlayingBlurredImage(image: image)
-                    .id(shown)
-                    .transition(coverTransition)
-            }
-            LinearGradient(colors: [Color.black.opacity(0.28), Color.black.opacity(0.6)],
-                           startPoint: .top, endPoint: .bottom)
-        }
-        .ignoresSafeArea()
-        .allowsHitTesting(false)
-        .accessibilityHidden(true)
-        .task(id: artwork) {
-            await load()
-        }
-    }
-
-    private var coverTransition: AnyTransition {
-        reduceMotion ? .opacity : .opacity.combined(with: .scale(scale: 1.2))
-    }
-
-    private func load() async {
-        guard let artwork, let client = app.client else {
-            show(nil, for: nil)
-            return
-        }
-        // Small on purpose: it is blurred past recognition, a blur of a
-        // small image is cheap, and this is the size Up Next's rows fetch
-        // (48 points at 3x falls in ImagePipeline's 240 bucket), so it is
-        // usually in memory already.
-        let url = client.imageURL(artwork, maxPixelSize: 240)
-        let loaded: UIImage?
-        if let cached = ImagePipeline.shared.cached(url) {
-            loaded = cached
-        } else {
-            loaded = await ImagePipeline.shared.image(for: url)
-        }
-        guard !Task.isCancelled else { return }
-        show(loaded, for: artwork)
-    }
-
-    private func show(_ new: UIImage?, for artwork: Artwork?) {
-        guard new != nil || image != nil else { return }
-        withAnimation(.easeInOut(duration: reduceMotion ? 0.4 : 0.9)) {
-            image = new
-            shown = artwork
-        }
-    }
-}
-
-private struct NowPlayingBlurredImage: View {
-    let image: UIImage
-
-    var body: some View {
-        GeometryReader { proxy in
-            Image(uiImage: image)
-                .resizable()
-                .scaledToFill()
-                .frame(width: proxy.size.width, height: proxy.size.height)
-                .clipped()
-                .saturation(1.3)
-                // Opaque: the edges stay filled instead of fading to the
-                // ground behind.
-                .blur(radius: 60, opaque: true)
-        }
-    }
-}
 
 // MARK: - Scrubber
 
@@ -201,43 +109,6 @@ struct NowPlayingScrubber: View {
 }
 
 // MARK: - Buttons
-
-/// A small round button's face beside the title (favourite, "…") and in the
-/// station's row (the thumbs): a glyph in a faint white circle, brighter
-/// when it is on. With a `tint`, on is the tint: the glyph in it, on a
-/// faint circle of it (the thumbs up given, in Glow).
-struct NowPlayingRoundGlyph: View {
-    let systemName: String
-    let isOn: Bool
-    let tint: Color?
-
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 34
-
-    init(systemName: String, isOn: Bool = false, tint: Color? = nil) {
-        self.systemName = systemName
-        self.isOn = isOn
-        self.tint = tint
-    }
-
-    var body: some View {
-        Image(systemName: systemName)
-            .font(.body.weight(.semibold))
-            .foregroundStyle(glyphStyle)
-            .frame(width: min(side, 48), height: min(side, 48))
-            .background(circleColor, in: .circle)
-            .contentShape(.circle)
-    }
-
-    private var glyphStyle: AnyShapeStyle {
-        if isOn, let tint { return AnyShapeStyle(tint) }
-        return isOn ? AnyShapeStyle(HierarchicalShapeStyle.primary) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
-    }
-
-    private var circleColor: Color {
-        if isOn, let tint { return tint.opacity(0.2) }
-        return Color.white.opacity(isOn ? 0.24 : 0.12)
-    }
-}
 
 /// The transport's buttons: the glyph alone, and a faint circle behind it
 /// while it is pressed, as Music draws them. They shrink a little when

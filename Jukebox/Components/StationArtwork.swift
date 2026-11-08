@@ -1,14 +1,21 @@
 // A station's artwork, the Arch's way (docs/BRAND.md, dev/brand/station.py,
 // which draws the same with these same numbers): the arch's window with the
 // seed's music in it — one cover for a song or an album, four as panes for
-// an artist, a genre, a decade or a playlist — two tubes of light around
-// it, and as the room the first cover's own colour, darkened. Every station
-// is recognisably Jukebox's, and recognisably its seed's. The stations made
+// an artist, a genre, a decade or a playlist — two bands around it, and as
+// the room the first cover's own colour, darkened. Every station is
+// recognisably Jukebox's, and recognisably its seed's. The stations made
 // from the listener's own taste (Your Station, Discovery, Loved) have no
-// one seed to show: their window holds the mark's core, lit.
+// one seed to show: their window holds the mark's core.
 //
-// Only stations are drawn so: lit means endless. A mix, an album or a
-// playlist stays a square cover.
+// Light means on air (docs/design/tells.md, 1). Every station is drawn flat
+// — Copper outside, Glow inside, a flat room, a flat core, no blur — except
+// the one on the air, which alone is lit: its tubes in their own oranges,
+// with one soft glow on the room. The photographer, 8 November 2026: "Kun je
+// het design iets minder ai maken?" — and the first of the tells was that
+// everything glowed.
+//
+// Only stations are drawn so: the arch means a station. A mix, an album or
+// a playlist stays a square cover.
 
 import JukeboxKit
 import SwiftUI
@@ -34,25 +41,23 @@ nonisolated struct StationArtCut: Equatable, Sendable {
     /// The lit core's radius, in proportion to the window as on the board.
     var coreRadius: CGFloat { rw * 25 / 70 }
 
-    /// From 200 points: the station's name is drawn under the window. A
-    /// shelf's tile has its name as real Text under it, which follows the
-    /// reader's text size; art this large stands alone (a station's page).
-    static let named = StationArtCut(t: 4.4, g: 5.6, rw: 70, top: 22, base: 228)
-    /// A tile: the window takes the room the name would have had.
+    /// From 60 points: a tile, a row, a station's page. The name is never
+    /// drawn into the art: the page's title, in the serif, is right under
+    /// it, and a subtitle that repeats a title goes (tells.md, 5).
     static let tile = StationArtCut(t: 6, g: 6.5, rw: 82, top: 26, base: 274)
     /// Under 60 points (a row's thumbnail, the mini player): heavier tubes,
     /// and one cover, as four would be specks.
     static let small = StationArtCut(t: 9, g: 8, rw: 80, top: 22, base: 280)
 
     static func forSide(_ side: CGFloat) -> StationArtCut {
-        side >= 200 ? .named : (side >= 60 ? .tile : .small)
+        side >= 60 ? .tile : .small
     }
 }
 
 /// The room a station's art stands in: the first cover's hue, its
 /// saturation held to 0.5 so the room is never louder than the music in the
-/// window, at brightness 0.14 for the ground and 0.28 where the tubes light
-/// it. Until the cover's colour is known, Cabinet.
+/// window, at brightness 0.14, flat. Until the cover's colour is known,
+/// Cabinet.
 nonisolated struct StationRoom: Hashable, Sendable {
     var hue: Double
     var saturation: Double
@@ -64,7 +69,6 @@ nonisolated struct StationRoom: Hashable, Sendable {
     }
 
     static let groundBrightness = 0.14
-    static let hazeBrightness = 0.28
 }
 
 /// A cover's average colour, each 0 … 1 (ImagePipeline.averageColor).
@@ -101,13 +105,16 @@ nonisolated struct AverageColor: Hashable, Sendable {
     }
 }
 
-/// A station's artwork, square. `size` nil: as wide as offered.
+/// A station's artwork, square, its corners the one radius. `size` nil: as
+/// wide as offered. Lit only while its station is on the air.
 struct StationArtwork: View {
     let station: Station
     var size: CGFloat?
     var cornerRadius: CGFloat
 
     @Environment(AppModel.self) private var app
+    @Environment(RadioController.self) private var radio
+    @Environment(AudioPlayer.self) private var player
     /// The first cover's colour, once worked out (ImagePipeline keeps it),
     /// and which cover it is of: a reused view must not show the room of
     /// the station it showed before.
@@ -125,20 +132,24 @@ struct StationArtwork: View {
         let known = toneURL.flatMap { url in
             ImagePipeline.shared.cachedAverageColor(url) ?? (average?.url == url ? average?.color : nil)
         }
+        // By id, as a station's page compares them: the station a tile was
+        // built with and the one the radio plays can differ in their covers.
+        let onAir = radio.stationOnAir(player: player)?.id == station.id
         GeometryReader { proxy in
             let side = min(proxy.size.width, proxy.size.height)
-            StationArtworkFace(station: station, side: side, room: lit ? nil : known.map(StationRoom.init))
+            StationArtworkFace(station: station, side: side,
+                               room: hasCoreWindow ? nil : known.map(StationRoom.init), isOnAir: onAir)
                 .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .aspectRatio(1, contentMode: .fit)
         .frame(width: size, height: size)
         .clipShape(.rect(cornerRadius: cornerRadius))
-        // Always the dark of a lit room, and the placeholders in its
-        // window drawn for it, in light mode as in dark.
+        // Always the dark of a room, and the placeholders in its window
+        // drawn for it, in light mode as in dark.
         .environment(\.colorScheme, .dark)
         .accessibilityHidden(true)
         .task(id: toneURL) {
-            guard let toneURL, !lit else { return }
+            guard let toneURL, !hasCoreWindow else { return }
             if ImagePipeline.shared.cachedAverageColor(toneURL) != nil { return }
             guard let found = await ImagePipeline.shared.averageColor(for: toneURL) else { return }
             // A newer station has its own task; this colour is not its.
@@ -149,9 +160,9 @@ struct StationArtwork: View {
         }
     }
 
-    /// The stations of the listener's own taste: the lit core, not covers.
-    private var lit: Bool {
-        StationArtworkFace.litCore(for: station) != nil
+    /// The stations of the listener's own taste: the core, not covers.
+    private var hasCoreWindow: Bool {
+        StationArtworkFace.core(for: station) != nil
     }
 
     /// The first cover, small: its colour is all that is wanted of it, and
@@ -168,29 +179,33 @@ private struct StationArtworkFace: View {
     let side: CGFloat
     /// The covers' room; nil: Cabinet.
     let room: StationRoom?
+    /// The station plays: lit. Otherwise flat.
+    let isOnAir: Bool
 
-    init(station: Station, side: CGFloat, room: StationRoom?) {
+    init(station: Station, side: CGFloat, room: StationRoom?, isOnAir: Bool) {
         self.station = station
         self.side = side
         self.room = room
+        self.isOnAir = isOnAir
     }
 
-    /// The light in the window of a station made from the listener's own
-    /// taste: Your Station's is the filament itself; Discovery's a paler,
-    /// newer light; Loved's a warmer, rosier one. Calm differences, one
-    /// family. Any station whose covers are not known yet has Your
-    /// Station's, rather than an empty window.
-    struct LitCore {
+    /// The core in the window of a station made from the listener's own
+    /// taste: Your Station's a warm white; Discovery's paler, newer; Loved's
+    /// warmer, rosier. Calm differences, one family. Any station whose
+    /// covers are not known yet has Your Station's, rather than an empty
+    /// window. `flat` is the core at rest; `top` and `foot` the core lit,
+    /// on the air.
+    struct Core {
+        let flat: Color
         let top: Color
         let foot: Color
-        let bloom: Color
 
-        static let yours = LitCore(top: Theme.Arch.coreTop, foot: Theme.Arch.coreFoot, bloom: Theme.Arch.coreBloom)
-        static let discovery = LitCore(top: .white, foot: Color(rgb: 0xFFE9B8), bloom: Color(rgb: 0xFFE08A))
-        static let loved = LitCore(top: Color(rgb: 0xFFF1EA), foot: Color(rgb: 0xFFB58E), bloom: Color(rgb: 0xFF9A6A))
+        static let yours = Core(flat: Color(rgb: 0xFFEDCC), top: Color(rgb: 0xFFFBF0), foot: Color(rgb: 0xFFD58E))
+        static let discovery = Core(flat: Color(rgb: 0xFAF6EC), top: .white, foot: Color(rgb: 0xFFE9B8))
+        static let loved = Core(flat: Color(rgb: 0xFFD3BE), top: Color(rgb: 0xFFF1EA), foot: Color(rgb: 0xFFB58E))
     }
 
-    static func litCore(for station: Station) -> LitCore? {
+    static func core(for station: Station) -> Core? {
         switch station.seed {
         case .personal: return .yours
         case .discovery: return .discovery
@@ -210,61 +225,39 @@ private struct StationArtworkFace: View {
         ZStack(alignment: .topLeading) {
             ground
 
-            // The light the tubes throw on the room.
-            ZStack {
-                outer.stroke(Theme.Arch.outerTube, style: StrokeStyle(lineWidth: cut.t * 2.2 * u, lineCap: .round))
-                inner.stroke(Theme.Arch.innerTube, style: StrokeStyle(lineWidth: cut.t * 2.2 * u, lineCap: .round))
+            if isOnAir {
+                // The one soft glow: the light the tubes throw on the room,
+                // while, and only while, the station is on the air.
+                ZStack {
+                    outer.stroke(Theme.Arch.outerTube, style: StrokeStyle(lineWidth: cut.t * 2.2 * u, lineCap: .round))
+                    inner.stroke(Theme.Arch.innerTube, style: StrokeStyle(lineWidth: cut.t * 2.2 * u, lineCap: .round))
+                }
+                .frame(width: side, height: side)
+                .blur(radius: 7 * u)
+                .opacity(0.42)
             }
-            .frame(width: side, height: side)
-            .blur(radius: 7 * u)
-            .opacity(0.42)
 
             window(cut: cut, u: u, width: windowWidth, height: windowHeight)
                 .frame(width: windowWidth, height: windowHeight)
                 .clipShape(ArchWindow())
-                .overlay {
-                    ArchWindow().stroke(Color.black.opacity(0.18), lineWidth: max(0.5, u))
-                }
                 .offset(x: (150 - cut.rw) * u, y: cut.windowTop * u)
 
             ZStack {
-                outer.stroke(Theme.Arch.outerTube, style: tubeLine)
-                inner.stroke(Theme.Arch.innerTube, style: tubeLine)
+                outer.stroke(isOnAir ? Theme.Arch.outerTube : Theme.Arch.copper, style: tubeLine)
+                inner.stroke(isOnAir ? Theme.Arch.innerTube : Theme.Arch.glow, style: tubeLine)
             }
             .frame(width: side, height: side)
-
-            // The hot line down each tube; too fine to see in a thumbnail.
-            if cut != .small {
-                ZStack {
-                    outer.stroke(Theme.Arch.outerTubeHeart, style: StrokeStyle(lineWidth: cut.t * 0.4 * u, lineCap: .round))
-                    inner.stroke(Theme.Arch.innerTubeHeart, style: StrokeStyle(lineWidth: cut.t * 0.4 * u, lineCap: .round))
-                }
-                .frame(width: side, height: side)
-                .blur(radius: 2 * u)
-                .opacity(0.45)
-            }
-
-            if cut == .named {
-                name(u: u)
-                    .frame(width: side, height: side, alignment: .bottom)
-            }
         }
         .frame(width: side, height: side)
     }
 
     // MARK: The room
 
+    /// Flat: the cover's colour darkened, or Cabinet.
     private var ground: some View {
-        let colors: [Color]
-        if let room {
-            colors = [Color(hue: room.hue, saturation: room.saturation, brightness: StationRoom.hazeBrightness),
-                      Color(hue: room.hue, saturation: room.saturation, brightness: StationRoom.groundBrightness)]
-        } else {
-            colors = [Theme.Arch.cabinetHaze, Theme.Arch.cabinet]
-        }
-        return RadialGradient(colors: colors, center: UnitPoint(x: 0.5, y: 0.4),
-                              startRadius: 0, endRadius: side * 230 / 300)
-            .frame(width: side, height: side)
+        let color = room.map { Color(hue: $0.hue, saturation: $0.saturation, brightness: StationRoom.groundBrightness) }
+            ?? Theme.Arch.cabinet
+        return color.frame(width: side, height: side)
     }
 
     // MARK: The window
@@ -272,8 +265,8 @@ private struct StationArtworkFace: View {
     @ViewBuilder
     private func window(cut: StationArtCut, u: CGFloat, width: CGFloat, height: CGFloat) -> some View {
         let covers = station.artwork
-        if let core = Self.litCore(for: station) {
-            litWindow(core, cut: cut, u: u, width: width, height: height)
+        if let core = Self.core(for: station) {
+            coreWindow(core, cut: cut, u: u, width: width, height: height)
         } else if covers.count >= 4 && cut != .small && showsPanes {
             // Four covers as panes, two by two, each cover square and cut to
             // its pane, its middle shown.
@@ -314,71 +307,24 @@ private struct StationArtworkFace: View {
             .clipped()
     }
 
-    /// The core, lit, in a window glowing with it.
-    private func litWindow(_ core: LitCore, cut: StationArtCut, u: CGFloat, width: CGFloat, height: CGFloat) -> some View {
+    /// The core in a dark window: flat at rest; on the air, the core's own
+    /// light from its top to its foot (the glow is the tubes').
+    private func coreWindow(_ core: Core, cut: StationArtCut, u: CGFloat, width: CGFloat, height: CGFloat) -> some View {
         let coreWidth = cut.coreRadius * 2 * u
         // From the top of its half circle about the spring line to the sill.
         let coreHeight = (cut.base - cut.spring + cut.coreRadius) * u
-        // The window's light is brightest half way down from the spring line.
-        let lightY = ((cut.spring + cut.base) / 2 - cut.windowTop) / (cut.base - cut.windowTop)
         return ZStack(alignment: .bottom) {
-            RadialGradient(stops: [
-                .init(color: Color(rgb: 0x8A3A14), location: 0),
-                .init(color: Color(rgb: 0x3A150B), location: 0.6),
-                .init(color: Color(rgb: 0x220C07), location: 1),
-            ], center: UnitPoint(x: 0.5, y: lightY), startRadius: 0, endRadius: cut.rw * 1.7 * u)
-            Capsule(style: .circular)
-                .fill(core.bloom)
-                .frame(width: coreWidth, height: coreHeight)
-                .blur(radius: 9 * u)
-                .opacity(0.75)
-            Capsule(style: .circular)
-                .fill(LinearGradient(colors: [core.top, core.foot], startPoint: .top, endPoint: .bottom))
-                .frame(width: coreWidth, height: coreHeight)
+            Color(rgb: 0x220C07)
+            if isOnAir {
+                Capsule(style: .circular)
+                    .fill(LinearGradient(colors: [core.top, core.foot], startPoint: .top, endPoint: .bottom))
+                    .frame(width: coreWidth, height: coreHeight)
+            } else {
+                Capsule(style: .circular)
+                    .fill(core.flat)
+                    .frame(width: coreWidth, height: coreHeight)
+            }
         }
         .frame(width: width, height: height)
-    }
-
-    // MARK: The name
-
-    /// The station's name and what kind it is, under the window, from 200
-    /// points: "Velvet Static", "ARTIST STATION". Fixed sizes: it is part of
-    /// the picture (hidden from VoiceOver, which reads the page's own title).
-    private func name(u: CGFloat) -> some View {
-        VStack(spacing: 2 * u) {
-            Text(verbatim: artTitle)
-                .font(.system(size: 23 * u, weight: .semibold))
-                .tracking(-0.2 * u)
-                .foregroundStyle(.white)
-            Text(kindLabel.uppercased())
-                .font(.system(size: 9.5 * u, weight: .semibold))
-                .tracking(1.5 * u)
-                .foregroundStyle(Color.white.opacity(0.62))
-        }
-        .lineLimit(1)
-        .minimumScaleFactor(0.6)
-        .frame(width: 264 * u)
-        .padding(.bottom, 12 * u)
-    }
-
-    /// The title without "Radio": the art says it is a station already.
-    private var artTitle: String {
-        let title = station.title
-        let suffix = " Radio"
-        return title.hasSuffix(suffix) && title.count > suffix.count ? String(title.dropLast(suffix.count)) : title
-    }
-
-    private var kindLabel: String {
-        switch station.seed {
-        case .track: String(localized: "Song Station")
-        case .artist: String(localized: "Artist Station")
-        case .album: String(localized: "Album Station")
-        case .genre: String(localized: "Genre Station")
-        case .decade: String(localized: "Decade Station")
-        case .collection: String(localized: "Playlist Station")
-        case .personal: String(localized: "From Your Listening")
-        case .discovery: String(localized: "New to You")
-        case .favorites: String(localized: "Your Favorites")
-        }
     }
 }

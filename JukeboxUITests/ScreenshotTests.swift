@@ -153,8 +153,8 @@ final class ScreenshotTests: XCTestCase {
         // The radio's own page with a station on the air: its card and dial.
         try walk.tab("Radio")
         walk.picture("radio-on-air")
-        // Your Station's page while it plays, from its tile under Recently
-        // Played: the song playing and what the radio has queued.
+        // Your Station's page while it plays, from its row under Stations:
+        // the song playing and what the radio has queued.
         if try walk.openStation("Your Station") {
             walk.picture("station-on-air")
             try walk.goBack(to: "Radio")
@@ -633,15 +633,16 @@ final class Walk {
         }
     }
 
-    /// A station's page, from its card or tile on the Radio tab, found by
-    /// the start of its label (a card's label is its title, then its
-    /// description). True once the page is there — its New Picks, or while
-    /// the station is on the air its Up Next — after a moment for the songs
-    /// to be chosen and their covers to come.
+    /// A station's page, from its row or tile on the Radio tab, found by
+    /// the start of its label (a row's label is its title, then when it last
+    /// played). True once the page is there — its New Picks, or while the
+    /// station is on the air its "Up next" heading — after a moment for the
+    /// songs to be chosen and their covers to come.
     func openStation(_ title: String) throws -> Bool {
         let link = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch
         guard try tap(link, "Radio: the \(title) station") else { return false }
-        let page = [app.buttons["New Picks"].firstMatch, app.staticTexts["UP NEXT"].firstMatch]
+        let upNext = app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", "Up next")).firstMatch
+        let page = [app.buttons["New Picks"].firstMatch, upNext]
         guard waitForAny(page, timeout: 10) else {
             note("Radio: the \(title) station's page did not open (no New Picks, no Up Next)")
             return false
@@ -760,13 +761,13 @@ final class Walk {
         }
     }
 
-    /// Home with the library read (Your Station's card, or a shelf), then
-    /// the mixes made (their grey placeholders gone) and a moment for the
-    /// covers. A library that does not come is written down and the walk
-    /// goes on: the other screens' pictures then show how the app says so.
+    /// Home with the library read (Your Station, or a shelf's heading),
+    /// then the mixes made (their grey placeholders gone) and a moment for
+    /// the covers. A library that does not come is written down and the
+    /// walk goes on: the other screens' pictures then show how the app says so.
     func waitForLibrary() {
-        let loaded = [app.staticTexts["Your Station"].firstMatch, app.staticTexts["Made for You"].firstMatch,
-                      app.staticTexts["Recently Added"].firstMatch]
+        let loaded = [app.staticTexts["Your Station"].firstMatch, app.staticTexts["Mixes"].firstMatch,
+                      app.staticTexts["Recently added"].firstMatch]
         if !waitForAny(loaded, timeout: 150) {
             note("Home: the library did not load within 150 s (no Your Station, no shelves)")
             return
@@ -784,9 +785,9 @@ final class Walk {
 
     // MARK: Playing
 
-    /// Your Station from Home's card. Its Play is the one enabled Play on
-    /// Home while nothing plays (the mini player's is greyed out then), and
-    /// the highest on the screen. True when it was tapped.
+    /// Your Station from the top of Home. Its Play is the one enabled Play
+    /// on Home while nothing plays (the mini player's is greyed out then),
+    /// and the highest on the screen. True when it was tapped.
     func startYourStation() throws -> Bool {
         let card = app.staticTexts["Your Station"].firstMatch
         guard find(card, "Home: Your Station's card", timeout: 15) else { return false }
@@ -823,12 +824,14 @@ final class Walk {
         }
     }
 
-    /// Now Playing, from Home's card while its station is on the air (a tap
-    /// anywhere on the card but its button opens it), else from the mini
-    /// player. True once its Close button is there.
+    /// Now Playing, from Home's Your Station while its station is on the
+    /// air (a tap anywhere on it but its button opens it; its label says
+    /// "On air"), else from the mini player. True once its Close button is
+    /// there.
     func openNowPlaying() throws -> Bool {
         let close = app.buttons["Close"].firstMatch
-        let onAir = app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", "Now Playing")).firstMatch
+        let onAir = app.staticTexts.matching(NSPredicate(format: "label ==[c] %@ OR label ==[c] %@",
+                                                         "On air", "Now Playing")).firstMatch
         if onAir.waitForExistence(timeout: 5),
            try tap(onAir, "Home: the card of the station on the air"),
            close.waitForExistence(timeout: 8) {

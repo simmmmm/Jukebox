@@ -31,7 +31,7 @@ struct LibraryView: View {
                     LibraryStatusView()
                         .padding(.top, Theme.Space.xl)
                 } else {
-                    SectionHeader("Recently Added", route: .recentlyAdded)
+                    SectionHeader("Recently added", route: .recentlyAdded)
                         .padding(.bottom, Theme.Space.m)
                     LazyVGrid(columns: columns, alignment: .leading, spacing: Theme.Space.xl) {
                         ForEach(recent) { album in
@@ -43,6 +43,7 @@ struct LibraryView: View {
             }
             .padding(.bottom, Theme.Space.xxl)
         }
+        .background(Theme.ground)
         .navigationTitle("Library")
         .refreshable { await library.refresh() }
     }

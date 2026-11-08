@@ -181,8 +181,8 @@ struct LibraryAlbumMenu: View {
     }
 }
 
-/// The station button under a page's Play and Shuffle: grey, beside the one
-/// filled button, with the radio's symbol.
+/// The station button under a page's Play and Shuffle: a word in the
+/// accent, beside the one filled button.
 struct LibraryRadioButton: View {
     let seed: StationSeed
 
@@ -198,7 +198,7 @@ struct LibraryRadioButton: View {
             Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
             radio.start(seed)
         } label: {
-            Label("Start Radio", systemImage: "dot.radiowaves.left.and.right")
+            Text("Start Radio")
         }
         .buttonStyle(.secondary)
     }
@@ -224,7 +224,7 @@ struct LibraryPlaylistRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Space.m) {
-            ArtworkView(playlist.artwork, size: 56, cornerRadius: Theme.Radius.thumbnail,
+            ArtworkView(playlist.artwork, size: 56, cornerRadius: Theme.Radius.artwork,
                         placeholder: "music.note.list")
             VStack(alignment: .leading, spacing: 2) {
                 Text(playlist.name)

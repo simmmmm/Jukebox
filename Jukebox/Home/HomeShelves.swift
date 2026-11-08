@@ -1,6 +1,7 @@
 // Home's album shelves beyond the mixes, as Feishin's Home and Music's have
 // them: what was played most, a handful to explore today, and what the
-// listener chose to play lately. Worked out here, from values, and not in
+// listener chose to play lately, with when; and when each station last
+// played. Worked out here, from values, and not in
 // the views' bodies: each is one pass over the library or the history.
 // Measured in a Linux container (Swift 6.2, release, best of 7) for 20 000
 // tracks on 2 000 albums and a full history of 20 000 events: most played
@@ -79,20 +80,29 @@ enum HomeShelves {
     static func recentlyPlayed(events: [PlayEvent], tracks: [Track], albums: [Album],
                                track trackLookup: (ItemID) -> Track?, album albumLookup: (ItemID) -> Album?,
                                limit: Int = 20) -> [Album] {
+        recentlyPlayedDated(events: events, tracks: tracks, albums: albums, track: trackLookup,
+                            album: albumLookup, limit: limit).map(\.album)
+    }
+
+    /// As `recentlyPlayed`, each album with when it was last played: Home's
+    /// Played lately says when ("Yesterday"), as a fact in a slogan's place.
+    static func recentlyPlayedDated(events: [PlayEvent], tracks: [Track], albums: [Album],
+                                    track trackLookup: (ItemID) -> Track?, album albumLookup: (ItemID) -> Album?,
+                                    limit: Int = 20) -> [(album: Album, date: Date)] {
         guard limit > 0 else { return [] }
         var seen = Set<ItemID>()
-        var result: [Album] = []
+        var result: [(album: Album, date: Date)] = []
         for event in events.reversed() {
             guard event.stationID == nil, event.outcome != .skipped, event.outcome != .disliked,
                   let albumID = trackLookup(event.trackID)?.albumID, !seen.contains(albumID),
                   let found = albumLookup(albumID) else { continue }
             seen.insert(albumID)
-            result.append(found)
+            result.append((found, event.date))
             if result.count >= limit { return result }
         }
-        for found in playedBefore(events.first?.date, tracks: tracks, albums: albums, album: albumLookup)
-        where seen.insert(found.id).inserted {
-            result.append(found)
+        for dated in playedBeforeDated(events.first?.date, tracks: tracks, albums: albums, album: albumLookup)
+        where seen.insert(dated.album.id).inserted {
+            result.append(dated)
             if result.count >= limit { break }
         }
         return result
@@ -103,6 +113,11 @@ enum HomeShelves {
     /// As LibraryStore.recentlyPlayedAlbums, with the dates kept to compare.
     static func playedBefore(_ cutoff: Date?, tracks: [Track], albums: [Album],
                              album lookup: (ItemID) -> Album?) -> [Album] {
+        playedBeforeDated(cutoff, tracks: tracks, albums: albums, album: lookup).map(\.album)
+    }
+
+    static func playedBeforeDated(_ cutoff: Date?, tracks: [Track], albums: [Album],
+                                  album lookup: (ItemID) -> Album?) -> [(album: Album, date: Date)] {
         var latest: [ItemID: Date] = [:]
         for album in albums {
             if let date = album.lastPlayed { latest[album.id] = date }
@@ -117,6 +132,19 @@ enum HomeShelves {
             dated.removeAll { $0.value >= cutoff }
         }
         dated.sort { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }
-        return dated.compactMap { lookup($0.key) }
+        return dated.compactMap { entry in lookup(entry.key).map { (album: $0, date: entry.value) } }
+    }
+
+    /// When each station last played on this device, by the station's id
+    /// (PlayEvent.stationID, Station.id): the newest event of each, in one
+    /// pass from the newest back. For "Played Thursday" on Radio's list and
+    /// Your Station's "Last played" on Home.
+    static func stationDates(events: [PlayEvent]) -> [String: Date] {
+        var dates: [String: Date] = [:]
+        for event in events.reversed() {
+            guard let id = event.stationID, dates[id] == nil else { continue }
+            dates[id] = event.date
+        }
+        return dates
     }
 }

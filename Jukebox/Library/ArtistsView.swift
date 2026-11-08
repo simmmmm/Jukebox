@@ -112,7 +112,7 @@ struct ArtistDetailView: View {
 
                 if !top.isEmpty {
                     VStack(alignment: .leading, spacing: Theme.Space.s) {
-                        SectionHeader(isRanked ? String(localized: "Top Songs") : String(localized: "Songs"))
+                        SectionHeader(isRanked ? String(localized: "Top songs") : String(localized: "Songs"))
                         VStack(spacing: 0) {
                             ForEach(top.indices, id: \.self) { i in
                                 Button {
@@ -136,12 +136,12 @@ struct ArtistDetailView: View {
                     shelf("Albums", albums: albums, showsArtist: false)
                 }
                 if !appearances.isEmpty {
-                    shelf("Appears On", albums: appearances, showsArtist: true)
+                    shelf("Appears on", albums: appearances, showsArtist: true)
                 }
 
                 if !similar.isEmpty {
                     VStack(alignment: .leading, spacing: Theme.Space.m) {
-                        SectionHeader("Similar Artists")
+                        SectionHeader("Similar artists")
                         Shelf(items: similar, width: 120) { other in
                             NavigationLink(value: Route.artist(other)) {
                                 ArtistTile(artist: other)
@@ -153,7 +153,7 @@ struct ArtistDetailView: View {
 
                 if let overview = shown.overview?.trimmingCharacters(in: .whitespacesAndNewlines), !overview.isEmpty {
                     VStack(alignment: .leading, spacing: Theme.Space.s) {
-                        Eyebrow("About")
+                        ListHeading("About")
                         Text(overview)
                             .font(.callout)
                             .foregroundStyle(.secondary)
@@ -189,9 +189,8 @@ struct ArtistDetailView: View {
         let genres = LibraryIndex.genreNames(shown.genres)
         return VStack(spacing: Theme.Space.m) {
             ArtistAvatar(artist: shown, size: 180)
-                .shadow(color: .black.opacity(0.2), radius: 16, y: 8)
             Text(shown.name)
-                .font(.largeTitle.bold())
+                .font(.serif(.largeTitle))
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
             if !genres.isEmpty {

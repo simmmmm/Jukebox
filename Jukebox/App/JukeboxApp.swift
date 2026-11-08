@@ -12,6 +12,8 @@ struct JukeboxApp: App {
     init() {
         // Once a launch (Stats): how many starts, on which system and version.
         Stats.track(.appOpen)
+        // The bars' titles in the serif, before the first bar is made.
+        Theme.styleNavigationBars()
     }
 
     var body: some Scene {

@@ -259,10 +259,9 @@ struct PlaylistDetailView: View {
         let duration = entries == nil ? (shown.duration ?? 0) : LibraryText.totalDuration(tracks)
         return VStack(spacing: Theme.Space.s) {
             cover(shown, tracks: tracks)
-                .shadow(color: .black.opacity(0.25), radius: 20, y: 10)
                 .padding(.bottom, Theme.Space.m)
             Text(shown.name)
-                .font(.title2.bold())
+                .font(.serif(.title))
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
             Text(LibraryText.summary(count: count, duration: duration))
