@@ -19,7 +19,13 @@ env=()
 # JUKEBOX_TEST_CONTAINER: the second server of dev/jellyfin-test-server.sh.
 server=${JUKEBOX_TEST_CONTAINER:-jukebox-jellyfin}
 host=jellyfin; [[ $server == jukebox-jellyfin ]] || host=$server
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$server"; then
+if [[ -n ${JELLYFIN_URL:-} ]]; then
+  # Another server on the Docker network "jukebox", such as the fake the
+  # screenshots use: JELLYFIN_URL=http://fake-jellyfin:8096 dev/kit-test.sh
+  net=(--network jukebox)
+  env=(-e JELLYFIN_URL="$JELLYFIN_URL" -e JELLYFIN_USER="${JELLYFIN_USER:-test}"
+       -e JELLYFIN_PASSWORD="${JELLYFIN_PASSWORD:-test}")
+elif docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$server"; then
   net=(--network jukebox)
   env=(-e JELLYFIN_URL=http://$host:8096 -e JELLYFIN_USER=test -e JELLYFIN_PASSWORD=test)
 fi

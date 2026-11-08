@@ -1,7 +1,7 @@
 # Jukebox's Xcode project, made by XcodeGen on the Mac that builds it (CI:
-# .github/workflows/build.yml and testflight.yml), so no .xcodeproj is kept
+# .github/workflows/ci.yml, through ci/app.sh), so no .xcodeproj is kept
 # in git. Every Swift file under Jukebox/ is in the app; JukeboxKit is a
-# local Swift package.
+# local Swift package; JukeboxUITests is the screenshot walk.
 name: Jukebox
 options:
   bundleIdPrefix: com.tijmen
@@ -12,7 +12,7 @@ options:
 settings:
   base:
     MARKETING_VERSION: "1.0"
-    # testflight.yml sets the run number.
+    # ci/app.sh sets the run number for TestFlight (BUILD_NUMBER).
     CURRENT_PROJECT_VERSION: "1"
     # Swift 5 mode with the main actor as the default: UI code reads as it
     # did, and what is not about the UI says `nonisolated` where it must.
@@ -74,12 +74,41 @@ targets:
         ENABLE_PREVIEWS: YES
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+
+  # The screenshot walk (JukeboxUITests/ScreenshotTests.swift), run in the
+  # simulator by ci/screenshots.sh. Built only by build-for-testing: the
+  # scheme's build action has it for testing alone, so the device build
+  # (`xcodebuild build`) and the TestFlight archive build the app as before.
+  # Swift 5 mode and the project's main-actor default, as the app: the walk
+  # marks what it needs @MainActor itself, so it reads the same either way.
+  JukeboxUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: JukeboxUITests
+    dependencies:
+      - target: Jukebox
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tijmen.Jukebox.UITests
+        TEST_TARGET_NAME: Jukebox
+        # The iPhone and the iPad are both walked.
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
 schemes:
   Jukebox:
     build:
       targets:
         Jukebox: all
+        JukeboxUITests: [test]
     run:
       config: Debug
+    test:
+      config: Debug
+      targets: [JukeboxUITests]
+      # The walk takes its own pictures; XCTest's automatic ones at every
+      # step would only slow it and fill the result bundle.
+      captureScreenshotsAutomatically: false
     archive:
       config: Release

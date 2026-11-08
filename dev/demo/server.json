@@ -1,0 +1,426 @@
+{
+ "recordedAt": "2026-11-08T08:33:52.2141570Z",
+ "publicInfo": {
+  "ServerName": "Jellyfin",
+  "Version": "12.4.0",
+  "ProductName": "Jellyfin Server",
+  "OperatingSystem": "",
+  "Id": "ab1b921a10354a07a7dfbbc2c8061335",
+  "StartupWizardCompleted": true
+ },
+ "user": {
+  "Name": "test",
+  "ServerId": "ab1b921a10354a07a7dfbbc2c8061335",
+  "Id": "32c60d1fd64b4a7ca7da417c157fde48",
+  "HasPassword": true,
+  "HasConfiguredPassword": true,
+  "HasConfiguredEasyPassword": false,
+  "EnableAutoLogin": false,
+  "LastLoginDate": "2026-11-08T08:33:50.9212859Z",
+  "LastActivityDate": "2026-11-08T08:33:50.9212859Z",
+  "Configuration": {
+   "PlayDefaultAudioTrack": true,
+   "SubtitleLanguagePreference": "",
+   "DisplayMissingEpisodes": false,
+   "GroupedFolders": [],
+   "SubtitleMode": "Default",
+   "DisplayCollectionsView": false,
+   "EnableLocalPassword": false,
+   "OrderedViews": [],
+   "LatestItemsExcludes": [],
+   "MyMediaExcludes": [],
+   "HidePlayedInLatest": true,
+   "RememberAudioSelections": true,
+   "RememberSubtitleSelections": true,
+   "EnableNextEpisodeAutoPlay": true,
+   "CastReceiverId": "F007D354"
+  },
+  "Policy": {
+   "IsAdministrator": true,
+   "IsHidden": true,
+   "EnableCollectionManagement": false,
+   "EnableSubtitleManagement": false,
+   "EnableLyricManagement": false,
+   "IsDisabled": false,
+   "BlockedTags": [],
+   "AllowedTags": [],
+   "EnableUserPreferenceAccess": true,
+   "AccessSchedules": [],
+   "BlockUnratedItems": [],
+   "EnableRemoteControlOfOtherUsers": true,
+   "EnableSharedDeviceControl": true,
+   "EnableRemoteAccess": true,
+   "EnableLiveTvManagement": false,
+   "EnableLiveTvAccess": true,
+   "EnableMediaPlayback": true,
+   "EnableAudioPlaybackTranscoding": true,
+   "EnableVideoPlaybackTranscoding": true,
+   "EnablePlaybackRemuxing": true,
+   "ForceRemoteSourceTranscoding": false,
+   "EnableContentDeletion": true,
+   "EnableContentDeletionFromFolders": [],
+   "EnableContentDownloading": true,
+   "EnableSyncTranscoding": true,
+   "EnableMediaConversion": true,
+   "EnabledDevices": [],
+   "EnableAllDevices": true,
+   "EnabledChannels": [],
+   "EnableAllChannels": true,
+   "EnabledFolders": [],
+   "EnableAllFolders": true,
+   "InvalidLoginAttemptCount": 0,
+   "LoginAttemptsBeforeLockout": -1,
+   "MaxActiveSessions": 0,
+   "EnablePublicSharing": true,
+   "BlockedMediaFolders": [],
+   "BlockedChannels": [],
+   "RemoteClientBitrateLimit": 0,
+   "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+   "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+   "SyncPlayAccess": "CreateAndJoinGroups"
+  }
+ },
+ "signIn": {
+  "User": {
+   "Name": "test",
+   "ServerId": "ab1b921a10354a07a7dfbbc2c8061335",
+   "Id": "32c60d1fd64b4a7ca7da417c157fde48",
+   "HasPassword": true,
+   "HasConfiguredPassword": true,
+   "HasConfiguredEasyPassword": false,
+   "EnableAutoLogin": false,
+   "LastLoginDate": "2026-11-08T08:33:50.9212859Z",
+   "LastActivityDate": "2026-11-08T08:33:50.9212859Z",
+   "Configuration": {
+    "PlayDefaultAudioTrack": true,
+    "SubtitleLanguagePreference": "",
+    "DisplayMissingEpisodes": false,
+    "GroupedFolders": [],
+    "SubtitleMode": "Default",
+    "DisplayCollectionsView": false,
+    "EnableLocalPassword": false,
+    "OrderedViews": [],
+    "LatestItemsExcludes": [],
+    "MyMediaExcludes": [],
+    "HidePlayedInLatest": true,
+    "RememberAudioSelections": true,
+    "RememberSubtitleSelections": true,
+    "EnableNextEpisodeAutoPlay": true,
+    "CastReceiverId": "F007D354"
+   },
+   "Policy": {
+    "IsAdministrator": true,
+    "IsHidden": true,
+    "EnableCollectionManagement": false,
+    "EnableSubtitleManagement": false,
+    "EnableLyricManagement": false,
+    "IsDisabled": false,
+    "BlockedTags": [],
+    "AllowedTags": [],
+    "EnableUserPreferenceAccess": true,
+    "AccessSchedules": [],
+    "BlockUnratedItems": [],
+    "EnableRemoteControlOfOtherUsers": true,
+    "EnableSharedDeviceControl": true,
+    "EnableRemoteAccess": true,
+    "EnableLiveTvManagement": false,
+    "EnableLiveTvAccess": true,
+    "EnableMediaPlayback": true,
+    "EnableAudioPlaybackTranscoding": true,
+    "EnableVideoPlaybackTranscoding": true,
+    "EnablePlaybackRemuxing": true,
+    "ForceRemoteSourceTranscoding": false,
+    "EnableContentDeletion": true,
+    "EnableContentDeletionFromFolders": [],
+    "EnableContentDownloading": true,
+    "EnableSyncTranscoding": true,
+    "EnableMediaConversion": true,
+    "EnabledDevices": [],
+    "EnableAllDevices": true,
+    "EnabledChannels": [],
+    "EnableAllChannels": true,
+    "EnabledFolders": [],
+    "EnableAllFolders": true,
+    "InvalidLoginAttemptCount": 0,
+    "LoginAttemptsBeforeLockout": -1,
+    "MaxActiveSessions": 0,
+    "EnablePublicSharing": true,
+    "BlockedMediaFolders": [],
+    "BlockedChannels": [],
+    "RemoteClientBitrateLimit": 0,
+    "AuthenticationProviderId": "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+    "PasswordResetProviderId": "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+    "SyncPlayAccess": "CreateAndJoinGroups"
+   }
+  },
+  "SessionInfo": {
+   "PlayState": {
+    "CanSeek": false,
+    "IsPaused": false,
+    "IsMuted": false,
+    "RepeatMode": "RepeatNone",
+    "PlaybackOrder": "Default"
+   },
+   "AdditionalUsers": [],
+   "Capabilities": {
+    "PlayableMediaTypes": [],
+    "SupportedCommands": [],
+    "SupportsMediaControl": false,
+    "SupportsPersistentIdentifier": true
+   },
+   "RemoteEndPoint": "172.18.0.1",
+   "PlayableMediaTypes": [],
+   "Id": "f2021c57c34e5cf3a4b9411a4d7de0d0",
+   "UserId": "32c60d1fd64b4a7ca7da417c157fde48",
+   "UserName": "test",
+   "Client": "JukeboxDemoRecorder",
+   "LastActivityDate": "2026-11-08T08:33:50.9223846Z",
+   "LastPlaybackCheckIn": "0001-01-01T00:00:00.0000000Z",
+   "DeviceName": "Linux",
+   "DeviceId": "jukebox-demo-recorder",
+   "ApplicationVersion": "1.0",
+   "IsActive": true,
+   "SupportsMediaControl": false,
+   "SupportsRemoteControl": false,
+   "NowPlayingQueue": [],
+   "HasCustomDeviceName": false,
+   "ServerId": "ab1b921a10354a07a7dfbbc2c8061335",
+   "SupportedCommands": []
+  },
+  "AccessToken": "",
+  "ServerId": "ab1b921a10354a07a7dfbbc2c8061335"
+ },
+ "views": [
+  {
+   "Name": "Music",
+   "Id": "7e64e319657a9516ec78490da03edccb",
+   "Etag": "e2ee604b1661d2dabaf1dcad724a2c41",
+   "DateCreated": "2026-11-08T01:26:22.4584117Z",
+   "DateLastMediaAdded": "0001-01-01T00:00:00.0000000Z",
+   "CanDelete": false,
+   "CanDownload": false,
+   "SortName": "music",
+   "ExternalUrls": [],
+   "Path": "/config/root/default/Music",
+   "EnableMediaSourceDisplay": true,
+   "ChannelId": null,
+   "Taglines": [],
+   "Genres": [],
+   "PlayAccess": "Full",
+   "RemoteTrailers": [],
+   "ProviderIds": {},
+   "IsFolder": true,
+   "ParentId": "e9d5075a555c1cbc394eec4cef295274",
+   "Type": "CollectionFolder",
+   "People": [],
+   "Studios": [],
+   "GenreItems": [],
+   "LocalTrailerCount": 0,
+   "UserData": {
+    "PlaybackPositionTicks": 0,
+    "PlayCount": 0,
+    "IsFavorite": false,
+    "Played": false,
+    "Key": "7e64e319-657a-9516-ec78-490da03edccb",
+    "ItemId": "7e64e319657a9516ec78490da03edccb"
+   },
+   "ChildCount": 23,
+   "SpecialFeatureCount": 0,
+   "DisplayPreferencesId": "7e64e319657a9516ec78490da03edccb",
+   "Tags": [],
+   "CollectionType": "music",
+   "ImageTags": {},
+   "BackdropImageTags": [],
+   "Chapters": [],
+   "LocationType": "FileSystem",
+   "MediaType": "Unknown",
+   "LockedFields": [],
+   "LockData": false
+  },
+  {
+   "Name": "Playlists",
+   "Id": "976e6adac0110f93c5842c3c9a9c4f8b",
+   "Etag": "2440ec0e268c5c6fdd3dec3e6ba18cad",
+   "DateCreated": "2026-11-08T01:46:52.5403836Z",
+   "DateLastMediaAdded": "0001-01-01T00:00:00.0000000Z",
+   "CanDelete": false,
+   "CanDownload": false,
+   "SortName": "playlists",
+   "ExternalUrls": [],
+   "Path": "/config/metadata/views/976e6adac0110f93c5842c3c9a9c4f8b",
+   "EnableMediaSourceDisplay": true,
+   "ChannelId": null,
+   "Taglines": [],
+   "Genres": [],
+   "PlayAccess": "Full",
+   "RemoteTrailers": [],
+   "ProviderIds": {},
+   "IsFolder": true,
+   "ParentId": null,
+   "Type": "UserView",
+   "People": [],
+   "Studios": [],
+   "GenreItems": [],
+   "LocalTrailerCount": 0,
+   "UserData": {
+    "PlaybackPositionTicks": 0,
+    "PlayCount": 0,
+    "IsFavorite": false,
+    "Played": false,
+    "Key": "976e6ada-c011-0f93-c584-2c3c9a9c4f8b",
+    "ItemId": "976e6adac0110f93c5842c3c9a9c4f8b"
+   },
+   "ChildCount": 2,
+   "SpecialFeatureCount": 0,
+   "DisplayPreferencesId": "cb46bc72e78d95cc6cd072de3a65b93a",
+   "Tags": [],
+   "PrimaryImageAspectRatio": 1.7777777777777777,
+   "CollectionType": "playlists",
+   "ImageTags": {
+    "Primary": "10712950dd344ae01af47956eadc78c1"
+   },
+   "BackdropImageTags": [],
+   "Chapters": [],
+   "LocationType": "FileSystem",
+   "MediaType": "Unknown",
+   "LockedFields": [],
+   "LockData": false
+  }
+ ],
+ "fields": {
+  "Audio": {
+   "Genres": [
+    "GenreItems",
+    "Genres"
+   ],
+   "DateCreated": [
+    "DateCreated"
+   ],
+   "SortName": [
+    "SortName"
+   ]
+  },
+  "MusicAlbum": {
+   "Genres": [
+    "GenreItems",
+    "Genres"
+   ],
+   "DateCreated": [
+    "DateCreated"
+   ],
+   "ChildCount": [
+    "ChildCount"
+   ],
+   "SortName": [
+    "SortName"
+   ],
+   "CumulativeRunTimeTicks": [
+    "CumulativeRunTimeTicks"
+   ],
+   "PrimaryImageAspectRatio": [
+    "PrimaryImageAspectRatio"
+   ]
+  },
+  "MusicArtist": {
+   "Genres": [
+    "GenreItems",
+    "Genres"
+   ],
+   "DateCreated": [
+    "DateCreated"
+   ],
+   "ChildCount": [
+    "ChildCount"
+   ],
+   "ItemCounts": [
+    "AlbumCount",
+    "ArtistCount",
+    "ChildCount",
+    "EpisodeCount",
+    "MovieCount",
+    "MusicVideoCount",
+    "ProgramCount",
+    "SeriesCount",
+    "SongCount",
+    "TrailerCount"
+   ],
+   "SortName": [
+    "SortName"
+   ],
+   "CumulativeRunTimeTicks": [
+    "CumulativeRunTimeTicks"
+   ]
+  },
+  "MusicGenre": {
+   "Genres": [
+    "GenreItems",
+    "Genres"
+   ],
+   "DateCreated": [
+    "DateCreated"
+   ],
+   "ItemCounts": [
+    "AlbumCount",
+    "ArtistCount",
+    "ChildCount",
+    "EpisodeCount",
+    "MovieCount",
+    "MusicVideoCount",
+    "ProgramCount",
+    "SeriesCount",
+    "SongCount",
+    "TrailerCount"
+   ],
+   "SortName": [
+    "SortName"
+   ],
+   "PrimaryImageAspectRatio": [
+    "PrimaryImageAspectRatio"
+   ]
+  },
+  "Playlist": {
+   "Genres": [
+    "GenreItems",
+    "Genres"
+   ],
+   "DateCreated": [
+    "DateCreated"
+   ],
+   "SortName": [
+    "SortName"
+   ],
+   "CumulativeRunTimeTicks": [
+    "CumulativeRunTimeTicks"
+   ],
+   "PrimaryImageAspectRatio": [
+    "PrimaryImageAspectRatio"
+   ]
+  }
+ },
+ "playlistTemplate": {
+  "Name": "Jukebox demo recorder",
+  "Id": "6a97898b1b26365a1cebf63b257cc8aa",
+  "DateCreated": "2026-11-08T08:33:51.0000000Z",
+  "SortName": "jukebox demo recorder",
+  "ChannelId": null,
+  "Genres": [],
+  "CumulativeRunTimeTicks": 0,
+  "RunTimeTicks": 0,
+  "IsFolder": true,
+  "Type": "Playlist",
+  "GenreItems": [],
+  "UserData": {
+   "PlaybackPositionTicks": 0,
+   "PlayCount": 0,
+   "IsFavorite": false,
+   "Played": false,
+   "Key": "6a97898b-1b26-365a-1ceb-f63b257cc8aa",
+   "ItemId": "6a97898b1b26365a1cebf63b257cc8aa"
+  },
+  "ChildCount": 1,
+  "ImageTags": {},
+  "BackdropImageTags": [],
+  "LocationType": "FileSystem",
+  "MediaType": "Audio"
+ }
+}

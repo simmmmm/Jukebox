@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # CI's app job (.github/workflows/ci.yml, on GitHub's macOS): the Xcode
 # project from project.yml, then either
-#   - the app compiled for the iPhone without signing (every push), or
+#   - the app compiled for the iPhone without signing (every push), then,
+#     when it compiled, the pictures of its screens (ci/screenshots.sh), or
 #   - with TESTFLIGHT=true: archived, signed by Xcode itself with the App
 #     Store Connect API key (role Admin: it makes the certificate and the
 #     profile, no Mac of the photographer's needed) and uploaded.
@@ -29,6 +30,42 @@ report() {
   } >> "${GITHUB_STEP_SUMMARY:-/dev/null}" || true
 }
 
+# Pictures of every main screen (ci/screenshots.sh): walked in the simulator
+# against the fake Jellyfin, put on the `screenshots` branch and printed at
+# the end of this log. Never this job's verdict. It runs in a process group
+# of its own, so that the watchdog (macOS has no `timeout`) can stop all of it
+# at once, xcodebuild and the fake server included, if a simulator hangs: the
+# job has 75 minutes, and its budget is what the build left of them, less ten
+# minutes for the steps around this script, and at most 45.
+screenshots() {
+  local budget=$(( ${JOB_MINUTES:-75} * 60 - 600 - SECONDS )) pid dog
+  if (( budget > 2700 )); then budget=2700; fi
+  if (( budget < 600 )); then
+    echo "::warning::No screenshots: the build left $budget s of the job."
+    return 0
+  fi
+  SHOTS_BUDGET=$budget perl -e 'setpgrp(0, 0); exec @ARGV or die "exec: $!\n"' bash ci/screenshots.sh \
+    < /dev/null &
+  pid=$!
+  # One perl process, nothing else: killed, it leaves nothing that holds
+  # the log open.
+  perl -e '
+    my ($limit, $group) = @ARGV;
+    sleep $limit;
+    kill(0, $group) or exit 0;
+    print STDERR "::warning::The screenshots ran past $limit s and were stopped.\n";
+    kill("-TERM", $group);
+    sleep 20;
+    kill("-KILL", $group);
+  ' "$(( budget + 120 ))" "$pid" &
+  dog=$!
+  wait "$pid" || true
+  kill "$dog" 2> /dev/null || true
+  # Whatever of the round is still running, stopped or finished.
+  kill -TERM -- "-$pid" 2> /dev/null || true
+  return 0
+}
+
 if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
@@ -48,6 +85,10 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   head -80 build/logs/warnings.txt
   echo "$(wc -l < build/logs/warnings.txt | tr -d ' ') distinct Swift warnings"
   report build/logs/build.log "Compile errors"
+  # Only of an app that compiled; SCREENSHOTS=false leaves them out.
+  if [[ $status == 0 && ${SCREENSHOTS:-true} != false ]]; then
+    screenshots
+  fi
   exit $status
 fi
 
