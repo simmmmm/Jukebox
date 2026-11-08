@@ -116,6 +116,7 @@ struct ArtistDetailView: View {
                         VStack(spacing: 0) {
                             ForEach(top.indices, id: \.self) { i in
                                 Button {
+                                    guard !player.refusesOffline(top[i]) else { return }
                                     player.play(topQueue, startingAt: i,
                                                 context: QueueContext(.artist(shown.id), title: shown.name))
                                 } label: {

@@ -125,6 +125,9 @@ private struct SearchResultsList: View {
                 Section {
                     ForEach(results.tracks) { track in
                         Button {
+                            // Offline, a song not on the phone says why: its
+                            // station would not open with it.
+                            guard !player.refusesOffline(track) else { return }
                             remember()
                             // The song first, then what sounds like it: the
                             // station of a song opens with that song.

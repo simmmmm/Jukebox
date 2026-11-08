@@ -1,6 +1,8 @@
 // A track in any list — an album's (its number), a playlist's or Songs'
 // (its cover), Up Next (with why the radio chose it) — and the menu every
-// track has, in a long press and behind its "…".
+// track has, in a long press and behind its "…". A song on the phone has
+// Music's small arrow after its title; offline, a song that is not on the
+// phone is dimmed, as it cannot play (OfflineStore), and a tap on it says why.
 
 import JukeboxKit
 import SwiftUI
@@ -22,6 +24,7 @@ struct TrackRow: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(LibraryStore.self) private var library
     @Environment(AppModel.self) private var app
+    @Environment(OfflineStore.self) private var offline
 
     init(_ track: Track, leading: Leading = .artwork, subtitle: String? = nil, reason: PickReason? = nil,
          showsMenu: Bool = true) {
@@ -38,10 +41,13 @@ struct TrackRow: View {
     }
 
     var body: some View {
+        let onPhone = offline.has(track.id)
+        let playable = onPhone || !offline.isOffline
         HStack(spacing: Theme.Space.m) {
             switch leading {
             case .artwork:
                 ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
+                    .opacity(playable ? 1 : 0.5)
             case let .number(number):
                 Group {
                     if isCurrent {
@@ -63,18 +69,24 @@ struct TrackRow: View {
                 HStack(spacing: 4) {
                     Text(track.name)
                         .lineLimit(1)
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(playable ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
                     if library.isFavorite(track.id) {
                         Image(systemName: "heart.fill")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .accessibilityLabel("Favorite")
                     }
+                    if onPhone {
+                        Image(systemName: "arrow.down.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .accessibilityLabel("Downloaded")
+                    }
                 }
                 if let subtitle, !subtitle.isEmpty {
                     Text(subtitle)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(playable ? HierarchicalShapeStyle.secondary : HierarchicalShapeStyle.tertiary)
                         .lineLimit(1)
                 }
                 if let reason {

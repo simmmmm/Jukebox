@@ -32,6 +32,8 @@ enum Route: Hashable {
     case genres
     case favorites
     case recentlyAdded
+    /// What is on the phone (DownloadedView).
+    case downloaded
 }
 
 struct AddToPlaylistRequest: Identifiable {
@@ -104,6 +106,7 @@ extension View {
                 case .genres: GenresView()
                 case .favorites: FavoritesView()
                 case .recentlyAdded: RecentlyAddedView()
+                case .downloaded: DownloadedView()
                 }
             }
             // Once a push, whether by a link or by `open`: not again when
@@ -143,6 +146,7 @@ extension Route {
         case .genres: return "genres"
         case .favorites: return "favorites"
         case .recentlyAdded: return "recently_added"
+        case .downloaded: return "downloaded"
         }
     }
 }

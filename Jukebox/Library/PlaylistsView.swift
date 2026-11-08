@@ -6,7 +6,9 @@
 // the server each time its page appears, and again when Add Songs closes or
 // a song is added from elsewhere (Now Playing's menu): playlists change in
 // other apps too, and a page that missed a song it was just given looks
-// broken.
+// broken. Download in the bar puts the playlist on the phone; a downloaded
+// playlist follows what the server says it holds each time its page reads
+// it, and offline its page shows the songs it was downloaded with.
 
 import JukeboxKit
 import SwiftUI
@@ -115,9 +117,11 @@ struct PlaylistDetailView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
+    @Environment(OfflineStore.self) private var offline
     @Environment(\.dismiss) private var dismiss
     /// Nil until the server has answered.
     @State private var entries: [LibraryPlaylistEntry]?
+    @State private var isConfirmingRemoval = false
     @State private var loadError: String?
     @State private var errorMessage: String?
     @State private var isConfirmingDelete = false
@@ -138,6 +142,7 @@ struct PlaylistDetailView: View {
             if let entries {
                 ForEach(entries) { entry in
                     Button {
+                        guard !player.refusesOffline(entry.track) else { return }
                         let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
                         play(tracks, from: i, playlist: shown, shuffled: false)
                     } label: {
@@ -202,6 +207,10 @@ struct PlaylistDetailView: View {
                     .disabled(entries == nil)
             }
             ToolbarItem(placement: .topBarTrailing) {
+                OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: tracks),
+                                      isConfirmingRemoval: $isConfirmingRemoval)
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 Menu {
                     Section {
                         Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
@@ -238,6 +247,7 @@ struct PlaylistDetailView: View {
             Text("It is deleted from your Jellyfin server, for every app. Its songs stay in your library.")
         }
         .libraryErrorAlert("Could Not Change the Playlist", message: $errorMessage)
+        .offlineRemovalDialog($isConfirmingRemoval, for: .playlist(playlist.id), name: shown.name)
         .sheet(isPresented: $isAddingSongs, onDismiss: { Task { await load() } }) {
             LibraryAddSongsSheet(playlist: shown, songsInPlaylist: Set(tracks.map(\.id)))
         }
@@ -305,14 +315,31 @@ struct PlaylistDetailView: View {
     private func load() async {
         loadCount += 1
         let mine = loadCount
+        let saved = offline.collection(for: .playlist(playlist.id))?.tracks
+        // Offline, the songs it was downloaded with, without asking a server
+        // that cannot answer.
+        if offline.isOffline, let saved {
+            entries = Self.makeEntries(from: saved)
+            loadError = nil
+            return
+        }
         do {
             let tracks = try await library.tracks(in: playlist)
             guard mine == loadCount else { return }
             entries = Self.makeEntries(from: tracks)
             loadError = nil
+            // Downloaded: what came in or went out on the server follows.
+            let shown = library.playlists.first(where: { $0.id == playlist.id }) ?? playlist
+            offline.playlistLoaded(shown, tracks: tracks)
         } catch {
             // Leaving the page cancels its load: that is no failure to show.
             guard mine == loadCount, !Task.isCancelled else { return }
+            // The server away: the downloaded songs, as offline.
+            if entries == nil, let saved {
+                entries = Self.makeEntries(from: saved)
+                loadError = nil
+                return
+            }
             // Songs already shown stay; only an empty page says it failed.
             if entries == nil {
                 loadError = error.localizedDescription
