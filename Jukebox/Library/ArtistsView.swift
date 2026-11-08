@@ -2,6 +2,9 @@
 // ignored, as Music does), and an artist's page — Play and Shuffle, their
 // station, their most played songs, their albums, the albums they are a
 // guest on, who sounds like them, and what Jellyfin knows about them.
+// Top Songs is called Songs until one of them has been played or is a
+// favorite: before that the order is only the newest album's, and "Top"
+// would claim a ranking there is not.
 
 import JukeboxKit
 import SwiftUI
@@ -93,6 +96,7 @@ struct ArtistDetailView: View {
         let top = Array(topQueue.prefix(5))
         let similar = similarArtists(to: shown)
         let hasTracks = !topQueue.isEmpty
+        let isRanked = library.hasPlaysOrFavorites(by: shown)
 
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
@@ -108,7 +112,7 @@ struct ArtistDetailView: View {
 
                 if !top.isEmpty {
                     VStack(alignment: .leading, spacing: Theme.Space.s) {
-                        SectionHeader("Top Songs")
+                        SectionHeader(isRanked ? String(localized: "Top Songs") : String(localized: "Songs"))
                         VStack(spacing: 0) {
                             ForEach(top.indices, id: \.self) { i in
                                 Button {
@@ -180,15 +184,18 @@ struct ArtistDetailView: View {
     }
 
     private func header(_ shown: Artist) -> some View {
-        VStack(spacing: Theme.Space.m) {
+        // A joined tag split, as Genres lists it: "Rock · Shoegaze", not
+        // "Rock; Shoegaze".
+        let genres = LibraryIndex.genreNames(shown.genres)
+        return VStack(spacing: Theme.Space.m) {
             ArtistAvatar(artist: shown, size: 180)
                 .shadow(color: .black.opacity(0.2), radius: 16, y: 8)
             Text(shown.name)
                 .font(.largeTitle.bold())
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
-            if !shown.genres.isEmpty {
-                Text(shown.genres.prefix(3).joined(separator: " · "))
+            if !genres.isEmpty {
+                Text(genres.prefix(3).joined(separator: " · "))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -228,7 +235,7 @@ struct ArtistDetailView: View {
             .disabled(tracks.isEmpty)
         }
         Section {
-            Button(favorite ? "Undo Favourite" : "Favourite", systemImage: favorite ? "heart.slash" : "heart") {
+            Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
                 Task { await library.toggleFavorite(shown.id) }
             }
         }

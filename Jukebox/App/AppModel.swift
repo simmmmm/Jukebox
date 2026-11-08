@@ -78,7 +78,8 @@ final class AppModel {
 
     func signOut() async {
         player.stop()
-        radio.stop()
+        // Also forgets this account's thumbs and recent stations.
+        radio.reset()
         let client = self.client
         Keychain.deleteCredentials()
         credentials = nil

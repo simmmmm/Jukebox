@@ -191,6 +191,39 @@ final class RadioTasteTests: XCTestCase {
         XCTAssertEqual(event.genreKeys, ["hiphop", "nederhop"])
     }
 
+    func testATakenBackThumbLeavesTheHistoryAsBefore() {
+        let tracks = [RadioTestTracks.track("t", "A"), RadioTestTracks.track("o", "B")]
+        var history = ListeningHistory(events: [
+            PlayEvent(track: tracks[0], date: days(3), listened: 200, outcome: .completed),
+            PlayEvent(track: tracks[0], date: days(2), listened: 0, outcome: .disliked),
+            PlayEvent(track: tracks[1], date: days(1), listened: 200, outcome: .completed),
+        ])
+        func affinity() -> Double {
+            TasteProfile(snapshot: LibrarySnapshot(tracks: tracks), history: history, now: now).trackAffinity("t")
+        }
+        XCTAssertLessThan(affinity(), 0)
+
+        // Only the newest event of that track, and only if it is that outcome.
+        XCTAssertFalse(history.removeLatest(.liked, of: "t"), "the newest of t is a thumbs down")
+        XCTAssertFalse(history.removeLatest(.disliked, of: "o"), "the newest of o is a play")
+        XCTAssertFalse(history.removeLatest(.disliked, of: "nowhere"))
+        XCTAssertEqual(history.events.count, 3)
+
+        XCTAssertTrue(history.removeLatest(.disliked, of: "t"))
+        XCTAssertEqual(history.events.map(\.outcome), [.completed, .completed], "the play before it stays")
+        XCTAssertGreaterThan(affinity(), 0, "the thumbs down no longer counts")
+        XCTAssertFalse(history.removeLatest(.disliked, of: "t"), "one, not every thumbs down")
+
+        // A thumbs up given after a thumbs down, then taken back: the thumbs
+        // down stands again, as it did before.
+        history.append(PlayEvent(track: tracks[0], date: days(0.5), listened: 0, outcome: .disliked))
+        history.append(PlayEvent(track: tracks[0], date: days(0.2), listened: 0, outcome: .liked))
+        XCTAssertTrue(history.removeLatest(.liked, of: "t"))
+        XCTAssertEqual(history.events.last?.outcome, .disliked)
+        XCTAssertEqual(history.events.count, 3)
+        XCTAssertLessThan(affinity(), 0)
+    }
+
     func testHistoryOfTracksNoLongerInTheLibraryCountsForTheArtist() {
         let tracks = [RadioTestTracks.track("1", "Kept")]
         let history = ListeningHistory(events: [
@@ -502,6 +535,88 @@ final class RadioSessionTests: XCTestCase {
         }
         let own = Set(s.ownTracks(artistKey: artist.key).compactMap(\.artwork))
         XCTAssertTrue(Station(seed: w.artistSeed(artist), snapshot: s).artwork.allSatisfy(own.contains))
+    }
+
+    /// Jellyfin lists a joined tag as one genre ("Rock; Shoegaze"); the
+    /// snapshot has "Rock" and "Shoegaze". The station is its parts, the
+    /// more specific weighing more, named after the most specific.
+    func testAGenreTheServerListsJoined() throws {
+        // More rock artists than separation lets a station rotate through,
+        // so what the station weighs shows in what it plays.
+        var tracks: [Track] = []
+        for (artist, genre) in [("Velvet Static", "Rock; Shoegaze"), ("Slow Haze", "Shoegaze"), ("Iron Meadow", "Rock; Hard Rock"),
+                                ("The Lanterns", "Rock; Alternative"), ("Grey Pilots", "Rock; Grunge"), ("Red Barn", "Rock; Blues"),
+                                ("Static Youth", "Rock; Punk"), ("Plain Folk", "Rock"), ("Kalimba", "Electronic; House"),
+                                ("Nightdrive", "Electronic; Synthwave"), ("Blue Room Trio", "Jazz")] {
+            for k in 0..<8 {
+                let album = "\(artist) \(k / 4)"
+                tracks.append(RadioTestTracks.track("\(NameKey.artist(artist))-\(k)", artist, album: album, genres: [genre],
+                                                    number: k % 4 + 1))
+            }
+        }
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        let taste = TasteProfile(snapshot: snapshot, history: ListeningHistory(), now: Date(timeIntervalSinceReferenceDate: 800_000_000))
+        let graph = SimilarityGraph.fromLibrary(snapshot)
+        func seed(_ name: String) -> StationSeed { .genre(key: NameKey.genre(name), name: name) }
+        func picks(_ name: String, randomSeed: UInt64) -> [RadioPick] {
+            var session = RadioSession(station: Station(seed: seed(name), snapshot: snapshot), snapshot: snapshot, taste: taste,
+                                       graph: graph, randomSeed: randomSeed)
+            return session.next(16)
+        }
+        func share(_ name: String, carrying genres: Set<String>, only: Bool = false) -> Double {
+            var hits = 0, total = 0
+            for randomSeed in UInt64(1)...8 {
+                for pick in picks(name, randomSeed: randomSeed) {
+                    let own = Set(snapshot.genreKeys(of: pick.track))
+                    total += 1
+                    if only ? own == genres : !own.isDisjoint(with: genres) { hits += 1 }
+                }
+            }
+            return Double(hits) / Double(max(1, total))
+        }
+
+        let joined = Station(seed: seed("Rock; Shoegaze"), snapshot: snapshot)
+        XCTAssertEqual(joined.id, "genre-rockshoegaze", "the id stays the seed's")
+        XCTAssertEqual(joined.title, "Shoegaze Radio")
+        XCTAssertEqual(joined.subtitle, "Shoegaze and Rock from your library")
+        let velvet = Set(snapshot.ownTracks(artistKey: "velvetstatic").compactMap(\.artwork))
+        XCTAssertFalse(joined.artwork.isEmpty)
+        XCTAssertTrue(joined.artwork.allSatisfy(velvet.contains), "the covers are the joined tag's own records")
+
+        for randomSeed in UInt64(1)...8 {
+            let list = picks("Rock; Shoegaze", randomSeed: randomSeed)
+            XCTAssertEqual(list.count, 16)
+            let first = try XCTUnwrap(list.first)
+            XCTAssertEqual(Set(snapshot.genreKeys(of: first.track)), ["rock", "shoegaze"], "it opens in the tag")
+            XCTAssertEqual(first.reason, .genre("Shoegaze"))
+        }
+        // Rock and shoegaze, and the more specific more than Rock Radio has.
+        let rockOrShoegaze = share("Rock; Shoegaze", carrying: ["rock", "shoegaze"])
+        let shoegazeHere = share("Rock; Shoegaze", carrying: ["shoegaze"])
+        let shoegazeOnRock = share("Rock", carrying: ["shoegaze"])
+        let rockOnlyHere = share("Rock; Shoegaze", carrying: ["rock"]) - share("Rock; Shoegaze", carrying: ["rock", "shoegaze"], only: true)
+        let rockOnlyOnShoegaze = share("Shoegaze", carrying: ["rock"]) - share("Shoegaze", carrying: ["rock", "shoegaze"], only: true)
+        RadioEvaluationTests.line(String(format: "joined genre: Rock; Shoegaze Radio %.2f rock or shoegaze, %.2f shoegaze (Rock Radio %.2f); rock without shoegaze %.2f (Shoegaze Radio %.2f)",
+                                         rockOrShoegaze, shoegazeHere, shoegazeOnRock, rockOnlyHere, rockOnlyOnShoegaze))
+        XCTAssertGreaterThanOrEqual(rockOrShoegaze, 0.9)
+        XCTAssertGreaterThan(shoegazeHere, shoegazeOnRock)
+        XCTAssertGreaterThanOrEqual(rockOnlyHere, rockOnlyOnShoegaze)
+
+        // "|" joins too; a part the library lacks is left out; three parts.
+        XCTAssertEqual(Station(seed: seed("Electronic | House"), snapshot: snapshot).title, "House Radio")
+        let partly = Station(seed: seed("Rock; Polka"), snapshot: snapshot)
+        XCTAssertEqual(partly.title, "Rock Radio")
+        XCTAssertEqual(partly.subtitle, "Rock from your library")
+        XCTAssertTrue(picks("Rock; Polka", randomSeed: 2).first.map { snapshot.genreKeys(of: $0.track).contains("rock") } ?? false)
+        XCTAssertEqual(Station(seed: seed("Rock; Shoegaze; Hard Rock"), snapshot: snapshot).subtitle,
+                       "Hard Rock, Shoegaze, and Rock from your library")
+        // None of it in the library: Your Station, under the seed's own name.
+        let none = Station(seed: seed("Polka; Schlager"), snapshot: snapshot)
+        XCTAssertEqual(none.title, "Polka; Schlager Radio")
+        XCTAssertTrue(none.artwork.isEmpty)
+        XCTAssertEqual(picks("Polka; Schlager", randomSeed: 3).count, 16)
+        // One genre is what it was.
+        XCTAssertEqual(Station(seed: seed("Shoegaze"), snapshot: snapshot).subtitle, "Shoegaze from your library")
     }
 
     func testPlayOutcomes() {

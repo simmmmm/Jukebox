@@ -10,6 +10,10 @@
 // those, and Jellyfin serves plain http there by default) and for port 8096
 // (Jellyfin's http port; its https port is 8920). https for everything
 // else, since a server on the internet should be behind TLS.
+//
+// Without a port, the address may well be missing the one Jellyfin listens
+// on: JellyfinClient.candidateAddresses adds http at 8096 to try second
+// (`candidates`, below, has the rule).
 
 import Foundation
 
@@ -17,7 +21,54 @@ enum JellyfinAddress {
     /// Home-network suffixes no public certificate is issued for.
     static let homeSuffixes = [".local", ".lan", ".home", ".home.arpa", ".internal", ".localdomain", ".fritz.box"]
 
+    /// Jellyfin's own http port.
+    static let defaultPort = 8096
+
+    /// What was typed, taken apart.
+    struct Parts {
+        /// "http" or "https" when typed, nil when not.
+        var typedScheme: String?
+        /// The scheme the address gets: the typed one, else the guess above.
+        var scheme: String
+        /// Lower case; an IPv6 address in brackets.
+        var host: String
+        var port: Int?
+        /// "" or the path of a server behind a reverse proxy ("/jellyfin").
+        var path: String
+
+        func url(scheme: String, port: Int?) -> URL? {
+            var string = "\(scheme)://\(host)"
+            if let port { string += ":\(port)" }
+            string += path
+            return URL(string: string)
+        }
+    }
+
     static func normalize(_ input: String) -> URL? {
+        guard let parts = parse(input) else { return nil }
+        return parts.url(scheme: parts.scheme, port: parts.port)
+    }
+
+    /// The addresses to try, in order: the normalized one; then, when no
+    /// port was typed, the same host on http at 8096. People type
+    /// "192.168.1.10" or "nas.local" for a server that answers only on
+    /// Jellyfin's own port (a fresh install listens on http 8096 and nowhere
+    /// else), and the guess without it reaches nothing.
+    ///
+    /// Not when "https://" was typed: the person asked for TLS, and plain
+    /// http would send their password in the clear to whoever answers on
+    /// 8096. A typed "http://" (no TLS asked for) and no scheme at all (the
+    /// https was this app's guess) get it. A typed port is the port: no
+    /// second guess. The path stays: Jellyfin's own Base URL setting puts a
+    /// server at "/jellyfin" on 8096 as well.
+    static func candidates(_ input: String) -> [URL] {
+        guard let parts = parse(input), let first = parts.url(scheme: parts.scheme, port: parts.port) else { return [] }
+        guard parts.port == nil, parts.typedScheme != "https",
+              let fallback = parts.url(scheme: "http", port: defaultPort), fallback != first else { return [first] }
+        return [first, fallback]
+    }
+
+    static func parse(_ input: String) -> Parts? {
         var rest = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !rest.isEmpty,
               !rest.unicodeScalars.contains(where: { CharacterSet.whitespacesAndNewlines.contains($0) })
@@ -46,11 +97,8 @@ enum JellyfinAddress {
         guard path.unicodeScalars.allSatisfy({ pathAllowed.contains($0) }) else { return nil }
         path = serverPath(path)
 
-        let chosen = scheme ?? (isHomeNetwork(host: host, isIP: isIP) || port == 8096 ? "http" : "https")
-        var string = "\(chosen)://\(host)"
-        if let port { string += ":\(port)" }
-        string += path
-        return URL(string: string)
+        let chosen = scheme ?? (isHomeNetwork(host: host, isIP: isIP) || port == defaultPort ? "http" : "https")
+        return Parts(typedScheme: scheme, scheme: chosen, host: host, port: port, path: path)
     }
 
     /// The host (lower case; an IPv6 address in brackets), the port, and

@@ -1,11 +1,15 @@
 // Home: the two things the photographer asked for most, first — "op de
 // homepage wil ik dat de app zelf leuke playlists verzint en of een goede
 // radio functie heeft" (8 November 2026). Their own station on top, one tap
-// from playing; the mixes Jukebox made up today; stations to start; then
-// what they played lately and what is new, as Music's Home has them.
+// from playing; the mixes Jukebox made up today; stations to start; then, as
+// Feishin's Home and Music's have them ("Ik vind feishin een fijne desktop
+// app op Linux voor context"), what they chose to play lately, what they
+// play most, albums to explore today, and what is new. Explore needs no
+// history, so Home is full on day one too.
 
 import JukeboxKit
 import SwiftUI
+import UIKit
 
 struct HomeView: View {
     @Environment(LibraryStore.self) private var library
@@ -72,11 +76,14 @@ private struct HomeFeed: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xxl) {
+                HomeOfflineNotice()
                 HomeStationHero()
                     .padding(.horizontal, Theme.margin)
                 HomeMixesSection()
                 HomeStationsSection()
                 HomeRecentlyPlayedSection()
+                HomeMostPlayedSection()
+                HomeExploreSection()
                 HomeRecentlyAddedSection()
             }
             .padding(.top, Theme.Space.s)
@@ -86,6 +93,62 @@ private struct HomeFeed: View {
             await library.refresh()
             await mixes.rebuild(library: library, history: history, settings: settings)
         }
+    }
+}
+
+private enum HomeLayout {
+    /// The widest the cards on top get: on the iPad, and an iPhone on its
+    /// side, a card across the whole screen leaves the eclipse half a
+    /// screen from its words. At 560 the words keep about 390 points beside
+    /// it, room for "Endless music from everything you love" on one line.
+    static let cardWidth: CGFloat = 560
+}
+
+// MARK: - The server out of reach
+
+/// The library from last time, while the server does not answer: said once,
+/// small, above the music, with a way to try again. Only when there is a
+/// library on screen; without one HomeLibraryStatus says it full size.
+private struct HomeOfflineNotice: View {
+    @Environment(LibraryStore.self) private var library
+
+    var body: some View {
+        if isFailed {
+            VStack(alignment: .leading, spacing: Theme.Space.m) {
+                Label {
+                    Text("Can’t reach \(serverName). Showing your library from last time.")
+                        .foregroundStyle(.primary)
+                        .fixedSize(horizontal: false, vertical: true)
+                } icon: {
+                    Image(systemName: "wifi.exclamationmark")
+                        .foregroundStyle(.secondary)
+                }
+                .font(.subheadline)
+                Button("Try Again") {
+                    Task { await library.refresh() }
+                }
+                .buttonStyle(.secondary)
+                .fixedSize()
+            }
+            .padding(Theme.Space.l)
+            .frame(maxWidth: HomeLayout.cardWidth, alignment: .leading)
+            // The system's grouped-card grey, as the Radio tab's card on the air.
+            .background(Color(uiColor: .secondarySystemBackground), in: .rect(cornerRadius: Theme.Radius.card))
+            .accessibilityElement(children: .contain)
+            .padding(.horizontal, Theme.margin)
+        }
+    }
+
+    /// The load failed; the library on screen is the cached one (HomeFeed
+    /// shows only while there are tracks). A refresh under way is
+    /// `.loading`, so the notice goes while it tries and comes back if it fails.
+    private var isFailed: Bool {
+        if case .failed = library.state { return true }
+        return false
+    }
+
+    private var serverName: String {
+        library.serverName ?? String(localized: "your server")
     }
 }
 
@@ -119,8 +182,9 @@ private struct HomeStationHero: View {
             if !isStacked { art }
         }
         .padding(Theme.margin)
-        // About 16:9 on an iPhone; taller when the text is larger.
-        .frame(maxWidth: .infinity, minHeight: 196, alignment: .leading)
+        // About 16:9 on an iPhone; taller when the text is larger; no wider
+        // than HomeLayout.cardWidth on the iPad.
+        .frame(maxWidth: HomeLayout.cardWidth, minHeight: 196, alignment: .leading)
         .background(Theme.page, in: .rect(cornerRadius: Theme.Radius.card))
         .overlay {
             RoundedRectangle(cornerRadius: Theme.Radius.card)
@@ -253,14 +317,61 @@ private struct HomeStationsSection: View {
     }
 }
 
+/// What the listener chose to play, from this device's history: a station's
+/// songs are not in it, so a night of radio does not fill it
+/// (HomeShelves.recentlyPlayed).
 private struct HomeRecentlyPlayedSection: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(HistoryStore.self) private var history
 
     var body: some View {
-        let albums = Array(library.recentlyPlayedAlbums.prefix(20))
+        let albums = HomeShelves.recentlyPlayed(events: history.history.events, tracks: library.tracks,
+                                                albums: library.albums,
+                                                track: { library.track(id: $0) },
+                                                album: { library.album(id: $0) })
         if !albums.isEmpty {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 SectionHeader("Recently Played")
+                Shelf(items: albums, width: 150) { album in
+                    HomeAlbumLink(album: album)
+                }
+            }
+        }
+    }
+}
+
+/// The albums played most, by the plays of their songs on every device.
+private struct HomeMostPlayedSection: View {
+    @Environment(LibraryStore.self) private var library
+
+    var body: some View {
+        let albums = HomeShelves.mostPlayed(tracks: library.tracks, album: { library.album(id: $0) })
+        if !albums.isEmpty {
+            VStack(alignment: .leading, spacing: Theme.Space.m) {
+                SectionHeader("Most Played")
+                Shelf(items: albums, width: 150) { album in
+                    HomeAlbumLink(album: album)
+                }
+            }
+        }
+    }
+}
+
+/// Twenty albums from anywhere in the library, in an order that holds for
+/// the day, as Feishin's "Explore from your library".
+private struct HomeExploreSection: View {
+    @Environment(LibraryStore.self) private var library
+    @Environment(MixStore.self) private var mixes
+
+    var body: some View {
+        // The mixes' day, so the shelf turns over with them the next morning
+        // (Home rebuilds them when it comes back to the front), rather than
+        // only when the library next changes.
+        let day = HomeShelves.dayNumber(of: mixes.builtAt ?? Date())
+        let albums = HomeShelves.explore(albums: library.albums, day: day)
+        if !albums.isEmpty {
+            VStack(alignment: .leading, spacing: Theme.Space.m) {
+                SectionHeader("Explore")
                 Shelf(items: albums, width: 150) { album in
                     HomeAlbumLink(album: album)
                 }

@@ -96,6 +96,21 @@ public struct ListeningHistory: Codable, Sendable {
         if events.count > Self.limit { events.removeFirst(events.count - Self.limit) }
     }
 
+    /// Takes back the track's newest event when (and only when) it is
+    /// `outcome`: a thumb taken back. The history is then as it was before
+    /// the thumb, earlier thumbs and plays kept; when something else came
+    /// after the thumb, nothing is taken. A thumbs down left in keeps the
+    /// song off every station for half a year (TasteData.thumbsDownDays),
+    /// whatever the button shows. Whether it removed one.
+    @discardableResult
+    public mutating func removeLatest(_ outcome: PlayOutcome, of trackID: ItemID) -> Bool {
+        guard let at = events.lastIndex(where: { $0.trackID == trackID }), events[at].outcome == outcome else {
+            return false
+        }
+        events.remove(at: at)
+        return true
+    }
+
     /// Tracks played (any outcome) since `date`.
     public func trackIDs(since date: Date) -> Set<ItemID> {
         var ids = Set<ItemID>()
@@ -317,7 +332,7 @@ public enum PickReason: Hashable, Codable, Sendable {
         case let .similarTrack(title): "Like “\(title)”"
         case let .genre(name): "More \(name)"
         case let .era(decade): "From the \(decade)s"
-        case .favorite: "One of your favourites"
+        case .favorite: "One of your favorites"
         case .rediscover: "Not heard in a while"
         case .discovery: "New to you"
         case let .becauseYouLiked(title): "Because you liked “\(title)”"

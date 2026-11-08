@@ -1,5 +1,6 @@
-// Favourites: the songs, albums and artists the listener has hearted, in
-// Jellyfin (so every Jellyfin app shares them), one kind at a time.
+// Favorites: the songs, albums and artists the listener has hearted, in
+// Jellyfin (so every Jellyfin app shares them), one kind at a time. Spelled
+// as Apple's Music spells it, "Favorite", in every string the listener sees.
 
 import JukeboxKit
 import SwiftUI
@@ -22,7 +23,7 @@ struct FavoritesView: View {
                 .padding(.vertical, Theme.Space.s)
                 .background(.bar)
             }
-            .navigationTitle("Favourites")
+            .navigationTitle("Favorites")
             .refreshable { await library.refresh() }
     }
 
@@ -59,8 +60,8 @@ struct FavoritesView: View {
         .listStyle(.plain)
         .overlay {
             if favorites.isEmpty {
-                ContentUnavailableView("No Favourite Songs", systemImage: "heart",
-                                       description: Text("Touch and hold a song, then choose Favourite."))
+                ContentUnavailableView("No Favorite Songs", systemImage: "heart",
+                                       description: Text("Touch and hold a song, then choose Favorite."))
             }
         }
     }
@@ -73,8 +74,8 @@ struct FavoritesView: View {
         }
         .overlay {
             if favorites.isEmpty {
-                ContentUnavailableView("No Favourite Albums", systemImage: "heart",
-                                       description: Text("Touch and hold an album, then choose Favourite."))
+                ContentUnavailableView("No Favorite Albums", systemImage: "heart",
+                                       description: Text("Touch and hold an album, then choose Favorite."))
             }
         }
     }
@@ -91,14 +92,14 @@ struct FavoritesView: View {
         .listStyle(.plain)
         .overlay {
             if favorites.isEmpty {
-                ContentUnavailableView("No Favourite Artists", systemImage: "heart",
-                                       description: Text("On an artist’s page, choose Favourite in the … menu."))
+                ContentUnavailableView("No Favorite Artists", systemImage: "heart",
+                                       description: Text("On an artist’s page, choose Favorite in the … menu."))
             }
         }
     }
 
     private var context: QueueContext {
-        QueueContext(.favorites, title: String(localized: "Favourite Songs"))
+        QueueContext(.favorites, title: String(localized: "Favorite Songs"))
     }
 }
 

@@ -316,16 +316,27 @@ struct NowPlayingView: View {
         }
     }
 
+    /// The heart. While the radio's station plays, a heart is a thumbs up
+    /// too: a song loved on a station is the clearest "more like this" the
+    /// listener gives, and it should not take a second tap on the thumb to
+    /// teach the station so. Taking the heart back leaves the thumb as it
+    /// is: not loving a song any more is not disliking it, and the thumb has
+    /// its own button beside the station's name.
     private func favoriteButton(_ track: Track) -> some View {
         let favorite = library.isFavorite(track.id)
         return Button {
+            let turningOn = !library.isFavorite(track.id)
+            // like() toggles: a song already thumbed up would lose its thumb.
+            if turningOn, radioStation != nil, !radio.liked.contains(track.id) {
+                radio.like(track)
+            }
             Task { await library.toggleFavorite(track.id) }
         } label: {
             NowPlayingRoundGlyph(systemName: favorite ? "heart.fill" : "heart", isOn: favorite)
                 .symbolEffect(.bounce, value: favorite)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(favorite ? "Undo Favourite" : "Favourite")
+        .accessibilityLabel(favorite ? "Undo Favorite" : "Favorite")
     }
 
     // MARK: Controls
@@ -568,6 +579,16 @@ struct NowPlayingView: View {
 
     private var playingStation: Station? {
         player.context?.station
+    }
+
+    /// The radio's station, while it is what plays: the radio has one and
+    /// the queue is its. Not while a new station is still being tuned in
+    /// over the old one's last song, nor when the radio has stopped and the
+    /// queue still carries a station's name: the thumb would teach nothing,
+    /// or the wrong station.
+    private var radioStation: Station? {
+        guard let station = radio.station, player.context?.station?.id == station.id else { return nil }
+        return station
     }
 
     private var contextTitle: String? {

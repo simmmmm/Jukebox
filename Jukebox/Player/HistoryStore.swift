@@ -30,6 +30,14 @@ final class HistoryStore {
         scheduleSave()
     }
 
+    /// A thumb taken back: the track's newest event goes, if it is that
+    /// thumb. A thumbs down left in keeps the song off every station for
+    /// half a year (TasteData.thumbsDownDays), whatever the button shows.
+    func removeLatest(_ outcome: PlayOutcome, of trackID: ItemID) {
+        guard history.removeLatest(outcome, of: trackID) else { return }
+        scheduleSave()
+    }
+
     /// Recently heard tracks, newest first, at most `limit`, each once.
     func recentTrackIDs(limit: Int = 50) -> [ItemID] {
         guard limit > 0 else { return [] }

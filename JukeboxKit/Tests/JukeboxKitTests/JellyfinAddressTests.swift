@@ -53,6 +53,39 @@ struct JellyfinAddressTests {
         #expect(JellyfinClient.normalize(serverAddress: input) == nil)
     }
 
+    @Test("Addresses to try: http at 8096 second, when no port was typed", arguments: [
+        ("192.168.1.10", ["http://192.168.1.10", "http://192.168.1.10:8096"]),
+        ("nas.local", ["http://nas.local", "http://nas.local:8096"]),
+        ("nas", ["http://nas", "http://nas:8096"]),
+        ("[fd00::1]", ["http://[fd00::1]", "http://[fd00::1]:8096"]),
+        // No scheme typed: the https was a guess, so http at 8096 is tried too.
+        ("music.example.com", ["https://music.example.com", "http://music.example.com:8096"]),
+        ("http://music.example.com", ["http://music.example.com", "http://music.example.com:8096"]),
+        ("nas.local/jellyfin/", ["http://nas.local/jellyfin", "http://nas.local:8096/jellyfin"]),
+        // A typed port is the port.
+        ("nas.local:8096", ["http://nas.local:8096"]),
+        ("192.168.1.10:80", ["http://192.168.1.10:80"]),
+        ("music.example.com:8920", ["https://music.example.com:8920"]),
+        ("http://1.2.3.4:8096/", ["http://1.2.3.4:8096"]),
+        // https typed: TLS was asked for, never plain http instead.
+        ("https://music.example.com", ["https://music.example.com"]),
+        ("HTTPS://Music.Example.COM/", ["https://music.example.com"]),
+        ("https://10.0.0.2", ["https://10.0.0.2"]),
+        ("https://jf.example.com/jellyfin/web/#/home", ["https://jf.example.com/jellyfin"]),
+        ("  https://music.example.com \n", ["https://music.example.com"]),
+    ])
+    func candidates(_ input: String, _ expected: [String]) {
+        let found = JellyfinClient.candidateAddresses(for: input).map(\.absoluteString)
+        #expect(found == expected)
+        // The first is always what normalize gives.
+        #expect(found.first == JellyfinClient.normalize(serverAddress: input)?.absoluteString)
+    }
+
+    @Test("No addresses to try for what is not an address", arguments: ["", "   ", "not a url", "ftp://x.y", "x.y:0", "user:pw@x.y"])
+    func noCandidates(_ input: String) {
+        #expect(JellyfinClient.candidateAddresses(for: input).isEmpty)
+    }
+
     @Test("A base path is kept for routes behind a reverse proxy")
     func basePath() throws {
         let base = try #require(JellyfinClient.normalize(serverAddress: "https://x.y/jellyfin/"))

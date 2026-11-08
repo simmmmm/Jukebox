@@ -31,6 +31,10 @@ final class LibraryStore {
     private(set) var albums: [Album] = []
     private(set) var artists: [Artist] = []
     private(set) var playlists: [Playlist] = []
+    /// The library's genres as the snapshot splits them ("Rock" and
+    /// "Shoegaze", not the server's "Rock; Shoegaze"), by name, each with
+    /// the server's id when it has a genre of exactly that name and
+    /// "genre:" + key when not (LibraryIndex.libraryGenres).
     private(set) var genres: [Genre] = []
     /// The index the radio and the mixes work from; rebuilt off the main
     /// actor when `tracks` changes.
@@ -78,7 +82,7 @@ final class LibraryStore {
         if let cached {
             let (library, built) = cached
             apply(tracks: library.tracks, albums: library.albums, artists: library.artists,
-                  playlists: library.playlists, genres: library.genres, index: built)
+                  playlists: library.playlists, index: built)
             lastLoaded = library.savedAt
             state = .loaded
             // The server behind the cache, without holding up the caller:
@@ -334,6 +338,16 @@ extension LibraryStore {
 
     func trackCount(inGenre genre: Genre) -> Int { index.genreTracks[genre.key]?.count ?? 0 }
 
+    /// Whether any of the artist's songs has been played or is a favorite:
+    /// until then `topTracks` is only the newest album's order, and the
+    /// artist's page calls them Songs, not Top Songs.
+    func hasPlaysOrFavorites(by artist: Artist) -> Bool {
+        guard let positions = index.artistTracks[artist.key] else { return false }
+        return positions.contains { i in
+            tracks.indices.contains(i) && (tracks[i].playCount > 0 || favoriteIDs.contains(tracks[i].id))
+        }
+    }
+
     /// The server's name, for "Loading the music on …".
     var serverName: String? { credentials?.serverName }
 
@@ -388,18 +402,22 @@ private extension LibraryStore {
             async let fetchedAlbums = LibraryStore.allAlbums(client)
             async let fetchedArtists = LibraryStore.allArtists(client)
             async let fetchedPlaylists = client.playlists()
-            async let fetchedGenres = client.genres()
+            // The server's genres only lend their ids and images to the
+            // library's own split list (LibraryIndex): without them the
+            // library still loads, with the ids the genres already had.
+            async let fetchedGenres = try? await client.genres()
             let (newTracks, newAlbums, newArtists, newPlaylists, newGenres) =
                 try await (fetchedTracks, fetchedAlbums, fetchedArtists, fetchedPlaylists, fetchedGenres)
             guard generation == self.generation else { return }
 
+            let serverGenres = newGenres ?? genres
             let built = await Task.detached(priority: .userInitiated) {
-                LibraryIndex(tracks: newTracks, albums: newAlbums, artists: newArtists, genres: newGenres)
+                LibraryIndex(tracks: newTracks, albums: newAlbums, artists: newArtists, genres: serverGenres)
             }.value
             guard generation == self.generation else { return }
 
             apply(tracks: newTracks, albums: newAlbums, artists: newArtists,
-                  playlists: newPlaylists, genres: newGenres, index: built)
+                  playlists: newPlaylists, index: built)
             lastLoaded = Date()
             state = .loaded
             saveCache()
@@ -438,22 +456,16 @@ private extension LibraryStore {
     }
 
     func apply(tracks: [Track], albums: [Album], artists: [Artist], playlists: [Playlist],
-               genres: [Genre], index built: LibraryIndex) {
+               index built: LibraryIndex) {
         // Arrays and index in one go: the index's positions are into these.
+        // The genres are the index's own (split, sorted): its genreByKey
+        // points into that list.
         self.tracks = tracks
         self.albums = albums
         self.artists = artists
         self.playlists = playlists.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        let sortedGenres = genres.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-        self.genres = sortedGenres
-        // The index's genre positions were made in the server's order, the
-        // list is sorted above: made again (a few hundred at most).
-        var adjusted = built
-        adjusted.genreByKey = [:]
-        for (i, genre) in sortedGenres.enumerated() where adjusted.genreByKey[genre.key] == nil {
-            adjusted.genreByKey[genre.key] = i
-        }
-        index = adjusted
+        self.genres = built.genres
+        index = built
         favoriteIDs = built.favoriteIDs
         snapshot = built.snapshot
     }

@@ -4,6 +4,10 @@
 // address shows at once and the second step can say "Signing in to Tijmen's
 // Music". Where the server offers Quick Connect, a code to type into another
 // Jellyfin app that is signed in already saves typing a password on the phone.
+// An address typed without a port is tried as typed and then on Jellyfin's
+// own (http, 8096; JellyfinClient.candidateAddresses): "192.168.1.10" or
+// "nas.local" for a fresh install, which listens on 8096 only, then simply
+// works rather than saying there is nothing there.
 //
 // One card of fields on the grouped background, as Settings draws a Form,
 // under the eclipse: the first thing anyone sees of Jukebox is Numa's mark.
@@ -106,30 +110,45 @@ struct OnboardingView: View {
         guard !isConnecting else { return }
         let typed = trimmedAddress
         guard !typed.isEmpty else { return }
-        guard let url = JellyfinClient.normalize(serverAddress: typed) else {
+        let candidates = JellyfinClient.candidateAddresses(for: typed)
+        guard let first = candidates.first else {
             show(String(localized: "That is not a server address. Try one like jellyfin.example.com."))
             return
         }
         serverError = nil
         isConnecting = true
         isAddressFocused = false
-        let client = app.client(for: url)
+        let clients = candidates.map { app.client(for: $0) }
         Task {
-            do {
-                // Both at once: Quick Connect's answer is ready when the
-                // server's name is, and the second step opens complete.
-                async let offersQuickConnect = client.quickConnectEnabled()
-                let info = try await client.publicInfo()
-                let quickConnect = await offersQuickConnect
-                OnboardingMemory.serverAddress = typed
-                isConnecting = false
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    step = .account(OnboardingServer(url: url, info: info, offersQuickConnect: quickConnect))
+            // One after the other, in order: the first that answers is the
+            // server, so the address as typed wins whenever it works.
+            var firstError: Error?
+            for client in clients {
+                do {
+                    // Both at once: Quick Connect's answer is ready when the
+                    // server's name is, and the second step opens complete.
+                    async let offersQuickConnect = client.quickConnectEnabled()
+                    let info = try await client.publicInfo()
+                    let quickConnect = await offersQuickConnect
+                    // What answered, for the next sign-in: Jellyfin's port
+                    // written out when it took the second try, so the next
+                    // one goes straight there.
+                    OnboardingMemory.serverAddress = client.serverURL == first ? typed : client.serverURL.absoluteString
+                    isConnecting = false
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        step = .account(OnboardingServer(url: client.serverURL, info: info, offersQuickConnect: quickConnect))
+                    }
+                    return
+                } catch {
+                    if firstError == nil { firstError = error }
                 }
-            } catch {
-                isConnecting = false
-                show(Self.message(for: error, at: url))
             }
+            isConnecting = false
+            // The address as typed is the one to talk about: the second try
+            // was this app's guess, and its "no answer on 8096" would only
+            // confuse what went wrong with the first.
+            let error: Error = firstError ?? JellyfinError.invalidServerAddress
+            show(Self.message(for: error, at: first))
         }
     }
 
@@ -252,11 +271,17 @@ private struct OnboardingAccountForm: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// "Jellyfin 10.10.7 · music.example.com"
+    /// "Jellyfin 10.10.7 · music.example.com", with the port when there is
+    /// one ("nas.local:8096"): the address may be the second try, not the
+    /// one typed, and this says which answered.
     private var serverDetail: String {
         var parts: [String] = []
         if !server.info.version.isEmpty { parts.append("Jellyfin \(server.info.version)") }
-        parts.append(server.url.host() ?? server.url.absoluteString)
+        if let host = server.url.host() {
+            parts.append(server.url.port.map { "\(host):\($0)" } ?? host)
+        } else {
+            parts.append(server.url.absoluteString)
+        }
         return parts.joined(separator: " · ")
     }
 

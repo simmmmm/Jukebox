@@ -3,15 +3,24 @@
 // bar is full width), play or pause, and next. A tap anywhere else opens
 // Now Playing. When the tab bar is minimised (scrolling down) the accessory
 // sits inline beside it and is narrow: the title and play or pause only.
+//
+// The player's error ("Could not play …", a station that finds nothing)
+// takes the artist's line for the five seconds the player keeps it: Now
+// Playing shows it as a banner, but most of the time Now Playing is closed,
+// and a song that silently does not play, or a station that silently does
+// not start, reads as a broken button.
 
 import JukeboxKit
 import SwiftUI
+import UIKit
 
 struct MiniPlayer: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+    init() {}
 
     var body: some View {
         HStack(spacing: Theme.Space.xs) {
@@ -50,6 +59,13 @@ struct MiniPlayer: View {
                 TrackMenu(track: track)
             }
         }
+        .onChange(of: player.errorMessage) { _, message in
+            // Shown on this line silently; VoiceOver is told. Not while Now
+            // Playing is open: it tells VoiceOver itself, and once is enough.
+            if let message, !navigator.isNowPlayingPresented {
+                UIAccessibility.post(notification: .announcement, argument: message)
+            }
+        }
     }
 
     // MARK: Parts
@@ -63,47 +79,75 @@ struct MiniPlayer: View {
     }
 
     @ViewBuilder private var titles: some View {
-        if let track = player.currentTrack {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(spacing: Theme.Space.xs) {
-                    if isStation {
-                        // A station plays: the radio's glyph, small, so the
-                        // listener knows skips and thumbs teach it.
-                        Image(systemName: "dot.radiowaves.left.and.right")
-                            .font(.caption2.weight(.semibold))
-                            .foregroundStyle(.secondary)
+        Group {
+            if let track = player.currentTrack {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(spacing: Theme.Space.xs) {
+                        if isStation {
+                            // A station plays: the radio's glyph, small, so the
+                            // listener knows skips and thumbs teach it.
+                            Image(systemName: "dot.radiowaves.left.and.right")
+                                .font(.caption2.weight(.semibold))
+                                .foregroundStyle(.secondary)
+                        }
+                        Text(track.name)
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
                     }
-                    Text(track.name)
+                    if let shownError {
+                        errorLine(shownError)
+                    } else if showsArtist {
+                        Text(track.artistLine)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+            } else if let station = startingStation {
+                // A station chosen while nothing played: its first track is a
+                // moment away.
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(station.title)
                         .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
+                    if let shownError {
+                        errorLine(shownError)
+                    } else if !isInline {
+                        Text("Tuning in…")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
                 }
-                if showsArtist {
-                    Text(track.artistLine)
-                        .font(.caption)
+            } else {
+                // Nothing plays: a station that found nothing to play ends
+                // here, and says so under "Not Playing".
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Not Playing")
+                        .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+                    if let shownError {
+                        errorLine(shownError)
+                    }
                 }
             }
-        } else if let station = startingStation {
-            // A station chosen while nothing played: its first track is a
-            // moment away.
-            VStack(alignment: .leading, spacing: 0) {
-                Text(station.title)
-                    .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
-                if !isInline {
-                    Text("Tuning in…")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-        } else {
-            Text("Not Playing")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
+        }
+        // The error comes and goes, after five seconds, as a crossfade.
+        .animation(.easeInOut(duration: 0.25), value: shownError)
+    }
+
+    /// The error in the artist's place: as quiet as the artist, with the
+    /// warning sign Now Playing's banner has, so it does not read as a name.
+    private func errorLine(_ message: String) -> some View {
+        HStack(spacing: Theme.Space.xs) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.caption2.weight(.semibold))
+            Text(verbatim: message)
+                .font(.caption)
                 .lineLimit(1)
         }
+        .foregroundStyle(.secondary)
     }
 
     private var playPauseButton: some View {
@@ -152,6 +196,13 @@ struct MiniPlayer: View {
         return !track.artistLine.isEmpty
     }
 
+    /// The player's error while it keeps it, on the second line. Not beside
+    /// the minimised tab bar, which has room for the title alone.
+    private var shownError: String? {
+        guard !isInline else { return nil }
+        return player.errorMessage
+    }
+
     /// The station being started, when the radio is choosing its first
     /// tracks.
     private var startingStation: Station? {
@@ -160,7 +211,15 @@ struct MiniPlayer: View {
 
     private var accessibilityTitle: String {
         guard let track = player.currentTrack else {
-            return String(localized: "Not Playing")
+            let notPlaying = String(localized: "Not Playing")
+            if let error = player.errorMessage {
+                return "\(notPlaying), \(error)"
+            }
+            return notPlaying
+        }
+        // What the eyes read on the second line, the ears hear second.
+        if let error = player.errorMessage {
+            return "\(track.name), \(error)"
         }
         let artist = track.artistLine
         return artist.isEmpty ? track.name : "\(track.name), \(artist)"

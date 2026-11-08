@@ -1,5 +1,5 @@
 // The Library tab, as Music's: the kinds of things in it (Playlists,
-// Artists, Albums, Songs, Genres, Favourites), then what was added lately
+// Artists, Albums, Songs, Genres, Favorites), then what was added lately
 // as a grid of covers. On the first launch, while the server is read, the
 // grid's place shows how far it is.
 //
@@ -23,7 +23,7 @@ struct LibraryView: View {
                     LibraryLinkRow(title: "Albums", symbol: "square.stack", route: .albums)
                     LibraryLinkRow(title: "Songs", symbol: "music.note", route: .songs)
                     LibraryLinkRow(title: "Genres", symbol: "guitars", route: .genres)
-                    LibraryLinkRow(title: "Favourites", symbol: "heart", route: .favorites, isLast: true)
+                    LibraryLinkRow(title: "Favorites", symbol: "heart", route: .favorites, isLast: true)
                 }
                 .padding(.bottom, Theme.Space.xl)
 

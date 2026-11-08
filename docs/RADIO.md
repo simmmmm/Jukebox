@@ -68,6 +68,43 @@ album does not make him jazz. Measured: with guest spots counted, Jazz and
 Nederhop came out as "related genres" on the test server, and Jazz Radio
 played four Nederhop songs in twenty.
 
+### A genre the server lists joined
+
+Jellyfin's /MusicGenres lists a joined tag as one genre: 19 of the test
+server's 23 are like "Rock; Shoegaze", while the snapshot has "Rock" and
+"Shoegaze". A genre seed the snapshot does not know as one genre is split
+the same way (";" and "|"), and the station is the parts the library has
+(`LibrarySnapshot.genreSeed`):
+- weighted by how specific each part is (`genreSpecificity`), as a tag goes
+  from the general to the particular: "Rock; Shoegaze" is rock 0.40 and
+  shoegaze 0.60 on the test server;
+- the parts' artists, by those weights, lead to their neighbours, as on any
+  genre station;
+- it opens with a song that carries every part: the tag's own songs;
+- it is called after the most specific part, "Shoegaze Radio" ("Rock;
+  Shoegaze Radio" reads as a tag), with every part in the subtitle
+  ("Shoegaze and Rock from your library"). The id stays the seed's
+  ("genre-rockshoegaze").
+
+None of the parts in the library: Your Station under the seed's name, as
+before. One genre: the station it was (every weight is 1).
+
+Measured on the test server's library (RadioRealServerTests: its 19 joined
+genres × 10 random seeds × 20 picks):
+
+| | opens in the tag | picks with the part named | with any part |
+|---|---|---|---|
+| before: the seed's key only (Your Station) | 7 of 190 | 0.00 | 0.14 |
+| the most specific part alone | 160 of 190 | 0.37 | 0.73 |
+| the parts, by specificity | 190 of 190 | 0.35 | 0.81 |
+
+The 14 whose most specific part is one artist's play that artist every
+fourth song, as often as separation allows: "Rock; Shoegaze" is Velvet
+Static at 0.25 and rock or shoegaze at 0.72 ("Shoegaze" alone 0.69). The
+lowest, "Classical; Piano", is at 0.47, with two classical artists for every
+four slots. The live server's /MusicGenres has the same 23 names, and a
+station from each opens in its tag.
+
 ### Taste
 
 Each track's evidence, `e`:
@@ -148,7 +185,7 @@ part empty.
 | `.track` | its artists (0.88, a guest 0.75) | its genres; its year ±5 | that track, always (even if just heard) |
 | `.artist` | the artist (0.88) | their records' genres; their median year, spread from their years (≥ 4) | one of their best-liked, drawn from the top 3 and any within 85% of the best (up to 12) |
 | `.album` | the album's artists by share | the album's genres and year | a best-liked track from it |
-| `.genre` | (none of its own); its artists (half their records or more) lead to their neighbours | the genre, and genres that go with it (0.1 + 0.5 · adventurousness of their link) | a best-liked track of the genre |
+| `.genre` | (none of its own); its artists (half their records or more) lead to their neighbours | the genre, and genres that go with it (0.1 + 0.5 · adventurousness of their link); a joined one ("Rock; Shoegaze") its parts by specificity | a best-liked track of the genre (of a joined one, with every part) |
 | `.decade` | the listener's liked artists with songs in it | the listener's genres in that decade (taste-weighted) | a best-liked track from it |
 | `.collection` | its artists by share | its genres and era; its own tracks get a channel of 0.6 | a best-liked track from it |
 | `.personal` | the 30 artists liked most | the 12 genres liked most; the 300 liked tracks get a channel of their own | from the listener's top 30 |
@@ -538,6 +575,7 @@ library is RadioFixtures' unless said.)
 | the dial goes 0 ↔ 1 every 5 picks (200) | — | unheard 0.12 at 0, 0.75 at 1; no separation or album violation; no song within 12 hours |
 | names: "Beyoncé", "Beyonce", "BEYONCÉ"; "Sigur Rós"/"Sigur Ros"; "AC/DC"; "The The"; "Simon & Garfunkel"/"and" | — | one artist each; a station from the plain spelling finds the library's ("Beyoncé Radio") |
 | a guest only ever in "A; B" or "A feat. B" | — | their own station, opening with a song they are on, 20 of 20 in its genre |
+| a genre station from /MusicGenres' "Rock; Shoegaze" (the test server's 19 joined genres × 10) | Your Station: 7 of 190 opened in the tag, 0.14 of picks in it | "Shoegaze Radio": 190 of 190, 0.81 |
 | 50 000 tracks | — | release: snapshot 343 ms, session + first five 9.1 ms, `next(5)` 0.2 ms |
 
 What it does, then:

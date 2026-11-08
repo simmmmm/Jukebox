@@ -5,6 +5,14 @@
 // into LibraryStore's arrays rather than a copy, so a change to one track
 // (a favourite, a play) is made in one place and every list sees it.
 //
+// The genres are the library's as the snapshot splits them, not the
+// server's list: Jellyfin 12.4's /MusicGenres gives a joined tag as one
+// genre ("Rock; Shoegaze" — 19 of the test server's 23 genres are such), so
+// Genres listed "Rock; Shoegaze" beside "Rock" and a shoegaze record was
+// under neither "Shoegaze" nor, as far as its page knew, "Rock". Split
+// here as LibrarySnapshot splits them (on ";" and "|"), every list, page
+// and station agrees on one "Rock" and one "Shoegaze".
+//
 // `nonisolated`: the app's types are on the main actor by default, and this
 // is built in a detached task so a library of tens of thousands of tracks
 // never holds up a scroll.
@@ -46,6 +54,9 @@ nonisolated struct LibraryIndex: Sendable {
     var artistsByName: [Int] = []
     var favoriteIDs: Set<ItemID> = []
     var snapshot: LibrarySnapshot = .empty
+    /// The library's genres, split as the snapshot splits them, by name;
+    /// `genreByKey` is a position in this.
+    var genres: [Genre] = []
 
     // Folded once here, so a search is a scan of plain strings.
     var trackNames: [String] = []
@@ -56,7 +67,9 @@ nonisolated struct LibraryIndex: Sendable {
 
     init() {}
 
-    init(tracks: [Track], albums: [Album], artists: [Artist], genres: [Genre]) {
+    /// `genres`: the server's (or the cache's), for the ids and images of
+    /// the genres the library's own split list has by exactly that name.
+    init(tracks: [Track], albums: [Album], artists: [Artist], genres serverGenres: [Genre]) {
         snapshot = LibrarySnapshot(tracks: tracks)
 
         albumNames.reserveCapacity(albums.count)
@@ -79,15 +92,16 @@ nonisolated struct LibraryIndex: Sendable {
             artistNames.append(Self.fold(artist.name))
         }
 
-        for (i, genre) in genres.enumerated() where genreByKey[genre.key] == nil {
-            genreByKey[genre.key] = i
-        }
-
         // An album's genres as Jellyfin has them on the album, and those of
         // its tracks: a file's tags often say more than the album does.
+        // Split as the tracks' are, so "Rock; Shoegaze" on an album files it
+        // under both.
         var albumsOfGenre: [String: Set<Int>] = [:]
         for (i, album) in albums.enumerated() {
-            for key in album.genres.map(NameKey.genre) { albumsOfGenre[key, default: []].insert(i) }
+            for name in Self.genreNames(album.genres) {
+                let key = NameKey.genre(name)
+                if !key.isEmpty { albumsOfGenre[key, default: []].insert(i) }
+            }
         }
 
         trackNames.reserveCapacity(tracks.count)
@@ -101,7 +115,9 @@ nonisolated struct LibraryIndex: Sendable {
                 albumIndex = albumPosition[albumID]
             }
             for key in track.artistKeys { artistTracks[key, default: []].append(i) }
-            for key in Set(track.genres.map(NameKey.genre)) {
+            // The snapshot's keys (split, each once), so a genre's page has
+            // exactly the tracks its station starts from.
+            for key in snapshot.genreKeys(of: track) {
                 genreTracks[key, default: []].append(i)
                 if let albumIndex { albumsOfGenre[key, default: []].insert(albumIndex) }
             }
@@ -174,6 +190,61 @@ nonisolated struct LibraryIndex: Sendable {
 
         let artistKeys = artists.map { Self.sortKey($0.name) }
         artistsByName = Array(artists.indices).sorted { artistKeys[$0] < artistKeys[$1] }
+
+        genres = Self.libraryGenres(snapshot: snapshot, server: serverGenres, albumCounts: genreAlbums)
+        for (i, genre) in genres.enumerated() where genreByKey[genre.key] == nil {
+            genreByKey[genre.key] = i
+        }
+    }
+
+    // MARK: Genres
+
+    /// One genre per genre the snapshot has, by name. Its id is the
+    /// server's genre of exactly that name when there is one (Instant Mix
+    /// and images need a real item), else "genre:" and its key: no item on
+    /// the server, so not to be sent there — a genre's page reads the
+    /// library. Made from a list made this way (the cache's), the list
+    /// comes out the same, so the cache keeps the split list.
+    static func libraryGenres(snapshot: LibrarySnapshot, server: [Genre],
+                              albumCounts: [String: [Int]]) -> [Genre] {
+        var serverByName: [String: Genre] = [:]
+        for genre in server where !genre.id.hasPrefix(syntheticGenrePrefix) && serverByName[genre.name] == nil {
+            serverByName[genre.name] = genre
+        }
+        var result: [Genre] = []
+        result.reserveCapacity(snapshot.genreTrackCounts.count)
+        for (key, count) in snapshot.genreTrackCounts {
+            let name = snapshot.genreName(key: key) ?? key
+            let known = serverByName[name]
+            result.append(Genre(id: known?.id ?? syntheticGenrePrefix + key, name: name,
+                                imageTag: known?.imageTag, songCount: count,
+                                albumCount: albumCounts[key]?.count ?? known?.albumCount))
+        }
+        // By name, as the Files app sorts (what Genres showed before); names
+        // that compare alike by key, so the order is the same on every load.
+        return result.sorted { a, b in
+            switch a.name.localizedStandardCompare(b.name) {
+            case .orderedAscending: return true
+            case .orderedDescending: return false
+            case .orderedSame: return a.key < b.key
+            }
+        }
+    }
+
+    /// The start of a genre's id that the server does not know.
+    static let syntheticGenrePrefix = "genre:"
+
+    /// A list of genre tags split as LibrarySnapshot splits them ("Rock;
+    /// Shoegaze" and "Pop|Dance" are two each), trimmed, each once, in order.
+    static func genreNames(_ tags: [String]) -> [String] {
+        var out: [String] = []
+        for tag in tags {
+            for part in tag.split(whereSeparator: { $0 == ";" || $0 == "|" }) {
+                let trimmed = part.trimmingCharacters(in: .whitespaces)
+                if !trimmed.isEmpty, !out.contains(trimmed) { out.append(trimmed) }
+            }
+        }
+        return out
     }
 
     // MARK: Orders

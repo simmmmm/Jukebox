@@ -330,7 +330,7 @@ struct RadioEngine: Sendable {
             if a.kind == .personal {
                 for t in rankedTracks.prefix(300) where affinity[t] > 0.2 {
                     a.trackWeight[t] = 0.45 + 0.4 * affinity[t]
-                    // "One of your favourites" for a heart or a song played a
+                    // "One of your favorites" for a heart or a song played a
                     // lot (affinity 0.6 is about eight recent plays).
                     if snapshot.tracks[t].isFavorite || affinity[t] >= 0.6 {
                         a.trackReason[t] = .favorite
@@ -406,27 +406,39 @@ struct RadioEngine: Sendable {
             }
 
         case let .genre(key, name):
-            if let g = index.genreByKey[key] ?? index.genreByKey[NameKey.genre(name)] {
+            // One genre, or the parts of a joined one ("Rock; Shoegaze", as
+            // Jellyfin lists it) by how specific each is
+            // (LibrarySnapshot.genreSeed). For one genre each weight below is
+            // 1 and the station is what it was.
+            if let genre = snapshot.genreSeed(key: key, name: name) {
                 a.kind = .genre
                 a.genreScale = 0.9
-                a.genreWeight[g] = 1
+                for part in genre.parts { a.genreWeight[part.genre] = part.weight }
                 // The genre's own artists (half or more of their records carry
-                // it) lead, through the graph, to who is near them: what a
-                // genre station plays beyond the genre itself.
+                // it; of a joined genre, by the parts' weights) lead, through
+                // the graph, to who is near them: what a genre station plays
+                // beyond the genre itself.
                 for artist in 0..<index.artistCount {
                     let own = index.artistOwnTracks[artist]
                     guard own.count >= 2 else { continue }
-                    let share = Double(own.filter { index.trackGenres[$0].contains(g) }.count) / Double(own.count)
+                    var share = 0.0
+                    for part in genre.parts {
+                        let carrying = own.filter { index.trackGenres[$0].contains(part.genre) }.count
+                        share += part.weight * Double(carrying) / Double(own.count)
+                    }
                     if share >= 0.5 { sources.append((artist, 0.55 * share)) }
                 }
                 // Genres that go with it, more of them further out.
-                for link in index.genreRelated[g] {
-                    a.genreWeight[link.genre] = max(a.genreWeight[link.genre], link.weight * (0.1 + 0.5 * adv))
+                for part in genre.parts {
+                    for link in index.genreRelated[part.genre] {
+                        a.genreWeight[link.genre] = max(a.genreWeight[link.genre],
+                                                        part.weight * link.weight * (0.1 + 0.5 * adv))
+                    }
                 }
                 let total = a.genreWeight.reduce(0, +)
                 if total > 0 { for h in a.genreWeight.indices { a.genreWeight[h] /= total } }
-                a.first = index.genreTracks[g]
-                a.firstReason = .genre(index.genreNames[g])
+                a.first = genre.tracks
+                a.firstReason = .genre(index.genreNames[genre.lead])
             } else {
                 personal()
             }

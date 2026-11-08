@@ -2,8 +2,9 @@
 // radiofunctie echt belangrijk", 8 November 2026), so it is a page of its
 // own as in Music. On top what is on the air, with the dial; then the three
 // stations made from the listener's own taste — Your Station, Discovery,
-// Loved — a way to start one from anything, and the stations Jukebox
-// suggests by artist, genre and decade.
+// Loved — with the tab's one filled button, Your Station's Play; a way to
+// start one from anything; the stations played lately, to go back to; and
+// the stations Jukebox suggests by artist, genre and decade.
 
 import JukeboxKit
 import SwiftUI
@@ -72,6 +73,7 @@ private struct RadioFeed: View {
                     .padding(.horizontal, Theme.margin)
                 startAStation
                     .padding(.horizontal, Theme.margin)
+                RadioRecentStationsShelf()
                 RadioStationShelf(title: "Artist Stations", stations: artistStations)
                 RadioStationShelf(title: "Genre Stations", stations: genreStations)
                 RadioStationShelf(title: "Decades", stations: decadeStations)
@@ -154,6 +156,11 @@ private struct RadioFeatured: Identifiable {
     /// What the artwork draws: the built station, else the eclipse over a
     /// record until its covers are known.
     var shown: Station { built ?? Station(id: "featured-\(title)", seed: seed, title: title) }
+
+    /// Your Station's card carries the tab's one filled button, as Home's
+    /// card on top does: the station the photographer starts most is one
+    /// tap from playing on both.
+    var carriesPlayButton: Bool { seed == .personal }
 }
 
 /// Big cards: on an iPhone Your Station wide on top and the other two side
@@ -207,7 +214,7 @@ private struct RadioFeaturedStations: View {
         let loved = built(.favorites)
         if loved != nil || (mixes.builtAt == nil && !library.favoriteTracks.isEmpty) {
             items.append(RadioFeatured(seed: .favorites, title: String(localized: "Loved"),
-                                       description: String(localized: "Your favourites and what sounds like them"),
+                                       description: String(localized: "Your favorites and what sounds like them"),
                                        built: loved))
         }
         return items
@@ -233,26 +240,86 @@ private struct RadioFeaturedCard: View {
 
     var body: some View {
         let onAir = radio.stationOnAir(player: player)?.seed == item.seed
+        if item.carriesPlayButton {
+            // Not a button itself, so the Play button in it is one of its
+            // own (a button in a button's label gets no taps of its own); a
+            // tap elsewhere on the card does what the other cards do.
+            Group {
+                if isWide {
+                    wide(onAir: onAir)
+                } else {
+                    square(onAir: onAir)
+                }
+            }
+            .onTapGesture {
+                open(onAir: onAir)
+            }
+            .accessibilityElement(children: .contain)
+            .accessibilityAddTraits(onAir ? .isSelected : [])
+        } else {
+            Button {
+                open(onAir: onAir)
+            } label: {
+                if isWide {
+                    wide(onAir: onAir)
+                } else {
+                    square(onAir: onAir)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityElement(children: .combine)
+            .accessibilityAddTraits(onAir ? .isSelected : [])
+            .accessibilityHint(onAir ? Text("Shows Now Playing") : Text("Starts the station"))
+        }
+    }
+
+    /// The one on the air shows Now Playing; the others start.
+    private func open(onAir: Bool) {
+        if onAir {
+            navigator.isNowPlayingPresented = true
+        } else {
+            start()
+        }
+    }
+
+    private func start() {
+        if let built = item.built {
+            radio.start(built)
+        } else {
+            // Not built yet: the radio names it and finds its covers.
+            radio.start(item.seed)
+        }
+    }
+
+    /// Play, or Pause while the station plays, as on Home's card; the
+    /// spinner while its first songs are chosen.
+    private func playButton(onAir: Bool) -> some View {
         Button {
+            // Its first songs are being chosen; a second tap would only
+            // start choosing again. Another station starting is replaced.
+            if onAir && radio.isStarting { return }
             if onAir {
-                navigator.isNowPlayingPresented = true
-            } else if let built = item.built {
-                radio.start(built)
+                player.togglePlayPause()
             } else {
-                // Not built yet: the radio names it and finds its covers.
-                radio.start(item.seed)
+                start()
             }
         } label: {
-            if isWide {
-                wide(onAir: onAir)
-            } else {
-                square(onAir: onAir)
+            Group {
+                if onAir && radio.isStarting {
+                    ProgressView()
+                        .tint(Theme.onAccent)
+                        .accessibilityLabel("Starting")
+                } else if onAir && player.isPlaying {
+                    Label("Pause", systemImage: "pause.fill")
+                } else {
+                    Label("Play", systemImage: "play.fill")
+                }
             }
+            .frame(minWidth: 88)
         }
-        .buttonStyle(.plain)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(onAir ? .isSelected : [])
-        .accessibilityHint(onAir ? Text("Shows Now Playing") : Text("Starts the station"))
+        .buttonStyle(.prominent)
+        .fixedSize()
+        .accessibilityHint(onAir ? Text(verbatim: "") : Text("Starts Your Station"))
     }
 
     /// The eclipse on Numa's page grey with the words beside it: the
@@ -269,17 +336,25 @@ private struct RadioFeaturedCard: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
+                if item.carriesPlayButton {
+                    playButton(onAir: onAir)
+                        .padding(.top, Theme.Space.s)
+                }
             }
             Spacer(minLength: 0)
             if onAir {
                 StationOnAirBadge()
-            } else {
+            } else if !item.carriesPlayButton {
                 Image(systemName: "play.circle.fill")
                     .font(.title)
                     .foregroundStyle(Theme.accent)
                     .accessibilityHidden(true)
             }
         }
+        // With the button the words are taller than the artwork: room above
+        // and below them. The artwork's grey is the card's, so the eclipse
+        // floats on it rather than stops short.
+        .padding(.vertical, item.carriesPlayButton ? Theme.Space.l : 0)
         .padding(.trailing, Theme.Space.l)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Theme.page, in: .rect(cornerRadius: Theme.Radius.card))
@@ -307,6 +382,10 @@ private struct RadioFeaturedCard: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2, reservesSpace: true)
+            if item.carriesPlayButton {
+                playButton(onAir: onAir)
+                    .padding(.top, Theme.Space.s)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(.rect)
@@ -314,6 +393,24 @@ private struct RadioFeaturedCard: View {
 }
 
 // MARK: - Shelves
+
+/// The stations played lately, newest first, to start again with a tap;
+/// nothing until one has played.
+private struct RadioRecentStationsShelf: View {
+    @Environment(RadioController.self) private var radio
+
+    var body: some View {
+        let stations = radio.recentStations
+        if !stations.isEmpty {
+            VStack(alignment: .leading, spacing: Theme.Space.m) {
+                SectionHeader("Recently Played")
+                Shelf(items: stations, width: 150) { station in
+                    StationTileButton(station: station)
+                }
+            }
+        }
+    }
+}
 
 /// Suggested stations of one kind; grey placeholders while they are being
 /// made, nothing when there are none of the kind.

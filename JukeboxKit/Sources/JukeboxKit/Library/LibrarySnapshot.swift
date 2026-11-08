@@ -155,6 +155,62 @@ extension LibrarySnapshot {
     }
 }
 
+// MARK: - A genre seed
+
+extension LibrarySnapshot {
+    /// What a genre station's seed stands for in this library.
+    struct GenreSeed: Sendable {
+        /// By genre number, the most specific first; the weights sum to 1.
+        var parts: [(genre: Int, weight: Double)]
+        /// The tracks that carry every part (a joined tag's own tracks),
+        /// else the lead part's: where the station opens, and its covers.
+        var tracks: [Int]
+        /// The part the station is named after.
+        var lead: Int { parts[0].genre }
+    }
+
+    /// The genre a genre seed names; or, for a name the library does not
+    /// have as one genre, the parts of it that it does. Jellyfin's
+    /// /MusicGenres lists a joined tag as one genre ("Rock; Shoegaze", 19 of
+    /// the test server's 23), while the snapshot splits genres on ";" and
+    /// "|" (Index.splitGenreNames): with the seed's own key only, every such
+    /// station was Your Station (7 of 190 opened in their tag, by chance;
+    /// now all 190, docs/RADIO.md). The parts are weighted by how specific
+    /// each is: a joined tag is the general genre and then the one that
+    /// says what it is, and "Rock; Shoegaze" should sound like shoegaze,
+    /// with rock near. Nil when the library has none of it (the station is
+    /// then Your Station under the seed's own name).
+    func genreSeed(key: String, name: String) -> GenreSeed? {
+        if let g = index.genreByKey[key] ?? index.genreByKey[NameKey.genre(name)] {
+            return GenreSeed(parts: [(g, 1)], tracks: index.genreTracks[g])
+        }
+        var known: [(genre: Int, position: Int)] = []
+        for (position, part) in Index.splitGenreNames([name]).enumerated() {
+            if let g = index.genreByKey[NameKey.genre(part)], !known.contains(where: { $0.genre == g }) {
+                known.append((g, position))
+            }
+        }
+        guard !known.isEmpty else { return nil }
+        // The most specific first; between two as specific, the one with
+        // fewer tracks, then the one named later (a tag goes from the general
+        // to the particular: "Hip-Hop; Nederhop").
+        known.sort { x, y in
+            let ix = index.genreIDF[x.genre], iy = index.genreIDF[y.genre]
+            if ix != iy { return ix > iy }
+            let nx = index.genreTracks[x.genre].count, ny = index.genreTracks[y.genre].count
+            if nx != ny { return nx < ny }
+            return x.position > y.position
+        }
+        let total = known.reduce(0) { $0 + index.genreIDF[$1.genre] }
+        let parts = known.map { part in
+            (genre: part.genre, weight: total > 0 ? index.genreIDF[part.genre] / total : 1 / Double(known.count))
+        }
+        let lead = parts[0].genre
+        let all = index.genreTracks[lead].filter { t in parts.allSatisfy { index.trackGenres[t].contains($0.genre) } }
+        return GenreSeed(parts: parts, tracks: all.isEmpty ? index.genreTracks[lead] : all)
+    }
+}
+
 // MARK: - The index
 
 extension LibrarySnapshot {

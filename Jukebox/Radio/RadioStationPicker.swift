@@ -2,7 +2,8 @@
 // station's seed, found as one types — the library is in memory, so the
 // answer is instant — with the stations Jukebox suggests and every genre
 // before anything is typed. Choosing one starts it and closes the sheet;
-// the Radio tab then shows it on the air.
+// the Radio tab then shows it on the air. Section headers are Numa's small
+// grey spaced labels (Eyebrow), as Search's and Settings' are.
 
 import JukeboxKit
 import SwiftUI
@@ -51,23 +52,27 @@ struct RadioStationPicker: View {
         // Your Station, Discovery and Loved are on the Radio page itself.
         let suggested = Array(mixes.stations.filter { !Self.isOnRadioPage($0.seed) }.prefix(12))
         if !suggested.isEmpty {
-            Section("Suggested") {
+            Section {
                 ForEach(suggested) { station in
                     RadioPickerRow(title: station.title, subtitle: station.subtitle,
                                    action: { startStation(station) }) {
                         StationArtwork(station: station, size: 40, cornerRadius: Theme.Radius.thumbnail)
                     }
                 }
+            } header: {
+                Eyebrow("Suggested")
             }
         }
         if !library.genres.isEmpty {
-            Section("Genres") {
+            Section {
                 ForEach(library.genres) { genre in
                     RadioPickerRow(title: genre.name,
                                    action: { startSeed(.genre(key: genre.key, name: genre.name)) }) {
                         RadioPickerGlyph(systemImage: "guitars")
                     }
                 }
+            } header: {
+                Eyebrow("Genres")
             }
         }
     }
@@ -96,43 +101,51 @@ struct RadioStationPicker: View {
     @ViewBuilder
     private func results(_ found: Found) -> some View {
         if !found.artists.isEmpty {
-            Section("Artists") {
+            Section {
                 ForEach(found.artists) { artist in
                     RadioPickerRow(title: artist.name,
                                    action: { startSeed(.artist(key: artist.key, name: artist.name, id: artist.id)) }) {
                         ArtistAvatar(artist: artist, size: 40)
                     }
                 }
+            } header: {
+                Eyebrow("Artists")
             }
         }
         if !found.tracks.isEmpty {
-            Section("Songs") {
+            Section {
                 ForEach(found.tracks) { track in
                     RadioPickerRow(title: track.name, subtitle: track.artistLine,
                                    action: { startSeed(.track(track.id)) }) {
                         ArtworkView(track.artwork, size: 40, cornerRadius: Theme.Radius.thumbnail)
                     }
                 }
+            } header: {
+                Eyebrow("Songs")
             }
         }
         if !found.albums.isEmpty {
-            Section("Albums") {
+            Section {
                 ForEach(found.albums) { album in
                     RadioPickerRow(title: album.name, subtitle: album.artistLine,
                                    action: { startSeed(.album(album.id)) }) {
                         ArtworkView(album.artwork, size: 40, cornerRadius: Theme.Radius.thumbnail)
                     }
                 }
+            } header: {
+                Eyebrow("Albums")
             }
         }
         if !found.genres.isEmpty {
-            Section("Genres") {
+            Section {
                 ForEach(found.genres) { genre in
                     RadioPickerRow(title: genre.name,
                                    action: { startSeed(.genre(key: genre.key, name: genre.name)) }) {
                         RadioPickerGlyph(systemImage: "guitars")
                     }
                 }
+            } header: {
+                Eyebrow("Genres")
             }
         }
     }

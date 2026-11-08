@@ -1,7 +1,9 @@
 // Albums: the grid of covers, sorted as the listener chose (kept between
 // launches), and an album's page as Music draws it — the cover large, the
-// artist in the accent to go to them, Play and Shuffle, the songs by disc,
-// how long it all is.
+// artist in the accent to go to them, Play and Shuffle, the album's station
+// under them (as an artist's page has it: "ik vind vooral de radiofunctie
+// echt belangrijk"), the songs by disc, how long it all is, and More by the
+// artist at the end.
 
 import JukeboxKit
 import SwiftUI
@@ -64,6 +66,7 @@ struct AlbumDetailView: View {
         let tracks = own.isEmpty ? (fetched ?? []) : own
         let discs = Self.splitIntoDiscs(tracks)
         let isLoading = own.isEmpty && fetched == nil
+        let moreBy = isLoading ? nil : moreByArtist(shown)
 
         List {
             header(shown, tracks: tracks)
@@ -94,6 +97,18 @@ struct AlbumDetailView: View {
             if !tracks.isEmpty {
                 footer(shown, tracks: tracks)
                     .listRowSeparator(.hidden)
+            }
+
+            if let artist = moreBy {
+                NavigationLink(value: Route.artist(artist)) {
+                    HStack(spacing: Theme.Space.m) {
+                        ArtistAvatar(artist: artist, size: 44)
+                        Text("More by \(artist.name)")
+                            .lineLimit(1)
+                    }
+                    .accessibilityElement(children: .combine)
+                }
+                .listRowSeparator(.hidden, edges: .top)
             }
         }
         .listStyle(.plain)
@@ -136,10 +151,13 @@ struct AlbumDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            PlayShuffleButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
-                               shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
-                .padding(.top, Theme.Space.m)
-                .disabled(tracks.isEmpty)
+            VStack(spacing: Theme.Space.m) {
+                PlayShuffleButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
+                                   shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
+                LibraryRadioButton(seed: .album(shown.id))
+            }
+            .padding(.top, Theme.Space.m)
+            .disabled(tracks.isEmpty)
         }
         .frame(maxWidth: .infinity)
     }
@@ -178,6 +196,14 @@ struct AlbumDetailView: View {
         navigator.open(.artist(artist))
     }
 
+    /// The album artist, for More by at the end, when the library has them;
+    /// not Various Artists, whose page is every compilation at once.
+    private func moreByArtist(_ shown: Album) -> Artist? {
+        guard let ref = shown.primaryArtist, let artist = library.artist(ref),
+              artist.key != NameKey.artist("Various Artists") else { return nil }
+        return artist
+    }
+
     private func fetchIfNeeded() async {
         guard library.tracks(inAlbum: album.id).isEmpty, fetched == nil else { return }
         guard let client = library.client else {
@@ -192,10 +218,12 @@ struct AlbumDetailView: View {
         }
     }
 
-    /// "Rock · 1997": the album's first genre and its year, when known.
+    /// "Rock, Shoegaze · 1997": the album's genres, a joined tag split as
+    /// Genres lists them (two at most), and its year, when known.
     private static func detailLine(_ album: Album) -> String? {
         var parts: [String] = []
-        if let genre = album.genres.first { parts.append(genre) }
+        let genres = LibraryIndex.genreNames(album.genres).prefix(2)
+        if !genres.isEmpty { parts.append(genres.joined(separator: ", ")) }
         if let year = album.year { parts.append(String(year)) }
         return parts.isEmpty ? nil : parts.joined(separator: " · ")
     }

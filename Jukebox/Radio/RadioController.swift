@@ -28,6 +28,10 @@ final class RadioController {
     /// Liked and disliked in this session, for the thumbs' state.
     private(set) var liked: Set<ItemID> = []
     private(set) var disliked: Set<ItemID> = []
+    /// Stations started, newest first, each once, at most 20; kept in
+    /// UserDefaults ("recentStations", JSON), so they are there after a
+    /// relaunch.
+    private(set) var recentStations: [Station] = []
 
     var client: JellyfinClient?
 
@@ -56,6 +60,7 @@ final class RadioController {
         self.library = library
         self.history = history
         self.settings = settings
+        recentStations = Self.loadRecentStations()
     }
 
     /// After sign-in: the graph from the library, then Last.fm in the
@@ -71,16 +76,29 @@ final class RadioController {
     }
 
     func start(_ station: Station) {
-        begin(station, excluding: nil)
+        // "Start Radio" on the song that plays (Now Playing's "…", the mini
+        // player, a track's menu, Search): the song goes on where it is, as
+        // the station's first, rather than start again from 0:00 with the
+        // part already heard written down as a skip of it.
+        if case let .track(id) = station.seed, player.currentTrack?.id == id {
+            begin(station, excluding: id, continuing: true)
+        } else {
+            begin(station, excluding: nil, continuing: false)
+        }
     }
 
     /// Music's Autoplay, from the player when an album or a playlist ends:
     /// a station from its last track that does not play that track again.
+    /// That track is still the player's current one, but it has ended: the
+    /// station starts after it, never continues it.
     func autoplay(after track: Track) {
-        begin(station(for: .track(track.id)), excluding: track.id)
+        begin(station(for: .track(track.id)), excluding: track.id, continuing: false)
     }
 
-    private func begin(_ station: Station, excluding excluded: ItemID?) {
+    /// - Parameter continuing: the station is the song that plays, which
+    ///   goes on (`excluded` is its id); else the station's first pick
+    ///   replaces it.
+    private func begin(_ station: Station, excluding excluded: ItemID?, continuing: Bool) {
         generation += 1
         let generation = self.generation
         cancelSources()
@@ -99,6 +117,10 @@ final class RadioController {
         let graph = self.graph
         let radioSettings = RadioSettings(adventurousness: settings.adventurousness)
         let now = Date()
+        // The song playing reaches the history only when it ends: until
+        // then an artist or album station could open with it, the song
+        // that was just interrupted for the station.
+        let playingNow = continuing ? nil : player.currentTrack?.id
 
         Task { [weak self] in
             let (session, picks, index) = await Task.detached(priority: .userInitiated) {
@@ -106,7 +128,8 @@ final class RadioController {
                 let index = snapshot.isEmpty && !fallback.isEmpty ? LibrarySnapshot(tracks: fallback) : snapshot
                 let taste = TasteProfile(snapshot: index, history: events, now: now)
                 // Heard anywhere in the last hours: it waits (RadioSettings).
-                let recent = events.trackIDs(since: now.addingTimeInterval(-radioSettings.noRepeatHours * 3600))
+                var recent = events.trackIDs(since: now.addingTimeInterval(-radioSettings.noRepeatHours * 3600))
+                if let playingNow { recent.insert(playingNow) }
                 var session = RadioSession(station: station, snapshot: index, taste: taste, graph: graph,
                                            settings: radioSettings, recentlyPlayed: recent)
                 var picks = session.next(4)
@@ -136,10 +159,18 @@ final class RadioController {
                 return
             }
             self.session = session
-            // The track that was playing ends here; it belongs to whatever
-            // played before, not to this station.
+            self.remember(station)
             self.isHandlingFeedback = true
-            self.player.playRadio(picks, station: station)
+            if continuing, self.player.currentTrack?.id == excluded {
+                // The song goes on where it is; the picks come after it.
+                self.player.continueAsRadio(picks, station: station)
+            } else {
+                // The track that was playing ends here; it belongs to
+                // whatever played before, not to this station. So too the
+                // song "Start Radio" was asked on, if it ended or was
+                // skipped while the first picks were chosen.
+                self.player.playRadio(picks, station: station)
+            }
             self.isHandlingFeedback = false
             self.gatherSources(for: station, in: index, generation: generation)
         }
@@ -153,6 +184,18 @@ final class RadioController {
         station = nil
         session = nil
         isStarting = false
+    }
+
+    /// At sign-out (AppModel): nothing of this account's radio stays — the
+    /// station, the thumbs, the stations started. The next account may be
+    /// on another server, where those tracks and stations mean nothing.
+    func reset() {
+        stop()
+        liked = []
+        disliked = []
+        recentStations = []
+        UserDefaults.standard.removeObject(forKey: Self.recentStationsKey)
+        player.refreshRemoteFeedback()
     }
 
     /// The player is this many tracks from the end of a station's queue.
@@ -183,11 +226,15 @@ final class RadioController {
         }
     }
 
-    /// Thumbs up. A second time takes the thumb back, as Music's Love does;
-    /// what the session learnt from the first stays.
+    /// Thumbs up. A second time takes the thumb back, as Music's Love does,
+    /// and out of the history, so tomorrow's taste does not count it; what
+    /// this station's session learnt from the first stays. Only while the
+    /// like is the track's newest event (ListeningHistory.removeLatest): a
+    /// like taken back after the song ended stays in the history.
     func like(_ track: Track) {
         if liked.contains(track.id) {
             liked.remove(track.id)
+            history.removeLatest(.liked, of: track.id)
             player.refreshRemoteFeedback()
             return
         }
@@ -200,23 +247,38 @@ final class RadioController {
         rechooseUpcoming(keepingNext: false)
     }
 
-    /// Thumbs down: skip it if it plays, and less like it from here.
+    /// Thumbs down: skip it if it plays, and less like it from here. A
+    /// second time takes it back, out of the history too: a thumbs down left
+    /// there keeps the song off every station for half a year
+    /// (TasteData.thumbsDownDays), whatever the button shows. That second
+    /// tap is on the song playing: Now Playing's thumbs (and the lock
+    /// screen's) are the current song's, and a disliked song is current
+    /// again when the listener went back to it (Previous, Up Next) or
+    /// nothing came after it to skip to. So it takes the thumb back there
+    /// too, rather than skip the song again.
     func dislike(_ track: Track) {
         let isCurrent = player.currentTrack?.id == track.id
-        if disliked.contains(track.id), !isCurrent {
+        if disliked.contains(track.id) {
             disliked.remove(track.id)
+            history.removeLatest(.disliked, of: track.id)
             player.refreshRemoteFeedback()
             return
         }
         disliked.insert(track.id)
         liked.remove(track.id)
         session?.record(.disliked(track.id))
-        history.record(PlayEvent(track: track, date: Date(), listened: 0, outcome: .disliked, stationID: station?.id))
+        // The station as it was before the skip, which can move the player
+        // on to something else.
+        let stationID = station?.id
         if isCurrent {
             isHandlingFeedback = true
             player.next()
             isHandlingFeedback = false
         }
+        // Written after the skip, whose own event (the seconds heard) the
+        // player writes as the song stops: so the thumb is the song's newest
+        // event, and taking it back finds it.
+        history.record(PlayEvent(track: track, date: Date(), listened: 0, outcome: .disliked, stationID: stationID))
         player.refreshRemoteFeedback()
         rechooseUpcoming(keepingNext: false)
     }
@@ -245,6 +307,33 @@ final class RadioController {
     /// artwork, for "Start Radio" buttons.
     func station(for seed: StationSeed) -> Station {
         Station(seed: seed, snapshot: library.snapshot)
+    }
+
+    // MARK: Recent stations
+
+    private static let recentStationLimit = 20
+    private static let recentStationsKey = "recentStations"
+
+    /// A station that started goes first, once: started again, it moves up
+    /// rather than show twice. Autoplay's stations too, since they played.
+    private func remember(_ station: Station) {
+        var stations = recentStations.filter { $0.id != station.id }
+        stations.insert(station, at: 0)
+        if stations.count > Self.recentStationLimit {
+            stations.removeLast(stations.count - Self.recentStationLimit)
+        }
+        recentStations = stations
+        if let data = try? JSONEncoder().encode(stations) {
+            UserDefaults.standard.set(data, forKey: Self.recentStationsKey)
+        }
+    }
+
+    /// What was kept; none when nothing was, or it no longer decodes (a
+    /// Station of an older build).
+    private static func loadRecentStations() -> [Station] {
+        guard let data = UserDefaults.standard.data(forKey: recentStationsKey),
+              let stations = try? JSONDecoder().decode([Station].self, from: data) else { return [] }
+        return Array(stations.prefix(recentStationLimit))
     }
 
     // MARK: Feeding the station
@@ -309,7 +398,12 @@ final class RadioController {
         case let .album(id):
             return id
         case let .genre(_, name):
-            return library.genre(named: name)?.id
+            // A genre split out of a joined tag ("Shoegaze" of "Rock;
+            // Shoegaze") has a made-up id ("genre:" and its key,
+            // LibraryIndex.libraryGenres): no item on the server, so no
+            // Instant Mix; the library's own picks carry that station.
+            guard let id = library.genre(named: name)?.id, Self.isJellyfinID(id) else { return nil }
+            return id
         case let .collection(id, _, trackIDs):
             // A playlist is a Jellyfin item; a made-up mix is not, so it
             // starts from its first track.

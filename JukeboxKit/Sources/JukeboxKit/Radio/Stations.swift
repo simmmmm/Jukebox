@@ -45,9 +45,15 @@ extension Station {
             return ("\(track.albumName ?? "Album") Radio", artist, track.artwork.map { [$0] } ?? [])
 
         case let .genre(key, name):
-            let g = index.genreByKey[key] ?? index.genreByKey[NameKey.genre(name)]
-            let shown = g.map { index.genreNames[$0] } ?? name
-            return ("\(shown) Radio", "\(shown) from your library", covers(of: g.map { index.genreTracks[$0] } ?? [], snapshot))
+            guard let genre = snapshot.genreSeed(key: key, name: name) else {
+                return ("\(name) Radio", "\(name) from your library", [])
+            }
+            // A joined genre is named after its most specific part, as it
+            // plays: "Shoegaze Radio" for Jellyfin's "Rock; Shoegaze", which
+            // reads as a station where "Rock; Shoegaze Radio" reads as a tag.
+            // The subtitle has every part, so it still says what was chosen.
+            let names = genre.parts.map { index.genreNames[$0.genre] }
+            return ("\(names[0]) Radio", "\(Self.list(names)) from your library", covers(of: genre.tracks, snapshot))
 
         case let .decade(year):
             return ("\(year)s Radio", "The \(year)s in your library", covers(of: index.decadeTracks[year] ?? [], snapshot))
@@ -66,7 +72,18 @@ extension Station {
 
         case .favorites:
             let loved = (0..<tracks.count).filter { tracks[$0].isFavorite }
-            return ("Loved", "Your favourites, and songs like them", covers(of: loved, snapshot))
+            return ("Loved", "Your favorites, and songs like them", covers(of: loved, snapshot))
+        }
+    }
+
+    /// "Shoegaze", "Shoegaze and Rock", "Bebop, Jazz, and Swing": US
+    /// English, with the serial comma Apple's own copy uses.
+    static func list(_ names: [String]) -> String {
+        switch names.count {
+        case 0: ""
+        case 1: names[0]
+        case 2: "\(names[0]) and \(names[1])"
+        default: names.dropLast().joined(separator: ", ") + ", and " + names[names.count - 1]
         }
     }
 

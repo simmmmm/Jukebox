@@ -120,8 +120,10 @@ final class AudioPlayer {
     private struct Playing {
         let entry: QueueEntry
         let loaded: Loaded
-        /// The station it began on, kept: the context can change before it ends.
-        let stationID: String?
+        /// The station it began on, kept: the context can change before it
+        /// ends. Changed only by `continueAsRadio`, whose station the song
+        /// then belongs to.
+        var stationID: String?
         /// Seconds actually heard: the clock runs only while the engine plays.
         var heard: TimeInterval = 0
         var playingSince: Date?
@@ -247,6 +249,33 @@ final class AudioPlayer {
         // button while a station plays to turn it off again.
         repeatMode = .off
         load(0, play: true)
+    }
+
+    /// "Start Radio" on the song that plays (RadioController calls this):
+    /// the song goes on from where it is, as the station's first, and the
+    /// picks replace what came after it. Through `playRadio` it started
+    /// again from 0:00, and the part already heard went to the history as
+    /// a skip (or a half listen) of the very song the station was asked for.
+    func continueAsRadio(_ picks: [RadioPick], station: Station) {
+        guard let currentIndex, queue.indices.contains(currentIndex) else {
+            playRadio(picks, station: station)
+            return
+        }
+        context = QueueContext(.radio(station), title: station.title)
+        // What was played before it stays, as Up Next's history; nothing is
+        // shuffled on a station.
+        queue = Array(queue[...currentIndex]) + picks.map { QueueEntry(track: $0.track, reason: $0.reason) }
+        originalOrder = nil
+        isShuffled = false
+        // As in playRadio: the radio chooses the order.
+        repeatMode = .off
+        // Its end, heard or skipped, is the station's feedback now (deliver).
+        playing?.stationID = station.id
+        queueChanged()
+        refreshRemoteFeedback()
+        // Starting a station plays, as playRadio does: from where it is
+        // when paused, or loaded again when the engine has nothing.
+        resume()
     }
 
     /// The radio's further picks at the end of the queue.

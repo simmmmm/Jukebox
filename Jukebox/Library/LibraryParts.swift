@@ -161,7 +161,7 @@ struct LibraryAlbumMenu: View {
                 navigator.addToPlaylist = AddToPlaylistRequest(tracks: songs)
             }
             .disabled(songs.isEmpty)
-            Button(favorite ? "Undo Favourite" : "Favourite", systemImage: favorite ? "heart.slash" : "heart") {
+            Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
                 Task { await library.toggleFavorite(album.id) }
             }
         }

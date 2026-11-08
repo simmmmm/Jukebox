@@ -1,6 +1,12 @@
-// Genres: every music genre on the server, and a genre's page — Play and
-// Shuffle of its songs, its station, its albums. Counts are the library's
-// own songs in the genre (a track's tags and its album's), not the server's.
+// Genres: every genre in the library's tags, and a genre's page — Play and
+// Shuffle of its songs, its station, its albums. A tag that joins several
+// ("Rock; Shoegaze") is listed as each of them, as the radio counts them
+// (LibraryIndex), so there is one Rock and one Shoegaze. Counts are the
+// library's own songs in the genre, not the server's.
+//
+// A genre's page reads only the library, never the server by the genre's
+// id: a genre the server has no item of exactly that name for has an id
+// of the app's own ("genre:shoegaze").
 
 import JukeboxKit
 import SwiftUI

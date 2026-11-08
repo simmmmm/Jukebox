@@ -67,7 +67,7 @@ private struct SettingsAccountSection: View {
                     Task { await app.signOut() }
                 }
             } message: {
-                Text("Playback stops and Jukebox forgets the library on this \(UIDevice.current.model). Your music, playlists and favourites stay on the server.")
+                Text("Playback stops and Jukebox forgets the library and your recent stations on this \(UIDevice.current.model). Your music, playlists and favorites stay on the server.")
             }
         } header: {
             Eyebrow("Account")
@@ -398,7 +398,7 @@ private struct SettingsHistorySection: View {
                     Task { await mixes.rebuild(library: library, history: history, settings: settings) }
                 }
             } message: {
-                Text("The radio and your mixes start learning your taste again from your library and favourites. Play counts on the server stay as they are.")
+                Text("The radio and your mixes start learning your taste again from your library and favorites. Play counts on the server stay as they are.")
             }
         } header: {
             Eyebrow("History")

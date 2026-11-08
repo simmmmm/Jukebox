@@ -1,8 +1,12 @@
 // Playlists: the listener's own, on the server (so every Jellyfin app has
-// them), made here with New Playlist…, filled from any menu's Add to
-// Playlist…, edited in place: swipe to remove a song, Edit to reorder,
-// Delete Playlist behind the "…". A playlist's songs are read from the
-// server each time it opens: playlists change in other apps too.
+// them), made here with New Playlist…, filled with the playlist's own Add
+// Songs (the library's songs, found by name, a + on each) or from any
+// menu's Add to Playlist…, edited in place: swipe to remove a song, Edit to
+// reorder, Delete Playlist behind the "…". A playlist's songs are read from
+// the server each time its page appears, and again when Add Songs closes or
+// a song is added from elsewhere (Now Playing's menu): playlists change in
+// other apps too, and a page that missed a song it was just given looks
+// broken.
 
 import JukeboxKit
 import SwiftUI
@@ -58,7 +62,7 @@ struct PlaylistsView: View {
             Button("Cancel", role: .cancel) {}
             Button("Create") { create() }
         } message: {
-            Text("Add songs from any song’s or album’s menu.")
+            Text("Then add songs with Add Songs on its page, or from any song’s or album’s menu.")
         }
         .confirmationDialog("Delete Playlist?", isPresented: isConfirmingDelete, titleVisibility: .visible,
                             presenting: pendingDelete) { playlist in
@@ -116,6 +120,9 @@ struct PlaylistDetailView: View {
     @State private var loadError: String?
     @State private var errorMessage: String?
     @State private var isConfirmingDelete = false
+    @State private var isAddingSongs = false
+    /// Counts loads, so an answer that a later load has overtaken is dropped.
+    @State private var loadCount = 0
 
     var body: some View {
         let shown = library.playlists.first(where: { $0.id == playlist.id }) ?? playlist
@@ -145,9 +152,18 @@ struct PlaylistDetailView: View {
                 }
 
                 if entries.isEmpty {
-                    ContentUnavailableView("No Songs Yet", systemImage: "music.note.list",
-                                           description: Text("Choose Add to Playlist… in any song’s or album’s menu."))
-                        .listRowSeparator(.hidden)
+                    ContentUnavailableView {
+                        Label("No Songs Yet", systemImage: "music.note.list")
+                    } description: {
+                        Text("Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
+                    } actions: {
+                        Button("Add Songs") {
+                            isAddingSongs = true
+                        }
+                        .buttonStyle(.secondary)
+                        .fixedSize()
+                    }
+                    .listRowSeparator(.hidden)
                 }
             } else if let loadError {
                 ContentUnavailableView {
@@ -170,6 +186,14 @@ struct PlaylistDetailView: View {
         .listStyle(.plain)
         .libraryScrolledTitle(shown.name, after: 280)
         .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    isAddingSongs = true
+                } label: {
+                    Label("Add Songs", systemImage: "plus")
+                }
+                .disabled(entries == nil)
+            }
             ToolbarItem(placement: .topBarTrailing) {
                 // Off only while loading: after the last song is removed in
                 // edit mode, Done must still be there to leave it.
@@ -212,8 +236,18 @@ struct PlaylistDetailView: View {
             Text("It is deleted from your Jellyfin server, for every app. Its songs stay in your library.")
         }
         .libraryErrorAlert("Could Not Change the Playlist", message: $errorMessage)
-        .task(id: playlist.id) {
-            if entries == nil { await load() }
+        .sheet(isPresented: $isAddingSongs, onDismiss: { Task { await load() } }) {
+            LibraryAddSongsSheet(playlist: shown, songsInPlaylist: Set(tracks.map(\.id)))
+        }
+        // Every time the page appears, not only the first: songs added from
+        // Now Playing or another app while it was covered are shown.
+        .task(id: playlist.id) { await load() }
+        // A song added from a menu while the page is open (Add to Playlist…
+        // changes the count at once); not while Add Songs is open, which
+        // reloads once when it closes.
+        .onChange(of: shown.trackCount) { _, count in
+            guard !isAddingSongs, let entries, count != entries.count else { return }
+            Task { await load() }
         }
         .refreshable { await load() }
     }
@@ -268,11 +302,16 @@ struct PlaylistDetailView: View {
     }
 
     private func load() async {
+        loadCount += 1
+        let mine = loadCount
         do {
             let tracks = try await library.tracks(in: playlist)
+            guard mine == loadCount else { return }
             entries = Self.makeEntries(from: tracks)
             loadError = nil
         } catch {
+            // Leaving the page cancels its load: that is no failure to show.
+            guard mine == loadCount, !Task.isCancelled else { return }
             // Songs already shown stay; only an empty page says it failed.
             if entries == nil {
                 loadError = error.localizedDescription
@@ -288,9 +327,14 @@ struct PlaylistDetailView: View {
         let removed = offsets.filter { current.indices.contains($0) }.map { current[$0].track }
         current.remove(atOffsets: offsets)
         entries = current
+        // Jellyfin 12.4 removes every place of a song that is in the
+        // playlist twice (its entry id is the song's own): then the page
+        // shows what the server kept.
+        let wasTwice = removed.contains { gone in current.contains { $0.track.id == gone.id } }
         Task {
             do {
                 try await library.remove(removed, from: shown)
+                if wasTwice { await load() }
             } catch {
                 errorMessage = error.localizedDescription
                 await load()
@@ -328,11 +372,19 @@ struct PlaylistDetailView: View {
     }
 
     private static func makeEntries(from tracks: [Track]) -> [LibraryPlaylistEntry] {
-        tracks.enumerated().map { pair in
-            // A song can be in a playlist twice: its entry id tells them apart.
-            LibraryPlaylistEntry(id: pair.element.playlistEntryID ?? "\(pair.offset)-\(pair.element.id)",
-                          track: pair.element)
+        // A song can be in a playlist twice, and on Jellyfin 12.4 both places
+        // carry the song's own id as their entry id: the second is told
+        // apart by a count, so the list's ids stay unique.
+        var seen: [String: Int] = [:]
+        var entries: [LibraryPlaylistEntry] = []
+        entries.reserveCapacity(tracks.count)
+        for track in tracks {
+            let base = track.playlistEntryID ?? track.id
+            let earlier = seen[base] ?? 0
+            seen[base] = earlier + 1
+            entries.append(LibraryPlaylistEntry(id: earlier == 0 ? base : "\(base)#\(earlier)", track: track))
         }
+        return entries
     }
 
     private static func firstCovers(of tracks: [Track]) -> [Artwork] {

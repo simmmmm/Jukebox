@@ -238,6 +238,16 @@ public final class JellyfinClient: Sendable {
         JellyfinAddress.normalize(serverAddress)
     }
 
+    /// The addresses to try for what a person typed, in order: the
+    /// normalized one first; then, when no port was typed, the same host on
+    /// http at 8096, Jellyfin's own port ("192.168.1.10" → http://192.168.1.10,
+    /// http://192.168.1.10:8096). Not when "https://" was typed: that asked
+    /// for TLS, and the fallback would send the password in the clear.
+    /// Empty when the address cannot be normalized (JellyfinAddress.swift).
+    public static func candidateAddresses(for serverAddress: String) -> [URL] {
+        JellyfinAddress.candidates(serverAddress)
+    }
+
     // MARK: Signing in
 
     /// GET /System/Info/Public — answers without signing in; how the app

@@ -120,6 +120,93 @@ final class RadioRealServerTests: XCTestCase {
                                  opening.filter { snapshot.genreKeys(of: $0.track).contains("pop") }.count)
     }
 
+    /// Genre stations from the genres as the server lists them: /MusicGenres
+    /// has a joined tag as one genre ("Rock; Shoegaze", 19 of 23), which the
+    /// snapshot splits (docs/RADIO.md, "A genre the server lists joined").
+    /// Each opens in its tag, and plays its parts.
+    func testGenreStationsFromTheServersJoinedGenres() {
+        let tracks = RadioRealLibraryFixture.tracks
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        let taste = TasteProfile(snapshot: snapshot, history: ListeningHistory(), now: Date(timeIntervalSinceReferenceDate: 815_800_000))
+        let graph = SimilarityGraph.fromLibrary(snapshot)
+        // The server's genre names are the tags as written (the live test
+        // checks this against /MusicGenres).
+        let joined = Self.serverGenreNames(tracks).filter { $0.contains(";") }
+        XCTAssertEqual(joined.count, 19)
+
+        let seeds = UInt64(1)...10
+        struct Measure {
+            var opened = 0, stations = 0, lead = 0, any = 0, picks = 0
+            var leadShare: Double { Double(lead) / Double(max(1, picks)) }
+            var anyShare: Double { Double(any) / Double(max(1, picks)) }
+            mutating func add(_ other: Measure) {
+                opened += other.opened
+                stations += other.stations
+                lead += other.lead
+                any += other.any
+                picks += other.picks
+            }
+        }
+        /// 20 picks for each random seed: whether the first carries every
+        /// part of the tag, and how many carry the part named or any part.
+        func measure(_ station: Station, parts: Set<String>, lead: String) -> Measure {
+            var m = Measure()
+            for randomSeed in seeds {
+                var session = RadioSession(station: station, snapshot: snapshot, taste: taste, graph: graph, randomSeed: randomSeed)
+                let picks = session.next(20)
+                XCTAssertEqual(picks.count, 20)
+                XCTAssertEqual(RadioMetrics.repeats(picks), 0)
+                XCTAssertEqual(RadioMetrics.separationViolations(picks, snapshot: snapshot, separation: 3), 0)
+                m.stations += 1
+                if let first = picks.first, parts.isSubset(of: snapshot.genreKeys(of: first.track)) { m.opened += 1 }
+                for pick in picks {
+                    let own = Set(snapshot.genreKeys(of: pick.track))
+                    m.picks += 1
+                    if own.contains(lead) { m.lead += 1 }
+                    if !own.isDisjoint(with: parts) { m.any += 1 }
+                }
+            }
+            return m
+        }
+
+        var all = Measure(), alone = Measure()
+        for name in joined {
+            let parts = Set(name.split(separator: ";").map { NameKey.genre(String($0)) })
+            let station = Station(seed: .genre(key: NameKey.genre(name), name: name), snapshot: snapshot)
+            let leadName = String(station.title.dropLast(" Radio".count))
+            let lead = NameKey.genre(leadName)
+            XCTAssertTrue(parts.contains(lead), "\(name): named after one of its parts, not \(station.title)")
+            let m = measure(station, parts: parts, lead: lead)
+            // Against the station of the part it is named after alone: what
+            // a resolver to the most specific part would play.
+            let part = measure(Station(seed: .genre(key: lead, name: leadName), snapshot: snapshot), parts: parts, lead: lead)
+            RadioEvaluationTests.line(String(format: "real library: \"%@\" → %@ (%@): opens in the tag %d/%d; of 20 picks %.2f %@, %.2f any part (%@ alone: %d/%d, %.2f, %.2f)",
+                                             name, station.title, station.subtitle ?? "", m.opened, m.stations, m.leadShare, leadName,
+                                             m.anyShare, leadName, part.opened, part.stations, part.leadShare, part.anyShare))
+            XCTAssertEqual(m.opened, m.stations, "\(name) opens in its tag")
+            // Near half its parts at the least: three tracks between two by one
+            // artist, and one or two artists to a genre here ("Classical;
+            // Piano": two), leave the other slots to the parts' neighbours.
+            XCTAssertGreaterThanOrEqual(m.anyShare, 0.45, name)
+            XCTAssertGreaterThanOrEqual(m.anyShare, part.anyShare - 0.05, "\(name): its parts, at least as much as \(leadName) alone")
+            all.add(m)
+            alone.add(part)
+        }
+        RadioEvaluationTests.line(String(format: "real library: joined genres: %d of %d stations open in their tag; picks %.2f the part named, %.2f any part (the part alone: %d of %d, %.2f, %.2f)",
+                                         all.opened, all.stations, all.leadShare, all.anyShare, alone.opened, alone.stations,
+                                         alone.leadShare, alone.anyShare))
+        XCTAssertGreaterThanOrEqual(all.anyShare, 0.75)
+        let rock = snapshot.genreSpecificity(key: "rock"), shoegaze = snapshot.genreSpecificity(key: "shoegaze")
+        RadioEvaluationTests.line(String(format: "real library: \"Rock; Shoegaze\" weighs rock %.2f (specificity %.2f), shoegaze %.2f (%.2f)",
+                                         rock / (rock + shoegaze), rock, shoegaze / (rock + shoegaze), shoegaze))
+    }
+
+    /// The genres a Jellyfin server lists for these tracks: each tag as it is
+    /// written, joined ones too, by name.
+    static func serverGenreNames(_ tracks: [Track]) -> [String] {
+        Set(tracks.flatMap(\.genres)).sorted()
+    }
+
     // MARK: Against the live server
 
     struct LiveItems: Decodable {
@@ -191,5 +278,26 @@ final class RadioRealServerTests: XCTestCase {
         let picks = station.next(30)
         XCTAssertEqual(picks.count, 30)
         XCTAssertEqual(RadioMetrics.separationViolations(picks, snapshot: snapshot, separation: 3), 0)
+
+        // The genres as /MusicGenres lists them, joined ones and all, are the
+        // tags of the fixture; a station from each opens in its tag.
+        var genres = try XCTUnwrap(URLComponents(url: base.appendingPathComponent("MusicGenres"), resolvingAgainstBaseURL: false))
+        genres.queryItems = [URLQueryItem(name: "userId", value: userID), URLQueryItem(name: "Recursive", value: "true")]
+        var genresRequest = URLRequest(url: try XCTUnwrap(genres.url))
+        genresRequest.setValue(auth + #", Token="\#(token)""#, forHTTPHeaderField: "Authorization")
+        let (genreData, _) = try await URLSession.shared.data(for: genresRequest)
+        let names = try JSONDecoder().decode(LiveItems.self, from: genreData).Items.map(\.Name).sorted()
+        XCTAssertEqual(names, Self.serverGenreNames(fixture))
+        let taste = TasteProfile(snapshot: snapshot, history: ListeningHistory(), now: Date())
+        let graph = SimilarityGraph.fromLibrary(snapshot)
+        var opened = 0
+        for name in names {
+            let parts = Set(name.split(separator: ";").map { NameKey.genre(String($0)) })
+            var session = RadioSession(station: Station(seed: .genre(key: NameKey.genre(name), name: name), snapshot: snapshot),
+                                       snapshot: snapshot, taste: taste, graph: graph, randomSeed: 1)
+            if let first = session.next(1).first, parts.isSubset(of: snapshot.genreKeys(of: first.track)) { opened += 1 }
+        }
+        RadioEvaluationTests.line("live server: \(names.count) genres in /MusicGenres, \(names.filter { $0.contains(";") }.count) joined; \(opened) genre stations open in their tag")
+        XCTAssertEqual(opened, names.count)
     }
 }
