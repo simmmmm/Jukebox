@@ -69,6 +69,8 @@ struct MainTabView: View {
                 }
             }
         }
+        // On the iPad a sidebar, as Music has there; on the iPhone the tab bar.
+        .tabViewStyle(.sidebarAdaptable)
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
             MiniPlayer()

@@ -68,7 +68,7 @@ struct TrackRow: View {
                         Image(systemName: "heart.fill")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
-                            .accessibilityLabel("Favourite")
+                            .accessibilityLabel("Favorite")
                     }
                 }
                 if let subtitle, !subtitle.isEmpty {
@@ -167,7 +167,7 @@ struct TrackMenu: View {
                 navigator.addToPlaylist = AddToPlaylistRequest(tracks: [track])
             }
             let favorite = library.isFavorite(track.id)
-            Button(favorite ? "Undo Favourite" : "Favourite", systemImage: favorite ? "heart.slash" : "heart") {
+            Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
                 Task { await library.toggleFavorite(track.id) }
             }
         }
