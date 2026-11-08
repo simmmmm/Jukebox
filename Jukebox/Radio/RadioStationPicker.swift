@@ -14,10 +14,17 @@ struct RadioStationPicker: View {
     @Environment(LibraryStore.self) private var library
     @Environment(RadioController.self) private var radio
     @Environment(MixStore.self) private var mixes
-    @Environment(Navigator.self) private var navigator
     @Environment(\.dismiss) private var dismiss
 
+    /// Told the chosen station; RadioView opens its page once the sheet
+    /// has gone.
+    private let onPick: (Station) -> Void
+
     @State private var query = ""
+
+    init(onPick: @escaping (Station) -> Void) {
+        self.onPick = onPick
+    }
 
     var body: some View {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -159,11 +166,11 @@ struct RadioStationPicker: View {
         show(radio.station(for: seed))
     }
 
-    /// The sheet closes and the station's page opens under it, on the
-    /// Radio tab's stack: the sheet is only ever shown from the Radio tab.
+    /// The sheet closes; RadioView then opens the station's page on the
+    /// Radio tab's stack (the sheet is only ever shown from the Radio tab).
     private func show(_ station: Station) {
+        onPick(station)
         dismiss()
-        navigator.radioPath.append(Route.station(station))
     }
 
     private static func isOnRadioPage(_ seed: StationSeed) -> Bool {

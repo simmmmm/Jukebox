@@ -17,9 +17,12 @@ struct RadioView: View {
     @Environment(HistoryStore.self) private var history
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
+    @Environment(Navigator.self) private var navigator
 
     @State private var isPicking = false
     @State private var isShowingSettings = false
+    /// The station chosen in Start a Station, opened once its sheet has gone.
+    @State private var picked: Station?
 
     init() {}
 
@@ -34,8 +37,11 @@ struct RadioView: View {
         }
         .navigationTitle("Radio")
         .navigationBarTitleDisplayMode(.large)
-        .sheet(isPresented: $isPicking) {
-            RadioStationPicker()
+        // The page is pushed after the sheet has gone: pushed while it was
+        // closing (CI's screenshot walk, build 15), the sheet stayed up and
+        // the page never came.
+        .sheet(isPresented: $isPicking, onDismiss: openPicked) {
+            RadioStationPicker(onPick: { picked = $0 })
         }
         .sheet(isPresented: $isShowingSettings) {
             SettingsView()
@@ -45,6 +51,12 @@ struct RadioView: View {
         .task(id: library.lastLoaded) {
             await mixes.rebuildIfStale(library: library, history: history, settings: settings)
         }
+    }
+
+    private func openPicked() {
+        guard let station = picked else { return }
+        picked = nil
+        navigator.radioPath.append(Route.station(station))
     }
 }
 
