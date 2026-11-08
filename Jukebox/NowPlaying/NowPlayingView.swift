@@ -284,8 +284,8 @@ struct NowPlayingView: View {
     private func ground(_ anchors: NowPlayingAnchors, in proxy: GeometryProxy) -> some View {
         let side = albumSide
         let room: CGRect? = anchors.sleeveRoom.map { proxy[$0] }
-        let title: CGRect? = anchors.title.map { proxy[$0] }
-        return NowPlayingGround(size: proxy.size, sleeveRoom: room, title: title, wide: anchors.wide,
+        let titleFrame: CGRect? = anchors.title.map { proxy[$0] }
+        return NowPlayingGround(size: proxy.size, sleeveRoom: room, title: titleFrame, wide: anchors.wide,
                                 still: isStill, walls: walls, artwork: currentTrack?.artwork,
                                 side: side ?? .alone, label: recordLabel(disc: side?.disc),
                                 isPlaying: player.isPlaying)
