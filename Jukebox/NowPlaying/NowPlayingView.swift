@@ -13,11 +13,17 @@
 // queue take the record's place at a tap. A pull down anywhere on the
 // record, or on the top, closes it.
 //
-// The controls stay white; the accent (Glow, as Now Playing is always dark)
-// marks only what is the radio's or what is on: the progress, the thumbs up
-// given, the station's name, the dial. Gone with sketch D: the cover's
-// colours blurred behind everything, "Playing From", the station as a
-// spaced label in a capsule, round buttons.
+// The controls stay white; the accent marks only what is the radio's or
+// what is on: the progress, the thumbs up given, the station's name, the
+// dial. It is the colour of the cover that plays (CoverAccent) — the
+// photographer, 8 November 2026: "kan je de kleur uit de albumhoes pakken
+// voor de steunkleur?" — at Glow's weight, so only its hue changes; Glow
+// for a cover with no colour of its own. Given as the tint, which every
+// part here draws its accent with (.tint), so a part never picks Glow by
+// itself. Only here: the rest of the app keeps Copper and Glow, the brand.
+//
+// Gone with sketch D: the cover's colours blurred behind everything,
+// "Playing From", the station as a spaced label in a capsule, round buttons.
 
 import JukeboxKit
 import SwiftUI
@@ -36,9 +42,15 @@ struct NowPlayingView: View {
     @Environment(RadioController.self) private var radio
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
+    @Environment(AppModel.self) private var app
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     @State private var panel: NowPlayingPanel = .cover
+    /// The accent shown, and the cover it is of: nil until the first is
+    /// worked out. Kept until the next one is, so a song change eases from
+    /// the last cover's colour to this one's rather than flashing Glow
+    /// between them.
+    @State private var shownAccent: (url: URL, color: AccentColor?)?
     /// How far the view has been pulled down to close it.
     @State private var dragOffset: CGFloat = 0
     /// True while a pull is held. SwiftUI resets it when the system cancels
@@ -89,6 +101,9 @@ struct NowPlayingView: View {
         .accessibilityAction(.escape) {
             close()
         }
+        // The cover's accent as the tint (see the top). Inside the dark
+        // environment and before the sheet, which keeps the app's own.
+        .tint(accentColor)
         .environment(\.colorScheme, .dark)
         // The cover's own presentation dark too, so the status bar, the
         // menus and the system's volume and AirPlay views are drawn for dark
@@ -98,6 +113,23 @@ struct NowPlayingView: View {
         .onChange(of: player.errorMessage) { _, message in
             if let message {
                 UIAccessibility.post(notification: .announcement, argument: message)
+            }
+        }
+        // The accent, once per cover (ImagePipeline keeps it), eased in
+        // over half a second rather than switched: the song changed, and
+        // the colour follows it. The first is set at once: Now Playing
+        // opens in its colour.
+        .task(id: accentURL) {
+            guard let url = accentURL else {
+                shownAccent = nil
+                return
+            }
+            let found = await ImagePipeline.shared.accent(for: url)
+            // A newer cover has its own task; this colour is not its.
+            guard !Task.isCancelled, shownAccent?.url != url else { return }
+            let first = shownAccent == nil
+            withAnimation(first || reduceMotion ? nil : .easeInOut(duration: 0.5)) {
+                shownAccent = (url: url, color: found)
             }
         }
         .onChange(of: isPulling) { _, pulling in
@@ -263,11 +295,37 @@ struct NowPlayingView: View {
         .gesture(dismissDrag)
     }
 
+    // MARK: The accent
+
+    /// The cover, small, for its colour: the 120 pixels the record's label
+    /// already takes its colour from (Turntable), so it is one download.
+    private var accentURL: URL? {
+        guard let artwork = currentTrack?.artwork, let client = app.client else { return nil }
+        return client.imageURL(artwork, maxPixelSize: 120)
+    }
+
+    /// The accent shown: the last worked out (shownAccent), or before any
+    /// is, one ImagePipeline kept for this cover. Glow for a cover without
+    /// a colour of its own, a song without a cover, and until the first is
+    /// known.
+    private var accentColor: Color {
+        let color: AccentColor?
+        if let shownAccent {
+            color = shownAccent.color
+        } else if let url = accentURL, case let .some(kept) = ImagePipeline.shared.cachedAccent(url) {
+            color = kept
+        } else {
+            color = nil
+        }
+        guard let color else { return Theme.Arch.glow }
+        return Color(red: color.red, green: color.green, blue: color.blue)
+    }
+
     // MARK: The title
 
     /// From the margin, as a sleeve's back is set: the title in the serif,
-    /// the artist, and where it plays from — the station in Glow after its
-    /// mark, or the album, mix or playlist in grey.
+    /// the artist, and where it plays from — the station in the accent
+    /// after its mark, or the album, mix or playlist in grey.
     private var titleRow: some View {
         HStack(alignment: .top, spacing: Theme.Space.s) {
             VStack(alignment: .leading, spacing: 2) {
@@ -338,9 +396,9 @@ struct NowPlayingView: View {
         }
     }
 
-    /// Where it plays from. A station: its mark and its name in Glow, which
-    /// go to the Radio tab, where its dial is. Anything else: its name in
-    /// grey ("From Velvet Songs").
+    /// Where it plays from. A station: its mark and its name in the
+    /// accent, which go to the Radio tab, where its dial is. Anything else:
+    /// its name in grey ("From Velvet Songs").
     @ViewBuilder private var source: some View {
         if let station = playingStation {
             Button {
@@ -352,7 +410,7 @@ struct NowPlayingView: View {
                     Text(station.title)
                         .lineLimit(1)
                 }
-                .foregroundStyle(Theme.accent)
+                .foregroundStyle(.tint)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
@@ -394,7 +452,7 @@ struct NowPlayingView: View {
         } label: {
             Image(systemName: favorite ? "heart.fill" : "heart")
                 .font(.title3)
-                .foregroundStyle(favorite ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
+                .foregroundStyle(favorite ? AnyShapeStyle(.tint) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
                 .symbolEffect(.bounce, value: favorite)
                 .frame(width: 44, height: 44)
                 .contentShape(.rect)

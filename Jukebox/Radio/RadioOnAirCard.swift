@@ -142,7 +142,8 @@ struct RadioThumbs: View {
             } label: {
                 Image(systemName: liked ? "hand.thumbsup.fill" : "hand.thumbsup")
                     .font(.title3)
-                    .foregroundStyle(liked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
+                    // The tint: the app's accent here, the cover's on Now Playing.
+                    .foregroundStyle(liked ? AnyShapeStyle(.tint) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
                     .symbolEffect(.bounce, value: liked)
                     .frame(width: 44, height: 44)
                     .contentShape(.rect)
@@ -156,7 +157,7 @@ struct RadioThumbs: View {
 }
 
 /// The radio's dial, wherever it is (the Radio tab, a station's page, Now
-/// Playing): the system Slider in the accent, and under its two ends
+/// Playing): the system Slider in the tint, and under its two ends
 /// "Familiar" and "Adventurous" — nothing else. Sketch D took away the
 /// dial's ticks, numbers, phrases and caption: the ends say what it does.
 /// A drag sends every step; the radio is told when it ends. Steps that come
@@ -185,7 +186,9 @@ struct RadioDial: View {
                     Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
                 }
             })
-            .tint(Theme.accent)
+            // The tint around it: Copper or Glow on the Radio tab and a
+            // station's page (the app's own), the cover's colour on Now
+            // Playing.
             .accessibilityLabel("Adventurousness")
             .accessibilityValue(Self.spoken(settings.adventurousness))
             HStack {

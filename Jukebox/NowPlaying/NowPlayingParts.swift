@@ -40,10 +40,10 @@ struct NowPlayingScrubber: View {
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(Color.white.opacity(0.22))
-                    // What has been heard, in the accent: Glow, as Now
-                    // Playing is always dark.
+                    // What has been heard, in the accent: the tint, which
+                    // Now Playing sets to its cover's colour.
                     Capsule()
-                        .fill(Theme.accent)
+                        .fill(.tint)
                         .frame(width: width * CGFloat(fraction))
                 }
                 .frame(height: isDragging ? 10 : 5)

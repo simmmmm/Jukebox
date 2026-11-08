@@ -100,7 +100,8 @@ its labels: Numa's small grey spaced labels went with sketch D.
    Centred only where Apple centres: the transport, a page's own header.
 9. **One accent pair.** Copper by day, Glow by night: one hue seen in two
    exposures. Nothing else in the interface is orange; the tubes' own
-   oranges are for the station on the air and the app icon only.
+   oranges are for the station on the air and the app icon only. The one
+   exception is Now Playing, whose accent is its cover's (below).
 10. **No jukebox cabinet.** No bubble tubes, chrome, grilles or selector
     buttons — no Wurlitzer. The arch is the whole of it; the record player
     on Now Playing is drawn, not rendered.
@@ -126,10 +127,33 @@ accent pair is the asset catalog's `AccentColor`.
 | Inner tube | `#FFB44C` | The station on the air only: its inner tube, and its glow | — |
 
 Contrast as WCAG 2 computes it (`python3 dev/brand/contrast.py`).
-Now Playing is always dark, so there the accent is always Glow; a station's
-room is always dark, so its art reads the same in either appearance. The
+Now Playing is always dark, and its accent is the colour of the cover that
+plays, at Glow's weight; a station's room is always dark, so its art reads
+the same in either appearance. The
 icon's other oranges (the tubes' feet and hot lines, the core's light, the
 room's glow) are `dev/brand/icon.py`'s, for the icon alone.
+
+## Now Playing's accent: the cover's
+
+The photographer, 8 November 2026: "kan je de kleur uit de albumhoes pakken
+voor de steunkleur?" On Now Playing, what is Glow elsewhere — the progress,
+the station's name and mark, a thumb or heart given, the dial, Up Next's
+toggles — takes the hue of the cover that plays
+(`JukeboxKit/…/Artwork/CoverAccent.swift`, the steps in its comment;
+`dev/accent.py` is the same in Python for sketches):
+
+- the hue the eye picks out (a histogram of hue, vivid parts weighed most),
+  not the average, which makes red stripes on cream beige;
+- at Glow's lightness, so it weighs on Cabinet what Glow does and only the
+  hue changes from album to album; a little darker where a hue has no room
+  there (red), never under Oklab 0.70: 6.7:1 or more on Cabinet;
+- Glow for a cover without a colour of its own (black and white, grey);
+- eased over half a second when the song changes, at once when Now Playing
+  opens.
+
+The rest of the app keeps Copper and Glow: the brand stays put, the record
+playing colours its own page only. `docs/design/accent.png` is the test
+library's covers with their accents.
 
 ## The mark
 

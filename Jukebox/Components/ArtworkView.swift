@@ -72,24 +72,7 @@ final class ImagePipeline {
     /// and those averaged: a cover's colour as the eye takes it in from
     /// across the room, not the colour of any one part of it.
     static func averageColor(of image: UIImage) -> AverageColor? {
-        let side = 8
-        var pixels = [UInt8](repeating: 0, count: side * side * 4)
-        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
-            guard let context = CGContext(data: buffer.baseAddress, width: side, height: side,
-                                          bitsPerComponent: 8, bytesPerRow: side * 4,
-                                          space: CGColorSpaceCreateDeviceRGB(),
-                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
-                return false
-            }
-            context.interpolationQuality = .high
-            // Drawn by UIKit, whatever backs the image; upside down in
-            // Core Graphics' coordinates, which an average does not mind.
-            UIGraphicsPushContext(context)
-            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
-            UIGraphicsPopContext()
-            return true
-        }
-        guard drawn else { return nil }
+        guard let pixels = pixels(of: image, side: 8) else { return nil }
         // Premultiplied: a pixel's colour is already weighed by its alpha,
         // so the sums over the alphas' sum are the average of what shows.
         var red = 0.0, green = 0.0, blue = 0.0, weight = 0.0
@@ -101,6 +84,53 @@ final class ImagePipeline {
         }
         guard weight > 0 else { return nil }
         return AverageColor(red: red / weight, green: green / weight, blue: blue / weight)
+    }
+
+    /// Each cover's accent (CoverAccent), by its URL, nil for a cover with
+    /// no colour of its own: Now Playing's, worked out once a song.
+    private var accents: [URL: AccentColor?] = [:]
+
+    /// Known, with nil for "no colour of its own"; nil outside when not
+    /// worked out yet.
+    func cachedAccent(_ url: URL) -> AccentColor?? {
+        accents[url]
+    }
+
+    /// The accent of the cover at `url`, nil when it has no colour of its
+    /// own (or did not load: then it is asked again next time).
+    func accent(for url: URL) async -> AccentColor? {
+        if let known = accents[url] { return known }
+        guard let image = await image(for: url), let pixels = Self.pixels(of: image, side: CoverAccent.side) else {
+            return nil
+        }
+        let found = CoverAccent.accent(rgba: pixels, width: CoverAccent.side, height: CoverAccent.side)
+        // updateValue, not a subscript: `accents[url] = nil` would remove
+        // the key rather than keep "no colour".
+        accents.updateValue(found, forKey: url)
+        return found
+    }
+
+    /// The image drawn into `side` by `side` pixels, RGBA, premultiplied,
+    /// with high-quality interpolation (each pixel the mean of its patch).
+    static func pixels(of image: UIImage, side: Int) -> [UInt8]? {
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: side, height: side,
+                                          bitsPerComponent: 8, bytesPerRow: side * 4,
+                                          space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                return false
+            }
+            context.interpolationQuality = .high
+            // Drawn by UIKit, whatever backs the image; upside down in
+            // Core Graphics' coordinates, which neither an average nor a
+            // histogram minds.
+            UIGraphicsPushContext(context)
+            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+            UIGraphicsPopContext()
+            return true
+        }
+        return drawn ? pixels : nil
     }
 
     /// Sizes rounded up to a few steps, so a cover drawn at 44 and at 48

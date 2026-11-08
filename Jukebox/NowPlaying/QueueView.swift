@@ -318,7 +318,8 @@ private struct QueueToggle: View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.body.weight(.semibold))
-                .foregroundStyle(isOn ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
+                // The tint: Now Playing's cover colour.
+                .foregroundStyle(isOn ? AnyShapeStyle(.tint) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: 40, height: 32)
                 .contentShape(.rect)
