@@ -1,9 +1,11 @@
 // "Start a Station": any artist, song, album or genre in the library as a
 // station's seed, found as one types — the library is in memory, so the
 // answer is instant — with the stations Jukebox suggests and every genre
-// before anything is typed. Choosing one starts it and closes the sheet;
-// the Radio tab then shows it on the air. Section headers are Numa's small
-// grey spaced labels (Eyebrow), as Search's and Settings' are.
+// before anything is typed. Choosing one closes the sheet and opens the
+// station's page on the Radio tab, where what it would play is to see
+// before it plays, as from every station's tile (StationDetailView). Section
+// headers are Numa's small grey spaced labels (Eyebrow), as Search's and
+// Settings' are.
 
 import JukeboxKit
 import SwiftUI
@@ -12,6 +14,7 @@ struct RadioStationPicker: View {
     @Environment(LibraryStore.self) private var library
     @Environment(RadioController.self) private var radio
     @Environment(MixStore.self) private var mixes
+    @Environment(Navigator.self) private var navigator
     @Environment(\.dismiss) private var dismiss
 
     @State private var query = ""
@@ -55,7 +58,7 @@ struct RadioStationPicker: View {
             Section {
                 ForEach(suggested) { station in
                     RadioPickerRow(title: station.title, subtitle: station.subtitle,
-                                   action: { startStation(station) }) {
+                                   action: { show(station) }) {
                         StationArtwork(station: station, size: 40, cornerRadius: Theme.Radius.thumbnail)
                     }
                 }
@@ -67,7 +70,7 @@ struct RadioStationPicker: View {
             Section {
                 ForEach(library.genres) { genre in
                     RadioPickerRow(title: genre.name,
-                                   action: { startSeed(.genre(key: genre.key, name: genre.name)) }) {
+                                   action: { showSeed(.genre(key: genre.key, name: genre.name)) }) {
                         RadioPickerGlyph(systemImage: "guitars")
                     }
                 }
@@ -104,7 +107,7 @@ struct RadioStationPicker: View {
             Section {
                 ForEach(found.artists) { artist in
                     RadioPickerRow(title: artist.name,
-                                   action: { startSeed(.artist(key: artist.key, name: artist.name, id: artist.id)) }) {
+                                   action: { showSeed(.artist(key: artist.key, name: artist.name, id: artist.id)) }) {
                         ArtistAvatar(artist: artist, size: 40)
                     }
                 }
@@ -116,7 +119,7 @@ struct RadioStationPicker: View {
             Section {
                 ForEach(found.tracks) { track in
                     RadioPickerRow(title: track.name, subtitle: track.artistLine,
-                                   action: { startSeed(.track(track.id)) }) {
+                                   action: { showSeed(.track(track.id)) }) {
                         ArtworkView(track.artwork, size: 40, cornerRadius: Theme.Radius.thumbnail)
                     }
                 }
@@ -128,7 +131,7 @@ struct RadioStationPicker: View {
             Section {
                 ForEach(found.albums) { album in
                     RadioPickerRow(title: album.name, subtitle: album.artistLine,
-                                   action: { startSeed(.album(album.id)) }) {
+                                   action: { showSeed(.album(album.id)) }) {
                         ArtworkView(album.artwork, size: 40, cornerRadius: Theme.Radius.thumbnail)
                     }
                 }
@@ -140,7 +143,7 @@ struct RadioStationPicker: View {
             Section {
                 ForEach(found.genres) { genre in
                     RadioPickerRow(title: genre.name,
-                                   action: { startSeed(.genre(key: genre.key, name: genre.name)) }) {
+                                   action: { showSeed(.genre(key: genre.key, name: genre.name)) }) {
                         RadioPickerGlyph(systemImage: "guitars")
                     }
                 }
@@ -150,16 +153,17 @@ struct RadioStationPicker: View {
         }
     }
 
-    // MARK: Starting
+    // MARK: Choosing
 
-    private func startSeed(_ seed: StationSeed) {
-        radio.start(seed)
-        dismiss()
+    private func showSeed(_ seed: StationSeed) {
+        show(radio.station(for: seed))
     }
 
-    private func startStation(_ station: Station) {
-        radio.start(station)
+    /// The sheet closes and the station's page opens under it, on the
+    /// Radio tab's stack: the sheet is only ever shown from the Radio tab.
+    private func show(_ station: Station) {
         dismiss()
+        navigator.radioPath.append(Route.station(station))
     }
 
     private static func isOnRadioPage(_ seed: StationSeed) -> Bool {
@@ -212,7 +216,7 @@ private struct RadioPickerRow<Leading: View>: View {
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
-        .accessibilityHint("Starts a station from it")
+        .accessibilityHint("Shows a station from it")
     }
 }
 

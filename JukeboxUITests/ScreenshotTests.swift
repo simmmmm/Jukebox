@@ -27,10 +27,11 @@ import UIKit
 import XCTest
 
 final class ScreenshotTests: XCTestCase {
-    /// The iPhone, in dark: the welcome and the sign-in, Home, Radio, the
-    /// library and its pages, Settings, Your Station started from Home, Now
-    /// Playing with its lyrics and its queue, the mini player above the
-    /// tabs, and a search.
+    /// The iPhone, in dark: the welcome and the sign-in, Home, Radio, a
+    /// station's page before it plays, the library and its pages, Settings,
+    /// Your Station started from Home, Now Playing with its lyrics and its
+    /// queue, the mini player above the tabs, a station's page on the air,
+    /// and a search.
     @MainActor
     func testPhone() throws {
         let isPhone = UIDevice.current.userInterfaceIdiom == .phone
@@ -52,10 +53,37 @@ final class ScreenshotTests: XCTestCase {
 
         try walk.tab("Radio")
         walk.picture("radio")
+
+        // A station's card opens its page: what the radio made of it, before
+        // anything plays (the photographer, 8 November 2026: "ipv dat je
+        // kan zien wat je van de playlist gemaakt hebt"). Then its songs.
+        let station = try walk.openStation("Discovery")
+        walk.picture("station-page")
+        if station {
+            try walk.swipe(up: true)
+            walk.picture("station-page-songs")
+            try walk.goBack(to: "Radio")
+        }
+
         let picking = try walk.tap(app.buttons["Start a Station"], "Radio: Start a Station")
         if picking { walk.pause(2) }
         walk.picture("radio-start-a-station")
-        if picking { try walk.closeSheet(with: "Cancel") }
+        // Choosing a station in the sheet closes it and opens the station's
+        // page on the Radio tab.
+        var picked = false
+        if picking, let row = walk.firstRow("Start a Station: a suggested station") {
+            picked = try walk.tap(row, "Start a Station: choose a station")
+        }
+        if picked {
+            walk.pause(2)
+            if walk.find(app.buttons["New Picks"], "Start a Station: the chosen station's page") { walk.pause(2) }
+            walk.picture("station-picked")
+            // The sheet still up (the tap went elsewhere): closed as before.
+            if app.buttons["Cancel"].exists { try walk.closeSheet(with: "Cancel") }
+            try walk.goBack(to: "Radio")
+        } else if picking {
+            try walk.closeSheet(with: "Cancel")
+        }
 
         try walk.tab("Library")
         walk.picture("library")
@@ -125,6 +153,14 @@ final class ScreenshotTests: XCTestCase {
         // The radio's own page with a station on the air: its card and dial.
         try walk.tab("Radio")
         walk.picture("radio-on-air")
+        // Your Station's page while it plays, from its tile under Recently
+        // Played: the song playing and what the radio has queued.
+        if try walk.openStation("Your Station") {
+            walk.picture("station-on-air")
+            try walk.goBack(to: "Radio")
+        } else {
+            walk.picture("station-on-air")
+        }
 
         // Last: on iOS 26 a search takes the tab bar over until it is cancelled.
         try walk.tab("Search")
@@ -163,8 +199,8 @@ final class ScreenshotTests: XCTestCase {
         walk.picture("home-playing")
     }
 
-    /// The iPad, held sideways as on a stand, in dark: the sign-in, Home, an
-    /// album's page and Now Playing in its wide layout.
+    /// The iPad, held sideways as on a stand, in dark: the sign-in, Home, a
+    /// station's page, an album's page and Now Playing in its wide layout.
     @MainActor
     func testPad() throws {
         let isPad = UIDevice.current.userInterfaceIdiom == .pad
@@ -178,6 +214,14 @@ final class ScreenshotTests: XCTestCase {
         guard try walk.signIn(takingPictures: true) else { return }
         walk.waitForLibrary()
         walk.picture("home")
+
+        try walk.tab("Radio")
+        if try walk.openStation("Discovery") {
+            walk.picture("station-page")
+            try walk.goBack(to: "Radio")
+        } else {
+            walk.picture("station-page")
+        }
 
         try walk.tab("Library")
         walk.picture("library")
@@ -584,6 +628,23 @@ final class Walk {
             }
             return nil
         }
+    }
+
+    /// A station's page, from its card or tile on the Radio tab, found by
+    /// the start of its label (a card's label is its title, then its
+    /// description). True once the page is there — its New Picks, or while
+    /// the station is on the air its Up Next — after a moment for the songs
+    /// to be chosen and their covers to come.
+    func openStation(_ title: String) throws -> Bool {
+        let link = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch
+        guard try tap(link, "Radio: the \(title) station") else { return false }
+        let page = [app.buttons["New Picks"].firstMatch, app.staticTexts["UP NEXT"].firstMatch]
+        guard waitForAny(page, timeout: 10) else {
+            note("Radio: the \(title) station's page did not open (no New Picks, no Up Next)")
+            return false
+        }
+        pause(3)
+        return true
     }
 
     /// Closes a sheet with its button (Cancel, Done), or pulls it down.

@@ -155,7 +155,9 @@ private struct HomeOfflineNotice: View {
 // MARK: - Your Station
 
 /// The card on top: the listener's own station on Numa's page grey, the
-/// eclipse over their covers, and the screen's one filled button. While a
+/// eclipse over their covers, and the screen's one filled button, which
+/// plays it at once. A tap elsewhere on the card opens Your Station's page,
+/// to see what it would play first, as every station's tile does. While a
 /// station plays it shows that station instead, and a tap opens Now Playing.
 private struct HomeStationHero: View {
     @Environment(RadioController.self) private var radio
@@ -192,7 +194,15 @@ private struct HomeStationHero: View {
         }
         .contentShape(.rect(cornerRadius: Theme.Radius.card))
         .onTapGesture {
-            if onAir != nil { navigator.isNowPlayingPresented = true }
+            if onAir != nil {
+                navigator.isNowPlayingPresented = true
+            } else {
+                navigator.open(.station(yourStation))
+            }
+        }
+        // Play now, or its page: on a long press as on every station's tile.
+        .contextMenu {
+            StationMenu(station: onAir ?? yourStation)
         }
         // Always Numa's dark page, so its accent is white here in light mode too.
         .environment(\.colorScheme, .dark)
@@ -203,6 +213,12 @@ private struct HomeStationHero: View {
     /// Your Station as the mixes built it, with the listener's covers.
     private var personal: Station? {
         mixes.stations.first { $0.seed == .personal }
+    }
+
+    /// Your Station for its page: as the mixes built it, else as the radio
+    /// names it now (the mixes are made a moment after the library).
+    private var yourStation: Station {
+        personal ?? radio.station(for: .personal)
     }
 
     private func words(_ onAir: Station?) -> some View {
@@ -267,6 +283,12 @@ private struct HomeStationHero: View {
         .buttonStyle(.prominent)
         .fixedSize()
         .accessibilityHint(onAir == nil ? Text("Starts Your Station") : Text(verbatim: ""))
+        // The card around it opens the station's page on a tap (while
+        // nothing plays) or a long press; VoiceOver gives a container
+        // neither, so the page is offered here, as the long press offers it.
+        .accessibilityAction(named: Text("Show Station")) {
+            navigator.open(.station(onAir ?? yourStation))
+        }
     }
 }
 
@@ -305,7 +327,7 @@ private struct HomeStationsSection: View {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 SectionHeader("Stations for You")
                 Shelf(items: stations, width: 150) { station in
-                    StationTileButton(station: station)
+                    StationTileLink(station: station)
                 }
             }
         } else if mixes.isBuilding || mixes.builtAt == nil {

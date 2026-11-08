@@ -12,6 +12,14 @@
 // four tracks come from the library in memory, chosen off the main actor,
 // and the first one plays before the network has been asked anything. What
 // Jellyfin and Last.fm add changes only the tracks not yet loaded.
+//
+// A station's page (StationDetailView) shows what the station would play
+// before it plays: "Als je nu klikt op een tegel van radio begint er meteen
+// van alles te spelen ipv dat je kan zien wat je van de playlist gemaakt
+// hebt" (the photographer, 8 November 2026). `preview` chooses those songs
+// as `begin` chooses a station's first, and keeps the session that chose
+// them; `start(_:preview:from:)` plays that very session, so Play plays the
+// list the page shows, song for song.
 
 import Foundation
 import JukeboxKit
@@ -24,7 +32,9 @@ final class RadioController {
     /// Starting: the first tracks are being chosen.
     private(set) var isStarting = false
     /// The graph from the library and Last.fm, as far as it is known.
-    private(set) var graph = SimilarityGraph()
+    private(set) var graph = SimilarityGraph() {
+        didSet { previewInputs += 1 }
+    }
     /// Liked and disliked in this session, for the thumbs' state.
     private(set) var liked: Set<ItemID> = []
     private(set) var disliked: Set<ItemID> = []
@@ -32,6 +42,10 @@ final class RadioController {
     /// UserDefaults ("recentStations", JSON), so they are there after a
     /// relaunch.
     private(set) var recentStations: [Station] = []
+    /// Moves whenever what a station's preview is chosen from changes (the
+    /// library's snapshot, the graph): a station's page then chooses its
+    /// list again, rather than show one that Play would no longer play.
+    private(set) var previewInputs = 0
 
     var client: JellyfinClient?
 
@@ -54,6 +68,25 @@ final class RadioController {
     /// Set while the radio itself moves the player on (a thumbs down skips
     /// the track): that skip is the listener's thumbs, already acted on.
     @ObservationIgnored private var isHandlingFeedback = false
+    /// The station was started from its page and still plays the songs the
+    /// page showed: what Instant Mix and Last.fm add then shapes the songs
+    /// after those, not those. The listener's own skip, thumbs or dial
+    /// chooses them again, as the page's footer says it will.
+    @ObservationIgnored private var keepsShownPicks = false
+    /// The stations' pages' previews, by station and draw ("<id> <seed>"),
+    /// each with the session that chose it. A few, not one: each tab keeps
+    /// its own stack, and a page under another tab's must still play what
+    /// it shows, also when it is the same station's (Your Station's page on
+    /// Home and on Radio): by station alone, the page chosen last took the
+    /// other's place, and Play there started the station afresh.
+    @ObservationIgnored private var previews: [String: KeptPreview] = [:]
+    /// The newest preview asked for, by the same key: an older one that
+    /// arrives after it is not kept, as it is not what the page shows.
+    @ObservationIgnored private var latestPreview: [String: Int] = [:]
+    @ObservationIgnored private var previewCount = 0
+    /// The draw New Picks made for a station, by station id, while the app
+    /// runs (`pageSeed(for:)`).
+    @ObservationIgnored private var pageSeeds: [String: UInt64] = [:]
 
     init(player: AudioPlayer, library: LibraryStore, history: HistoryStore, settings: AppSettings) {
         self.player = player
@@ -106,39 +139,26 @@ final class RadioController {
         self.station = station
         session = nil
         isStarting = true
+        keepsShownPicks = false
 
-        // Everything the first picks need, as values, so they are chosen
-        // off the main actor while the screen stays responsive.
-        let snapshot = library.snapshot
-        // The library's index is built after its tracks arrive; a station
-        // started in that moment builds its own rather than find nothing.
-        let fallback = snapshot.isEmpty ? library.tracks : []
-        let events = history.history
-        let graph = self.graph
-        let radioSettings = RadioSettings(adventurousness: settings.adventurousness)
-        let now = Date()
         // The song playing reaches the history only when it ends: until
         // then an artist or album station could open with it, the song
         // that was just interrupted for the station.
-        let playingNow = continuing ? nil : player.currentTrack?.id
+        let inputs = startInputs(playingNow: continuing ? nil : player.currentTrack?.id)
+        let randomSeed = UInt64.random(in: 0...UInt64.max)
 
         Task { [weak self] in
             let (session, picks, index) = await Task.detached(priority: .userInitiated) {
                 () async -> (RadioSession, [RadioPick], LibrarySnapshot) in
-                let index = snapshot.isEmpty && !fallback.isEmpty ? LibrarySnapshot(tracks: fallback) : snapshot
-                let taste = TasteProfile(snapshot: index, history: events, now: now)
-                // Heard anywhere in the last hours: it waits (RadioSettings).
-                var recent = events.trackIDs(since: now.addingTimeInterval(-radioSettings.noRepeatHours * 3600))
-                if let playingNow { recent.insert(playingNow) }
-                var session = RadioSession(station: station, snapshot: index, taste: taste, graph: graph,
-                                           settings: radioSettings, recentlyPlayed: recent)
+                let made = inputs.session(for: station, randomSeed: randomSeed)
+                var session = made.session
                 var picks = session.next(4)
                 if let excluded {
                     // Handed out and dropped, so the session never offers it again here.
                     picks.removeAll { $0.track.id == excluded }
                     if picks.count < 4 { picks += session.next(4 - picks.count) }
                 }
-                return (session, picks, index)
+                return (session, picks, made.index)
             }.value
             guard let self, self.generation == generation else { return }
             self.isStarting = false
@@ -184,6 +204,7 @@ final class RadioController {
         station = nil
         session = nil
         isStarting = false
+        keepsShownPicks = false
     }
 
     /// At sign-out (AppModel): nothing of this account's radio stays — the
@@ -194,6 +215,9 @@ final class RadioController {
         liked = []
         disliked = []
         recentStations = []
+        previews = [:]
+        latestPreview = [:]
+        pageSeeds = [:]
         UserDefaults.standard.removeObject(forKey: Self.recentStationsKey)
         player.refreshRemoteFeedback()
     }
@@ -309,6 +333,165 @@ final class RadioController {
         Station(seed: seed, snapshot: library.snapshot)
     }
 
+    // MARK: A station's page
+
+    /// The songs `station` would start with, for its page: chosen off the
+    /// main actor exactly as `begin` chooses a station's first (the same
+    /// library, taste, graph, dial, and what was heard lately, the song
+    /// playing now too), only more of them. The session that chose them is
+    /// kept, so `start(_:preview:from:)` plays these and no others. The
+    /// same `randomSeed` with the same library gives the same songs: a page
+    /// chooses with its station's draw (`pageSeed(for:)`), so a list chosen
+    /// again because the library or the graph moved, or the page opened
+    /// again, stays much as it was; New Picks is a new seed, another list as
+    /// near the station.
+    func preview(_ station: Station, count: Int = 25,
+                 randomSeed: UInt64 = UInt64.random(in: 0...UInt64.max)) async -> [RadioPick] {
+        previewCount += 1
+        let request = previewCount
+        let slot = "\(station.id) \(randomSeed)"
+        latestPreview[slot] = request
+        let inputs = startInputs(playingNow: player.currentTrack?.id)
+        let stamp = previewInputs
+        let (session, picks, index) = await Task.detached(priority: .userInitiated) {
+            () async -> (RadioSession, [RadioPick], LibrarySnapshot) in
+            let made = inputs.session(for: station, randomSeed: randomSeed)
+            var session = made.session
+            let picks = session.next(count)
+            return (session, picks, made.index)
+        }.value
+        // A newer one was asked for while this was chosen: that one is what
+        // the page will show.
+        guard latestPreview[slot] == request else { return picks }
+        previews[slot] = KeptPreview(station: station.id, request: request, picks: picks.map(\.id),
+                                     session: session, index: index, inputs: stamp,
+                                     adventurousness: inputs.settings.adventurousness)
+        // A session holds some ten numbers for every track (reckoned, not
+        // measured: under 2 MB for 20 000): the newest four pages' are
+        // enough, one per tab.
+        while previews.count > Self.keptPreviewLimit,
+              let oldest = previews.min(by: { $0.value.request < $1.value.request })?.key {
+            previews[oldest] = nil
+        }
+        return picks
+    }
+
+    /// Whether Play on a page showing `picks` would play them: they are the
+    /// kept preview, and nothing it was chosen from has moved since.
+    func isPreviewCurrent(_ station: Station, _ picks: [RadioPick]) -> Bool {
+        keptPreview(of: station, matching: picks) != nil
+    }
+
+    /// The station from its page: `picks` from `index` on, as the page
+    /// showed them, when they are its kept preview and it is not stale (the
+    /// library, the graph and the dial as they were). Else the station
+    /// starts as any other, with songs chosen now: the page then shows what
+    /// plays, as it does whenever its station is on the air.
+    func start(_ station: Station, preview picks: [RadioPick], from index: Int = 0) {
+        guard picks.indices.contains(index), let found = keptPreview(of: station, matching: picks) else {
+            start(station)
+            return
+        }
+        let kept = found.kept
+        // The song playing was left out when these were chosen. Another
+        // playing now, further down the list, would come round twice.
+        let current = player.currentTrack?.id
+        if let current, picks[(index + 1)...].contains(where: { $0.id == current }) {
+            start(station)
+            return
+        }
+        previews[found.slot] = nil
+        generation += 1
+        let generation = self.generation
+        cancelSources()
+        // A dial moved a moment ago would choose these again as they start.
+        dialTask?.cancel()
+        dialTask = nil
+
+        var session = kept.session
+        // The songs above the one tapped were handed out, not heard: back,
+        // so the station can still play them later.
+        if index > 0 { session.returnUnplayed(picks[..<index].map(\.id)) }
+        self.station = station
+        self.session = session
+        isStarting = false
+        keepsShownPicks = true
+        remember(station)
+        isHandlingFeedback = true
+        if picks[index].id == current {
+            // A song station's own song, playing already: it goes on where
+            // it is, as "Start Radio" on it does.
+            player.continueAsRadio(Array(picks[(index + 1)...]), station: station)
+        } else {
+            player.playRadio(Array(picks[index...]), station: station)
+        }
+        isHandlingFeedback = false
+        gatherSources(for: station, in: kept.index, generation: generation)
+    }
+
+    /// A station's draw for its page: the same each time its page opens
+    /// while the app runs, so the list the listener looked at is the one
+    /// they come back to (measured on the kit's made-up library of 60
+    /// artists: chosen again after another song has played, on average 19
+    /// to 24 of the 25 stay in their place, by station), until New Picks
+    /// draws another (`drawPageSeed(for:)`). Before that, the id's hash,
+    /// which Swift seeds anew at every launch: the same until the app is
+    /// closed, another after, and nothing to store.
+    func pageSeed(for station: Station) -> UInt64 {
+        pageSeeds[station.id] ?? UInt64(bitPattern: Int64(station.id.hashValue))
+    }
+
+    /// New Picks: another draw, the station's own from now on.
+    func drawPageSeed(for station: Station) -> UInt64 {
+        let seed = UInt64.random(in: 0...UInt64.max)
+        pageSeeds[station.id] = seed
+        return seed
+    }
+
+    private static let keptPreviewLimit = 4
+
+    /// What a station's page showed, with the session that chose it.
+    private struct KeptPreview {
+        /// The station's id.
+        let station: String
+        let request: Int
+        let picks: [ItemID]
+        let session: RadioSession
+        let index: LibrarySnapshot
+        /// `previewInputs` and the dial when it was chosen: if either has
+        /// moved, the station would now choose otherwise.
+        let inputs: Int
+        let adventurousness: Double
+    }
+
+    /// The kept preview that is `picks`, with its key, when nothing it was
+    /// chosen from has moved since.
+    private func keptPreview(of station: Station, matching picks: [RadioPick]) -> (slot: String, kept: KeptPreview)? {
+        let ids = picks.map(\.id)
+        let inputs = previewInputs
+        let dial = settings.adventurousness
+        guard let found = previews.first(where: {
+            $0.value.station == station.id && $0.value.picks == ids
+                && $0.value.inputs == inputs && $0.value.adventurousness == dial
+        }) else { return nil }
+        return (found.key, found.value)
+    }
+
+    /// What a station's first songs are chosen from, now.
+    private func startInputs(playingNow: ItemID?) -> RadioStartInputs {
+        let snapshot = library.snapshot
+        return RadioStartInputs(snapshot: snapshot,
+                                // The library's index is built after its
+                                // tracks arrive; a station started in that
+                                // moment builds its own rather than find nothing.
+                                fallback: snapshot.isEmpty ? library.tracks : [],
+                                history: history.history,
+                                graph: graph,
+                                settings: RadioSettings(adventurousness: settings.adventurousness),
+                                now: Date(),
+                                playingNow: playingNow)
+    }
+
     // MARK: Recent stations
 
     private static let recentStationLimit = 20
@@ -373,14 +556,22 @@ final class RadioController {
     private func addCandidates(_ ids: [ItemID], weight: Double, reason: PickReason) {
         guard session != nil else { return }
         session?.addCandidates(ids, weight: weight, reason: reason)
+        // Started from its page, the station plays the songs the page
+        // showed: what arrives now chooses the songs after them.
+        guard !keepsShownPicks else { return }
         // The track playing and the one loaded after it stay; the rest
         // benefit from what just arrived.
         rechooseUpcoming(keepingNext: true)
     }
 
     /// The radio's tracks after the current one go back to the session and
-    /// are chosen again with what it knows now.
+    /// are chosen again with what it knows now. All of them: a station
+    /// started from its page has some twenty queued, and a skip says "not
+    /// this" of what is ahead too. As many again, so the queue the listener
+    /// saw keeps its length.
     private func rechooseUpcoming(keepingNext: Bool) {
+        // The listener's skip, thumbs or dial: the page's songs make way.
+        if !keepingNext { keepsShownPicks = false }
         guard session != nil, let station, player.context?.station?.id == station.id else { return }
         let removed = player.removeUpcomingRadioPicks(keepingNext: keepingNext)
         session?.returnUnplayed(removed)
@@ -488,6 +679,7 @@ final class RadioController {
 
     private func snapshotChanged() {
         observeSnapshot()
+        previewInputs += 1
         snapshotTask?.cancel()
         snapshotTask = Task { [weak self] in
             // It can be set twice in a moment; build once.
@@ -495,5 +687,32 @@ final class RadioController {
             guard !Task.isCancelled else { return }
             self?.rebuildGraph()
         }
+    }
+}
+
+/// Everything a station's first songs are chosen from, taken on the main
+/// actor as values, so the choosing runs off it while the screen stays
+/// responsive. `begin` and a page's preview both choose from one of these,
+/// in the same way, so the page shows what the station plays.
+nonisolated private struct RadioStartInputs: Sendable {
+    let snapshot: LibrarySnapshot
+    /// The library's tracks while its index is not built yet, else none.
+    let fallback: [Track]
+    let history: ListeningHistory
+    let graph: SimilarityGraph
+    let settings: RadioSettings
+    let now: Date
+    /// The song playing: it reaches the history only when it ends.
+    let playingNow: ItemID?
+
+    func session(for station: Station, randomSeed: UInt64) -> (session: RadioSession, index: LibrarySnapshot) {
+        let index = snapshot.isEmpty && !fallback.isEmpty ? LibrarySnapshot(tracks: fallback) : snapshot
+        let taste = TasteProfile(snapshot: index, history: history, now: now)
+        // Heard anywhere in the last hours: it waits (RadioSettings).
+        var recent = history.trackIDs(since: now.addingTimeInterval(-settings.noRepeatHours * 3600))
+        if let playingNow { recent.insert(playingNow) }
+        let session = RadioSession(station: station, snapshot: index, taste: taste, graph: graph,
+                                   settings: settings, recentlyPlayed: recent, randomSeed: randomSeed)
+        return (session, index)
     }
 }

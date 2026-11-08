@@ -4,7 +4,10 @@
 // stations made from the listener's own taste — Your Station, Discovery,
 // Loved — with the tab's one filled button, Your Station's Play; a way to
 // start one from anything; the stations played lately, to go back to; and
-// the stations Jukebox suggests by artist, genre and decade.
+// the stations Jukebox suggests by artist, genre and decade. A station's
+// card or tile opens its page, to see what it would play before it plays
+// ("ipv dat je kan zien wat je van de playlist gemaakt hebt"); Your
+// Station's Play, and every long press's Play Station, play at once.
 
 import JukeboxKit
 import SwiftUI
@@ -241,7 +244,7 @@ private struct RadioFeaturedCard: View {
     var body: some View {
         let onAir = radio.stationOnAir(player: player)?.seed == item.seed
         if item.carriesPlayButton {
-            // Not a button itself, so the Play button in it is one of its
+            // Not a link itself, so the Play button in it is one of its
             // own (a button in a button's label gets no taps of its own); a
             // tap elsewhere on the card does what the other cards do.
             Group {
@@ -252,14 +255,15 @@ private struct RadioFeaturedCard: View {
                 }
             }
             .onTapGesture {
-                open(onAir: onAir)
+                navigator.open(.station(station))
+            }
+            .contextMenu {
+                StationMenu(station: station)
             }
             .accessibilityElement(children: .contain)
             .accessibilityAddTraits(onAir ? .isSelected : [])
         } else {
-            Button {
-                open(onAir: onAir)
-            } label: {
+            NavigationLink(value: Route.station(station)) {
                 if isWide {
                     wide(onAir: onAir)
                 } else {
@@ -267,19 +271,20 @@ private struct RadioFeaturedCard: View {
                 }
             }
             .buttonStyle(.plain)
+            .contextMenu {
+                StationMenu(station: station)
+            }
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(onAir ? .isSelected : [])
-            .accessibilityHint(onAir ? Text("Shows Now Playing") : Text("Starts the station"))
+            .accessibilityHint(Text("Shows the station and what it would play"))
         }
     }
 
-    /// The one on the air shows Now Playing; the others start.
-    private func open(onAir: Bool) {
-        if onAir {
-            navigator.isNowPlayingPresented = true
-        } else {
-            start()
-        }
+    /// The station for its page and its menu: as the mixes built it, else
+    /// as the radio names it now, with its own id (the placeholder `shown`
+    /// has a made-up one, which would be remembered as a station of its own).
+    private var station: Station {
+        item.built ?? radio.station(for: item.seed)
     }
 
     private func start() {
@@ -320,6 +325,11 @@ private struct RadioFeaturedCard: View {
         .buttonStyle(.prominent)
         .fixedSize()
         .accessibilityHint(onAir ? Text(verbatim: "") : Text("Starts Your Station"))
+        // The card around it opens the station's page on a tap, which
+        // VoiceOver cannot give a container: the page is here for it.
+        .accessibilityAction(named: Text("Show Station")) {
+            navigator.open(.station(station))
+        }
     }
 
     /// The eclipse on Numa's page grey with the words beside it: the
@@ -345,9 +355,10 @@ private struct RadioFeaturedCard: View {
             if onAir {
                 StationOnAirBadge()
             } else if !item.carriesPlayButton {
-                Image(systemName: "play.circle.fill")
-                    .font(.title)
-                    .foregroundStyle(Theme.accent)
+                // It opens the station's page now, no longer plays.
+                Image(systemName: "chevron.right")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
         }
@@ -405,7 +416,7 @@ private struct RadioRecentStationsShelf: View {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 SectionHeader("Recently Played")
                 Shelf(items: stations, width: 150) { station in
-                    StationTileButton(station: station)
+                    StationTileLink(station: station)
                 }
             }
         }
@@ -430,7 +441,7 @@ private struct RadioStationShelf: View {
             VStack(alignment: .leading, spacing: Theme.Space.m) {
                 SectionHeader(title)
                 Shelf(items: stations, width: 150) { station in
-                    StationTileButton(station: station)
+                    StationTileLink(station: station)
                 }
             }
         } else if mixes.stations.isEmpty && (mixes.isBuilding || mixes.builtAt == nil) {

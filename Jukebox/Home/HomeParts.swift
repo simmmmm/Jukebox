@@ -1,8 +1,9 @@
 // The pieces Home and Radio share: which station is on the air, what a tab
 // shows while the library loads or when it has nothing, the eclipse over a
-// station's covers, a station's tile that starts it, the grey placeholders
-// a shelf shows while the mixes are being made, and a mix's tile and menu.
-// Named Home… or Station… so they cannot clash with another part's helpers.
+// station's covers, a station's tile that opens its page and its long-press
+// menu, the grey placeholders a shelf shows while the mixes are being made,
+// and a mix's tile and menu. Named Home… or Station… so they cannot clash
+// with another part's helpers.
 
 import JukeboxKit
 import SwiftUI
@@ -170,9 +171,46 @@ struct StationOnAirBadge: View {
     }
 }
 
-/// A station's tile that starts it; the one on the air opens Now Playing
-/// instead of starting over.
-struct StationTileButton: View {
+/// A station's tile: it opens the station's page, where what the radio
+/// made of it can be seen before it plays. The photographer, 8 November
+/// 2026: "Als je nu klikt op een tegel van radio begint er meteen van alles
+/// te spelen ipv dat je kan zien wat je van de playlist gemaakt hebt." A
+/// long press plays it at once. The one on the air opens its page too,
+/// which then shows what plays and what comes next.
+struct StationTileLink: View {
+    let station: Station
+
+    @Environment(RadioController.self) private var radio
+    @Environment(AudioPlayer.self) private var player
+
+    init(station: Station) {
+        self.station = station
+    }
+
+    var body: some View {
+        let onAir = radio.stationOnAir(player: player)?.seed == station.seed
+        NavigationLink(value: Route.station(station)) {
+            StationCard(station: station)
+                .overlay(alignment: .topTrailing) {
+                    if onAir {
+                        StationOnAirBadge()
+                            .padding(Theme.Space.s)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            StationMenu(station: station)
+        }
+        .accessibilityAddTraits(onAir ? .isSelected : [])
+        .accessibilityHint(Text("Shows the station and what it would play"))
+    }
+}
+
+/// A station's long press, on its tile and its card: play it now, without
+/// looking first, or see its page. The station on the air offers Now
+/// Playing instead of Play: playing it again would start it over.
+struct StationMenu: View {
     let station: Station
 
     @Environment(RadioController.self) private var radio
@@ -184,25 +222,20 @@ struct StationTileButton: View {
     }
 
     var body: some View {
-        let onAir = radio.stationOnAir(player: player)?.seed == station.seed
-        Button {
-            if onAir {
-                navigator.isNowPlayingPresented = true
-            } else {
-                radio.start(station)
-            }
-        } label: {
-            StationCard(station: station)
-                .overlay(alignment: .topTrailing) {
-                    if onAir {
-                        StationOnAirBadge()
-                            .padding(Theme.Space.s)
-                    }
+        Section {
+            if radio.stationOnAir(player: player)?.seed == station.seed {
+                Button("Show Now Playing", systemImage: "play.circle") {
+                    navigator.isNowPlayingPresented = true
                 }
+            } else {
+                Button("Play Station", systemImage: "play.fill") {
+                    radio.start(station)
+                }
+            }
+            Button("Show Station", systemImage: "dot.radiowaves.left.and.right") {
+                navigator.open(.station(station))
+            }
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(onAir ? .isSelected : [])
-        .accessibilityHint(onAir ? Text("Shows Now Playing") : Text("Starts the station"))
     }
 }
 

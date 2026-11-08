@@ -76,7 +76,15 @@ must exist with exactly this initializer:
 - Now playing: `MiniPlayer()` (inside `tabViewBottomAccessory`; reads
   `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
   expanded), `NowPlayingView()` (in a fullScreenCover).
-- Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`.
+- Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
+  `StationDetailView(station: Station)` (`Route.station(station)`): a
+  station's page, what it would play before it plays. Every tile and card of
+  a station opens it rather than playing, because the photographer asked to
+  see what the radio made first: "Als je nu klikt op een tegel van radio
+  begint er meteen van alles te spelen ipv dat je kan zien wat je van de
+  playlist gemaakt hebt" (8 November 2026). A long press's Play Station,
+  Your Station's Play on Home and Radio, and every "Start Radio" still play
+  at once.
 - Shell: `OnboardingView()`, `SearchView()`, `SettingsView()` (Home's toolbar
   opens it as a sheet).
 
@@ -92,6 +100,20 @@ Starting things, from any screen:
 - shuffle: the same with `shuffled: true`
 - a station: `radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))`,
   `radio.start(.track(id))`, `radio.start(station)`
+- a station's page: `navigator.open(.station(station))`; the page asks
+  `radio.preview(station, randomSeed:)` for its first 25 songs (chosen as
+  `begin` chooses, the session kept) and plays them with
+  `radio.start(station, preview: picks, from: i)`, so Play plays the list
+  shown. The seed is the station's draw, `radio.pageSeed(for:)`, the same
+  each time its page opens while the app runs, so going back and opening
+  it again shows the list seen before; New Picks draws another
+  (`radio.drawPageSeed(for:)`). The lists are kept by station and draw, so
+  one station's page on two tabs each plays its own. A newer library,
+  graph or dial makes the kept list stale
+  (`radio.previewInputs` moves and the page chooses again, with the same
+  seed), and the page chooses again when another song plays, as the list
+  leaves out the one playing; a stale or unknown list starts the station
+  afresh.
 - going somewhere: `navigator.open(.album(album))`
 - Now Playing: `navigator.isNowPlayingPresented = true`
 

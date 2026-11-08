@@ -20,6 +20,9 @@ enum Route: Hashable {
     case playlist(Playlist)
     case genre(Genre)
     case mix(Mix)
+    /// A station's page: what it would play, before it plays. Every tile
+    /// and card of a station opens it (StationDetailView).
+    case station(Station)
     case artists
     case albums
     case songs
@@ -90,6 +93,7 @@ extension View {
             case let .playlist(playlist): PlaylistDetailView(playlist: playlist)
             case let .genre(genre): GenreDetailView(genre: genre)
             case let .mix(mix): MixDetailView(mix: mix)
+            case let .station(station): StationDetailView(station: station)
             case .artists: ArtistsView()
             case .albums: AlbumsView()
             case .songs: SongsView()
