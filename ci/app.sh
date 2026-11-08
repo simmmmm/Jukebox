@@ -105,11 +105,17 @@ auth=(-allowProvisioningUpdates
       -authenticationKeyID "$ASC_KEY_ID"
       -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 
+# Archived unsigned; signed only at export, by Apple's cloud signing with the
+# API key, so the runner needs no certificate of its own. Signing the archive
+# made a new Apple Development certificate on every run (each runner starts
+# with an empty keychain), until the account had as many as Apple allows:
+# "Your account has reached the maximum number of certificates" (run 28).
 set +e
 xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
   -destination 'generic/platform=iOS' -archivePath build/Jukebox.xcarchive \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" \
-  "${auth[@]}" > build/logs/archive.log 2>&1
+  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+  > build/logs/archive.log 2>&1
 status=$?
 set -e
 { grep -E 'error:|ARCHIVE (SUCCEEDED|FAILED)' build/logs/archive.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/archive-errors.txt
