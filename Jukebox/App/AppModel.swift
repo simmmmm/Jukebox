@@ -1,9 +1,9 @@
 // The app's one root object: the session (signed out, or signed in to a
 // server as a user), and the stores every screen reads — the library, the
-// player, the radio, the mixes, the history and the settings. Made once in
-// JukeboxApp and handed down through the environment, each store on its own
-// (`@Environment(LibraryStore.self)` and so on), so a view reads only what it
-// draws.
+// player, the radio, the mixes, the history, the songs on the phone and the
+// settings. Made once in JukeboxApp and handed down through the environment,
+// each store on its own (`@Environment(LibraryStore.self)` and so on), so a
+// view reads only what it draws.
 
 import Foundation
 import JukeboxKit
@@ -33,6 +33,7 @@ final class AppModel {
     let player: AudioPlayer
     let radio: RadioController
     let mixes: MixStore
+    let offline: OfflineStore
 
     init() {
         identity = ClientIdentity(
@@ -48,10 +49,17 @@ final class AppModel {
         player = AudioPlayer(settings: settings, history: history)
         radio = RadioController(player: player, library: library, history: history, settings: settings)
         mixes = MixStore()
+        offline = OfflineStore(settings: settings, library: library, history: history)
         player.radio = radio
         // What moves play counts and "Recently Played" when a song is heard
         // to the end (AudioPlayer calls library.notePlayed).
         player.library = library
+        // Songs on the phone play from their files; offline only they play,
+        // and the radio chooses from them alone.
+        player.offline = offline
+        radio.offline = offline
+        offline.onConnectivityChange = { [weak self] in self?.connectivityChanged() }
+        offline.onSongsChange = { [weak self] in self?.radio.offlineSongsChanged() }
     }
 
     /// A client for a server address, before anyone has signed in: what the
@@ -82,6 +90,11 @@ final class AppModel {
         // Also forgets this account's thumbs and recent stations.
         radio.reset()
         let client = self.client
+        // What was heard offline and not yet told to the server goes on the
+        // way out, when the server answers. Then the account's downloads go
+        // (OfflineStore.signOut): the next account never plays its songs.
+        let unsent = offline.takeReports()
+        offline.signOut()
         Keychain.deleteCredentials()
         credentials = nil
         self.client = nil
@@ -101,6 +114,7 @@ final class AppModel {
         navigator.radioPath = NavigationPath()
         navigator.libraryPath = NavigationPath()
         navigator.searchPath = NavigationPath()
+        if let client, !unsent.isEmpty { await OfflineReports.send(unsent, with: client) }
         await client?.signOut()
     }
 
@@ -111,11 +125,25 @@ final class AppModel {
         player.client = client
         radio.client = client
         phase = .signedIn
+        // The songs on the phone first: they play before the library from
+        // the server has come, or without it.
+        await offline.open(credentials: credentials, client: client)
         await library.open(client: client, credentials: credentials)
         // The radio first: its graph is made in the background and needs
         // nothing from the mixes, so it does not wait for them to be made.
         radio.prepare()
         await mixes.rebuild(library: library, history: history, settings: settings)
+    }
+
+    /// The network went, or came back (OfflineStore): the player and the
+    /// radio play what can play now, and back online the library is read
+    /// from the server again, so Home's notice goes by itself.
+    private func connectivityChanged() {
+        player.connectivityChanged()
+        radio.connectivityChanged()
+        if !offline.isOffline, case .failed = library.state {
+            Task { await library.refresh() }
+        }
     }
 
     /// One id per installation, kept in UserDefaults: Jellyfin lists the
