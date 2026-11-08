@@ -111,11 +111,12 @@ private struct SettingsPlaybackSection: View {
                 SettingsDetailLabel(title: "Autoplay",
                                     detail: "When an album or playlist ends, keep playing similar music")
             }
-            // Now Playing's record (Turntable.swift): off, it rests. It
-            // rests anyway in Low Power Mode and with Reduce Motion.
+            // Now Playing's motion (NowPlayingGround.swift): off, the page
+            // is sketch D1, the still wall, as it is anyway in Low Power
+            // Mode and with Reduce Motion.
             Toggle(isOn: $settings.spinRecord) {
                 SettingsDetailLabel(title: "Spin the Record",
-                                    detail: "The record in Now Playing turns while music plays. It stands still in Low Power Mode and with Reduce Motion.")
+                                    detail: "Now Playing's record turns, and its grooves move on with each song. Off, as in Low Power Mode and with Reduce Motion, it stands still on a wall of the cover's colours.")
             }
         } header: {
             Text("Playback")

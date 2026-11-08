@@ -67,9 +67,12 @@ final class AppSettings {
         }
     }
 
-    /// Now Playing's record turns while music plays (Turntable.swift). On
-    /// unless the listener turns it off; off, the record rests. It rests
-    /// anyway in Low Power Mode and under Reduce Motion. The photographer, of
+    /// Now Playing moves: its record's label turns while music plays and
+    /// the album's grooves under the page move on with each song (sketch
+    /// D2, NowPlayingGround.swift). On unless the listener turns it off;
+    /// off, the page is still (sketch D1, the wall), as it is anyway in Low
+    /// Power Mode and under Reduce Motion — the photographer, of sketch E:
+    /// "D1 is reduced motion/batterij besparing d2 normaal". The photographer, of
     /// the turntable, 8 November 2026: "dan zou ik ook de plaat willen zien
     /// draaien" — and "Als batterij een zorg wordt moeten we ook ff kijken
     /// wat we daar aan kunnen doen": this is the switch for that.
