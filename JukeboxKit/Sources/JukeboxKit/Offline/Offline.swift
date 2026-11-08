@@ -200,14 +200,35 @@ public enum KeepPolicy {
     /// they are never in either list and do not count against the limit.
     public static func plan(tracks: [Track], history: ListeningHistory, manifest: OfflineManifest,
                             limitBytes: Int64, quality: DownloadQuality, now: Date) -> KeepPlan {
-        fatalError("contract")
+        // How it ranks and fills, and why each number: Keep.swift.
+        plan(tracks: tracks, history: history, manifest: manifest, limitBytes: limitBytes,
+             quality: quality, now: now, tuning: .standard)
     }
 
     /// A song's size before it is fetched, for the limit and for Settings'
     /// "about … GB": its length at the quality's bitrate (the original's from
     /// a typical lossless or MP3 rate when the server does not say).
+    ///
+    /// Measured on 12.4 (downloadURL's files, a 4-minute stereo song): the
+    /// AAC is its bitrate and 2.8 kbit/s more, the m4a's index of its
+    /// frames (7 765 392 bytes at 256, 3 924 627 at 128, for 240.05 s); 3
+    /// kbit/s is allowed, which is 0.1% over. At .high and .normal that is
+    /// at most what comes: a file the server sends as it is is smaller.
+    /// Jellyfin knows the original's bitrate, but Track does not carry it,
+    /// so .original assumes 900 kbit/s: CD-quality FLAC or ALAC of pop and
+    /// rock is 800–1000 kbit/s, and a library of MP3 and AAC is below it.
+    /// Erring large is the side that does no harm: the keep then holds a
+    /// little less than its limit until the real sizes are in (the plan
+    /// counts a kept song by its file), where erring small would fetch songs
+    /// it must let go of again. A song of no known length counts as four
+    /// minutes, not as nothing.
     public static func estimatedBytes(of track: Track, quality: DownloadQuality) -> Int64 {
-        fatalError("contract")
+        let seconds = track.duration.isFinite && track.duration > 0 ? track.duration : 240
+        let bitsPerSecond: Double = switch quality {
+        case .original: 900_000
+        case .high, .normal: Double(quality.aacBitrate ?? 0) + 3_000
+        }
+        return Int64((seconds * bitsPerSecond / 8).rounded(.up))
     }
 }
 
