@@ -37,11 +37,15 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
     > build/logs/build.log 2>&1
   status=$?
   set -e
-  grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build.log | sed "s#$PWD/##g" | sort -u | head -200
+  { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/errors.txt
+  head -200 build/logs/errors.txt
   # The app's own warnings too, in the log: the artifact cannot be read from
   # where the code is written, the log can.
-  grep -E '^/.*\.swift:[0-9]+:[0-9]+: warning:' build/logs/build.log | sed "s#$PWD/##g" | sort -u \
-    | tee build/logs/warnings.txt | head -80
+  # Not in one pipe with head: under pipefail no warning at all (grep finds
+  # nothing) or many (tee killed by head) would end the job after a good build.
+  { grep -E '^/.*\.swift:[0-9]+:[0-9]+: warning:' build/logs/build.log || true; } | sed "s#$PWD/##g" | sort -u \
+    > build/logs/warnings.txt
+  head -80 build/logs/warnings.txt
   echo "$(wc -l < build/logs/warnings.txt | tr -d ' ') distinct Swift warnings"
   report build/logs/build.log "Compile errors"
   exit $status
@@ -67,7 +71,8 @@ xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Rel
   "${auth[@]}" > build/logs/archive.log 2>&1
 status=$?
 set -e
-grep -E 'error:|ARCHIVE (SUCCEEDED|FAILED)' build/logs/archive.log | sed "s#$PWD/##g" | sort -u | head -200
+{ grep -E 'error:|ARCHIVE (SUCCEEDED|FAILED)' build/logs/archive.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/archive-errors.txt
+head -200 build/logs/archive-errors.txt
 report build/logs/archive.log "Archive errors"
 [[ $status == 0 ]] || exit $status
 
