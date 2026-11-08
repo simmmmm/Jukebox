@@ -20,7 +20,8 @@ struct RadioView: View {
     init() {}
 
     var body: some View {
-        Group {
+        // A ZStack, as Home's: the sheets sit on one view whatever it shows.
+        ZStack {
             if library.tracks.isEmpty {
                 HomeLibraryStatus()
             } else {

@@ -169,6 +169,8 @@ final class AudioPlayer {
     @ObservationIgnored private var seekGeneration = 0
     @ObservationIgnored private var consecutiveFailures = 0
     @ObservationIgnored private var isAskingRadio = false
+    /// Set while the listener goes back to an earlier entry (`goBack`).
+    @ObservationIgnored private var isGoingBack = false
     @ObservationIgnored private var errorGeneration = 0
     @ObservationIgnored private var observations: [NSKeyValueObservation] = []
     @ObservationIgnored private var notificationTokens: [any NSObjectProtocol] = []
@@ -354,9 +356,9 @@ final class AudioPlayer {
         if elapsed > 3 || (currentIndex == 0 && repeatMode != .all) {
             if playing == nil { load(currentIndex, play: true) } else { seek(to: 0) }
         } else if currentIndex > 0 {
-            load(currentIndex - 1, play: true)
+            goBack(to: currentIndex - 1)
         } else {
-            load(queue.count - 1, play: true)
+            goBack(to: queue.count - 1)
         }
     }
 
@@ -375,7 +377,11 @@ final class AudioPlayer {
 
     func skip(to entry: QueueEntry) {
         guard let index = queue.firstIndex(where: { $0.id == entry.id }) else { return }
-        load(index, play: true)
+        if let currentIndex, index < currentIndex {
+            goBack(to: index)
+        } else {
+            load(index, play: true)
+        }
     }
 
     func toggleShuffle() {
@@ -522,6 +528,15 @@ final class AudioPlayer {
         checkRadioSupply()
     }
 
+    /// Back to an entry before the current one. Going back is not "not
+    /// this": the station is not told the track left was skipped, which
+    /// would drop it from Up Next and count against its artist.
+    private func goBack(to index: Int) {
+        isGoingBack = true
+        load(index, play: true)
+        isGoingBack = false
+    }
+
     /// `entry` is current now, with `loaded` already in the engine.
     private func begin(_ entry: QueueEntry, at index: Int, loaded: Loaded) {
         currentIndex = index
@@ -650,8 +665,9 @@ final class AudioPlayer {
             library?.notePlayed(finished.track.id, at: now)
         }
         // Only to the station it played on: a track of the station before
-        // says nothing about this one.
-        if let stationID = finished.stationID, let radio, radio.station?.id == stationID {
+        // says nothing about this one. Nor a skip made by going back.
+        if let stationID = finished.stationID, let radio, radio.station?.id == stationID,
+           !(isGoingBack && outcome == .skipped) {
             radio.trackEnded(finished.track, listened: finished.listened)
         }
     }
@@ -748,8 +764,12 @@ final class AudioPlayer {
         // Normalisation turned on or off in Settings takes effect at once.
         let level = volume(for: playing.entry.track)
         if engine.volume != level { engine.volume = level }
-        if engine.timeControlStatus == .playing, Date().timeIntervalSince(playing.lastProgress) >= 10 {
-            reportProgress()
+        if engine.timeControlStatus == .playing {
+            if !playing.startReported {
+                reportStartIfNeeded()
+            } else if Date().timeIntervalSince(playing.lastProgress) >= 10 {
+                reportProgress()
+            }
         }
     }
 
@@ -878,15 +898,27 @@ final class AudioPlayer {
 
     // MARK: Telling Jellyfin and the lock screen
 
-    /// The first moment an entry really plays: Jellyfin's "now playing".
+    /// Jellyfin's "now playing", once the entry has played long enough not
+    /// to be a skip by PlayOutcome's rule. Jellyfin counts the play at the
+    /// start report (measured on 12.4, JellyfinClient.reportStart): sent at
+    /// once, every skip would gain a play count, and the next library load
+    /// would cancel that skip in the radio's taste. tick() asks again while
+    /// it plays.
     @discardableResult
     private func reportStartIfNeeded() -> Bool {
         guard var playing, !playing.startReported else { return false }
+        let now = Date()
+        var heard = playing.heard
+        if let since = playing.playingSince { heard += max(0, now.timeIntervalSince(since)) }
+        // The length deliver() judges the play by.
+        var length = playing.entry.track.duration
+        if length <= 0 { length = Self.seconds(playing.loaded.item.duration) ?? 0 }
+        guard PlayOutcome.of(listened: heard, duration: length) != .skipped else { return false }
         playing.startReported = true
-        playing.lastProgress = Date()
+        playing.lastProgress = now
         self.playing = playing
         guard let client else { return true }
-        let report = PlaybackReport(trackID: playing.entry.track.id, position: elapsed, isPaused: false,
+        let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
                                     playSessionID: playing.loaded.playSessionID)
         Task { await client.reportStart(report) }
         return true

@@ -29,9 +29,13 @@ struct PlaylistsView: View {
                     LibraryPlaylistRow(playlist: playlist)
                 }
                 .swipeActions {
-                    Button("Delete", systemImage: "trash", role: .destructive) {
+                    // Red by tint, not by the destructive role: with the role,
+                    // List slides the row away as deleted at once, before the
+                    // dialog below has asked.
+                    Button("Delete", systemImage: "trash") {
                         pendingDelete = playlist
                     }
+                    .tint(.red)
                 }
                 .contextMenu {
                     Button("Delete Playlist", systemImage: "trash", role: .destructive) {
@@ -167,8 +171,10 @@ struct PlaylistDetailView: View {
         .libraryScrolledTitle(shown.name, after: 280)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
+                // Off only while loading: after the last song is removed in
+                // edit mode, Done must still be there to leave it.
                 EditButton()
-                    .disabled(tracks.isEmpty)
+                    .disabled(entries == nil)
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

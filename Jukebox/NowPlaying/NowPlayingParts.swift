@@ -113,6 +113,9 @@ struct NowPlayingScrubber: View {
     @State private var dragFraction: Double?
     /// The playhead when the drag began.
     @State private var dragStart: Double = 0
+    /// True while a finger is down. SwiftUI resets it when the system
+    /// cancels the drag (a call, Siri), which never reaches onEnded.
+    @GestureState private var isHeld = false
 
     var body: some View {
         let duration = player.duration
@@ -139,6 +142,9 @@ struct NowPlayingScrubber: View {
                 .contentShape(.rect)
                 .gesture(
                     DragGesture(minimumDistance: 0)
+                        .updating($isHeld) { _, held, _ in
+                            held = true
+                        }
                         .onChanged { value in
                             guard canSeek else { return }
                             if dragFraction == nil { dragStart = playing }
@@ -166,6 +172,13 @@ struct NowPlayingScrubber: View {
             .foregroundStyle(isDragging ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
         }
         .animation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8), value: isDragging)
+        .onChange(of: isHeld) { _, held in
+            // A cancelled drag would leave the line thick and the times
+            // stopped. Let go after this update, when an onEnded that did
+            // run has already seeked.
+            guard !held else { return }
+            Task { dragFraction = nil }
+        }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Position")
         .accessibilityValue(spokenPosition)

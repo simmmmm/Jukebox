@@ -20,6 +20,9 @@ final class ImagePipeline {
         configuration.requestCachePolicy = .returnCacheDataElseLoad
         session = URLSession(configuration: configuration)
         memory.countLimit = 500
+        // Decoded bytes, not a count: a 900 px cover is 3.2 MB once prepared
+        // for display, so 500 of them would be 1.6 GB. 256 MB is about 80.
+        memory.totalCostLimit = 256 << 20
     }
 
     func cached(_ url: URL) -> UIImage? {
@@ -39,7 +42,10 @@ final class ImagePipeline {
         inFlight[url] = task
         let image = await task.value
         inFlight[url] = nil
-        if let image { memory.setObject(image, forKey: url as NSURL) }
+        if let image {
+            let pixels = image.size.width * image.scale * image.size.height * image.scale
+            memory.setObject(image, forKey: url as NSURL, cost: Int(pixels) * 4)
+        }
         return image
     }
 
@@ -76,7 +82,9 @@ struct ArtworkView: View {
             .aspectRatio(1, contentMode: .fit)
             .frame(width: size, height: size)
             .overlay {
-                if let image = loaded ?? url.flatMap({ ImagePipeline.shared.cached($0) }) {
+                // The current url's cover first: `loaded` can still be the
+                // last one's for a moment after the artwork changes in place.
+                if let image = url.flatMap({ ImagePipeline.shared.cached($0) }) ?? loaded {
                     Image(uiImage: image)
                         .resizable()
                         .scaledToFill()
@@ -96,7 +104,13 @@ struct ArtworkView: View {
             }
             .task(id: url) {
                 guard let url else { loaded = nil; return }
-                loaded = await ImagePipeline.shared.image(for: url)
+                let image = await ImagePipeline.shared.image(for: url)
+                // Cancelled: the view has gone, or a newer url has its own
+                // task. The download went on regardless (and is cached), but
+                // this cover is not the one to show: written now, a slow old
+                // cover would replace the new one.
+                guard !Task.isCancelled else { return }
+                loaded = image
             }
             .accessibilityHidden(true)
     }

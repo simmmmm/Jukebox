@@ -19,7 +19,10 @@ struct HomeView: View {
     init() {}
 
     var body: some View {
-        Group {
+        // A ZStack, not a Group: a Group hands its modifiers to whichever
+        // branch shows, so Settings, opened during the first load, would
+        // close and open again (losing what was typed) when the load ends.
+        ZStack {
             if library.tracks.isEmpty {
                 HomeLibraryStatus()
             } else {
@@ -103,14 +106,17 @@ private struct HomeStationHero: View {
         let onAir = radio.stationOnAir(player: player)
         // Side by side as a wide card; the art above the words at the
         // largest text sizes, where side by side leaves the words no room.
-        let layout = dynamicTypeSize.isAccessibilitySize
+        let isStacked = dynamicTypeSize.isAccessibilitySize
+        let layout = isStacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Space.l))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Theme.Space.l))
+        // 76: on a 375-point iPhone the words keep about 170 points.
+        let art = HomeEclipseArt(station: onAir ?? personal, diameter: 76)
         layout {
+            if isStacked { art }
             words(onAir)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            // 76: on a 375-point iPhone the words keep about 170 points.
-            HomeEclipseArt(station: onAir ?? personal, diameter: 76)
+            if !isStacked { art }
         }
         .padding(Theme.margin)
         // About 16:9 on an iPhone; taller when the text is larger.

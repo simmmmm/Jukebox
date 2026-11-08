@@ -29,6 +29,9 @@ struct NowPlayingView: View {
     @State private var panel: NowPlayingPanel = .cover
     /// How far the view has been pulled down to close it.
     @State private var dragOffset: CGFloat = 0
+    /// True while a pull is held. SwiftUI resets it when the system cancels
+    /// the pull (a call, Siri), which never reaches onEnded.
+    @GestureState private var isPulling = false
     /// Counted, so each tap plays the glyph's bounce once.
     @State private var previousTaps = 0
     @State private var nextTaps = 0
@@ -80,6 +83,16 @@ struct NowPlayingView: View {
         .onChange(of: player.errorMessage) { _, message in
             if let message {
                 UIAccessibility.post(notification: .announcement, argument: message)
+            }
+        }
+        .onChange(of: isPulling) { _, pulling in
+            // A cancelled pull would leave the view where the finger was.
+            // Looked at after this update, when an onEnded that did run has
+            // already closed the view or settled it.
+            guard !pulling else { return }
+            Task {
+                guard dragOffset > 0, navigator.isNowPlayingPresented else { return }
+                settle()
             }
         }
         // "Add to Playlist…" from the "…" menu, Up Next or History: the tab
@@ -212,8 +225,9 @@ struct NowPlayingView: View {
     /// music plays, as Music's does; still under Reduce Motion.
     private func bigCover(side: CGFloat) -> some View {
         let playing = player.isPlaying
-        return ArtworkView(currentTrack?.artwork, size: side, cornerRadius: Theme.Radius.card)
+        return NowPlayingCover(artwork: currentTrack?.artwork, drawnSide: side, cornerRadius: Theme.Radius.card)
             .nowPlayingMatched("cover", in: coverSpace, enabled: !reduceMotion)
+            .frame(width: side, height: side)
             .shadow(color: Color.black.opacity(playing ? 0.45 : 0.25), radius: playing ? 28 : 14, y: playing ? 14 : 6)
             .scaleEffect(playing ? 1 : 0.84)
             .animation(reduceMotion ? nil : .spring(response: 0.5, dampingFraction: 0.68), value: playing)
@@ -237,8 +251,9 @@ struct NowPlayingView: View {
             Button {
                 show(.cover)
             } label: {
-                ArtworkView(currentTrack?.artwork, size: 60, cornerRadius: Theme.Radius.artwork)
+                NowPlayingCover(artwork: currentTrack?.artwork, drawnSide: 60, cornerRadius: Theme.Radius.artwork)
                     .nowPlayingMatched("cover", in: coverSpace, enabled: !reduceMotion)
+                    .frame(width: 60, height: 60)
                     .shadow(color: Color.black.opacity(0.3), radius: 8, y: 4)
             }
             .buttonStyle(.plain)
@@ -507,6 +522,9 @@ struct NowPlayingView: View {
         // Global: the view moves under the finger, so its own coordinates
         // would move with it.
         DragGesture(minimumDistance: 16, coordinateSpace: .global)
+            .updating($isPulling) { _, pulling, _ in
+                pulling = true
+            }
             .onChanged { value in
                 let down = value.translation.height
                 if dragOffset == 0 {
@@ -520,15 +538,20 @@ struct NowPlayingView: View {
                 if dragOffset > 0, value.translation.height > 140 || value.predictedEndTranslation.height > 480 {
                     close()
                 } else {
-                    withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.82)) {
-                        dragOffset = 0
-                    }
+                    settle()
                 }
             }
     }
 
     private func close() {
         navigator.isNowPlayingPresented = false
+    }
+
+    /// Back up, for a pull that was not a close.
+    private func settle() {
+        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.82)) {
+            dragOffset = 0
+        }
     }
 
     private func show(_ new: NowPlayingPanel) {
@@ -563,6 +586,31 @@ struct NowPlayingView: View {
     private func libraryArtist(for track: Track) -> Artist? {
         guard let ref = track.primaryArtist else { return nil }
         return library.artist(ref)
+    }
+}
+
+/// The cover as it flies between its big place and its small one.
+/// matchedGeometryEffect flies a view by offering it the frames in between,
+/// and ArtworkView keeps the size it is given, so on its own it would slide
+/// without growing or shrinking. Here it
+/// is drawn at `drawnSide` (its image fetched for that size, so the big cover
+/// stays sharp) and scaled to the square it is offered: at rest that is
+/// `drawnSide`, and the scale is 1.
+private struct NowPlayingCover: View {
+    let artwork: Artwork?
+    let drawnSide: CGFloat
+    let cornerRadius: CGFloat
+
+    var body: some View {
+        Color.clear
+            .overlay {
+                GeometryReader { proxy in
+                    let scale = drawnSide > 0 ? proxy.size.width / drawnSide : 1
+                    ArtworkView(artwork, size: drawnSide, cornerRadius: cornerRadius)
+                        .scaleEffect(scale)
+                        .frame(width: proxy.size.width, height: proxy.size.height)
+                }
+            }
     }
 }
 
