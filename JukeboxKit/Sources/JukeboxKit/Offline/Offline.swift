@@ -212,7 +212,7 @@ public enum KeepPolicy {
     /// Measured on 12.4 (downloadURL's files, a 4-minute stereo song): the
     /// AAC is its bitrate and 2.8 kbit/s more, the m4a's index of its
     /// frames (7 765 392 bytes at 256, 3 924 627 at 128, for 240.05 s); 3
-    /// kbit/s is allowed, which is 0.1% over. At .high and .normal that is
+    /// kbit/s is allowed, which is 0.1–0.2% over. At .high and .normal that is
     /// at most what comes: a file the server sends as it is is smaller.
     /// Jellyfin knows the original's bitrate, but Track does not carry it,
     /// so .original assumes 900 kbit/s: CD-quality FLAC or ALAC of pop and

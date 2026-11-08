@@ -41,7 +41,8 @@ extension KeepPolicy {
         /// margin"): half the downloads of no margin for a point fewer plays
         /// on the phone, and a day with no plays trades nothing, where with
         /// no margin time alone trades songs back and forth. A margin of 2
-        /// halves the downloads again but costs 1.7 points.
+        /// fetches a third less again (1.2 a day) but holds 1.7 points fewer
+        /// than none.
         var incumbentBonus = 1.5
         /// Below this a song is not worth fetching, however much room is
         /// left: one completed play two months ago (2^(−60/14) ≈ 0.05).

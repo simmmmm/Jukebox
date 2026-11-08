@@ -230,9 +230,10 @@ struct KeepPolicySimulationTests {
             Self.measure(String(format: "margin %.1f: after 90 days, a day with no plays trades %ld songs; one more play of a song not kept changes the keep in %ld of %ld tries, %.2f songs on average, at most %ld fetched and %ld let go",
                                 bonus, nextDay, changed, tries, Double(total) / Double(tries), most.fetched, most.letGo))
             if bonus == KeepPolicy.Tuning.standard.incumbentBonus {
-                // At most: the song played comes in, the room it needs lets
-                // go of two shorter ones, and what is left over takes a
-                // shorter one from further down.
+                // Measured at most 2 fetched and 1 let go: the song played
+                // comes in, the room it needs lets go of one, and what is left
+                // over takes a shorter one from further down. Four allows a
+                // long song to push out two.
                 #expect(most.fetched + most.letGo <= 4)
                 #expect(nextDay <= 2)
             }
@@ -282,8 +283,16 @@ struct KeepPolicySimulationTests {
         let bytes = month.download.reduce(Int64(0)) { $0 + KeepPolicy.estimatedBytes(of: byID[$1]!, quality: .high) }
         let heard = Set(events.map(\.trackID)).count
         let lovedKept = month.download.filter { id in byID[id]?.primaryArtist.map { loved.contains($0.key) } ?? false }.count
-        Self.measure(String(format: "test library, a month (600 plays of %ld songs), 1 GB at .high: %ld songs, %.1f MB; %ld of the %ld by the three loved artists",
-                            heard, month.download.count, Double(bytes) / 1e6, lovedKept, theirs.count))
+        // The songs heard and not kept: how many were skipped as often as
+        // they were heard to the end or partly.
+        let kept = Set(month.download)
+        let left = Set(events.map(\.trackID)).subtracting(kept)
+        let skippedMost = left.filter { id in
+            let mine = events.filter { $0.trackID == id }
+            return mine.filter { $0.outcome == .skipped }.count >= mine.filter { $0.outcome != .skipped }.count
+        }.count
+        Self.measure(String(format: "test library, a month (600 plays of %ld songs), 1 GB at .high: %ld songs, %.1f MB; %ld of the %ld by the three loved artists; of the %ld heard and not kept, %ld were skipped at least as often as heard",
+                            heard, month.download.count, Double(bytes) / 1e6, lovedKept, theirs.count, left.count, skippedMost))
         // Every loved song the month played is kept, but one skipped more
         // than it was heard (from the 30% heard anywhere).
         let heardLoved = theirs.filter { t in events.contains { $0.trackID == t.id } }.count
