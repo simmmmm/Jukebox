@@ -1,7 +1,8 @@
 // CoverAccent on made-up covers of 32 by 32: the colours dev/accent.py
-// gives for the same pixels (so the sketches show what the app will), a
-// cover without colour of its own keeping Glow, and every accent readable
-// on Cabinet.
+// gives for the same pixels (so the sketches show what the app will), the
+// second colour where a cover has one and not where it is a speck, a cover
+// without colour of its own keeping Glow, and every accent readable on
+// Cabinet.
 
 import Foundation
 import Testing
@@ -61,10 +62,22 @@ struct CoverAccentTests {
         #expect(same(found, "FF6857"), "got \(found.map(hex) ?? "nil")")
     }
 
-    @Test("A gradient of blue to green: the hue it leans to")
+    @Test("A gradient from teal to blue: the blue end, apart from the teal most of it is")
     func gradient() {
         let found = accent { x, y in (40 + x * 5, 90 + y * 3, 160 - x * 2) }
-        #expect(same(found, "75DCC2"), "got \(found.map(hex) ?? "nil")")
+        #expect(same(found, "92C3FF"), "got \(found.map(hex) ?? "nil")")
+    }
+
+    @Test("Purple with an orange band: the orange, the cover's second colour")
+    func secondColour() {
+        let found = accent { x, _ in x < 26 ? (150, 60, 200) : (240, 170, 40) }
+        #expect(same(found, "FDB73B"), "got \(found.map(hex) ?? "nil")")
+    }
+
+    @Test("Purple with an orange speck: a speck is not a second colour, the purple")
+    func speck() {
+        let found = accent { x, y in x < 1 && y < 16 ? (240, 170, 40) : (150, 60, 200) }
+        #expect(same(found, "C971FF"), "got \(found.map(hex) ?? "nil")")
     }
 
     @Test("Black to white, no colour: nil, so the app keeps Glow")

@@ -1,10 +1,19 @@
 // The accent of Now Playing, from the cover of what plays — the
 // photographer, 8 November 2026: "kan je de kleur uit de albumhoes pakken
-// voor de steunkleur?"
+// voor de steunkleur?", and then "Of een complementaire kleur, kijk maar
+// wat het beste uitkomt".
 //
-// Not the cover's average (ImagePipeline.averageColor, which a turntable's
-// label and a station's room take): an average of red stripes on cream is a
-// pinkish beige no one sees in it. The accent is the hue the eye picks out:
+// What came out best is the cover's second colour: a colour of its own
+// that stands apart from its main one — the orange sun on a purple sky,
+// the teal corner of a pink haze — so the controls stand out from the art
+// above them and still belong to it. The true complement (the opposite
+// hue) brings a colour the cover does not have: acid lime under a sunset,
+// cyan under red stripes. One colour only: that one. None: Glow.
+// (docs/design/accent-choice.png: the three side by side.)
+//
+// Not the cover's average either (ImagePipeline.averageColor, which a
+// turntable's label and a station's room take): an average of red stripes
+// on cream is a pinkish beige no one sees in it.
 //
 //   1. The cover small (32 by 32: the app draws it so), each pixel in Oklab,
 //      as lightness, chroma and hue.
@@ -14,13 +23,17 @@
 //      chroma squared, so a vivid part counts far more than a dull one of
 //      the same size; each step with half of its two neighbours, so a hue
 //      on a step's edge is not split in two.
-//   4. The best step's pixels, within 20° of its middle, must cover 4% of
-//      the cover; less, and the cover has no colour of its own (a black and
-//      white photo, a grey sleeve): nil, and the app keeps Glow.
-//   5. Their hue (the mean of the angles, weighed by chroma), and how vivid
-//      they are (the 75th percentile of their chroma, at least 0.10 so the
+//   4. The main colour: the best step's pixels, within 20° of its middle.
+//      They must cover 4% of the cover; less, and the cover has no colour
+//      of its own (a black and white photo, a grey sleeve): nil, and the
+//      app keeps Glow.
+//   5. The second colour: the best step 60° or more from the main colour's
+//      hue, its pixels within 20°, if they cover 2% of the cover (a speck
+//      is not a colour); else the main colour is the accent.
+//   6. Its hue (the mean of the angles, weighed by chroma), and how vivid
+//      it is (the 75th percentile of the chroma, at least 0.10 so the
 //      accent never reads as grey).
-//   6. That hue at Glow's own lightness, so it weighs on Cabinet what Glow
+//   7. That hue at Glow's own lightness, so it weighs on Cabinet what Glow
 //      weighs, and only the hue changes from album to album; a little
 //      darker where the hue has no room for its chroma there (a red at
 //      Glow's lightness is salmon), but never under 0.70, which keeps it at
@@ -71,6 +84,8 @@ public enum CoverAccent {
     static let leastAccentChroma = 0.10
     static let lowestLightness = 0.70
     static let steps = 36
+    static let secondApart = 60.0
+    static let secondShare = 0.02
     /// Glow's lightness in Oklab, 0.825.
     static let glowLightness = oklab(red: linear(AccentColor.glow.red), green: linear(AccentColor.glow.green),
                                      blue: linear(AccentColor.glow.blue)).lightness
@@ -107,18 +122,39 @@ public enum CoverAccent {
             histogram[Int(hue / (360 / Double(steps))) % steps] += chroma * chroma
         }
 
-        var best = -1
-        var bestScore = 0.0
+        var scores = [Double](repeating: 0, count: steps)
         for step in 0..<steps {
-            let score = histogram[step] + 0.5 * (histogram[(step + steps - 1) % steps] + histogram[(step + 1) % steps])
-            if score > bestScore {
-                bestScore = score
-                best = step
-            }
+            let neighbours: Double = histogram[(step + steps - 1) % steps] + histogram[(step + 1) % steps]
+            scores[step] = histogram[step] + 0.5 * neighbours
         }
-        guard best >= 0 else { return nil }
+        // Best first; a tie in the order of the steps, as NumPy's stable sort.
+        let order: [Int] = (0..<steps).sorted { (a: Int, b: Int) -> Bool in
+            if scores[a] != scores[b] { return scores[a] > scores[b] }
+            return a < b
+        }
+        guard let best = order.first, scores[best] > 0,
+              let primary = group(samples, around: middle(of: best)),
+              primary.share >= minimumShare else { return nil }
 
-        let middle = (Double(best) + 0.5) * 360 / Double(steps)
+        var chosen = primary
+        for step in order {
+            guard scores[step] > 0 else { break }
+            guard angle(middle(of: step), from: primary.hue) >= secondApart else { continue }
+            // Only the strongest step far enough away: if that is a speck,
+            // the cover has one colour.
+            if let second = group(samples, around: middle(of: step)), second.share >= secondShare {
+                chosen = second
+            }
+            break
+        }
+        return color(hue: chosen.hue, chroma: chosen.chroma)
+    }
+
+    /// The pixels within 20° of a hue: their share of all the cover's, their
+    /// hue (the mean of the angles, weighed by chroma), and their chroma's
+    /// 75th percentile. Nil when there are none.
+    static func group(_ samples: [(chroma: Double, hue: Double)?], around middle: Double)
+        -> (share: Double, hue: Double, chroma: Double)? {
         var near: [Double] = []
         var sine = 0.0, cosine = 0.0
         for case let (chroma, hue)? in samples where angle(hue, from: middle) <= 20 {
@@ -126,13 +162,20 @@ public enum CoverAccent {
             sine += chroma * sin(hue * .pi / 180)
             cosine += chroma * cos(hue * .pi / 180)
         }
-        guard Double(near.count) / Double(count) >= minimumShare else { return nil }
+        guard !near.isEmpty else { return nil }
+        return (Double(near.count) / Double(samples.count), degrees(atan2(sine, cosine)), percentile(near.sorted(), 0.75))
+    }
 
-        let hue = degrees(atan2(sine, cosine))
-        let wanted = max(percentile(near.sorted(), 0.75), leastAccentChroma)
+    /// The middle of a step of the histogram, in degrees.
+    static func middle(of step: Int) -> Double {
+        (Double(step) + 0.5) * 360 / Double(steps)
+    }
 
-        // From Glow's lightness down: the lightest that comes within 0.01 of
-        // the most chroma the hue can have.
+    /// A hue as the accent: from Glow's lightness down, the lightest that
+    /// comes within 0.01 of the most chroma the hue can have, up to what
+    /// the cover has (and at least leastAccentChroma).
+    static func color(hue: Double, chroma: Double) -> AccentColor {
+        let wanted = max(chroma, leastAccentChroma)
         var chosen = (lightness: glowLightness, chroma: -1.0)
         for lightness in stride(from: glowLightness, through: lowestLightness, by: -0.01) {
             let chroma = min(wanted, mostChroma(lightness: lightness, hue: hue))

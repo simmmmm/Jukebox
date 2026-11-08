@@ -136,18 +136,27 @@ room's glow) are `dev/brand/icon.py`'s, for the icon alone.
 ## Now Playing's accent: the cover's
 
 The photographer, 8 November 2026: "kan je de kleur uit de albumhoes pakken
-voor de steunkleur?" On Now Playing, what is Glow elsewhere — the progress,
+voor de steunkleur?", and then "Of een complementaire kleur, kijk maar wat
+het beste uitkomt". On Now Playing, what is Glow elsewhere — the progress,
 the station's name and mark, a thumb or heart given, the dial, Up Next's
-toggles — takes the hue of the cover that plays
+toggles — takes a colour of the cover that plays
 (`JukeboxKit/…/Artwork/CoverAccent.swift`, the steps in its comment;
 `dev/accent.py` is the same in Python for sketches):
 
+- the cover's second colour: a colour of its own that stands apart from
+  its main one (60° of hue or more) — the orange sun on a purple sky, the
+  teal corner of a pink haze — so the controls stand out from the art
+  above them and still belong to it. Tried against the main colour and the
+  true complement (`docs/design/accent-choice.png`): the main colour melts
+  into the record; the complement brings a colour the cover does not have
+  (acid lime under a sunset, cyan under red stripes);
+- a cover with one colour: that one; with none (black and white, grey):
+  Glow;
 - the hue the eye picks out (a histogram of hue, vivid parts weighed most),
   not the average, which makes red stripes on cream beige;
 - at Glow's lightness, so it weighs on Cabinet what Glow does and only the
   hue changes from album to album; a little darker where a hue has no room
   there (red), never under Oklab 0.70: 6.7:1 or more on Cabinet;
-- Glow for a cover without a colour of its own (black and white, grey);
 - eased over half a second when the song changes, at once when Now Playing
   opens.
 

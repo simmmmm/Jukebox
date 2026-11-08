@@ -15,10 +15,11 @@
 //
 // The controls stay white; the accent marks only what is the radio's or
 // what is on: the progress, the thumbs up given, the station's name, the
-// dial. It is the colour of the cover that plays (CoverAccent) — the
-// photographer, 8 November 2026: "kan je de kleur uit de albumhoes pakken
-// voor de steunkleur?" — at Glow's weight, so only its hue changes; Glow
-// for a cover with no colour of its own. Given as the tint, which every
+// dial. It is a colour of the cover that plays (CoverAccent: its second
+// colour, apart from its main one) — the photographer, 8 November 2026:
+// "kan je de kleur uit de albumhoes pakken voor de steunkleur?" — at
+// Glow's weight, so only its hue changes; Glow for a cover with no colour
+// of its own. Given as the tint, which every
 // part here draws its accent with (.tint), so a part never picks Glow by
 // itself. Only here: the rest of the app keeps Copper and Glow, the brand.
 //

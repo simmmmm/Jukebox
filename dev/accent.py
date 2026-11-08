@@ -22,6 +22,8 @@ MINIMUM_CHROMA = 0.035
 MINIMUM_SHARE = 0.04
 LEAST_ACCENT_CHROMA = 0.10
 LOWEST_LIGHTNESS = 0.70
+SECOND_APART = 60
+SECOND_SHARE = 0.02
 
 
 def linear(c):
@@ -77,6 +79,33 @@ def most_chroma(L, hue):
     return low
 
 
+def group(C, h, vivid, middle):
+    """The pixels within 20 degrees of a hue: their share of the cover,
+    their hue (the mean of the angles, weighed by chroma) and their 75th
+    percentile of chroma."""
+    near = vivid & (np.abs((h - middle + 180) % 360 - 180) <= 20)
+    if near.sum() == 0:
+        return None
+    ang = np.radians(h[near])
+    hue = math.degrees(math.atan2((C[near] * np.sin(ang)).sum(), (C[near] * np.cos(ang)).sum())) % 360
+    return dict(share=near.sum() / len(C), hue=hue, chroma=float(np.percentile(C[near], 75)))
+
+
+def colour(hue, chroma):
+    """A hue at Glow's lightness, or a little darker where it has no room."""
+    wanted = max(chroma, LEAST_ACCENT_CHROMA)
+    chosen = None
+    L_try = GLOW_LIGHTNESS
+    while L_try >= LOWEST_LIGHTNESS - 1e-9:
+        c = min(wanted, most_chroma(L_try, hue))
+        if chosen is None or c > chosen[1] + 0.01:
+            chosen = (L_try, c)
+        L_try -= 0.01
+    L_c, c = chosen
+    rgb = encoded(linear_rgb(L_c, c * math.cos(math.radians(hue)), c * math.sin(math.radians(hue))))
+    return tuple(int(round(v * 255)) for v in rgb)
+
+
 def accent_of_pixels(rgb8):
     """rgb8: N x 3, 0 … 255 (opaque). The accent as 8-bit RGB, or None."""
     lab = oklab(linear(np.asarray(rgb8, float) / 255))
@@ -89,23 +118,23 @@ def accent_of_pixels(rgb8):
     hist = np.zeros(STEPS)
     np.add.at(hist, (h[vivid] // (360 / STEPS)).astype(int) % STEPS, C[vivid] ** 2)
     smooth = hist + 0.5 * (np.roll(hist, 1) + np.roll(hist, -1))
-    middle = (int(np.argmax(smooth)) + 0.5) * 360 / STEPS
-    near = vivid & (np.abs((h - middle + 180) % 360 - 180) <= 20)
-    if near.sum() / len(C) < MINIMUM_SHARE:
+    order = np.argsort(-smooth, kind='stable')
+    first = group(C, h, vivid, (int(order[0]) + 0.5) * 360 / STEPS)
+    if first is None or first['share'] < MINIMUM_SHARE:
         return None
-    ang = np.radians(h[near])
-    hue = math.degrees(math.atan2((C[near] * np.sin(ang)).sum(), (C[near] * np.cos(ang)).sum())) % 360
-    wanted = max(float(np.percentile(C[near], 75)), LEAST_ACCENT_CHROMA)
-    chosen = None
-    L_try = GLOW_LIGHTNESS
-    while L_try >= LOWEST_LIGHTNESS - 1e-9:
-        c = min(wanted, most_chroma(L_try, hue))
-        if chosen is None or c > chosen[1] + 0.01:
-            chosen = (L_try, c)
-        L_try -= 0.01
-    L_c, c = chosen
-    rgb = encoded(linear_rgb(L_c, c * math.cos(math.radians(hue)), c * math.sin(math.radians(hue))))
-    return tuple(int(round(v * 255)) for v in rgb)
+    # The cover's second colour: the strongest step 60 degrees or more from
+    # the first, if it colours 2% of the cover.
+    for step in order:
+        if smooth[step] <= 0:
+            break
+        middle = (int(step) + 0.5) * 360 / STEPS
+        if abs((middle - first['hue'] + 180) % 360 - 180) < SECOND_APART:
+            continue
+        second = group(C, h, vivid, middle)
+        if second is not None and second['share'] >= SECOND_SHARE:
+            return colour(second['hue'], second['chroma'])
+        break
+    return colour(first['hue'], first['chroma'])
 
 
 def accent(path):
