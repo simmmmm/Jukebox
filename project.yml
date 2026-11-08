@@ -1,0 +1,86 @@
+# Jukebox's Xcode project, made by XcodeGen on the Mac that builds it (CI:
+# .github/workflows/build.yml and testflight.yml), so no .xcodeproj is kept
+# in git. Every Swift file under Jukebox/ is in the app; JukeboxKit is a
+# local Swift package.
+name: Jukebox
+options:
+  bundleIdPrefix: com.tijmen
+  deploymentTarget:
+    iOS: "26.0"
+  developmentLanguage: en
+  createIntermediateGroups: true
+settings:
+  base:
+    MARKETING_VERSION: "1.0"
+    # testflight.yml sets the run number.
+    CURRENT_PROJECT_VERSION: "1"
+    # Swift 5 mode with the main actor as the default: UI code reads as it
+    # did, and what is not about the UI says `nonisolated` where it must.
+    # Concurrency mistakes are then warnings, not errors, in the app; the kit
+    # is Swift 6 and strict, and is tested on Linux.
+    SWIFT_VERSION: "5.0"
+    SWIFT_DEFAULT_ACTOR_ISOLATION: MainActor
+    SWIFT_APPROACHABLE_CONCURRENCY: YES
+    SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY: YES
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+    LOCALIZATION_PREFERS_STRING_CATALOGS: YES
+    SWIFT_EMIT_LOC_STRINGS: YES
+packages:
+  JukeboxKit:
+    path: JukeboxKit
+targets:
+  Jukebox:
+    type: application
+    platform: iOS
+    sources:
+      - path: Jukebox
+    dependencies:
+      - package: JukeboxKit
+      - sdk: AVFoundation.framework
+      - sdk: MediaPlayer.framework
+      - sdk: AVKit.framework
+    info:
+      path: Jukebox/Info.plist
+      properties:
+        CFBundleDisplayName: Jukebox
+        CFBundleName: Jukebox
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSApplicationCategoryType: public.app-category.music
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen:
+          UIColorName: LaunchBackground
+        UIBackgroundModes: [audio]
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        # A home server is often plain http on the local network, or a
+        # certificate the phone does not know: Jukebox goes where it is told.
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin server on this network.
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tijmen.Jukebox
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+schemes:
+  Jukebox:
+    build:
+      targets:
+        Jukebox: all
+    run:
+      config: Debug
+    archive:
+      config: Release
