@@ -72,7 +72,7 @@ final class ImagePipeline {
     /// and those averaged: a cover's colour as the eye takes it in from
     /// across the room, not the colour of any one part of it.
     static func averageColor(of image: UIImage) -> AverageColor? {
-        guard let pixels = pixels(of: image, side: 8) else { return nil }
+        guard let pixels = Self.pixels(of: image, side: 8) else { return nil }
         // Premultiplied: a pixel's colour is already weighed by its alpha,
         // so the sums over the alphas' sum are the average of what shows.
         var red = 0.0, green = 0.0, blue = 0.0, weight = 0.0
