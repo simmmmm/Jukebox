@@ -6,6 +6,11 @@
 // is the photographer's favourite part ("ik vind vooral de radiofunctie
 // echt belangrijk", 8 November 2026), and what it learns from is one tap
 // away here. A pull down anywhere on the cover, or on the top, closes it.
+//
+// The controls stay white; the accent (Glow, as Now Playing is always dark)
+// marks only what is the radio's or what is on: the progress, the thumbs
+// up given, the station's name. Over "Playing From" a station has the mark,
+// lit, its tubes breathing while it plays.
 
 import JukeboxKit
 import SwiftUI
@@ -191,9 +196,14 @@ struct NowPlayingView: View {
                 VStack(spacing: 2) {
                     if let title = contextTitle {
                         Eyebrow("Playing From")
-                        Text(title)
-                            .font(.subheadline.weight(.semibold))
-                            .lineLimit(1)
+                        HStack(spacing: 6) {
+                            if playingStation != nil {
+                                ArchMark(size: 16, breathing: player.isPlaying)
+                            }
+                            Text(title)
+                                .font(.subheadline.weight(.semibold))
+                                .lineLimit(1)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -426,7 +436,8 @@ struct NowPlayingView: View {
             Button {
                 radio.like(track)
             } label: {
-                NowPlayingRoundGlyph(systemName: liked ? "hand.thumbsup.fill" : "hand.thumbsup", isOn: liked)
+                NowPlayingRoundGlyph(systemName: liked ? "hand.thumbsup.fill" : "hand.thumbsup", isOn: liked,
+                                     tint: Theme.accent)
                     .symbolEffect(.bounce, value: liked)
             }
             .buttonStyle(.plain)
@@ -436,25 +447,25 @@ struct NowPlayingView: View {
         }
     }
 
-    /// The station's name as Numa's grey label in a faint capsule; it goes
-    /// to the Radio tab, where the station's dial is.
+    /// The station's name as a small spaced label in the accent, after the
+    /// mark, in a faint capsule of its light; it goes to the Radio tab,
+    /// where the station's dial is.
     private func stationChip(_ station: Station) -> some View {
         Button {
             navigator.tab = .radio
             close()
         } label: {
             HStack(spacing: 6) {
-                Image(systemName: "dot.radiowaves.left.and.right")
-                    .font(Theme.eyebrow)
+                ArchMark(size: 11, style: .template)
                 Text(station.title.uppercased())
                     .font(Theme.eyebrow)
                     .tracking(Theme.eyebrowTracking)
                     .lineLimit(1)
             }
-            .foregroundStyle(.secondary)
+            .foregroundStyle(Theme.accent)
             .padding(.horizontal, Theme.Space.m)
             .padding(.vertical, 7)
-            .background(Color.white.opacity(0.1), in: .capsule)
+            .background(Theme.accent.opacity(0.14), in: .capsule)
             .contentShape(.capsule)
         }
         .buttonStyle(.plain)

@@ -1,9 +1,8 @@
 // The pieces Home and Radio share: which station is on the air, what a tab
-// shows while the library loads or when it has nothing, the eclipse over a
-// station's covers, a station's tile that opens its page and its long-press
-// menu, the grey placeholders a shelf shows while the mixes are being made,
-// and a mix's tile and menu. Named Home… or Station… so they cannot clash
-// with another part's helpers.
+// shows while the library loads or when it has nothing, a station's tile
+// that opens its page and its long-press menu, the grey placeholders a
+// shelf shows while the mixes are being made, and a mix's tile and menu.
+// Named Home… or Station… so they cannot clash with another part's helpers.
 
 import JukeboxKit
 import SwiftUI
@@ -89,7 +88,7 @@ struct HomeLoadingView: View {
 
     var body: some View {
         VStack(spacing: Theme.Space.l) {
-            JukeboxMark(diameter: 40)
+            ArchMark(size: 48)
             VStack(spacing: Theme.Space.xs) {
                 Text("Loading your library…")
                     .font(.headline)
@@ -119,40 +118,7 @@ struct HomeLoadingView: View {
 
 // MARK: - Stations
 
-/// The eclipse over a station's covers: Numa's glow disc on the left, and
-/// under it, to the right, the covers in a circle (four as a collage) — the
-/// listener's own music as the dark disc. The mark itself while there are
-/// no covers yet.
-struct HomeEclipseArt: View {
-    let station: Station?
-    let diameter: CGFloat
-
-    var body: some View {
-        let covers = station?.artwork ?? []
-        if covers.isEmpty {
-            JukeboxMark(diameter: diameter)
-        } else {
-            ZStack(alignment: .topLeading) {
-                Group {
-                    if covers.count >= 4 {
-                        CollageArtwork(artworks: covers, cornerRadius: 0)
-                    } else {
-                        ArtworkView(covers[0], size: diameter, cornerRadius: 0)
-                    }
-                }
-                .frame(width: diameter, height: diameter)
-                .clipShape(.circle)
-                .offset(x: diameter * Eclipse.spacing)
-                GlowDisc()
-                    .frame(width: diameter, height: diameter)
-            }
-            .frame(width: diameter * (1 + Eclipse.spacing), height: diameter, alignment: .topLeading)
-            .accessibilityHidden(true)
-        }
-    }
-}
-
-/// On a station's artwork while it plays: the waveform in a white disc,
+/// On a station's artwork while it plays: the waveform in a disc of Glow,
 /// moving with the music unless Reduce Motion is on.
 struct StationOnAirBadge: View {
     @Environment(AudioPlayer.self) private var player
@@ -165,7 +131,8 @@ struct StationOnAirBadge: View {
             .foregroundStyle(Theme.onAccent)
             .padding(6)
             .background(Theme.accent, in: .circle)
-            // White on the station's dark artwork in light mode too.
+            // Glow on the station's dark artwork in light mode too: the
+            // art's room is always dark, and Copper would sink into it.
             .environment(\.colorScheme, .dark)
             .accessibilityHidden(true)
     }

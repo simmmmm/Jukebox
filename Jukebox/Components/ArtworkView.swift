@@ -49,6 +49,60 @@ final class ImagePipeline {
         return image
     }
 
+    // MARK: A cover's colour
+
+    /// Each cover's average colour, by its URL: a station's art takes its
+    /// room from its first cover (StationArtwork), and many tiles show one
+    /// station. A few bytes each; a library's stations are a few hundred.
+    private var averages: [URL: AverageColor] = [:]
+
+    func cachedAverageColor(_ url: URL) -> AverageColor? {
+        averages[url]
+    }
+
+    /// The average colour of the image at `url`, worked out once.
+    func averageColor(for url: URL) async -> AverageColor? {
+        if let known = averages[url] { return known }
+        guard let image = await image(for: url), let average = Self.averageColor(of: image) else { return nil }
+        averages[url] = average
+        return average
+    }
+
+    /// The image drawn into 8 by 8 pixels, with high-quality interpolation,
+    /// and those averaged: a cover's colour as the eye takes it in from
+    /// across the room, not the colour of any one part of it.
+    static func averageColor(of image: UIImage) -> AverageColor? {
+        let side = 8
+        var pixels = [UInt8](repeating: 0, count: side * side * 4)
+        let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: side, height: side,
+                                          bitsPerComponent: 8, bytesPerRow: side * 4,
+                                          space: CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else {
+                return false
+            }
+            context.interpolationQuality = .high
+            // Drawn by UIKit, whatever backs the image; upside down in
+            // Core Graphics' coordinates, which an average does not mind.
+            UIGraphicsPushContext(context)
+            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+            UIGraphicsPopContext()
+            return true
+        }
+        guard drawn else { return nil }
+        // Premultiplied: a pixel's colour is already weighed by its alpha,
+        // so the sums over the alphas' sum are the average of what shows.
+        var red = 0.0, green = 0.0, blue = 0.0, weight = 0.0
+        for i in stride(from: 0, to: pixels.count, by: 4) {
+            red += Double(pixels[i])
+            green += Double(pixels[i + 1])
+            blue += Double(pixels[i + 2])
+            weight += Double(pixels[i + 3])
+        }
+        guard weight > 0 else { return nil }
+        return AverageColor(red: red / weight, green: green / weight, blue: blue / weight)
+    }
+
     /// Sizes rounded up to a few steps, so a cover drawn at 44 and at 48
     /// points is one download.
     static func bucket(_ pixels: Int) -> Int {

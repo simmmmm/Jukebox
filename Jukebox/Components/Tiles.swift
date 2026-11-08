@@ -62,7 +62,8 @@ struct PlaylistTile: View {
 }
 
 /// A made-up playlist: its collage with the title set on it, Music's daily
-/// mixes' way, and its subtitle under it.
+/// mixes' way, and its subtitle under it. Square, and no light of the
+/// arch's: a mix ends, and lit means endless (docs/BRAND.md).
 struct MixCard: View {
     let mix: Mix
 
@@ -71,10 +72,19 @@ struct MixCard: View {
             CollageArtwork(artworks: mix.artwork, cornerRadius: Theme.Radius.card)
                 .overlay(alignment: .bottomLeading) {
                     ZStack(alignment: .bottomLeading) {
-                        LinearGradient(colors: [.clear, .black.opacity(0.65)], startPoint: .center, endPoint: .bottom)
+                        // A scrim from the bottom, black to clear, so white
+                        // words read over a white cover too: over white, 3.7:1
+                        // where a two-line title starts (large text asks
+                        // 3:1), 5.9:1 behind a one-line title, more below.
+                        LinearGradient(stops: [
+                            .init(color: .black.opacity(0), location: 0.3),
+                            .init(color: .black.opacity(0.4), location: 0.55),
+                            .init(color: .black.opacity(0.8), location: 1),
+                        ], startPoint: .top, endPoint: .bottom)
                         Text(mix.title)
                             .font(.title3.weight(.bold))
                             .foregroundStyle(.white)
+                            .shadow(color: .black.opacity(0.35), radius: 2, y: 1)
                             .lineLimit(2)
                             .padding(Theme.Space.m)
                     }
@@ -90,7 +100,8 @@ struct MixCard: View {
     }
 }
 
-/// A station: the eclipse over its seed, its name under it.
+/// A station: its arch, lit, over its seed's music; its name under it as
+/// real text, which follows the reader's text size.
 struct StationCard: View {
     let station: Station
 

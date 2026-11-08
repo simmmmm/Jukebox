@@ -156,8 +156,8 @@ private struct RadioFeatured: Identifiable {
 
     var id: String { title }
 
-    /// What the artwork draws: the built station, else the eclipse over a
-    /// record until its covers are known.
+    /// What the artwork draws: the built station, else one named for its
+    /// seed (the three are drawn with the lit core, covers or not).
     var shown: Station { built ?? Station(id: "featured-\(title)", seed: seed, title: title) }
 
     /// Your Station's card carries the tab's one filled button, as Home's
@@ -332,11 +332,11 @@ private struct RadioFeaturedCard: View {
         }
     }
 
-    /// The eclipse on Numa's page grey with the words beside it: the
-    /// artwork's own grey runs into the card's, so the two read as one.
+    /// The station's lit window on Cabinet, with the words beside it: the
+    /// card is the room the art stands in.
     private func wide(onAir: Bool) -> some View {
         HStack(spacing: Theme.Space.l) {
-            StationArtwork(station: item.shown, size: 96, cornerRadius: 0)
+            StationArtwork(station: item.shown, size: 96, cornerRadius: Theme.Radius.artwork)
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(item.title)
                     .font(.title3.bold())
@@ -362,17 +362,15 @@ private struct RadioFeaturedCard: View {
                     .accessibilityHidden(true)
             }
         }
-        // With the button the words are taller than the artwork: room above
-        // and below them. The artwork's grey is the card's, so the eclipse
-        // floats on it rather than stops short.
-        .padding(.vertical, item.carriesPlayButton ? Theme.Space.l : 0)
-        .padding(.trailing, Theme.Space.l)
+        // The art inset as a tile on the card, as on Home's card on top.
+        .padding(Theme.Space.m)
+        .padding(.trailing, Theme.Space.xs)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.page, in: .rect(cornerRadius: Theme.Radius.card))
+        .background(Theme.Arch.cabinet, in: .rect(cornerRadius: Theme.Radius.card))
         .clipShape(.rect(cornerRadius: Theme.Radius.card))
         .contentShape(.rect(cornerRadius: Theme.Radius.card))
-        // Always Numa's dark page, so its words and accent are light here
-        // in light mode too.
+        // Always Cabinet, the dark the light stands in: its words light and
+        // its accent Glow here in light mode too.
         .environment(\.colorScheme, .dark)
     }
 

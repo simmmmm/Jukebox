@@ -37,8 +37,9 @@ struct HomeView: View {
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                // The mark only, not a button, as on Numa's own home.
-                JukeboxMark(diameter: 16)
+                // The mark only, not a button: whose app this is, as a
+                // signature, lit.
+                ArchMark(size: 16)
             }
             .sharedBackgroundVisibility(.hidden)
             ToolbarItem(placement: .topBarTrailing) {
@@ -98,8 +99,8 @@ private struct HomeFeed: View {
 
 private enum HomeLayout {
     /// The widest the cards on top get: on the iPad, and an iPhone on its
-    /// side, a card across the whole screen leaves the eclipse half a
-    /// screen from its words. At 560 the words keep about 390 points beside
+    /// side, a card across the whole screen leaves the artwork half a
+    /// screen from its words. At 560 the words keep about 400 points beside
     /// it, room for "Endless music from everything you love" on one line.
     static let cardWidth: CGFloat = 560
 }
@@ -154,11 +155,12 @@ private struct HomeOfflineNotice: View {
 
 // MARK: - Your Station
 
-/// The card on top: the listener's own station on Numa's page grey, the
-/// eclipse over their covers, and the screen's one filled button, which
-/// plays it at once. A tap elsewhere on the card opens Your Station's page,
-/// to see what it would play first, as every station's tile does. While a
-/// station plays it shows that station instead, and a tap opens Now Playing.
+/// The card on top: the listener's own station on Cabinet, its window with
+/// the core lit (lit means endless: the radio), and the screen's one filled
+/// button, which plays it at once. A tap elsewhere on the card opens Your
+/// Station's page, to see what it would play first, as every station's
+/// tile does. While a station plays it shows that station instead, and a
+/// tap opens Now Playing.
 private struct HomeStationHero: View {
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
@@ -175,8 +177,8 @@ private struct HomeStationHero: View {
         let layout = isStacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Space.l))
             : AnyLayout(HStackLayout(alignment: .center, spacing: Theme.Space.l))
-        // 76: on a 375-point iPhone the words keep about 170 points.
-        let art = HomeEclipseArt(station: onAir ?? personal, diameter: 76)
+        // 104: on a 375-point iPhone the words keep about 175 points.
+        let art = StationArtwork(station: onAir ?? yourStation, size: 104, cornerRadius: Theme.Radius.artwork)
         layout {
             if isStacked { art }
             words(onAir)
@@ -187,7 +189,7 @@ private struct HomeStationHero: View {
         // About 16:9 on an iPhone; taller when the text is larger; no wider
         // than HomeLayout.cardWidth on the iPad.
         .frame(maxWidth: HomeLayout.cardWidth, minHeight: 196, alignment: .leading)
-        .background(Theme.page, in: .rect(cornerRadius: Theme.Radius.card))
+        .background(Theme.Arch.cabinet, in: .rect(cornerRadius: Theme.Radius.card))
         .overlay {
             RoundedRectangle(cornerRadius: Theme.Radius.card)
                 .strokeBorder(Color.white.opacity(0.08), lineWidth: 0.5)
@@ -204,7 +206,8 @@ private struct HomeStationHero: View {
         .contextMenu {
             StationMenu(station: onAir ?? yourStation)
         }
-        // Always Numa's dark page, so its accent is white here in light mode too.
+        // Always Cabinet, the dark the light stands in: its words light and
+        // its accent Glow here in light mode too.
         .environment(\.colorScheme, .dark)
         .animation(reduceMotion ? nil : .default, value: onAir?.id)
         .accessibilityElement(children: .contain)

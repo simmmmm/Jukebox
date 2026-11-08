@@ -346,7 +346,7 @@ private struct SearchBrowse: View {
 }
 
 /// A genre to browse: its name on a grey rounded tile. No colours of its
-/// own — the white accent stays the only one.
+/// own — the accent (Copper, Glow) stays the only one.
 private struct SearchGenreTile: View {
     let name: String
 

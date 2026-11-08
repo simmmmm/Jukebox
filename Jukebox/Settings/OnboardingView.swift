@@ -10,7 +10,8 @@
 // works rather than saying there is nothing there.
 //
 // One card of fields on the grouped background, as Settings draws a Form,
-// under the eclipse: the first thing anyone sees of Jukebox is Numa's mark.
+// under the app icon, live, its tubes warming up: the first thing anyone
+// sees of Jukebox is its own light coming on (ShellAppMark).
 // The address and the user name are remembered for the next sign-in (after a
 // sign-out); the password never is — the keychain's AutoFill offers it.
 
@@ -484,11 +485,13 @@ private struct OnboardingAccountForm: View {
 
 // MARK: - Parts
 
-/// The eclipse, the name, and what Jukebox is in one line.
+/// The icon warming up, the name, and what Jukebox is in one line.
 private struct OnboardingWelcome: View {
     var body: some View {
         VStack(spacing: Theme.Space.l) {
-            ShellAppMark(diameter: 80, animatesIn: true)
+            ShellAppMark(side: 128, animatesIn: true)
+                // As the icon sits on the Home Screen: a little lifted.
+                .shadow(color: Color.black.opacity(0.18), radius: 14, y: 6)
             VStack(spacing: Theme.Space.s) {
                 Text("Jukebox")
                     .font(.system(.largeTitle, design: .rounded, weight: .bold))

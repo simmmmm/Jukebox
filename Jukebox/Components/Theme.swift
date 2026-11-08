@@ -1,10 +1,14 @@
 // Jukebox's few tokens and styles. The chrome is Apple's own (tab bar,
-// navigation bars, lists, menus, sheets: HIG, native); what makes it a
-// sibling of Numa lives in the content — white as the one accent (near-black
-// in light mode, the design system's inversion), one filled button per
-// screen and it is the accent, small grey spaced section labels, the eclipse.
-// Numa's design system: "the chrome is the platform's own; the signatures
-// make it Numa."
+// navigation bars, lists, menus, sheets: HIG, native); what makes it Jukebox
+// lives in the content — the Arch (docs/BRAND.md): two tubes of light and a
+// core, the arch only ever meaning a station; one accent, Copper in light
+// mode and Glow in dark, one hue seen in two exposures; Cabinet, the warm
+// dark the light stands in; one filled button per screen and it is the
+// accent; small grey spaced section labels. The photographer, 8 November
+// 2026: "Het heeft nu wel heel weinig eigen branding en je hergebruikt nu
+// het numa logo daar mag je wel meer eigen vorm aan geven" — and, of the
+// four directions drawn, "Die arch is leuk." A sibling of Numa in restraint
+// and in care, no longer in its shapes.
 
 import SwiftUI
 import UIKit
@@ -31,18 +35,69 @@ enum Theme {
     /// A page's side margin, as Music and the system lists use.
     static let margin: CGFloat = 20
 
-    /// The accent: white in dark mode, #141414 in light (the asset catalog's
-    /// AccentColor). What is chosen, playing or touched.
+    /// The accent: Copper (#A84A17) in light mode, Glow (#FFB54D) in dark —
+    /// the asset catalog's AccentColor. What is chosen, playing or touched:
+    /// tint, selection, the one filled button. Copper is 5.7:1 on white and
+    /// 5.2:1 on the grouped grey; Glow 12:1 on black and 9.7:1 on the dark
+    /// grouped grey.
     static let accent = Color.accentColor
 
-    /// Text and glyphs on the accent.
+    /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
+    /// (9.9:1). Glow is a light colour: white on it would all but vanish.
     static let onAccent = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(white: 0x14 / 255, alpha: 1) : .white
+        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0x2A1505) : .white
     })
 
-    /// Numa's `page` ground (#141414) for what is always dark — Now
-    /// Playing's backdrop behind the artwork's colours.
+    /// A near-black (#141414) for what is always dark and takes its colours
+    /// from elsewhere: Now Playing's backdrop behind the cover's own.
     static let page = Color(white: 0x14 / 255)
+
+    /// The Arch's own colours (docs/BRAND.md, dev/brand/). Cabinet, Glow,
+    /// Copper and Ink are the identity's; the tubes' colours are for art
+    /// only — the icon, a station's artwork, the welcome — never for text.
+    enum Arch {
+        /// Cabinet, #1E0A07: the warm dark of a jukebox's cabinet, the
+        /// ground the light stands in — the app icon, the welcome, Your
+        /// Station's card, every lit core. Dark in light mode too.
+        static let cabinet = Color(rgb: 0x1E0A07)
+        /// The cabinet where its tubes light it, #4A1D0F: the top of a lit
+        /// ground's gradient.
+        static let cabinetHaze = Color(rgb: 0x4A1D0F)
+        /// Glow, #FFB54D: the accent in dark mode (AccentColor's dark half).
+        static let glow = Color(rgb: 0xFFB54D)
+        /// Copper, #A84A17: the accent in light mode, Glow's own hue seen by
+        /// day — from the Tonearm direction, in place of a redder ember that
+        /// sat too near Last.fm's red.
+        static let copper = Color(rgb: 0xA84A17)
+        /// Ink, #2A1505: words and glyphs on Glow.
+        static let ink = Color(rgb: 0x2A1505)
+        /// Filament, #FFF4DE: the core's light, the brightest thing in the art.
+        static let filament = Color(rgb: 0xFFF4DE)
+        /// The mark's core: amber (#F7A136) on light grounds, where filament
+        /// would vanish; a warm white (#FFF1D6) on dark ones.
+        static let markCore = Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark ? UIColor(rgb: 0xFFF1D6) : UIColor(rgb: 0xF7A136)
+        })
+
+        // Art only.
+
+        /// The outer tube, #F07E36, deepening to #D45A22 at its feet in the icon.
+        static let outerTube = Color(rgb: 0xF07E36)
+        static let outerTubeFoot = Color(rgb: 0xD45A22)
+        /// The inner tube, #FFB44C, to #F49A30 at its feet.
+        static let innerTube = Color(rgb: 0xFFB44C)
+        static let innerTubeFoot = Color(rgb: 0xF49A30)
+        /// The hot line down the middle of each tube, where the gas is brightest.
+        static let outerTubeHeart = Color(rgb: 0xFFC08A)
+        static let innerTubeHeart = Color(rgb: 0xFFE3AE)
+        /// The core lit in art: #FFFBF0 at its top to #FFD58E at its foot,
+        /// and its bloom.
+        static let coreTop = Color(rgb: 0xFFFBF0)
+        static let coreFoot = Color(rgb: 0xFFD58E)
+        static let coreBloom = Color(rgb: 0xFFC46A)
+        /// The light the tubes throw on the room around them, #FF8A2A.
+        static let roomGlow = Color(rgb: 0xFF8A2A)
+    }
 
     /// Numa's section label: 11 pt semibold, spaced, upper case, grey.
     static let eyebrow = Font.system(size: 11, weight: .semibold)
@@ -160,6 +215,29 @@ struct PlayShuffleButtons: View {
             }
             .buttonStyle(.secondary)
         }
+    }
+}
+
+// `nonisolated`: UIKit may ask a dynamic colour's provider for its colour
+// off the main actor, and the app's own code is on the main actor by default.
+extension Color {
+    /// An sRGB colour by its hex, as the brand board names it: 0xA84A17.
+    nonisolated init(rgb: UInt32) {
+        self.init(.sRGB,
+                  red: Double((rgb >> 16) & 0xFF) / 255,
+                  green: Double((rgb >> 8) & 0xFF) / 255,
+                  blue: Double(rgb & 0xFF) / 255,
+                  opacity: 1)
+    }
+}
+
+extension UIColor {
+    /// UIKit's, for colours that change with the appearance.
+    nonisolated convenience init(rgb: UInt32) {
+        self.init(red: CGFloat((rgb >> 16) & 0xFF) / 255,
+                  green: CGFloat((rgb >> 8) & 0xFF) / 255,
+                  blue: CGFloat(rgb & 0xFF) / 255,
+                  alpha: 1)
     }
 }
 

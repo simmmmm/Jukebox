@@ -132,6 +132,8 @@ struct NowPlayingScrubber: View {
                 ZStack(alignment: .leading) {
                     Capsule()
                         .fill(Color.white.opacity(0.22))
+                    // What has been heard, in the accent: Glow, as Now
+                    // Playing is always dark.
                     Capsule()
                         .fill(Theme.accent)
                         .frame(width: width * CGFloat(fraction))
@@ -202,25 +204,38 @@ struct NowPlayingScrubber: View {
 
 /// A small round button's face beside the title (favourite, "…") and in the
 /// station's row (the thumbs): a glyph in a faint white circle, brighter
-/// when it is on.
+/// when it is on. With a `tint`, on is the tint: the glyph in it, on a
+/// faint circle of it (the thumbs up given, in Glow).
 struct NowPlayingRoundGlyph: View {
     let systemName: String
     let isOn: Bool
+    let tint: Color?
 
     @ScaledMetric(relativeTo: .body) private var side: CGFloat = 34
 
-    init(systemName: String, isOn: Bool = false) {
+    init(systemName: String, isOn: Bool = false, tint: Color? = nil) {
         self.systemName = systemName
         self.isOn = isOn
+        self.tint = tint
     }
 
     var body: some View {
         Image(systemName: systemName)
             .font(.body.weight(.semibold))
-            .foregroundStyle(isOn ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
+            .foregroundStyle(glyphStyle)
             .frame(width: min(side, 48), height: min(side, 48))
-            .background(Color.white.opacity(isOn ? 0.24 : 0.12), in: .circle)
+            .background(circleColor, in: .circle)
             .contentShape(.circle)
+    }
+
+    private var glyphStyle: AnyShapeStyle {
+        if isOn, let tint { return AnyShapeStyle(tint) }
+        return isOn ? AnyShapeStyle(HierarchicalShapeStyle.primary) : AnyShapeStyle(HierarchicalShapeStyle.secondary)
+    }
+
+    private var circleColor: Color {
+        if isOn, let tint { return tint.opacity(0.2) }
+        return Color.white.opacity(isOn ? 0.24 : 0.12)
     }
 }
 

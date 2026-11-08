@@ -3,6 +3,12 @@
 // AppSettings.adventurousness itself, so it is where it was left for the
 // next station too; moving it chooses the songs ahead again once it rests
 // (RadioController.adventurousnessChanged), never the one playing.
+//
+// Right under the station, as a radio's tuning sits under its station's
+// name: the native Slider in the accent, and over it, in the accent, a few
+// words for where the dial is — "Close to home", "A little further out",
+// "Far afield" (from the Dial direction, which the judge kept for the
+// Radio tab).
 
 import JukeboxKit
 import SwiftUI
@@ -55,12 +61,20 @@ struct RadioOnAirCard: View {
             .accessibilityHint("Shows Now Playing")
 
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                Text(RadioDial.phrase(settings.adventurousness))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Theme.accent)
+                    .contentTransition(.opacity)
+                    .animation(.easeInOut(duration: 0.2), value: RadioDial.phrase(settings.adventurousness))
+                    // The slider says it, as its value.
+                    .accessibilityHidden(true)
                 Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: { editing in
                     isDragging = editing
                     if !editing { radio.adventurousnessChanged() }
                 })
+                .tint(Theme.accent)
                 .accessibilityLabel("Adventurousness")
-                .accessibilityValue(dialValue)
+                .accessibilityValue(RadioDial.spoken(settings.adventurousness))
                 HStack {
                     Text("Familiar")
                     Spacer()
@@ -114,14 +128,22 @@ struct RadioOnAirCard: View {
             Text(verbatim: " ")
         }
     }
+}
 
-    /// "Familiar, 20%", for VoiceOver: the words at the dial's ends and
-    /// where it is between them.
-    private var dialValue: Text {
-        let value = settings.adventurousness
+/// The dial's words, wherever the radio's dial is (the Radio tab's card, a
+/// station's page): where it stands between Familiar and Adventurous, as a
+/// radio's dial shows its station. A third of the way each.
+enum RadioDial {
+    static func phrase(_ value: Double) -> String {
+        if value < 0.34 { return String(localized: "Close to home") }
+        if value < 0.67 { return String(localized: "A little further out") }
+        return String(localized: "Far afield")
+    }
+
+    /// "Close to home, 20%", for VoiceOver: the words seen, and where
+    /// between the ends.
+    static func spoken(_ value: Double) -> Text {
         let percent = value.formatted(.percent.precision(.fractionLength(0)))
-        if value < 0.34 { return Text("Familiar, \(percent)") }
-        if value < 0.67 { return Text("Balanced, \(percent)") }
-        return Text("Adventurous, \(percent)")
+        return Text(verbatim: "\(phrase(value)), \(percent)")
     }
 }

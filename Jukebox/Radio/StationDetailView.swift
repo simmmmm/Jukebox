@@ -1,4 +1,4 @@
-// A station's own page, as Music shows a playlist: its eclipse, what it is,
+// A station's own page, as Music shows a playlist: its arch, what it is,
 // Play, and the songs it would start with, so the listener sees what the
 // radio made of it before anything plays. The photographer, 8 November
 // 2026: "Als je nu klikt op een tegel van radio begint er meteen van alles
@@ -226,12 +226,20 @@ struct StationDetailView: View {
     private var dial: some View {
         @Bindable var settings = settings
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
+            // The dial's words in the accent, as on the Radio tab's card.
+            Text(RadioDial.phrase(settings.adventurousness))
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .contentTransition(.opacity)
+                .animation(.easeInOut(duration: 0.2), value: RadioDial.phrase(settings.adventurousness))
+                .accessibilityHidden(true)
             Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: { editing in
                 isDragging = editing
                 if !editing { radio.adventurousnessChanged() }
             })
+            .tint(Theme.accent)
             .accessibilityLabel("Adventurousness")
-            .accessibilityValue(dialValue)
+            .accessibilityValue(RadioDial.spoken(settings.adventurousness))
             HStack {
                 Text("Familiar")
                 Spacer()
@@ -443,16 +451,6 @@ struct StationDetailView: View {
                 if !isShown { value.wrappedValue = nil }
             }
         )
-    }
-
-    /// "Familiar, 20%", for VoiceOver: the words at the dial's ends and
-    /// where it is between them.
-    private var dialValue: Text {
-        let value = settings.adventurousness
-        let percent = value.formatted(.percent.precision(.fractionLength(0)))
-        if value < 0.34 { return Text("Familiar, \(percent)") }
-        if value < 0.67 { return Text("Balanced, \(percent)") }
-        return Text("Adventurous, \(percent)")
     }
 }
 

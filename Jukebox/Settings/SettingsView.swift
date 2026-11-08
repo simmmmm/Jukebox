@@ -414,7 +414,7 @@ private struct SettingsAboutSection: View {
     var body: some View {
         Section {
             HStack(spacing: Theme.Space.m) {
-                ShellAppMark(diameter: 22)
+                ShellAppMark(side: 44)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Jukebox")
                         .font(.headline)

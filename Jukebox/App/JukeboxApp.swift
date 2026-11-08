@@ -31,7 +31,10 @@ struct RootView: View {
     var body: some View {
         switch app.phase {
         case .launching:
-            Color(uiColor: .systemBackground).ignoresSafeArea()
+            // The launch screen's own ground (white, or Cabinet in dark
+            // mode), so restoring the session shows no second ground
+            // between it and the app.
+            Color("LaunchBackground").ignoresSafeArea()
         case .signedOut:
             OnboardingView()
         case .signedIn:

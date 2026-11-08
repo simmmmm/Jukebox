@@ -687,7 +687,7 @@ final class Walk {
             return false
         }
 
-        // The eclipse's intro has settled.
+        // The icon's warm-up has settled.
         pause(2.5)
         if takingPictures { picture("onboarding") }
         try enter("localhost:8096", into: address, "Welcome: the server's address")

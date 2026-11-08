@@ -12,8 +12,9 @@ first. `docs/RADIO.md` is how the radio chooses, with measurements.
 - The workflow file is generic and calls `ci/*.sh`: the session's token may not
   push workflow files, so change the scripts, not the workflow.
 - A commit message with `[testflight]` uploads that build to TestFlight.
-- Native first (HIG, SF Symbols, Apple's controls); Numa's signatures from
-  `Theme.swift` — the white accent, the eclipse, grey section labels.
+- Native first (HIG, SF Symbols, Apple's controls); Jukebox's own brand, the
+  Arch, from `Theme.swift` and `docs/BRAND.md` — Copper and Glow, the mark,
+  lit station art, grey section labels.
 - Comments say why; the photographer's words where they decided something.
 - Commits are the photographer's: author and committer `simmmmm
   <38768749+simmmmm@users.noreply.github.com>` (set in the clone's git

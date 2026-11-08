@@ -84,11 +84,11 @@ struct MiniPlayer: View {
                 VStack(alignment: .leading, spacing: 0) {
                     HStack(spacing: Theme.Space.xs) {
                         if isStation {
-                            // A station plays: the radio's glyph, small, so the
-                            // listener knows skips and thumbs teach it.
-                            Image(systemName: "dot.radiowaves.left.and.right")
-                                .font(.caption2.weight(.semibold))
-                                .foregroundStyle(.secondary)
+                            // A station plays: the mark, small, in the
+                            // accent, so the listener knows it is the radio
+                            // and that skips and thumbs teach it.
+                            ArchMark(size: 11, style: .template)
+                                .foregroundStyle(Theme.accent)
                         }
                         Text(track.name)
                             .font(.subheadline.weight(.semibold))

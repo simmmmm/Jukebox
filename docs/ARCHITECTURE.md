@@ -6,7 +6,9 @@ playlists the app makes up itself on Home and a radio that plays on from
 anything. Asked for on 8 November 2026: "op de homepage wil ik dat de app zelf
 leuke playlists verzint en of een goede radio functie heeft — ik vind vooral
 de radiofunctie echt belangrijk". Design: Apple's HIG and native controls,
-branded as a sibling of Numa (white accent, the eclipse, grey section labels).
+with a brand of its own, the Arch (`docs/BRAND.md`): two tubes of light and
+a core, Copper and Glow, Cabinet — a sibling of Numa in restraint, no
+longer in its shapes.
 
 ## Layout
 
@@ -16,7 +18,8 @@ branded as a sibling of Numa (white accent, the eclipse, grey section labels).
 | `Jukebox/` | The SwiftUI app, iOS 26, Swift 5 mode with MainActor default isolation (project.yml). Compiled only on GitHub's macOS (`ci/app.sh`) — there is no Mac here, so Swift in `Jukebox/` is read twice before it is pushed. |
 | `project.yml` | XcodeGen. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
 | `ci/` | What `.github/workflows/ci.yml` runs. The workflow file itself is generic, because the Claude session may not push workflow files. |
-| `dev/` | The test server, the made-up library, the kit tests, the icon. |
+| `dev/` | The test server, the made-up library, the kit tests, the icon (`make-icon.py`) and the brand's drawings (`brand/`). |
+| `docs/` | This, `RADIO.md` (how the radio chooses), `BRAND.md` (the Arch, its rules and colours), `brand/` (the boards). |
 
 ## Rules for every part
 
@@ -34,11 +37,15 @@ branded as a sibling of Numa (white accent, the eclipse, grey section labels).
   the minimum: use its APIs plainly (Tab, `tabViewBottomAccessory`,
   `glassEffect` only where Apple's own apps use glass). No UIKit unless SwiftUI
   has nothing (MPVolumeView, AVRoutePickerView).
-- **Numa's signatures, from `Theme.swift`.** `Theme.accent` (white in dark,
-  #141414 in light) is the one accent; one filled button per screen
+- **The Arch, from `Theme.swift` and `docs/BRAND.md`.** `Theme.accent`
+  (Copper #A84A17 by day, Glow #FFB54D by night) is the one accent, with
+  `Theme.onAccent` on it; one filled button per screen
   (`.buttonStyle(.prominent)`), others `.secondary`; `Eyebrow` for small grey
-  spaced labels; `SectionHeader` for shelves; `StationArtwork`/`JukeboxMark`
-  for the eclipse. Spaces and radii from `Theme`.
+  spaced labels; `SectionHeader` for shelves; `ArchMark` for the mark and
+  `StationArtwork` for a station — the arch only ever means a station, and
+  only the radio is drawn lit ("lit means endless"); mixes, albums and
+  playlists stay square. `Theme.Arch` has Cabinet and the art's colours.
+  Spaces and radii from `Theme`.
 - **Comments say why**, in plain words; where the photographer decided
   something, quote them. Measurements rather than claims.
 - **English UI**, as Numa's. Strings as literals (`Text("Albums")`); the
@@ -124,3 +131,13 @@ The test server (`dev/jellyfin-test-server.sh`) runs Jellyfin 12.4 (the
 tracks in MP3, FLAC and M4A, genres in clusters. Requests carry
 `Authorization: MediaBrowser Client="Jukebox", Device="…", DeviceId="…", Version="…", Token="…"`.
 Times are ticks (10 000 000 a second); dates have seven fractional digits.
+
+## Scrobbling
+
+Jukebox does not scrobble to Last.fm itself: the server does — Jellyfin
+with its Last.fm plugin, Navidrome with its own Last.fm link — from the
+playback reports the app already sends (Jellyfin's start/progress/stopped;
+Subsonic's scrobble). The photographer, 8 November 2026: "Laat scrobblen
+lekker via de server lopen." One place for every client, and no song twice
+on Last.fm. The Last.fm key in Settings is only for the radio's similar
+artists and songs.
