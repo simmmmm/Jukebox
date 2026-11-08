@@ -14,11 +14,14 @@ cd "$(dirname "$0")/.."
 
 IMAGE=jellyfin/jellyfin:latest
 DATA=${JUKEBOX_TEST_DATA:-$HOME/.cache/jukebox-test}
-URL=http://localhost:8096
+# Another name and port for a second, fresh server beside the usual one.
+NAME=${JUKEBOX_TEST_CONTAINER:-jukebox-jellyfin}
+PORT=${JUKEBOX_TEST_PORT:-8096}
+URL=http://localhost:$PORT
 AUTH='MediaBrowser Client="JukeboxTests", Device="Linux", DeviceId="jukebox-tests", Version="1.0"'
 
 if [[ ${1:-} == --reset ]]; then
-  docker rm -f jukebox-jellyfin >/dev/null 2>&1 || true
+  docker rm -f "$NAME" >/dev/null 2>&1 || true
   rm -rf "$DATA"
 fi
 mkdir -p "$DATA/media" "$DATA/config" "$DATA/cache"
@@ -30,35 +33,45 @@ if [[ ! -d $DATA/media/music ]]; then
     "$IMAGE" /gen.sh
 fi
 
-if ! docker ps --format '{{.Names}}' | grep -qx jukebox-jellyfin; then
-  docker rm -f jukebox-jellyfin >/dev/null 2>&1 || true
-  docker run -d --name jukebox-jellyfin --network jukebox --network-alias jellyfin \
-    -p 8096:8096 -v "$DATA/config:/config" -v "$DATA/cache:/cache" -v "$DATA/media:/media:ro" \
+if ! docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
+  docker rm -f "$NAME" >/dev/null 2>&1 || true
+  alias=jellyfin; [[ $NAME == jukebox-jellyfin ]] || alias=$NAME
+  docker run -d --name "$NAME" --network jukebox --network-alias "$alias" \
+    -p "$PORT:8096" -v "$DATA/config:/config" -v "$DATA/cache:/cache" -v "$DATA/media:/media:ro" \
     "$IMAGE" >/dev/null
 fi
 
-for _ in $(seq 1 90); do
-  curl -sf "$URL/System/Info/Public" >/dev/null 2>&1 && break
-  sleep 1
-done
-curl -sf "$URL/System/Info/Public" >/dev/null
+# A call, again each second until it succeeds, for a minute. A fresh
+# Jellyfin answers /System/Info/Public within a second or two of starting,
+# before the wizard's routes take requests (seen on GitHub's Linux: the
+# first POST /Startup/Configuration failed three seconds in).
+again() {
+  local _
+  for _ in $(seq 1 60); do "$@" 2>/dev/null && return 0; sleep 1; done
+  "$@"
+}
+
+# Up, and saying whether its wizard is done (an answer without it is
+# from a server still starting).
+wizard_known() { curl -sf "$URL/System/Info/Public" | grep -q StartupWizardCompleted; }
+again wizard_known
 
 json() { python3 -c "import json,sys; d=json.load(sys.stdin); print($1)"; }
 
 done_already=$(curl -sf "$URL/System/Info/Public" | json 'd.get("StartupWizardCompleted")')
 if [[ $done_already != True ]]; then
   # The wizard's own order. The first GET of /Startup/User makes the user.
-  curl -sf -X POST "$URL/Startup/Configuration" -H 'Content-Type: application/json' \
+  again curl -sf -X POST "$URL/Startup/Configuration" -H 'Content-Type: application/json' \
     -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}'
-  curl -sf "$URL/Startup/User" >/dev/null
-  curl -sf -X POST "$URL/Startup/User" -H 'Content-Type: application/json' \
+  again curl -sf "$URL/Startup/User" -o /dev/null
+  again curl -sf -X POST "$URL/Startup/User" -H 'Content-Type: application/json' \
     -d '{"Name":"test","Password":"test"}'
-  curl -sf -X POST "$URL/Startup/RemoteAccess" -H 'Content-Type: application/json' \
+  again curl -sf -X POST "$URL/Startup/RemoteAccess" -H 'Content-Type: application/json' \
     -d '{"EnableRemoteAccess":true,"EnableAutomaticPortMapping":false}'
-  curl -sf -X POST "$URL/Startup/Complete"
+  again curl -sf -X POST "$URL/Startup/Complete"
 fi
 
-TOKEN=$(curl -sf -X POST "$URL/Users/AuthenticateByName" -H 'Content-Type: application/json' \
+TOKEN=$(again curl -sf -X POST "$URL/Users/AuthenticateByName" -H 'Content-Type: application/json' \
   -H "Authorization: $AUTH" -d '{"Username":"test","Pw":"test"}' | json 'd["AccessToken"]')
 H=(-H "Authorization: $AUTH, Token=\"$TOKEN\"")
 
@@ -79,4 +92,4 @@ for i in $(seq 1 180); do
   (( i % 15 == 0 )) && curl -sf -X POST "${H[@]}" "$URL/Library/Refresh"
   sleep 2
 done
-echo "Jellyfin at $URL (Docker: http://jellyfin:8096): $have of $want tracks, user test/test, user id $USER_ID"
+echo "Jellyfin at $URL (Docker: http://${alias:-jellyfin}:8096): $have of $want tracks, user test/test, user id $USER_ID"
