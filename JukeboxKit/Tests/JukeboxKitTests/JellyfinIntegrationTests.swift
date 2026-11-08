@@ -159,7 +159,10 @@ struct JellyfinIntegrationTests {
         // By SortName, which drops a leading "The": "The Lanterns" sorts under L.
         let sortNames = all.items.map { $0.name.hasPrefix("The ") ? String($0.name.dropFirst(4)) : $0.name }
         #expect(sortNames == sortNames.sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending })
-        #expect(all.items.allSatisfy { ($0.songCount ?? 0) > 0 && ($0.albumCount ?? 0) > 0 && !$0.genres.isEmpty })
+        #expect(all.items.allSatisfy { ($0.songCount ?? 0) > 0 && ($0.albumCount ?? 0) > 0 })
+        // Not every artist's genres: with internet (GitHub's runners), Jellyfin's
+        // MusicBrainz and AudioDB providers set an artist's genres from what they
+        // find online, and for these made-up names that can be none.
 
         let window = try await client.artists(start: 2, limit: 5)
         #expect(window.items.map(\.id) == Array(all.items[2..<7]).map(\.id))
@@ -256,9 +259,13 @@ struct JellyfinIntegrationTests {
         #expect(byArtist.items.allSatisfy { $0.artistKeys.contains(artist.key) || $0.artists.contains { $0.id == artist.id } })
 
         let genres = try await client.genres()
-        #expect(!genres.isEmpty)
-        #expect(genres.allSatisfy { ($0.songCount ?? 0) > 0 })
-        let genre = try #require(genres.first)
+        // With internet (GitHub's runners), the online providers add the genres
+        // they find for an artist ("alternative rock", "punk", "house"), which
+        // no song carries: seen on CI, 27 genres where the files have 23. A real
+        // server has those too, so the files' own are the ones with songs.
+        let withSongs = genres.filter { ($0.songCount ?? 0) > 0 }
+        #expect(withSongs.count >= 23)
+        let genre = try #require(withSongs.first)
         let inGenre = try await client.tracks(TrackQuery(genre: genre.name, limit: 0))
         #expect(inGenre.totalCount == genre.songCount)
         JellyfinTestServer.measure("genres: \(genres.count): \(genres.map(\.name).joined(separator: " | "))")
