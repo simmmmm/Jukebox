@@ -215,7 +215,72 @@ extension JellyfinClient {
     /// A song's file to save, at a quality: a plain file (never HLS), so a
     /// download task can fetch it in the background. The token is in the
     /// URL, as for streaming. Which endpoint, measured on 12.4: OFFLINE.md.
+    ///
+    /// GET /Audio/{id}/universal with TranscodingProtocol=http: Jellyfin
+    /// sends the file itself when the phone plays its container and (at
+    /// .high and .normal) it is no larger than the quality, and otherwise
+    /// transcodes it to AAC in an m4a as one plain response. `.original` is
+    /// the file as it is for every container AVPlayer plays; for one it
+    /// cannot (Ogg, Opus, WMA …) it is AAC at 256, since a file the phone
+    /// cannot play is no use on it. "No larger" allows 10% for the
+    /// container: the test library's 128 kbit/s MP3 and M4A are 129.2 and
+    /// 129.5 kbit/s with their tags, and asked for exactly 128 Jellyfin
+    /// re-encoded the M4A into a larger file (99 224 bytes, from 97 105) —
+    /// so the cap is 141 / 282 kbit/s and the AAC asked for 128 / 256.
+    ///
+    /// Measured on 12.4 (8 November 2026, curl, no header, this URL):
+    /// - The test library (6–8 s mono tones): at every quality the MP3 (200
+    ///   audio/mpeg), FLAC (audio/flac) and M4A (audio/mp4) came as
+    ///   themselves, byte for byte the files /Items/{id}/Download gives,
+    ///   with Content-Length and Accept-Ranges: bytes. With the cap at 70
+    ///   kbit/s: 200 audio/mp4, AAC LC 64 kbit/s, an m4a ffprobe reads to the
+    ///   end (8.05 s), Transfer-Encoding: chunked, Accept-Ranges: none.
+    /// - A second server with four 4-minute stereo files (FLAC 512 kbit/s,
+    ///   MP3 320, AAC 222, Ogg Vorbis 96):
+    ///   .original: FLAC 15 369 415 bytes and MP3 9 602 787 as themselves
+    ///     in 0.05–0.16 s, AAC 6 659 361 as itself, the Ogg as AAC 256
+    ///     (7 765 165 bytes, 2.0 s);
+    ///   .high: FLAC, MP3 and Ogg as AAC 256 kbit/s m4a (7.77 MB, 2.2–2.4 s),
+    ///     the AAC as itself;
+    ///   .normal: all four as AAC 128 kbit/s m4a (3.88–3.92 MB, 1.8–2.1 s).
+    ///   Every transcode: AAC LC, stereo, 240.05 s to ffprobe; Jellyfin's
+    ///   ffmpeg writes it with `-movflags empty_moov+delay_moov`: ftyp, moov,
+    ///   one moof, mdat, mfra — a fragmented MP4, one fragment for the
+    ///   whole song. AVFoundation reads movie fragments (AVAsset's
+    ///   containsFragments); that AVPlayer plays this one from a file is
+    ///   not checked on a phone here (docs/OFFLINE.md, "In the app").
+    ///   Four transcodes at once and an HLS stream, one device: all four
+    ///   whole. A transcode read slowly (8 s rather than 1.9): the same bytes.
+    /// - A transcode has no Content-Length (progress has no total) and
+    ///   cannot be resumed from the middle; the file itself can.
+    /// - /Items/{id}/Download is the same file for the original, but 403
+    ///   for a user whose admin turned downloads off, where this URL is 200:
+    ///   `downloadsAllowed()` asks what the admin said.
+    /// - /Audio/{id}/stream.m4a (and .aac, .mp4) always transcode, even a
+    ///   file already small enough (the 222 kbit/s AAC asked for 256 came
+    ///   re-encoded, 7 724 036 bytes for 6 659 361); /Audio/{id}/stream?static=true
+    ///   never does. TranscodingContainer=aac gives ADTS instead (200 audio/aac,
+    ///   7 681 532 bytes for the FLAC at .high) — the fallback, should a
+    ///   phone not play the fragmented m4a.
+    /// - Mono is capped at 128 kbit/s by Jellyfin (asked for 256, a mono
+    ///   FLAC came as 128); AudioBitRate below that is kept (96 → 96).
+    /// - No token: 401; `api_key` instead of ApiKey: 401.
     public func downloadURL(trackID: ItemID, quality: DownloadQuality) -> URL {
-        fatalError("contract")
+        var query = [
+            URLQueryItem(name: "UserId", value: userID ?? ""),
+            URLQueryItem(name: "DeviceId", value: identity.deviceID),
+            URLQueryItem(name: "Container", value: Self.directContainers),
+            URLQueryItem(name: "TranscodingContainer", value: "m4a"),
+            URLQueryItem(name: "TranscodingProtocol", value: "http"),
+            URLQueryItem(name: "AudioCodec", value: "aac"),
+        ]
+        if let bitrate = quality.aacBitrate {
+            query.append(URLQueryItem(name: "MaxStreamingBitrate", value: String(bitrate + bitrate / 10)))
+        }
+        query.append(URLQueryItem(name: "AudioBitRate", value: String(quality.aacBitrate ?? 256_000)))
+        if let accessToken, !accessToken.isEmpty {
+            query.append(URLQueryItem(name: "ApiKey", value: accessToken))
+        }
+        return url("/Audio/\(Self.segment(trackID))/universal", query)
     }
 }
