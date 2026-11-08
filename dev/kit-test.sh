@@ -16,9 +16,12 @@ volume=jukebox-kit-build-$(printf '%s' "$PWD" | cksum | cut -d' ' -f1)
 IMAGE=swift:6.2-noble
 net=()
 env=()
-if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx jukebox-jellyfin; then
+# JUKEBOX_TEST_CONTAINER: the second server of dev/jellyfin-test-server.sh.
+server=${JUKEBOX_TEST_CONTAINER:-jukebox-jellyfin}
+host=jellyfin; [[ $server == jukebox-jellyfin ]] || host=$server
+if docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$server"; then
   net=(--network jukebox)
-  env=(-e JELLYFIN_URL=http://jellyfin:8096 -e JELLYFIN_USER=test -e JELLYFIN_PASSWORD=test)
+  env=(-e JELLYFIN_URL=http://$host:8096 -e JELLYFIN_USER=test -e JELLYFIN_PASSWORD=test)
 fi
 
 if [[ ${1:-} == build ]]; then

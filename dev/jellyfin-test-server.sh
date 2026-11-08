@@ -92,4 +92,22 @@ for i in $(seq 1 180); do
   (( i % 15 == 0 )) && curl -sf -X POST "${H[@]}" "$URL/Library/Refresh"
   sleep 2
 done
+# Every track found is not the scan done: on a fresh server (GitHub's
+# Linux) the genres, the album artists and the covers came in after the
+# count was right, and the tests that started then failed on them. So:
+# until the scan task is idle, every track has its genres, and the number
+# of album artists has held for one more look.
+artists_before=-1
+for _ in $(seq 1 120); do
+  state=$(curl -sf "${H[@]}" "$URL/ScheduledTasks?isHidden=false" \
+    | json '[t["State"] for t in d if t.get("Key") == "RefreshLibrary"][0]' || echo unknown)
+  bare=$(curl -sf "${H[@]}" "$URL/Items?userId=$USER_ID&IncludeItemTypes=Audio&Recursive=true&Fields=Genres" \
+    | json 'sum(1 for i in d["Items"] if not i.get("Genres"))' || echo -1)
+  artists=$(curl -sf "${H[@]}" "$URL/Artists/AlbumArtists?userId=$USER_ID&Limit=0" | json 'd["TotalRecordCount"]' || echo -1)
+  [[ $state == Idle && $bare == 0 && $artists -gt 0 && $artists == "$artists_before" ]] && break
+  artists_before=$artists
+  sleep 3
+done
+echo "scan: $state, tracks without genres: $bare, album artists: $artists"
+
 echo "Jellyfin at $URL (Docker: http://${alias:-jellyfin}:8096): $have of $want tracks, user test/test, user id $USER_ID"
