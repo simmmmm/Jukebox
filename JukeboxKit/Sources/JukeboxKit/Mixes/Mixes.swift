@@ -1,4 +1,6 @@
-// CONTRACT — signatures fixed, bodies the radio agent's (docs/ARCHITECTURE.md).
+// CONTRACT — signatures fixed, bodies the mixes agent's (docs/ARCHITECTURE.md).
+// How they are made: Mixes/MixModel.swift and Mixes/MixBuilders.swift;
+// measured by MixesEvaluationTests and MixesPerformanceTests.
 //
 // Home's playlists that Jukebox makes up itself ("op de homepage wil ik dat
 // de app zelf leuke playlists verzint", the photographer, 8 November 2026):
@@ -57,21 +59,34 @@ public struct Mix: Identifiable, Hashable, Sendable {
 }
 
 public struct MixGenerator: Sendable {
+    /// The taste, the plays of the last month and the day, worked out once
+    /// (Mixes/MixModel.swift); the mixes are made from it in
+    /// Mixes/MixBuilders.swift.
+    let model: MixModel
+
     public init(snapshot: LibrarySnapshot, taste: TasteProfile, history: ListeningHistory,
                 graph: SimilarityGraph, now: Date, calendar: Calendar = .current) {
-        fatalError("MixGenerator is not built yet")
+        model = MixModel(snapshot: snapshot, taste: taste, history: history, graph: graph, now: now, calendar: calendar)
     }
 
     /// Home's "Made for You", best first: the daily mixes, then the others
     /// that have enough tracks (25–50 each; a mix of fewer than 8 is left out).
     public func mixes() -> [Mix] {
-        fatalError("not built yet")
+        guard !model.snapshot.isEmpty else { return [] }
+        let kinds = MixKind.allCases
+        let others = model.otherMixes().sorted { x, y in
+            if x.want != y.want { return x.want > y.want }
+            let kx = kinds.firstIndex(of: x.mix.kind) ?? 0, ky = kinds.firstIndex(of: y.mix.kind) ?? 0
+            return kx != ky ? kx < ky : x.mix.id < y.mix.id
+        }
+        return model.dailyMixes() + others.map(\.mix)
     }
 
     /// Stations to suggest on Home and Radio: Your Station, Discovery,
     /// Loved (when there are favourites), the top artists' stations, the top
     /// genres' and the decades the library has most of.
     public func suggestedStations() -> [Station] {
-        fatalError("not built yet")
+        guard !model.snapshot.isEmpty else { return [] }
+        return model.stations()
     }
 }

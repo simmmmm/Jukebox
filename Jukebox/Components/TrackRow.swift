@@ -21,6 +21,7 @@ struct TrackRow: View {
 
     @Environment(AudioPlayer.self) private var player
     @Environment(LibraryStore.self) private var library
+    @Environment(AppModel.self) private var app
 
     init(_ track: Track, leading: Leading = .artwork, subtitle: String? = nil, reason: PickReason? = nil,
          showsMenu: Bool = true) {
@@ -108,7 +109,12 @@ struct TrackRow: View {
         .contextMenu {
             TrackMenu(track: track)
         } preview: {
+            // Passed in explicitly: the preview is drawn in a hosting
+            // controller of its own, and its cover (ArtworkView) needs the
+            // AppModel's client. Were the environment not carried into it,
+            // every long press on a song would crash.
             TrackPreview(track: track)
+                .environment(app)
         }
     }
 

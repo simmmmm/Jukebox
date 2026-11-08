@@ -12,20 +12,70 @@ import Observation
 final class HistoryStore {
     private(set) var history = ListeningHistory()
 
+    private let url: URL
+    /// One writer, in order: a slow write can never land after a newer one.
+    private let writer = DispatchQueue(label: "Jukebox.history", qos: .utility)
+    @ObservationIgnored private var saveTask: Task<Void, Never>?
+
     init() {
-        fatalError("not built yet")
+        url = Self.fileURL()
+        // Read at once, on launch, so the first mixes and the first station
+        // already know what was heard. The file is at most 20 000 small
+        // events (ListeningHistory.limit), a few megabytes.
+        history = ListeningHistory.load(from: url)
     }
 
     func record(_ event: PlayEvent) {
-        fatalError("not built yet")
+        history.append(event)
+        scheduleSave()
     }
 
     /// Recently heard tracks, newest first, at most `limit`, each once.
     func recentTrackIDs(limit: Int = 50) -> [ItemID] {
-        fatalError("not built yet")
+        guard limit > 0 else { return [] }
+        var seen = Set<ItemID>()
+        var ids: [ItemID] = []
+        for event in history.events.reversed() {
+            // Heard: a skip, or a thumbs down, is not.
+            if event.outcome == .skipped || event.outcome == .disliked { continue }
+            if seen.insert(event.trackID).inserted {
+                ids.append(event.trackID)
+                if ids.count >= limit { break }
+            }
+        }
+        return ids
     }
 
     func clear() {
-        fatalError("not built yet")
+        saveTask?.cancel()
+        saveTask = nil
+        history = ListeningHistory()
+        saveNow()
+    }
+
+    /// Two seconds after the last play, so a burst of skips is one write.
+    private func scheduleSave() {
+        saveTask?.cancel()
+        saveTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            guard !Task.isCancelled else { return }
+            self?.saveNow()
+        }
+    }
+
+    private func saveNow() {
+        let snapshot = history
+        let url = self.url
+        writer.async {
+            try? snapshot.save(to: url)
+        }
+    }
+
+    private static func fileURL() -> URL {
+        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        return base
+            .appendingPathComponent("Jukebox", isDirectory: true)
+            .appendingPathComponent("history.json", isDirectory: false)
     }
 }

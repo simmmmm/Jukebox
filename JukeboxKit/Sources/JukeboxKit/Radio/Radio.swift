@@ -29,10 +29,12 @@ public enum PlayOutcome: String, Codable, Sendable, Hashable {
     case disliked
 
     /// The outcome of a play that ended (not liked or disliked) after
-    /// `listened` of `duration` seconds.
+    /// `listened` of `duration` seconds. "All but the last 20 s" only for a
+    /// track longer than 40 s: for a shorter one (an interlude) it would make
+    /// every play, however short, a completed one.
     public static func of(listened: TimeInterval, duration: TimeInterval) -> PlayOutcome {
         guard duration > 0 else { return listened >= 30 ? .completed : .skipped }
-        if listened >= duration * 0.8 || listened >= duration - 20 { return .completed }
+        if listened >= duration * 0.8 || (duration > 40 && listened >= duration - 20) { return .completed }
         if listened < min(30, duration * 0.5) { return .skipped }
         return .partial
     }
@@ -66,10 +68,15 @@ public struct PlayEvent: Codable, Sendable, Hashable {
         self.genreKeys = genreKeys
     }
 
+    /// The artist and genre keys as the radio counts them: joined tags
+    /// ("A; B", "Rock; Pop") split, as LibrarySnapshot does, so the history
+    /// of a song that has left the library still finds its artists.
     public init(track: Track, date: Date, listened: TimeInterval, outcome: PlayOutcome, stationID: String? = nil) {
+        let artists = Set(LibrarySnapshot.Index.artistNames(of: track).map { NameKey.artist($0.name) }.filter { !$0.isEmpty })
+        let genres = LibrarySnapshot.Index.splitGenreNames(track.genres).map(NameKey.genre).filter { !$0.isEmpty }
         self.init(trackID: track.id, date: date, listened: listened, duration: track.duration,
-                  outcome: outcome, stationID: stationID, artistKeys: Array(track.artistKeys).sorted(),
-                  genreKeys: track.genres.map(NameKey.genre))
+                  outcome: outcome, stationID: stationID, artistKeys: artists.sorted(),
+                  genreKeys: genres)
     }
 }
 
@@ -120,22 +127,35 @@ public struct ListeningHistory: Codable, Sendable {
 /// from this device's history (completions, skips, thumbs), for tracks,
 /// artists and genres. Recent behaviour weighs more than old.
 public struct TasteProfile: Sendable {
+    /// Worked out once (Radio/Taste.swift), aligned with the snapshot.
+    let data: TasteData
+
     public init(snapshot: LibrarySnapshot, history: ListeningHistory, now: Date) {
-        fatalError("TasteProfile is not built yet")
+        data = TasteData(snapshot: snapshot, history: history, now: now)
     }
 
     /// -1 (avoid) … 0 (unknown or neutral) … 1 (loved).
-    public func trackAffinity(_ id: ItemID) -> Double { fatalError("not built yet") }
-    public func artistAffinity(_ key: String) -> Double { fatalError("not built yet") }
-    public func genreAffinity(_ key: String) -> Double { fatalError("not built yet") }
+    public func trackAffinity(_ id: ItemID) -> Double {
+        data.index.trackByID[id].map { data.trackAffinity[$0] } ?? 0
+    }
+
+    public func artistAffinity(_ key: String) -> Double {
+        data.index.artistByKey[key].map { data.artistAffinity[$0] } ?? 0
+    }
+
+    public func genreAffinity(_ key: String) -> Double {
+        data.index.genreByKey[key].map { data.genreAffinity[$0] } ?? 0
+    }
 
     /// 0 never heard … 1 heard a lot (play count and history together).
-    public func familiarity(_ id: ItemID) -> Double { fatalError("not built yet") }
+    public func familiarity(_ id: ItemID) -> Double {
+        data.index.trackByID[id].map { data.familiarity[$0] } ?? 0
+    }
 
     /// Artist keys, most liked first.
-    public func topArtists(_ count: Int) -> [String] { fatalError("not built yet") }
+    public func topArtists(_ count: Int) -> [String] { Array(data.rankedArtists.prefix(max(0, count))) }
     /// Genre keys, most liked first.
-    public func topGenres(_ count: Int) -> [String] { fatalError("not built yet") }
+    public func topGenres(_ count: Int) -> [String] { Array(data.rankedGenres.prefix(max(0, count))) }
 }
 
 // MARK: - Who sounds like whom
@@ -156,42 +176,61 @@ public struct Neighbor: Codable, Sendable, Hashable {
 /// and, when a Last.fm key is set, from Last.fm's similar artists and
 /// tracks (SimilarityService), which are far better.
 public struct SimilarityGraph: Codable, Sendable {
-    public init() {
-        fatalError("SimilarityGraph is not built yet")
-    }
+    /// Artist key → neighbour key → 0 … 1, kept both ways.
+    var artistEdges: [String: [String: Double]] = [:]
+    /// Track id → similar track id → 0 … 1, one way.
+    var trackEdges: [ItemID: [ItemID: Double]] = [:]
+    /// Artists that were the first key of `addArtistEdge`: those asked about
+    /// elsewhere (Last.fm).
+    var enriched: Set<String> = []
 
-    /// From the library alone.
+    public init() {}
+
+    /// From the library alone (Radio/Similarity.swift: shared genres by how
+    /// specific they are, guests, era).
     public static func fromLibrary(_ snapshot: LibrarySnapshot) -> SimilarityGraph {
-        fatalError("not built yet")
+        build(from: snapshot)
     }
 
     /// An edge both ways; a second edge between the same two keeps the
     /// heavier, so library and Last.fm edges can be merged in any order.
+    /// `a` is the artist that was asked about (Last.fm's artist.getSimilar
+    /// for `a` answered `b`): it counts in `enrichedArtistCount`.
     public mutating func addArtistEdge(_ a: String, _ b: String, weight: Double) {
-        fatalError("not built yet")
+        guard a != b, !a.isEmpty, !b.isEmpty, weight.isFinite, weight > 0 else { return }
+        setArtistEdge(a, b, weight: weight)
+        enriched.insert(a)
     }
 
     /// One way: Last.fm's similar tracks are not symmetric.
     public mutating func addTrackEdge(from: ItemID, to: ItemID, weight: Double) {
-        fatalError("not built yet")
+        guard from != to, weight.isFinite, weight > 0 else { return }
+        let w = min(1, weight)
+        if (trackEdges[from]?[to] ?? 0) < w { trackEdges[from, default: [:]][to] = w }
     }
 
     public mutating func merge(_ other: SimilarityGraph) {
-        fatalError("not built yet")
+        for (a, edges) in other.artistEdges {
+            for (b, w) in edges where (artistEdges[a]?[b] ?? 0) < w { artistEdges[a, default: [:]][b] = w }
+        }
+        for (from, edges) in other.trackEdges {
+            for (to, w) in edges where (trackEdges[from]?[to] ?? 0) < w { trackEdges[from, default: [:]][to] = w }
+        }
+        enriched.formUnion(other.enriched)
     }
 
     /// Heaviest first.
     public func similarArtists(to key: String, limit: Int = 50) -> [Neighbor] {
-        fatalError("not built yet")
+        Self.sorted(artistEdges[key], limit: limit)
     }
 
     /// Heaviest first; the keys are track ids.
     public func similarTracks(to id: ItemID, limit: Int = 50) -> [Neighbor] {
-        fatalError("not built yet")
+        Self.sorted(trackEdges[id], limit: limit)
     }
 
     /// How many artists have Last.fm edges: what Settings shows.
-    public var enrichedArtistCount: Int { fatalError("not built yet") }
+    public var enrichedArtistCount: Int { enriched.count }
 }
 
 // MARK: - Stations
@@ -233,7 +272,9 @@ public struct Station: Identifiable, Hashable, Codable, Sendable {
 
     /// The station for `seed`, its id, title and artwork from the library.
     public init(seed: StationSeed, snapshot: LibrarySnapshot) {
-        fatalError("Station(seed:snapshot:) is not built yet")
+        let about = Self.describe(seed, in: snapshot)
+        self.init(id: Self.id(for: seed), seed: seed, title: about.title, subtitle: about.subtitle,
+                  artwork: about.artwork)
     }
 }
 
@@ -315,7 +356,11 @@ public enum RadioFeedback: Hashable, Sendable {
 /// ahead should be chosen again.
 public struct RadioSession: Sendable {
     public private(set) var station: Station
-    public var settings: RadioSettings
+    public var settings: RadioSettings {
+        didSet { engine.settings = settings }
+    }
+    /// Everything the session knows and has handed out (Radio/RadioEngine.swift).
+    var engine: RadioEngine
 
     /// - Parameters:
     ///   - recentlyPlayed: tracks heard in the last `settings.noRepeatHours`
@@ -325,34 +370,37 @@ public struct RadioSession: Sendable {
     public init(station: Station, snapshot: LibrarySnapshot, taste: TasteProfile, graph: SimilarityGraph,
                 settings: RadioSettings = RadioSettings(), recentlyPlayed: Set<ItemID> = [],
                 randomSeed: UInt64 = UInt64.random(in: 0...UInt64.max)) {
-        fatalError("RadioSession is not built yet")
+        self.station = station
+        self.settings = settings
+        engine = RadioEngine(seed: station.seed, snapshot: snapshot, taste: taste, graph: graph,
+                             settings: settings, recentlyPlayed: recentlyPlayed, randomSeed: randomSeed)
     }
 
     /// Tracks from outside the library's own knowledge — Jellyfin's Instant
     /// Mix for the seed, Last.fm's similar tracks — as candidates, raised by
     /// `weight` (0 … 1).
     public mutating func addCandidates(_ ids: [ItemID], weight: Double, reason: PickReason) {
-        fatalError("not built yet")
+        engine.addCandidates(ids, weight: weight, reason: reason)
     }
 
     /// The next `count` tracks. Fewer only when the library is out of
     /// tracks that fit (a library of a few songs); then the rules loosen
     /// before the station stops.
     public mutating func next(_ count: Int) -> [RadioPick] {
-        fatalError("not built yet")
+        engine.next(count)
     }
 
     /// What the listener did with a track the session handed out.
     public mutating func record(_ feedback: RadioFeedback) {
-        fatalError("not built yet")
+        engine.record(feedback)
     }
 
     /// Put back tracks handed out but not heard, so the next `next` chooses
     /// again with what is known now.
     public mutating func returnUnplayed(_ ids: [ItemID]) {
-        fatalError("not built yet")
+        engine.returnUnplayed(ids)
     }
 
     /// Every track handed out and not returned, in order.
-    public var handedOut: [ItemID] { fatalError("not built yet") }
+    public var handedOut: [ItemID] { engine.handed.map { engine.snapshot.tracks[$0].id } }
 }

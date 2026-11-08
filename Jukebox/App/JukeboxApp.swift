@@ -76,7 +76,11 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: $navigator.isNowPlayingPresented) {
             NowPlayingView()
         }
-        .sheet(item: $navigator.addToPlaylist) { request in
+        // While Now Playing covers the tabs it presents this sheet itself
+        // (a view already presenting cannot present another); here it
+        // waits, so the two never both try.
+        .sheet(item: Binding(get: { self.navigator.isNowPlayingPresented ? nil : self.navigator.addToPlaylist },
+                             set: { self.navigator.addToPlaylist = $0 })) { request in
             AddToPlaylistSheet(tracks: request.tracks)
         }
     }

@@ -8,6 +8,8 @@
 import Foundation
 import JukeboxKit
 import Observation
+// NavigationPath, for clearing the Navigator's stacks at sign-out.
+import SwiftUI
 import UIKit
 
 @Observable
@@ -47,6 +49,9 @@ final class AppModel {
         radio = RadioController(player: player, library: library, history: history, settings: settings)
         mixes = MixStore()
         player.radio = radio
+        // What moves play counts and "Recently Played" when a song is heard
+        // to the end (AudioPlayer calls library.notePlayed).
+        player.library = library
     }
 
     /// A client for a server address, before anyone has signed in: what the
@@ -78,9 +83,22 @@ final class AppModel {
         Keychain.deleteCredentials()
         credentials = nil
         self.client = nil
+        // Nothing streams, reports or asks the old server from here on.
+        player.client = nil
+        radio.client = nil
         library.reset()
         mixes.reset()
         phase = .signedOut
+        // After the tabs have gone, so nothing pops on screen: the next
+        // sign-in, perhaps to another server, starts on Home rather than on
+        // the last account's album pages.
+        navigator.isNowPlayingPresented = false
+        navigator.addToPlaylist = nil
+        navigator.tab = .home
+        navigator.homePath = NavigationPath()
+        navigator.radioPath = NavigationPath()
+        navigator.libraryPath = NavigationPath()
+        navigator.searchPath = NavigationPath()
         await client?.signOut()
     }
 
@@ -92,8 +110,10 @@ final class AppModel {
         radio.client = client
         phase = .signedIn
         await library.open(client: client, credentials: credentials)
-        await mixes.rebuild(library: library, history: history, settings: settings)
+        // The radio first: its graph is made in the background and needs
+        // nothing from the mixes, so it does not wait for them to be made.
         radio.prepare()
+        await mixes.rebuild(library: library, history: history, settings: settings)
     }
 
     /// One id per installation, kept in UserDefaults: Jellyfin lists the
