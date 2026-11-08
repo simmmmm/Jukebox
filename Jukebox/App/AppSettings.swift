@@ -1,6 +1,7 @@
 // The listener's choices, kept in UserDefaults: streaming quality on Wi-Fi
 // and on the mobile network, loudness normalisation, the Last.fm key, how
-// adventurous the radio is. Observable, so a change shows at once.
+// adventurous the radio is, whether lyrics are looked up online. Observable,
+// so a change shows at once.
 
 import Foundation
 import JukeboxKit
@@ -41,6 +42,14 @@ final class AppSettings {
         didSet { defaults.set(adventurousness, forKey: Keys.adventurousness) }
     }
 
+    /// When the server has no lyrics for a song, look on LRCLIB. On unless
+    /// the listener turns it off: most libraries have no lyrics of their
+    /// own, and the photographer asked for lyrics ("Kun je ook lyrics
+    /// toevoegen", 8 November 2026).
+    var findLyricsOnline: Bool {
+        didSet { defaults.set(findLyricsOnline, forKey: Keys.findLyricsOnline) }
+    }
+
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         wifiQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.wifiQuality) ?? "") ?? .original
@@ -49,6 +58,7 @@ final class AppSettings {
         lastFMAPIKey = defaults.string(forKey: Keys.lastFMAPIKey) ?? ""
         autoplay = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
         adventurousness = defaults.object(forKey: Keys.adventurousness) as? Double ?? 0.35
+        findLyricsOnline = defaults.object(forKey: Keys.findLyricsOnline) as? Bool ?? true
     }
 
     var hasLastFM: Bool { !lastFMAPIKey.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -60,5 +70,6 @@ final class AppSettings {
         static let lastFMAPIKey = "lastFMAPIKey"
         static let adventurousness = "adventurousness"
         static let autoplay = "autoplay"
+        static let findLyricsOnline = "findLyricsOnline"
     }
 }

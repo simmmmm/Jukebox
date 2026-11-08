@@ -1,8 +1,9 @@
-// The lyrics, in Now Playing's cover place, from Jellyfin (10.9 and later
-// read them from the files and from .lrc files beside them). Synced lyrics
-// follow the song as Music's do: the line being sung bright, the others
-// dim, the view keeping it in sight, a tap on a line playing from there.
-// Unsynced lyrics are the text, to read along.
+// The lyrics, in Now Playing's cover place: the server's (Jellyfin 10.9 and
+// later reads them from the files and from .lrc files beside them), and
+// when it has none, LRCLIB's (LyricsFinder), with a line under them saying
+// so. Synced lyrics follow the song as Music's do: the line being sung
+// bright, the others dim, the view keeping it in sight, a tap on a line
+// playing from there. Unsynced lyrics are the text, to read along.
 
 import JukeboxKit
 import SwiftUI
@@ -10,12 +11,14 @@ import SwiftUI
 struct LyricsView: View {
     @Environment(AppModel.self) private var app
     @Environment(AudioPlayer.self) private var player
+    @Environment(AppSettings.self) private var settings
 
     private enum Content: Equatable {
         case loading
-        case lyrics(Lyrics)
+        case lyrics(Lyrics, fromLRCLIB: Bool)
+        case instrumental
         case unavailable
-        case failed
+        case failed(server: Bool)
     }
 
     @State private var content: Content = .loading
@@ -26,73 +29,88 @@ struct LyricsView: View {
             case .loading:
                 ProgressView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
-            case let .lyrics(lyrics):
+            case let .lyrics(lyrics, fromLRCLIB):
                 if lyrics.isSynced {
-                    LyricsSyncedLines(lines: lyrics.lines)
+                    LyricsSyncedLines(lines: lyrics.lines, credit: fromLRCLIB)
                 } else {
-                    LyricsPlainText(lines: lyrics.lines)
+                    LyricsPlainText(lines: lyrics.lines, credit: fromLRCLIB)
                 }
+            case .instrumental:
+                ContentUnavailableView("Instrumental", systemImage: "pianokeys")
             case .unavailable:
                 ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
-                                       description: Text("Jellyfin has no lyrics for this song."))
-            case .failed:
+                                       description: unavailableDescription)
+            case let .failed(server):
                 ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
-                                       description: Text("The lyrics could not be loaded from the server."))
+                                       description: failedDescription(server: server))
             }
         }
+        // Settings, where LRCLIB is turned on and off, cannot open over Now
+        // Playing, so the song alone says when to ask again.
         .task(id: player.currentTrack?.id) {
-            await load(player.currentTrack?.id)
+            await load(player.currentTrack)
         }
     }
 
-    private func load(_ trackID: ItemID?) async {
-        guard let trackID else {
+    private var unavailableDescription: Text {
+        if settings.findLyricsOnline {
+            return Text("Neither your server nor LRCLIB has lyrics for this song.")
+        }
+        return Text("Jellyfin has no lyrics for this song.")
+    }
+
+    private func failedDescription(server: Bool) -> Text {
+        if server {
+            return Text("The lyrics could not be loaded from the server.")
+        }
+        return Text("The lyrics could not be loaded from LRCLIB.")
+    }
+
+    private func load(_ track: Track?) async {
+        guard let track, let client = app.client else {
             content = .unavailable
             return
         }
-        if let known = LyricsMemory.found[trackID] {
-            content = .lyrics(known)
-            return
-        }
-        if LyricsMemory.missing.contains(trackID) {
-            content = .unavailable
-            return
-        }
-        guard let client = app.client else {
-            content = .unavailable
-            return
-        }
-        content = .loading
-        do {
-            let lyrics = try await client.lyrics(trackID: trackID)
+        let online = settings.findLyricsOnline
+        let finder = LyricsFinder.shared
+        if let known = finder.known(track, online: online) {
+            show(known)
+        } else {
+            content = .loading
+            let answer = await finder.lyrics(for: track, client: client, online: online)
             guard !Task.isCancelled else { return }
-            if let lyrics, !lyrics.lines.isEmpty {
-                LyricsMemory.remember(lyrics, for: trackID)
-                content = .lyrics(lyrics)
-            } else {
-                LyricsMemory.missing.insert(trackID)
-                content = .unavailable
-            }
-        } catch {
-            // Not remembered: the network may be back next time.
-            guard !Task.isCancelled else { return }
-            content = .failed
+            show(answer)
+        }
+        // While the lyrics are open, the next song's too, so they are there
+        // the moment it starts. While they are closed nothing is asked: no
+        // traffic the listener did not ask for.
+        guard !Task.isCancelled else { return }
+        finder.prefetch(player.upNext.first?.track, client: client, online: online)
+    }
+
+    private func show(_ answer: LyricsAnswer) {
+        switch answer {
+        case let .lyrics(lyrics, fromLRCLIB):
+            content = .lyrics(lyrics, fromLRCLIB: fromLRCLIB)
+        case .instrumental:
+            content = .instrumental
+        case .notFound:
+            content = .unavailable
+        case let .failed(server):
+            content = .failed(server: server)
         }
     }
 }
 
-/// Lyrics fetched this launch, so turning to them again, or a song coming
-/// round again on a station, does not ask the server twice.
-private enum LyricsMemory {
-    static var found: [ItemID: Lyrics] = [:]
-    /// Tracks the server has no lyrics for.
-    static var missing: Set<ItemID> = []
+/// Under LRCLIB's lyrics: where they are from. Its listeners wrote them.
+private struct LyricsCredit: View {
+    init() {}
 
-    static func remember(_ lyrics: Lyrics, for trackID: ItemID) {
-        // A few hundred songs' lyrics are a few hundred kilobytes; past
-        // that, start again rather than keep a whole evening's.
-        if found.count >= 200 { found.removeAll() }
-        found[trackID] = lyrics
+    var body: some View {
+        Text("Lyrics from LRCLIB")
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
 
@@ -100,12 +118,15 @@ private enum LyricsMemory {
 /// the way down, a tap on a line playing from there.
 private struct LyricsSyncedLines: View {
     let lines: [Lyrics.Line]
+    /// LRCLIB's: the credit under the last line.
+    let credit: Bool
 
     @Environment(AudioPlayer.self) private var player
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(lines: [Lyrics.Line]) {
+    init(lines: [Lyrics.Line], credit: Bool) {
         self.lines = lines
+        self.credit = credit
     }
 
     var body: some View {
@@ -116,6 +137,9 @@ private struct LyricsSyncedLines: View {
                     ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
                         lineButton(line, isCurrent: index == current)
                             .id(index)
+                    }
+                    if credit {
+                        LyricsCredit()
                     }
                 }
                 .padding(.horizontal, Theme.Space.xl)
@@ -183,20 +207,30 @@ private struct LyricsSyncedLines: View {
 /// Untimed lyrics: the words, to read along.
 private struct LyricsPlainText: View {
     let lines: [Lyrics.Line]
+    /// LRCLIB's: the credit under the words.
+    let credit: Bool
 
-    init(lines: [Lyrics.Line]) {
+    init(lines: [Lyrics.Line], credit: Bool) {
         self.lines = lines
+        self.credit = credit
     }
 
     var body: some View {
         ScrollView {
-            Text(lines.map(\.text).joined(separator: "\n"))
-                .font(.title3.weight(.semibold))
-                .lineSpacing(6)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, Theme.Space.xl)
-                .padding(.vertical, Theme.Space.xxl)
-                .textSelection(.enabled)
+            VStack(alignment: .leading, spacing: Theme.Space.xl) {
+                Text(lines.map(\.text).joined(separator: "\n"))
+                    .font(.title3.weight(.semibold))
+                    .lineSpacing(6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+                if credit {
+                    LyricsCredit()
+                }
+            }
+            .padding(.horizontal, Theme.Space.xl)
+            .padding(.top, Theme.Space.xxl)
+            // Past the edge's fade, so the credit can be read at the end.
+            .padding(.bottom, credit ? Theme.Space.xxl * 2 : Theme.Space.xxl)
         }
         .scrollIndicators(.hidden)
         .mask {

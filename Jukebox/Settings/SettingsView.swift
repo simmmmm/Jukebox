@@ -20,6 +20,7 @@ struct SettingsView: View {
                 SettingsPlaybackSection()
                 SettingsRadioSection()
                 SettingsLastFMSection(savedKey: settings.lastFMAPIKey)
+                SettingsLyricsSection()
                 SettingsLibrarySection()
                 SettingsHistorySection()
                 SettingsAboutSection()
@@ -296,6 +297,29 @@ private struct SettingsLastFMSection: View {
 
     private static func trimmed(_ text: String) -> String {
         text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+// MARK: - Lyrics
+
+/// LRCLIB, when the server has no lyrics for a song: on unless turned off,
+/// as the photographer asked for lyrics ("Kun je ook lyrics toevoegen", 8
+/// November 2026) and most libraries have none of their own. The footer
+/// says what leaves the phone, as Last.fm's does.
+private struct SettingsLyricsSection: View {
+    @Environment(AppSettings.self) private var settings
+
+    init() {}
+
+    var body: some View {
+        @Bindable var settings = settings
+        Section {
+            Toggle("Find Lyrics Online", isOn: $settings.findLyricsOnline)
+        } header: {
+            Eyebrow("Lyrics")
+        } footer: {
+            Text("When your server has no lyrics for a song, Jukebox looks them up on LRCLIB (lrclib.net), a free and open lyrics database. It sends the song's title, artist, album and length.")
+        }
     }
 }
 

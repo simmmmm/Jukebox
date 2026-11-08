@@ -14,7 +14,7 @@ longer in its shapes.
 
 | Path | What |
 |---|---|
-| `JukeboxKit/` | Swift package, Foundation only, Swift 6 strict. Jellyfin and Last.fm clients, the library index, the radio, the mixes. Built and tested on Linux (`dev/kit-test.sh`) against a real Jellyfin (`dev/jellyfin-test-server.sh`). |
+| `JukeboxKit/` | Swift package, Foundation only, Swift 6 strict. Jellyfin, Last.fm and LRCLIB clients, the library index, the radio, the mixes, the LRC parser. Built and tested on Linux (`dev/kit-test.sh`) against a real Jellyfin (`dev/jellyfin-test-server.sh`). |
 | `Jukebox/` | The SwiftUI app, iOS 26, Swift 5 mode with MainActor default isolation (project.yml). Compiled only on GitHub's macOS (`ci/app.sh`) — there is no Mac here, so Swift in `Jukebox/` is read twice before it is pushed. |
 | `project.yml` | XcodeGen. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
 | `ci/` | What `.github/workflows/ci.yml` runs. The workflow file itself is generic, because the Claude session may not push workflow files. |
@@ -64,6 +64,7 @@ longer in its shapes.
 | Kit: Jellyfin | `JukeboxKit/Sources/JukeboxKit/Jellyfin/*` (client, DTOs), its tests |
 | Kit: radio | `Library/LibrarySnapshot.swift`, `Radio/*`, tests, `docs/RADIO.md` (how it chooses, measured) |
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
+| Kit: lyrics | `Lyrics/*` — LRCParser, LyricsQuery, LRCLIBClient, LyricsCache — and their tests |
 | App: library | `Jukebox/Library/*` — LibraryStore and every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift` — AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
 | App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, QueueView, LyricsView, AirPlay and volume |
@@ -141,3 +142,25 @@ Subsonic's scrobble). The photographer, 8 November 2026: "Laat scrobblen
 lekker via de server lopen." One place for every client, and no song twice
 on Last.fm. The Last.fm key in Settings is only for the radio's similar
 artists and songs.
+
+## Lyrics
+
+The photographer, 8 November 2026, from the TestFlight build: "Kun je ook
+lyrics toevoegen". Now Playing's Lyrics panel (`LyricsView`, through
+`LyricsFinder`) asks the server first (`/Audio/{id}/Lyrics`). Most libraries
+have none, so then, while Settings' Find Lyrics Online is on (the default),
+it asks LRCLIB (lrclib.net), a free, open lyrics database without a key that
+Feishin uses too: `/api/get` with title, artist, album and length, and on a
+404 (or no answer in 8 s: it may look beyond LRCLIB's own database)
+`/api/search`, taking the record of the same title and artist nearest in
+length, synced first, never one more than 3 s off (another recording, whose
+timed lines would drift) or without a length. Artists are whole names or one
+of the record's credits ("Daft Punk, Pharrell Williams"), never a name that
+only begins with ours ("Queen" is not "Queensrÿche"). Only the title (without
+"feat."), the main artist, the album and the length are sent. Answers are
+kept on disk (`LyricsCache`, about 1.2 kB a song): found for 90 days, not
+found for 3. Nothing is asked while the panel is closed, and the song's
+lookup is cancelled when the song changes or the panel closes; while it is
+open, the next song is looked up too, once the playing song's answer is in.
+`LRCLIBLiveTests` asks the real LRCLIB where it answers within 3 s (GitHub's
+runners) or with `LRCLIB_LIVE=1`, and skips itself elsewhere.
