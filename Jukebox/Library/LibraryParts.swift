@@ -143,6 +143,7 @@ struct LibraryAlbumMenu: View {
         let favorite = library.isFavorite(album.id)
         Section {
             Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "album", "from": "menu"])
                 radio.start(.album(album.id))
             }
         }
@@ -193,6 +194,8 @@ struct LibraryRadioButton: View {
 
     var body: some View {
         Button {
+            // "menu" too: a Start Radio of an album, artist, playlist or genre.
+            Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
             radio.start(seed)
         } label: {
             Label("Start Radio", systemImage: "dot.radiowaves.left.and.right")

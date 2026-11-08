@@ -213,6 +213,8 @@ final class AudioPlayer {
     /// anything but 0.
     func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false) {
         guard !tracks.isEmpty else { return }
+        // What music is started from, by its kind (Stats); never the album.
+        Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled])
         // Anything but a station ends the station that played.
         if !context.isRadio { radio?.stop() }
         let entries = tracks.map { QueueEntry(track: $0) }
@@ -239,6 +241,7 @@ final class AudioPlayer {
     /// The radio's picks as a new queue (RadioController calls this).
     func playRadio(_ picks: [RadioPick], station: Station) {
         guard !picks.isEmpty else { return }
+        Stats.track(.playStarted, ["from": "station", "shuffled": false])
         currentIndex = nil
         context = QueueContext(.radio(station), title: station.title)
         queue = picks.map { QueueEntry(track: $0.track, reason: $0.reason) }
@@ -688,6 +691,8 @@ final class AudioPlayer {
         guard let finished else { return }
         let now = Date()
         let outcome = PlayOutcome.of(listened: finished.listened, duration: finished.track.duration)
+        // Heard to the end, partly, or skipped, and whether on a station (Stats).
+        Stats.track(.trackEnded, ["outcome": outcome.rawValue, "station": finished.stationID != nil])
         history.record(PlayEvent(track: finished.track, date: now, listened: finished.listened,
                                  outcome: outcome, stationID: finished.stationID))
         if outcome == .completed {
@@ -834,6 +839,8 @@ final class AudioPlayer {
 
     private func itemFailed(_ id: ObjectIdentifier) {
         if let playing, ObjectIdentifier(playing.loaded.item) == id {
+            // Why, by kind (Stats); never the song or the error's words.
+            Stats.track(.playbackError, ["reason": Stats.playbackFailure(playing.loaded.item.error)])
             showError("Could not play “\(playing.entry.track.name)”.")
             consecutiveFailures += 1
             // Five in a row is the server or the network, not a file: stop

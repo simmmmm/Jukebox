@@ -23,6 +23,7 @@ struct SettingsView: View {
                 SettingsLyricsSection()
                 SettingsLibrarySection()
                 SettingsHistorySection()
+                SettingsPrivacySection()
                 SettingsAboutSection()
             }
             .navigationTitle("Settings")
@@ -33,6 +34,7 @@ struct SettingsView: View {
                 }
             }
         }
+        .countsScreen("settings")
     }
 }
 
@@ -154,7 +156,11 @@ private struct SettingsRadioSection: View {
                     isDragging = editing
                     // Once, when the finger lifts: the radio chooses its next
                     // songs again, and every step of a drag would be wasted.
-                    if !editing { radio.adventurousnessChanged() }
+                    // So too the count (Stats): where it was let go.
+                    if !editing {
+                        radio.adventurousnessChanged()
+                        Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
+                    }
                 })
                 .accessibilityValue(dialValue)
                 HStack {
@@ -284,6 +290,7 @@ private struct SettingsLastFMSection: View {
                 guard settings.hasLastFM else { return }
                 settings.lastFMAPIKey = ""
                 radio.lastFMKeyChanged()
+                Stats.track(.lastFMKey, ["state": "removed"])
                 return
             }
             let works = await LastFMClient(apiKey: key).validateKey()
@@ -292,6 +299,7 @@ private struct SettingsLastFMSection: View {
             guard works, key != Self.trimmed(settings.lastFMAPIKey) else { return }
             settings.lastFMAPIKey = key
             radio.lastFMKeyChanged()
+            Stats.track(.lastFMKey, ["state": "added"])
         }
     }
 
@@ -428,6 +436,30 @@ private struct SettingsHistorySection: View {
             Eyebrow("History")
         } footer: {
             Text("What you play, skip and give a thumbs up or down to is how the radio and your mixes learn your taste. It stays on this \(UIDevice.current.model).")
+        }
+    }
+}
+
+// MARK: - Privacy
+
+/// The anonymous usage counts (Stats, docs/STATS.md), on unless turned off
+/// here: the photographer's choice, "alles tracken wat je mag zonder cookie
+/// melding" (8 November 2026), as Aptabase sets no cookie and keeps no device
+/// id or address. The footer says what is counted, and what never is, as
+/// Last.fm's and Lyrics' footers say what leaves the phone.
+private struct SettingsPrivacySection: View {
+    @Environment(AppSettings.self) private var settings
+
+    init() {}
+
+    var body: some View {
+        @Bindable var settings = settings
+        Section {
+            Toggle("Share Anonymous Usage", isOn: $settings.shareUsage)
+        } header: {
+            Eyebrow("Privacy")
+        } footer: {
+            Text("Jukebox counts which screens and features are used — never titles, artists, searches, server addresses or names — on the developer's own server, without cookies or a device id. It helps decide what to improve.")
         }
     }
 }

@@ -85,6 +85,7 @@ struct PlaylistsView: View {
         Task {
             do {
                 let playlist = try await library.createPlaylist(named: name, with: [])
+                Stats.track(.playlistCreated, ["from": "library"])
                 // Into it at once, as Music does: the next thing is filling it.
                 navigator.open(.playlist(playlist))
             } catch {
@@ -204,6 +205,7 @@ struct PlaylistDetailView: View {
                 Menu {
                     Section {
                         Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                            Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
                             radio.start(seed(for: shown, tracks: tracks))
                         }
                         .disabled(tracks.isEmpty)
@@ -473,6 +475,7 @@ struct AddToPlaylistSheet: View {
         Task {
             do {
                 try await library.add(tracks, to: playlist)
+                Stats.track(.playlistSongsAdded, ["from": "add_to_playlist"])
                 dismiss()
             } catch {
                 errorMessage = error.localizedDescription
@@ -488,6 +491,7 @@ struct AddToPlaylistSheet: View {
         Task {
             do {
                 try await library.createPlaylist(named: name, with: tracks)
+                Stats.track(.playlistCreated, ["from": "add_to_playlist"])
                 dismiss()
             } catch {
                 errorMessage = error.localizedDescription

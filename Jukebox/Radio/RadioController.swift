@@ -125,6 +125,7 @@ final class RadioController {
     /// That track is still the player's current one, but it has ended: the
     /// station starts after it, never continues it.
     func autoplay(after track: Track) {
+        Stats.track(.stationStarted, ["seed": "track", "from": "autoplay"])
         begin(station(for: .track(track.id)), excluding: track.id, continuing: false)
     }
 
@@ -241,6 +242,8 @@ final class RadioController {
             // A skip says "not this": what comes next is chosen again with
             // that known, at once.
             if !isHandlingFeedback { rechooseUpcoming(keepingNext: false) }
+            // The listener's skip, not the one a thumbs down made (counted as that).
+            if !isHandlingFeedback { Stats.track(.radioFeedback, ["kind": "skip"]) }
         case .partial:
             // Left halfway: the session weighs it by how long was heard; not
             // enough to throw away what is queued.
@@ -256,6 +259,7 @@ final class RadioController {
     /// like is the track's newest event (ListeningHistory.removeLatest): a
     /// like taken back after the song ended stays in the history.
     func like(_ track: Track) {
+        Stats.track(.radioFeedback, ["kind": liked.contains(track.id) ? "undo" : "like"])
         if liked.contains(track.id) {
             liked.remove(track.id)
             history.removeLatest(.liked, of: track.id)
@@ -282,6 +286,7 @@ final class RadioController {
     /// too, rather than skip the song again.
     func dislike(_ track: Track) {
         let isCurrent = player.currentTrack?.id == track.id
+        Stats.track(.radioFeedback, ["kind": disliked.contains(track.id) ? "undo" : "dislike"])
         if disliked.contains(track.id) {
             disliked.remove(track.id)
             history.removeLatest(.disliked, of: track.id)

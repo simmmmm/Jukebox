@@ -9,6 +9,11 @@ import SwiftUI
 struct JukeboxApp: App {
     @State private var app = AppModel()
 
+    init() {
+        // Once a launch (Stats): how many starts, on which system and version.
+        Stats.track(.appOpen)
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -80,6 +85,14 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: $navigator.isNowPlayingPresented) {
             NowPlayingView()
+        }
+        // The usage counts (Stats, `screen`): the tab shown first, then each
+        // one chosen, Now Playing's station name to Radio too. Here, with
+        // the tabs, rather than in Navigator: signing out puts the tab back
+        // on Home after the tabs have gone, and that is no visit to Home.
+        .countsOnce { Stats.track(.screen, ["name": self.navigator.tab.statsName]) }
+        .onChange(of: navigator.tab) { _, tab in
+            Stats.track(.screen, ["name": tab.statsName])
         }
         // While Now Playing covers the tabs it presents this sheet itself
         // (a view already presenting cannot present another); here it

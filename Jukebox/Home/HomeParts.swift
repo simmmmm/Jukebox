@@ -22,6 +22,8 @@ extension AudioPlayer {
     /// A mix from `index`, named after the mix in Now Playing ("Playing
     /// from Daily Mix 1").
     func playMix(_ mix: Mix, from index: Int = 0, shuffled: Bool = false) {
+        // Which kind of mix is played (Stats): its kind, never its title.
+        Stats.track(.mixPlayed, ["kind": mix.kind.rawValue])
         play(mix.tracks, startingAt: index, context: QueueContext(.mix(mix.id), title: mix.title), shuffled: shuffled)
     }
 }
@@ -196,6 +198,7 @@ struct StationMenu: View {
                 }
             } else {
                 Button("Play Station", systemImage: "play.fill") {
+                    Stats.track(.stationStarted, ["seed": Stats.seed(station.seed), "from": "tile_menu"])
                     radio.start(station)
                 }
             }
@@ -282,6 +285,7 @@ struct HomeMixMenu: View {
                 player.playMix(mix, shuffled: true)
             }
             Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
                 radio.start(mix.stationSeed)
             }
         }
@@ -327,6 +331,7 @@ struct HomeAlbumLink: View {
                     play(shuffled: true)
                 }
                 Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                    Stats.track(.stationStarted, ["seed": "album", "from": "menu"])
                     radio.start(.album(album.id))
                 }
             }

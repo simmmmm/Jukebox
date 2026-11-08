@@ -267,6 +267,7 @@ private struct HomeStationHero: View {
             if onAir != nil {
                 player.togglePlayPause()
             } else {
+                Stats.track(.stationStarted, ["seed": "personal", "from": "hero"])
                 radio.start(.personal)
             }
         } label: {

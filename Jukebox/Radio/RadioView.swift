@@ -300,6 +300,7 @@ private struct RadioFeaturedCard: View {
     }
 
     private func start() {
+        Stats.track(.stationStarted, ["seed": Stats.seed(item.seed), "from": "hero"])
         if let built = item.built {
             radio.start(built)
         } else {

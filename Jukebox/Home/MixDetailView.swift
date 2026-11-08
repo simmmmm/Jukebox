@@ -46,6 +46,8 @@ struct MixDetailView: View {
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? mix.title : "")
         .navigationBarTitleDisplayMode(.inline)
+        // Which kinds of mix are opened (Stats): the kind, never the title.
+        .countsOnce { Stats.track(.mixOpened, ["kind": mix.kind.rawValue]) }
         .onScrollGeometryChange(for: Bool.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top > 300
         } action: { _, isPast in
@@ -132,6 +134,7 @@ struct MixDetailView: View {
                 .padding(.top, Theme.Space.m)
                 .disabled(mix.tracks.isEmpty)
             Button {
+                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
                 radio.start(mix.stationSeed)
             } label: {
                 Label("Start Radio", systemImage: "dot.radiowaves.left.and.right")
@@ -155,6 +158,7 @@ struct MixDetailView: View {
         Task {
             do {
                 saved = try await library.createPlaylist(named: name, with: tracks)
+                Stats.track(.playlistCreated, ["from": "mix"])
             } catch {
                 saveError = error.localizedDescription
             }

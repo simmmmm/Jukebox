@@ -75,6 +75,7 @@ struct LibraryAddSongsSheet: View {
             do {
                 try await library.add([track], to: playlist)
                 added.insert(track.id)
+                Stats.track(.playlistSongsAdded, ["from": "add_songs"])
             } catch {
                 errorMessage = error.localizedDescription
             }

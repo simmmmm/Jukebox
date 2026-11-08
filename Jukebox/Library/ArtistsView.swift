@@ -221,6 +221,7 @@ struct ArtistDetailView: View {
         let tracks = library.tracks(by: shown)
         Section {
             Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "artist", "from": "menu"])
                 radio.start(seed(for: shown))
             }
         }

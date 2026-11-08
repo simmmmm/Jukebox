@@ -59,6 +59,7 @@ final class LibraryStore {
 
     /// Signed in: the cache at once, then the server.
     func open(client: JellyfinClient, credentials: Credentials) async {
+        let started = Date()
         if let previous = self.credentials,
            previous.serverID != credentials.serverID || previous.userID != credentials.userID {
             clearLibrary()
@@ -85,6 +86,8 @@ final class LibraryStore {
                   playlists: library.playlists, index: built)
             lastLoaded = library.savedAt
             state = .loaded
+            // How large, from where and how quickly (Stats): buckets only.
+            Stats.track(.libraryLoaded, ["tracks": Stats.trackCount(library.tracks.count), "from": "cache", "seconds": Stats.duration(Date().timeIntervalSince(started))])
             // The server behind the cache, without holding up the caller:
             // Home's mixes and the radio start from the cache at once, and
             // `lastLoaded` changes when the fresh library is in.
@@ -237,6 +240,8 @@ final class LibraryStore {
         }
         do {
             try await client.setFavorite(isFavorite, itemID: itemID)
+            // What kind of thing, never which (Stats).
+            Stats.track(.favoriteSet, ["item": favoriteKind(of: itemID), "on": isFavorite])
             // The radio's taste reads favourites from the snapshot.
             scheduleSnapshotRebuild(after: 2)
         } catch {
@@ -390,6 +395,7 @@ private extension LibraryStore {
             if generation == self.generation { loadTask = nil }
         }
         guard let client else { return }
+        let started = Date()
         state = .loading(progress: nil)
         // Every page of tracks moves the bar: they are most of the wait.
         let progress: @Sendable (Int, Int) -> Void = { done, total in
@@ -420,6 +426,7 @@ private extension LibraryStore {
                   playlists: newPlaylists, index: built)
             lastLoaded = Date()
             state = .loaded
+            Stats.track(.libraryLoaded, ["tracks": Stats.trackCount(newTracks.count), "from": "server", "seconds": Stats.duration(Date().timeIntervalSince(started))])
             saveCache()
         } catch {
             guard generation == self.generation else { return }
@@ -499,6 +506,13 @@ private extension LibraryStore {
     }
 
     // MARK: Small changes
+
+    /// A favourite's kind, for the usage counts: "track", "album" or "artist".
+    func favoriteKind(of itemID: ItemID) -> String {
+        if index.trackPosition[itemID] != nil { return "track" }
+        if index.albumPosition[itemID] != nil { return "album" }
+        return "artist"
+    }
 
     func mirrorFavorite(_ isFavorite: Bool, itemID: ItemID) {
         if isFavorite { favoriteIDs.insert(itemID) } else { favoriteIDs.remove(itemID) }

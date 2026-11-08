@@ -19,7 +19,7 @@ longer in its shapes.
 | `project.yml` | XcodeGen. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
 | `ci/` | What `.github/workflows/ci.yml` runs. The workflow file itself is generic, because the Claude session may not push workflow files. |
 | `dev/` | The test server, the made-up library, the kit tests, the icon (`make-icon.py`) and the brand's drawings (`brand/`). |
-| `docs/` | This, `RADIO.md` (how the radio chooses), `BRAND.md` (the Arch, its rules and colours), `brand/` (the boards). |
+| `docs/` | This, `RADIO.md` (how the radio chooses), `BRAND.md` (the Arch, its rules and colours), `STATS.md` (the anonymous usage counts), `brand/` (the boards). |
 
 ## Rules for every part
 
@@ -164,3 +164,11 @@ lookup is cancelled when the song changes or the panel closes; while it is
 open, the next song is looked up too, once the playing song's answer is in.
 `LRCLIBLiveTests` asks the real LRCLIB where it answers within 3 s (GitHub's
 runners) or with `LRCLIB_LIVE=1`, and skips itself elsewhere.
+
+## Usage counts
+
+Anonymous counts of which screens and features are used go to the
+photographer's own Aptabase (stats.numa.photo) through `Jukebox/App/Stats.swift`,
+on unless Settings › Privacy turns them off ("alles tracken wat je mag zonder
+cookie melding", 8 November 2026): a closed list of events with coarse
+properties, never a title, an artist, a search or a server — `docs/STATS.md`.

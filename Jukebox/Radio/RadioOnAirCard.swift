@@ -70,7 +70,10 @@ struct RadioOnAirCard: View {
                     .accessibilityHidden(true)
                 Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: { editing in
                     isDragging = editing
-                    if !editing { radio.adventurousnessChanged() }
+                    if !editing {
+                        radio.adventurousnessChanged()
+                        Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
+                    }
                 })
                 .tint(Theme.accent)
                 .accessibilityLabel("Adventurousness")

@@ -149,6 +149,7 @@ struct OnboardingView: View {
             // was this app's guess, and its "no answer on 8096" would only
             // confuse what went wrong with the first.
             let error: Error = firstError ?? JellyfinError.invalidServerAddress
+            Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
             show(Self.message(for: error, at: first))
         }
     }
@@ -358,9 +359,11 @@ private struct OnboardingAccountForm: View {
             do {
                 let credentials = try await client.signIn(username: name, password: password)
                 OnboardingMemory.userName = name
+                Stats.track(.signedIn, ["server": "jellyfin", "method": "password"])
                 await app.signIn(credentials)
             } catch {
                 isSigningIn = false
+                Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
                 show(Self.signInMessage(for: error))
             }
         }
@@ -439,12 +442,14 @@ private struct OnboardingAccountForm: View {
                 // From here it is signing in, not waiting: nothing for Cancel
                 // or this view's going away to stop.
                 quickConnectTask = nil
+                Stats.track(.signedIn, ["server": "jellyfin", "method": "quick_connect"])
                 await app.signIn(credentials)
             } catch {
                 // Cancelled: Cancel or Change Server already put the form back.
                 guard !Task.isCancelled else { return }
                 quickConnectTask = nil
                 quickConnectCode = nil
+                Stats.track(.signInFailed, ["reason": Stats.signInFailure(error, quickConnect: true)])
                 show(Self.quickConnectMessage(for: error))
             }
         }

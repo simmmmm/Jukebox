@@ -27,14 +27,24 @@ settings:
 packages:
   JukeboxKit:
     path: JukeboxKit
+  # The anonymous usage counts' client (Jukebox/App/Stats.swift,
+  # docs/STATS.md), as Numa has it.
+  Aptabase:
+    url: https://github.com/aptabase/aptabase-swift.git
+    from: 0.4.0
 targets:
   Jukebox:
     type: application
     platform: iOS
     sources:
+      # The Swift files, and as resources the asset catalog and
+      # Resources/PrivacyInfo.xcprivacy: XcodeGen gives a file of a type it
+      # has no rule for the Copy Bundle Resources phase (2.40.1 and later).
       - path: Jukebox
     dependencies:
       - package: JukeboxKit
+      # The usage counts: the app only, not the screenshot walk.
+      - package: Aptabase
       - sdk: AVFoundation.framework
       - sdk: MediaPlayer.framework
       - sdk: AVKit.framework

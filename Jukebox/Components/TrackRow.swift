@@ -159,6 +159,7 @@ struct TrackMenu: View {
                 player.addToQueue([track])
             }
             Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "track", "from": "menu"])
                 radio.start(.track(track.id))
             }
         }

@@ -77,6 +77,7 @@ final class AppModel {
     }
 
     func signOut() async {
+        Stats.track(.signedOut)
         player.stop()
         // Also forgets this account's thumbs and recent stations.
         radio.reset()

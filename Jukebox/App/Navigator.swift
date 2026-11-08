@@ -2,7 +2,9 @@
 // object, so anything — a context menu's "Go to Album", Now Playing's
 // artist name — can take the listener somewhere without knowing which tab
 // it is in. Every screen that can be pushed is a Route; `routeDestinations()`
-// is the one place that turns a Route into its view.
+// is the one place that turns a Route into its view, and so where a pushed
+// page is counted (Stats, `screen`), by its kind alone: "album", never the
+// album. The tabs are counted where they are drawn (MainTabView).
 
 import JukeboxKit
 import SwiftUI
@@ -87,21 +89,60 @@ extension View {
     /// Every Route's screen, for a tab's NavigationStack.
     func routeDestinations() -> some View {
         navigationDestination(for: Route.self) { route in
-            switch route {
-            case let .album(album): AlbumDetailView(album: album)
-            case let .artist(artist): ArtistDetailView(artist: artist)
-            case let .playlist(playlist): PlaylistDetailView(playlist: playlist)
-            case let .genre(genre): GenreDetailView(genre: genre)
-            case let .mix(mix): MixDetailView(mix: mix)
-            case let .station(station): StationDetailView(station: station)
-            case .artists: ArtistsView()
-            case .albums: AlbumsView()
-            case .songs: SongsView()
-            case .playlists: PlaylistsView()
-            case .genres: GenresView()
-            case .favorites: FavoritesView()
-            case .recentlyAdded: RecentlyAddedView()
+            Group {
+                switch route {
+                case let .album(album): AlbumDetailView(album: album)
+                case let .artist(artist): ArtistDetailView(artist: artist)
+                case let .playlist(playlist): PlaylistDetailView(playlist: playlist)
+                case let .genre(genre): GenreDetailView(genre: genre)
+                case let .mix(mix): MixDetailView(mix: mix)
+                case let .station(station): StationDetailView(station: station)
+                case .artists: ArtistsView()
+                case .albums: AlbumsView()
+                case .songs: SongsView()
+                case .playlists: PlaylistsView()
+                case .genres: GenresView()
+                case .favorites: FavoritesView()
+                case .recentlyAdded: RecentlyAddedView()
+                }
             }
+            // Once a push, whether by a link or by `open`: not again when
+            // the listener comes Back to it.
+            .countsScreen(route.statsName)
+        }
+    }
+}
+
+extension AppTab {
+    /// The tab in the usage counts (Stats, `screen`).
+    var statsName: String {
+        switch self {
+        case .home: return "home"
+        case .radio: return "radio"
+        case .library: return "library"
+        case .search: return "search"
+        }
+    }
+}
+
+extension Route {
+    /// The page in the usage counts (Stats, `screen`): its kind, never the
+    /// album, artist, playlist, genre, mix or station it shows.
+    var statsName: String {
+        switch self {
+        case .album: return "album"
+        case .artist: return "artist"
+        case .playlist: return "playlist"
+        case .genre: return "genre"
+        case .mix: return "mix"
+        case .station: return "station"
+        case .artists: return "artists"
+        case .albums: return "albums"
+        case .songs: return "songs"
+        case .playlists: return "playlists"
+        case .genres: return "genres"
+        case .favorites: return "favorites"
+        case .recentlyAdded: return "recently_added"
         }
     }
 }

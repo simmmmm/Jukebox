@@ -121,6 +121,8 @@ struct QueueView: View {
         } message: { message in
             Text(message)
         }
+        // Each time the panel opens (Stats).
+        .countsScreen("queue")
     }
 
     // MARK: Rows
@@ -282,6 +284,7 @@ struct QueueView: View {
         Task {
             do {
                 saved = try await library.createPlaylist(named: name, with: tracks)
+                Stats.track(.playlistCreated, ["from": "queue"])
             } catch {
                 saveError = error.localizedDescription
             }

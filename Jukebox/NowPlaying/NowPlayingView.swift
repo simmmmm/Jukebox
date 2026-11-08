@@ -107,6 +107,8 @@ struct NowPlayingView: View {
                              set: { navigator.addToPlaylist = $0 })) { request in
             AddToPlaylistSheet(tracks: request.tracks)
         }
+        // Once each time it opens (Stats), not again when a sheet over it closes.
+        .countsScreen("now_playing")
     }
 
     // MARK: Layouts

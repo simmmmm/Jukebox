@@ -352,6 +352,9 @@ final class Walk {
         // English and the US region, whatever the simulator was set to: the
         // labels this walk looks for are the app's English words.
         app.launchArguments += ["-AppleLanguages", "(en)", "-AppleLocale", "en_US"]
+        // No usage counts from CI's walk on the photographer's Aptabase
+        // (docs/STATS.md): the argument domain turns Share Anonymous Usage off.
+        app.launchArguments += ["-shareUsage", "NO"]
         app.launch()
         try alive("launch")
     }

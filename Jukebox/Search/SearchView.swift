@@ -70,6 +70,10 @@ private struct SearchResultsList: View {
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
+    /// This search has been counted (Stats): once, when the typing first
+    /// rests, not at every letter. These results go when the field is
+    /// emptied, and with them this; the next search counts again.
+    @State private var isCounted = false
 
     init(term: String, remember: @escaping () -> Void) {
         self.term = term
@@ -92,6 +96,7 @@ private struct SearchResultsList: View {
                         .contextMenu {
                             Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
                                 remember()
+                                Stats.track(.stationStarted, ["seed": "artist", "from": "search"])
                                 radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
                             }
                         }
@@ -123,6 +128,7 @@ private struct SearchResultsList: View {
                             remember()
                             // The song first, then what sounds like it: the
                             // station of a song opens with that song.
+                            Stats.track(.stationStarted, ["seed": "track", "from": "search"])
                             radio.start(.track(track.id))
                         } label: {
                             TrackRow.standard(track)
@@ -160,6 +166,14 @@ private struct SearchResultsList: View {
                 }
             }
         }
+        // How much a search finds, in buckets; never what was typed.
+        .task(id: term) {
+            guard !isCounted else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            isCounted = true
+            Stats.track(.searchUsed, ["results": Stats.resultCount(results.artists.count + results.albums.count + results.tracks.count + results.playlists.count)])
+        }
     }
 
     @ViewBuilder private func albumMenu(_ album: Album) -> some View {
@@ -172,6 +186,7 @@ private struct SearchResultsList: View {
         }
         Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
             remember()
+            Stats.track(.stationStarted, ["seed": "album", "from": "search"])
             radio.start(.album(album.id))
         }
     }
@@ -329,6 +344,7 @@ private struct SearchBrowse: View {
                     .buttonStyle(.plain)
                     .contextMenu {
                         Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                            Stats.track(.stationStarted, ["seed": "genre", "from": "search"])
                             radio.start(.genre(key: genre.key, name: genre.name))
                         }
                     }

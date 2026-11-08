@@ -50,6 +50,8 @@ struct LyricsView: View {
         .task(id: player.currentTrack?.id) {
             await load(player.currentTrack)
         }
+        // Each time the panel opens (Stats); the songs' answers in `show`.
+        .countsScreen("lyrics")
     }
 
     private var unavailableDescription: Text {
@@ -89,6 +91,8 @@ struct LyricsView: View {
     }
 
     private func show(_ answer: LyricsAnswer) {
+        // Where a song's lyrics came from, and whether timed (Stats).
+        Stats.track(.lyricsShown, Stats.lyrics(answer))
         switch answer {
         case let .lyrics(lyrics, fromLRCLIB):
             content = .lyrics(lyrics, fromLRCLIB: fromLRCLIB)

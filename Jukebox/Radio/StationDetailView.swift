@@ -99,6 +99,8 @@ struct StationDetailView: View {
         .task(id: previewKey) {
             await choose(previewKey)
         }
+        // Whether the page is looked at, and then played (Stats).
+        .countsOnce { Stats.track(.stationPage, ["action": "opened"]) }
         // The confirmation, with the name to change if the listener likes.
         .alert("Save as Playlist", isPresented: $isNaming) {
             TextField("Playlist Name", text: $playlistName)
@@ -197,6 +199,7 @@ struct StationDetailView: View {
                 .buttonStyle(.secondary)
             } else {
                 Button {
+                    Stats.track(.stationPage, ["action": "play"])
                     play(from: 0)
                 } label: {
                     Label("Play", systemImage: "play.fill")
@@ -235,7 +238,10 @@ struct StationDetailView: View {
                 .accessibilityHidden(true)
             Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: { editing in
                 isDragging = editing
-                if !editing { radio.adventurousnessChanged() }
+                if !editing {
+                    radio.adventurousnessChanged()
+                    Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
+                }
             })
             .tint(Theme.accent)
             .accessibilityLabel("Adventurousness")
@@ -276,6 +282,7 @@ struct StationDetailView: View {
                 // them, and the list would have the same song twice.
                 ForEach(Array(picks.enumerated()), id: \.offset) { index, pick in
                     Button {
+                        Stats.track(.stationPage, ["action": "row"])
                         play(from: index)
                     } label: {
                         TrackRow(pick.track, subtitle: pick.track.artistLine, reason: pick.reason)
@@ -386,6 +393,7 @@ struct StationDetailView: View {
     }
 
     private func newPicks() {
+        Stats.track(.stationPage, ["action": "new_picks"])
         isDrawing = true
         // The station's draw from now on, so its page opened again shows
         // these new picks.
@@ -395,6 +403,7 @@ struct StationDetailView: View {
     /// From the song tapped (or the first): the list as shown, kept by the
     /// radio. Not chosen yet, the station starts as from anywhere else.
     private func play(from index: Int) {
+        Stats.track(.stationStarted, ["seed": Stats.seed(station.seed), "from": "page"])
         if let picks, !picks.isEmpty {
             radio.start(station, preview: picks, from: index)
         } else {
@@ -436,6 +445,7 @@ struct StationDetailView: View {
         Task {
             do {
                 saved = try await library.createPlaylist(named: name, with: tracks)
+                Stats.track(.playlistCreated, ["from": "station"])
             } catch {
                 saveError = error.localizedDescription
             }
