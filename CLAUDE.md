@@ -15,3 +15,7 @@ first. `docs/RADIO.md` is how the radio chooses, with measurements.
 - Native first (HIG, SF Symbols, Apple's controls); Numa's signatures from
   `Theme.swift` — the white accent, the eclipse, grey section labels.
 - Comments say why; the photographer's words where they decided something.
+- Commits are the photographer's: author and committer `simmmmm
+  <38768749+simmmmm@users.noreply.github.com>` (set in the clone's git
+  config), and no Claude co-author line — "Maak mij de main contributor van
+  alles ipv jou" (8 November 2026).
