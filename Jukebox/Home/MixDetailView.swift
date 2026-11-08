@@ -19,6 +19,7 @@ struct MixDetailView: View {
     @Environment(RadioController.self) private var radio
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
+    @Environment(OfflineStore.self) private var offline
 
     @State private var showsTitle = false
     @State private var isConfirmingRemoval = false
@@ -61,8 +62,10 @@ struct MixDetailView: View {
             showsTitle = isPast
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                OfflineDownloadButton(collection: OfflineCollection(mix: mix), isConfirmingRemoval: $isConfirmingRemoval)
+            if offline.offersDownload(for: .mix(mix.id)) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    OfflineDownloadButton(collection: OfflineCollection(mix: mix), isConfirmingRemoval: $isConfirmingRemoval)
+                }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

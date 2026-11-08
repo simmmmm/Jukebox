@@ -8,7 +8,8 @@
 //     collections.json  the albums, playlists and mixes chosen, with their songs in order
 //     queue.json        the songs still to fetch, and those the server would not give
 //     reports.json      plays heard offline, for the server once it answers
-//     files/            the songs, "<track id>.<ext>"
+//     files/            the songs, "<track id>.<ext>" (the kit's OfflineFile.fileName,
+//                       from the Content-Type the server sent)
 //
 // Another account's folder is never read: signing out removes the account's
 // folder (OfflineStore.signOut), and a folder of an account that is not the
@@ -143,6 +144,9 @@ nonisolated struct PendingPlay: Codable, Sendable, Hashable {
 nonisolated struct OfflineQueueFile: Codable, Sendable {
     var wanted: [OfflineWanted] = []
     var failed: [ItemID] = []
+    /// What the server said last of "Allow media downloading" for this
+    /// user; nil before it was asked (a queue.json of before it was kept).
+    var downloadsAllowed: Bool?
 }
 
 /// Everything one account keeps, as read at sign-in and written after a change.
@@ -152,6 +156,7 @@ nonisolated struct OfflineAccountState: Sendable {
     var wanted: [OfflineWanted]
     var failed: [ItemID]
     var reports: [PendingPlay]
+    var downloadsAllowed: Bool
 }
 
 nonisolated enum OfflinePaths {
@@ -194,36 +199,6 @@ nonisolated enum OfflinePaths {
 
     static func reports(_ account: String) -> URL {
         folder(account).appendingPathComponent("reports.json", isDirectory: false)
-    }
-
-    /// "<track id>.<ext>": AVFoundation reads a file's kind from its
-    /// extension, so it is the format the server sent — its MIME type
-    /// first, then the name it suggested, else m4a (what Jellyfin's AAC
-    /// comes in).
-    static func fileName(for trackID: ItemID, mimeType: String?, suggested: String?) -> String {
-        let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-")
-        let stem = String(trackID.filter { allowed.contains($0) })
-        return "\(stem).\(fileExtension(mimeType: mimeType, suggested: suggested))"
-    }
-
-    private static func fileExtension(mimeType: String?, suggested: String?) -> String {
-        switch mimeType?.lowercased() {
-        case "audio/mpeg", "audio/mp3", "audio/mpeg3": return "mp3"
-        case "audio/flac", "audio/x-flac": return "flac"
-        case "audio/mp4", "audio/m4a", "audio/x-m4a", "audio/mp4a-latm": return "m4a"
-        case "audio/aac", "audio/aacp", "audio/x-aac": return "aac"
-        case "audio/wav", "audio/x-wav", "audio/wave", "audio/vnd.wave": return "wav"
-        case "audio/aiff", "audio/x-aiff": return "aiff"
-        case "audio/ogg", "audio/opus": return "ogg"
-        case "audio/alac": return "m4a"
-        default: break
-        }
-        let known: Set<String> = ["mp3", "flac", "m4a", "aac", "wav", "aiff", "aif", "alac", "ogg", "opus", "mp4"]
-        if let suggested {
-            let ext = (suggested as NSString).pathExtension.lowercased()
-            if known.contains(ext) { return ext }
-        }
-        return "m4a"
     }
 }
 
@@ -279,14 +254,16 @@ nonisolated enum OfflineDisk {
         wanted.removeAll { manifest.has($0.trackID) }
 
         return OfflineAccountState(manifest: manifest, collections: collections, wanted: wanted,
-                                   failed: queue.failed, reports: reports)
+                                   failed: queue.failed, reports: reports,
+                                   downloadsAllowed: queue.downloadsAllowed ?? true)
     }
 
     static func save(_ state: OfflineAccountState, of account: String) {
         try? FileManager.default.createDirectory(at: OfflinePaths.folder(account), withIntermediateDirectories: true)
         try? state.manifest.save(to: OfflinePaths.manifest(account))
         write(state.collections, to: OfflinePaths.collections(account))
-        write(OfflineQueueFile(wanted: state.wanted, failed: state.failed), to: OfflinePaths.queue(account))
+        write(OfflineQueueFile(wanted: state.wanted, failed: state.failed, downloadsAllowed: state.downloadsAllowed),
+              to: OfflinePaths.queue(account))
         write(state.reports, to: OfflinePaths.reports(account))
     }
 

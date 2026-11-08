@@ -206,9 +206,11 @@ struct PlaylistDetailView: View {
                 EditButton()
                     .disabled(entries == nil)
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: tracks),
-                                      isConfirmingRemoval: $isConfirmingRemoval)
+            if offline.offersDownload(for: .playlist(playlist.id)) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: tracks),
+                                          isConfirmingRemoval: $isConfirmingRemoval)
+                }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

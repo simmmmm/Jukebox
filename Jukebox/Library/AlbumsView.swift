@@ -118,9 +118,13 @@ struct AlbumDetailView: View {
         .listStyle(.plain)
         .libraryScrolledTitle(shown.name)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: tracks),
-                                      isConfirmingRemoval: $isConfirmingRemoval)
+            // Not when the server does not let this account download,
+            // unless the album is on the phone already, to remove it.
+            if offline.offersDownload(for: .album(album.id)) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: tracks),
+                                          isConfirmingRemoval: $isConfirmingRemoval)
+                }
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {

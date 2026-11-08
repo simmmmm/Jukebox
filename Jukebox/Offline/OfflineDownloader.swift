@@ -160,8 +160,11 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
             emit(.failed(tag, permanent: [400, 404, 410, 415].contains(status)))
             return
         }
-        let fileName = OfflinePaths.fileName(for: tag.trackID, mimeType: response?.mimeType,
-                                             suggested: response?.suggestedFilename)
+        // Named by what the server sent, not by the quality asked for: the
+        // file itself in any container the phone plays, or an m4a when
+        // Jellyfin converted it; AVPlayer reads a local file by its extension.
+        let contentType = response?.value(forHTTPHeaderField: "Content-Type") ?? response?.mimeType
+        let fileName = OfflineFile.fileName(trackID: tag.trackID, contentType: contentType)
         let folder = OfflinePaths.files(tag.account)
         let destination = folder.appendingPathComponent(fileName, isDirectory: false)
         do {

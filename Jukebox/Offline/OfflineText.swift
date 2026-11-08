@@ -41,6 +41,7 @@ enum OfflineText {
         switch wait {
         case .wifi: return String(localized: "Waiting for Wi-Fi")
         case .network: return String(localized: "Waiting for a connection")
+        case .notAllowed: return String(localized: "Downloads are off on your server")
         }
     }
 

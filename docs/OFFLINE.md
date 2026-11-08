@@ -15,10 +15,14 @@ it would only take the listener's iCloud space): `manifest.json` (the kit's
 `OfflineManifest`), `collections.json` (the albums, playlists and mixes
 chosen, with their songs in order — the manifest knows which songs a reason
 holds, not their order, and offline a playlist's page cannot ask the
-server), `queue.json` (songs still to fetch, and those the server would not
-give), `reports.json` (plays heard offline) and `files/<track id>.<ext>`,
-the extension from the MIME type the server sent, as AVFoundation reads a
-file's kind from it (`OfflineDisk.swift`).
+server), `queue.json` (songs still to fetch, those the server would not
+give, and its last answer on downloading), `reports.json` (plays heard
+offline) and `files/`, each song named by the kit's
+`OfflineFile.fileName(trackID:contentType:)` from the Content-Type the
+server sent — AVFoundation reads a local file's kind from its extension
+(`OfflineDisk.swift`). A song saved again is the newest save, with the
+reasons of both (the kit's `add`); the older file is deleted when its name
+differs.
 
 At sign-in the folder is checked against the manifest: a file that is gone
 is forgotten (`forget`); a file the manifest does not know — a download
@@ -62,10 +66,20 @@ it.
   again after 1, 2, 4, 8 and 16 minutes, then given up; while the server is
   away a failure does not count, and everything waiting is tried at once
   when it answers again.
-- **Progress** per song from the bytes written (the estimate from
-  `KeepPolicy.estimatedBytes` when the server sends no length), published
+- **Progress** per song from the bytes written; a song Jellyfin converts
+  comes without a length, and its estimate (`KeepPolicy.estimatedBytes`,
+  the rate asked for and a little over) stands in, held under 99%. Published
   twice a second; an album's, a playlist's or a mix's is its songs on the
   phone plus the parts of those coming, over its songs.
+- **The server's admin** can turn "Allow media downloading" off for a
+  user (`JellyfinClient.downloadsAllowed`, asked at sign-in and whenever
+  the server answers again, kept in `queue.json` for a launch without the
+  server). Off: nothing is fetched, downloads under way are cancelled and
+  wait, the keep waits, the pages show no Download (only the control of
+  one chosen before, to remove it), and Settings › Downloads says,
+  in one line, that the server does not allow downloads for this account.
+  What is on the phone stays and plays. The server does not refuse the
+  download URL itself (the kit measured it), so the app keeps to it.
 
 ### Downloads you choose
 
@@ -87,12 +101,15 @@ their title in every list (`TrackRow`).
 ### The keep
 
 Settings › Downloads › Keep Songs I Play, on at 5 GB (1, 2, 5, 10 or 20),
-in Download Quality (High by default). `KeepPolicy.plan` runs a minute after
+in Download Quality (High by default; the rates in its words are the kit's
+`aacBitrate`; Original is each file as it is, or AAC at 256 when the phone
+cannot play it). `KeepPolicy.plan` runs a minute after
 the last play (each play moves it on), 10 s after sign-in, 15 s after the
 library has loaded, 5 s after Wi-Fi, the server or full power comes back,
 and when its settings change. It fetches its `download` list in its order
-and deletes its `remove` list. It does not run while its songs cannot come —
-offline, on mobile data without leave, in Low Power Mode — as it could let
+and deletes its `remove` list, removing first. It does not run while its
+songs cannot come — offline, on mobile data without leave, in Low Power
+Mode, or not allowed by the server — as it could let
 songs go to make room for ones it cannot fetch, and offline those it let go
 of are the only ones that play. Low Power Mode also cancels the keep's
 downloads in flight; what was chosen goes on. Turned off, what the keep
@@ -145,5 +162,6 @@ Not the quality, the size, Download over Cellular or how much is on the phone.
   Home's shelves; only in their pages, their songs' rows and Downloaded.
 - The keep's progress is not shown song by song; Settings says how many
   songs are still to come, and what they wait for.
-- A download stopped by Low Power Mode, or by Download over Cellular
-  changing, starts again from its beginning (no resume data is kept).
+- A download stopped by Low Power Mode, by Download over Cellular
+  changing, or by the server's admin, starts again from its beginning: no
+  resume data is kept (a plain file could resume; a converted one cannot).

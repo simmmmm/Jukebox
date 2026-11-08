@@ -150,6 +150,7 @@ private struct SettingsPlaybackSection: View {
 /// Songs I Play, on at 5 GB, beside the albums, playlists and mixes chosen on
 /// their pages. The space each takes, and Remove All Downloads, asked first.
 private struct SettingsDownloadsSection: View {
+    @Environment(AppModel.self) private var app
     @Environment(AppSettings.self) private var settings
     @Environment(OfflineStore.self) private var offline
     @State private var isConfirmingRemoveAll = false
@@ -159,6 +160,12 @@ private struct SettingsDownloadsSection: View {
     var body: some View {
         @Bindable var settings = settings
         Section {
+            if !offline.downloadsAllowed {
+                // The server's admin turned "Allow media downloading" off
+                // for this user: said once, as a fact.
+                Text("\(serverName) doesn’t allow downloads for this account.")
+                    .foregroundStyle(.secondary)
+            }
             Toggle(isOn: $settings.keepSongs) {
                 SettingsDetailLabel(title: "Keep Songs I Play",
                                     detail: "Songs you play often or lately stay on this \(UIDevice.current.model), to play without a connection")
@@ -171,9 +178,10 @@ private struct SettingsDownloadsSection: View {
                 }
             }
             Picker("Download Quality", selection: $settings.downloadQuality) {
-                Text("Original").tag(DownloadQuality.original)
-                Text("High (256 kbit/s)").tag(DownloadQuality.high)
-                Text("Normal (128 kbit/s)").tag(DownloadQuality.normal)
+                ForEach(DownloadQuality.allCases, id: \.self) { quality in
+                    label(for: quality)
+                        .tag(quality)
+                }
             }
             // Music's words, as Cellular Streaming above.
             Toggle("Download over Cellular", isOn: $settings.downloadOverCellular)
@@ -203,8 +211,22 @@ private struct SettingsDownloadsSection: View {
         } header: {
             Text("Downloads")
         } footer: {
-            Text("High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
+            Text("Original is each file as it is, or AAC at 256 kbit/s when this \(UIDevice.current.model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
         }
+    }
+
+    /// The kit's rate for each quality, so the words and the files agree.
+    private func label(for quality: DownloadQuality) -> Text {
+        let kilobits = (quality.aacBitrate ?? 0) / 1000
+        switch quality {
+        case .original: return Text("Original")
+        case .high: return Text("High (\(kilobits) kbit/s)")
+        case .normal: return Text("Normal (\(kilobits) kbit/s)")
+        }
+    }
+
+    private var serverName: String {
+        app.credentials?.serverName ?? String(localized: "Your server")
     }
 
     /// "1.2 GB of 5 GB": what the keep holds, against its limit.
@@ -220,6 +242,7 @@ private struct SettingsDownloadsSection: View {
         switch offline.waiting {
         case .wifi?: return "Waiting for Wi-Fi"
         case .network?: return "Waiting for a Connection"
+        case .notAllowed?: return "Paused"
         case nil:
             if offline.isLowPower && !hasChosenQueued { return "Paused in Low Power Mode" }
             return "Downloading"

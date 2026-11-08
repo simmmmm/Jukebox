@@ -21,6 +21,10 @@
 //   (its public info, asked when the network changes, when a load or a song
 //   fails, and every 30 s while it does not answer). The player and the
 //   radio read `isOffline` and `canPlay`, and are told when it changes.
+// - The server's admin can turn "Allow media downloading" off for a user
+//   (JellyfinClient.downloadsAllowed, asked at sign-in and when the server
+//   answers again): then nothing is fetched, the keep waits, the pages offer
+//   no Download, and Settings says why. What is on the phone stays and plays.
 // - Plays heard offline: their reports wait here and go to the server, in
 //   order, once it answers (Jellyfin counts a play at its start report, and
 //   its Last.fm plugin scrobbles from them), so nothing heard offline is
@@ -43,6 +47,8 @@ enum OfflineDownloadState: Equatable {
 enum OfflineWait: Equatable {
     case wifi
     case network
+    /// The server's admin does not let this user download.
+    case notAllowed
 }
 
 @Observable
@@ -68,6 +74,8 @@ final class OfflineStore {
     private(set) var isExpensiveNetwork = false
     private(set) var isServerUnreachable = false
     private(set) var isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+    /// The server's "Allow media downloading" for this user, as it said last.
+    private(set) var downloadsAllowed = true
 
     /// No network, or a server that does not answer: only what is on the
     /// phone can play.
@@ -177,6 +185,7 @@ final class OfflineStore {
         wanted = loaded.wanted
         failed = Set(loaded.failed)
         reports = loaded.reports
+        downloadsAllowed = loaded.downloadsAllowed
         isLoaded = true
         // What the session said meanwhile, now that it can be read: another
         // account's files go, this one's join the manifest.
@@ -188,6 +197,7 @@ final class OfflineStore {
             Task { @MainActor in self?.adopt(tags, account: account) }
         }
         checkServer()
+        checkDownloadsAllowed()
         scheduleKeep(after: 10)
     }
 
@@ -212,6 +222,7 @@ final class OfflineStore {
         failures = [:]
         retryAt = [:]
         reports = []
+        downloadsAllowed = true
         for task in [saveTask, keepTask, pumpTask, flushTask, recheckTask, probeTask, progressTask] { task?.cancel() }
         saveTask = nil
         keepTask = nil
@@ -269,9 +280,10 @@ final class OfflineStore {
         return .downloading(fraction: done / Double(total), waiting: waiting)
     }
 
-    /// Why nothing moves, when nothing can: no network, or only mobile data
-    /// and Download over Cellular off.
+    /// Why nothing moves, when nothing can: the server does not allow it, no
+    /// network, or only mobile data and Download over Cellular off.
     var waiting: OfflineWait? {
+        if !downloadsAllowed { return .notAllowed }
         if !hasNetwork { return .network }
         if isExpensiveNetwork && !settings.downloadOverCellular { return .wifi }
         return nil
@@ -284,6 +296,13 @@ final class OfflineStore {
     var keptTrackIDs: [ItemID] { manifest.tracks(with: .kept) }
     /// Songs still to come.
     var queuedCount: Int { wanted.count }
+
+    /// Whether a page shows its Download control: not when the server does
+    /// not allow downloads, unless this one is on the phone already (to
+    /// remove it).
+    func offersDownload(for reason: OfflineReason) -> Bool {
+        downloadsAllowed || collection(for: reason) != nil
+    }
 
     /// The bytes of a collection's songs on the phone.
     func bytes(of collection: OfflineCollection) -> Int64 {
@@ -300,7 +319,7 @@ final class OfflineStore {
     /// An album, a playlist or a mix to the phone: its songs not there yet
     /// are fetched, those there already gain it as a reason.
     func download(_ collection: OfflineCollection) {
-        guard account != nil, !collection.tracks.isEmpty else { return }
+        guard account != nil, downloadsAllowed, !collection.tracks.isEmpty else { return }
         // What kind of thing, never which (Stats).
         Stats.track(.downloadChosen, ["kind": collection.kind])
         let reason = collection.reason
@@ -428,6 +447,25 @@ final class OfflineStore {
         }
     }
 
+    /// Asks the server whether this user may download ("Allow media
+    /// downloading"); an answer that does not come leaves it as it was.
+    /// Off, the downloads under way are cancelled and wait in the queue.
+    func checkDownloadsAllowed() {
+        guard let client, let account else { return }
+        Task { [weak self] in
+            guard let allowed = try? await client.downloadsAllowed() else { return }
+            guard let self, self.account == account, self.downloadsAllowed != allowed else { return }
+            self.downloadsAllowed = allowed
+            self.scheduleSave()
+            if allowed {
+                self.pump()
+                self.scheduleKeep(after: 2)
+            } else {
+                self.cancelDownloads(self.inFlight)
+            }
+        }
+    }
+
     /// The app is in front again: the server may have come back, or gone,
     /// while it was away.
     func appBecameActive() {
@@ -544,7 +582,7 @@ private extension OfflineStore {
     /// keep's wait while it is off or in Low Power Mode; a song that failed
     /// on the way waits its turn to be tried again.
     func pump() {
-        guard isAdopted, let account, let client else { return }
+        guard isAdopted, downloadsAllowed, let account, let client else { return }
         var running = inFlight.count
         guard running < Self.window else { return }
         let keepMayRun = settings.keepSongs && !isLowPower
@@ -592,6 +630,8 @@ private extension OfflineStore {
         switch event {
         case let .progress(tag, written: written, expected: expected):
             guard tag.account == account, inFlight.contains(tag.trackID) else { return }
+            // A song Jellyfin converts comes without a length: its estimate
+            // (the rate it is asked for and a little over) stands in.
             let estimate = wanted.first(where: { $0.trackID == tag.trackID })?.estimate ?? 0
             let total = expected > 0 ? expected : estimate
             guard total > 0 else { return }
@@ -625,20 +665,21 @@ private extension OfflineStore {
         retryAt[id] = nil
         var item: OfflineWanted?
         if let at = wanted.firstIndex(where: { $0.trackID == id }) { item = wanted.remove(at: at) }
-        if let existing = manifest.file(id) {
-            // Fetched twice: the first stays, with this one's reasons too.
-            if existing.fileName != fileName {
-                writer.async { OfflineDisk.removeFiles([fileName], of: account) }
-            }
-            for reason in item?.reasons ?? [] { manifest.addReason(reason, to: id) }
-        } else if let item {
-            manifest.add(OfflineFile(trackID: id, fileName: fileName, bytes: bytes, savedAt: Date(),
-                                     quality: tag.quality, reasons: item.reasons))
-        } else {
+        let old = manifest.file(id)
+        guard item != nil || old != nil else {
             // No longer wanted (removed while it came).
             writer.async { OfflineDisk.removeFiles([fileName], of: account) }
             pump()
             return
+        }
+        // The newest save is the file, with the reasons of both (the kit's
+        // `add`); the older one goes when its name differs, else it was
+        // overwritten as this one came.
+        manifest.add(OfflineFile(trackID: id, fileName: fileName, bytes: bytes, savedAt: Date(),
+                                 quality: tag.quality, reasons: item?.reasons ?? []))
+        if let old, old.fileName != fileName {
+            let stale = old.fileName
+            writer.async { OfflineDisk.removeFiles([stale], of: account) }
         }
         songsChanged()
         scheduleSave()
@@ -895,6 +936,7 @@ private extension OfflineStore {
             retryAt = [:]
             failures = [:]
             flushReports()
+            checkDownloadsAllowed()
             pump()
             scheduleKeep(after: 5)
         }
@@ -947,7 +989,8 @@ private extension OfflineStore {
         saveTask = nil
         guard let account else { return }
         let state = OfflineAccountState(manifest: manifest, collections: collections, wanted: wanted,
-                                        failed: Array(failed), reports: reports)
+                                        failed: Array(failed), reports: reports,
+                                        downloadsAllowed: downloadsAllowed)
         writer.async { OfflineDisk.save(state, of: account) }
     }
 }
