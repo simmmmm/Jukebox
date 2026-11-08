@@ -2,7 +2,10 @@
 // As sketch D draws it (docs/design/nowplaying-after.png): in the cover's
 // place the record player (Turntable.swift), the song's cover turning on it
 // as a picture disc — the photographer, 8 November 2026: "dan zou ik ook de
-// plaat willen zien draaien met de album art er op" — then, from the margin,
+// plaat willen zien draaien met de album art er op" — with the album's
+// sleeve behind it and the needle on the song's place on the album ("de
+// hoes er achter zetten en de naald zetten op welk nummer het is van het
+// album"); then, from the margin,
 // the title in the serif, the artist, and the station in Glow after its
 // mark; the thumbs as plain glyphs beside the title; the slim scrubber; the
 // transport; while a station plays its dial with its two ends in the place
@@ -183,10 +186,39 @@ struct NowPlayingView: View {
         }
     }
 
-    /// The record player, the song's cover on its record (Turntable.swift).
+    /// The record player, the song's cover on its record and its album's
+    /// sleeve behind it (Turntable.swift), the needle on the song's place
+    /// on its album.
     private var turntable: some View {
-        Turntable(artwork: currentTrack?.artwork, isPlaying: player.isPlaying)
+        let side = albumSide
+        return Turntable(artwork: currentTrack?.artwork, isPlaying: player.isPlaying, side: side,
+                         label: recordLabel(disc: side?.disc))
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Where the playing song lies on its album (TurntableSide): the songs
+    /// of its disc, in disc and track order, from the library. Nil when the
+    /// song has no album, the library does not know the album, or the song
+    /// is its disc's only one: then the arm goes by the song alone. Only the
+    /// song is read here, not its clock: the arm reads that itself, so this
+    /// view is not evaluated again twice a second.
+    private var albumSide: TurntableSide? {
+        guard let track = currentTrack, let albumID = track.albumID else { return nil }
+        let songs = library.tracks(inAlbum: albumID).map {
+            TurntableSong(id: $0.id, disc: $0.discNumber, length: $0.duration)
+        }
+        return TurntableSide.of(track.id, in: songs)
+    }
+
+    /// The words on the record's label: the album's title and its artist,
+    /// and "Disc 2" when the album has discs. Nil, a plain label, when the
+    /// song has neither album nor artist.
+    private func recordLabel(disc: Int?) -> TurntableLabel? {
+        guard let track = currentTrack else { return nil }
+        let title = track.albumName ?? ""
+        let artist = track.albumArtist?.name ?? track.artistLine
+        guard !title.isEmpty || !artist.isEmpty else { return nil }
+        return TurntableLabel(title: title, artist: artist, disc: disc)
     }
 
     // MARK: Top

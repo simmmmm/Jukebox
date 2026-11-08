@@ -90,11 +90,15 @@ must exist with exactly this initializer:
 - Now playing: `MiniPlayer()` (inside `tabViewBottomAccessory`; reads
   `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
   expanded), `NowPlayingView()` (in a fullScreenCover). In the cover's place
-  `Turntable(artwork:isPlaying:)` (`NowPlaying/Turntable.swift`): the cover as
-  a picture disc on a drawn deck, tipped back, its arm following the song.
-  The disc is drawn once (`drawingGroup`) and only its rotation changes, at
-  most 30 frames a second, and only while Now Playing shows it, the music
-  plays, the app is active, and neither Reduce Motion, Low Power Mode nor
+  `Turntable(artwork:isPlaying:side:label:)` (`NowPlaying/Turntable.swift`):
+  the cover as a picture disc on a drawn deck, tipped back, the album's
+  sleeve standing behind it, its arm on the song's place on its album
+  (`side`: a `TurntableSide` from `LibraryStore.tracks(inAlbum:)`, worked
+  out in NowPlayingView; the arithmetic in `TurntableMeasures.swift`, checked
+  on Linux by `dev/turntable-test.sh`). The disc is drawn once
+  (`drawingGroup`) and only its rotation changes, at most 20 frames a second,
+  and only while Now Playing shows it, the music plays, the app is active,
+  and neither Reduce Motion, Low Power Mode nor
   Settings' Spin the Record (`AppSettings.spinRecord`) says otherwise; at
   rest its timeline is paused. `docs/BRAND.md` says why each.
 - Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
