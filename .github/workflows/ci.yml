@@ -1,0 +1,42 @@
+# Generic on purpose: each step is a script in ci/ (Claude may not push workflow files).
+name: CI
+on:
+  push:
+  workflow_dispatch:
+    inputs:
+      testflight:
+        description: Upload to TestFlight
+        type: boolean
+        default: false
+permissions:
+  contents: write
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'push' && !contains(github.event.head_commit.message, '[testflight]') }}
+jobs:
+  kit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+      - run: bash ci/kit.sh
+  app:
+    runs-on: macos-26
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v5
+      - run: bash ci/app.sh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TESTFLIGHT: ${{ inputs.testflight == true || contains(github.event.head_commit.message, '[testflight]') }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs-${{ github.run_number }}
+          path: build/logs
+          if-no-files-found: ignore
