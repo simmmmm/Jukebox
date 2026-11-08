@@ -290,7 +290,9 @@ final class RadioEvaluationTests: XCTestCase {
             var session = w.session(seed, randomSeed: 3)
             let picks = session.next(200)
             XCTAssertEqual(picks.count, 200, name)
-            XCTAssertEqual(RadioMetrics.repeats(picks), 0, name)
+            // 200 picks are about 13 hours: a song may be back after 12.
+            XCTAssertEqual(RadioMetrics.repeats(Array(picks.prefix(150))), 0, name)
+            XCTAssertGreaterThanOrEqual(RadioCriticFixtures.leastMusicBetweenPlays(picks), 12 * 3600, name)
             XCTAssertEqual(RadioMetrics.separationViolations(picks, snapshot: snapshot, separation: 3), 0, name)
             guard let first = picks.first else { continue }
             let firstLine: String

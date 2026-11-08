@@ -328,7 +328,10 @@ final class RadioSessionTests: XCTestCase {
             var session = w.session(seed, randomSeed: UInt64(k))
             let picks = session.next(400)
             XCTAssertEqual(picks.count, 400)
-            XCTAssertEqual(RadioMetrics.repeats(picks), 0)
+            // About 27 hours: a song may come back, after noRepeatHours (12)
+            // of music (docs/RADIO.md, "Each pick").
+            XCTAssertEqual(RadioMetrics.repeats(Array(picks.prefix(150))), 0)
+            XCTAssertGreaterThanOrEqual(RadioCriticFixtures.leastMusicBetweenPlays(picks), 12 * 3600)
             XCTAssertEqual(RadioMetrics.separationViolations(picks, snapshot: w.snapshot, separation: 3), 0)
             XCTAssertEqual(RadioMetrics.albumBackToBack(picks), 0)
             XCTAssertTrue(picks.allSatisfy { $0.score.isFinite && $0.score > 0 })

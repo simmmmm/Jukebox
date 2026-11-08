@@ -284,7 +284,9 @@ extension MixModel {
             candidates.append((t, recentPlays[t]))
         }
         candidates.sort { $0.plays != $1.plays ? $0.plays > $1.plays : $0.track < $1.track }
-        let picks = candidates.prefix(30).map(\.track)
+        // A song once: its most played recording.
+        var songs = Set<Int>()
+        let picks = candidates.filter { songs.insert(index.trackSong[$0.track]).inserted }.prefix(30).map(\.track)
         guard let mix = make(.onRepeat, title: "On Repeat", tracks: order([picks], separation: 1), coverOrder: picks) else { return nil }
         return Made(mix: mix, want: 0.9 * min(1, Double(candidates.count) / 20))
     }

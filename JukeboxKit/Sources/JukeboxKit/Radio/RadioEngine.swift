@@ -12,7 +12,10 @@
 // 4. Each pick: the base times what this session has learnt (skips, thumbs,
 //    artists already heard), over the tracks the rules allow; the best K
 //    are drawn from at random in proportion to their score — never the
-//    argmax, so a station is never the same twice.
+//    argmax, so a station is never the same twice. Ties go by the session's
+//    own random order, never the library's. The rules loosen one at a time
+//    when nothing passes; a song (any recording of it) comes back only
+//    after `noRepeatHours` of music, or in a library that has run out.
 // 5. Feedback moves the profile (a little, the seed keeps 70%) and the
 //    session's penalties and boosts; the scores are worked out again before
 //    the next pick.
@@ -48,6 +51,10 @@ struct RadioEngine: Sendable {
         var artistVia: [Int] = []
         /// Artist stations: the artist whose share is held to one in five.
         var capArtist = -1
+        /// The artists a song, artist or album station is named after. A
+        /// thumbs down on one of their songs there is about the song more
+        /// than the artist: the listener chose their station.
+        var subject: Set<Int> = []
         /// By genre number, summing to 1.
         var genreWeight: [Double] = []
         /// How much a perfect genre fit is worth.
@@ -99,6 +106,14 @@ struct RadioEngine: Sendable {
     let rankedArtists: [Int]
     let rankedGenres: [Int]
     let maxSpecificity: Double
+    /// By track number: the session's own order for tracks that score the
+    /// same, from its random seed. Without it ties went by the library's
+    /// order, and when nothing is known of the listener, ties are most of
+    /// the library: The Lanterns Radio opened with one of the same three
+    /// songs (of 20) for any random seed, and a library without genres
+    /// played 64% from its first half (measured, RadioCriticTests).
+    let ties: [UInt64]
+    let tieSeed: UInt64
 
     var rng: SplitMix64
     var recently: Set<Int>
@@ -124,7 +139,12 @@ struct RadioEngine: Sendable {
 
     // The session.
     var handed: [Int] = []
-    var handedCount: [Int: Int] = [:]
+    /// By song number (LibrarySnapshot.Index.trackSong: the album's and
+    /// the best-of's "Karma Police" are one song): where it was handed last,
+    /// a position in `handed`.
+    var lastAt: [Int: Int] = [:]
+    /// Seconds of music handed out up to and including each position.
+    var handedEnd: [Double] = []
     var disliked = Set<Int>()
     var skipped = Set<Int>()
     /// Skips against an artist (1 a skip, 0.4 as a guest), fading 2% a track.
@@ -149,6 +169,23 @@ struct RadioEngine: Sendable {
     /// What a track outside the neighbourhood counts as, when a station has
     /// run out of its own.
     static let floorCloseness = 0.03
+    /// A thumbs down on a song of the station's own artist, on their
+    /// station: that artist × 0.12 rather than × 0.02. At × 0.02 (as for
+    /// anyone else) Radiohead all but left Radiohead Radio after one song
+    /// (5.9 → 0.3 of the next 30, measured); at × 0.2, 5.9 → 4.7, as if
+    /// nothing was said; at × 0.07, 1.0.
+    static let subjectBan = 0.12
+    /// A song heard earlier in the session, once `noRepeatHours` of music
+    /// (at least three) have played since, is back in the running: at its
+    /// freshness (as a song heard that long ago anywhere, 0.37 after 12
+    /// hours, 0.63 after 48) times 0.4, for being the same station again.
+    /// A song near the seed then beats a new one far from it, not a new one
+    /// near. Without it a long session ran out of its neighbourhood and
+    /// left it: an artist station on the made-up library played 0% of the
+    /// seed's cluster after pick 400 (about 27 hours). At a flat 0.5
+    /// (tried first) two picks in three after the first 200 were repeats
+    /// (measured, RadioCriticTests).
+    static let laterRepeat = 0.4
 
     init(seed: StationSeed, snapshot: LibrarySnapshot, taste: TasteProfile, graph: SimilarityGraph,
          settings: RadioSettings, recentlyPlayed: Set<ItemID>, randomSeed: UInt64) {
@@ -161,27 +198,58 @@ struct RadioEngine: Sendable {
         let n = snapshot.tracks.count
 
         let data = taste.data
+        var known: [Double], heard: [Double]
         if data.index === index {
             affinity = data.trackAffinity
-            familiarity = data.familiarity
-            hoursSince = data.hoursSinceHeard
+            known = data.familiarity
+            heard = data.hoursSinceHeard
             artistAffinity = data.artistAffinity
             genreAffinity = data.genreAffinity
         } else {
             // A taste made from another snapshot (the library changed since):
             // the same numbers, looked up by id and key.
             affinity = snapshot.tracks.map { taste.trackAffinity($0.id) }
-            familiarity = snapshot.tracks.map { taste.familiarity($0.id) }
-            hoursSince = snapshot.tracks.map { data.hoursSinceHeard(id: $0.id) }
+            known = snapshot.tracks.map { taste.familiarity($0.id) }
+            heard = snapshot.tracks.map { data.hoursSinceHeard(id: $0.id) }
             artistAffinity = index.artistKeys.map { taste.artistAffinity($0) }
             genreAffinity = index.genreKeys.map { taste.genreAffinity($0) }
         }
+        // A song is as known and as lately heard as its most played
+        // recording: the best-of's copy of a song heard twenty times is not
+        // "New to you", nor fresh because that copy was never played.
+        for tracks in index.songTracks where tracks.count > 1 {
+            var most = 0.0, latest = Double.infinity
+            for t in tracks {
+                most = max(most, known[t])
+                latest = min(latest, heard[t])
+            }
+            for t in tracks {
+                known[t] = most
+                heard[t] = latest
+            }
+        }
+        familiarity = known
+        hoursSince = heard
         rankedTracks = data.rankedTracks.compactMap { index.trackByID[$0] }
         rankedArtists = data.rankedArtists.compactMap { index.artistByKey[$0] }
         rankedGenres = data.rankedGenres.compactMap { index.genreByKey[$0] }
         maxSpecificity = max(1e-9, index.genreIDF.max() ?? 1)
+        // A stream of its own, so the picks' random numbers stay those of
+        // the seed.
+        tieSeed = randomSeed ^ 0x5DEE_CE66_D1CE_4E5B
+        var tieNumbers = SplitMix64(seed: tieSeed)
+        ties = (0..<n).map { _ in tieNumbers.next() }
 
-        recently = Set(recentlyPlayed.compactMap { index.trackByID[$0] })
+        // Songs thumbed down on this device stay out, except the one a song
+        // station is started from: the listener chose it.
+        let down = data.index === index
+            ? data.thumbsDown.indices.filter { data.thumbsDown[$0] }
+            : snapshot.tracks.indices.filter { data.isThumbedDown(id: snapshot.tracks[$0].id) }
+        // A song's other recordings with it (the best-of's, the live one).
+        for t in down { disliked.formUnion(index.songTracks[index.trackSong[t]]) }
+        if case let .track(id) = seed, let t = index.trackByID[id] { disliked.remove(t) }
+
+        recently = Set(recentlyPlayed.compactMap { index.trackByID[$0] }.flatMap { index.songTracks[index.trackSong[$0]] })
         artistPressure = [Double](repeating: 0, count: index.artistCount)
         artistBan = [Double](repeating: 1, count: index.artistCount)
         genrePressure = [Double](repeating: 0, count: index.genreCount)
@@ -241,9 +309,12 @@ struct RadioEngine: Sendable {
             if liked.isEmpty {
                 // A listener Jukebox knows nothing of yet: the library's
                 // biggest artists and genres stand in for their taste.
+                // Ties (artists of one size) in the session's own order, not
+                // the library's: of 500 artists of three albums each, the
+                // first 30 alphabetically were Your Station.
                 let biggest = (0..<index.artistCount).sorted {
                     let x = index.artistOwnTracks[$0].count, y = index.artistOwnTracks[$1].count
-                    return x != y ? x > y : $0 < $1
+                    return x != y ? x > y : artistTie($0) < artistTie($1)
                 }.prefix(30)
                 for artist in biggest where !index.artistOwnTracks[artist].isEmpty { setOwn(artist, 0.5) }
                 shareGenres(Array(0..<snapshot.tracks.count))
@@ -280,6 +351,7 @@ struct RadioEngine: Sendable {
                 a.kind = .track
                 a.seedTrack = t
                 a.capArtist = index.trackArtists[t].first ?? -1
+                a.subject = Set(index.trackArtists[t])
                 for (k, artist) in index.trackArtists[t].enumerated() { setOwn(artist, k == 0 ? 0.88 : 0.75) }
                 shareGenres([t])
                 setEra([t], spread: 5)
@@ -300,6 +372,7 @@ struct RadioEngine: Sendable {
             if let artist = index.artistByKey[key] ?? snapshot.matchArtist(name).flatMap({ index.artistByKey[$0] }) {
                 a.kind = .artist
                 a.capArtist = artist
+                a.subject = [artist]
                 setOwn(artist, 0.88)
                 // The artist's own records say what they sound like; their
                 // guest spots are someone else's (as in the graph).
@@ -317,6 +390,7 @@ struct RadioEngine: Sendable {
                 a.kind = .album
                 let tracks = index.albumTracks[album]
                 a.capArtist = index.trackArtists[tracks[0]].first ?? -1
+                a.subject = Set(tracks.compactMap { index.trackArtists[$0].first })
                 var counts: [Int: Double] = [:]
                 for t in tracks {
                     for (k, artist) in index.trackArtists[t].enumerated() { counts[artist, default: 0] += k == 0 ? 1 : 0.5 }
@@ -622,8 +696,11 @@ struct RadioEngine: Sendable {
             if let w = added[i] { base[i] *= 1 + w / 0.9 }
         }
 
-        pool = (0..<n).filter { closeness[$0] > Self.minCloseness }
-        pool.sort { base[$0] != base[$1] ? base[$0] > base[$1] : $0 < $1 }
+        // Sorted in a local: the comparator reads `self`, which a sort of
+        // `pool` in place may not while it holds `pool`.
+        var ranked = (0..<n).filter { closeness[$0] > Self.minCloseness }
+        ranked.sort { base[$0] != base[$1] ? base[$0] > base[$1] : tiedBefore($0, $1) }
+        pool = ranked
         rest = nil
         needsScoring = false
     }
@@ -688,6 +765,17 @@ struct RadioEngine: Sendable {
         x <= 0 ? 0 : exp(y * log(x))
     }
 
+    /// Two tracks that score the same, in the session's own order.
+    func tiedBefore(_ x: Int, _ y: Int) -> Bool {
+        ties[x] != ties[y] ? ties[x] < ties[y] : x < y
+    }
+
+    /// Two artists that rank the same, in the session's own order.
+    func artistTie(_ a: Int) -> UInt64 {
+        var generator = SplitMix64(seed: tieSeed &+ 0x9E37_79B9_7F4A_7C15 &* UInt64(a + 1))
+        return generator.next()
+    }
+
     mutating func makeRest() {
         let adv = adventurousness
         let gamma = Self.gamma(adv)
@@ -699,7 +787,7 @@ struct RadioEngine: Sendable {
             list.append(i)
             scores[i] = floor * personalFactor(i, adv: adv, discovery: isDiscovery)
         }
-        list.sort { scores[$0] != scores[$1] ? scores[$0] > scores[$1] : $0 < $1 }
+        list.sort { scores[$0] != scores[$1] ? scores[$0] > scores[$1] : tiedBefore($0, $1) }
         rest = list
         restBase = scores
     }
@@ -715,6 +803,8 @@ struct RadioEngine: Sendable {
         var likeDecay: [Double] = []
         var likedArtists: Set<Int> = []
         var maxBoost = 1.0
+        /// Songs not thumbed down: what a repeat waits for a share of.
+        var usable = 0
     }
 
     func context() -> Context {
@@ -750,25 +840,63 @@ struct RadioEngine: Sendable {
             if decay > 0.25, let a = index.trackArtists[like.track].first { ctx.likedArtists.insert(a) }
         }
         ctx.maxBoost = 1 + Self.likeBoost * strongest
+        ctx.usable = index.songCount - Set(disliked.map { index.trackSong[$0] }).count
         return ctx
     }
 
-    func allowed(_ i: Int, level: Int, _ ctx: Context, window: Int) -> Bool {
-        if disliked.contains(i) { return false }
-        if handedCount[i] != nil {
-            guard level >= 4, let at = handed.lastIndex(of: i), at < handed.count - window else { return false }
+    /// Whether the rules of this step let the track be picked: 0 when they
+    /// do not, else what its score is multiplied by (less than 1 for a song
+    /// heard earlier in the session). The levels: 0 every rule; 1 the cap
+    /// off (one in five by the station's own artist: of four artists,
+    /// separation alone makes it one in four, and the two together used to
+    /// go at once); 2 separation halved; 3 separation off; 4 the album rule
+    /// off; 5 recently heard allowed. With a `window`, the songs of this
+    /// session are allowed too when more than `window` tracks have come
+    /// since, the longer ago the likelier; at the last level even skipped
+    /// ones. Without one, only those heard `noRepeatHours` of music ago.
+    func admission(_ i: Int, window: Int?, level: Int, _ ctx: Context) -> Double {
+        if disliked.contains(i) { return 0 }
+        let lastResort = window != nil && level >= Self.lastLevel
+        if skipped.contains(i), !lastResort { return 0 }
+        var factor = 1.0
+        if let at = lastAt[index.trackSong[i]] {
+            let since = (handedEnd.last ?? 0) - handedEnd[at]
+            let after = repeatAfter
+            if since >= after {
+                factor = Self.laterRepeat * (1 - 0.75 * exp2(-since / 3600 / 48))
+            } else {
+                let gap = handed.count - at
+                guard let window, gap > window else { return 0 }
+                // Only repeats are left at these steps: the longest unheard
+                // first.
+                let share = min(1, Double(gap) / Double(max(1, ctx.usable)))
+                factor = 0.01 + 0.99 * share * share * share * share
+            }
         }
-        if level < 4, skipped.contains(i) { return false }
-        if level < 3, recently.contains(i) || hoursSince[i] < settings.noRepeatHours { return false }
+        if level < 5, recently.contains(i) || hoursSince[i] < settings.noRepeatHours { return 0 }
         let artists = index.trackArtists[i]
-        if level == 0 {
-            for a in artists where ctx.blocked.contains(a) { return false }
-            if ctx.capBlocked, artists.contains(anchor.capArtist) { return false }
-        } else if level == 1 {
-            for a in artists where ctx.blockedHalf.contains(a) { return false }
+        if level == 0, ctx.capBlocked, artists.contains(anchor.capArtist) { return 0 }
+        if level <= 1 {
+            for a in artists where ctx.blocked.contains(a) { return 0 }
+        } else if level == 2 {
+            for a in artists where ctx.blockedHalf.contains(a) { return 0 }
         }
-        if level <= 1, ctx.lastAlbum >= 0, index.trackAlbum[i] == ctx.lastAlbum { return false }
-        return true
+        if level <= 3, ctx.lastAlbum >= 0, index.trackAlbum[i] == ctx.lastAlbum { return 0 }
+        return factor
+    }
+
+    /// Seconds of music after which a song of this session may come back:
+    /// `noRepeatHours`, at least three.
+    var repeatAfter: Double {
+        let hours = settings.noRepeatHours
+        return max(3, hours.isFinite ? hours : 12) * 3600
+    }
+
+    /// A track's length as the session counts music: four minutes when
+    /// the server does not know it, at most an hour.
+    func seconds(_ i: Int) -> Double {
+        let d = snapshot.tracks[i].duration
+        return d.isFinite && d > 0 ? min(d, 3600) : 240
     }
 
     /// What this session has learnt about a track: skips and thumbs on its
@@ -791,7 +919,12 @@ struct RadioEngine: Sendable {
         f *= exp(-0.45 * pressure - 0.6 * genre)
         // Reached through an artist the listener skipped or turned down
         // ("Sounds like X" just after X was skipped): a share of that too.
-        if case let .artist(a) = channel[i], a < artistViaNow.count, artistViaNow[a] >= 0 {
+        // Not through the artist the station is named after: on their
+        // station everyone near is reached through them, and a song of
+        // theirs thumbed down took 30% of their neighbours with it
+        // (measured).
+        if case let .artist(a) = channel[i], a < artistViaNow.count, artistViaNow[a] >= 0,
+           !anchor.subject.contains(artistViaNow[a]) {
             let via = artistViaNow[a]
             f *= exp(-0.25 * artistPressure[via]) * artistBan[via].squareRoot()
         }
@@ -837,21 +970,46 @@ struct RadioEngine: Sendable {
         return (s, artist > 0 && artist >= s)
     }
 
+    /// What a repeat in a library that has run out waits for, in tracks
+    /// handed out since: all but four of the library, or (when that leaves
+    /// nothing that keeps the rules) half of it; at most 50. A library of
+    /// one song repeats it rather than stop.
+    static func repeatWindows(_ usable: Int) -> (long: Int, short: Int) {
+        let short = max(0, min(50, usable / 2))
+        return (max(short, min(50, usable - 4)), short)
+    }
+
+    /// The rules loosen one at a time (docs/RADIO.md, "Each pick"): first
+    /// without repeats, then with them (the longest-unheard first), every
+    /// rule again from the top, so a library that has run out repeats with
+    /// its artists still kept apart. At each level the long window is
+    /// tried before the short one: a song comes back sooner rather than
+    /// two by one artist closer. Repeats used to come only once every rule
+    /// was off: a 12-song library of four artists broke separation 352
+    /// times in 6 × 120 picks and the album rule 126 times.
+    enum Window { case none, long, short }
+    static let steps: [(window: Window, wide: Bool, level: Int)] =
+        [(.none, false, 0)] + (0...lastLevel).map { (.none, true, $0) }
+        + (0...lastLevel).flatMap { [(.long, true, $0), (.short, true, $0)] }
+    static let lastLevel = 5
+
     mutating func pickOne() -> RadioPick? {
         if needsScoring { scoreAll() }
         let ctx = context()
-        let usable = snapshot.tracks.count - disliked.count
-        // A repeat (the last loosening) waits for half the library, at most 50
-        // tracks; a library of one song repeats it rather than stop.
-        let window = max(0, min(50, usable / 2))
-        for (wide, level) in [(false, 0), (true, 0), (true, 1), (true, 2), (true, 3), (true, 4)] {
-            if wide, rest == nil { makeRest() }
-            if let pick = choose(wide: wide, level: level, ctx, window: window) { return pick }
+        let windows = Self.repeatWindows(ctx.usable)
+        for step in Self.steps {
+            if step.wide, rest == nil { makeRest() }
+            let window: Int? = switch step.window {
+            case .none: nil
+            case .long: windows.long
+            case .short: windows.short
+            }
+            if let pick = choose(wide: step.wide, window: window, level: step.level, ctx) { return pick }
         }
         return nil
     }
 
-    mutating func choose(wide: Bool, level: Int, _ ctx: Context, window: Int) -> RadioPick? {
+    mutating func choose(wide: Bool, window: Int?, level: Int, _ ctx: Context) -> RadioPick? {
         let adv = adventurousness
         let k = Self.breadth(adv)
         var top: [Candidate] = []
@@ -861,9 +1019,11 @@ struct RadioEngine: Sendable {
             for i in list {
                 let b = scores[i]
                 if top.count == k, let worst = top.last, b * ctx.maxBoost <= worst.score { break }
-                guard b > 0, allowed(i, level: level, ctx, window: window) else { continue }
+                guard b > 0 else { continue }
+                let admitted = admission(i, window: window, level: level, ctx)
+                guard admitted > 0 else { continue }
                 let d = dynamic(i, ctx)
-                let s = b * d.factor
+                let s = b * d.factor * admitted
                 guard s > 0, s.isFinite else { continue }
                 if top.count == k, let worst = top.last, s <= worst.score { continue }
                 let candidate = Candidate(track: i, score: s, likeStrength: d.likeStrength, like: d.like)
@@ -896,10 +1056,10 @@ struct RadioEngine: Sendable {
 
     mutating func firstPick() -> RadioPick? {
         if needsScoring { scoreAll() }
-        if let t = anchor.seedTrack, !disliked.contains(t), handedCount[t] == nil {
+        if let t = anchor.seedTrack, !disliked.contains(t), lastAt[index.trackSong[t]] == nil {
             return RadioPick(track: snapshot.tracks[t], reason: .seed, score: 1)
         }
-        var candidates = anchor.first.filter { !disliked.contains($0) && handedCount[$0] == nil }
+        var candidates = anchor.first.filter { !disliked.contains($0) && lastAt[index.trackSong[$0]] == nil }
         let fresh = candidates.filter { !recently.contains($0) && hoursSince[$0] >= settings.noRepeatHours }
         if !fresh.isEmpty { candidates = fresh }
         guard !candidates.isEmpty else { return nil }
@@ -914,8 +1074,16 @@ struct RadioEngine: Sendable {
             s *= max(0.05, closeness[t])
             return (t, s.isFinite ? s : 0)
         }
-        scored.sort { $0.score != $1.score ? $0.score > $1.score : $0.track < $1.track }
-        let top = Array(scored.prefix(anchor.kind == .personal || anchor.kind == .favorites ? 6 : 3))
+        scored.sort { $0.score != $1.score ? $0.score > $1.score : tiedBefore($0.track, $1.track) }
+        // The best three (six on Your Station and Loved), and any as good
+        // as 85% of the best, up to twelve: when little is known of the
+        // listener most songs score alike, and Jazz Radio opened with one
+        // of the same three songs for any random seed (measured).
+        let least = anchor.kind == .personal || anchor.kind == .favorites ? 6 : 3
+        let bar = 0.85 * (scored.first?.score ?? 0)
+        var count = min(least, scored.count)
+        while count < min(12, scored.count), scored[count].score >= bar { count += 1 }
+        let top = Array(scored.prefix(count))
         let total = top.reduce(0) { $0 + $1.score }
         var chosen = top[0]
         if total > 0 {
@@ -951,8 +1119,9 @@ struct RadioEngine: Sendable {
     }
 
     mutating func hand(_ i: Int) {
+        lastAt[index.trackSong[i]] = handed.count
         handed.append(i)
-        handedCount[i, default: 0] += 1
+        handedEnd.append((handedEnd.last ?? 0) + seconds(i))
         // A skip's weight fades as the station plays on, 2% each track (half
         // in 34 tracks, about two hours). A thumbs down does not fade.
         for a in artistPressure.indices where artistPressure[a] > 0 {
@@ -1064,7 +1233,7 @@ struct RadioEngine: Sendable {
 
     mutating func like(_ i: Int) {
         accept(i, weight: 3)
-        disliked.remove(i)
+        disliked.subtract(index.songTracks[index.trackSong[i]])
         var artists: [Int: Double] = [:]
         for a in index.trackArtists[i] {
             artists[a] = 1
@@ -1082,7 +1251,7 @@ struct RadioEngine: Sendable {
     /// Left early: that artist less for a while, its genres a little; the
     /// profile moves away.
     mutating func skip(_ i: Int) {
-        skipped.insert(i)
+        skipped.formUnion(index.songTracks[index.trackSong[i]])
         for (k, a) in index.trackArtists[i].enumerated() { artistPressure[a] += k == 0 ? 1 : 0.4 }
         let genres = index.trackGenres[i]
         let direction = distinctiveness(of: genres)
@@ -1116,12 +1285,14 @@ struct RadioEngine: Sendable {
     /// Thumbs down: the track is gone, its artist all but gone for the
     /// session, its genres a little less.
     mutating func dislike(_ i: Int) {
-        disliked.insert(i)
+        disliked.formUnion(index.songTracks[index.trackSong[i]])
         likes.removeAll { $0.track == i }
         // 0.02: on the test server's small library 0.08 (tried first) let the
         // artist back three tracks later, when the rules had blocked everyone
         // else near.
-        for (k, a) in index.trackArtists[i].enumerated() { artistBan[a] *= k == 0 ? 0.02 : 0.25 }
+        for (k, a) in index.trackArtists[i].enumerated() {
+            artistBan[a] *= anchor.subject.contains(a) ? Self.subjectBan : (k == 0 ? 0.02 : 0.25)
+        }
         let genres = index.trackGenres[i]
         let direction = distinctiveness(of: genres)
         for (k, g) in genres.enumerated() {
@@ -1148,10 +1319,21 @@ struct RadioEngine: Sendable {
     }
 
     mutating func returnUnplayed(_ ids: [ItemID]) {
+        var removed = false
         for id in ids {
             guard let t = index.trackByID[id], let at = handed.lastIndex(of: t) else { continue }
             handed.remove(at: at)
-            if let c = handedCount[t], c > 1 { handedCount[t] = c - 1 } else { handedCount[t] = nil }
+            removed = true
+        }
+        guard removed else { return }
+        // Positions moved: where each was handed, and the music up to it.
+        lastAt.removeAll(keepingCapacity: true)
+        handedEnd.removeAll(keepingCapacity: true)
+        var total = 0.0
+        for (k, t) in handed.enumerated() {
+            lastAt[index.trackSong[t]] = k
+            total += seconds(t)
+            handedEnd.append(total)
         }
         if handed.isEmpty { started = false }
     }
@@ -1160,5 +1342,9 @@ struct RadioEngine: Sendable {
 extension TasteData {
     func hoursSinceHeard(id: ItemID) -> Double {
         index.trackByID[id].map { hoursSinceHeard[$0] } ?? .infinity
+    }
+
+    func isThumbedDown(id: ItemID) -> Bool {
+        index.trackByID[id].map { thumbsDown[$0] } ?? false
     }
 }

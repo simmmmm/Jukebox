@@ -12,7 +12,13 @@ public enum NameKey {
     public static func artist(_ name: String) -> String {
         var s = fold(name)
         if s.hasPrefix("the ") { s.removeFirst(4) }
-        return squeeze(s)
+        let key = squeeze(s)
+        guard key.isEmpty else { return key }
+        // A name of punctuation only ("!!!", "†‡†") squeezes to nothing, and
+        // all such artists would share one key and one station. Its own
+        // spelling, lower case and without spaces, is the key instead — the
+        // same rule as LibrarySnapshot's, so Artist.key and the snapshot agree.
+        return String(String.UnicodeScalarView(name.lowercased().unicodeScalars.filter { !$0.properties.isWhitespace }))
     }
 
     /// A genre's key: "Hip-Hop", "hip hop" and "HipHop" are one.

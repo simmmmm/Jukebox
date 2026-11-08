@@ -238,7 +238,10 @@ final class MixModel: Sendable {
     /// u^(1/w) and the largest keys win), best first. At most `artistCap`
     /// filed under one artist and `albumCap` from one album, counting what
     /// `counts` already holds; when that leaves the mix short, the caps give
-    /// way rather than the mix.
+    /// way rather than the mix. A song once, whatever gives way: its album's
+    /// and its best-of's recordings are one (LibrarySnapshot.Index.trackSong;
+    /// with best-ofs of the made-up listener's loved songs, 7 songs were
+    /// twice in a mix).
     func draw(_ weighted: [(track: Int, weight: Double)], count: Int, seed: UInt64,
               artistCap: Int? = nil, albumCap: Int? = nil, counts: inout MixCounts) -> [Int] {
         guard count > 0 else { return [] }
@@ -253,6 +256,7 @@ final class MixModel: Sendable {
         var taken = Set<Int>()
         for (t, _) in keyed {
             if picked.count == count { break }
+            if counts.songs.contains(index.trackSong[t]) { continue }
             if let artistCap, let a = primaryArtist(t), counts.artists[a, default: 0] >= artistCap { continue }
             let album = index.trackAlbum[t]
             if let albumCap, album >= 0, counts.albums[album, default: 0] >= albumCap { continue }
@@ -261,7 +265,7 @@ final class MixModel: Sendable {
             counts.add(t, self)
         }
         if picked.count < count, artistCap != nil || albumCap != nil {
-            for (t, _) in keyed where !taken.contains(t) {
+            for (t, _) in keyed where !taken.contains(t) && !counts.songs.contains(index.trackSong[t]) {
                 if picked.count == count { break }
                 picked.append(t)
                 counts.add(t, self)
@@ -442,8 +446,10 @@ final class MixModel: Sendable {
 struct MixCounts {
     var artists: [Int: Int] = [:]
     var albums: [Int: Int] = [:]
+    var songs: Set<Int> = []
 
     mutating func add(_ t: Int, _ model: MixModel) {
+        songs.insert(model.index.trackSong[t])
         if let a = model.primaryArtist(t) { artists[a, default: 0] += 1 }
         let album = model.index.trackAlbum[t]
         if album >= 0 { albums[album, default: 0] += 1 }

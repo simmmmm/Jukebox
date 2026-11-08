@@ -96,12 +96,12 @@ public struct LibrarySnapshot: Sendable {
     /// The library's key for an artist name from elsewhere (Last.fm), when
     /// the library has that artist.
     public func matchArtist(_ name: String) -> String? {
-        let key = NameKey.artist(name)
+        let key = Index.artistKey(name)
         if index.artistByKey[key] != nil { return key }
         // "Artist feat. Guest" or "A; B" from elsewhere: the first named.
         let parts = Index.splitArtistNames(name)
         if parts.count > 1 {
-            let first = NameKey.artist(parts[0])
+            let first = Index.artistKey(parts[0])
             if index.artistByKey[first] != nil { return first }
         }
         return nil
@@ -120,7 +120,7 @@ extension LibrarySnapshot {
         if let i = index.trackByID[track.id] {
             return index.trackArtists[i].map { index.artistKeys[$0] }
         }
-        return Index.artistNames(of: track).map { NameKey.artist($0.name) }.filter { !$0.isEmpty }
+        return Index.artistNames(of: track).map { Index.artistKey($0.name) }.filter { !$0.isEmpty }
     }
 
     /// The artist a track is filed under (album artist, else first
@@ -168,6 +168,14 @@ extension LibrarySnapshot {
         let trackAlbum: [Int]
         /// 0 when unknown.
         let trackYear: [Int]
+        /// The song a track is a recording of: tracks filed under one artist
+        /// with one title (brackets, " - …" and "feat." left out) are one
+        /// song, so the radio plays "Karma Police" once, not once from OK
+        /// Computer and again from the best-of. Measured: with 40 of 120
+        /// tracks on a best-of too, 46 songs played twice in 6 × 60 picks.
+        let trackSong: [Int]
+        /// By song number: its tracks.
+        let songTracks: [[Int]]
 
         // By artist number.
         let artistKeys: [String]
@@ -234,6 +242,11 @@ extension LibrarySnapshot {
             var albumByID: [ItemID: Int] = [:]
             var albumTracks: [[Int]] = []
             var decadeTracks: [Int: [Int]] = [:]
+            var trackSong: [Int] = []
+            trackSong.reserveCapacity(tracks.count)
+            var songTracks: [[Int]] = []
+            var songOf: [String: Int] = [:]
+            var titleKeyOf: [String: String] = [:]
 
             // NameKey is slow on Linux (above); a library repeats each name
             // on every track, so each spelling is keyed once.
@@ -269,7 +282,7 @@ extension LibrarySnapshot {
                 if let known = artistKeyOf[ref.name] {
                     key = known
                 } else {
-                    key = NameKey.artist(ref.name)
+                    key = Self.artistKey(ref.name)
                     artistKeyOf[ref.name] = key
                 }
                 guard !key.isEmpty else { return nil }
@@ -305,6 +318,29 @@ extension LibrarySnapshot {
                 }
                 for a in carried { artistTracks[a].append(i) }
                 if let first = own.first { artistOwnTracks[first].append(i) }
+
+                // The song: its artist and its title.
+                let titleKey: String
+                if let known = titleKeyOf[track.name] {
+                    titleKey = known
+                } else {
+                    titleKey = Self.songKey(track.name)
+                    titleKeyOf[track.name] = titleKey
+                }
+                if let first = own.first, !titleKey.isEmpty {
+                    let songKey = "\(first)|\(titleKey)"
+                    if let known = songOf[songKey] {
+                        trackSong.append(known)
+                        songTracks[known].append(i)
+                    } else {
+                        songOf[songKey] = songTracks.count
+                        trackSong.append(songTracks.count)
+                        songTracks.append([i])
+                    }
+                } else {
+                    trackSong.append(songTracks.count)
+                    songTracks.append([i])
+                }
 
                 // Genres.
                 var genres: [Int] = []
@@ -438,6 +474,8 @@ extension LibrarySnapshot {
             self.trackGenres = trackGenres
             self.trackAlbum = trackAlbum
             self.trackYear = trackYear
+            self.trackSong = trackSong
+            self.songTracks = songTracks
             self.artistKeys = artistKeys
             self.artistByKey = artistByKey
             self.artistRefs = artistRefs
@@ -458,10 +496,75 @@ extension LibrarySnapshot {
         }
 
         var trackCount: Int { trackArtists.count }
+        var songCount: Int { songTracks.count }
         var artistCount: Int { artistKeys.count }
         var genreCount: Int { genreKeys.count }
 
         // MARK: Names
+
+        /// An artist's key: NameKey's, or for a name it folds to nothing
+        /// ("!!!", "†‡†": punctuation only) the name itself in lower case
+        /// without spaces. Such a band is still a band; with NameKey's empty
+        /// key they had no artist at all, so nothing kept them apart and
+        /// their station played someone else (measured).
+        static func artistKey(_ name: String) -> String {
+            let key = NameKey.artist(name)
+            guard key.isEmpty else { return key }
+            return String(String.UnicodeScalarView(name.lowercased().unicodeScalars.filter { !$0.properties.isWhitespace }))
+        }
+
+        /// A title as one song's: lower case, letters and digits, without a
+        /// part that only says which recording it is — "(Remastered 2011)",
+        /// "[Live]", " - Single Version", "(feat. X)" — but with any other
+        /// ("Symphony No. 5 - II. Andante" is not "- I. Allegro"; a remix
+        /// is a song of its own). Plain Swift: NameKey.title costs 25 µs a
+        /// call with Linux's Foundation, half a second on 20 000 tracks.
+        /// Empty for a title of punctuation only: then it is its own song.
+        static func songKey(_ title: String) -> String {
+            let scalars = Array(title.lowercased().unicodeScalars)
+            func starts(_ k: Int, _ word: String) -> Bool {
+                var j = k
+                for c in word.unicodeScalars {
+                    guard j < scalars.count, scalars[j] == c else { return false }
+                    j += 1
+                }
+                return true
+            }
+            func isKept(_ c: Unicode.Scalar) -> Bool { c.properties.isAlphabetic || c.properties.numericType != nil }
+            var out = String.UnicodeScalarView()
+            var group = String.UnicodeScalarView()
+            var depth = 0
+            var k = 0
+            while k < scalars.count {
+                let c = scalars[k]
+                if c == "(" || c == "[" {
+                    if depth == 0 { group.removeAll() }
+                    depth += 1
+                } else if c == ")" || c == "]" {
+                    if depth == 1, !isVersionNote(String(group)) { out.append(contentsOf: group.filter(isKept)) }
+                    depth = max(0, depth - 1)
+                } else if depth > 0 {
+                    group.append(c)
+                } else {
+                    if c == " ", !out.isEmpty {
+                        if starts(k, " feat. ") || starts(k, " feat ") || starts(k, " ft. ") || starts(k, " featuring ") { break }
+                        if starts(k, " - "), isVersionNote(String(String.UnicodeScalarView(scalars[(k + 3)...]))) { break }
+                    }
+                    if isKept(c) { out.append(c) }
+                }
+                k += 1
+            }
+            return String(out)
+        }
+
+        /// Words that say which recording of a song it is, not which song.
+        static let versionWords = ["remaster", "live", "version", "edit", "mono", "stereo", "demo", "acoustic",
+                                   "single", "deluxe", "bonus", "feat", "ft.", "featuring", "with ", "explicit",
+                                   "clean", "anniversary", "re-recorded", "unplugged"]
+
+        static func isVersionNote(_ text: String) -> Bool {
+            versionWords.contains { text.contains($0) }
+        }
 
         /// "Various Artists" and its usual spellings: not an artist the radio
         /// keeps apart or links to anyone.

@@ -23,6 +23,13 @@ final class TasteData: Sendable {
     let artistAffinity: [Double]
     /// By genre number: −1 … 1.
     let genreAffinity: [Double]
+    /// By track number: the last thumbs on this device was down, within
+    /// half a year (as the mixes count it), and no thumbs up since. The
+    /// radio leaves these out: a thumbs down yesterday is still one today.
+    /// Measured: four songs thumbed down the day before came back 7 times
+    /// in 600 picks of their artist's station when they were only
+    /// evidence (affinity −0.87, a score × 0.44).
+    let thumbsDown: [Bool]
 
     let rankedArtists: [String]
     let rankedGenres: [String]
@@ -31,6 +38,8 @@ final class TasteData: Sendable {
     // What each outcome says, and how fast it fades (docs/RADIO.md).
     static let halfLifeDays = 21.0
     static let playCountHalfLifeDays = 90.0
+    /// How long a thumbs down keeps a song off the radio: the mixes' half year.
+    static let thumbsDownDays = 183.0
 
     static func value(of outcome: PlayOutcome) -> Double {
         switch outcome {
@@ -84,11 +93,18 @@ final class TasteData: Sendable {
         // the library still say something about their artists and genres.
         var strayArtist = [Double](repeating: 0, count: index.artistCount)
         var strayGenre = [Double](repeating: 0, count: index.genreCount)
+        var thumbsDown = [Bool](repeating: false, count: n)
         for event in history.events {
             let decay = exp2(-days(since: event.date) / Self.halfLifeDays)
             let v = Self.value(of: event.outcome) * decay
             if let i = index.trackByID[event.trackID] {
                 evidence[i] += v
+                // Oldest first: the last thumbs given is the one that holds.
+                if event.outcome == .disliked {
+                    thumbsDown[i] = days(since: event.date) <= Self.thumbsDownDays
+                } else if event.outcome == .liked {
+                    thumbsDown[i] = false
+                }
                 switch event.outcome {
                 case .completed: heardEvents[i] += 1
                 case .partial: lightEvents[i] += 0.5
@@ -174,6 +190,7 @@ final class TasteData: Sendable {
         self.hoursSinceHeard = hours
         self.artistAffinity = artistAffinity
         self.genreAffinity = genreAffinity
+        self.thumbsDown = thumbsDown
         self.rankedArtists = artistOrder.map { index.artistKeys[$0] }
         self.rankedGenres = genreOrder.map { index.genreKeys[$0] }
         self.rankedTracks = trackOrder.map { tracks[$0].id }

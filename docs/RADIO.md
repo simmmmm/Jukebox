@@ -11,13 +11,14 @@ The code is in `JukeboxKit/Sources/JukeboxKit/Radio/` and
 `Library/LibrarySnapshot.swift`, Foundation only. The measurements below come
 from the tests in `JukeboxKit/Tests/JukeboxKitTests/Radio*.swift`; every
 number here is printed by one of them (`dev/kit-test.sh --filter Radio`,
-lines starting `RADIO-EVAL`).
+lines starting `RADIO-EVAL`, and `RADIO-CRITIC` for the awkward cases of
+"What it does when …").
 
 ## The parts
 
 | Type | What it is |
 |---|---|
-| `LibrarySnapshot` | The library at one moment, indexed by track number: artists, genres, album, year of each track; tracks of each artist, genre, album and decade; how specific each genre is; which genres go together. Made once, read by everything. |
+| `LibrarySnapshot` | The library at one moment, indexed by track number: artists, genres, album, year and song of each track; tracks of each artist, genre, album, decade and song; how specific each genre is; which genres go together. Made once, read by everything. |
 | `TasteProfile` | What the listener likes, −1 … 1, for every track, artist and genre, and how familiar each track is, 0 … 1. From Jellyfin's favourites and play counts and this device's history. |
 | `SimilarityGraph` | Who sounds like whom: artists (and, from Last.fm, tracks) with weighted edges. From the library alone (`fromLibrary`), merged with Last.fm's when there is a key. Codable, kept on disk. |
 | `Station` | A seed with a stable id ("artist-radiohead"), a title ("Radiohead Radio") and up to four covers. |
@@ -36,6 +37,23 @@ tracks have an artist like "MC Polder; Lyric Engine", and 294 a genre like
 A part gets the id that name has elsewhere in the library, usually as an
 album artist. "Various Artists" is nobody: on a compilation the performer is
 who a song is by.
+
+A name NameKey folds to nothing ("!!!", "†‡†": punctuation only) keeps
+its own lower-case spelling as its key. With the empty key such a band had
+no artist at all: nothing kept them apart, and "!!! Radio" opened with
+someone else's song.
+
+**Songs.** Tracks filed under one artist with one title are one song: "Karma
+Police" on OK Computer, on the best-of, "(Remastered 2011)", "[Live]" or
+" - Single Version". A part in brackets or after " - " is left out only when
+it says which recording it is (remaster, live, version, edit, demo, mono,
+acoustic, single, deluxe, feat., …): "Symphony No. 5 - II. Andante" is not
+"- I. Allegro", and a remix is a song of its own. The key is plain Swift, as
+NameKey.title costs 25 µs a call on Linux. The radio and the mixes play a
+song once, whichever recording; its familiarity is its most played
+recording's, its last play the latest of them, and a thumbs down or a skip
+counts for all of them. The test server's 358 tracks are 351 songs (its
+made-up titles repeat within an artist seven times).
 
 After splitting, the test server has 23 artists and 23 genres, which is what
 it has. `snapshot.artistKeys(of:)`, `primaryArtistKey(of:)` and
@@ -77,6 +95,12 @@ whether they have played a hundred songs or a hundred thousand.
 
 Everything is clamped before it is used: negative play counts, dates in the
 future, NaN seconds. Nothing comes out NaN; the test feeds it all of these.
+
+A thumbs down is more than evidence: a song whose last thumbs on this device
+was down, in the last half year (the mixes' rule), is left out of every
+station, except a song station started from it. As evidence alone
+(affinity −0.87, a score × 0.44), four songs thumbed down the day before
+came back 7 times in 600 picks of their artist's station; now 0.
 
 `topArtists`/`topGenres` leave out the disliked. The never-heard come last,
 biggest first, so a new listener still gets a list. `topTracks` and
@@ -122,7 +146,7 @@ part empty.
 | Seed | Artists | Genres, era | First track |
 |---|---|---|---|
 | `.track` | its artists (0.88, a guest 0.75) | its genres; its year ±5 | that track, always (even if just heard) |
-| `.artist` | the artist (0.88) | their records' genres; their median year, spread from their years (≥ 4) | one of their best-liked, drawn from the top 3 |
+| `.artist` | the artist (0.88) | their records' genres; their median year, spread from their years (≥ 4) | one of their best-liked, drawn from the top 3 and any within 85% of the best (up to 12) |
 | `.album` | the album's artists by share | the album's genres and year | a best-liked track from it |
 | `.genre` | (none of its own); its artists (half their records or more) lead to their neighbours | the genre, and genres that go with it (0.1 + 0.5 · adventurousness of their link) | a best-liked track of the genre |
 | `.decade` | the listener's liked artists with songs in it | the listener's genres in that decade (taste-weighted) | a best-liked track from it |
@@ -210,26 +234,42 @@ What the session has learnt multiplies the base:
 Of the tracks the rules allow, the best K (8 + 52 · adventurousness: 8 …
 60) are drawn from at random in proportion to their score. It is never the
 argmax, so the same seed differs each time it is started with another
-random seed, and is the same for the same one.
+random seed, and is the same for the same one. Tracks that score the same
+come in the session's own order (from its random seed), not the library's:
+when nothing is known of the listener most of a library ties, and the
+library's order made The Lanterns Radio open with one of the same three
+songs for any seed and a library without genres play 64% from its first
+half (now 10 different openers in 20 seeds, and 47%).
 
 The rules:
-- never a track twice in a session;
+- a song (any of its recordings) not again in a session until
+  `noRepeatHours` of music (at least 3) have played since; then it is back
+  at 0.4 × its freshness (0.15 after 12 hours, 0.25 after 48), so a song
+  near the seed beats a new one far from it but not a new one near;
 - at least `artistSeparation` (3) tracks between two by one artist. A guest
   counts as that artist, so "A; B" keeps B away too;
 - never two from one album back to back;
 - nothing heard in the last `noRepeatHours` (the `recentlyPlayed` passed in,
   and the taste's last-heard times);
 - on an artist, song or album station, the seed's own artist at most one in
-  five, after the first.
+  five, after the first;
+- never a song thumbed down, in this session or (see Taste) before.
 
 When nothing passes, the station looks wider first: the whole library, the
 tracks outside its neighbourhood at a closeness of 0.03, taste deciding.
-Then the rules loosen, in this order:
-1. separation halved, and the cap off;
-2. separation and the album rule off;
-3. recently heard allowed;
-4. repeats allowed, of tracks not among the last half of the library (at
-   most 50 back).
+Then the rules loosen one at a time:
+1. the cap off (of four artists, separation alone makes it one in four);
+2. separation halved;
+3. separation off;
+4. the album rule off;
+5. recently heard allowed.
+
+Only then do songs of this session come back sooner than `noRepeatHours`,
+and every rule is tried again from the top with them: a song that more than
+all but four of the library came after (or, if nothing then keeps the rule
+of that level, half of it; at most 50), the longest unheard by far the
+likeliest (by the fourth power of how far back). A skipped song only at
+the very last.
 
 A station never ends on its own: a library of one song repeats it. Only an
 empty library, or one where every song has a thumbs down, gives fewer
@@ -259,8 +299,14 @@ after a skip already reflects it.
 - **Thumbs up**: a stronger pull (as three completions). Its artist and its
   graph neighbours, and its genres at half that, are lifted in the next
   picks.
-- **Thumbs down**: the track is gone for the session. Its artist is all but
-  gone (× 0.02), its genres get 1.5 skips' pressure.
+- **Thumbs down**: the song is gone (and stays gone, see Taste). Its artist
+  is all but gone (× 0.02), its genres get 1.5 skips' pressure. On a song,
+  artist or album station, the artist it is named after only × 0.12: one
+  of Radiohead's songs thumbed down on Radiohead Radio is about the song.
+  And the artists reached through them keep their weight: on their station
+  everyone near is reached through them. (Before: Radiohead 5.9 → 0.3 of
+  the next 30 and their close neighbours 0.65 → 0.45; now 5.9 → 3.3 and
+  0.65 → 0.70.)
 - `addCandidates(ids, weight:, reason:)`: Jellyfin's Instant Mix, Last.fm's
   similar tracks. In the order given, the first a little more.
 - `settings` can change at any time: the next `next` builds the profile
@@ -289,10 +335,10 @@ do not.
 
 | adventurousness | coherent | in cluster (played / unplayed seeds) | unheard | favourites | distinct artists in 50 | seed artist's share | separation / repeat / album violations |
 |---|---|---|---|---|---|---|---|
-| 0 | 1.000 | 0.970 (0.990 / 0.938) | 0.340 | 0.073 | 7.8 | 0.184 | 0 / 0 / 0 |
-| 0.35 (default) | 1.000 | 0.961 (0.978 / 0.933) | 0.441 | 0.069 | 8.6 | 0.184 | 0 / 0 / 0 |
-| 0.7 | 1.000 | 0.939 (0.959 / 0.904) | 0.619 | 0.060 | 9.5 | 0.183 | 0 / 0 / 0 |
-| 1 | 0.939 | 0.787 (0.791 / 0.780) | 0.822 | 0.021 | 15.0 | 0.170 | 0 / 0 / 0 |
+| 0 | 1.000 | 0.971 (0.990 / 0.939) | 0.339 | 0.073 | 7.8 | 0.184 | 0 / 0 / 0 |
+| 0.35 (default) | 1.000 | 0.960 (0.977 / 0.931) | 0.441 | 0.070 | 8.6 | 0.184 | 0 / 0 / 0 |
+| 0.7 | 1.000 | 0.935 (0.955 / 0.902) | 0.621 | 0.062 | 9.7 | 0.183 | 0 / 0 / 0 |
+| 1 | 0.941 | 0.790 (0.793 / 0.787) | 0.817 | 0.020 | 15.1 | 0.170 | 0 / 0 / 0 |
 
 The dial does what it says. At 0 the station stays near and known (97% in
 cluster, a third unheard). At 1 it goes further out (79% in cluster, through
@@ -304,48 +350,54 @@ Listening (adventurousness 0.35 unless said):
 
 | What | Without | After |
 |---|---|---|
-| Thumbs down on a song by artist X (6 picks in): X's songs in the next 30, average over 48 stations | 5.33 | 0.02 |
-| Three skips of Shoegaze on Rock Radio: Shoegaze's share of the next 30, 12 runs | 0.364 | 0.147 |
-| Thumbs up at 0.6: the liked artist's share of the next 15 (separation 3 holds any artist to 0.25 at most) | 0.154 | 0.185 |
-| … the liked artist and its close neighbours (edge ≥ 0.5) | 0.448 | 0.498 |
-| … picks that say "Because you liked" | 0 | 0.363 |
+| Thumbs down on a song by artist X (6 picks in): X's songs in the next 30, average over 48 stations | 5.31 | 0.02 |
+| Three skips of Shoegaze on Rock Radio: Shoegaze's share of the next 30, 12 runs | 0.386 | 0.150 |
+| Thumbs up at 0.6: the liked artist's share of the next 15 (separation 3 holds any artist to 0.25 at most) | 0.158 | 0.185 |
+| … the liked artist and its close neighbours (edge ≥ 0.5) | 0.456 | 0.502 |
+| … picks that say "Because you liked" | 0 | 0.358 |
 
-Every kind of seed, 200 picks each: 200 tracks, no repeats, no separation
+Every kind of seed, 200 picks each (about 13 hours): 200 tracks, no repeat
+in the first 150 and none within 12 hours of music, no separation
 violations. The first track and the reasons of the first 50:
 
 | Seed | First | Reasons in 50 |
 |---|---|---|
 | track | the seed track | similar artist 19, genre 16, by artist 9, favourite 5, seed 1 |
 | artist | by the artist, affinity 0.85 | similar artist 33, by artist 10, genre 5, favourite 2 |
-| album | from the album | similar artist 25, by artist 19, genre 5, seed 1 |
+| album | from the album | similar artist 25, by artist 20, genre 4, seed 1 |
 | genre (Jazz) | Jazz, affinity 0.91 | genre 44, favourite 6 |
 | decade (1990s) | from 1999 | era 50 |
 | collection (12 favourites) | from the playlist | by artist 20, similar artist 13, genre 12, seed 3, favourite 2 |
 | personal | affinity 0.94 | favourite 49, rediscover 1 |
-| discovery | familiarity 0.00 | discovery 50 |
-| favorites | a favourite | favourite 48, genre 2 |
+| discovery | familiarity 0.00 | discovery 49, by artist 1 |
+| favorites | a favourite | favourite 48, by artist 1, genre 1 |
 
 ### Speed
 
 20 000 tracks, 20 000 history events, on this machine (Xeon at 2.1 GHz, 4
 cores; one core used). Two libraries: 600 artists and 32 genres, and a
-harder one with 1 914 artists and 295 genres, as real libraries have.
+harder one with 1 914 artists and 295 genres, as real libraries have. And
+50 000 tracks of 3 337 artists and 432 genres (RadioCriticTests).
 
-Release build (`KIT_DIR=… dev/kit-test.sh -c release -Xswiftc -enable-testing --filter RadioPerformance`):
+Release build (`KIT_DIR=… dev/kit-test.sh -c release -Xswiftc -enable-testing --filter "RadioPerformance|RadioCriticTests.testFiftyThousand"`):
 
-| | 600 artists | 1 914 artists | bar |
-|---|---|---|---|
-| `LibrarySnapshot(tracks:)` | 90 ms | 136 ms | 500 ms |
-| `TasteProfile(...)` | 11 ms | 13 ms | |
-| `SimilarityGraph.fromLibrary` | 14 ms | 83 ms | |
-| graph as JSON: size, encode, decode | 634 kB, 20 ms, 18 ms | 2.4 MB, 72 ms, 59 ms | |
-| session built + first `next(5)`, median (max) | 4.3 ms (4.9) | 4.7 ms (5.7) | 300 ms |
-| `next(5)`, median (max) | 0.4 ms (0.9) | 0.3 ms (1.3) | 50 ms |
-| feedback + `returnUnplayed` + `next(5)`, median (max) | 2.3 ms (4.8) | 2.2 ms (4.1) | |
+| | 600 artists | 1 914 artists | 50 000 tracks | bar |
+|---|---|---|---|---|
+| `LibrarySnapshot(tracks:)` | 102 ms | 162 ms | 343 ms | 500 ms (20 000) |
+| `TasteProfile(...)` | 11 ms | 14 ms | 27 ms | |
+| `SimilarityGraph.fromLibrary` | 11 ms | 77 ms | 187 ms | |
+| graph as JSON: size, encode, decode | 634 kB, 14 ms, 14 ms | 2.4 MB, 64 ms, 55 ms | | |
+| session built + first `next(5)`, median (max) | 3.2 ms (3.9) | 4.2 ms (5.2) | 9.1 ms (10.2) | 300 ms |
+| `next(5)`, median (max) | 0.3 ms (0.7) | 0.3 ms (1.2) | 0.2 ms (0.6) | 50 ms |
+| feedback + `returnUnplayed` + `next(5)`, median (max) | 1.8 ms (2.8) | 2.1 ms (3.9) | 4.0 ms (7.2) | |
+
+The song keys cost the snapshot 12 ms (600 artists) to 26 ms (1 914)
+against the round before (90 and 136 ms).
 
 Debug build (what `swift test` runs by default), 1 914 artists: snapshot
-232 ms, graph 802 ms, session + first five 124 ms, `next(5)` 6.9 ms,
-feedback + next 111 ms. The tests hold debug to 12 times the bar.
+271 ms, graph 679 ms, session + first five 113 ms, `next(5)` 6.0 ms,
+feedback + next 99 ms; 50 000 tracks: snapshot 652 ms, graph 2.7 s,
+session + first five 282 ms. The tests hold debug to 12 times the bar.
 
 How:
 - The snapshot keys each distinct spelling once. The title index for `match`
@@ -376,26 +428,26 @@ Iron Meadow 0.59, Kalimba Sound System 0.26, The Lanterns 0.24, Nightdrive
 0.22, Glass Animals Club 0.18):
 
 ```
- 1. Glass Road — Velvet Static (Rock, Shoegaze, 1997) · More by Velvet Static
- 2. Fire Tide — Iron Meadow (Rock, Hard Rock, 1979) · Sounds like Velvet Static
- 3. Ocean Story — The Lanterns (Rock, Alternative, 1998) · More Rock
- 4. Static Heart — Kalimba Sound System; Hexagon Lights (Electronic, House, 2014) · Sounds like Velvet Static
+ 1. Gold Dream — Velvet Static (Rock, Shoegaze, 1997) · More by Velvet Static
+ 2. Lights City — Iron Meadow (Rock, Hard Rock, 1979) · Sounds like Velvet Static
+ 3. Dust Dance — The Lanterns (Rock, Alternative, 1996) · More Rock
+ 4. Gold Window — Kalimba Sound System (Electronic, House, 2014) · Sounds like Velvet Static
  5. Summer Road — Nightdrive (Electronic, Synthwave, 2015) · Sounds like Velvet Static
  6. Hollow Tide — Velvet Static; Iron Meadow (Rock, Shoegaze, 1997) · More by Velvet Static
- 7. Wild Story — The Lanterns (Rock, Alternative, 1994) · More Rock
- 8. Red Window — Kalimba Sound System (Electronic, House, 2013) · Sounds like Velvet Static
- 9. Echo Garden — Glass Animals Club (Indie, Alternative, 2012) · Sounds like Velvet Static
-10. Winter Dance — Iron Meadow (Rock, Hard Rock, 1983) · Sounds like Velvet Static
-11. Northern Letters — Velvet Static (Rock, Shoegaze, 1991) · More by Velvet Static
-12. Glass Dance — The Lanterns; Mira Lux (Rock, Alternative, 1994) · More Rock
-13. Winter Line — Nightdrive (Electronic, Synthwave, 2015) · Sounds like Velvet Static
-14. Electric Mirror — Iron Meadow (Rock, Hard Rock, 1984) · Sounds like Velvet Static
+ 7. Rain Window — The Lanterns (Rock, Alternative, 1994) · More Rock
+ 8. Fire Heart — Kalimba Sound System; Hexagon Lights (Electronic, House, 2013) · Sounds like Velvet Static
+ 9. Summer Song — Glass Animals Club (Indie, Alternative, 2012) · Sounds like Velvet Static
+10. Quiet Drive — Iron Meadow (Rock, Hard Rock, 1983) · Sounds like Velvet Static
+11. Gold City — Velvet Static (Rock, Shoegaze, 1991) · More by Velvet Static
+12. Wild Story — The Lanterns (Rock, Alternative, 1994) · More Rock
+13. Morning Line — Nightdrive (Electronic, Synthwave, 2015) · Sounds like Velvet Static
+14. Night Dream — Iron Meadow (Rock, Hard Rock, 1984) · Sounds like Velvet Static
 15. River City — Paper Harbour; Glass Animals Club (Alternative, Indie, 2006) · Sounds like Velvet Static
-16. Lights Machine — Velvet Static; Kalimba Sound System (Rock, Shoegaze, 1997) · More by Velvet Static
-17. Ghost Line — The Lanterns (Rock, Alternative, 1996) · More Rock
-18. Fire Fields — Iron Meadow (Rock, Hard Rock, 1984) · Sounds like Velvet Static
-19. Iron Road — Glass Animals Club (Indie, Alternative, 2014) · Sounds like Velvet Static
-20. Night Waltz — Kalimba Sound System (Electronic, House, 2013) · Sounds like Velvet Static
+16. Echo Machine — Velvet Static; Kalimba Sound System (Rock, Shoegaze, 1997) · More by Velvet Static
+17. Harbour Road — The Lanterns (Rock, Alternative, 1996) · More Rock
+18. Echo Story — Iron Meadow (Rock, Hard Rock, 1984) · Sounds like Velvet Static
+19. Ocean Road — Glass Animals Club (Indie, Alternative, 2014) · Sounds like Velvet Static
+20. Red Window — Kalimba Sound System (Electronic, House, 2013) · Sounds like Velvet Static
 ```
 
 Velvet Static plays every fifth song (the cap). Kalimba Sound System and
@@ -406,15 +458,15 @@ with Last.fm's edges they would give way to who sounds alike.
 
 ```
  1. Signal Dream — MC Polder; Lyric Engine (Hip-Hop, Nederhop, 2006) · Where the station started
- 2. Hollow Dance — Concrete Poets (Hip-Hop, 1996) · Sounds like MC Polder
- 3. Signal Garden — Clara Venn; Amsterdam Strings (Classical, Piano, 2004) · Sounds like Lyric Engine
- 4. Glass Garden — Saskia de Wit (Jazz, Vocal Jazz, 2010) · Sounds like MC Polder
+ 2. Signal Road — Concrete Poets; Amsterdam Strings (Hip-Hop, 1996) · Sounds like MC Polder
+ 3. Lights Tide — Clara Venn; Willow & Pine (Classical, Piano, 2004) · Sounds like Lyric Engine
+ 4. Rain Tide — Saskia de Wit (Jazz, Vocal Jazz, 2010) · Sounds like MC Polder
  5. Electric City — Lyric Engine (Hip-Hop, Rap, 2020) · More by Lyric Engine
- 6. Quiet City — MC Polder (Hip-Hop, Nederhop, 2006) · More by MC Polder
+ 6. River Room — MC Polder (Hip-Hop, Nederhop, 2006) · More by MC Polder
  7. Lights Waltz — Concrete Poets (Hip-Hop, 2001) · Sounds like MC Polder
- 8. Wild Road — Amsterdam Strings (Classical, 1995) · Sounds like Lyric Engine
- 9. Quiet Window — Clara Venn (Classical, Piano, 2004) · Sounds like Lyric Engine
-10. Rain Waltz — Lyric Engine (Hip-Hop, Rap, 2018) · More by Lyric Engine
+ 8. River Dance — Amsterdam Strings (Classical, 1995) · Sounds like Lyric Engine
+ 9. Night Line — Blue Room Trio (Jazz, Bebop, 1962) · Sounds like MC Polder
+10. Fire Mirror — Lyric Engine (Hip-Hop, Rap, 2018) · More by Lyric Engine
 ```
 
 (20 in the test output, 12 of them hip-hop. The server has three hip-hop
@@ -424,41 +476,81 @@ Polder and Saskia de Wit three.)
 
 **Jazz Radio**: 15 of 20 jazz, the most three jazz artists allow. About
 every fourth song comes from the jazz artists' neighbours in the graph:
-"Sounds like Saskia de Wit" for MC Polder (on two of her songs), "Sounds
-like Miles Ahead Quartet" for Low Orbit.
+"Sounds like Saskia de Wit" for MC Polder and Concrete Poets (guests on
+her songs), "Sounds like Miles Ahead Quartet" for Low Orbit and Hexagon
+Lights.
 
 **Listening, on The Lanterns Radio at 0.7.** The first eight:
 
 ```
-1. Quiet Heart — The Lanterns; Mira Lux (Rock, Alternative, 1996) · More by The Lanterns
+1. Wild Drive — The Lanterns (Rock, Alternative, 1996) · More by The Lanterns
 2. Electric Mirror — Iron Meadow (Rock, Hard Rock, 1984) · More Rock
-3. Echo Machine — Velvet Static; Kalimba Sound System (Rock, Shoegaze, 1997) · More Rock
-4. Summer Dream — Sunny Side (Pop, Dance, 2017) · Sounds like The Lanterns
-5. Northern Heart — Mira Lux (Pop, Electronic, 2021) · Sounds like The Lanterns
-6. Ghost Machine — The Lanterns; Paper Harbour (Rock, Alternative, 1994) · More by The Lanterns
-7. Silver Parade — Glass Animals Club (Indie, Alternative, 2012) · Sounds like The Lanterns
-8. Quiet Drive — Iron Meadow (Rock, Hard Rock, 1983) · More Rock
+3. Lights Machine — Velvet Static; Kalimba Sound System (Rock, Shoegaze, 1997) · More Rock
+4. Glass Machine — Mira Lux (Pop, Electronic, 2027) · Sounds like The Lanterns
+5. Red Letters — Sunny Side (Pop, Dance, 2011) · Sounds like The Lanterns
+6. River Waltz — The Lanterns (Rock, Alternative, 1998) · More by The Lanterns
+7. Velvet Machine — Paper Harbour (Alternative, Indie, 2003) · Sounds like The Lanterns
+8. Echo Dance — Iron Meadow (Rock, Hard Rock, 1984) · More Rock
 ```
 
 The listener gives "Electric Mirror" a thumbs down and skips both pop songs.
 The queue after them is put back, and the next ten are chosen again:
 
 ```
- 1. River Story — The Lanterns; Paper Harbour (Rock, Alternative, 1994) · More by The Lanterns
- 2. Silver Dream — Glass Animals Club; Velvet Static (Indie, Alternative, 2012) · Sounds like The Lanterns
- 3. Night Line — Sunny Side (Pop, Dance, 2023) · Sounds like The Lanterns
- 4. Signal Sky — Old Mill Road; Neon Hearts (Folk, Americana, 1976) · Sounds like Mira Lux
- 5. Velvet Machine — Paper Harbour (Alternative, Indie, 2003) · Sounds like The Lanterns
- 6. Static Dream — The Lanterns (Rock, Alternative, 1996) · More by The Lanterns
- 7. Echo Garden — Glass Animals Club (Indie, Alternative, 2012) · Sounds like The Lanterns
- 8. Velvet Tide — Velvet Static; Nightdrive (Rock, Shoegaze, 1997) · More Rock
- 9. Blue Room — June Hollow (Folk, Indie, 2021) · Sounds like Glass Animals Club
-10. Electric Story — Paper Harbour (Alternative, Indie, 2006) · Sounds like The Lanterns
+ 1. Ocean Story — The Lanterns (Rock, Alternative, 1998) · More by The Lanterns
+ 2. Satellite Line — Paper Harbour (Alternative, Indie, 2003) · Sounds like The Lanterns
+ 3. Static Mirror — Glass Animals Club; Iron Meadow (Indie, Alternative, 2012) · Sounds like The Lanterns
+ 4. Northern Letters — Velvet Static (Rock, Shoegaze, 1991) · More Rock
+ 5. Paper Dream — June Hollow; Old Mill Road (Folk, Indie, 2021) · Sounds like Glass Animals Club
+ 6. Fire Story — The Lanterns (Rock, Alternative, 1996) · More by The Lanterns
+ 7. Silver Parade — Glass Animals Club (Indie, Alternative, 2012) · Sounds like The Lanterns
+ 8. Glass Heart — Paper Harbour (Alternative, Indie, 2003) · Sounds like The Lanterns
+ 9. River Tide — June Hollow (Folk, Indie, 2021) · Sounds like Glass Animals Club
+10. Fire Sky — Velvet Static (Rock, Shoegaze, 1991) · More Rock
 ```
 
-No Iron Meadow, and one pop song instead of two: the third and fourth
-slots, where separation has blocked every rock artist in this library, go
-to the least-skipped of what is left.
+No Iron Meadow song of their own (one as a guest, at √0.02 of its score),
+and no pop: the slots where separation has blocked every rock artist in
+this library go to folk and indie through Glass Animals Club.
+
+## What it does when …
+
+`RadioCriticTests.swift`: the radio tried the way a demanding listener would
+try to break it. Each case is a test that measures; where the first
+measurement showed a weakness, the fix and the number after it. (The made-up
+library is RadioFixtures' unless said.)
+
+| When … | Before | After |
+|---|---|---|
+| the library has 12 songs of 4 artists (6 stations × 120 picks) | every song before a repeat; then every rule off at once: 352 separation violations, 126 album back to back, a song back after 7 | the same first round; then 0 and 0, a song back after 12 at the soonest |
+| one artist, 3 albums of 10 (4 × 90) | 125 album back to back | 2 (the last new songs of the first round), 0 after; a song back after 27 |
+| nothing is known of the listener (the test server) | The Lanterns Radio opened with 3 different songs in 20 random seeds, Jazz Radio with 3 | 10 and 13 |
+| no track has a genre or a year (20 artists, 6 × 40) | 0.64 of picks from the library's first half | 0.47; the artist's own every fifth, 20 artists |
+| every track is Rock, one year (20 artists, 6 × 60) | — | 20 artists in 60, albums in no order (0.51), a skipped artist 1.17 → 0.83 of the next 20 |
+| an artist station for an artist with one song | — | it first, never again, then 100% their genre |
+| the same song is on its album and a best-of (40 of 120 tracks, 6 × 60) | 46 songs played twice | 0 (and 7 → 0 twice in a mix) |
+| a song was thumbed down yesterday (4 songs, their artist's station, 10 × 60) | played 7 times | 0 |
+| the seed artist's song gets a thumbs down on their station (32 stations, next 30) | the artist 5.9 → 0.3, their close neighbours 0.65 → 0.45 | 5.9 → 3.3, 0.65 → 0.70 |
+| the station plays 1 000 songs (3 artist stations, all heard to the end) | the seed's cluster by hundreds 0.98 0.89 0.49 0.09 0.00 0.00 0.00 0.00 0.00 0.00 | 0.98 0.89 0.80 0.70 0.61 0.60 0.63 0.65 0.67 0.70; songs again in each hundred 0.00 0.03 0.38 0.55 0.61 0.61 0.68 0.71 0.77 0.83, never within 12 hours; distinct artists in 50: 8.3 → 16.0; no artist above 0.20 of any 50 |
+| an artist is called "!!!" or "†‡†" | no artist: nothing kept them apart, "!!! Radio" opened with someone else | an artist each; their station opens with them |
+| 50 skips in a row (4 stations) | — | no repeat, no skipped song back in the next 30, no score 0 (no underflow), 21 artists tried in the 50 |
+| 50 thumbs down in a row (3 stations) | — | none back in the next 40, no repeat, never fewer than asked |
+| the dial goes 0 ↔ 1 every 5 picks (200) | — | unheard 0.12 at 0, 0.75 at 1; no separation or album violation; no song within 12 hours |
+| names: "Beyoncé", "Beyonce", "BEYONCÉ"; "Sigur Rós"/"Sigur Ros"; "AC/DC"; "The The"; "Simon & Garfunkel"/"and" | — | one artist each; a station from the plain spelling finds the library's ("Beyoncé Radio") |
+| a guest only ever in "A; B" or "A feat. B" | — | their own station, opening with a song they are on, 20 of 20 in its genre |
+| 50 000 tracks | — | release: snapshot 343 ms, session + first five 9.1 ms, `next(5)` 0.2 ms |
+
+What it does, then:
+- **runs out of new songs**: plays the station's songs again once 12 hours
+  of music have passed, before it plays far from the seed; in a tiny
+  library, it repeats with the rules kept (the longest unheard first);
+- **is told no once on the seed's own song**: plays the artist half as
+  often, not never;
+- **is told no on a song before**: never plays it, on any station but its
+  own, for half a year or until a thumbs up;
+- **knows nothing of the listener**: draws from everything alike, not from
+  the top of the library;
+- **meets the same song twice in the library**: plays one recording, once.
 
 ## What was tried
 
@@ -507,6 +599,15 @@ of its time.
 9. **Short tracks**: `PlayOutcome.of` counted "all but the last 20 s" as
    heard, so on the test server's 6-second tones every skip was a
    completion. That rule now applies only to tracks longer than 40 s.
+10. **The critic's round** ("What it does when …"): ties in the session's
+   order; songs rather than tracks; the rules loosened one at a time, and
+   then again with repeats; repeats after `noRepeatHours` of music in a
+   long session; a thumbs down kept across sessions; a softer one for the
+   station's own artist. Tried on the way: repeats at a flat 0.5 (cluster
+   0.83–0.98 in every hundred of 1 000, but 68% repeats after the first
+   200), 0.15 rising to 0.3 (0.65 and 56%), 0.3 × freshness (0.49 and 47%);
+   the station's own artist at × 0.2 after a thumbs down (5.9 → 4.7, as if
+   nothing was said) and × 0.07 (→ 1.0).
 
 ## Building on it
 
@@ -533,6 +634,12 @@ of its time.
     then `next(n)`;
   - after a song heard to the end, `record(.finished)` (no need to return
     anything);
+  - a session may hand out a song again after `noRepeatHours` of music
+    (and sooner in a library that has run out): the queue should not
+    assume ids are unique over a whole session;
+  - a thumbs down is kept by the history's `.disliked` event: taking a
+    thumb back should leave something in the history too (a `.liked`
+    event does it), or the song stays off the radio for half a year;
   - pass `history.trackIDs(since: now − noRepeatHours)` as `recentlyPlayed`;
   - Instant Mix at a weight of about 0.5, Last.fm's similar tracks about
     0.8, both via `addCandidates`;
@@ -548,3 +655,10 @@ of its time.
 - No audio analysis: two songs of one artist are alike, whatever they sound
   like.
 - Adventurousness is not remembered per station; that is the app's.
+- Over a very long session repeats grow: after 13 hours of an artist
+  station on the made-up library, a third of the songs are ones heard
+  earlier, after three days four in five. The choice was that, or leaving
+  the seed altogether.
+- Songs are matched by artist and title: a cover by another artist is
+  another song, and two different songs of one artist with one title
+  ("Intro" on two albums) are one.

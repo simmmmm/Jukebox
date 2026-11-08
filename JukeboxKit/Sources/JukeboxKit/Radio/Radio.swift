@@ -72,7 +72,7 @@ public struct PlayEvent: Codable, Sendable, Hashable {
     /// ("A; B", "Rock; Pop") split, as LibrarySnapshot does, so the history
     /// of a song that has left the library still finds its artists.
     public init(track: Track, date: Date, listened: TimeInterval, outcome: PlayOutcome, stationID: String? = nil) {
-        let artists = Set(LibrarySnapshot.Index.artistNames(of: track).map { NameKey.artist($0.name) }.filter { !$0.isEmpty })
+        let artists = Set(LibrarySnapshot.Index.artistNames(of: track).map { LibrarySnapshot.Index.artistKey($0.name) }.filter { !$0.isEmpty })
         let genres = LibrarySnapshot.Index.splitGenreNames(track.genres).map(NameKey.genre).filter { !$0.isEmpty }
         self.init(trackID: track.id, date: date, listened: listened, duration: track.duration,
                   outcome: outcome, stationID: stationID, artistKeys: artists.sorted(),
@@ -350,10 +350,11 @@ public enum RadioFeedback: Hashable, Sendable {
     case disliked(ItemID)
 }
 
-/// One station, playing. Hand-outs are remembered: `next` never repeats a
-/// track in a session and keeps artists apart; `returnUnplayed` puts back
-/// what was handed out but not yet heard, when feedback means the queue
-/// ahead should be chosen again.
+/// One station, playing. Hand-outs are remembered: `next` plays a song
+/// (any of its recordings) again only after `noRepeatHours` of music, or
+/// sooner in a library that has run out, and keeps artists apart;
+/// `returnUnplayed` puts back what was handed out but not yet heard, when
+/// feedback means the queue ahead should be chosen again.
 public struct RadioSession: Sendable {
     public private(set) var station: Station
     public var settings: RadioSettings {
