@@ -30,6 +30,12 @@ final class AppSettings {
         didSet { defaults.set(lastFMAPIKey, forKey: Keys.lastFMAPIKey) }
     }
 
+    /// When an album, a playlist or a mix ends, play on with a station from
+    /// its last track, as Music's Autoplay does.
+    var autoplay: Bool {
+        didSet { defaults.set(autoplay, forKey: Keys.autoplay) }
+    }
+
     /// The radio's dial, 0 familiar … 1 adventurous.
     var adventurousness: Double {
         didSet { defaults.set(adventurousness, forKey: Keys.adventurousness) }
@@ -41,6 +47,7 @@ final class AppSettings {
         cellularQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.cellularQuality) ?? "") ?? .normal
         normalizeVolume = defaults.object(forKey: Keys.normalizeVolume) as? Bool ?? true
         lastFMAPIKey = defaults.string(forKey: Keys.lastFMAPIKey) ?? ""
+        autoplay = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
         adventurousness = defaults.object(forKey: Keys.adventurousness) as? Double ?? 0.35
     }
 
@@ -52,5 +59,6 @@ final class AppSettings {
         static let normalizeVolume = "normalizeVolume"
         static let lastFMAPIKey = "lastFMAPIKey"
         static let adventurousness = "adventurousness"
+        static let autoplay = "autoplay"
     }
 }
