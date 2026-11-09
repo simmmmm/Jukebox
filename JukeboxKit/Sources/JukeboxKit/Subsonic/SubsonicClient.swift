@@ -543,6 +543,17 @@ public struct SubsonicClient: MusicServer {
     /// credentials (it needs them: without, error 10, measured). Album
     /// covers come back "public, max-age=31536000, immutable"; an unknown
     /// id answers 200 with JSON, which the image view reads as no image.
+    // CONTRACT — the kit agent's: /rest/download for .original, /rest/stream
+    // with a format and maxBitRate otherwise (measured on Navidrome), and
+    // getUser's downloadRole.
+    public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
+        fatalError("contract")
+    }
+
+    public func downloadsAllowed() async throws -> Bool {
+        fatalError("contract")
+    }
+
     public func artworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
         let id = artwork.tag.flatMap { $0.isEmpty ? nil : $0 } ?? artwork.itemID
         return connection.url("getCoverArt", [URLQueryItem(name: "id", value: id),

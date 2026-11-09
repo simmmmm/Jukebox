@@ -201,6 +201,18 @@ public struct JellyfinServer: MusicServer {
         client.streamURL(trackID: track.id, quality: quality, playSessionID: playSessionID)
     }
 
+    public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
+        client.downloadURL(trackID: track.id, quality: quality)
+    }
+
+    public func downloadsAllowed() async throws -> Bool {
+        do {
+            return try await client.downloadsAllowed()
+        } catch let error as JellyfinError {
+            throw MusicServerError(error)
+        }
+    }
+
     public func artworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
         client.imageURL(artwork, maxPixelSize: maxPixelSize)
     }

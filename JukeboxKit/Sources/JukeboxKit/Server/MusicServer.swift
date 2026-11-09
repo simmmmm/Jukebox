@@ -530,6 +530,18 @@ public protocol MusicServer: Sendable {
     func artworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL
     /// Never throws and never waits on the music: a missed report is lost.
     func report(_ event: PlaybackEvent, _ report: PlaybackReport) async
+
+    // MARK: Offline (docs/OFFLINE.md)
+
+    /// A song's file to save on the phone, at a quality: a plain file
+    /// (never HLS) that a background download task fetches with no headers,
+    /// credentials in the query. Jellyfin: JellyfinClient.downloadURL,
+    /// measured in OFFLINE.md.
+    func downloadURL(for track: Track, quality: DownloadQuality) -> URL
+    /// Whether the server lets this user save songs: Jellyfin's "Allow media
+    /// downloading", Subsonic's downloadRole. The app hides downloads and
+    /// pauses the automatic keep when it does not.
+    func downloadsAllowed() async throws -> Bool
 }
 
 // MARK: - Finding and opening servers
