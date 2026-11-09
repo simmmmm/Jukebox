@@ -330,15 +330,16 @@ nonisolated enum RecordMotion {
     /// down. Sketch H1, "33⅓": a record "net niet helemaal rond", so "de
     /// lijnen dansen" (the photographer, 8 November 2026; and of the still
     /// land in the first build, 9 November: "Achtergrond lijkt niet echt te
-    /// draaien?"). 3 pt with the oval below moves the grooves under the
-    /// words ±4.5–5.5 pt, about one groove each way, at 27–35 pt/s; 8 pt
-    /// was seasick, and the pin alone moves the page as one slow drift.
-    static let landPinOffset = CGPoint(x: 3, y: 0)
+    /// draaien?"). H1's 3 pt and 0.8% swayed the grooves under the words
+    /// ±4.5–5.5 pt at 27–35 pt/s: "nog net iets teveel beweging, oogt
+    /// daardoor een beetje onrustig". Half of it, H2's quiet sway: ±2.3–2.8
+    /// pt, at most 17 pt/s, about half a groove each way.
+    static let landPinOffset = CGPoint(x: 1.5, y: 0)
     /// How oval the land is: its width over its height, less one, in per
-    /// cent. Sketch H1's 1.004 across and 0.996 down: 0.8. The oval does
-    /// the dancing: it bends the lines twice a turn, the left and the right
-    /// of the screen out of step.
-    static let landOvalPercent: Double = 0.8
+    /// cent: 1.002 across and 0.998 down. The oval does the dancing: it
+    /// bends the lines twice a turn, the left and the right of the screen
+    /// out of step.
+    static let landOvalPercent: Double = 0.4
     /// Frames a second while the label alone turns: at 36° a second a frame
     /// turns it 1.8°, which reads as smooth, for a third fewer frames than
     /// 30.
