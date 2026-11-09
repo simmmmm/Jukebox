@@ -46,6 +46,15 @@ if docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   [[ $mounted == "$DATA" ]] || docker rm -f "$NAME" >/dev/null
 fi
 
+# What Navidrome said, when something here fails (CI's log has it then).
+trap 'echo "--- docker logs $NAME" >&2; docker logs --tail 40 "$NAME" >&2 2>&1 || true' ERR
+
+# The image, pulled again a few times: a fresh runner pulls it, and a pull
+# can fail on the way.
+if ! docker image inspect "$IMAGE" >/dev/null 2>&1; then
+  for i in 1 2 3 4; do docker pull -q "$IMAGE" >/dev/null && break; (( i == 4 )) && exit 1; sleep $((i * 5)); done
+fi
+
 alias=navidrome; [[ $NAME == jukebox-navidrome ]] || alias=$NAME
 if ! docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   docker rm -f "$NAME" >/dev/null 2>&1 || true
@@ -69,7 +78,16 @@ again() {
   for _ in $(seq 1 60); do "$@" 2>/dev/null && return 0; sleep 1; done
   "$@"
 }
-json() { python3 -c "import json,sys; d=json.load(sys.stdin)['subsonic-response']; print($1)"; }
+# A value from an answer, or the default when there is no answer to read
+# (the server busy or restarting): one look that fails is one look, not
+# the end of the script.
+json() {
+  python3 -c "import json,sys
+try:
+    d=json.load(sys.stdin)['subsonic-response']; print($1)
+except Exception:
+    print('${2:-}')"
+}
 
 # Up: the Subsonic ping answers (with error 10, unauthenticated) once the
 # server listens.
@@ -97,17 +115,18 @@ again ping_ok
 # nobody to see it: a scan is asked for again while tracks are missing.
 want=$(find "$LIBRARY" -type f \( -name '*.mp3' -o -name '*.flac' -o -name '*.m4a' \) | wc -l)
 before=""
-have=0 listed=0 albums=0 artists=0
+have=0 listed=0 albums=0 artists=0 settled=no
 for i in $(seq 1 120); do
-  status=$(rest getScanStatus)
-  scanning=$(json 'd["scanStatus"]["scanning"]' <<<"$status")
-  have=$(json 'd["scanStatus"].get("count", 0)' <<<"$status")
+  status=$(rest getScanStatus || true)
+  scanning=$(json 'd["scanStatus"]["scanning"]' unknown <<<"$status")
+  have=$(json 'd["scanStatus"].get("count", 0)' 0 <<<"$status")
   listed=$(rest search3 "query=&artistCount=0&albumCount=0&songCount=5000" \
-    | json 'len(d.get("searchResult3", {}).get("song", []))')
-  albums=$(rest getAlbumList2 "type=alphabeticalByName&size=500" | json 'len(d.get("albumList2", {}).get("album", []))')
-  artists=$(rest getArtists | json 'sum(len(i.get("artist", [])) for i in d.get("artists", {}).get("index", []))')
+    | json 'len(d.get("searchResult3", {}).get("song", []))' 0 || true)
+  albums=$(rest getAlbumList2 "type=alphabeticalByName&size=500" | json 'len(d.get("albumList2", {}).get("album", []))' 0 || true)
+  artists=$(rest getArtists | json 'sum(len(i.get("artist", [])) for i in d.get("artists", {}).get("index", []))' 0 || true)
   now="$listed/$albums/$artists"
   if [[ $scanning == False && $have -ge $want && $listed -ge $want && $now == "$before" ]]; then
+    settled=yes
     break
   fi
   before=$now
@@ -117,6 +136,13 @@ for i in $(seq 1 120); do
   sleep 2
 done
 
-version=$(rest ping | json 'd.get("serverVersion")')
+if [[ $settled != yes ]]; then
+  echo "Navidrome's scan did not settle in 4 minutes: scanning $scanning, $have counted, $listed of $want listed," \
+    "$albums albums, $artists artists" >&2
+  docker logs --tail 40 "$NAME" >&2 2>&1 || true
+  exit 1
+fi
+
+version=$(rest ping | json 'd.get("serverVersion")' unknown)
 echo "Navidrome $version at $URL (Docker: http://$alias:4533): $listed of $want tracks listed," \
   "$albums albums, $artists artists, user test/test"

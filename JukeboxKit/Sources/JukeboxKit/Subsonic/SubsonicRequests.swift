@@ -89,16 +89,26 @@ struct SubsonicConnection: Sendable {
     /// The same query gives the same URL, always: the image cache is keyed
     /// by it.
     func url(_ endpoint: String, _ query: [URLQueryItem] = []) -> URL {
+        URL(string: endpointString(endpoint) + "?" + form(query)) ?? baseURL
+    }
+
+    /// `{base}/rest/{endpoint}.view`, without a query.
+    func endpointString(_ endpoint: String) -> String {
         var string = baseURL.absoluteString
         if let cut = string.firstIndex(where: { $0 == "?" || $0 == "#" }) { string = String(string[..<cut]) }
         while string.hasSuffix("/") { string.removeLast() }
-        string += "/rest/\(endpoint).view"
+        return string + "/rest/\(endpoint).view"
+    }
+
+    /// The query and everything every request carries, escaped: a URL's
+    /// query, or the body of a form POST (application/x-www-form-urlencoded
+    /// takes the same escaping).
+    func form(_ query: [URLQueryItem]) -> String {
         let all = query + auth + [URLQueryItem(name: "v", value: apiVersion),
                                   URLQueryItem(name: "c", value: clientName),
                                   URLQueryItem(name: "f", value: "json")]
-        string += "?" + all.map { "\(JellyfinClient.escape($0.name))=\(JellyfinClient.escape($0.value ?? ""))" }
+        return all.map { "\(JellyfinClient.escape($0.name))=\(JellyfinClient.escape($0.value ?? ""))" }
             .joined(separator: "&")
-        return URL(string: string) ?? baseURL
     }
 
     // MARK: Sending
@@ -107,18 +117,30 @@ struct SubsonicConnection: Sendable {
     /// MusicServerError (`error(_:)`). `capability` is what a missing
     /// endpoint (HTTP 404) means the server lacks.
     func call(_ endpoint: String, _ query: [URLQueryItem] = [], timeout: TimeInterval = 30,
-              lacking capability: ServerCapability? = nil) async throws -> SubsonicBody {
-        let body = try await answer(endpoint, query, timeout: timeout, lacking: capability)
+              lacking capability: ServerCapability? = nil, post: Bool = false) async throws -> SubsonicBody {
+        let body = try await answer(endpoint, query, timeout: timeout, lacking: capability, post: post)
         guard body.isOK else { throw Self.error(body.error) }
         return body
     }
 
     /// The answer whatever its status: for the ping, where a failed status
-    /// still says who answered and why.
+    /// still says who answered and why. `post`: everything in a form POST's
+    /// body instead of the URL, for a server that lists `formPost` — one
+    /// request however many ids (Navidrome 0.64.2: a playlist of all 358
+    /// songs, 10.8 kB of body, in one request, 25–31 ms, measured), and the
+    /// credentials out of the URL.
     func answer(_ endpoint: String, _ query: [URLQueryItem] = [], timeout: TimeInterval = 30,
-                lacking capability: ServerCapability? = nil) async throws -> SubsonicBody {
-        var request = URLRequest(url: url(endpoint, query))
-        request.httpMethod = "GET"
+                lacking capability: ServerCapability? = nil, post: Bool = false) async throws -> SubsonicBody {
+        var request: URLRequest
+        if post, let url = URL(string: endpointString(endpoint)) {
+            request = URLRequest(url: url)
+            request.httpMethod = "POST"
+            request.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+            request.httpBody = Data(form(query).utf8)
+        } else {
+            request = URLRequest(url: url(endpoint, query))
+            request.httpMethod = "GET"
+        }
         request.timeoutInterval = timeout
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         let response = try await Self.send(request, transport: transport)
@@ -230,7 +252,8 @@ struct SubsonicConnection: Sendable {
         if extensions.contains("apiKeyAuthentication") { set.insert(.apiKeySignIn) }
         if atLeast(apiVersion, "1.11.0") { set.formUnion([.instantMix, .similarArtists]) }
         if atLeast(apiVersion, "1.13.0") { set.insert(.topSongs) }
-        if atLeast(apiVersion, "1.14.0") { set.insert(.playlistReorder) }
+        // A move is updatePlaylist's removals and additions (API 1.8.0).
+        if atLeast(apiVersion, "1.8.0") { set.insert(.playlistReorder) }
         if extensions.contains("songLyrics") { set.insert(.syncedLyrics) }
         if openSubsonic { set.formUnion([.replayGain, .lastPlayed]) }
         if extensions.contains("playbackReport") { set.insert(.playbackTimeline) }
@@ -249,7 +272,9 @@ struct SubsonicConnection: Sendable {
 
     /// Ids per request when many go in the query: 100 of Navidrome's
     /// 22-character ids are 3 kB, inside the 8 kB a reverse proxy takes as
-    /// a request line (nginx's default), as JellyfinClient's 100.
+    /// a request line (nginx's default), as JellyfinClient's 100. (Navidrome
+    /// itself took 358 in one GET of 10.9 kB, measured; a proxy in front
+    /// would answer 414.) Only where the server has no `formPost`.
     static let idsPerRequest = 100
 
     static func chunks<T>(_ list: [T], of size: Int = idsPerRequest) -> [[T]] {

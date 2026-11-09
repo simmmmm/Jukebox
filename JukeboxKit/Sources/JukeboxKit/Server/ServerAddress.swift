@@ -51,9 +51,15 @@ enum ServerAddress {
     /// "/web" does.
     static func serverPath(_ path: String) -> String {
         var path = path
-        if let admin = path.range(of: "/admin", options: .caseInsensitive) {
+        var from = path.startIndex
+        while let admin = path.range(of: "/admin", options: .caseInsensitive, range: from..<path.endIndex) {
             let after = path[admin.upperBound...]
-            if after.isEmpty || after.hasPrefix("/") { path = String(path[..<admin.lowerBound]) }
+            if after.isEmpty || after.hasPrefix("/") {
+                path = String(path[..<admin.lowerBound])
+                break
+            }
+            // "/administration": a folder of the proxy's, keep looking.
+            from = admin.upperBound
         }
         while path.hasSuffix("/") { path.removeLast() }
         if path.lowercased().hasSuffix("/app") { path.removeLast(4) }

@@ -40,9 +40,9 @@ public struct SubsonicClient: MusicServer {
 
     /// The answer of a call that needs the session.
     func call(_ endpoint: String, _ query: [URLQueryItem] = [], timeout: TimeInterval = 30,
-              lacking capability: ServerCapability? = nil) async throws -> SubsonicBody {
+              lacking capability: ServerCapability? = nil, post: Bool = false) async throws -> SubsonicBody {
         guard !connection.auth.isEmpty else { throw MusicServerError.notSignedIn }
-        return try await connection.call(endpoint, query, timeout: timeout, lacking: capability)
+        return try await connection.call(endpoint, query, timeout: timeout, lacking: capability, post: post)
     }
 
     // MARK: Who
@@ -331,15 +331,18 @@ public struct SubsonicClient: MusicServer {
         try await playlistAnswer(id: id).entry.map { $0.id ?? "" }
     }
 
-    /// createPlaylist with the first 100 songs (API 1.14.0+ answers with the
-    /// playlist, measured on Navidrome), then updatePlaylist 100 at a time.
-    /// Before 1.14.0 the answer is empty: the newest playlist of that name
-    /// is the one. An unknown song id is dropped by the server (measured).
+    /// createPlaylist with the songs (API 1.14.0+ answers with the
+    /// playlist, measured on Navidrome); more than one GET takes go in one
+    /// form POST where the server lists `formPost`, else the first 100 here
+    /// and the rest added after. Before 1.14.0 the answer is empty: the
+    /// newest playlist of that name is the one. An unknown song id is
+    /// dropped by the server (measured).
     @discardableResult
     public func createPlaylist(name: String, trackIDs: [ItemID]) async throws -> ItemID {
-        let chunks = SubsonicConnection.chunks(trackIDs)
+        let post = trackIDs.count > SubsonicConnection.idsPerRequest ? await postsForms() : false
+        let first = post ? trackIDs : Array(trackIDs.prefix(SubsonicConnection.idsPerRequest))
         let body = try await call("createPlaylist", [URLQueryItem(name: "name", value: name)]
-            + (chunks.first ?? []).map { URLQueryItem(name: "songId", value: $0) })
+            + first.map { URLQueryItem(name: "songId", value: $0) }, post: post)
         var id = body.playlist?.id.flatMap { $0.isEmpty ? nil : $0 }
         if id == nil {
             let named = (try await call("getPlaylists").playlists?.playlist ?? []).filter { $0.name == name }
@@ -347,57 +350,91 @@ public struct SubsonicClient: MusicServer {
                 < ($1.created.flatMap(JellyfinDate.parse) ?? .distantPast) }?.id
         }
         guard let id else { throw MusicServerError.decoding("the new playlist has no id") }
-        for chunk in chunks.dropFirst() { try await add(chunk, to: id) }
+        try await update(id, adding: Array(trackIDs.dropFirst(first.count)), removing: [], forms: post)
         return id
     }
 
     /// updatePlaylist songIdToAdd, at the end, in order, duplicates kept
-    /// (measured: A B C A + D A → A B C A D A), 100 at a time.
+    /// (measured: A B C A + D A → A B C A D A).
     public func addToPlaylist(playlistID: ItemID, trackIDs: [ItemID]) async throws {
-        for chunk in SubsonicConnection.chunks(trackIDs) { try await add(chunk, to: playlistID) }
-    }
-
-    func add(_ ids: [ItemID], to playlistID: ItemID) async throws {
-        _ = try await call("updatePlaylist", [URLQueryItem(name: "playlistId", value: playlistID)]
-            + ids.map { URLQueryItem(name: "songIdToAdd", value: $0) })
+        try await update(playlistID, adding: trackIDs, removing: [])
     }
 
     /// The playlist read again, each entry found there, and updatePlaylist
     /// songIndexToRemove with their positions. The positions count in the
     /// list before the change (measured: removing 0 and 2 of A B C A D A
-    /// left B A D A); more than 100 go highest first, so the ones still to
-    /// send keep their places.
+    /// left B A D A).
     public func removeFromPlaylist(playlistID: ItemID, entryIDs: [String]) async throws {
         guard !entryIDs.isEmpty else { return }
         let songs = try await playlistSongIDs(playlistID)
-        let positions = Self.positions(of: entryIDs, in: songs).sorted(by: >)
-        for chunk in SubsonicConnection.chunks(positions) {
-            _ = try await call("updatePlaylist", [URLQueryItem(name: "playlistId", value: playlistID)]
-                + chunk.map { URLQueryItem(name: "songIndexToRemove", value: String($0)) })
-        }
+        try await update(playlistID, adding: [], removing: Self.positions(of: entryIDs, in: songs))
     }
 
-    /// The playlist read again, the move made in the list, and every song
-    /// written again in the new order: createPlaylist with `playlistId`
-    /// replaces the songs and keeps the name and comment (measured).
-    /// `index` is the place the entry ends up in, as on Jellyfin (measured
-    /// on 12.4: A to 2 in A B C D gives B C A D) and as PlaylistsView sends
-    /// it. An entry the playlist no longer has is .notFound.
+    /// The playlist read again, the move made in the list, and its changed
+    /// part written again: every place from the first one the move touches
+    /// is removed and the songs from there on added back in the new order,
+    /// in one updatePlaylist where it fits (a move near the end of a long
+    /// playlist sends a few songs, not all of them). Measured on Navidrome
+    /// 0.64.2: removals and additions in one request apply the removals
+    /// first (A B C D E, remove 1 and 3, add X: A C E X); a server that
+    /// adds first ends the same, as the additions go after every place
+    /// removed. `index` is the place the entry ends up in, as on Jellyfin
+    /// (measured on 12.4: A to 2 in A B C D gives B C A D) and as
+    /// PlaylistsView sends it. An entry the playlist no longer has is
+    /// .notFound.
     public func movePlaylistEntry(playlistID: ItemID, entryID: String, to index: Int) async throws {
         var songs = try await playlistSongIDs(playlistID)
         guard let from = Self.positions(of: [entryID], in: songs).first else { throw MusicServerError.notFound }
         let to = min(max(0, index), songs.count - 1)
         guard from != to else { return }
+        let count = songs.count
         songs.insert(songs.remove(at: from), at: to)
-        let chunks = SubsonicConnection.chunks(songs)
-        _ = try await call("createPlaylist", [URLQueryItem(name: "playlistId", value: playlistID)]
-            + (chunks.first ?? []).map { URLQueryItem(name: "songId", value: $0) })
-        for chunk in chunks.dropFirst() { try await add(chunk, to: playlistID) }
+        let first = min(from, to)
+        try await update(playlistID, adding: Array(songs[first...]), removing: Array(first..<count))
     }
 
     /// deletePlaylist; an unknown id is 70 (measured): .notFound.
     public func deletePlaylist(id: ItemID) async throws {
         _ = try await call("deletePlaylist", [URLQueryItem(name: "id", value: id)])
+    }
+
+    /// One updatePlaylist where it fits in a GET (100 ids and positions), or
+    /// in a form POST where the server lists `formPost` (Navidrome does).
+    /// Otherwise several, the additions first and then the removals,
+    /// highest first: the positions are the list's before the change, the
+    /// additions go after all of them, and a request lost on the way leaves
+    /// a song twice, never one gone. (Writing the whole list again, as an
+    /// earlier version moved, lost every song after the first 100 when the
+    /// second request failed.) `forms`: whether the server takes a form
+    /// POST, when the caller knows already.
+    func update(_ playlistID: ItemID, adding ids: [ItemID], removing positions: [Int],
+                forms: Bool? = nil) async throws {
+        guard !ids.isEmpty || !positions.isEmpty else { return }
+        func query(_ ids: [ItemID], _ positions: [Int]) -> [URLQueryItem] {
+            [URLQueryItem(name: "playlistId", value: playlistID)]
+                + positions.map { URLQueryItem(name: "songIndexToRemove", value: String($0)) }
+                + ids.map { URLQueryItem(name: "songIdToAdd", value: $0) }
+        }
+        if ids.count + positions.count <= SubsonicConnection.idsPerRequest {
+            _ = try await call("updatePlaylist", query(ids, positions))
+            return
+        }
+        let post: Bool
+        if let forms { post = forms } else { post = await postsForms() }
+        if post {
+            _ = try await call("updatePlaylist", query(ids, positions), timeout: 60, post: true)
+            return
+        }
+        for chunk in SubsonicConnection.chunks(ids) { _ = try await call("updatePlaylist", query(chunk, [])) }
+        for chunk in SubsonicConnection.chunks(positions.sorted(by: >)) {
+            _ = try await call("updatePlaylist", query([], chunk))
+        }
+    }
+
+    /// Whether the server takes a form POST (OpenSubsonic's `formPost`):
+    /// asked only for a list too long for one GET (2 ms on Navidrome).
+    func postsForms() async -> Bool {
+        await connection.extensions().contains("formPost")
     }
 
     // MARK: Playlist entries
@@ -521,6 +558,16 @@ public struct SubsonicClient: MusicServer {
     static let unplayable: Set<String> = ["ogg", "oga", "opus", "spx", "wma", "ape", "wv", "mpc", "tta", "tak",
                                          "dsf", "dff", "mka", "webm"]
 
+    static func cannotPlay(_ track: Track) -> Bool {
+        track.container.map { unplayable.contains($0.lowercased()) } ?? false
+    }
+
+    /// The MP3 a capped stream or download asks for: `maxBitRate` in kbit/s
+    /// and `format=mp3`.
+    static func mp3(kbps: Int) -> [URLQueryItem] {
+        [URLQueryItem(name: "maxBitRate", value: String(kbps)), URLQueryItem(name: "format", value: "mp3")]
+    }
+
     /// `stream?id=` with the credentials (AVPlayer sends no headers). With a
     /// cap: `maxBitRate=<kbit/s>&format=mp3`. Navidrome sends the file when
     /// it is under the cap, like Jellyfin, but converts to Ogg Opus when
@@ -528,32 +575,89 @@ public struct SubsonicClient: MusicServer {
     /// MP3 is the format every Subsonic server converts to. No
     /// `estimateContentLength`: Navidrome's guess was 49 397 bytes for 48 499
     /// sent (measured). `playSessionID` is Jellyfin's; Subsonic has none.
+    ///
+    /// `.original` says `format=raw` (the API's "no conversion", since
+    /// 1.9.0): without a format a server converts by its player settings,
+    /// which Airsonic's are by default for FLAC; Navidrome sends the file
+    /// either way (200 with Content-Length and Accept-Ranges: bytes,
+    /// measured).
     public func streamURL(for track: Track, quality: StreamQuality, playSessionID: String) -> URL {
         var query = [URLQueryItem(name: "id", value: track.id)]
         if let bitrate = quality.maxBitrate {
-            query += [URLQueryItem(name: "maxBitRate", value: String(bitrate / 1000)),
-                      URLQueryItem(name: "format", value: "mp3")]
-        } else if let container = track.container, Self.unplayable.contains(container.lowercased()) {
-            query += [URLQueryItem(name: "maxBitRate", value: "320"), URLQueryItem(name: "format", value: "mp3")]
+            query += Self.mp3(kbps: bitrate / 1000)
+        } else if Self.cannotPlay(track) {
+            query += Self.mp3(kbps: 320)
+        } else {
+            query.append(URLQueryItem(name: "format", value: "raw"))
         }
         return connection.url("stream", query)
+    }
+
+    /// A song's file to save on the phone (docs/OFFLINE.md), a plain file
+    /// a background download fetches with no headers:
+    /// - `.original`: `download?id=`, the file as it is (the spec: "without
+    ///   transcoding or downsampling"); for a format AVPlayer cannot play,
+    ///   the MP3 at 320 that `.original` streams.
+    /// - `.high`, `.normal`: `stream?id=&maxBitRate=256` / `128` with
+    ///   `format=mp3`.
+    ///
+    /// Measured on Navidrome 0.64.2 (9 November 2026, curl with no header,
+    /// one mono file of each kind from the test library: MP3 129 kbit/s
+    /// 97 196 bytes, FLAC 97 kbit/s 69 347, M4A AAC 126 kbit/s 80 892):
+    /// - `download`: each file byte for byte, 200 with its own type
+    ///   (audio/mpeg, audio/flac, audio/mp4), Content-Length, Accept-Ranges:
+    ///   bytes — resumable.
+    /// - `format=mp3`: the MP3 as itself at 256 (it is under the cap) and
+    ///   re-encoded at 128 (129 is over it; 96 779 bytes, 6.03 s); the FLAC
+    ///   as MP3 at the cap (161 541 bytes at 256, 80 875 at 128: these
+    ///   sine tones are smaller as FLAC than any MP3, a real FLAC is
+    ///   800–1000 kbit/s); the M4A as MP3 at 128 at both (Navidrome caps a
+    ///   lossy file's conversion at its own rate). Every conversion 200
+    ///   audio/mpeg, CBR, a duration ffprobe reads within 0.05 s, chunked
+    ///   with no Content-Length (no total for progress, not resumable); a
+    ///   second request for one already made had a Content-Length.
+    /// - `format=aac` is ADTS (audio/aac): AVPlayer plays it, but an ADTS
+    ///   file says nothing of its length, and ffprobe made 6.42 s of the
+    ///   6.03 s MP3's and 5.41 s of the 5.00 s M4A's (8% off), a scrubber
+    ///   that would be as wrong. And not every Subsonic server converts to
+    ///   AAC; every one converts to MP3, which streaming uses too.
+    /// - `format=m4a` is no conversion Navidrome has: the MP3 and the FLAC
+    ///   came as Ogg Opus (audio/ogg), which AVPlayer cannot play.
+    /// - Downloads turned off (ND_ENABLEDOWNLOADS=false): `download` is 200
+    ///   with a JSON error 50 "downloads are disabled", `stream` converts
+    ///   as before — so it is `downloadsAllowed()` that keeps to what the
+    ///   admin said, as on Jellyfin.
+    /// - An unknown id: 200, application/json, error 70; no credentials:
+    ///   error 10. A JSON answer is never audio.
+    public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
+        let id = URLQueryItem(name: "id", value: track.id)
+        switch quality {
+        case .original where Self.cannotPlay(track): return connection.url("stream", [id] + Self.mp3(kbps: 320))
+        case .original: return connection.url("download", [id])
+        case .high: return connection.url("stream", [id] + Self.mp3(kbps: 256))
+        case .normal: return connection.url("stream", [id] + Self.mp3(kbps: 128))
+        }
+    }
+
+    /// getUser's `downloadRole` for the signed-in user (Navidrome 0.64.2:
+    /// true, and false with ND_ENABLEDOWNLOADS=false, measured). True when
+    /// the answer does not say, or the server has no getUser (404), as
+    /// Jellyfin's is when its policy does not say: the download itself
+    /// then tells. Other errors are thrown; the app keeps what it knew.
+    public func downloadsAllowed() async throws -> Bool {
+        let user = credentials.userName.isEmpty ? credentials.userID : credentials.userName
+        do {
+            let body = try await call("getUser", [URLQueryItem(name: "username", value: user)], timeout: 15)
+            return body.user?.downloadRole ?? true
+        } catch MusicServerError.unsupported {
+            return true
+        }
     }
 
     /// `getCoverArt?id=<the coverArt id, else the item's>&size=` with the
     /// credentials (it needs them: without, error 10, measured). Album
     /// covers come back "public, max-age=31536000, immutable"; an unknown
     /// id answers 200 with JSON, which the image view reads as no image.
-    // CONTRACT — the kit agent's: /rest/download for .original, /rest/stream
-    // with a format and maxBitRate otherwise (measured on Navidrome), and
-    // getUser's downloadRole.
-    public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
-        fatalError("contract")
-    }
-
-    public func downloadsAllowed() async throws -> Bool {
-        fatalError("contract")
-    }
-
     public func artworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
         let id = artwork.tag.flatMap { $0.isEmpty ? nil : $0 } ?? artwork.itemID
         return connection.url("getCoverArt", [URLQueryItem(name: "id", value: id),

@@ -142,8 +142,19 @@ public struct JellyfinServer: MusicServer {
         try await mapped { try await client.setFavorite(isFavorite, itemID: item.id) }
     }
 
+    /// A playlist's tracks with an entry id for each place. Jellyfin 12.4's
+    /// own (PlaylistItemId) is the song's id (measured), so a song twice in
+    /// a playlist has one id for both places, which the contract and the
+    /// app's rows (PlaylistsView's ForEach) need apart. Then every place
+    /// gets "<its id>#<n>", n counting that id's earlier places from 0, as
+    /// Subsonic's are made (SubsonicClient.entryIDs); a playlist where no
+    /// song repeats keeps Jellyfin's ids and Jellyfin's own calls.
     public func playlistTracks(playlistID: ItemID) async throws -> [Track] {
-        try await mapped { try await client.playlistTracks(playlistID: playlistID) }
+        var tracks = try await mapped { try await client.playlistTracks(playlistID: playlistID) }
+        let entries = tracks.map(Self.entry)
+        guard Set(entries).count < entries.count else { return tracks }
+        for (i, id) in SubsonicClient.entryIDs(entries).enumerated() { tracks[i].playlistEntryID = id }
+        return tracks
     }
 
     public func createPlaylist(name: String, trackIDs: [ItemID]) async throws -> ItemID {
@@ -154,12 +165,95 @@ public struct JellyfinServer: MusicServer {
         try await mapped { try await client.addToPlaylist(playlistID: playlistID, trackIDs: trackIDs) }
     }
 
+    /// Jellyfin's own ids: DELETE them. A place of a song that repeats
+    /// ("<id>#<n>"): Jellyfin removes every place of an entry id (measured
+    /// on 12.4: A B A C A, remove A, gives B C), so the song's other places
+    /// are added back where they were (`rewrite`).
     public func removeFromPlaylist(playlistID: ItemID, entryIDs: [String]) async throws {
-        try await mapped { try await client.removeFromPlaylist(playlistID: playlistID, entryIDs: entryIDs) }
+        guard entryIDs.contains(where: Self.isPlace) else {
+            return try await mapped { try await client.removeFromPlaylist(playlistID: playlistID, entryIDs: entryIDs) }
+        }
+        try await mapped {
+            let places = try await self.places(playlistID)
+            let gone = Set(SubsonicClient.positions(of: entryIDs, in: places.map(\.entry)))
+            let kept = places.enumerated().filter { !gone.contains($0.offset) }.map(\.element)
+            try await rewrite(playlistID, to: kept, songs: Set(gone.map { places[$0].entry }))
+        }
     }
 
+    /// Jellyfin's own id: its Move (`index` the place the entry ends up in,
+    /// measured: A to 2 in A B C D gives B C A D). A place of a song that
+    /// repeats: Jellyfin moves the first place of that id, and not by that
+    /// rule (measured on 12.4: A B A C A, A to 3, gave B A A C A), so the
+    /// song comes out and goes back at its places in the new order.
     public func movePlaylistEntry(playlistID: ItemID, entryID: String, to index: Int) async throws {
-        try await mapped { try await client.movePlaylistEntry(playlistID: playlistID, entryID: entryID, to: index) }
+        guard Self.isPlace(entryID) else {
+            return try await mapped { try await client.movePlaylistEntry(playlistID: playlistID, entryID: entryID, to: index) }
+        }
+        try await mapped {
+            var places = try await self.places(playlistID)
+            guard let from = SubsonicClient.positions(of: [entryID], in: places.map(\.entry)).first else {
+                throw JellyfinError.notFound
+            }
+            let to = min(max(0, index), places.count - 1)
+            guard from != to else { return }
+            let song = places[from].entry
+            places.insert(places.remove(at: from), at: to)
+            try await rewrite(playlistID, to: places, songs: [song])
+        }
+    }
+
+    /// One place in a playlist: Jellyfin's entry id and the track there.
+    struct Place: Sendable {
+        var entry: String
+        var track: ItemID
+    }
+
+    static func entry(_ track: Track) -> String { track.playlistEntryID ?? track.id }
+
+    /// An entry id made by `playlistTracks`, "<id>#<n>"; Jellyfin's own are
+    /// GUIDs, without "#".
+    static func isPlace(_ entryID: String) -> Bool {
+        guard let mark = entryID.lastIndex(of: "#") else { return false }
+        let digits = entryID[entryID.index(after: mark)...]
+        return !digits.isEmpty && digits.allSatisfy { $0.isASCII && $0.isNumber }
+    }
+
+    func places(_ playlistID: ItemID) async throws -> [Place] {
+        try await client.playlistTracks(playlistID: playlistID).map { Place(entry: Self.entry($0), track: $0.id) }
+    }
+
+    /// The playlist made into `target`, which differs from what it is only
+    /// in the places of `songs` (entry ids): every place of those removed in
+    /// one DELETE, then each place they have in `target` added at its
+    /// position (POST /Playlists/{id}/Items?ids=&position=, measured on
+    /// 12.4 to insert there and keep it), in order from the start, so the
+    /// places before each one are already right; neighbours go in one
+    /// request. Not atomic, as Jellyfin has no call that is: a request lost
+    /// after the DELETE leaves those songs' places out, never another song's.
+    /// (POST /Playlists/{id} with `Ids` would write the whole list at once,
+    /// but on 12.4 its items showed the new order while the playlist kept
+    /// the old one and the next change went on from that: not used.)
+    func rewrite(_ playlistID: ItemID, to target: [Place], songs: Set<String>) async throws {
+        guard !songs.isEmpty else { return }
+        let user = try client.requireUser()
+        try await client.removeFromPlaylist(playlistID: playlistID, entryIDs: songs.sorted())
+        var i = 0
+        while i < target.count {
+            guard songs.contains(target[i].entry) else { i += 1; continue }
+            var run = [target[i].track]
+            var next = i + 1
+            while next < target.count, songs.contains(target[next].entry), run.count < JellyfinClient.idsPerRequest {
+                run.append(target[next].track)
+                next += 1
+            }
+            try await client.send("POST", "/Playlists/\(JellyfinClient.segment(playlistID))/Items", query: [
+                URLQueryItem(name: "ids", value: run.joined(separator: ",")),
+                URLQueryItem(name: "position", value: String(i)),
+                URLQueryItem(name: "userId", value: user),
+            ])
+            i = next
+        }
     }
 
     public func deletePlaylist(id: ItemID) async throws {

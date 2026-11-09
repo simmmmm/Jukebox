@@ -9,9 +9,10 @@ their reference player, does.
 This is the design of the layer between the app and a server, and the map
 from each thing the app asks to Jellyfin's and Subsonic's requests. The
 protocol is `JukeboxKit/Sources/JukeboxKit/Server/MusicServer.swift`
-(CONTRACT: the value types are complete and tested, the servers are the next
-round's). Every number below was measured on 8 November 2026 against the two
-test servers, unless it says otherwise:
+(CONTRACT); both servers are built and tested against it, the kit's half
+done (9 November 2026), the app's move to it the next round's. Every number
+below was measured on 8 and 9 November 2026 against the two test servers,
+unless it says otherwise:
 
 - Jellyfin 12.4.0 (`dev/jellyfin-test-server.sh`), the measurements in
   `JellyfinClient.swift`'s comments;
@@ -39,12 +40,16 @@ The OpenSubsonic specification was read at its commit c1fd43f (2 November
 | `ItemRef`, `MixSeed`, `PlaybackEvent` | What the calls take where Subsonic needs more than an id: which kind of item a favourite is, what a mix starts from, which moment of a play is reported. |
 | `MusicServerError` | Every server's errors as the app tells them apart. |
 
-The next round adds, in `JukeboxKit/Sources/JukeboxKit/Server/`:
-`JellyfinServer` (a thin wrapper around `JellyfinClient`, which stays as it
-is), `ServerAddress` (the candidates and the detection), and in
-`Server/Subsonic/` the `SubsonicServer`, its requests, its answers' shapes,
-and an MD5 written out in Swift (`CryptoKit` is Apple's only; the kit is
-Foundation only and tested on Linux).
+The servers, in `JukeboxKit/Sources/JukeboxKit/`:
+- `Server/JellyfinServer.swift`: Jellyfin as a `MusicServer`, a thin wrapper
+  around `JellyfinClient`, which stays as it is; it adds one thing, an entry
+  id for each place of a song that is in a playlist twice (below);
+- `Server/ServerAddress.swift`: the candidates and the detection;
+- `Subsonic/`: `SubsonicClient` (the `MusicServer`), `SubsonicRequests`
+  (the one connection every call goes through), `SubsonicDTO` (the answers'
+  shapes, read leniently, and the mapping into the models), `SubsonicSignIn`,
+  and an MD5 written out in Swift (`CryptoKit` is Apple's only; the kit is
+  Foundation only and tested on Linux).
 
 ## Decisions
 
@@ -96,9 +101,11 @@ Foundation only and tested on Linux).
    half the track, measured) is not used: `reportPlayback` goes with
    `ignoreScrobble=true`, as Feishin sends it. So a skip counts nowhere and
    a play counts once on every server.
-9. **Converted streams are MP3 on Subsonic.** Navidrome converts to Ogg
-   Opus when only `maxBitRate` is given (measured), which AVPlayer cannot
-   play. `format=mp3` is the one target every Subsonic server converts to.
+9. **Converted streams and downloads are MP3 on Subsonic.** Navidrome
+   converts to Ogg Opus when only `maxBitRate` is given (measured), which
+   AVPlayer cannot play. `format=mp3` is the one target every Subsonic
+   server converts to; Navidrome's AAC is ADTS, which carries no length
+   (below, "Downloads, measured").
 10. **The keychain entry migrates in place.** `ServerCredentials` decodes
     the Jellyfin-only app's `Credentials` (tested,
     `ServerCredentialsTests`), so nobody is signed out by the update.
@@ -295,11 +302,15 @@ query is escaped as `JellyfinClient.url` escapes it (only A–Z a–z 0–9 - . 
 ~ stay), and dates are read with `JellyfinDate`, which takes Navidrome's nine
 fractional digits ("2026-11-08T10:14:28.62878675Z").
 
-Long lists of ids (a playlist's songs): as a form POST
-(`application/x-www-form-urlencoded`) where the server lists `formPost`
-(Navidrome does; a POST ping measured ok); otherwise 100 ids a request, as
-JellyfinClient does: 100 `&songId=` with Navidrome's 22-character ids are
-3 kB, inside the 8 kB a reverse proxy takes as a request line.
+Long lists of ids (a playlist's songs): up to 100 ids and positions go in
+one GET; more go in one form POST (`application/x-www-form-urlencoded`,
+everything in the body, the credentials too) where the server lists
+`formPost` — asked only then, 2 ms. Navidrome lists it: a playlist of all
+358 songs in one POST of 10.8 kB, 25–31 ms (measured; Navidrome itself also
+took them in one GET of 10.9 kB, but a reverse proxy in front answers 414
+past its 8 kB request line, nginx's default). Without `formPost`, 100 a
+request, as JellyfinClient does: 100 `&songId=` with Navidrome's
+22-character ids are 3 kB.
 
 ### Errors
 
@@ -362,10 +373,10 @@ app does where a Subsonic server lacks it.
 |---|---|---|
 | `setFavorite(_:item:)` | POST/DELETE /UserFavoriteItems/{id} | `star` / `unstar` with `id=` (a song), `albumId=` or `artistId=` by `ItemRef`. Navidrome took all three, and `id=` for an album or an artist too; an unknown id is ok (logged "Cannot star/unstar unknown id"). The item's `starred` date is the favourite (`getStarred2` lists them; not needed, the items say it). |
 | `playlistTracks(playlistID:)` | GET /Playlists/{id}/Items, `PlaylistItemId` | `getPlaylist?id=` → `playlist.entry[]` (Child) in order, duplicates kept; entry ids made as below |
-| `createPlaylist(name:trackIDs:)` | POST /Playlists (ids in the body) | `createPlaylist?name=&songId=…` → `playlist.id` (API 1.14.0+ answers with the playlist; measured). More than 100: the first 100, then `updatePlaylist` 100 at a time (or one form POST). A playlist with no songs: `name` alone (measured ok, `songCount` 0). An unknown song id is dropped silently (measured: ok, `songCount` 0). |
+| `createPlaylist(name:trackIDs:)` | POST /Playlists (ids in the body) | `createPlaylist?name=&songId=…` → `playlist.id` (API 1.14.0+ answers with the playlist; measured; before, the newest playlist of that name). More than 100: one form POST with `formPost`, else the first 100 and then `updatePlaylist` 100 at a time. A playlist with no songs: `name` alone (measured ok, `songCount` 0). An unknown song id is dropped silently (measured: ok, `songCount` 0). |
 | `addToPlaylist(playlistID:trackIDs:)` | POST /Playlists/{id}/Items?ids= | `updatePlaylist?playlistId=&songIdToAdd=…`, at the end, in order, duplicates kept (measured A B C A + D A → A B C A D A) |
 | `removeFromPlaylist(playlistID:entryIDs:)` | DELETE /Playlists/{id}/Items?entryIds= | `getPlaylist`, then `updatePlaylist?playlistId=&songIndexToRemove=…` with the entries' positions there. All positions count in the playlist before the change (measured: removing 0 and 2 of A B C A D A left B A D A); a position past the end is ignored (measured: ok, nothing removed). |
-| `movePlaylistEntry(playlistID:entryID:to:)` | POST /Playlists/{id}/Items/{entry}/Move/{index} | `getPlaylist`, the move made in the list, then `createPlaylist?playlistId=&songId=…` with every song in the new order: with `playlistId` it replaces the songs and keeps the name and comment (measured: renamed "Renamed", comment "hello", then replaced: both kept). |
+| `movePlaylistEntry(playlistID:entryID:to:)` | POST /Playlists/{id}/Items/{entry}/Move/{index}; for a place of a song that repeats, below | `getPlaylist`, the move made in the list, then one `updatePlaylist` that removes every place from the first the move touches and adds the songs from there on in the new order. Measured: removals and additions in one request apply the removals first, by the positions before the change (A B C D E, remove 1 and 3, add X: A C E X); a server that adds first ends the same, as the additions go after every place removed. A move near the end of a long playlist sends a few songs. |
 | `deletePlaylist(id:)` | DELETE /Items/{id} | `deletePlaylist?id=`; unknown: 70 (measured) |
 
 ### What only the server knows
@@ -381,7 +392,9 @@ app does where a Subsonic server lacks it.
 
 | Member | Jellyfin | Subsonic |
 |---|---|---|
-| `streamURL(for:quality:playSessionID:)` | /Audio/{id}/universal, AAC over HLS when capped | `stream?id=` and the credentials. `.original`: nothing more, the file as it is — unless its format is one AVPlayer cannot play (Ogg, Opus, WMA, APE, WavPack, DSD: needs `Track.container`, below), then as `.high`. Capped: `maxBitRate=<kbit/s>&format=mp3` (320, 256, 128). `playSessionID` is not sent: Subsonic has no play sessions. |
+| `streamURL(for:quality:playSessionID:)` | /Audio/{id}/universal, AAC over HLS when capped | `stream?id=` and the credentials. `.original`: `format=raw`, the file as it is (the API's "no conversion", 1.9.0+: without a format a server converts by its player settings, which Airsonic's are by default for FLAC; Navidrome sends the file either way) — unless its format is one AVPlayer cannot play (Ogg, Opus, WMA, APE, WavPack, DSD, by `Track.container`, Subsonic's `suffix`), then MP3 at 320. Capped: `maxBitRate=<kbit/s>&format=mp3` (320, 256, 128). `playSessionID` is not sent: Subsonic has no play sessions. |
+| `downloadURL(for:quality:)` | JellyfinClient.downloadURL (docs/OFFLINE.md) | `.original`: `download?id=`, the file byte for byte (MP3 at 320 for what AVPlayer cannot play); `.high`, `.normal`: `stream?id=&maxBitRate=256` / `128` with `format=mp3`. Below. |
+| `downloadsAllowed()` | /Users/Me's Policy.EnableContentDownloading | `getUser?username=` → `downloadRole`; true when absent or without getUser (404) |
 | `artworkURL(_:maxPixelSize:)` | /Items/{id}/Images/Primary?fillWidth=&fillHeight=&tag= | `getCoverArt?id=<artwork.tag ?? artwork.itemID>&size=<px>` and the credentials (it needs them: without, error 10, measured) |
 | `report(_:_:)` | below | below |
 
@@ -419,6 +432,47 @@ cannot seek in it. A second request for the same conversion answered a
 Range request with 206 (Navidrome keeps conversions for a while). An
 unknown id is 200 with a JSON error (application/json), not audio:
 AVPlayer fails the item, as for any bad URL.
+
+### Downloads, measured
+
+Navidrome 0.64.2, 9 November 2026, curl with no header (as a background
+download task fetches), one mono file of each kind: MP3 129 kbit/s 97 196
+bytes, FLAC 97 kbit/s 69 347, M4A (AAC) 126 kbit/s 80 892; `file` and
+`ffprobe` read what came.
+
+| Asked | MP3 | FLAC | M4A |
+|---|---|---|---|
+| `download` | the file byte for byte, audio/mpeg, Content-Length, Accept-Ranges: bytes | the file, audio/flac | the file, audio/mp4 |
+| `stream` `format=mp3&maxBitRate=256` (`.high`) | the file (under the cap) | MP3 256, 161 541 bytes | MP3 **128**, 81 065 (Navidrome caps a lossy file's conversion at its own rate) |
+| `format=mp3&maxBitRate=128` (`.normal`) | MP3 128, 96 779 bytes (129 is over the cap) | MP3 128, 80 875 | MP3 128, 81 065 |
+| `format=aac&maxBitRate=256` | ADTS AAC, audio/aac; ffprobe: 6.42 s for 6.03 | ADTS; 4.96 s for 5.00 | ADTS; 5.41 s for 5.00 |
+| `format=m4a&maxBitRate=256` | **Ogg Opus**, audio/ogg | **Ogg Opus** | the file (no m4a conversion: Navidrome sends it as it is) |
+| `format=raw` | the file | the file | the file |
+
+Every MP3 conversion: 200 audio/mpeg, CBR, a length ffprobe reads within
+0.05 s, chunked with no Content-Length (no total for progress, not
+resumable) — except a conversion Navidrome has made before, which comes
+from its cache with a Content-Length (seen in the live tests). So `.high`
+and `.normal` are MP3: AVPlayer plays it from a file, every Subsonic server
+converts to it, and its length is right; ADTS says nothing of its length
+(ffprobe was 8% off, a scrubber would be too), and not every server has
+AAC. (These sine tones are smaller as FLAC than as any MP3; a real FLAC is
+800–1000 kbit/s, and an AAC of 256 at `.high` comes as MP3 256, one
+generation more, the same size.) `OfflineFile.fileName` names each by its
+Content-Type: mp3, flac, m4a.
+
+Downloads turned off (`ND_ENABLEDOWNLOADS=false`, a second Navidrome):
+`getUser`'s `downloadRole` false; `download` 200 with a JSON error 50
+"downloads are disabled"; `stream` converts as before — so it is
+`downloadsAllowed()` that keeps to what the admin said, as on Jellyfin. An
+unknown id: 200, application/json, error 70; no credentials: error 10.
+Every Subsonic error is HTTP 200 with JSON: **the app's downloader must
+not keep an answer whose Content-Type is not audio** (OfflineDownloader
+keeps any 2xx today, and would save the JSON as "<id>.m4a").
+
+`getUser` (Navidrome 0.64.2, the test user, its admin): `streamRole` and
+`downloadRole` true, `playlistRole` **false** — and it makes playlists all
+the same, so no other role is read as a rule.
 
 OpenSubsonic's `transcoding` extension (`getTranscodeDecision`, a POST with
 what the player can play) would let the server choose; Navidrome lists it.
@@ -500,19 +554,43 @@ move, every later position is another song's. So:
   nothing (it is gone: skipped, as Jellyfin skips an unknown entry id).
 - **Removing** sends the positions found, all at once (they count in the
   list before the change, measured).
-- **Moving** writes the whole list again in the new order with
-  `createPlaylist?playlistId=` (measured to keep the name and comment).
-  `index` counts in the list before the move, as Jellyfin's. A change made
-  on another device between the read and the write is overwritten; a
-  playlist is edited by one person at a time, and the read is milliseconds
-  before the write.
+- **Moving** writes again only the part of the list the move changes
+  (above, the map). `index` is the place the entry ends up in, as on
+  Jellyfin (measured on 12.4: A to 2 in A B C D gives B C A D; every move
+  in a list of six checked against that rule, SubsonicMappingTests). A
+  change made on another device between the read and the write is
+  overwritten; a playlist is edited by one person at a time, and the read
+  is milliseconds before the write.
+- **A lost request loses no song.** In one request where it fits; else, on
+  a server without `formPost`, the additions go first, then the removals,
+  highest first: a request lost on the way leaves a song twice, never one
+  gone (tested by failing each request of a move in turn). The earlier
+  version wrote a move as the whole list again, the first 100 songs by
+  `createPlaylist?playlistId=` and then the rest: a second request lost
+  lost every song after the hundredth.
 
-Jellyfin's entry ids stay its own `PlaylistItemId`.
+**Jellyfin**, found by the contract test (ServerContractTests): 12.4's
+`PlaylistItemId` is the song's own id, so a song twice in a playlist has
+one entry id for both places (measured: A B A gave A, B, A). Removing it
+removes every place (A B A C A, remove A: B C), and a move moves the first,
+and not by its rule (A B A C A, A to 3: B A A C A). So `JellyfinServer`
+gives the places of such a playlist "<id>#<n>", as Subsonic's are made,
+and changes one place by removing the song (every place, one DELETE) and
+adding it back at the places it keeps, in order from the start, with
+`POST /Playlists/{id}/Items?ids=&position=` (measured to insert there and
+to keep it: `GET /Playlists/{id}`'s `ItemIds` agreed). Not atomic, as
+Jellyfin has no call that is: a request lost after the DELETE leaves that
+song's places out, never another song's. `POST /Playlists/{id}` with `Ids`
+would write the whole list at once, but on 12.4 the items then showed the
+new order while the playlist kept the old one, and the next change went on
+from the old: not used. A playlist where no song repeats keeps Jellyfin's
+own ids and calls, as before.
 
 ## The models, from Subsonic's answers
 
-The models do not change for this (they were server-neutral in shape
-already); the next round maps:
+The models were server-neutral in shape already; the mapping
+(`SubsonicDTO.swift`, tested on Navidrome's own answers in
+SubsonicMappingTests, and on the live server):
 
 **Track** ← `Child` (`search3`, `getSong`, `getAlbum.song`, `getPlaylist.entry`, the mixes)
 
@@ -551,18 +629,15 @@ can ask for it).
 
 **Genre** ← `genre`: `value` → `id` and `name`, `songCount`, `albumCount`.
 
-Proposed for the models (Models.swift is the lead's; nothing here needs
-them to compile):
-- `Track.container: String?` — Jellyfin's `Container`, Subsonic's
-  `suffix` — so `.original` can ask for a conversion of a file AVPlayer
-  cannot play, on Subsonic, where nothing converts it otherwise.
+In the models since the first round (Models.swift):
+- `Track.container: String?` — Subsonic's `suffix` (Jellyfin leaves it nil:
+  its universal URL lists what the player plays and Jellyfin decides) — so
+  `.original` asks for a conversion of a file AVPlayer cannot play, on
+  Subsonic, where nothing converts it otherwise.
 - `Playlist.isReadOnly: Bool` — OpenSubsonic's `readonly` (Navidrome:
-  false for one's own), Subsonic's `owner` ≠ the user; Jellyfin 10.9's
-  shared playlists — so Edit is not offered where the server would answer
-  50.
-- The comments that say Jellyfin ("made from Jellyfin's BaseItemDto",
-  `Artwork`'s "tag", `normalizationGain`'s "Jellyfin 10.9+") to say "the
-  server", with Subsonic's field beside.
+  false for one's own, measured), else Subsonic's `owner` ≠ the user — so
+  Edit is not offered where the server would answer 50. False on Jellyfin.
+- The comments say "the server", with Subsonic's field beside Jellyfin's.
 
 ## Capabilities
 
@@ -575,7 +650,7 @@ them to compile):
 | `topSongs` | never | API 1.13.0+ (by id with `topSongsByArtistId`) | yes (both), `{}` without agents | Last.fm, or the listener's most played |
 | `lyrics` | 10.9+ | always (`getLyrics`, API 1.2.0) | yes | no lyrics button |
 | `syncedLyrics` | 10.9+ | `songLyrics` listed | `songLyrics` 1, 2 | plain lines |
-| `playlistReorder` | always | API 1.14.0+ (`createPlaylist` with `playlistId`) | yes | no move handles |
+| `playlistReorder` | always | API 1.8.0+ (`updatePlaylist`'s removals and additions) | yes | no move handles |
 | `replayGain` | 10.9+ | OpenSubsonic | yes | Normalize Volume off, with a footnote |
 | `playbackTimeline` | always | `playbackReport` listed | listed | `scrobble` only |
 | `lastPlayed` | always | OpenSubsonic (`played`) | yes | taste at 0.6, Recently Played from this device |
@@ -600,22 +675,49 @@ walked; no `formPost` — 100 ids a request; no `getOpenSubsonicExtensions`
 `jukebox` (`http://navidrome:4533` from the kit's tests,
 `http://localhost:4533` from here) on Jellyfin's made-up library, read-only,
 makes the user test/test through `/auth/createAdmin` (Navidrome's own API:
-a fresh server has no user), and waits for the scan (`getScanStatus`: 358
-of 358 within seconds of starting). `--reset` forgets Navidrome's database; the
-play counts measured above live in it until then. The calls above were made
-with curl, token authentication, one salt.
+a fresh server has no user), and waits for the scan (`getScanStatus`, an
+empty `search3`, the albums and artists unchanged for one more look: 358 of
+358 in 6 s from a fresh database, 2.4 s again). A look that fails is one
+look; a scan that has not settled in 4 minutes ends the script with an
+error and Navidrome's log (CI's log has it then); the image is pulled again
+up to four times. `--reset` forgets Navidrome's database; the play counts
+the tests make live in it until then. `ci/kit.sh` runs Jellyfin's script,
+then this one, then `dev/kit-test.sh`, which passes `NAVIDROME_URL`,
+`NAVIDROME_USER` and `NAVIDROME_PASSWORD` when the container runs, as it
+does Jellyfin's.
+
+The tests (9 November 2026, `dev/kit-test.sh` with both servers: 111
+XCTest tests, 2 skipped — LRCLIB's live ones, no internet here — and 236
+swift-testing tests in 22 suites, none failed):
+
+| Suite | What |
+|---|---|
+| SubsonicClientTests | The token (md5(password + salt), one salt a session, in every request and URL, the password nowhere), error 41 (an API key, or the password only over https or at home), the envelope's every error and HTTP's, versions, capabilities, the stream, download and artwork URLs, the reports with and without `playbackReport`, the mixes, lyrics, favourites, `downloadsAllowed`. MD5 against RFC 1321's vectors, the padding's edges and `md5sum`. |
+| SubsonicMappingTests | Navidrome's answers into Track, Album, Artist, Playlist, Genre, Lyrics and SearchResults, and other servers' shapes (numbers for ids, one object for a list, no OpenSubsonic); `allTracks` in pages, and by the albums where a server does not page or will not search for nothing; every playlist change against a playlist kept as Navidrome keeps it, long ones with and without `formPost`, and a request lost at each step. |
+| JellyfinServerTests | A song twice in a Jellyfin playlist, against a playlist kept as 12.4 keeps it: its places, removing one, every move of six, a lost request. |
+| ServerAddressTests | The candidates for what people type; where a password may go; detection of Jellyfin, Navidrome, other Subsonic servers and neither; the order; both real servers as typed, from Navidrome's web app's address and by the host alone ("navidrome" found at :4533). |
+| NavidromeIntegrationTests | The real Navidrome: signing in, the library's numbers (358, 54, 23, 23 genres; 92 tracks with guests, 294 with two genres or more), every album's order, a known track, unknown ids, a playlist of all 358 by form POST, the files at every quality, artwork, now playing, the mixes without agents. |
+| ServerContractTests | The same checks through `any MusicServer` on both servers, opened as the app opens them; and that the two give the same library: 358 tracks matched by album artist, album, disc, track and title, with the same credits, genres, years and lengths (within a second), the same 54 albums and 23 artists. |
+
+Measured by them on Navidrome 0.64.2 (localhost, Docker): `allTracks`
+(getAlbumList2, then one search3) 51–59 ms, in pages of 100 71 ms; a move
+in a playlist of 358 (read, one POST) 50 ms; mixes 7–32 ms, 20 songs each,
+all sharing a genre with the seed for a track, an album and a genre, 11 of
+20 for an artist; play counts 0 → 0 at `.nowPlaying` → 1 at `.played` → 1
+after progress and a stop at the end, on Jellyfin and Navidrome alike.
 
 ## The next rounds
 
-- **Kit**: `ServerAddress` (candidates, detection) with tests against both
-  test servers; `JellyfinServer`; `SubsonicServer` with its answers decoded
-  from the shapes above (fixtures from the measured answers) and an
-  integration suite against Navidrome (`dev/kit-test.sh` passes
-  `NAVIDROME_URL` when the container runs, as it does `JELLYFIN_URL`); MD5
-  with RFC 1321's test vectors. `MusicServers`' bodies.
+- **Kit** (done, 9 November 2026): `ServerAddress` (candidates,
+  detection) with tests against both test servers; `JellyfinServer`;
+  `SubsonicClient` with its answers decoded from the shapes above and an
+  integration suite against Navidrome; a shared contract suite run on both
+  servers; MD5 with RFC 1321's test vectors; `MusicServers`' bodies.
 - **App** (done, 9 November 2026; docs/ARCHITECTURE.md, "In the app"):
   the tables in "What the app asks of a server"; the sign-in screen's API
   key field and its two new messages; the strings that say Jellyfin;
-  `RadioController`'s seeds; the player's `.nowPlaying`.
+  `RadioController`'s seeds; the player's `.nowPlaying`; the offline
+  downloader refusing a non-audio answer (above).
 - **Open**: when a play counts for Last.fm (above); seeking in a converted
-  stream (above); `Track.container` and `Playlist.isReadOnly` (the lead's).
+  stream (above); OpenSubsonic's `sonicSimilarity` for `instantMix` where a
+  server lists it; Navidrome's `transcoding` decision.
