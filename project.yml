@@ -73,7 +73,7 @@ targets:
         # certificate the phone does not know: Jukebox goes where it is told.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
-        NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin server on this network.
+        NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin, Navidrome or other music server on this network.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tijmen.Jukebox
