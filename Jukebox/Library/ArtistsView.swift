@@ -39,7 +39,7 @@ struct ArtistsView: View {
         .overlay {
             if showsEmptyState {
                 LibraryEmptyState(query: query, emptyTitle: "No Artists", emptySymbol: "music.mic",
-                                  emptyMessage: "Artists on your Jellyfin server appear here.")
+                                  emptyMessage: "Artists on your \(library.serverKind) server appear here.")
             }
         }
         .refreshable { await library.refresh() }
@@ -83,9 +83,10 @@ struct ArtistDetailView: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
-    /// Jellyfin's own idea of who is alike, for when the radio's graph
-    /// knows nobody near this artist yet.
-    @State private var jellyfinSimilar: [Artist] = []
+    /// The server's own idea of who is alike (Jellyfin's /Similar, a
+    /// Subsonic server's getArtistInfo2, from Last.fm there), for when the
+    /// radio's graph knows nobody near this artist yet.
+    @State private var serverSimilar: [Artist] = []
     @State private var showsWholeOverview = false
 
     var body: some View {
@@ -181,7 +182,7 @@ struct ArtistDetailView: View {
                 }
             }
         }
-        .task(id: artist.id) { await loadJellyfinSimilar() }
+        .task(id: artist.id) { await loadServerSimilar() }
     }
 
     private func header(_ shown: Artist) -> some View {
@@ -237,7 +238,7 @@ struct ArtistDetailView: View {
         }
         Section {
             Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
-                Task { await library.toggleFavorite(shown.id) }
+                Task { await library.toggleFavorite(.artist(shown.id)) }
             }
         }
     }
@@ -253,7 +254,7 @@ struct ArtistDetailView: View {
     }
 
     /// The radio's graph first (the library's own edges, and Last.fm's with
-    /// a key); Jellyfin's similar artists when the graph knows nobody.
+    /// a key); the server's similar artists when the graph knows nobody.
     /// Only artists in the library: a tile must open a page with music.
     private func similarArtists(to shown: Artist) -> [Artist] {
         var result: [Artist] = []
@@ -266,16 +267,18 @@ struct ArtistDetailView: View {
             if result.count == 12 { break }
         }
         if result.isEmpty {
-            return jellyfinSimilar.filter { $0.id != shown.id }
+            return serverSimilar.filter { $0.id != shown.id }
         }
         return result
     }
 
-    private func loadJellyfinSimilar() async {
-        guard let client = library.client else { return }
-        let found = (try? await client.similarArtists(artistID: artist.id, limit: 20)) ?? []
+    /// Not asked of a server that has no such call (a Subsonic server
+    /// before API 1.11): the graph's are all there is then.
+    private func loadServerSimilar() async {
+        guard let server = library.server, library.can(.similarArtists) else { return }
+        let found = (try? await server.similarArtists(artistID: artist.id, limit: 20)) ?? []
         var seen = Set<ItemID>()
-        jellyfinSimilar = found.compactMap { candidate in
+        serverSimilar = found.compactMap { candidate in
             guard let own = library.artist(id: candidate.id) ?? library.artist(candidate.ref),
                   seen.insert(own.id).inserted else { return nil }
             return own

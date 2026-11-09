@@ -1,6 +1,10 @@
-// Covers and artist photos from Jellyfin, at the size they are drawn, held
-// in memory and on disk (URLCache): Jellyfin's image URLs carry the image's
-// tag, so a cached one is never stale and scrolling back never refetches.
+// Covers and artist photos from the server, at the size they are drawn, held
+// in memory and on disk (URLCache), keyed by URL. Jellyfin's image URLs carry
+// the image's tag, so a cached one is never stale and scrolling back never
+// refetches; a Subsonic server's carry the coverArt id (Navidrome's has the
+// image's hash in it) and the session's one token and salt, made once at
+// sign-in so that the same cover is always the same URL (docs/SERVERS.md,
+// decision 4).
 
 import JukeboxKit
 import SwiftUI
@@ -200,13 +204,13 @@ struct ArtworkView: View {
     }
 
     private var url: URL? {
-        guard let artwork, let client = app.client else { return nil }
+        guard let artwork, let server = app.server else { return nil }
         let points = size ?? 300
-        return client.imageURL(artwork, maxPixelSize: ImagePipeline.bucket(Int(points * displayScale)))
+        return server.artworkURL(artwork, maxPixelSize: ImagePipeline.bucket(Int(points * displayScale)))
     }
 }
 
-/// An artist's photo in a circle, or their initials when Jellyfin has none.
+/// An artist's photo in a circle, or their initials when the server has none.
 struct ArtistAvatar: View {
     let artist: Artist
     var size: CGFloat?

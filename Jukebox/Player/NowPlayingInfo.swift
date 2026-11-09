@@ -19,7 +19,7 @@ final class NowPlayingInfo {
 
     /// A new track, or the same one with its place in the queue changed.
     func show(_ entry: QueueEntry, index: Int, count: Int, elapsed: TimeInterval, duration: TimeInterval,
-              rate: Double, client: JellyfinClient?) {
+              rate: Double, server: (any MusicServer)?) {
         let track = entry.track
         var info: [String: Any] = [:]
         info[MPMediaItemPropertyTitle] = track.name
@@ -41,7 +41,7 @@ final class NowPlayingInfo {
             artworkImage = nil
             artworkTask?.cancel()
             artworkTask = nil
-            loadArtwork(client: client)
+            loadArtwork(server: server)
         }
         if let artworkImage {
             info[MPMediaItemPropertyArtwork] = artworkImage
@@ -75,9 +75,9 @@ final class NowPlayingInfo {
 
     /// The cover at 600 pixels, from the app's own image cache when it is
     /// there (it usually is: the screen that started the music drew it).
-    private func loadArtwork(client: JellyfinClient?) {
-        guard let artwork, let client else { return }
-        let url = client.imageURL(artwork, maxPixelSize: 600)
+    private func loadArtwork(server: (any MusicServer)?) {
+        guard let artwork, let server else { return }
+        let url = server.artworkURL(artwork, maxPixelSize: 600)
         if let image = ImagePipeline.shared.cached(url) {
             artworkImage = Self.makeArtwork(image)
             return

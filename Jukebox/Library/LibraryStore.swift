@@ -10,6 +10,10 @@
 // LibraryIndex (built off the main actor, with the LibrarySnapshot) holds
 // positions into them. A favourite or a play changes one element in place,
 // so every list, the hearts and the next snapshot agree without a reload.
+//
+// The server is a MusicServer, Jellyfin or Subsonic (docs/SERVERS.md): each
+// gives "everything" in the pages that suit it, and every change here is the
+// same call to both. Errors are MusicServerError.
 
 import Foundation
 import JukeboxKit
@@ -40,7 +44,7 @@ final class LibraryStore {
     /// actor when `tracks` changes.
     private(set) var snapshot: LibrarySnapshot = .empty
     private(set) var lastLoaded: Date?
-    private(set) var client: JellyfinClient?
+    private(set) var server: (any MusicServer)?
 
     /// Favourite tracks, albums and artists by id: what every heart reads,
     /// changed at once when one is tapped.
@@ -48,7 +52,7 @@ final class LibraryStore {
     /// Positions into the arrays above; replaced together with them.
     private var index = LibraryIndex()
 
-    @ObservationIgnored private var credentials: Credentials?
+    @ObservationIgnored private var credentials: ServerCredentials?
     @ObservationIgnored private var loadTask: Task<Void, Never>?
     @ObservationIgnored private var snapshotTask: Task<Void, Never>?
     /// Bumped by `open` and `reset`: a load that ends after a sign-out (or
@@ -58,7 +62,8 @@ final class LibraryStore {
     init() {}
 
     /// Signed in: the cache at once, then the server.
-    func open(client: JellyfinClient, credentials: Credentials) async {
+    func open(server: any MusicServer) async {
+        let credentials = server.credentials
         let started = Date()
         if let previous = self.credentials,
            previous.serverID != credentials.serverID || previous.userID != credentials.userID {
@@ -68,7 +73,7 @@ final class LibraryStore {
         let generation = self.generation
         loadTask?.cancel()
         loadTask = nil
-        self.client = client
+        self.server = server
         self.credentials = credentials
 
         let url = Self.cacheURL(for: credentials)
@@ -99,9 +104,30 @@ final class LibraryStore {
         await refresh()
     }
 
+    /// The same session, with what the server said of itself since
+    /// (AppModel.refreshServer): nothing is loaded again.
+    func use(_ server: any MusicServer) {
+        guard let credentials, credentials.serverID == server.credentials.serverID,
+              credentials.userID == server.credentials.userID else { return }
+        self.server = server
+        self.credentials = server.credentials
+    }
+
+    /// Whether the server can do this, for the screens that offer it only
+    /// then (a playlist's move handles, an artist's similar artists).
+    func can(_ capability: ServerCapability) -> Bool {
+        server?.capabilities.contains(capability) ?? false
+    }
+
+    /// "Jellyfin", "Navidrome": the server's kind, as the screens name it
+    /// ("Albums on your Navidrome server appear here").
+    var serverKind: String {
+        server?.kind.displayName ?? String(localized: "music")
+    }
+
     /// Everything again from the server (pull to refresh, and a launch).
     func refresh() async {
-        guard client != nil else { return }
+        guard server != nil else { return }
         if let loadTask {
             await loadTask.value
             return
@@ -123,7 +149,7 @@ final class LibraryStore {
             Task.detached(priority: .utility) { _ = try? FileManager.default.removeItem(at: url) }
         }
         credentials = nil
-        client = nil
+        server = nil
         clearLibrary()
     }
 
@@ -200,7 +226,7 @@ final class LibraryStore {
     /// Newest first.
     var recentlyAddedAlbums: [Album] { items(index.albumOrders[.recentlyAdded], in: albums) }
 
-    /// Albums with a track played most recently first (Jellyfin's last-played dates).
+    /// Albums with a track played most recently first (the server's last-played dates).
     var recentlyPlayedAlbums: [Album] {
         var latest: [ItemID: Date] = [:]
         for album in albums {
@@ -227,21 +253,24 @@ final class LibraryStore {
 
     func isFavorite(_ itemID: ItemID) -> Bool { favoriteIDs.contains(itemID) }
 
-    /// Track, album or artist.
-    func setFavorite(_ isFavorite: Bool, itemID: ItemID) async {
+    /// Track, album or artist: the caller says which, as a Subsonic server
+    /// stars each in its own way (`id`, `albumId`, `artistId`); Jellyfin
+    /// takes the id alone.
+    func setFavorite(_ isFavorite: Bool, item: ItemRef) async {
+        let itemID = item.id
         let was = favoriteIDs.contains(itemID)
         guard was != isFavorite else { return }
         // At once, before the server answers: a heart that waits for the
         // network feels broken. Put back if the server says no.
         mirrorFavorite(isFavorite, itemID: itemID)
-        guard let client else {
+        guard let server else {
             mirrorFavorite(was, itemID: itemID)
             return
         }
         do {
-            try await client.setFavorite(isFavorite, itemID: itemID)
+            try await server.setFavorite(isFavorite, item: item)
             // What kind of thing, never which (Stats).
-            Stats.track(.favoriteSet, ["item": favoriteKind(of: itemID), "on": isFavorite])
+            Stats.track(.favoriteSet, ["item": Self.favoriteKind(of: item), "on": isFavorite])
             // The radio's taste reads favourites from the snapshot.
             scheduleSnapshotRebuild(after: 2)
         } catch {
@@ -249,14 +278,14 @@ final class LibraryStore {
         }
     }
 
-    func toggleFavorite(_ itemID: ItemID) async {
-        await setFavorite(!isFavorite(itemID), itemID: itemID)
+    func toggleFavorite(_ item: ItemRef) async {
+        await setFavorite(!isFavorite(item.id), item: item)
     }
 
     /// A playlist's tracks, from the server (playlists change elsewhere too).
     func tracks(in playlist: Playlist) async throws -> [Track] {
-        guard let client else { throw JellyfinError.notSignedIn }
-        let entries = try await client.playlistTracks(playlistID: playlist.id)
+        guard let server else { throw MusicServerError.notSignedIn }
+        let entries = try await server.playlistTracks(playlistID: playlist.id)
         let count = entries.count
         let total = entries.reduce(0) { $0 + $1.duration }
         updatePlaylist(playlist.id) { playlist in
@@ -268,8 +297,8 @@ final class LibraryStore {
 
     @discardableResult
     func createPlaylist(named name: String, with tracks: [Track]) async throws -> Playlist {
-        guard let client else { throw JellyfinError.notSignedIn }
-        let id = try await client.createPlaylist(name: name, trackIDs: tracks.map(\.id))
+        guard let server else { throw MusicServerError.notSignedIn }
+        let id = try await server.createPlaylist(name: name, trackIDs: tracks.map(\.id))
         let total = tracks.reduce(0) { $0 + $1.duration }
         let playlist = Playlist(id: id, name: name, trackCount: tracks.count, duration: total, dateAdded: Date())
         playlists.append(playlist)
@@ -278,9 +307,9 @@ final class LibraryStore {
     }
 
     func add(_ tracks: [Track], to playlist: Playlist) async throws {
-        guard let client else { throw JellyfinError.notSignedIn }
+        guard let server else { throw MusicServerError.notSignedIn }
         guard !tracks.isEmpty else { return }
-        try await client.addToPlaylist(playlistID: playlist.id, trackIDs: tracks.map(\.id))
+        try await server.addToPlaylist(playlistID: playlist.id, trackIDs: tracks.map(\.id))
         let count = tracks.count
         let added = tracks.reduce(0) { $0 + $1.duration }
         updatePlaylist(playlist.id) { playlist in
@@ -289,12 +318,13 @@ final class LibraryStore {
         }
     }
 
-    /// `tracks` as `tracks(in:)` gave them, with their playlist entry ids.
+    /// `tracks` as `tracks(in:)` gave them, with their playlist entry ids
+    /// (Jellyfin's own; on Subsonic "<songID>#<n>", made by the kit).
     func remove(_ tracks: [Track], from playlist: Playlist) async throws {
-        guard let client else { throw JellyfinError.notSignedIn }
+        guard let server else { throw MusicServerError.notSignedIn }
         let entryIDs = tracks.compactMap(\.playlistEntryID)
         guard !entryIDs.isEmpty else { return }
-        try await client.removeFromPlaylist(playlistID: playlist.id, entryIDs: entryIDs)
+        try await server.removeFromPlaylist(playlistID: playlist.id, entryIDs: entryIDs)
         let count = entryIDs.count
         let removed = tracks.reduce(0) { $0 + $1.duration }
         updatePlaylist(playlist.id) { playlist in
@@ -304,14 +334,14 @@ final class LibraryStore {
     }
 
     func move(_ track: Track, in playlist: Playlist, to index: Int) async throws {
-        guard let client else { throw JellyfinError.notSignedIn }
-        guard let entryID = track.playlistEntryID else { throw JellyfinError.notFound }
-        try await client.movePlaylistEntry(playlistID: playlist.id, entryID: entryID, to: index)
+        guard let server else { throw MusicServerError.notSignedIn }
+        guard let entryID = track.playlistEntryID else { throw MusicServerError.notFound }
+        try await server.movePlaylistEntry(playlistID: playlist.id, entryID: entryID, to: index)
     }
 
     func delete(_ playlist: Playlist) async throws {
-        guard let client else { throw JellyfinError.notSignedIn }
-        try await client.deletePlaylist(id: playlist.id)
+        guard let server else { throw MusicServerError.notSignedIn }
+        try await server.deletePlaylist(id: playlist.id)
         playlists.removeAll { $0.id == playlist.id }
     }
 
@@ -394,7 +424,7 @@ private extension LibraryStore {
         defer {
             if generation == self.generation { loadTask = nil }
         }
-        guard let client else { return }
+        guard let server else { return }
         let started = Date()
         state = .loading(progress: nil)
         // Every page of tracks moves the bar: they are most of the wait.
@@ -404,14 +434,17 @@ private extension LibraryStore {
             Task { @MainActor in self.noteProgress(fraction, generation: generation) }
         }
         do {
-            async let fetchedTracks = client.allTracks(progress: progress)
-            async let fetchedAlbums = LibraryStore.allAlbums(client)
-            async let fetchedArtists = LibraryStore.allArtists(client)
-            async let fetchedPlaylists = client.playlists()
+            // Each server pages as suits it (Jellyfin 2000 tracks a page,
+            // three at once; Subsonic one search3 for every song): the
+            // kit's servers, not this store, know how.
+            async let fetchedTracks = server.allTracks(progress: progress)
+            async let fetchedAlbums = server.allAlbums()
+            async let fetchedArtists = server.allArtists()
+            async let fetchedPlaylists = server.playlists()
             // The server's genres only lend their ids and images to the
             // library's own split list (LibraryIndex): without them the
             // library still loads, with the ids the genres already had.
-            async let fetchedGenres = try? await client.genres()
+            async let fetchedGenres = try? await server.genres()
             let (newTracks, newAlbums, newArtists, newPlaylists, newGenres) =
                 try await (fetchedTracks, fetchedAlbums, fetchedArtists, fetchedPlaylists, fetchedGenres)
             guard generation == self.generation else { return }
@@ -441,25 +474,6 @@ private extension LibraryStore {
         // loading does it move the bar.
         guard generation == self.generation, case .loading = state else { return }
         state = .loading(progress: fraction)
-    }
-
-    /// Albums come in pages: a large library has thousands.
-    static func allAlbums(_ client: JellyfinClient) async throws -> [Album] {
-        var albums: [Album] = []
-        while true {
-            let page = try await client.albums(AlbumQuery(sort: .name, start: albums.count, limit: 1000))
-            albums += page.items
-            if page.items.isEmpty || albums.count >= page.totalCount { return albums }
-        }
-    }
-
-    static func allArtists(_ client: JellyfinClient) async throws -> [Artist] {
-        var artists: [Artist] = []
-        while true {
-            let page = try await client.artists(start: artists.count, limit: 1000)
-            artists += page.items
-            if page.items.isEmpty || artists.count >= page.totalCount { return artists }
-        }
     }
 
     func apply(tracks: [Track], albums: [Album], artists: [Artist], playlists: [Playlist],
@@ -498,7 +512,10 @@ private extension LibraryStore {
         Task.detached(priority: .utility) { _ = try? LibraryCache.save(library, to: url) }
     }
 
-    static func cacheURL(for credentials: Credentials) -> URL {
+    /// By server and user, as before: a Jellyfin sign-in of the
+    /// Jellyfin-only app keeps its cache. A Subsonic server's id is its URL
+    /// (DetectedServer.id), which LibraryCache folds to letters and digits.
+    static func cacheURL(for credentials: ServerCredentials) -> URL {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
         return LibraryCache.url(in: caches.appendingPathComponent("Jukebox", isDirectory: true),
@@ -508,10 +525,12 @@ private extension LibraryStore {
     // MARK: Small changes
 
     /// A favourite's kind, for the usage counts: "track", "album" or "artist".
-    func favoriteKind(of itemID: ItemID) -> String {
-        if index.trackPosition[itemID] != nil { return "track" }
-        if index.albumPosition[itemID] != nil { return "album" }
-        return "artist"
+    static func favoriteKind(of item: ItemRef) -> String {
+        switch item {
+        case .track: "track"
+        case .album: "album"
+        case .artist: "artist"
+        }
     }
 
     func mirrorFavorite(_ isFavorite: Bool, itemID: ItemID) {

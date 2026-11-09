@@ -128,9 +128,10 @@ nonisolated struct OfflineWanted: Codable, Sendable, Hashable {
     var isChosen: Bool { reasons.contains { $0.isChosen } }
 }
 
-/// A play heard while the server could not be told: its start report (Jellyfin
-/// counts the play there, and its Last.fm plugin scrobbles from these
-/// reports) and its stop, sent in order when the server answers again.
+/// A play heard while the server could not be told: where it counted
+/// (`played`: Jellyfin's start report, a Subsonic server's scrobble; the
+/// server's Last.fm scrobbles from these) and its stop, sent in order when
+/// the server answers again.
 nonisolated struct PendingPlay: Codable, Sendable, Hashable {
     var trackID: ItemID
     var playSessionID: String
@@ -167,10 +168,12 @@ nonisolated enum OfflinePaths {
         return support.appendingPathComponent("Offline", isDirectory: true)
     }
 
-    /// The account's folder name: the server's id and the user's, which are
-    /// Jellyfin's hex GUIDs; anything else in them is left out, so the name
-    /// is always a plain folder name.
-    static func account(for credentials: Credentials) -> String {
+    /// The account's folder name: the server's id and the user's — Jellyfin's
+    /// hex GUIDs, as before (a Jellyfin sign-in of the Jellyfin-only app
+    /// keeps its songs), or a Subsonic server's URL and the user's name;
+    /// anything but letters and digits is left out, so the name is always a
+    /// plain folder name.
+    static func account(for credentials: ServerCredentials) -> String {
         let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
         let server = String(credentials.serverID.filter { allowed.contains($0) })
         let user = String(credentials.userID.filter { allowed.contains($0) })

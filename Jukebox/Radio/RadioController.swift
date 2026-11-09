@@ -2,8 +2,10 @@
 //
 // The radio in the app: one RadioSession (JukeboxKit) for the station that
 // plays, fed into the player a few tracks ahead. A station starts within a
-// moment from the library alone; Jellyfin's Instant Mix and, with a key,
-// Last.fm's similar tracks join it as they arrive. Feedback — a skip, a
+// moment from the library alone; the server's mix (Jellyfin's Instant Mix, a
+// Subsonic server's similar songs), an artist's top songs where the server
+// has them (Subsonic's getTopSongs) and, with a key, Last.fm's similar
+// tracks join it as they arrive. Feedback — a skip, a
 // thumbs up or down, a track heard to the end — goes to the session, and
 // after a skip or a thumbs the tracks ahead are chosen again.
 //
@@ -11,7 +13,7 @@
 // belangrijk", 8 November 2026), so it is built to feel instant: the first
 // four tracks come from the library in memory, chosen off the main actor,
 // and the first one plays before the network has been asked anything. What
-// Jellyfin and Last.fm add changes only the tracks not yet loaded.
+// the server and Last.fm add changes only the tracks not yet loaded.
 //
 // A station's page (StationDetailView) shows what the station would play
 // before it plays: "Als je nu klikt op een tegel van radio begint er meteen
@@ -26,8 +28,8 @@
 // play: the photographer, of the offline proposal ("offline speelt de app
 // alleen wat op de telefoon staat, ook de radio"), "Alle drie". A station
 // on the air when the network goes is chosen again from them at once, and
-// from the whole library when it comes back; Instant Mix and Last.fm are not
-// asked while offline.
+// from the whole library when it comes back; the server's mix and Last.fm
+// are not asked while offline.
 
 import Foundation
 import JukeboxKit
@@ -55,7 +57,7 @@ final class RadioController {
     /// list again, rather than show one that Play would no longer play.
     private(set) var previewInputs = 0
 
-    var client: JellyfinClient?
+    var server: (any MusicServer)?
     /// Set by AppModel: offline, what the radio may choose from.
     @ObservationIgnored weak var offline: OfflineStore?
 
@@ -79,7 +81,7 @@ final class RadioController {
     /// the track): that skip is the listener's thumbs, already acted on.
     @ObservationIgnored private var isHandlingFeedback = false
     /// The station was started from its page and still plays the songs the
-    /// page showed: what Instant Mix and Last.fm add then shapes the songs
+    /// page showed: what the server's mix and Last.fm add then shapes the songs
     /// after those, not those. The listener's own skip, thumbs or dial
     /// chooses them again, as the page's footer says it will.
     @ObservationIgnored private var keepsShownPicks = false
@@ -556,27 +558,38 @@ final class RadioController {
     private func gatherSources(for station: Station, in index: LibrarySnapshot, generation: Int) {
         // Offline neither answers, and the station chooses from the phone.
         if offline?.isOffline == true { return }
-        if let client, let seedID = instantMixSeed(for: station.seed) {
+        // Not asked of a server without one (a Subsonic server before API
+        // 1.11): the library's own picks carry the station, as they do when
+        // a mix comes back empty (Navidrome without its agents, a genre
+        // Jellyfin has no item for).
+        if let server, server.capabilities.contains(.instantMix), let seed = mixSeed(for: station.seed) {
             sourceTasks.append(Task { [weak self] in
-                let tracks = (try? await client.instantMix(seedID: seedID, limit: 100)) ?? []
+                let tracks = (try? await server.instantMix(from: seed, limit: 100)) ?? []
                 guard let self, self.generation == generation, !tracks.isEmpty else { return }
                 self.addCandidates(tracks.map(\.id), weight: 0.5, reason: .instantMix)
             })
         }
-        guard settings.hasLastFM, let service else { return }
+        let lastFM = settings.hasLastFM ? service : nil
         switch station.seed {
         case let .track(id):
-            guard let track = index.track(id: id) else { return }
+            guard let lastFM, let track = index.track(id: id) else { return }
             sourceTasks.append(Task { [weak self] in
-                let neighbors = await service.similarTracks(to: track, in: index)
+                let neighbors = await lastFM.similarTracks(to: track, in: index)
                 guard let self, self.generation == generation, !neighbors.isEmpty else { return }
                 self.addCandidates(neighbors.map(\.key), weight: 0.8, reason: .similarTrack(track.name))
             })
         case let .artist(key, name, _):
-            // An artist's station leans on the songs people know them by.
+            // An artist's station leans on the songs people know them by:
+            // the server's top songs where it has them (a Subsonic server's,
+            // from Last.fm there), else, or when it had none (Navidrome
+            // without its agents answers nothing), the app's own Last.fm.
             guard let artist = index.artist(key: key) else { return }
+            let topServer = server?.capabilities.contains(.topSongs) == true ? server : nil
+            guard topServer != nil || lastFM != nil else { return }
             sourceTasks.append(Task { [weak self] in
-                let top = await service.topTracks(artist: artist, in: index, limit: 10)
+                var top: [Track] = []
+                if let topServer { top = (try? await topServer.topSongs(of: artist, limit: 10)) ?? [] }
+                if top.isEmpty, let lastFM { top = await lastFM.topTracks(artist: artist, in: index, limit: 10) }
                 guard let self, self.generation == generation, !top.isEmpty else { return }
                 self.addCandidates(top.map(\.id), weight: 0.6, reason: .byArtist(name))
             })
@@ -611,35 +624,38 @@ final class RadioController {
         player.appendRadio(picks)
     }
 
-    /// The item Jellyfin's Instant Mix starts from, when the seed has one.
-    private func instantMixSeed(for seed: StationSeed) -> ItemID? {
+    /// What the server's mix starts from, when the seed has anything. The
+    /// seed says what it is, so no id is guessed at (Jellyfin's GUIDs were,
+    /// before Subsonic's ids, which are not).
+    private func mixSeed(for seed: StationSeed) -> MixSeed? {
         switch seed {
         case let .track(id):
-            return id
+            return MixSeed.track(id)
         case let .artist(_, _, id):
-            return id
+            guard let id else { return nil }
+            return MixSeed.artist(id)
         case let .album(id):
-            return id
+            return MixSeed.album(id)
         case let .genre(_, name):
             // A genre split out of a joined tag ("Shoegaze" of "Rock;
             // Shoegaze") has a made-up id ("genre:" and its key,
-            // LibraryIndex.libraryGenres): no item on the server, so no
-            // Instant Mix; the library's own picks carry that station.
-            guard let id = library.genre(named: name)?.id, Self.isJellyfinID(id) else { return nil }
-            return id
+            // LibraryIndex.libraryGenres): no item on Jellyfin, so its mix
+            // gives nothing and the library's own picks carry the station;
+            // a Subsonic server mixes a genre by its name.
+            var serverID: ItemID?
+            if let id = library.genre(named: name)?.id, !id.hasPrefix(LibraryIndex.syntheticGenrePrefix) {
+                serverID = id
+            }
+            return MixSeed.genre(name: name, id: serverID)
         case let .collection(id, _, trackIDs):
-            // A playlist is a Jellyfin item; a made-up mix is not, so it
+            // A playlist is the server's; a mix Home made up is not, so it
             // starts from its first track.
-            return Self.isJellyfinID(id) ? id : trackIDs.first
+            if library.playlists.contains(where: { $0.id == id }) { return MixSeed.playlist(id) }
+            guard let first = trackIDs.first else { return nil }
+            return MixSeed.track(first)
         case .decade, .personal, .discovery, .favorites:
             return nil
         }
-    }
-
-    /// Jellyfin's ids are GUIDs, 32 hex digits, with or without dashes.
-    private static func isJellyfinID(_ id: String) -> Bool {
-        let digits = id.filter { $0 != "-" }
-        return digits.count == 32 && digits.allSatisfy(\.isHexDigit)
     }
 
     private func cancelSources() {

@@ -168,8 +168,8 @@ struct StationArtwork: View {
     /// The first cover, small: its colour is all that is wanted of it, and
     /// 120 pixels is the size a shelf's panes and a row's thumbnail fetch.
     private var toneURL: URL? {
-        guard let cover = station.artwork.first, let client = app.client else { return nil }
-        return client.imageURL(cover, maxPixelSize: 120)
+        guard let cover = station.artwork.first, let server = app.server else { return nil }
+        return server.artworkURL(cover, maxPixelSize: 120)
     }
 }
 

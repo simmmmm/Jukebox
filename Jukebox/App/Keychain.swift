@@ -1,5 +1,10 @@
-// The signed-in session in the keychain: the access token is as good as a
-// password to the server, so it is not kept in UserDefaults.
+// The signed-in session in the keychain: Jellyfin's access token, or a
+// Subsonic server's token and salt (or API key), is as good as a password to
+// that server, so it is not kept in UserDefaults. One item, as before the
+// app spoke Subsonic: what the Jellyfin-only app saved there (its
+// Credentials, with `accessToken` and no `kind`) reads as a Jellyfin
+// ServerCredentials, so the update signs nobody out (JukeboxKit's
+// ServerCredentialsTests). Saved again, it is written in the new shape.
 
 import Foundation
 import JukeboxKit
@@ -9,7 +14,7 @@ enum Keychain {
     private static let service = "com.tijmen.Jukebox"
     private static let account = "credentials"
 
-    static func save(_ credentials: Credentials) {
+    static func save(_ credentials: ServerCredentials) {
         guard let data = try? JSONEncoder().encode(credentials) else { return }
         deleteCredentials()
         let query: [String: Any] = [
@@ -24,7 +29,7 @@ enum Keychain {
         SecItemAdd(query as CFDictionary, nil)
     }
 
-    static func loadCredentials() -> Credentials? {
+    static func loadCredentials() -> ServerCredentials? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -35,7 +40,7 @@ enum Keychain {
         var result: AnyObject?
         guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
               let data = result as? Data else { return nil }
-        return try? JSONDecoder().decode(Credentials.self, from: data)
+        return try? JSONDecoder().decode(ServerCredentials.self, from: data)
     }
 
     static func deleteCredentials() {

@@ -18,17 +18,20 @@
 //   when Wi-Fi comes back and when its settings change; it fetches its list
 //   in order and lets go of what fell out of it. It waits in Low Power Mode.
 // - Offline: no network (NWPathMonitor) or a server that does not answer
-//   (its public info, asked when the network changes, when a load or a song
-//   fails, and every 30 s while it does not answer). The player and the
-//   radio read `isOffline` and `canPlay`, and are told when it changes.
-// - The server's admin can turn "Allow media downloading" off for a user
-//   (JellyfinClient.downloadsAllowed, asked at sign-in and when the server
+//   (asked what it can do — Jellyfin's public info, a Subsonic server's
+//   ping — when the network changes, when a load or a song fails, and every
+//   30 s while it does not answer). The player and the radio read
+//   `isOffline` and `canPlay`, and are told when it changes.
+// - The server's admin can turn downloads off for a user (Jellyfin's "Allow
+//   media downloading", a Subsonic server's download role;
+//   MusicServer.downloadsAllowed, asked at sign-in and when the server
 //   answers again): then nothing is fetched, the keep waits, the pages offer
 //   no Download, and Settings says why. What is on the phone stays and plays.
 // - Plays heard offline: their reports wait here and go to the server, in
-//   order, once it answers (Jellyfin counts a play at its start report, and
-//   its Last.fm plugin scrobbles from them), so nothing heard offline is
-//   missing there — counted when they arrive, not when they were heard.
+//   order, once it answers (the play counts at `played`: Jellyfin's start
+//   report, a Subsonic server's scrobble; the server's Last.fm scrobbles
+//   from them), so nothing heard offline is missing there — counted when
+//   they arrive, not when they were heard.
 
 import Foundation
 import JukeboxKit
@@ -74,7 +77,7 @@ final class OfflineStore {
     private(set) var isExpensiveNetwork = false
     private(set) var isServerUnreachable = false
     private(set) var isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
-    /// The server's "Allow media downloading" for this user, as it said last.
+    /// Whether the server lets this user download, as it said last.
     private(set) var downloadsAllowed = true
 
     /// No network, or a server that does not answer: only what is on the
@@ -93,7 +96,7 @@ final class OfflineStore {
     /// One writer, in order: a slow write never lands after a newer one.
     private let writer = DispatchQueue(label: "Jukebox.offline", qos: .utility)
 
-    @ObservationIgnored private var client: JellyfinClient?
+    @ObservationIgnored private var server: (any MusicServer)?
     @ObservationIgnored private var account: String?
     @ObservationIgnored private var reports: [PendingPlay] = []
     /// Songs the session is fetching now.
@@ -170,9 +173,9 @@ final class OfflineStore {
 
     /// Signed in: the account's songs from disk, then what the session is
     /// still fetching for it, then the keep.
-    func open(credentials: Credentials, client: JellyfinClient) async {
-        let account = OfflinePaths.account(for: credentials)
-        self.client = client
+    func open(server: any MusicServer) async {
+        let account = OfflinePaths.account(for: server.credentials)
+        self.server = server
         guard self.account != account else { return }
         self.account = account
         isAdopted = false
@@ -201,6 +204,13 @@ final class OfflineStore {
         scheduleKeep(after: 10)
     }
 
+    /// The same account, with what the server said of itself since
+    /// (AppModel.refreshServer).
+    func use(_ server: any MusicServer) {
+        guard account == OfflinePaths.account(for: server.credentials) else { return }
+        self.server = server
+    }
+
     /// Signing out: the account's songs go with it, so the next account —
     /// perhaps on another server — never plays them, and no one's gigabytes
     /// are left behind where no Settings shows them. Its plays not yet told
@@ -209,7 +219,7 @@ final class OfflineStore {
         let account = self.account
         OfflineDownloader.shared.cancel { _ in true }
         self.account = nil
-        client = nil
+        server = nil
         isAdopted = false
         isLoaded = false
         manifest = OfflineManifest()
@@ -426,7 +436,7 @@ final class OfflineStore {
     /// Asks whether the server answers, unless asking already. Also from
     /// the player when a song fails on the network, and Home's Try Again.
     func checkServer(after delay: Double = 0) {
-        guard let client, hasNetwork, probeTask == nil else { return }
+        guard let server, hasNetwork, probeTask == nil else { return }
         probeCount += 1
         let mine = probeCount
         let account = self.account
@@ -434,7 +444,15 @@ final class OfflineStore {
             if delay > 0 { try? await Task.sleep(for: .seconds(delay)) }
             let answered: Bool
             do {
-                _ = try await client.publicInfo()
+                // Jellyfin's public info, a Subsonic server's ping: the
+                // smallest question each answers.
+                _ = try await server.currentCapabilities()
+                answered = true
+            } catch MusicServerError.unauthorized {
+                // There, only no longer taking the session (a Subsonic
+                // password changed): that is no network to wait for.
+                answered = true
+            } catch MusicServerError.notAllowed {
                 answered = true
             } catch {
                 answered = false
@@ -446,13 +464,14 @@ final class OfflineStore {
         }
     }
 
-    /// Asks the server whether this user may download ("Allow media
-    /// downloading"); an answer that does not come leaves it as it was.
-    /// Off, the downloads under way are cancelled and wait in the queue.
+    /// Asks the server whether this user may download (Jellyfin's "Allow
+    /// media downloading", a Subsonic server's download role); an answer
+    /// that does not come leaves it as it was. Off, the downloads under way
+    /// are cancelled and wait in the queue.
     func checkDownloadsAllowed() {
-        guard let client, let account else { return }
+        guard let server, let account else { return }
         Task { [weak self] in
-            guard let allowed = try? await client.downloadsAllowed() else { return }
+            guard let allowed = try? await server.downloadsAllowed() else { return }
             guard let self, self.account == account, self.downloadsAllowed != allowed else { return }
             self.downloadsAllowed = allowed
             self.scheduleSave()
@@ -604,7 +623,7 @@ private extension OfflineStore {
     /// keep's wait while it is off or in Low Power Mode; a song that failed
     /// on the way waits its turn to be tried again.
     func pump() {
-        guard isAdopted, downloadsAllowed, let account, let client else { return }
+        guard isAdopted, downloadsAllowed, let account, let server else { return }
         var running = inFlight.count
         guard running < Self.window else { return }
         let keepMayRun = settings.keepSongs && !isLowPower
@@ -621,7 +640,7 @@ private extension OfflineStore {
                 continue
             }
             let tag = OfflineDownloadTag(account: account, trackID: id, quality: item.quality)
-            let url = client.downloadURL(trackID: id, quality: item.quality)
+            let url = server.downloadURL(for: song(id), quality: item.quality)
             // Low Data Mode holds back the keep, not what was chosen.
             OfflineDownloader.shared.start(tag, from: url, overCellular: cellular, inLowDataMode: item.isChosen,
                                            expectedBytes: item.estimate, isChosen: item.isChosen)
@@ -629,6 +648,18 @@ private extension OfflineStore {
             running += 1
         }
         if let nextRetry { schedulePump(at: nextRetry) }
+    }
+
+    /// The song, for its download URL: a Subsonic server's depends on its
+    /// file (`container`: one the phone cannot play is converted). From the
+    /// library, else from the album, playlist or mix it was chosen with
+    /// (before the library is in); else its id alone, all Jellyfin needs.
+    func song(_ id: ItemID) -> Track {
+        if let track = library.track(id: id) { return track }
+        for collection in collections {
+            if let track = collection.tracks.first(where: { $0.id == id }) { return track }
+        }
+        return Track(id: id, name: "")
     }
 
     func schedulePump(at date: Date) {
@@ -967,10 +998,10 @@ private extension OfflineStore {
 
     // MARK: Reports
 
-    /// The plays heard offline, in order: the start (where Jellyfin counts
-    /// the play, and its Last.fm plugin scrobbles), then the stop.
+    /// The plays heard offline, in order: `played` (where the server counts
+    /// the play, and its Last.fm scrobbles), then `stopped`.
     func flushReports() {
-        guard flushTask == nil, !reports.isEmpty, let client, !isOffline else { return }
+        guard flushTask == nil, !reports.isEmpty, let server, !isOffline else { return }
         let account = self.account
         flushTask = Task { [weak self] in
             while true {
@@ -978,14 +1009,14 @@ private extension OfflineStore {
                       let play = self.reports.first else { break }
                 let session = play.playSessionID
                 if let start = play.startPosition {
-                    await client.reportStart(PlaybackReport(trackID: play.trackID, position: start, isPaused: false,
-                                                            playSessionID: session))
+                    await server.report(.played, PlaybackReport(trackID: play.trackID, position: start,
+                                                                isPaused: false, playSessionID: session))
                 }
                 // The stop can have come while the start went.
                 let stop = self.reports.first(where: { $0.playSessionID == session })?.stopPosition
                 if let stop {
-                    await client.reportStopped(PlaybackReport(trackID: play.trackID, position: stop, isPaused: false,
-                                                              playSessionID: session))
+                    await server.report(.stopped, PlaybackReport(trackID: play.trackID, position: stop,
+                                                                 isPaused: false, playSessionID: session))
                 }
                 guard self.account == account else { break }
                 self.reports.removeAll { $0.playSessionID == session }
@@ -1026,15 +1057,15 @@ nonisolated struct OfflinePathState: Sendable {
 /// The plays of an account signing out, told to its server on the way out
 /// when it answers (AppModel.signOut).
 enum OfflineReports {
-    static func send(_ plays: [PendingPlay], with client: JellyfinClient) async {
+    static func send(_ plays: [PendingPlay], with server: any MusicServer) async {
         for play in plays {
             if let start = play.startPosition {
-                await client.reportStart(PlaybackReport(trackID: play.trackID, position: start, isPaused: false,
-                                                        playSessionID: play.playSessionID))
+                await server.report(.played, PlaybackReport(trackID: play.trackID, position: start,
+                                                            isPaused: false, playSessionID: play.playSessionID))
             }
             if let stop = play.stopPosition {
-                await client.reportStopped(PlaybackReport(trackID: play.trackID, position: stop, isPaused: false,
-                                                          playSessionID: play.playSessionID))
+                await server.report(.stopped, PlaybackReport(trackID: play.trackID, position: stop,
+                                                             isPaused: false, playSessionID: play.playSessionID))
             }
         }
     }

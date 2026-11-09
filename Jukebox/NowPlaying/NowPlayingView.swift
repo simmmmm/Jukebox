@@ -370,8 +370,8 @@ struct NowPlayingView: View {
     /// already takes its colour from (NowPlayingGround), so it is one
     /// download.
     private var accentURL: URL? {
-        guard let artwork = currentTrack?.artwork, let client = app.client else { return nil }
-        return client.imageURL(artwork, maxPixelSize: 120)
+        guard let artwork = currentTrack?.artwork, let server = app.server else { return nil }
+        return server.artworkURL(artwork, maxPixelSize: 120)
     }
 
     /// The accent shown: the last worked out (shownAccent), or before any
@@ -596,7 +596,7 @@ struct NowPlayingView: View {
             if turningOn, radioStation != nil, !radio.liked.contains(track.id) {
                 radio.like(track)
             }
-            Task { await library.toggleFavorite(track.id) }
+            Task { await library.toggleFavorite(.track(track.id)) }
         } label: {
             Image(systemName: favorite ? "heart.fill" : "heart")
                 .font(.title3)
@@ -688,7 +688,14 @@ struct NowPlayingView: View {
 
     private var bottomRow: some View {
         HStack {
-            panelToggle(.lyrics, symbol: "quote.bubble", onSymbol: "quote.bubble.fill", label: "Lyrics")
+            if offersLyrics {
+                panelToggle(.lyrics, symbol: "quote.bubble", onSymbol: "quote.bubble.fill", label: "Lyrics")
+            } else {
+                // Its room kept, so AirPlay stays in the middle.
+                Color.clear
+                    .frame(width: 44, height: 44)
+                    .accessibilityHidden(true)
+            }
             Spacer()
             NowPlayingAirPlayButton()
                 .frame(width: 44, height: 44)
@@ -696,6 +703,12 @@ struct NowPlayingView: View {
             panelToggle(.queue, symbol: "list.bullet", onSymbol: "list.bullet", label: "Up Next")
         }
         .padding(.horizontal, Theme.Space.s)
+    }
+
+    /// No Lyrics button where none could come: a server without lyrics of
+    /// any kind (a Jellyfin before 10.9), with Find Lyrics Online off.
+    private var offersLyrics: Bool {
+        app.can(.lyrics) || settings.findLyricsOnline
     }
 
     /// Lyrics and Up Next take the record's place; a second tap gives it

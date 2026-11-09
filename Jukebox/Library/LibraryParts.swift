@@ -13,15 +13,21 @@ import SwiftUI
 struct LibraryStatusView: View {
     let emptyTitle: LocalizedStringKey
     let emptySymbol: String
-    let emptyMessage: LocalizedStringKey
+    /// Nil: that the server has no music yet, naming its kind.
+    let emptyMessage: LocalizedStringKey?
 
     @Environment(LibraryStore.self) private var library
 
     init(emptyTitle: LocalizedStringKey = "No Music", emptySymbol: String = "music.note",
-         emptyMessage: LocalizedStringKey = "Your Jellyfin server has no music in its libraries yet.") {
+         emptyMessage: LocalizedStringKey? = nil) {
         self.emptyTitle = emptyTitle
         self.emptySymbol = emptySymbol
         self.emptyMessage = emptyMessage
+    }
+
+    private var message: LocalizedStringKey {
+        if let emptyMessage { return emptyMessage }
+        return "Your \(library.serverKind) server has no music in its libraries yet."
     }
 
     var body: some View {
@@ -65,7 +71,7 @@ struct LibraryStatusView: View {
             ContentUnavailableView {
                 Label(emptyTitle, systemImage: emptySymbol)
             } description: {
-                Text(emptyMessage)
+                Text(message)
             }
         }
     }
@@ -76,7 +82,7 @@ struct LibraryEmptyState: View {
     let query: String
     var emptyTitle: LocalizedStringKey = "No Music"
     var emptySymbol = "music.note"
-    var emptyMessage: LocalizedStringKey = "Your Jellyfin server has no music in its libraries yet."
+    var emptyMessage: LocalizedStringKey?
 
     var body: some View {
         if query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -163,7 +169,7 @@ struct LibraryAlbumMenu: View {
             }
             .disabled(songs.isEmpty)
             Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
-                Task { await library.toggleFavorite(album.id) }
+                Task { await library.toggleFavorite(.album(album.id)) }
             }
         }
         if includesGoToArtist, let artist = albumArtist {

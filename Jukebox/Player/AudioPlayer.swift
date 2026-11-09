@@ -1,11 +1,11 @@
 // CONTRACT — signatures fixed; bodies the player agent's (docs/ARCHITECTURE.md).
 //
-// The one player: a queue of tracks streamed from Jellyfin through
+// The one player: a queue of tracks streamed from the server through
 // AVQueuePlayer (the next track preloaded, so albums play without a gap),
 // in the background and on the lock screen (MPNowPlayingInfoCenter,
 // MPRemoteCommandCenter, thumbs up and down there too while a station
 // plays), AirPlay, interruptions and headphones handled as Music does.
-// It tells Jellyfin what plays (so play counts are right on every client),
+// It tells the server what plays (so play counts are right on every client),
 // writes each play to the history, and asks the radio for more when a
 // station's queue runs low.
 //
@@ -15,7 +15,7 @@
 // repeat, the radio choosing again). When the engine moves on by itself —
 // the gapless case — its new current item is the preloaded one, and the
 // queue follows. Every entry that stops being current is "finished" once:
-// Jellyfin is told it stopped, the history gets how long it was heard
+// the server is told it stopped, the history gets how long it was heard
 // (time while playing, so a seek does not count), the radio its feedback.
 //
 // Songs on the phone (OfflineStore) always play from their file: no data,
@@ -23,8 +23,15 @@
 // answer — only those can play: a list starts at its first song on the
 // phone, the others are passed over in the queue, a song that streamed is
 // left once what it had loaded runs out, and a tap on one that is not on
-// the phone says so. The reports Jellyfin would have had wait in the store
-// until it answers again.
+// the phone says so. The reports the server would have had wait in the
+// store until it answers again.
+//
+// The server is a MusicServer, Jellyfin or Subsonic, told the moments of a
+// play by PlaybackEvent (docs/SERVERS.md, "Playback reports"): `nowPlaying`
+// when the entry starts to play, `played` once it is not a skip (where every
+// server counts the play: one rule, the app's, on all of them), `progress`
+// and `stopped` after that only. Jellyfin hears nothing at `nowPlaying` (its
+// start report counts a play); a Subsonic server shows the song as playing.
 
 import AVFoundation
 import Foundation
@@ -107,7 +114,7 @@ final class AudioPlayer {
     /// The last error, for a moment in Now Playing ("Could not play …").
     private(set) var errorMessage: String?
 
-    var client: JellyfinClient?
+    var server: (any MusicServer)?
     /// Set by AppModel; the radio this player asks for more.
     @ObservationIgnored weak var radio: RadioController?
     /// Set by AppModel; told when a track was heard to the end, so play
@@ -126,7 +133,7 @@ final class AudioPlayer {
         let statusObservation: NSKeyValueObservation
     }
 
-    /// The current entry's play: what Jellyfin and the history are told.
+    /// The current entry's play: what the server and the history are told.
     private struct Playing {
         let entry: QueueEntry
         let loaded: Loaded
@@ -140,6 +147,9 @@ final class AudioPlayer {
         /// It played at all; one never started (loaded, then replaced) is
         /// neither a play nor a skip.
         var didPlay = false
+        /// `nowPlaying` went: the server shows it as playing (Subsonic).
+        var nowPlayingReported = false
+        /// `played` went: the server counted the play.
         var startReported = false
         var lastProgress = Date.distantPast
 
@@ -677,9 +687,9 @@ final class AudioPlayer {
             // starts at once.
             url = file
         } else {
-            guard let client else { return nil }
+            guard let server else { return nil }
             let quality = network.isExpensive ? settings.cellularQuality : settings.wifiQuality
-            url = client.streamURL(trackID: entry.track.id, quality: quality, playSessionID: playSessionID)
+            url = server.streamURL(for: entry.track, quality: quality, playSessionID: playSessionID)
         }
         let item = AVPlayerItem(url: url)
         let itemID = ObjectIdentifier(item)
@@ -710,7 +720,8 @@ final class AudioPlayer {
         return nil
     }
 
-    /// Jellyfin's measured loudness, as a volume: only ever softer, since
+    /// The server's loudness for the song (Jellyfin's NormalizationGain, a
+    /// Subsonic server's ReplayGain), as a volume: only ever softer, since
     /// the engine cannot go above 1.
     private func volume(for track: Track) -> Float {
         guard settings.normalizeVolume, let gain = track.normalizationGain else { return 1 }
@@ -745,14 +756,14 @@ final class AudioPlayer {
 
     // MARK: Ending
 
-    /// The current entry stops being current: Jellyfin is told, and what
+    /// The current entry stops being current: the server is told, and what
     /// was heard is returned for `deliver` (called once the next entry is
     /// set up, so the radio sees the queue as it now is).
     private func finishCurrent() -> Finished? {
         guard var playing else { return nil }
         self.playing = nil
         playing.stopClock(Date())
-        if playing.startReported, let client {
+        if playing.startReported, let server {
             let position = Self.seconds(playing.loaded.item.currentTime()) ?? elapsed
             let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
                                         playSessionID: playing.loaded.playSessionID)
@@ -760,7 +771,7 @@ final class AudioPlayer {
                 // Told to the server, after its start, once it answers.
                 offline.holdStop(report)
             } else {
-                Task { await client.reportStopped(report) }
+                Task { await server.report(.stopped, report) }
             }
         }
         guard playing.didPlay else { return nil }
@@ -862,7 +873,7 @@ final class AudioPlayer {
         let playingNow = status != .paused
         if isPlaying != playingNow {
             isPlaying = playingNow
-            // Paused or resumed, so Jellyfin's dashboard shows it.
+            // Paused or resumed, so the server's dashboard shows it.
             if !justStarted { reportProgress() }
         }
         publishPlayback()
@@ -1021,16 +1032,19 @@ final class AudioPlayer {
         try? AVAudioSession.sharedInstance().setActive(true)
     }
 
-    // MARK: Telling Jellyfin and the lock screen
+    // MARK: Telling the server and the lock screen
 
-    /// Jellyfin's "now playing", once the entry has played long enough not
-    /// to be a skip by PlayOutcome's rule. Jellyfin counts the play at the
-    /// start report (measured on 12.4, JellyfinClient.reportStart): sent at
-    /// once, every skip would gain a play count, and the next library load
-    /// would cancel that skip in the radio's taste. tick() asks again while
-    /// it plays.
+    /// The play counted (`played`), once the entry has played long enough
+    /// not to be a skip by PlayOutcome's rule. Jellyfin counts the play at
+    /// its start report (measured on 12.4, JellyfinClient.reportStart), a
+    /// Subsonic server at `scrobble submission=true`: sent at once, every
+    /// skip would gain a play count, and the next library load would cancel
+    /// that skip in the radio's taste. tick() asks again while it plays.
+    /// Called only while the engine plays, so the first call is also the
+    /// moment the entry began: `nowPlaying` goes then.
     @discardableResult
     private func reportStartIfNeeded() -> Bool {
+        reportNowPlayingIfNeeded()
         guard var playing, !playing.startReported else { return false }
         let now = Date()
         var heard = playing.heard
@@ -1042,7 +1056,7 @@ final class AudioPlayer {
         playing.startReported = true
         playing.lastProgress = now
         self.playing = playing
-        guard let client else { return true }
+        guard let server else { return true }
         let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
                                     playSessionID: playing.loaded.playSessionID)
         if let offline, offline.holdsReports(of: report.playSessionID) {
@@ -1050,22 +1064,37 @@ final class AudioPlayer {
             // is counted (and scrobbled) all the same.
             offline.holdStart(report)
         } else {
-            Task { await client.reportStart(report) }
+            Task { await server.report(.played, report) }
         }
         return true
+    }
+
+    /// The server's "now playing" as the entry begins to play, before it
+    /// counts: a Subsonic server lists it as playing (Jellyfin is told
+    /// nothing here). Once an entry; not offline, where nothing would hear
+    /// it, and not kept for later, when it would be over.
+    private func reportNowPlayingIfNeeded() {
+        guard var playing, !playing.nowPlayingReported else { return }
+        playing.nowPlayingReported = true
+        self.playing = playing
+        guard let server else { return }
+        if let offline, offline.holdsReports(of: playing.loaded.playSessionID) { return }
+        let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
+                                    playSessionID: playing.loaded.playSessionID)
+        Task { await server.report(.nowPlaying, report) }
     }
 
     private func reportProgress() {
         guard let playing, playing.startReported else { return }
         self.playing?.lastProgress = Date()
-        guard let client else { return }
+        guard let server else { return }
         // Offline the server hears of the play when it is back; how far it
         // got on the way is not kept.
         if let offline, offline.holdsReports(of: playing.loaded.playSessionID) { return }
         let report = PlaybackReport(trackID: playing.entry.track.id, position: position,
                                     isPaused: engine.timeControlStatus == .paused,
                                     playSessionID: playing.loaded.playSessionID)
-        Task { await client.reportProgress(report) }
+        Task { await server.report(.progress, report) }
     }
 
     /// Where the current track is, as exactly as the engine knows.
@@ -1082,7 +1111,7 @@ final class AudioPlayer {
             return
         }
         nowPlaying.show(playing.entry, index: currentIndex, count: queue.count, elapsed: position,
-                        duration: duration, rate: rate, client: client)
+                        duration: duration, rate: rate, server: server)
     }
 
     private func publishPlayback() {

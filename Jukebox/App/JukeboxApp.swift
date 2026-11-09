@@ -1,6 +1,7 @@
-// Jukebox: Jellyfin's music on the iPhone and the iPad — artists, albums,
-// songs and playlists, playlists it makes up itself, and a radio that plays
-// on from anything and listens to what is skipped.
+// Jukebox: the music of a Jellyfin, Navidrome or other Subsonic server on
+// the iPhone and the iPad — artists, albums, songs and playlists, playlists
+// it makes up itself, and a radio that plays on from anything and listens to
+// what is skipped.
 
 import JukeboxKit
 import SwiftUI
@@ -13,8 +14,8 @@ struct JukeboxApp: App {
     @State private var app = AppModel()
 
     init() {
-        // Once a launch (Stats): how many starts, on which system and version.
-        Stats.track(.appOpen)
+        // `app_open` (Stats) is counted by AppModel.restore, once a launch,
+        // when the keychain has said which kind of server it is.
         // The bars' titles in the serif, before the first bar is made.
         Theme.styleNavigationBars()
     }

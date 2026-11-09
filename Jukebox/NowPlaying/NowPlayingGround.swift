@@ -413,8 +413,8 @@ struct NowPlayingGround: View {
     /// The cover, small, for its colour: 120 pixels, as a station's room
     /// takes its colour (StationArtwork), and the accent's download.
     private var toneURL: URL? {
-        guard let artwork, let client = app.client else { return nil }
-        return client.imageURL(artwork, maxPixelSize: 120)
+        guard let artwork, let server = app.server else { return nil }
+        return server.artworkURL(artwork, maxPixelSize: 120)
     }
 
     /// The cover's colour when it is known: kept by ImagePipeline, or worked

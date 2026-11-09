@@ -41,7 +41,7 @@ struct AlbumsView: View {
         .overlay {
             if albums.isEmpty {
                 LibraryEmptyState(query: query, emptyTitle: "No Albums", emptySymbol: "square.stack",
-                                  emptyMessage: "Albums on your Jellyfin server appear here.")
+                                  emptyMessage: "Albums on your \(library.serverKind) server appear here.")
             }
         }
         .refreshable { await library.refresh() }
@@ -231,13 +231,13 @@ struct AlbumDetailView: View {
 
     private func fetchIfNeeded() async {
         guard library.tracks(inAlbum: album.id).isEmpty, fetched == nil else { return }
-        guard let client = library.client else {
+        guard let server = library.server else {
             fetched = []
             return
         }
         do {
-            let page = try await client.tracks(TrackQuery(albumID: album.id))
-            fetched = page.items.sorted(by: LibraryIndex.inDiscOrder)
+            let tracks = try await server.albumTracks(albumID: album.id)
+            fetched = tracks.sorted(by: LibraryIndex.inDiscOrder)
         } catch {
             fetched = []
         }

@@ -35,6 +35,15 @@ struct TrackRow: View {
         self.showsMenu = showsMenu
     }
 
+    /// Why the radio chose it, in the kit's words but for the server's
+    /// mix, which is the server's own: Jellyfin's, or Navidrome's.
+    private func reasonText(_ reason: PickReason) -> String {
+        if case .instantMix = reason {
+            return String(localized: "From \(library.serverKind)’s mix")
+        }
+        return reason.text
+    }
+
     /// Artwork, title, artist: the usual row.
     static func standard(_ track: Track) -> TrackRow {
         TrackRow(track, subtitle: track.artistLine)
@@ -90,7 +99,7 @@ struct TrackRow: View {
                         .lineLimit(1)
                 }
                 if let reason {
-                    Text(reason.text)
+                    Text(reasonText(reason))
                         .font(.caption)
                         .foregroundStyle(.tertiary)
                         .lineLimit(1)
@@ -181,7 +190,7 @@ struct TrackMenu: View {
             }
             let favorite = library.isFavorite(track.id)
             Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
-                Task { await library.toggleFavorite(track.id) }
+                Task { await library.toggleFavorite(.track(track.id)) }
             }
         }
         Section {

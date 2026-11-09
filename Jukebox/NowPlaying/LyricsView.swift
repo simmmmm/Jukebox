@@ -1,5 +1,6 @@
 // The lyrics, in Now Playing's cover place: the server's (Jellyfin 10.9 and
-// later reads them from the files and from .lrc files beside them), and
+// later, and Navidrome, read them from the files and from .lrc files beside
+// them), and
 // when it has none, LRCLIB's (LyricsFinder), with a line under them saying
 // so. Synced lyrics follow the song as Music's do: the line being sung
 // bright, the others dim, the view keeping it in sight, a tap on a line
@@ -58,7 +59,7 @@ struct LyricsView: View {
         if settings.findLyricsOnline {
             return Text("Neither your server nor LRCLIB has lyrics for this song.")
         }
-        return Text("Jellyfin has no lyrics for this song.")
+        return Text("\(app.serverKindName) has no lyrics for this song.")
     }
 
     private func failedDescription(server: Bool) -> Text {
@@ -69,7 +70,7 @@ struct LyricsView: View {
     }
 
     private func load(_ track: Track?) async {
-        guard let track, let client = app.client else {
+        guard let track, let server = app.server else {
             content = .unavailable
             return
         }
@@ -79,7 +80,7 @@ struct LyricsView: View {
             show(known)
         } else {
             content = .loading
-            let answer = await finder.lyrics(for: track, client: client, online: online)
+            let answer = await finder.lyrics(for: track, server: server, online: online)
             guard !Task.isCancelled else { return }
             show(answer)
         }
@@ -87,7 +88,7 @@ struct LyricsView: View {
         // the moment it starts. While they are closed nothing is asked: no
         // traffic the listener did not ask for.
         guard !Task.isCancelled else { return }
-        finder.prefetch(player.upNext.first?.track, client: client, online: online)
+        finder.prefetch(player.upNext.first?.track, server: server, online: online)
     }
 
     private func show(_ answer: LyricsAnswer) {

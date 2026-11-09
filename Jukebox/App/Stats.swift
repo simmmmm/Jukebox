@@ -155,18 +155,36 @@ enum Stats {
         }
     }
 
-    /// Why signing in did not work, from Jellyfin's errors; never the
+    /// The kind of server, coarsely: `jellyfin`, `navidrome`, or `subsonic`
+    /// for every other Subsonic server (Gonic, Airsonic, …, and one that
+    /// names itself: never its own word); `none` signed out. Never which
+    /// server, nor its version.
+    static func server(_ kind: ServerKind?) -> String {
+        switch kind {
+        case .jellyfin?: return "jellyfin"
+        case .subsonic(.navidrome)?: return "navidrome"
+        case .subsonic?: return "subsonic"
+        case nil: return "none"
+        }
+    }
+
+    /// Why signing in did not work, from the servers' errors; never the
     /// message, which can hold the address.
     static func signInFailure(_ error: Error, quickConnect: Bool = false) -> String {
-        switch error as? JellyfinError {
+        switch error as? MusicServerError {
         case .transport?:
             return "unreachable"
         case .invalidServerAddress?:
-            return "not_jellyfin"
+            // `not_jellyfin` before 9 November 2026, when only Jellyfin was.
+            return "not_a_server"
         case .unauthorized?:
             // For Quick Connect the server says so when Quick Connect is
             // turned off there, not of a password.
             return quickConnect ? "other" : "wrong_password"
+        case .needsAPIKey?:
+            return "needs_api_key"
+        case .passwordNeedsHTTPS?:
+            return "needs_https"
         default:
             return "other"
         }
