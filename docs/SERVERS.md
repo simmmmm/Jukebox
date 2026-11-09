@@ -107,7 +107,9 @@ Foundation only and tested on Linux).
 
 Every use of `JellyfinClient` and its types in `Jukebox/`, at the branch's
 base (8 November 2026; other agents are changing the app in this round, so
-lines may have moved). The app moves to `MusicServer` in a later round.
+lines may have moved). The app moved to `MusicServer` on 9 November 2026:
+docs/ARCHITECTURE.md, "Navidrome and the other Subsonic servers", "In the
+app", says where each part of it is used.
 
 **The session** (`AppModel`, `Keychain`, `LibraryStore`, `SearchView`, `SettingsView`)
 
@@ -611,8 +613,9 @@ with curl, token authentication, one salt.
   integration suite against Navidrome (`dev/kit-test.sh` passes
   `NAVIDROME_URL` when the container runs, as it does `JELLYFIN_URL`); MD5
   with RFC 1321's test vectors. `MusicServers`' bodies.
-- **App**: the tables in "What the app asks of a server"; the sign-in
-  screen's API key field and its two new messages; the strings that say
-  Jellyfin; `RadioController`'s seeds; the player's `.nowPlaying`.
+- **App** (done, 9 November 2026; docs/ARCHITECTURE.md, "In the app"):
+  the tables in "What the app asks of a server"; the sign-in screen's API
+  key field and its two new messages; the strings that say Jellyfin;
+  `RadioController`'s seeds; the player's `.nowPlaying`.
 - **Open**: when a play counts for Last.fm (above); seeking in a converted
   stream (above); `Track.container` and `Playlist.isReadOnly` (the lead's).

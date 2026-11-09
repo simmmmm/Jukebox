@@ -1,7 +1,8 @@
 # Jukebox: how it is built
 
 Jukebox is the photographer's own music app for the iPhone and the iPad:
-their Jellyfin server's music — artists, albums, songs, playlists — with
+their Jellyfin server's music — or a Navidrome's, or another Subsonic
+server's, since 9 November 2026 — artists, albums, songs, playlists — with
 playlists the app makes up itself on Home and a radio that plays on from
 anything. Asked for on 8 November 2026: "op de homepage wil ik dat de app zelf
 leuke playlists verzint en of een goede radio functie heeft — ik vind vooral
@@ -77,7 +78,7 @@ means on air, flat grounds, titles in New York, facts not slogans).
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift` — AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
 | App: now playing | `Jukebox/NowPlaying/*` — MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController — MixStore, HomeView, MixDetailView, RadioView |
-| App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*` — OnboardingView (sign in, Quick Connect), SettingsView, SearchView |
+| App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*` — OnboardingView (sign in to any server: the address, then a password, Quick Connect or an API key), SettingsView, SearchView |
 | App: offline | `Jukebox/Offline/*` — OfflineStore (the songs on the phone per account, the queue, the keep's runs, offline or not, plays heard offline), OfflineDownloader (the background URLSession, JukeboxAppDelegate), OfflineDisk (the folders and files), the download control (OfflineDownloadButton), DownloadedView; `docs/OFFLINE.md`, "In the app" |
 
 ## The views each part must provide (the names others use)
@@ -131,7 +132,12 @@ must exist with exactly this initializer:
 `JukeboxApp` puts these in the environment; read them with
 `@Environment(X.self)`: `AppModel`, `Navigator`, `AppSettings`, `LibraryStore`,
 `HistoryStore`, `AudioPlayer`, `RadioController`, `MixStore`, `OfflineStore`.
-`AppModel.client` is the signed-in `JellyfinClient`. Offline (`OfflineStore.isOffline`)
+`AppModel.server` is the signed-in server, `any MusicServer` (Jellyfin or
+Subsonic; below), and `AppModel.credentials` its `ServerCredentials`;
+`LibraryStore.server` is the same one. What a server lacks is not offered:
+`app.can(.lyrics)`, `library.can(.playlistReorder)` (`ServerCapability`).
+Words name the server by its kind: `library.serverKind` ("your Navidrome
+server"). Offline (`OfflineStore.isOffline`)
 only songs on the phone play: a list's row asks `player.refusesOffline(track)`
 before it plays, and `TrackRow` dims what cannot play.
 
@@ -179,7 +185,9 @@ artists and songs.
 
 The photographer, 8 November 2026, from the TestFlight build: "Kun je ook
 lyrics toevoegen". Now Playing's Lyrics panel (`LyricsView`, through
-`LyricsFinder`) asks the server first (`/Audio/{id}/Lyrics`). Most libraries
+`LyricsFinder`) asks the server first (Jellyfin's `/Audio/{id}/Lyrics`, a
+Subsonic server's `getLyricsBySongId` or `getLyrics`; not a server without
+`.lyrics`, and no Lyrics button when it has none and LRCLIB is off). Most libraries
 have none, so then, while Settings' Find Lyrics Online is on (the default),
 it asks LRCLIB (lrclib.net), a free, open lyrics database without a key that
 Feishin uses too: `/api/get` with title, artist, album and length, and on a
@@ -215,3 +223,29 @@ protocol for Jellyfin and Subsonic that the app moves to from
 keychain keeps, and the map from every call to both APIs, measured on
 Jellyfin 12.4 and Navidrome 0.64.2. `dev/navidrome-test-server.sh` starts
 Navidrome on the same made-up library (user test/test, port 4533).
+
+### In the app
+
+The photographer, 9 November 2026, before the release: "Kun je die
+navidunges en subsonic toevoegen dan Istie erna wel klaar voor release" —
+the whole app, not a part. Nothing in `Jukebox/` holds a `JellyfinClient`
+any more; one `any MusicServer` goes where it did:
+
+| Where | What it does with the server |
+|---|---|
+| `AppModel` | `MusicServers.open(credentials)` at a launch and a sign-in; hands it to the player, the radio, the library and the offline store. Once a launch, in the background, `currentCapabilities()` (and, for a sign-in the Jellyfin-only app kept, the version): a changed session is saved and every store goes on with it (`use`). Sign-out: `server.signOut()` (Jellyfin forgets its token; Subsonic has none to forget, the keychain does). |
+| `Keychain` | One item as before, now `ServerCredentials`. The Jellyfin-only app's `Credentials` decodes as a Jellyfin session (JukeboxKit's `ServerCredentialsTests`), so the update signs nobody out; the library cache and the downloads' folder are named by the same server and user ids, so they stay too. |
+| `OnboardingView` | One address field. `MusicServers.detect` (through `app.detectServer`) asks every candidate both ways at once; the account step says "Signing in to Tijmen's Music", "Jellyfin 12.4.0 · music.example.com", or for a Subsonic server, which has no name, "Signing in to nas.local", "Navidrome 0.64.2 · nas.local:4533". User name and password everywhere; Use Quick Connect where the kit's sign-in is a `QuickConnectSignIn` (a Jellyfin with it on); Use an API Key where it is an `APIKeySignIn`, and at once when a password sign-in throws `needsAPIKey` (with the server's help link). Errors in words: no server there, the password would go over plain http (`passwordNeedsHTTPS`), the account may not play (`notAllowed`). |
+| `LibraryStore` | `allTracks`, `allAlbums`, `allArtists`, `playlists`, `genres` (each server pages as suits it, in the kit); `setFavorite(_:item:)` with the `ItemRef` the heart knows (track, album, artist); the playlist calls; `MusicServerError`. |
+| `AudioPlayer` | `streamURL(for:quality:playSessionID:)`; `report(.nowPlaying)` when an entry first plays (Subsonic shows it as playing; Jellyfin is told nothing), `.played` when it is not a skip (PlayOutcome, where every server counts it), `.progress`, `.stopped`. |
+| `RadioController` | `instantMix(from: MixSeed)` where `.instantMix`: a playlist is `.playlist` when the library has it, a made-up mix starts from its first track, a genre the library split out has no id (Jellyfin then has nothing; Subsonic mixes by name). An artist's station: the server's `topSongs` where `.topSongs`, else (or when it had none) Last.fm as before. |
+| `LyricsFinder` | `lyrics(for: track)` where `.lyrics`; an `unsupported` or `notFound` answer counts as none, so LRCLIB is asked. |
+| `OfflineStore` | `downloadURL(for:quality:)`, `downloadsAllowed()`; whether the server answers is `currentCapabilities()` (Jellyfin's public info, a Subsonic ping), and a server that refuses the session (`unauthorized`) still answered; plays heard offline go as `.played` and `.stopped`. |
+| Artwork | `artworkURL(_:maxPixelSize:)` in `ArtworkView`, `StationArtwork`, Now Playing's accent and ground, the lock screen. A Subsonic URL carries the session's one token and salt, so a cover is always one URL and the cache holds. |
+| Screens | `can(_:)` hides: Lyrics (without `.lyrics` and LRCLIB), similar artists' request (`.similarArtists`), move handles (`.playlistReorder`), Normalize Volume (`.replayGain`; off, with why). `Playlist.isReadOnly` (someone else's): no Delete, Add Songs, Edit, nor among Add to Playlist's. Up Next says "From Navidrome's mix" (JukeboxKit's `PickReason.instantMix.text` still says Jellyfin's). |
+| Settings | Server: the name, and under it the kind and version ("Navidrome 0.64.2", Navidrome's build in brackets left out); the quality footers say AAC for Jellyfin, MP3 for a Subsonic server. |
+| Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
+
+The screenshot walk signs in to the fake Jellyfin through the same screen:
+`dev/fake-jellyfin.py` answers `/rest/…` as Jellyfin 12.4 does (404, no
+body: not a Subsonic server), so it is found as Jellyfin.

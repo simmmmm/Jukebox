@@ -52,9 +52,9 @@ Buckets:
 
 | Event | Properties | The question it answers | Where |
 |---|---|---|---|
-| `app_open` | none | How many starts, on which system, version, language and device | `JukeboxApp.init` |
-| `signed_in` | `server` (`jellyfin`), `method` (`password`, `quick_connect`) | How people sign in; is Quick Connect worth it | OnboardingView |
-| `sign_in_failed` | `reason` (`unreachable`, `not_jellyfin`, `wrong_password`, `other`) | Where people stop before the music | OnboardingView |
+| `app_open` | `server` (`jellyfin`, `navidrome`, `subsonic`, `none`) | How many starts, on which system, version, language and device; which kinds of server are used | `AppModel.restore`, once a launch, when the keychain has said |
+| `signed_in` | `server` (`jellyfin`, `navidrome`, `subsonic`), `method` (`password`, `quick_connect`, `api_key`) | How people sign in, and to what; is Quick Connect worth it | OnboardingView |
+| `sign_in_failed` | `reason` (`unreachable`, `not_a_server`, `wrong_password`, `needs_api_key`, `needs_https`, `other`) | Where people stop before the music | OnboardingView |
 | `signed_out` | none | Do people leave, or move servers | `AppModel.signOut` |
 | `library_loaded` | `tracks` (bucket), `from` (`cache`, `server`), `seconds` (bucket) | How large libraries are; how long a launch and a load take | LibraryStore |
 | `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings` | Which screens are used, which never | MainTabView (tabs), `routeDestinations()` (pushes), the cover, panels and sheet |
@@ -76,6 +76,15 @@ Buckets:
 | `playback_error` | `reason` (`network`, `server`, `unsupported`, `other`) | How often a song does not play, and why | `AudioPlayer.itemFailed` |
 | `download_chosen` | `kind` (`album`, `playlist`, `mix`) | Are downloads used, and for what | `OfflineStore.download`, each Download on a page |
 | `offline_play_started` | `from` (as `play_started`'s) | Is music played offline, and from what | `AudioPlayer.play`, `playRadio`, while offline (with `play_started`) |
+
+The `server` property is the kind of server, coarsely (`Stats.server`):
+`jellyfin`, `navidrome`, and `subsonic` for every other Subsonic server —
+Gonic, Airsonic, Ampache, LMS, the original, and one that names itself in
+its own word, which is never sent — or `none` signed out. Never which
+server, its name, address or version. Asked for with Navidrome and the
+other Subsonic servers (9 November 2026). Until then `app_open` had no
+properties, it was counted in `JukeboxApp.init`, `signed_in`'s `server` was
+always `jellyfin`, and `not_a_server` was `not_jellyfin`.
 
 What the `from` of `station_started` means: `page` a station's page (its
 Play or a song on it); `tile_menu` a station's long press, Play Station;

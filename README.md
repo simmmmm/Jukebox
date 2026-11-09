@@ -1,8 +1,9 @@
 # Jukebox
 
-Your Jellyfin music on the iPhone and the iPad: artists, albums, songs and
-playlists; playlists Jukebox makes up for you on Home; and a radio that plays
-on from any song, artist, album, genre or decade and learns from what you skip.
+Your Jellyfin, Navidrome or other Subsonic server's music on the iPhone and
+the iPad: artists, albums, songs and playlists; playlists Jukebox makes up for
+you on Home; and a radio that plays on from any song, artist, album, genre or
+decade and learns from what you skip.
 
 ## TestFlight
 

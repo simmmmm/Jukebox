@@ -381,10 +381,10 @@ it.
   the rate asked for and a little over) stands in, held under 99%. Published
   twice a second; an album's, a playlist's or a mix's is its songs on the
   phone plus the parts of those coming, over its songs.
-- **The server's admin** can turn "Allow media downloading" off for a
-  user (`JellyfinClient.downloadsAllowed`, asked at sign-in and whenever
-  the server answers again, kept in `queue.json` for a launch without the
-  server). Off: nothing is fetched, downloads under way are cancelled and
+- **The server's admin** can turn downloads off for a user (Jellyfin's
+  "Allow media downloading", a Subsonic server's download role:
+  `MusicServer.downloadsAllowed`, asked at sign-in and whenever the server
+  answers again, kept in `queue.json` for a launch without the server). Off: nothing is fetched, downloads under way are cancelled and
   wait, the keep waits, the pages show no Download (only the control of
   one chosen before, to remove it), and Settings › Downloads says,
   in one line, that the server does not allow downloads for this account.
@@ -432,7 +432,9 @@ fetch its songs again at once.
 ### Offline
 
 Offline is no network (`NWPathMonitor`) or a server that does not answer
-its public info (`/System/Info/Public`): asked at sign-in, when the network
+`MusicServer.currentCapabilities()` (Jellyfin's public info,
+`/System/Info/Public`; a Subsonic server's ping; one that answers but no
+longer takes the session is there): asked at sign-in, when the network
 changes (back after none, it counts as offline until the server has
 answered — a server at home is not there from the mobile network), when a
 library load or a song fails on the network, when the app comes to the
@@ -454,7 +456,8 @@ front, from Home's Try Again, and every 30 s while it does not answer.
   song not on the phone becomes the kit's personal station among them.
 - **Plays heard offline are queued, not dropped**: their start and stop
   reports wait in `reports.json` and go to the server in order once it
-  answers, so Jellyfin counts them and its Last.fm plugin scrobbles them —
+  answers (as `played` and `stopped`, `MusicServer.report`), so the server
+  counts them and its Last.fm scrobbles them —
   at the time they arrive, not when they were heard (the reports carry no
   time). Progress reports made offline are dropped. At sign-out what is
   waiting is sent if the server answers, else it goes with the account.
