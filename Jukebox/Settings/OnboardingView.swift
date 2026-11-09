@@ -631,6 +631,9 @@ private struct OnboardingWelcome: View {
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                    // Two lines rather than cut short where the page is
+                    // tight (the first two steps cut it at "other…").
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
         .frame(maxWidth: .infinity)
