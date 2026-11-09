@@ -1,5 +1,5 @@
-// Playlists: the listener's own, on the server (so every Jellyfin app has
-// them), made here with New Playlist…, filled with the playlist's own Add
+// Playlists: the listener's own, on the server (so every app of that server
+// has them), made here with New Playlist…, filled with the playlist's own Add
 // Songs (the library's songs, found by name, a + on each) or from any
 // menu's Add to Playlist…, edited in place: swipe to remove a song, Edit to
 // reorder, Delete Playlist behind the "…". A playlist's songs are read from
@@ -9,6 +9,13 @@
 // broken. Download in the bar puts the playlist on the phone; a downloaded
 // playlist follows what the server says it holds each time its page reads
 // it, and offline its page shows the songs it was downloaded with.
+//
+// A playlist the server would not let this user change — someone else's,
+// shared on a Subsonic server (`Playlist.isReadOnly`) — plays and downloads
+// like any other, with nothing offered that the server would refuse: no
+// Delete, no Add Songs, no Edit, and it is not among Add to Playlist's
+// choices. Reordering is offered where the server can (Jellyfin; a Subsonic
+// server from API 1.14, ServerCapability.playlistReorder).
 
 import JukeboxKit
 import SwiftUI
@@ -31,23 +38,7 @@ struct PlaylistsView: View {
             }
 
             ForEach(library.playlists) { playlist in
-                NavigationLink(value: Route.playlist(playlist)) {
-                    LibraryPlaylistRow(playlist: playlist)
-                }
-                .swipeActions {
-                    // Red by tint, not by the destructive role: with the role,
-                    // List slides the row away as deleted at once, before the
-                    // dialog below has asked.
-                    Button("Delete", systemImage: "trash") {
-                        pendingDelete = playlist
-                    }
-                    .tint(.red)
-                }
-                .contextMenu {
-                    Button("Delete Playlist", systemImage: "trash", role: .destructive) {
-                        pendingDelete = playlist
-                    }
-                }
+                row(playlist)
             }
 
             if library.playlists.isEmpty {
@@ -72,9 +63,38 @@ struct PlaylistsView: View {
                 delete(playlist)
             }
         } message: { _ in
-            Text("It is deleted from your Jellyfin server, for every app. Its songs stay in your library.")
+            Text("It is deleted from your \(library.serverKind) server, for every app. Its songs stay in your library.")
         }
         .libraryErrorAlert("Could Not Change Playlists", message: $errorMessage)
+    }
+
+    /// Someone else's playlist opens and plays; only the listener's own
+    /// can be deleted.
+    @ViewBuilder
+    private func row(_ playlist: Playlist) -> some View {
+        if playlist.isReadOnly {
+            NavigationLink(value: Route.playlist(playlist)) {
+                LibraryPlaylistRow(playlist: playlist)
+            }
+        } else {
+            NavigationLink(value: Route.playlist(playlist)) {
+                LibraryPlaylistRow(playlist: playlist)
+            }
+            .swipeActions {
+                // Red by tint, not by the destructive role: with the role,
+                // List slides the row away as deleted at once, before the
+                // dialog below has asked.
+                Button("Delete", systemImage: "trash") {
+                    pendingDelete = playlist
+                }
+                .tint(.red)
+            }
+            .contextMenu {
+                Button("Delete Playlist", systemImage: "trash", role: .destructive) {
+                    pendingDelete = playlist
+                }
+            }
+        }
     }
 
     private var isConfirmingDelete: Binding<Bool> {
@@ -150,26 +170,27 @@ struct PlaylistDetailView: View {
                     }
                     .buttonStyle(.plain)
                 }
-                .onDelete { offsets in
-                    remove(at: offsets, from: shown)
-                }
-                .onMove { source, destination in
-                    move(from: source, to: destination, in: shown)
-                }
+                .onDelete(perform: deleteAction(shown))
+                .onMove(perform: moveAction(shown))
 
                 if entries.isEmpty {
-                    ContentUnavailableView {
-                        Label("No Songs Yet", systemImage: "music.note.list")
-                    } description: {
-                        Text("Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
-                    } actions: {
-                        Button("Add Songs") {
-                            isAddingSongs = true
+                    if shown.isReadOnly {
+                        ContentUnavailableView("No Songs Yet", systemImage: "music.note.list")
+                            .listRowSeparator(.hidden)
+                    } else {
+                        ContentUnavailableView {
+                            Label("No Songs Yet", systemImage: "music.note.list")
+                        } description: {
+                            Text("Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
+                        } actions: {
+                            Button("Add Songs") {
+                                isAddingSongs = true
+                            }
+                            .buttonStyle(.secondary)
+                            .fixedSize()
                         }
-                        .buttonStyle(.secondary)
-                        .fixedSize()
+                        .listRowSeparator(.hidden)
                     }
-                    .listRowSeparator(.hidden)
                 }
             } else if let loadError {
                 ContentUnavailableView {
@@ -192,19 +213,21 @@ struct PlaylistDetailView: View {
         .listStyle(.plain)
         .libraryScrolledTitle(shown.name, after: 280)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    isAddingSongs = true
-                } label: {
-                    Label("Add Songs", systemImage: "plus")
-                }
-                .disabled(entries == nil)
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                // Off only while loading: after the last song is removed in
-                // edit mode, Done must still be there to leave it.
-                EditButton()
+            if !shown.isReadOnly {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        isAddingSongs = true
+                    } label: {
+                        Label("Add Songs", systemImage: "plus")
+                    }
                     .disabled(entries == nil)
+                }
+                ToolbarItem(placement: .topBarTrailing) {
+                    // Off only while loading: after the last song is removed in
+                    // edit mode, Done must still be there to leave it.
+                    EditButton()
+                        .disabled(entries == nil)
+                }
             }
             if offline.offersDownload(for: .playlist(playlist.id)) {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -231,9 +254,11 @@ struct PlaylistDetailView: View {
                         }
                         .disabled(tracks.isEmpty)
                     }
-                    Section {
-                        Button("Delete Playlist", systemImage: "trash", role: .destructive) {
-                            isConfirmingDelete = true
+                    if !shown.isReadOnly {
+                        Section {
+                            Button("Delete Playlist", systemImage: "trash", role: .destructive) {
+                                isConfirmingDelete = true
+                            }
                         }
                     }
                 } label: {
@@ -246,7 +271,7 @@ struct PlaylistDetailView: View {
                 deletePlaylist(shown)
             }
         } message: {
-            Text("It is deleted from your Jellyfin server, for every app. Its songs stay in your library.")
+            Text("It is deleted from your \(library.serverKind) server, for every app. Its songs stay in your library.")
         }
         .libraryErrorAlert("Could Not Change the Playlist", message: $errorMessage)
         .offlineRemovalDialog($isConfirmingRemoval, for: .playlist(playlist.id), name: shown.name)
@@ -290,8 +315,8 @@ struct PlaylistDetailView: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// The playlist's own image when Jellyfin has made one, else the
-    /// covers of its first albums.
+    /// The playlist's own image when the server has made one (Jellyfin's,
+    /// Navidrome's mosaic), else the covers of its first albums.
     @ViewBuilder
     private func cover(_ shown: Playlist, tracks: [Track]) -> some View {
         let covers = Self.firstCovers(of: tracks)
@@ -351,6 +376,18 @@ struct PlaylistDetailView: View {
         }
     }
 
+    /// Swipe to remove, but not from someone else's playlist.
+    private func deleteAction(_ shown: Playlist) -> ((IndexSet) -> Void)? {
+        guard !shown.isReadOnly else { return nil }
+        return { offsets in remove(at: offsets, from: shown) }
+    }
+
+    /// The move handles in Edit, where the server can reorder.
+    private func moveAction(_ shown: Playlist) -> ((IndexSet, Int) -> Void)? {
+        guard !shown.isReadOnly, library.can(.playlistReorder) else { return nil }
+        return { source, destination in move(from: source, to: destination, in: shown) }
+    }
+
     /// Gone from the list at once; back from the server if it said no.
     private func remove(at offsets: IndexSet, from shown: Playlist) {
         guard var current = entries else { return }
@@ -377,8 +414,8 @@ struct PlaylistDetailView: View {
         let moved = current[from]
         current.move(fromOffsets: source, toOffset: destination)
         entries = current
-        // List's destination counts the row's old place; Jellyfin wants the
-        // place it ends up in.
+        // List's destination counts the row's old place; the server wants
+        // the place it ends up in (Jellyfin's, and the kit's for Subsonic).
         guard let newIndex = current.firstIndex(where: { $0.id == moved.id }) else { return }
         Task {
             do {
@@ -462,9 +499,9 @@ struct AddToPlaylistSheet: View {
                         Label("New Playlist…", systemImage: "plus")
                     }
                 }
-                if !library.playlists.isEmpty {
+                if !ownPlaylists.isEmpty {
                     Section("Playlists") {
-                        ForEach(library.playlists) { playlist in
+                        ForEach(ownPlaylists) { playlist in
                             Button {
                                 add(to: playlist)
                             } label: {
@@ -496,6 +533,11 @@ struct AddToPlaylistSheet: View {
             .libraryErrorAlert("Could Not Add to the Playlist", message: $errorMessage)
         }
         .presentationDetents([.medium, .large])
+    }
+
+    /// Only playlists the server lets this user add to.
+    private var ownPlaylists: [Playlist] {
+        library.playlists.filter { !$0.isReadOnly }
     }
 
     private func add(to playlist: Playlist) {
