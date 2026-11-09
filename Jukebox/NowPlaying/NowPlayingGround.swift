@@ -527,9 +527,11 @@ private struct LandLayer: View {
         let geometry = picture.key.geometry
         let diameter = geometry.diameter
         let scale = geometry.bitmapScale
-        let pin = UnitPoint(x: 0.5 + RecordMotion.landPinOffset.x / diameter,
-                            y: 0.5 + RecordMotion.landPinOffset.y / diameter)
-        let oval = 1 + CGFloat(RecordMotion.landOvalPercent) / 100
+        // This record's own warp, a part of the most (RecordWarp).
+        let warp = RecordWarp(bands: picture.key.bands)
+        let pin = UnitPoint(x: 0.5 + warp.pinOffset.x / diameter,
+                            y: 0.5 + warp.pinOffset.y / diameter)
+        let oval = 1 + CGFloat(warp.ovalPercent) / 100
         ZStack {
             Image(decorative: picture.image, scale: scale)
                 .resizable()
@@ -539,7 +541,7 @@ private struct LandLayer: View {
         }
         .frame(width: diameter, height: diameter)
         .scaleEffect(x: oval, y: 1)
-        .rotationEffect(.degrees(angle), anchor: pin)
+        .rotationEffect(.degrees(angle + warp.phase), anchor: pin)
     }
 }
 

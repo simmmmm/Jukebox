@@ -181,6 +181,33 @@ check(RecordMotion.landTurns, "off its centre and a little oval (sketch H1): the
 check(RecordMotion.landPinOffset.x == 1.5 && RecordMotion.landPinOffset.y == 0, "the pin 1.5 pt off the centre")
 check(near(RecordMotion.landOvalPercent, 0.4), "0.4% wider than high: 1.002 across, 0.998 down")
 check(RecordMotion.frameRate == 30, "30 frames a second while the land turns: 6.7° a frame")
+
+// Each record its own warp, a part of the most; the same album, the same.
+func bands(lengths: [Double]) -> [Double] {
+    let total = lengths.reduce(0, +)
+    var before = 0.0
+    return lengths.dropLast().map { length in
+        before += length
+        return before / total
+    }
+}
+let velvetWarp = RecordWarp(bands: bands(lengths: [204, 187, 241, 199, 262, 230, 211, 248, 195, 226]))
+check(velvetWarp == RecordWarp(bands: bands(lengths: [204, 187, 241, 199, 262, 230, 211, 248, 195, 226])),
+      "the same songs, the same warp")
+var seen = Set<Double>()
+var phases = Set<Double>()
+for n in 1...200 {
+    let lengths = (0..<(4 + n % 9)).map { i in Double(150 + (n * 37 + i * 53) % 200) }
+    let warp = RecordWarp(bands: bands(lengths: lengths))
+    seen.insert(warp.amount)
+    phases.insert(warp.phase)
+    check(warp.amount > 0 && warp.amount <= 1, "a part of the most, never more")
+    check(warp.ovalPercent <= RecordMotion.landOvalPercent && warp.pinOffset.x <= RecordMotion.landPinOffset.x,
+          "never more than the most: the current, the most extreme")
+}
+print("warps over 200 made-up albums: amounts \(seen.sorted()), \(phases.count) phases")
+check(seen == Set(RecordWarp.amounts), "all four amounts occur")
+check(phases.count > 100, "their warps begin at many places round")
 check(RecordMotion.frameRate <= 30 && RecordMotion.landFrameRate <= 30, "never more than 30 frames a second")
 
 // The clock: turns, coasts to a stop, holds; both records from one clock.

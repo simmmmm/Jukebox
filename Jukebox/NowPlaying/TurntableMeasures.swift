@@ -327,7 +327,8 @@ nonisolated enum RecordMotion {
     /// The land: a real record's speed.
     static let landRevolutionsPerMinute: Double = 100.0 / 3
     /// The land's pin, off the record's true centre, in points: right and
-    /// down. Sketch H1, "33⅓": a record "net niet helemaal rond", so "de
+    /// down; the most a record has (RecordWarp gives each its part of it).
+    /// Sketch H1, "33⅓": a record "net niet helemaal rond", so "de
     /// lijnen dansen" (the photographer, 8 November 2026; and of the still
     /// land in the first build, 9 November: "Achtergrond lijkt niet echt te
     /// draaien?"). H1's 3 pt and 0.8% swayed the grooves under the words
@@ -336,7 +337,8 @@ nonisolated enum RecordMotion {
     /// pt, at most 17 pt/s, about half a groove each way.
     static let landPinOffset = CGPoint(x: 1.5, y: 0)
     /// How oval the land is: its width over its height, less one, in per
-    /// cent: 1.002 across and 0.998 down. The oval does the dancing: it
+    /// cent: 1.002 across and 0.998 down; the most a record has
+    /// (RecordWarp). The oval does the dancing: it
     /// bends the lines twice a turn, the left and the right of the screen
     /// out of step.
     static let landOvalPercent: Double = 0.4
@@ -366,6 +368,43 @@ nonisolated enum RecordMotion {
     /// The one timeline's rate.
     static var frameRate: Double {
         landTurns ? landFrameRate : labelFrameRate
+    }
+}
+
+/// How warped one record is: a part of the most (RecordMotion's pin and
+/// oval) — a quarter, a half, three quarters or all of it — and where round
+/// its warp begins, both from the album's songs (its bands), so an album
+/// keeps its own from play to play and the next album is likely another.
+/// The photographer, 9 November 2026: "kun je ipv een vaste graad
+/// ovaalheid … een paar verschillende van maken waarbij de huidige het
+/// meest extreem is"; as real records are, each warped in its own way.
+nonisolated struct RecordWarp: Equatable, Sendable {
+    /// The part of the most: one of `amounts`.
+    let amount: Double
+    /// Where round the warp begins, degrees: added to the land's angle, so
+    /// two records do not sway in step.
+    let phase: Double
+
+    static let amounts: [Double] = [0.25, 0.5, 0.75, 1]
+
+    init(bands: [Double]) {
+        // FNV-1a over the bands' bits: the same songs, the same warp, on
+        // every launch (Hasher is seeded anew each launch).
+        var hash: UInt64 = 0xcbf2_9ce4_8422_2325
+        for band in bands {
+            hash = (hash ^ band.bitPattern) &* 0x0000_0100_0000_01b3
+        }
+        hash ^= hash >> 29
+        amount = Self.amounts[Int(hash % UInt64(Self.amounts.count))]
+        phase = Double((hash >> 8) % 360)
+    }
+
+    var pinOffset: CGPoint {
+        CGPoint(x: RecordMotion.landPinOffset.x * CGFloat(amount), y: RecordMotion.landPinOffset.y * CGFloat(amount))
+    }
+
+    var ovalPercent: Double {
+        RecordMotion.landOvalPercent * amount
     }
 }
 
