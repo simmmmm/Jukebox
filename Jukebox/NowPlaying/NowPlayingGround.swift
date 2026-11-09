@@ -275,10 +275,10 @@ struct NowPlayingGround: View {
     // MARK: D1, the wall
 
     /// The floor everywhere, and the wall over it from the top of the
-    /// screen to the sleeve's foot: across the screen upright; on the iPad
-    /// sideways, across the sleeve's side only, to the controls' column.
-    /// Cabinet, the brand's Now Playing ground, until the cover's colours
-    /// are known; all floor without a sleeve.
+    /// screen to a little above the sleeve's foot: across the screen
+    /// upright; on the iPad sideways, across the sleeve's side only, to the
+    /// controls' column. Cabinet, the brand's Now Playing ground, until the
+    /// cover's colours are known; all floor without a sleeve.
     @ViewBuilder private func wallAndFloor(sleeve: CGRect?) -> some View {
         let wall = walls?.wall(wide: wide)
         ZStack(alignment: .topLeading) {
@@ -286,11 +286,21 @@ struct NowPlayingGround: View {
             if let wall, let sleeve {
                 Rectangle()
                     .fill(Self.color(wall.wall))
-                    .frame(width: wallWidth, height: max(0, sleeve.maxY))
+                    .frame(width: wallWidth, height: max(0, sleeve.maxY - sleeve.height * Self.floorBehindSleeve))
             }
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)
     }
+
+    /// Where the floor meets the wall, behind the sleeve, as a part of the
+    /// sleeve's height above its foot: the sleeve stands on the floor, as a
+    /// sleeve set against a wall does, rather than its foot and the floor's
+    /// edge being one line. The photographer, 9 November 2026: "zou
+    /// eigenlijk net ff moeten beginnen onder de hoes …, nu is het precies
+    /// zon harde rand". A tenth: 28 points on an iPhone 17 Pro, enough to
+    /// read as the floor going on behind it, not so much that the sleeve
+    /// looks to sink into it.
+    private static let floorBehindSleeve: CGFloat = 0.1
 
     /// Upright, the screen's width; sideways, to the controls' column, which
     /// begins a margin before the title.
