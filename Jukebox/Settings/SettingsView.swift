@@ -266,13 +266,14 @@ private struct SettingsDownloadsSection: View {
         app.credentials?.serverName ?? String(localized: "Your server")
     }
 
-    /// What each quality means on this kind of server: Jellyfin converts
-    /// what the phone cannot play to AAC even at Original (docs/OFFLINE.md),
-    /// a Subsonic server converts to MP3 at High and Normal.
+    /// What each quality means on this kind of server: what the phone
+    /// cannot play is converted even at Original, by Jellyfin to AAC at 256
+    /// (docs/OFFLINE.md), by a Subsonic server to MP3 at 320
+    /// (SubsonicClient.downloadURL); High and Normal to AAC or MP3.
     private var qualityFooter: Text {
         let model = UIDevice.current.model
         if app.credentials?.kind.isSubsonic == true {
-            return Text("Original is each file as it is; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
+            return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
         }
         return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
     }
