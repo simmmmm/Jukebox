@@ -52,7 +52,17 @@ private struct SettingsAccountSection: View {
     var body: some View {
         Section {
             if let credentials = app.credentials {
-                LabeledContent("Server", value: credentials.serverName)
+                // Its name, and under it which kind of server it is and its
+                // version ("Navidrome 0.64.2"): the sign-in screen's words.
+                LabeledContent {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(verbatim: credentials.serverName)
+                        Text(verbatim: ServerWords.product(credentials.kind, version: credentials.serverVersion))
+                            .font(.footnote)
+                    }
+                } label: {
+                    Text("Server")
+                }
                 LabeledContent("User", value: credentials.userName)
                 LabeledContent("Address") {
                     Text(verbatim: credentials.serverURL.absoluteString)
@@ -91,6 +101,7 @@ private struct SettingsAccountSection: View {
 
 private struct SettingsPlaybackSection: View {
     @Environment(AppSettings.self) private var settings
+    @Environment(AppModel.self) private var app
 
     init() {}
 
@@ -104,9 +115,19 @@ private struct SettingsPlaybackSection: View {
             Picker("Cellular Streaming", selection: $settings.cellularQuality) {
                 qualityOptions
             }
-            Toggle(isOn: $settings.normalizeVolume) {
-                SettingsDetailLabel(title: "Normalize Volume",
-                                    detail: "Play every song at the loudness Jellyfin measured, so loud and quiet records sit side by side")
+            // Only where the server gives songs a loudness (Jellyfin 10.9+,
+            // an OpenSubsonic server's ReplayGain): elsewhere the switch
+            // would do nothing, so it is off and says why.
+            if app.can(.replayGain) {
+                Toggle(isOn: $settings.normalizeVolume) {
+                    SettingsDetailLabel(title: "Normalize Volume", detail: normalizeDetail)
+                }
+            } else {
+                Toggle(isOn: .constant(false)) {
+                    SettingsDetailLabel(title: "Normalize Volume",
+                                        detail: "\(app.serverKindName) doesn’t give songs a loudness, so each plays as it is")
+                }
+                .disabled(true)
             }
             Toggle(isOn: $settings.autoplay) {
                 SettingsDetailLabel(title: "Autoplay",
@@ -122,8 +143,22 @@ private struct SettingsPlaybackSection: View {
         } header: {
             Text("Playback")
         } footer: {
-            Text("Original plays your files as they are. The others have Jellyfin convert them to AAC at that rate, which uses less data.")
+            Text("Original plays your files as they are. The others have \(app.serverKindName) convert them to \(format) at that rate, which uses less data.")
         }
+    }
+
+    /// AAC from Jellyfin, MP3 from a Subsonic server.
+    private var format: String {
+        app.credentials?.kind.convertedFormat ?? "AAC"
+    }
+
+    /// Jellyfin measures each song itself; a Subsonic server passes on what
+    /// the files' ReplayGain tags say.
+    private var normalizeDetail: LocalizedStringKey {
+        if app.credentials?.kind.isSubsonic == true {
+            return "Play every song at the loudness its ReplayGain tags give, so loud and quiet records sit side by side"
+        }
+        return "Play every song at the loudness Jellyfin measured, so loud and quiet records sit side by side"
     }
 
     private var qualityOptions: some View {
@@ -162,8 +197,9 @@ private struct SettingsDownloadsSection: View {
         @Bindable var settings = settings
         Section {
             if !offline.downloadsAllowed {
-                // The server's admin turned "Allow media downloading" off
-                // for this user: said once, as a fact.
+                // The server's admin turned downloads off for this user
+                // (Jellyfin's "Allow media downloading", a Subsonic
+                // server's download role): said once, as a fact.
                 Text("\(serverName) doesn’t allow downloads for this account.")
                     .foregroundStyle(.secondary)
             }
@@ -212,7 +248,7 @@ private struct SettingsDownloadsSection: View {
         } header: {
             Text("Downloads")
         } footer: {
-            Text("Original is each file as it is, or AAC at 256 kbit/s when this \(UIDevice.current.model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
+            qualityFooter
         }
     }
 
@@ -228,6 +264,17 @@ private struct SettingsDownloadsSection: View {
 
     private var serverName: String {
         app.credentials?.serverName ?? String(localized: "Your server")
+    }
+
+    /// What each quality means on this kind of server: Jellyfin converts
+    /// what the phone cannot play to AAC even at Original (docs/OFFLINE.md),
+    /// a Subsonic server converts to MP3 at High and Normal.
+    private var qualityFooter: Text {
+        let model = UIDevice.current.model
+        if app.credentials?.kind.isSubsonic == true {
+            return Text("Original is each file as it is; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
+        }
+        return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
     }
 
     /// "1.2 GB of 5 GB": what the keep holds, against its limit.
@@ -595,7 +642,7 @@ private struct SettingsAboutSection: View {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("Jukebox")
                         .font(.headline)
-                    Text("Made for Jellyfin")
+                    Text("Made for Jellyfin, Navidrome and other Subsonic servers")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
