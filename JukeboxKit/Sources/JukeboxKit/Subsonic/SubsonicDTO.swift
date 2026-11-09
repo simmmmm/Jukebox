@@ -262,14 +262,19 @@ struct SubsonicExtension: Decodable {
     }
 }
 
+/// getUser's roles, the two the app asks about. (Navidrome 0.64.2 says
+/// `playlistRole: false` for its admin, who makes playlists all the same,
+/// measured: so no other role is read as a rule.)
 struct SubsonicUser: Decodable {
     var username: String?
     var streamRole: Bool?
+    var downloadRole: Bool?
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: SubsonicKey.self)
         username = c.lenientString(SubsonicKey("username"))
         streamRole = c.lenientBool(SubsonicKey("streamRole"))
+        downloadRole = c.lenientBool(SubsonicKey("downloadRole"))
     }
 }
 
