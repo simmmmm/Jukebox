@@ -1,6 +1,8 @@
 // The library as Jukebox thinks of it: tracks, albums, artists, playlists
-// and genres, made from Jellyfin's BaseItemDto (Jellyfin/DTO.swift) once, at
-// the edge, so nothing above the client reads Jellyfin's field names.
+// and genres, made once, at the edge, from Jellyfin's BaseItemDto
+// (Jellyfin/JellyfinDTO.swift) or Subsonic's Child, AlbumID3 and ArtistID3
+// (Subsonic/SubsonicDTO.swift), so nothing above the clients reads a
+// server's field names.
 // Codable so the whole library can be kept on disk (LibraryCache) and opened
 // at once on the next launch, before the server has answered.
 
@@ -8,8 +10,11 @@ import Foundation
 
 public typealias ItemID = String
 
-/// An image Jellyfin can draw at any size: the item that has it and the tag
-/// that changes when the image does, so a cached copy is never stale.
+/// An image the server can draw at any size: the item that has it and the
+/// server's key to the image. Jellyfin: the ImageTag, which changes when the
+/// image does, so a cached copy is never stale. Subsonic: the coverArt id
+/// (Navidrome's album covers carry a hash of the image in it, measured);
+/// without one, the item's own id, which getCoverArt takes too.
 public struct Artwork: Hashable, Codable, Sendable {
     public let itemID: ItemID
     public let tag: String?
@@ -57,18 +62,28 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     public var playCount: Int
     public var lastPlayed: Date?
     public var dateAdded: Date?
-    /// Jellyfin 10.9+'s loudness normalisation, in dB (negative: play softer).
+    /// The loudness gain to the ReplayGain 2.0 reference (-18 LUFS), in dB
+    /// (negative: play softer): Jellyfin 10.9+'s NormalizationGain,
+    /// OpenSubsonic's replayGain.trackGain.
     public var normalizationGain: Double?
     /// Set when the track came from a playlist: what removing or moving it
-    /// there needs (Jellyfin's PlaylistItemId).
+    /// there needs. Jellyfin's PlaylistItemId; for Subsonic, which has none,
+    /// "<songID>#<n>" (SubsonicClient.playlistTracks).
     public var playlistEntryID: String?
+    /// The file's format as the server names it ("mp3", "flac", "opus"):
+    /// Subsonic's `suffix`. Only Subsonic sets it, because only there does
+    /// the app have to ask for a file AVPlayer cannot play to be converted
+    /// (Jellyfin's universal URL lists what the player plays and Jellyfin
+    /// decides). Nil when unknown.
+    public var container: String?
 
     public init(id: ItemID, name: String, albumID: ItemID? = nil, albumName: String? = nil,
                 artists: [ArtistRef] = [], albumArtist: ArtistRef? = nil, genres: [String] = [],
                 year: Int? = nil, trackNumber: Int? = nil, discNumber: Int? = nil,
                 duration: TimeInterval = 0, imageTag: String? = nil, albumImageTag: String? = nil,
                 isFavorite: Bool = false, playCount: Int = 0, lastPlayed: Date? = nil,
-                dateAdded: Date? = nil, normalizationGain: Double? = nil, playlistEntryID: String? = nil) {
+                dateAdded: Date? = nil, normalizationGain: Double? = nil, playlistEntryID: String? = nil,
+                container: String? = nil) {
         self.id = id
         self.name = name
         self.albumID = albumID
@@ -88,6 +103,7 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
         self.dateAdded = dateAdded
         self.normalizationGain = normalizationGain
         self.playlistEntryID = playlistEntryID
+        self.container = container
     }
 
     /// The one artist a track is by, for keeping artists apart and for
@@ -180,7 +196,7 @@ public struct Artist: Identifiable, Hashable, Codable, Sendable {
 
     public var ref: ArtistRef { ArtistRef(id: id, name: name) }
     public var key: String { NameKey.artist(name) }
-    /// Nil when Jellyfin has no image of the artist: the view draws its
+    /// Nil when the server has no image of the artist: the view draws its
     /// initials then, as Music does.
     public var artwork: Artwork? { imageTag.map { Artwork(itemID: id, tag: $0) } }
 }
@@ -193,15 +209,37 @@ public struct Playlist: Identifiable, Hashable, Codable, Sendable {
     /// Seconds.
     public var duration: TimeInterval?
     public var dateAdded: Date?
+    /// The server would refuse a change: someone else's playlist
+    /// (OpenSubsonic's `readonly`, else Subsonic's `owner` not the user).
+    /// False for Jellyfin, which lists the user's own playlists.
+    public var isReadOnly: Bool
 
     public init(id: ItemID, name: String, imageTag: String? = nil, trackCount: Int? = nil,
-                duration: TimeInterval? = nil, dateAdded: Date? = nil) {
+                duration: TimeInterval? = nil, dateAdded: Date? = nil, isReadOnly: Bool = false) {
         self.id = id
         self.name = name
         self.imageTag = imageTag
         self.trackCount = trackCount
         self.duration = duration
         self.dateAdded = dateAdded
+        self.isReadOnly = isReadOnly
+    }
+
+    enum CodingKeys: String, CodingKey {
+        case id, name, imageTag, trackCount, duration, dateAdded, isReadOnly
+    }
+
+    /// A library kept on disk before there was `isReadOnly` (LibraryCache)
+    /// still opens: absent is false.
+    public init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id = try c.decode(ItemID.self, forKey: .id)
+        name = try c.decode(String.self, forKey: .name)
+        imageTag = try c.decodeIfPresent(String.self, forKey: .imageTag)
+        trackCount = try c.decodeIfPresent(Int.self, forKey: .trackCount)
+        duration = try c.decodeIfPresent(TimeInterval.self, forKey: .duration)
+        dateAdded = try c.decodeIfPresent(Date.self, forKey: .dateAdded)
+        isReadOnly = try c.decodeIfPresent(Bool.self, forKey: .isReadOnly) ?? false
     }
 
     public var artwork: Artwork? { imageTag.map { Artwork(itemID: id, tag: $0) } }
@@ -226,7 +264,7 @@ public struct Genre: Identifiable, Hashable, Codable, Sendable {
     public var key: String { NameKey.genre(name) }
 }
 
-/// A page of a longer list, as Jellyfin returns it.
+/// A page of a longer list, as JellyfinClient returns it.
 public struct Page<Element: Sendable>: Sendable {
     public var items: [Element]
     public var totalCount: Int
@@ -239,7 +277,7 @@ public struct Page<Element: Sendable>: Sendable {
     }
 }
 
-/// What one search finds, by kind, in the order Jellyfin ranks them.
+/// What one search finds, by kind, in the order the server ranks them.
 public struct SearchResults: Sendable {
     public var artists: [Artist]
     public var albums: [Album]
@@ -256,8 +294,8 @@ public struct SearchResults: Sendable {
     public var isEmpty: Bool { artists.isEmpty && albums.isEmpty && tracks.isEmpty && playlists.isEmpty }
 }
 
-/// A track's lyrics: timed lines when the file or Jellyfin has them synced,
-/// plain lines otherwise.
+/// A track's lyrics: timed lines when the file or the server has them
+/// synced, plain lines otherwise.
 public struct Lyrics: Sendable, Hashable {
     public struct Line: Sendable, Hashable {
         /// Seconds from the start; nil for unsynced lyrics.

@@ -204,3 +204,14 @@ photographer's own Aptabase (stats.numa.photo) through `Jukebox/App/Stats.swift`
 on unless Settings › Privacy turns them off ("alles tracken wat je mag zonder
 cookie melding", 8 November 2026): a closed list of events with coarse
 properties, never a title, an artist, a search or a server — `docs/STATS.md`.
+
+## Navidrome and the other Subsonic servers
+
+Asked for on 8 November 2026: "Moet eigenlijk ook voor navidrome en die
+ander". `docs/SERVERS.md` is the design: `MusicServer`
+(`JukeboxKit/Sources/JukeboxKit/Server/MusicServer.swift`, a CONTRACT), one
+protocol for Jellyfin and Subsonic that the app moves to from
+`JellyfinClient`, how the app finds which server is at an address, what the
+keychain keeps, and the map from every call to both APIs, measured on
+Jellyfin 12.4 and Navidrome 0.64.2. `dev/navidrome-test-server.sh` starts
+Navidrome on the same made-up library (user test/test, port 4533).
