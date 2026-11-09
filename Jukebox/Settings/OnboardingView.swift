@@ -1,13 +1,21 @@
-// Signed out: the welcome, then signing in to a Jellyfin server in two steps
-// — where the server is, then who is listening. The server is asked for its
-// name first (it answers without a password), so a typing mistake in the
-// address shows at once and the second step can say "Signing in to Tijmen's
-// Music". Where the server offers Quick Connect, a code to type into another
-// Jellyfin app that is signed in already saves typing a password on the phone.
-// An address typed without a port is tried as typed and then on Jellyfin's
-// own (http, 8096; JellyfinClient.candidateAddresses): "192.168.1.10" or
-// "nas.local" for a fresh install, which listens on 8096 only, then simply
-// works rather than saying there is nothing there.
+// Signed out: the welcome, then signing in to a server in two steps — where
+// the server is, then who is listening. One address field for any server:
+// what answers there is found, not asked ("Jellyfin or Subsonic?" is no
+// question a listener should get; docs/SERVERS.md, decision 5).
+// MusicServers.detect asks the address both ways at once, Jellyfin's
+// /System/Info/Public and Subsonic's /rest/ping.view, without a password, so
+// a typing mistake shows at once and the second step can say "Signing in to
+// Tijmen's Music · Jellyfin 12.4.0" or "Navidrome 0.64.2". Then the user name
+// and password, for every server; where a Jellyfin offers Quick Connect, a
+// code to type into another Jellyfin app that is signed in already saves
+// typing a password on the phone; where a Subsonic server signs in with API
+// keys instead, a key. An address typed without a port is tried as typed and
+// then on each server's own (http: Jellyfin's 8096, Navidrome's 4533,
+// Gonic's 4747, Airsonic's 4040, LMS's 5082; MusicServers.candidateAddresses):
+// "192.168.1.10" or "nas.local" for a fresh install, which listens on its
+// own port only, then simply works rather than saying there is nothing there.
+// The photographer, 9 November 2026: "Kun je die navidunges en subsonic
+// toevoegen dan Istie erna wel klaar voor release".
 //
 // The fields on the page's ground between hairlines, no card (docs/design/
 // tells.md, 6), under the mark, flat, its bands coming on one by one as a
@@ -44,7 +52,8 @@ struct OnboardingView: View {
                                 serverForm
                                     .transition(.opacity)
                             case let .account(server):
-                                OnboardingAccountForm(server: server, changeServer: { changeServer() })
+                                OnboardingAccountForm(server: server, serverSignIn: app.signIn(to: server),
+                                                      changeServer: { changeServer() })
                                     .transition(.opacity)
                             }
                         }
@@ -70,7 +79,7 @@ struct OnboardingView: View {
     private var serverForm: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             OnboardingFields {
-                TextField("Server Address", text: $address, prompt: Text(verbatim: "jellyfin.example.com"))
+                TextField("Server Address", text: $address, prompt: Text(verbatim: "music.example.com"))
                     .keyboardType(.URL)
                     .textContentType(.URL)
                     .textInputAutocapitalization(.never)
@@ -80,7 +89,7 @@ struct OnboardingView: View {
                     .onSubmit { connect() }
                     .frame(minHeight: 52)
             }
-            Text("The address you open Jellyfin at in a browser, such as jellyfin.example.com or 192.168.1.10:8096.")
+            Text("The address you open your Jellyfin or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             if let serverError {
@@ -106,46 +115,37 @@ struct OnboardingView: View {
         guard !isConnecting else { return }
         let typed = trimmedAddress
         guard !typed.isEmpty else { return }
-        let candidates = JellyfinClient.candidateAddresses(for: typed)
+        let candidates = MusicServers.candidateAddresses(for: typed)
         guard let first = candidates.first else {
-            show(String(localized: "That is not a server address. Try one like jellyfin.example.com."))
+            show(String(localized: "That is not a server address. Try one like music.example.com."))
             return
         }
         serverError = nil
         isConnecting = true
         isAddressFocused = false
-        let clients = candidates.map { app.client(for: $0) }
         Task {
-            // One after the other, in order: the first that answers is the
-            // server, so the address as typed wins whenever it works.
-            var firstError: Error?
-            for client in clients {
-                do {
-                    // Both at once: Quick Connect's answer is ready when the
-                    // server's name is, and the second step opens complete.
-                    async let offersQuickConnect = client.quickConnectEnabled()
-                    let info = try await client.publicInfo()
-                    let quickConnect = await offersQuickConnect
-                    // What answered, for the next sign-in: Jellyfin's port
-                    // written out when it took the second try, so the next
-                    // one goes straight there.
-                    OnboardingMemory.serverAddress = client.serverURL == first ? typed : client.serverURL.absoluteString
-                    isConnecting = false
-                    withAnimation(.easeInOut(duration: 0.25)) {
-                        step = .account(OnboardingServer(url: client.serverURL, info: info, offersQuickConnect: quickConnect))
-                    }
-                    return
-                } catch {
-                    if firstError == nil { firstError = error }
+            do {
+                // Every candidate at once, both ways at once; the first in
+                // order that proves to be a server wins, so the address as
+                // typed wins whenever it works, and the fallback ports add no
+                // wait of their own. What it offers (Quick Connect, an API
+                // key) comes with it, so the second step opens complete.
+                let server = try await app.detectServer(at: typed)
+                // What answered, for the next sign-in: the port written out
+                // when it took a fallback, so the next one goes straight there.
+                OnboardingMemory.serverAddress = server.url == first ? typed : server.url.absoluteString
+                isConnecting = false
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    step = .account(server)
                 }
+            } catch {
+                isConnecting = false
+                // The kit's error is the address as typed's: the fallbacks
+                // were this app's guess, and their "no answer on 8096" would
+                // only confuse what went wrong with the first.
+                Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
+                show(Self.message(for: error, at: first))
             }
-            isConnecting = false
-            // The address as typed is the one to talk about: the second try
-            // was this app's guess, and its "no answer on 8096" would only
-            // confuse what went wrong with the first.
-            let error: Error = firstError ?? JellyfinError.invalidServerAddress
-            Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
-            show(Self.message(for: error, at: first))
         }
     }
 
@@ -162,9 +162,9 @@ struct OnboardingView: View {
     }
 
     private static func message(for error: Error, at url: URL) -> String {
-        switch error as? JellyfinError {
+        switch error as? MusicServerError {
         case .invalidServerAddress?:
-            return String(localized: "There is no Jellyfin server at this address.")
+            return String(localized: "There is no Jellyfin, Navidrome or other Subsonic server at this address.")
         case let .transport(reason)?:
             // Jukebox guesses https for a name with dots; a home server
             // behind plain http (or a certificate the phone does not trust)
@@ -181,20 +181,18 @@ struct OnboardingView: View {
 
 // MARK: - Step 2, the account
 
-/// The server that answered, and what it offers.
-private struct OnboardingServer: Equatable {
-    let url: URL
-    let info: ServerInfo
-    let offersQuickConnect: Bool
-}
-
 private enum OnboardingStep: Equatable {
     case server
-    case account(OnboardingServer)
+    /// The server that answered, its kind and what it offers.
+    case account(DetectedServer)
 }
 
 private struct OnboardingAccountForm: View {
-    let server: OnboardingServer
+    let server: DetectedServer
+    /// The kit's sign-in for this server: also a QuickConnectSignIn or an
+    /// APIKeySignIn where the server offers one, so an option the server
+    /// lacks is not a button at all.
+    let serverSignIn: any ServerSignIn
     let changeServer: () -> Void
 
     @Environment(AppModel.self) private var app
@@ -210,15 +208,24 @@ private struct OnboardingAccountForm: View {
     /// by Cancel, by Change Server, and when this step goes away.
     @State private var quickConnectTask: Task<Void, Never>?
     @State private var quickConnectCode: String?
+    /// The API key's form instead of the password's: chosen, or because the
+    /// server said it takes no tokens made from a password.
+    @State private var usesAPIKey = false
+    @State private var apiKey = ""
+    /// Where the server says to make a key (OpenSubsonic's `helpUrl`).
+    @State private var apiKeyHelp: URL?
     @FocusState private var focus: Field?
+    @Environment(\.openURL) private var openURL
 
     private enum Field: Hashable {
         case username
         case password
+        case apiKey
     }
 
-    init(server: OnboardingServer, changeServer: @escaping () -> Void) {
+    init(server: DetectedServer, serverSignIn: any ServerSignIn, changeServer: @escaping () -> Void) {
         self.server = server
+        self.serverSignIn = serverSignIn
         self.changeServer = changeServer
     }
 
@@ -227,6 +234,8 @@ private struct OnboardingAccountForm: View {
             header
             if isQuickConnecting {
                 quickConnectPanel
+            } else if usesAPIKey, apiKeySignIn != nil {
+                apiKeyForm
             } else {
                 passwordForm
             }
@@ -250,13 +259,24 @@ private struct OnboardingAccountForm: View {
 
     private var isQuickConnecting: Bool { quickConnectTask != nil }
 
+    /// Quick Connect, where a Jellyfin has it turned on.
+    private var quickConnect: (any QuickConnectSignIn)? {
+        guard server.capabilities.contains(.quickConnect) else { return nil }
+        return serverSignIn as? any QuickConnectSignIn
+    }
+
+    /// An API key, where a Subsonic server lists `apiKeyAuthentication`.
+    private var apiKeySignIn: (any APIKeySignIn)? {
+        serverSignIn as? any APIKeySignIn
+    }
+
     private var trimmedUsername: String {
         username.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     private var header: some View {
         VStack(spacing: 2) {
-            Text("Signing in to \(server.info.name)")
+            Text("Signing in to \(server.name)")
                 .font(.headline)
             Text(verbatim: serverDetail)
                 .font(.subheadline)
@@ -268,14 +288,19 @@ private struct OnboardingAccountForm: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// "Jellyfin 10.10.7 · music.example.com", with the port when there is
-    /// one ("nas.local:8096"): the address may be the second try, not the
-    /// one typed, and this says which answered.
+    /// "Jellyfin 12.4.0 · music.example.com", "Navidrome 0.64.2 ·
+    /// nas.local:4533": which kind of server, and with the port when there
+    /// is one, as the address may be a fallback, not the one typed, and this
+    /// says which answered. A Subsonic server has no name, so the header has
+    /// its host already: not said twice when there is no port to add.
     private var serverDetail: String {
-        var parts: [String] = []
-        if !server.info.version.isEmpty { parts.append("Jellyfin \(server.info.version)") }
+        var parts = [ServerWords.product(server.kind, version: server.version)]
         if let host = server.url.host() {
-            parts.append(server.url.port.map { "\(host):\($0)" } ?? host)
+            if let port = server.url.port {
+                parts.append("\(host):\(port)")
+            } else if host != server.name {
+                parts.append(host)
+            }
         } else {
             parts.append(server.url.absoluteString)
         }
@@ -317,7 +342,7 @@ private struct OnboardingAccountForm: View {
             .accessibilityLabel(isSigningIn ? Text("Signing In") : Text("Sign In"))
             .padding(.top, Theme.Space.s)
 
-            if server.offersQuickConnect {
+            if quickConnect != nil {
                 Button {
                     startQuickConnect()
                 } label: {
@@ -329,6 +354,15 @@ private struct OnboardingAccountForm: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+            if apiKeySignIn != nil {
+                Button {
+                    switchToAPIKey(help: nil)
+                } label: {
+                    Text("Use an API Key")
+                }
+                .buttonStyle(.secondary)
+                .disabled(isSigningIn)
+            }
         }
     }
 
@@ -337,7 +371,7 @@ private struct OnboardingAccountForm: View {
         let name = trimmedUsername
         guard !name.isEmpty else { return }
         let password = self.password
-        let client = app.client(for: server.url)
+        let passwordSignIn = serverSignIn
         errorMessage = nil
         isSigningIn = true
         focus = nil
@@ -345,14 +379,102 @@ private struct OnboardingAccountForm: View {
         // for the library while `signIn` is still loading it.
         Task {
             do {
-                let credentials = try await client.signIn(username: name, password: password)
+                let credentials = try await passwordSignIn.signIn(username: name, password: password)
                 OnboardingMemory.userName = name
-                Stats.track(.signedIn, ["server": "jellyfin", "method": "password"])
+                Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "password"])
                 await app.signIn(credentials)
+            } catch MusicServerError.needsAPIKey(let help) {
+                // The server keeps only a hash of the password, so it cannot
+                // check a token made from it, and it takes keys: one is
+                // asked for rather than the password itself, which would go
+                // with every request (docs/SERVERS.md, "Signing in").
+                isSigningIn = false
+                Stats.track(.signInFailed, ["reason": "needs_api_key"])
+                switchToAPIKey(help: help)
+                show(String(localized: "This server signs in with an API key rather than a password. Make one in its settings, then paste it here."))
             } catch {
                 isSigningIn = false
                 Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
                 show(Self.signInMessage(for: error))
+            }
+        }
+    }
+
+    // MARK: An API key
+
+    private var apiKeyForm: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            OnboardingFields {
+                SecureField("API Key", text: $apiKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+                    .submitLabel(.go)
+                    .focused($focus, equals: .apiKey)
+                    .onSubmit { signInWithAPIKey() }
+                    .frame(minHeight: 52)
+            }
+            Text("A key made in the server’s own settings, for Jukebox alone: it can be taken back there without changing your password.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            if let errorMessage {
+                OnboardingErrorText(message: errorMessage)
+            }
+            Button {
+                signInWithAPIKey()
+            } label: {
+                OnboardingButtonLabel(title: "Sign In", isWorking: isSigningIn)
+            }
+            .buttonStyle(.prominent)
+            .disabled(trimmedAPIKey.isEmpty)
+            .accessibilityLabel(isSigningIn ? Text("Signing In") : Text("Sign In"))
+            .padding(.top, Theme.Space.s)
+
+            if let apiKeyHelp {
+                Button {
+                    openURL(apiKeyHelp)
+                } label: {
+                    Text("How to Make a Key")
+                }
+                .buttonStyle(.secondary)
+            }
+            Button {
+                usesAPIKey = false
+                errorMessage = nil
+            } label: {
+                Text("Use a Password Instead")
+            }
+            .buttonStyle(.secondary)
+            .disabled(isSigningIn)
+        }
+    }
+
+    private var trimmedAPIKey: String {
+        apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func switchToAPIKey(help: URL?) {
+        if let help { apiKeyHelp = help }
+        errorMessage = nil
+        usesAPIKey = true
+        focus = .apiKey
+    }
+
+    private func signInWithAPIKey() {
+        guard !isSigningIn, let keySignIn = apiKeySignIn else { return }
+        let key = trimmedAPIKey
+        guard !key.isEmpty else { return }
+        errorMessage = nil
+        isSigningIn = true
+        focus = nil
+        Task {
+            do {
+                let credentials = try await keySignIn.signIn(apiKey: key)
+                Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "api_key"])
+                await app.signIn(credentials)
+            } catch {
+                isSigningIn = false
+                Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
+                show(Self.apiKeyMessage(for: error))
             }
         }
     }
@@ -385,7 +507,7 @@ private struct OnboardingAccountForm: View {
                     .accessibilityElement(children: .combine)
                 } else {
                     ProgressView()
-                    Text("Asking \(server.info.name) for a code…")
+                    Text("Asking \(server.name) for a code…")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
@@ -406,13 +528,12 @@ private struct OnboardingAccountForm: View {
     }
 
     private func startQuickConnect() {
-        guard !isQuickConnecting, !isSigningIn else { return }
+        guard !isQuickConnecting, !isSigningIn, let quickConnect else { return }
         errorMessage = nil
         focus = nil
-        let client = app.client(for: server.url)
         quickConnectTask = Task {
             do {
-                var state = try await client.quickConnectStart()
+                var state = try await quickConnect.quickConnectStart()
                 // Cancelled while the server answered: a newer attempt's
                 // code may already be on screen.
                 try Task.checkCancellation()
@@ -422,15 +543,15 @@ private struct OnboardingAccountForm: View {
                 // gentle on the server for the few minutes a code lives.
                 while !state.isAuthenticated {
                     try await Task.sleep(for: .seconds(3))
-                    state = try await client.quickConnectState(secret: state.secret)
+                    state = try await quickConnect.quickConnectState(secret: state.secret)
                 }
-                let credentials = try await client.signIn(quickConnectSecret: state.secret)
+                let credentials = try await quickConnect.signIn(quickConnectSecret: state.secret)
                 // Cancel tapped in that last moment still means cancel.
                 try Task.checkCancellation()
                 // From here it is signing in, not waiting: nothing for Cancel
                 // or this view's going away to stop.
                 quickConnectTask = nil
-                Stats.track(.signedIn, ["server": "jellyfin", "method": "quick_connect"])
+                Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "quick_connect"])
                 await app.signIn(credentials)
             } catch {
                 // Cancelled: Cancel or Change Server already put the form back.
@@ -455,16 +576,34 @@ private struct OnboardingAccountForm: View {
     }
 
     private static func signInMessage(for error: Error) -> String {
-        switch error as? JellyfinError {
+        switch error as? MusicServerError {
         case .unauthorized?:
             return String(localized: "That user name and password did not work on this server.")
+        case .passwordNeedsHTTPS?:
+            // A server that takes neither tokens nor keys has the password
+            // itself sent with every request and in every song's address:
+            // only over https, or at home (docs/SERVERS.md, "Signing in").
+            return String(localized: "This server needs your password sent with every song, so Jukebox only signs in to it over a secure connection. Use its https:// address.")
+        case .notAllowed?:
+            return String(localized: "This server does not let this account play music.")
+        default:
+            return error.localizedDescription
+        }
+    }
+
+    private static func apiKeyMessage(for error: Error) -> String {
+        switch error as? MusicServerError {
+        case .unauthorized?:
+            return String(localized: "That API key did not work on this server.")
+        case .notAllowed?:
+            return String(localized: "This server does not let this account play music.")
         default:
             return error.localizedDescription
         }
     }
 
     private static func quickConnectMessage(for error: Error) -> String {
-        switch error as? JellyfinError {
+        switch error as? MusicServerError {
         case .notFound?:
             // The server forgets a code after a few minutes.
             return String(localized: "The code has expired. Use Quick Connect again for a new one.")
@@ -488,7 +627,7 @@ private struct OnboardingWelcome: View {
                 Text("Jukebox")
                     .font(.serif(.largeTitle))
                     .accessibilityAddTraits(.isHeader)
-                Text("Music from your Jellyfin server.")
+                Text("Music from your Jellyfin, Navidrome or other Subsonic server.")
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
