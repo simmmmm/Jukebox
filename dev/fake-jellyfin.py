@@ -19,6 +19,12 @@ Signing in takes the recorded user's name with the password ("test"); Quick
 Connect is off. A route it does not know is logged as UNKNOWN ROUTE and
 answered 404, so what is missing shows in the log.
 
+The sign-in screen asks every address both ways at once (JukeboxKit's
+MusicServers.detect): Jellyfin's /System/Info/Public and Subsonic's
+/rest/ping.view. The fake answers the second as Jellyfin 12.4 does, measured
+on the test server: 404 with no body, which the kit reads as "not a Subsonic
+server", so the Jellyfin answer wins. It is a known route, not an UNKNOWN one.
+
 Deliberately unlike Jellyfin:
 - Any token is taken until it is signed out, not only the ones it gave: the
   UI tests may sign in with a token of their own, and a restarted fake keeps
@@ -930,6 +936,10 @@ class Handler(BaseHTTPRequestHandler):
                 self.library.revoked.add(token)
         self.send(204)
 
+    def not_subsonic(self, q, *args):
+        # As 12.4 answers a Subsonic client's /rest/…: 404, no body.
+        self.send(404)
+
     def quick_enabled(self, q):
         self.send_json(False)
 
@@ -1147,6 +1157,7 @@ ID = r"([0-9A-Fa-f-]{32,36})"
 ROUTES = [(set(methods.split()), re.compile("^" + pattern + "$", re.IGNORECASE), handler) for methods, pattern, handler in [
     ("GET", r"/System/Info/Public", Handler.public_info),
     ("GET POST", r"/System/Ping", Handler.ping),
+    ("GET POST", r"/rest/.*", Handler.not_subsonic),
     ("POST", r"/Users/AuthenticateByName", Handler.authenticate),
     ("POST", r"/Users/AuthenticateWithQuickConnect", Handler.quick_disabled),
     ("POST", r"/Sessions/Logout", Handler.logout),
