@@ -160,10 +160,17 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
             emit(.failed(tag, permanent: [400, 404, 410, 415].contains(status)))
             return
         }
+        let contentType = response?.value(forHTTPHeaderField: "Content-Type") ?? response?.mimeType
+        // Words, not a song: every Subsonic error is HTTP 200 with JSON or
+        // XML (Navidrome's refused download measured so, docs/SERVERS.md),
+        // which would otherwise be kept as a song that never plays.
+        if let type = contentType?.lowercased(), type.contains("json") || type.contains("xml") || type.hasPrefix("text/") {
+            emit(.failed(tag, permanent: true))
+            return
+        }
         // Named by what the server sent, not by the quality asked for: the
         // file itself in any container the phone plays, or an m4a when
         // Jellyfin converted it; AVPlayer reads a local file by its extension.
-        let contentType = response?.value(forHTTPHeaderField: "Content-Type") ?? response?.mimeType
         let fileName = OfflineFile.fileName(trackID: tag.trackID, contentType: contentType)
         let folder = OfflinePaths.files(tag.account)
         let destination = folder.appendingPathComponent(fileName, isDirectory: false)
