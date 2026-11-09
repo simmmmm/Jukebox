@@ -276,9 +276,9 @@ struct QueueView: View {
     /// choice between two.
     private var saveMessage: Text {
         if songsToSave.count == 1 {
-            return Text("A playlist with this station’s song, on your Jellyfin server.")
+            return Text("A playlist with this station’s song, on your \(library.serverKind) server.")
         }
-        return Text("A playlist with this station’s \(songsToSave.count) songs, on your Jellyfin server: what played, what plays now and what is up next.")
+        return Text("A playlist with this station’s \(songsToSave.count) songs, on your \(library.serverKind) server: what played, what plays now and what is up next.")
     }
 
     private func save() {

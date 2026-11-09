@@ -72,7 +72,7 @@ struct HomeLibraryStatus: View {
             ContentUnavailableView {
                 Label("No Music Yet", systemImage: "music.note")
             } description: {
-                Text("Your Jellyfin server has no music in its libraries yet. Add some there, then check again.")
+                Text("Your \(library.serverKind) server has no music in its libraries yet. Add some there, then check again.")
             } actions: {
                 Button("Check Again") {
                     Task { await library.refresh() }

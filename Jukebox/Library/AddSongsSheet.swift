@@ -54,7 +54,7 @@ struct LibraryAddSongsSheet: View {
             .overlay {
                 if shown.isEmpty {
                     LibraryEmptyState(query: query, emptyTitle: "No Songs", emptySymbol: "music.note",
-                                      emptyMessage: "Songs on your Jellyfin server appear here.")
+                                      emptyMessage: "Songs on your \(library.serverKind) server appear here.")
                 }
             }
             .sensoryFeedback(.success, trigger: added)

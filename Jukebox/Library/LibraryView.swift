@@ -119,7 +119,7 @@ struct RecentlyAddedView: View {
         .overlay {
             if albums.isEmpty {
                 LibraryStatusView(emptyTitle: "No Albums", emptySymbol: "square.stack",
-                                  emptyMessage: "Albums added to your Jellyfin server appear here.")
+                                  emptyMessage: "Albums added to your \(library.serverKind) server appear here.")
             }
         }
         .refreshable { await library.refresh() }

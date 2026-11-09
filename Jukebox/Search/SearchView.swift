@@ -288,7 +288,7 @@ private struct SearchBrowse: View {
                 ContentUnavailableView {
                     Label("Search Your Library", systemImage: "magnifyingglass")
                 } description: {
-                    Text("Find artists, albums, songs and playlists on your Jellyfin server.")
+                    Text("Find artists, albums, songs and playlists on your \(library.serverKind) server.")
                 }
             }
         }

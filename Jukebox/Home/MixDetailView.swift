@@ -100,7 +100,7 @@ struct MixDetailView: View {
             Button("Save") { save() }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("A playlist with these \(mix.tracks.count) songs, on your Jellyfin server, to keep after today’s mixes change.")
+            Text("A playlist with these \(mix.tracks.count) songs, on your \(library.serverKind) server, to keep after today’s mixes change.")
         }
         .alert("Playlist Saved", isPresented: presence($saved), presenting: saved) { playlist in
             Button("Show Playlist") {
