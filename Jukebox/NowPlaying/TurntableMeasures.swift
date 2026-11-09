@@ -327,11 +327,18 @@ nonisolated enum RecordMotion {
     /// The land: a real record's speed.
     static let landRevolutionsPerMinute: Double = 100.0 / 3
     /// The land's pin, off the record's true centre, in points: right and
-    /// down. Sketch H's to give; 0 until then.
-    static let landPinOffset = CGPoint(x: 0, y: 0)
+    /// down. Sketch H1, "33⅓": a record "net niet helemaal rond", so "de
+    /// lijnen dansen" (the photographer, 8 November 2026; and of the still
+    /// land in the first build, 9 November: "Achtergrond lijkt niet echt te
+    /// draaien?"). 3 pt with the oval below moves the grooves under the
+    /// words ±4.5–5.5 pt, about one groove each way, at 27–35 pt/s; 8 pt
+    /// was seasick, and the pin alone moves the page as one slow drift.
+    static let landPinOffset = CGPoint(x: 3, y: 0)
     /// How oval the land is: its width over its height, less one, in per
-    /// cent. Sketch H's to give; 0 until then.
-    static let landOvalPercent: Double = 0
+    /// cent. Sketch H1's 1.004 across and 0.996 down: 0.8. The oval does
+    /// the dancing: it bends the lines twice a turn, the left and the right
+    /// of the screen out of step.
+    static let landOvalPercent: Double = 0.8
     /// Frames a second while the label alone turns: at 36° a second a frame
     /// turns it 1.8°, which reads as smooth, for a third fewer frames than
     /// 30.

@@ -173,11 +173,14 @@ _ = sleeve("iPad upright", 560, 620, wide: false)
 let nothing = sleeve("nothing yet", 0, 0, wide: false)
 check(nothing.sleeve.width == 0, "no room: no sleeve")
 
-// 7. The motion: the numbers sketch H will give, still at rest.
+// 7. The motion: sketch H1's numbers, "33⅓".
 print("motion: the label \(f(RecordMotion.labelDegreesPerSecond, 0))° a second, the land \(f(RecordMotion.landRevolutionsPerMinute, 2)) a minute (\(f(RecordMotion.landDegreesPerSecond, 0))° a second), pin \(RecordMotion.landPinOffset), oval \(RecordMotion.landOvalPercent)%, \(f(RecordMotion.frameRate, 0)) frames a second")
 check(near(RecordMotion.labelDegreesPerSecond * 10, 360), "the label: a turn in 10 s")
 check(near(RecordMotion.landDegreesPerSecond, 200), "the land: 33⅓ a minute is 200° a second")
-check(!RecordMotion.landTurns, "round and pinned at its centre: the land is not turned, as it would look the same")
+check(RecordMotion.landTurns, "off its centre and a little oval (sketch H1): the land is turned, and its lines dance")
+check(RecordMotion.landPinOffset.x == 3 && RecordMotion.landPinOffset.y == 0, "the pin 3 pt off the centre")
+check(near(RecordMotion.landOvalPercent, 0.8), "0.8% wider than high: 1.004 across, 0.996 down")
+check(RecordMotion.frameRate == 30, "30 frames a second while the land turns: 6.7° a frame")
 check(RecordMotion.frameRate <= 30 && RecordMotion.landFrameRate <= 30, "never more than 30 frames a second")
 
 // The clock: turns, coasts to a stop, holds; both records from one clock.

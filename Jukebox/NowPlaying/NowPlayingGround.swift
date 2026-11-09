@@ -469,11 +469,14 @@ nonisolated enum LandDrawing {
                                       space: space, bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
         else { return nil }
         let middle = CGFloat(side) / 2
-        // The grooves in one dark tone a little above the ground (sketch
-        // E's #211A17 on #131010); the light edge between songs and the
-        // run-out's edge, white at 5% and 4%.
-        let groove = CGColor(srgbRed: 0x21 / 255.0, green: 0x1A / 255.0, blue: 0x17 / 255.0, alpha: 1)
-        let edge = CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.05)
+        // The grooves in one dark tone a little above the ground: sketch
+        // E's #211A17 on #131010 a step lighter, #2B231F, so their dance
+        // (RecordMotion) shows — sketch H: more contrast, not more sway,
+        // which would only move them faster behind the words. White on it
+        // stays above 15:1, the darkest accent (#FF675F) 5.4:1. The light edge
+        // between songs and the run-out's edge, white at 7% and 4%.
+        let groove = CGColor(srgbRed: 0x2B / 255.0, green: 0x23 / 255.0, blue: 0x1F / 255.0, alpha: 1)
+        let edge = CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.07)
         let runOut = CGColor(srgbRed: 1, green: 1, blue: 1, alpha: 0.04)
         // One path a kind, stroked once: a few strokes, not two hundred.
         let kinds: [(LandRing.Kind, CGColor, CGFloat)] = [
