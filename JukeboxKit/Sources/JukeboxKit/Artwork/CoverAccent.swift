@@ -24,9 +24,11 @@
 //      the same size; each step with half of its two neighbours, so a hue
 //      on a step's edge is not split in two.
 //   4. The main colour: the best step's pixels, within 20° of its middle.
-//      They must cover 4% of the cover; less, and the cover has no colour
-//      of its own (a black and white photo, a grey sleeve): nil, and the
-//      app keeps Glow.
+//      They must cover 2% of the cover (4% left the small painting on the
+//      white sleeve of Cocteau Twins' Lullabies to Violaine without one, on
+//      the photographer's phone, 9 November 2026); less, and the cover has
+//      no colour of its own (a black and white photo, a grey sleeve): nil,
+//      and the app keeps Glow.
 //   5. The second colour: the best step 60° or more from the main colour's
 //      hue, its pixels within 20°, if they cover 2% of the cover (a speck
 //      is not a colour); else the main colour is the accent.
@@ -80,7 +82,7 @@ public enum CoverAccent {
     public static let side = 32
 
     static let minimumChroma = 0.035
-    static let minimumShare = 0.04
+    static let minimumShare = 0.02
     static let leastAccentChroma = 0.10
     static let lowestLightness = 0.70
     static let steps = 36

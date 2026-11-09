@@ -41,6 +41,15 @@ struct QueueView: View {
             Section {
                 playingFrom(station)
                     .queueRow()
+                if station != nil {
+                    // The station's dial, here above the songs it chooses,
+                    // which change as it moves. It stood in the volume's
+                    // place on Now Playing, swapped in as a station began —
+                    // the photographer, 9 November 2026: "Dat is hele
+                    // matige ux." The station's name there opens this.
+                    RadioDial()
+                        .queueRow()
+                }
                 upNextTitle(isEmpty: upNext.isEmpty)
                     .queueRow()
             }

@@ -138,3 +138,118 @@ struct NowPlayingTransportStyle: ButtonStyle {
             .contentShape(.circle)
     }
 }
+
+// MARK: - A title that scrolls
+
+/// One line that does not fit scrolls by now and then rather than being cut
+/// off, as Music's title does: it rests three seconds at its start, moves
+/// left at 30 points a second until a second copy behind it stands where it
+/// began, and rests again. A line that fits stands still. With Reduce Motion
+/// it does not move: it wraps onto a second line instead. The photographer,
+/// 9 November 2026: "Titel van het nummer past soms niet helemaal en dan kap
+/// je die af. Dat is niet zo Nice. … laat je de titel af en toe voorbij
+/// scrollen?"
+struct NowPlayingMarquee: View {
+    let text: String
+    let font: Font
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The line's own width, measured; 0 until it is.
+    @State private var lineWidth: CGFloat = 0
+    @State private var offset: CGFloat = 0
+
+    /// Between the line and its copy: wide enough to see where it ends.
+    private static let gap: CGFloat = 48
+    private static let pointsPerSecond: CGFloat = 30
+    private static let restSeconds: Double = 3
+    /// The fade at the trailing edge while the line overflows, in points.
+    private static let fade: CGFloat = 24
+
+    var body: some View {
+        if reduceMotion {
+            Text(text)
+                .font(font)
+                .lineLimit(2)
+        } else {
+            // One line's height and the width offered, from a hidden copy;
+            // the moving line is drawn over it.
+            Text(text)
+                .font(font)
+                .lineLimit(1)
+                .hidden()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .overlay(alignment: .leading) {
+                    GeometryReader { proxy in
+                        moving(width: proxy.size.width)
+                    }
+                }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel(Text(text))
+        }
+    }
+
+    private func moving(width: CGFloat) -> some View {
+        let overflows = lineWidth > width + 0.5
+        return HStack(spacing: Self.gap) {
+            line
+                .onGeometryChange(for: CGFloat.self) { proxy in
+                    proxy.size.width
+                } action: { measured in
+                    lineWidth = measured
+                }
+            if overflows {
+                line
+            }
+        }
+        .offset(x: overflows ? offset : 0)
+        .frame(width: width, alignment: .leading)
+        .clipped()
+        .mask {
+            if overflows {
+                HStack(spacing: 0) {
+                    Color.black
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: Self.fade)
+                }
+            } else {
+                Color.black
+            }
+        }
+        .task(id: MarqueeRun(text: text, overflows: overflows)) {
+            await run(overflows: overflows)
+        }
+    }
+
+    private var line: some View {
+        Text(text)
+            .font(font)
+            .lineLimit(1)
+            .fixedSize()
+    }
+
+    /// Rest, scroll one length, jump back unseen (the copy stands where the
+    /// line began), again; until the song or the room changes.
+    private func run(overflows: Bool) async {
+        offset = 0
+        guard overflows else { return }
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(Self.restSeconds))
+            if Task.isCancelled { return }
+            let distance = lineWidth + Self.gap
+            let seconds = Double(distance / Self.pointsPerSecond)
+            withAnimation(.linear(duration: seconds)) {
+                offset = -distance
+            }
+            try? await Task.sleep(for: .seconds(seconds))
+            if Task.isCancelled { return }
+            offset = 0
+        }
+    }
+}
+
+/// What a marquee's scrolling depends on: a new title, or a title that has
+/// come to fit (or stopped fitting), starts it over.
+nonisolated private struct MarqueeRun: Hashable {
+    let text: String
+    let overflows: Bool
+}

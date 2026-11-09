@@ -18,16 +18,17 @@
 // sleeve's foot and a floor below it, and nothing turns. A light wall gets
 // dark glyphs at the top and a dark status bar.
 //
-// Then, from the margin, the title in the serif, the artist, and the station
-// in the accent after its mark; the thumbs as plain glyphs beside the title;
-// the slim scrubber; the transport; while a station plays its dial with its
-// two ends in the place of the volume; and Lyrics, AirPlay and Up Next at
-// the foot. Lyrics and the queue take the sleeve's place at a tap. A pull
+// Then, from the margin, the title in the serif across the whole width,
+// scrolling by when it does not fit; under it the artist and the station in
+// the accent after its mark, with "less like this" and the heart beside
+// them, the same two whatever plays; the slim scrubber; the transport; the
+// volume, always (a station's dial is in Up Next); and Lyrics, AirPlay and
+// Up Next at the foot. Lyrics and the queue take the sleeve's place at a tap. A pull
 // down anywhere on the page, or on the top over the lyrics and the queue,
 // closes it.
 //
 // The controls stay white; the accent marks only what is the radio's or
-// what is on: the progress, the thumbs up given, the station's name, the
+// what is on: the progress, the heart given, the station's name, the
 // dial. It is a colour of the cover that plays (CoverAccent: its second
 // colour, apart from its main one) — the photographer, 8 November 2026:
 // "kan je de kleur uit de albumhoes pakken voor de steunkleur?" — at
@@ -435,18 +436,25 @@ struct NowPlayingView: View {
     // MARK: The title
 
     /// From the margin, as a sleeve's back is set: the title in the serif,
-    /// the artist, and where it plays from — the station in the accent
-    /// after its mark, or the album, mix or playlist in grey.
+    /// across the whole width, scrolling by now and then when it does not
+    /// fit (NowPlayingMarquee); under it the artist, and where it plays
+    /// from — the station in the accent after its mark, or the album, mix
+    /// or playlist in grey — with the song's buttons beside them. The
+    /// photographer, 9 November 2026: "Titel van het nummer past soms niet
+    /// helemaal en dan kap je die af. … Anders zet je het hartje lager en
+    /// laat je de titel af en toe voorbij scrollen?"
     private var titleRow: some View {
-        HStack(alignment: .top, spacing: Theme.Space.s) {
-            VStack(alignment: .leading, spacing: 2) {
-                title(.serif(.title))
-                artistLine(.title3)
-                source
-                    .padding(.top, Theme.Space.s)
+        VStack(alignment: .leading, spacing: 2) {
+            title(.serif(.title))
+            HStack(alignment: .top, spacing: Theme.Space.s) {
+                VStack(alignment: .leading, spacing: 2) {
+                    artistLine(.title3)
+                    source
+                        .padding(.top, Theme.Space.s)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                trackButtons
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            trackButtons
         }
         // Where the title is, for the land: the playing song's band starts
         // just above it.
@@ -482,9 +490,7 @@ struct NowPlayingView: View {
 
     @ViewBuilder private func title(_ font: Font) -> some View {
         if let track = currentTrack {
-            Text(track.name)
-                .font(font)
-                .lineLimit(1)
+            NowPlayingMarquee(text: track.name, font: font)
         } else {
             Text("Not Playing")
                 .font(font)
@@ -517,13 +523,12 @@ struct NowPlayingView: View {
     }
 
     /// Where it plays from. A station: its mark and its name in the
-    /// accent, which go to the Radio tab, where its dial is. Anything else:
-    /// its name in grey ("From Velvet Songs").
+    /// accent, which open Up Next, where its dial is. Anything else: its
+    /// name in grey ("From Velvet Songs").
     @ViewBuilder private var source: some View {
         if let station = playingStation {
             Button {
-                navigator.tab = .radio
-                close()
+                show(.queue)
             } label: {
                 HStack(spacing: 6) {
                     ArchMark(size: 16, style: .template)
@@ -535,7 +540,7 @@ struct NowPlayingView: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Station: \(station.title)")
-            .accessibilityHint("Opens Radio")
+            .accessibilityHint("Shows Up Next and the station's dial")
         } else if let contextTitle {
             Text("From \(contextTitle)")
                 .font(.subheadline)
@@ -544,22 +549,45 @@ struct NowPlayingView: View {
         }
     }
 
-    /// While a station plays, its thumbs, plain (RadioThumbs); otherwise the
-    /// heart.
+    /// The same two buttons whatever plays, in the same place: "less like
+    /// this" and the heart. They were the station's thumbs while a station
+    /// played and the heart otherwise, swapped in place as a station began —
+    /// the photographer, 9 November 2026: "idem met hartje en duimpje
+    /// omlaag/omhoog". The heart is the thumbs up too while a station
+    /// plays (favoriteButton), so nothing of the thumbs is lost.
     @ViewBuilder private var trackButtons: some View {
         if let track = currentTrack {
-            if playingStation != nil {
-                RadioThumbs(track: track)
-            } else {
+            HStack(spacing: 0) {
+                dislikeButton(track)
                 favoriteButton(track)
             }
         }
     }
 
-    /// The heart, while no station plays (with one, a song is loved from
-    /// the "…" menu, and the thumbs take its place). Loving a song while
-    /// the radio plays still teaches it (radioStation): a song loved on a
-    /// station is the clearest "more like this" the listener gives.
+    /// Less like this: skips the song and keeps it, and songs like it, off
+    /// the stations and the mixes (RadioController.dislike, which works
+    /// with or without a station on the air). Tapped again, taken back.
+    private func dislikeButton(_ track: Track) -> some View {
+        let disliked = radio.disliked.contains(track.id)
+        return Button {
+            radio.dislike(track)
+        } label: {
+            Image(systemName: disliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+                .font(.title3)
+                .foregroundStyle(disliked ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
+                .symbolEffect(.bounce, value: disliked)
+                .frame(width: 44, height: 44)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Dislike")
+        .accessibilityHint("Skips this song and plays less like it")
+        .accessibilityAddTraits(disliked ? .isSelected : [])
+    }
+
+    /// The heart. Loving a song while a station plays also teaches it, as
+    /// its thumbs up did (radioStation): a song loved on a station is the
+    /// clearest "more like this" the listener gives.
     private func favoriteButton(_ track: Track) -> some View {
         let favorite = library.isFavorite(track.id)
         return Button {
@@ -589,16 +617,13 @@ struct NowPlayingView: View {
                 .padding(.top, Theme.Space.l)
             transport
                 .padding(.vertical, Theme.Space.s)
-            if playingStation != nil {
-                // The station's dial in the volume's place: the system
-                // Slider with its two ends (RadioDial), as on the Radio tab.
-                // The volume stays on the phone's own buttons.
-                RadioDial()
-                    .padding(.top, Theme.Space.s)
-                    .padding(.bottom, Theme.Space.m)
-            } else {
-                volume
-            }
+            // The volume, whatever plays. A station's dial took its place as
+            // the station began — the photographer, 9 November 2026: "als je
+            // een radio aan zet zet je in één keer die andere slider op die
+            // plek neer. Dat is hele matige ux." The dial is in Up Next now,
+            // above the songs it chooses (QueueView), and the station's name
+            // opens it.
+            volume
             bottomRow
                 .padding(.top, Theme.Space.xs)
         }

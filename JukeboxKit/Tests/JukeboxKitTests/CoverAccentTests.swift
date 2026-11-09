@@ -85,12 +85,20 @@ struct CoverAccentTests {
         #expect(accent { x, _ in (x * 8, x * 8, x * 8) } == nil)
     }
 
-    @Test("A blue spot on grey: under 4% of the cover is no colour of its own, over it is")
+    @Test("A blue spot on grey: under 2% of the cover is no colour of its own, over it is")
     func spot() {
         let small = accent { x, y in x < 4 && y < 4 ? (30, 120, 220) : (128, 128, 128) }
         #expect(small == nil)
         let larger = accent { x, y in x < 8 && y < 8 ? (30, 120, 220) : (128, 128, 128) }
         #expect(same(larger, "56A2FF"), "got \(larger.map(hex) ?? "nil")")
+    }
+
+    @Test("A small painting on a white sleeve (3% of it): its green, not Glow")
+    func smallPainting() {
+        // As Lullabies to Violaine's sleeve: white, and a small green
+        // painting in it, 6 by 5 of the 32 by 32.
+        let found = accent { x, y in (10..<16).contains(x) && (12..<17).contains(y) ? (70, 150, 80) : (238, 236, 232) }
+        #expect(same(found, "8BDC92"), "got \(found.map(hex) ?? "nil")")
     }
 
     @Test("A see-through cover is not its colour: nothing shows, nil")

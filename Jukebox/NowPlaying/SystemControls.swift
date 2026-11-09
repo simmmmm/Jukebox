@@ -31,8 +31,17 @@ struct NowPlayingVolumeSlider: UIViewRepresentable {
 final class NowPlayingSystemVolumeView: MPVolumeView {
     override func layoutSubviews() {
         super.layoutSubviews()
-        for case let button as UIButton in subviews {
-            button.isHidden = true
+        for subview in subviews {
+            if let button = subview as? UIButton {
+                button.isHidden = true
+            } else if subview is UISlider {
+                // In the middle of the view's height: MPVolumeView lays its
+                // slider out at the top, so it sat above the speaker glyphs
+                // beside it, which SwiftUI centres — the photographer,
+                // 9 November 2026: "Volume icoontjes staan nu niet goed
+                // verticaal uitgelijnd".
+                subview.center = CGPoint(x: subview.center.x, y: bounds.midY)
+            }
         }
     }
 }
