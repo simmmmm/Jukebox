@@ -86,6 +86,7 @@ struct ServerAddressTests {
         ("192.168.1.5:4747/admin/home", ["http://192.168.1.5:4747"]),
         ("https://example.com/gonic/admin", ["https://example.com/gonic"]),
         ("https://example.com/administration", ["https://example.com/administration"]),
+        ("https://example.com/administration/gonic/admin/", ["https://example.com/administration/gonic"]),
         // Jellyfin's web app, as before.
         ("https://jf.example.com/web/#/home.html", ["https://jf.example.com"]),
         ("192.168.1.10:8096", ["http://192.168.1.10:8096"]),

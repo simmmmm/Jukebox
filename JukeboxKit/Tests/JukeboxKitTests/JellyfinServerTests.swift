@@ -139,5 +139,6 @@ struct JellyfinServerTests {
         #expect(!JellyfinServer.isPlace("2c4a765f5c8d9b4907be5d835a82513c"))
         #expect(!JellyfinServer.isPlace("a#"))
         #expect(!JellyfinServer.isPlace("a#x"))
+        #expect(!JellyfinServer.isPlace("a#²"))
     }
 }

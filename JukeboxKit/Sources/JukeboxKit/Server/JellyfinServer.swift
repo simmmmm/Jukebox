@@ -216,7 +216,7 @@ public struct JellyfinServer: MusicServer {
     static func isPlace(_ entryID: String) -> Bool {
         guard let mark = entryID.lastIndex(of: "#") else { return false }
         let digits = entryID[entryID.index(after: mark)...]
-        return !digits.isEmpty && digits.allSatisfy(\.isNumber)
+        return !digits.isEmpty && digits.allSatisfy { $0.isASCII && $0.isNumber }
     }
 
     func places(_ playlistID: ItemID) async throws -> [Place] {
