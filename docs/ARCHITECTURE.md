@@ -209,7 +209,7 @@ runners) or with `LRCLIB_LIVE=1`, and skips itself elsewhere.
 ## Usage counts
 
 Anonymous counts of which screens and features are used go to the
-photographer's own OpenPanel (panel.numa.photo) through `Jukebox/App/Stats.swift`,
+photographer's own OpenPanel (stats.numa.photo) through `Jukebox/App/Stats.swift`,
 on unless Settings › Privacy turns them off ("alles tracken wat je mag zonder
 cookie melding", 8 November 2026): a closed list of events with coarse
 properties, never a title, an artist, a search or a server — `docs/STATS.md`.

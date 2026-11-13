@@ -1,5 +1,5 @@
 // Anonymous usage counts on the photographer's own OpenPanel server
-// (panel.numa.photo, open source), as Numa counts (Numa-mac's Stats.swift),
+// (stats.numa.photo, open source), as Numa counts (Numa-mac's Stats.swift),
 // with one difference: on until the listener turns them off. The
 // photographer, 8 November 2026: "Kun je ook aptabase toevoegen van mijn
 // account en alles tracken wat je mag zonder cookie melding." OpenPanel and
@@ -73,7 +73,7 @@ enum Stats {
     /// Where the events go, and the project they belong to. The id and the
     /// secret come from the OpenPanel project (Settings › Clients); while the
     /// id is empty nothing is sent.
-    static let api = URL(string: "https://panel.numa.photo/api/track")!
+    static let api = URL(string: "https://stats.numa.photo/api/track")!
     static let clientID = ""
     static let clientSecret = ""
 

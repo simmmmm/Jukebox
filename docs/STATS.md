@@ -1,7 +1,7 @@
 # Usage counts (Stats)
 
 Anonymous counts of which screens and features of Jukebox are used, on the
-photographer's own OpenPanel server (`https://panel.numa.photo`, open source,
+photographer's own OpenPanel server (`https://stats.numa.photo`, open source,
 self-hosted). The client id and secret (`Stats.clientID`, `Stats.clientSecret`)
 come from the OpenPanel project and are not secrets: they ship in the app.
 While the id is empty nothing is sent.
