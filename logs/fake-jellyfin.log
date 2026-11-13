@@ -1,0 +1,307 @@
+20:10:57 fake Jellyfin 12.4.0 "Jellyfin" on http://[::]:8096: 358 Audio, 54 MusicAlbum, 79 MusicArtist, 23 MusicGenre, 5 Playlist; user test
+20:10:57 GET /System/Info/Public → 200 (206 B, 0.4 ms)
+20:18:09 GET /rest/ping.view?v=1.16.1&c=Jukebox&f=json → 404 (0 B, 4.8 ms)
+20:18:09 GET /System/Info/Public → 200 (206 B, 92.6 ms)
+20:18:09 GET /QuickConnect/Enabled → 200 (5 B, 0.2 ms)
+20:18:37 GET /System/Info/Public → 200 (206 B, 5.6 ms)20:18:37 POST /Users/AuthenticateByName → 200 (3007 B, 113.3 ms)
+
+20:18:39 GET /System/Info/Public → 200 (206 B, 80.7 ms)
+20:18:39 GET /Users/Me → 200 (2045 B, 46.6 ms)
+20:18:41 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&IncludeItemTypes=Audio&Recursive=true&Fields=Genres%2CDateCreated&StartIndex=0&Limit=2000 → 200 (410238 B, 1945.5 ms)
+20:18:41 GET /MusicGenres?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&Fields=ItemCounts → 200 (10278 B, 1915.6 ms)
+20:18:41 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&StartIndex=0&Limit=1000&IncludeItemTypes=MusicAlbum&Recursive=true&Fields=Genres%2CDateCreated%2CChildCount&SortBy=SortName&SortOrder=Ascending → 200 (59798 B, 1609.9 ms)
+20:18:41 GET /Artists/AlbumArtists?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&StartIndex=0&Limit=1000&Fields=Genres%2COverview%2CItemCounts&SortBy=SortName&SortOrder=Ascending → 200 (17435 B, 1392.2 ms)
+20:18:41 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&IncludeItemTypes=Playlist&Recursive=true&Fields=ChildCount%2CDateCreated → 200 (2823 B, 728.9 ms)
+20:18:44 GET /System/Info/Public → 200 (206 B, 43.6 ms)
+20:18:44 GET /Items/1edd1d657a2dc61f54b22d2667b07d82/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=dc1fa02904fcf363dcdc8b8e0e5ca960 → 200 (30790 B, 114.4 ms)20:18:44 GET /Items/0992061833142d74658f41a17bd6922f/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=a50cabb03f616b0a71436230568d3664 → 200 (28823 B, 9.0 ms)
+
+20:18:44 GET /Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=2fb0f06b97bcf99a2f653f257806c057 → 200 (31726 B, 8.6 ms)
+20:18:44 GET /Items/bc7fd53cfb52628dd34080460c9e5b7b/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=846caeaa3f3f31f9c41c74d87554ab51 → 200 (33392 B, 9.1 ms)
+20:18:44 GET /Items/3a74be17e154c79c263dd24df81591fd/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=a00d88b885fefbc482e7ddb881ef30d7 → 200 (29073 B, 8.3 ms)
+20:18:44 GET /Items/cdca736d01dcb7fef0e283e75b162731/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=a477a7cf6bab2b4688f3319be4591de7 → 200 (29131 B, 30.9 ms)
+20:18:44 GET /Items/989680fd001df90f983c677421fab9aa/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=8327b86b6ec8ed50f843da9f043a46ff → 200 (32634 B, 6.8 ms)
+20:18:44 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 3.0 ms)
+20:18:44 GET /Items/0481cba759b8ad7fb857d30f9e4ad028/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=a7ea7879e0a02d118ec166f47829f5ff → 200 (29398 B, 27.6 ms)
+20:18:44 GET /Items/5c5274b24df129847f4133f87f48d93d/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=8f594e8a1fc332791e0bc7df88e68b5a → 200 (26119 B, 17.5 ms)
+20:18:44 GET /Items/4285e57269f41fadeb1ae6bcfd867769/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=65466c4dd4a3c3c11dde969c042002e9 → 200 (31626 B, 33.1 ms)
+20:18:44 GET /Items/87dc3814a61bc70583634f3487e5ec9a/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=0ed5cc5337e0f1f12b3edee595323b83 → 200 (22435 B, 10.8 ms)
+20:18:44 GET /Items/cdca736d01dcb7fef0e283e75b162731/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=a477a7cf6bab2b4688f3319be4591de7 → 200 (29131 B, 0.2 ms)20:18:44 GET /Items/90add26c127ce6def968a82a8f3f6dc7/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=d206f77bf58c9d2ffb7d1229b023c0aa → 200 (33204 B, 29.1 ms)
+
+20:18:44 GET /Items/6a8d61b2fa2b1434b17d7f2eeff7904a/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=ee898f5bec1e85bf2ce816d869952605 → 200 (29832 B, 19.7 ms)
+20:18:44 GET /Items/db819dd856243bb2ee6e34f20cebf984/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=62134a8c790a8713ed989075650f1d1e → 200 (30246 B, 14.5 ms)
+20:18:44 GET /Items/a5bc362cbd980fffc9b93e2c22f0db86/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=f3e4d2b68b6a117fc5bc230e760d26f6 → 200 (33184 B, 3.4 ms)
+20:18:44 GET /Items/db819dd856243bb2ee6e34f20cebf984/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=62134a8c790a8713ed989075650f1d1e → 200 (30246 B, 0.2 ms)
+20:18:44 GET /Items/82c08b03063b74bef97472d75570d58f/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=1d4084a8aaece3175745e1f5fe7149d2 → 200 (30104 B, 12.2 ms)
+20:18:44 GET /Items/f6b60ff94fb7005bb2eb608094880a2e/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=4793bfbcda09be9a7fa1f89bd3bdcbdf → 200 (32557 B, 11.9 ms)20:18:44 GET /Items/90add26c127ce6def968a82a8f3f6dc7/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=d206f77bf58c9d2ffb7d1229b023c0aa → 200 (33204 B, 2.3 ms)
+
+20:18:44 GET /Items/0baf62c8e45a19eca3c3739b99c938d6/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=e8958f3795be8a005be6aab6ac526744 → 200 (32057 B, 2.1 ms)
+20:18:44 GET /Items/39802e24c152a1d2281534fedaa54aaf/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=21e96ac5cd32dd8e7e3af1262d950488 → 200 (32980 B, 49.0 ms)
+20:18:46 GET /Items/a5bc362cbd980fffc9b93e2c22f0db86/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=f3e4d2b68b6a117fc5bc230e760d26f6 → 200 (33184 B, 0.6 ms)
+20:18:46 GET /Items/c2f367132f21fc687c1142715207caab/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=c80e7e5eae4b0506ffc1abc42fb84db3 → 200 (29971 B, 6.5 ms)
+20:18:46 GET /Items/996833f783322227ea8dcd54a57d6b8c/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=23972343e437ab0148f9f46e66991e53 → 200 (31907 B, 49.7 ms)
+20:18:46 GET /Items/4bd72c149d5469b943672ef90a6239e4/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=bf88b7a968795028bf2da252af97c4c5 → 200 (31020 B, 86.5 ms)
+20:18:46 GET /Items/60110d167e69142b83d3532ca0e2f90c/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=c708f26d715e2b52c884e9c18e070e19 → 200 (33669 B, 97.7 ms)
+20:18:46 GET /Items/7fe5b8aa33834d1a241198d24d2d314f/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=94c2407d26afb23d1d89a27fcdf64e32 → 200 (24021 B, 104.5 ms)
+20:18:46 GET /Items/58250aa3da10c51763c56b19afda7496/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=d1f307beaf87583be4846c0229dc1eb6 → 200 (33591 B, 111.0 ms)
+20:18:46 GET /Items/91ad6bcd3e6cd71b8f2d7ad2e3927783/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=c63f3324f249e78bbc229060fc2fd77d → 200 (33311 B, 3.0 ms)
+20:18:46 GET /Items/b031e87f1f798c92b531e2c64728309e/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=f5887676b9805d08a08929a8aee31407 → 200 (30687 B, 253.1 ms)
+20:18:46 GET /Items/6388efa7922fb9e0601d76365fa331e3/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=821fe44295ab257f0b430a67ef87d732 → 200 (30884 B, 248.5 ms)
+20:18:46 GET /Items/92d24cdd8199d42ad48a5a100f99ce5a/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=504ae195ca150adf528db384e4c628df → 200 (32253 B, 242.0 ms)
+20:18:46 GET /Items/677e60e61702c7a0bf081202898e6ed3/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=e6f08abe1cffac260decc136bb7d6706 → 200 (32250 B, 90.1 ms)
+20:18:46 GET /Items/d02dc484a397a84c77a0a40460f07fc4/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=56b33600199d67f1dcaa119584eda537 → 200 (33755 B, 292.6 ms)
+20:18:46 GET /Items/18090d444bdbe7e36789a74b5778c080/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=b565a590c0e9189b9f6991c49005eddd → 200 (30134 B, 22.6 ms)20:18:46 GET /Items/bbf55cd5265ae098dc1b5176f8f70c44/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=1abfab8edc9141fe5a96f4334aa43d3b → 200 (27949 B, 287.3 ms)
+
+20:19:29 GET /Items/677e60e61702c7a0bf081202898e6ed3/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=e6f08abe1cffac260decc136bb7d6706 → 200 (32250 B, 7.3 ms)20:19:29 GET /Items/58250aa3da10c51763c56b19afda7496/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=d1f307beaf87583be4846c0229dc1eb6 → 200 (33591 B, 5.6 ms)
+
+20:19:29 GET /Items/3a74be17e154c79c263dd24df81591fd/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=a00d88b885fefbc482e7ddb881ef30d7 → 200 (29073 B, 2.5 ms)20:19:29 GET /Items/bbf55cd5265ae098dc1b5176f8f70c44/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=1abfab8edc9141fe5a96f4334aa43d3b → 200 (27949 B, 56.4 ms)
+20:19:29 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 52.1 ms)
+20:19:29 GET /Items/92d24cdd8199d42ad48a5a100f99ce5a/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=504ae195ca150adf528db384e4c628df → 200 (32253 B, 0.9 ms)
+
+20:19:29 GET /Items/58250aa3da10c51763c56b19afda7496/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=d1f307beaf87583be4846c0229dc1eb6 → 200 (33591 B, 1.3 ms)
+20:19:29 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 7.2 ms)20:19:29 GET /Items/3a74be17e154c79c263dd24df81591fd/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=a00d88b885fefbc482e7ddb881ef30d7 → 200 (29073 B, 11.9 ms)
+20:19:29 GET /Items/1edd1d657a2dc61f54b22d2667b07d82/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=dc1fa02904fcf363dcdc8b8e0e5ca960 → 200 (30790 B, 1.0 ms)
+
+20:19:29 GET /Items/39802e24c152a1d2281534fedaa54aaf/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=21e96ac5cd32dd8e7e3af1262d950488 → 200 (32980 B, 0.8 ms)20:19:29 GET /Items/6a8d61b2fa2b1434b17d7f2eeff7904a/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=ee898f5bec1e85bf2ce816d869952605 → 200 (29832 B, 0.5 ms)
+20:19:29 GET /Items/677e60e61702c7a0bf081202898e6ed3/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=e6f08abe1cffac260decc136bb7d6706 → 200 (32250 B, 0.4 ms)
+20:19:29 GET /Items/cdca736d01dcb7fef0e283e75b162731/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=a477a7cf6bab2b4688f3319be4591de7 → 200 (29131 B, 14.6 ms)
+
+20:19:29 GET /Items/677e60e61702c7a0bf081202898e6ed3/Images/Primary?fillWidth=400&fillHeight=400&quality=90&tag=e6f08abe1cffac260decc136bb7d6706 → 200 (32250 B, 0.9 ms)
+20:19:29 GET /Items/c08d5ab71c004c436c72bf7caaddd339/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=484a9509c773416cfe6ca7c0c44c6126 → 200 (28824 B, 34.0 ms)20:19:29 GET /Items/58250aa3da10c51763c56b19afda7496/Images/Primary?fillWidth=400&fillHeight=400&quality=90&tag=d1f307beaf87583be4846c0229dc1eb6 → 200 (33591 B, 4.3 ms)
+20:19:29 GET /Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=2fb0f06b97bcf99a2f653f257806c057 → 200 (31726 B, 17.4 ms)
+20:19:29 GET /Items/cdca736d01dcb7fef0e283e75b162731/Images/Primary?fillWidth=400&fillHeight=400&quality=90&tag=a477a7cf6bab2b4688f3319be4591de7 → 200 (29131 B, 0.3 ms)
+20:19:29 GET /Items/1cc8d0601d06f64b95fe8694f9557fac/Images/Primary?fillWidth=400&fillHeight=400&quality=90&tag=5199ae621f5a03524bf640dd153c3952 → 200 (32219 B, 8.4 ms)
+
+20:19:30 GET /Items/1cc8d0601d06f64b95fe8694f9557fac/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=5199ae621f5a03524bf640dd153c3952 → 200 (32219 B, 135.6 ms)
+20:19:30 GET /Items/4bd72c149d5469b943672ef90a6239e4/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=bf88b7a968795028bf2da252af97c4c5 → 200 (31020 B, 1.0 ms)
+20:19:30 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=400&fillHeight=400&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 156.8 ms)20:19:30 GET /Items/3a74be17e154c79c263dd24df81591fd/Images/Primary?fillWidth=400&fillHeight=400&quality=90&tag=a00d88b885fefbc482e7ddb881ef30d7 → 200 (29073 B, 22.2 ms)
+
+20:19:50 GET /Items/bc7fd53cfb52628dd34080460c9e5b7b/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=846caeaa3f3f31f9c41c74d87554ab51 → 200 (33392 B, 158.5 ms)
+20:19:50 GET /Items/58992d1f07933b22bb3258458b387168/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=bd38f54d2dfcf392c3e534338927fc5f → 200 (32290 B, 30.6 ms)
+20:20:33 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 28.1 ms)20:20:33 GET /Items/87dc3814a61bc70583634f3487e5ec9a/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=0ed5cc5337e0f1f12b3edee595323b83 → 200 (22435 B, 90.1 ms)
+
+20:21:06 GET /Items/880e0a8fb2271301d9633062eb701aff/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=3c6e64c6e5b30bcd30c700460fb2b55a → 200 (31076 B, 45.8 ms)
+20:21:24 GET /Items/1dff76a8b1aedbe6d4224ee4ca03a1a2/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=7eec245e1900dfa1c5edf9b7b8d9e635 → 200 (30037 B, 142.6 ms)
+20:21:24 GET /Items/3b915b79b495238bf73d9452349772f8/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=0021ff3a76392fb383caf7bc591d7fe1 → 200 (31190 B, 79.3 ms)
+20:21:24 GET /Items/d69312c4d583d8619adbb036b73e79fe/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=c42c00ab834393026404f6c180f5f805 → 200 (33006 B, 518.9 ms)
+20:21:24 GET /Items/dd8d3d32a5463e6c3268e13ae14d462b/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=3353af5cf7c841dbc367b01ec8824248 → 200 (30805 B, 146.0 ms)
+20:21:24 GET /Items/49965809dfa7c98b7f29bd4f9540f7a0/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=b9e46be1c156cbff867400743ec318b0 → 200 (31188 B, 516.1 ms)
+20:21:24 GET /Items/2fbe9f354a3334913f5611690848d65e/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=8807e05ab9b39fb6299b6f29f67c2b16 → 200 (27659 B, 30.2 ms)
+20:21:24 GET /Items/6a16ef6996493cf98701fb24884d6b41/Images/Primary?fillWidth=900&fillHeight=900&quality=90&tag=c9b4f33c061d0117dff5f79ffd5b80d3 → 200 (30703 B, 62.1 ms)
+20:21:53 GET /Items/67b37b6aab140ac9da5cb06c6a6db8e9/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=9c250d2ddab01cf7053300f7a0b27dca → 200 (28308 B, 58.3 ms)
+20:21:53 GET /Items/849bcb1257c3c0ac23057a6f8b68ef2f/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=fb03f707f5a9f5e44e618a1834443316 → 200 (25196 B, 232.7 ms)
+20:21:53 GET /Items/b4bcd5e01c144346e5f3bceb3c444103/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=a0bfbdbe445a714a5b42d2cc7c2fd8f3 → 200 (28657 B, 254.5 ms)
+20:21:53 GET /Items/46d8626ff1510e7d1654dabd5d58d131/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=d66815734d651d8ba18294bddcc7ae69 → 200 (27067 B, 286.4 ms)
+20:21:54 GET /Items/3487984eaa090efc317b926216b5ed19/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=04b72f242e0631c96c6352bb5f1e39bb → 200 (26461 B, 333.0 ms)
+20:21:54 GET /Items/6630c43097f3b47f81a35c0dd57fec0f/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=b83134cec1ce9d45330ce70118b8b779 → 200 (26692 B, 392.8 ms)
+20:22:22 GET /Items/e6d15be55363baf434ac55a233580537/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=b0bfa33cb9c763dff715a5b67e785934 → 200 (31974 B, 14.2 ms)
+20:23:05 GET /Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=2fb0f06b97bcf99a2f653f257806c057 → 200 (31726 B, 8.1 ms)
+20:23:05 GET /Audio/ebe5f40815b51d372ac95df9701d6f3a/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=41A16A6E-AA00-4837-B451-82C61BD840BA&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2 B, 439.1 ms)
+20:23:05 GET /Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=2fb0f06b97bcf99a2f653f257806c057 → 200 (31726 B, 0.6 ms)
+20:23:05 GET /Audio/ebe5f40815b51d372ac95df9701d6f3a/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=41A16A6E-AA00-4837-B451-82C61BD840BA&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (0 B, 31.0 ms)
+----------------------------------------
+Exception occurred during processing of request from ('::1', 52749, 0, 0)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 476, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 442, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socket.py", line 738, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+ConnectionResetError: [Errno 54] Connection reset by peer
+----------------------------------------
+20:23:06 GET /Audio/ebe5f40815b51d372ac95df9701d6f3a/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=41A16A6E-AA00-4837-B451-82C61BD840BA&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (1998234 B, 110.4 ms)
+20:23:06 GET /Audio/754ab64a61d66ebffd13bfd96a12bb3d/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=EBE844E0-9925-4A86-AB5D-99ACB9C1828F&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2 B, 13.9 ms)
+20:23:06 GET /Audio/754ab64a61d66ebffd13bfd96a12bb3d/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=EBE844E0-9925-4A86-AB5D-99ACB9C1828F&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2375323 B, 13.8 ms)
+20:23:06 GET /Audio/754ab64a61d66ebffd13bfd96a12bb3d/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=EBE844E0-9925-4A86-AB5D-99ACB9C1828F&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (1326747 B, 6.1 ms)
+20:23:27 GET /Audio/ebe5f40815b51d372ac95df9701d6f3a/Lyrics → 404 (84 B, 125.2 ms)
+20:23:28 GET /Audio/754ab64a61d66ebffd13bfd96a12bb3d/Lyrics → 404 (84 B, 0.8 ms)
+20:23:35 GET /Items/0139313429dde304c3a2a06b3285f30a/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=e99546de9396f5e8291bffc1fb8dca0f → 200 (32148 B, 3.7 ms)
+20:23:37 POST /Sessions/Playing → 204 (0 B, 0.7 ms)
+20:23:49 POST /Sessions/Playing/Progress → 204 (0 B, 4.6 ms)
+20:23:59 POST /Sessions/Playing/Progress → 204 (0 B, 1.3 ms)
+20:24:09 POST /Sessions/Playing/Progress → 204 (0 B, 10.0 ms)
+20:24:20 POST /Sessions/Playing/Progress → 204 (0 B, 6.2 ms)
+20:24:30 POST /Sessions/Playing/Progress → 204 (0 B, 2.8 ms)
+20:24:32 GET /Items/cc1fc8736ef7988874ec146bd16fddd4/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=187588fc8e1789c54bf49a5b9f956686 → 200 (28179 B, 6.9 ms)20:24:32 GET /Items/7d7c27d902c446ba16c8b2fbe8622d76/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=b61eb4e11859e1ccf379701f4492ed5a → 200 (25977 B, 31.7 ms)
+20:24:32 GET /Items/f357bfcdd3fb7a79cab24ec15a1cc4de/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=4e599140ae9038f42bd8f6a13ecc195e → 200 (28449 B, 7.8 ms)
+20:24:32 GET /Items/e007210263afcb45e0faf280eb2b051e/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=8c31d580e444829c9c3917ad34eeb539 → 200 (28080 B, 10.7 ms)
+
+20:24:32 GET /Items/045a415fe3ce561b1619aa990b66ac4d/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=a8d007576554cf4edc37ea33b54f9dab → 200 (26596 B, 9.0 ms)
+20:24:32 GET /Items/9c76590e28446d70b8c4c96a271c2d4d/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=020036912ac475c82bacff2a45b114ab → 200 (26533 B, 24.5 ms)
+20:24:32 GET /Items/3055150d9ee9049c78cc878b0a8245ff/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=6491c5b2270c81cb0c625785dcd4056d → 200 (28243 B, 94.1 ms)
+20:24:32 GET /Items/074e225174c6781d60bf46a1136993a0/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=a0c009a3dd657d9882d1ec3814af3ceb → 200 (27739 B, 97.7 ms)
+20:26:00 GET /System/Info/Public → 200 (206 B, 8.8 ms)20:26:00 GET /rest/ping.view?v=1.16.1&c=Jukebox&f=json → 404 (0 B, 1.8 ms)
+
+20:26:00 GET /QuickConnect/Enabled → 200 (5 B, 28.7 ms)
+20:26:11 POST /Users/AuthenticateByName → 200 (3007 B, 28.5 ms)
+20:26:11 GET /System/Info/Public → 200 (206 B, 48.5 ms)
+20:26:13 GET /System/Info/Public → 200 (206 B, 213.1 ms)
+20:26:13 GET /System/Info/Public → 200 (206 B, 1.0 ms)
+20:26:13 GET /Users/Me → 200 (2045 B, 502.1 ms)
+20:26:13 GET /MusicGenres?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&Fields=ItemCounts → 200 (10278 B, 345.1 ms)
+20:26:13 GET /Artists/AlbumArtists?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&StartIndex=0&Limit=1000&Fields=Genres%2COverview%2CItemCounts&SortBy=SortName&SortOrder=Ascending → 200 (17435 B, 8.0 ms)
+20:26:13 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&IncludeItemTypes=Audio&Recursive=true&Fields=Genres%2CDateCreated&StartIndex=0&Limit=2000 → 200 (410238 B, 94.8 ms)
+20:26:13 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&IncludeItemTypes=Playlist&Recursive=true&Fields=ChildCount%2CDateCreated → 200 (2823 B, 30.2 ms)
+20:26:13 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&StartIndex=0&Limit=1000&IncludeItemTypes=MusicAlbum&Recursive=true&Fields=Genres%2CDateCreated%2CChildCount&SortBy=SortName&SortOrder=Ascending → 200 (59798 B, 42.0 ms)
+20:26:48 GET /Audio/f5302559a07a65c45e6ffef5379021c6/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=714E248E-1BC3-4D38-B440-62B7FBD87A06&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2 B, 29.7 ms)
+20:26:48 GET /Audio/f5302559a07a65c45e6ffef5379021c6/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=714E248E-1BC3-4D38-B440-62B7FBD87A06&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (0 B, 81.7 ms)
+----------------------------------------
+Exception occurred during processing of request from ('::1', 54496, 0, 0)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+20:26:49 GET /Audio/f5302559a07a65c45e6ffef5379021c6/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=714E248E-1BC3-4D38-B440-62B7FBD87A06&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (714251 B, 31.3 ms)
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 476, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 442, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socket.py", line 738, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+ConnectionResetError: [Errno 54] Connection reset by peer
+----------------------------------------
+20:26:49 GET /Audio/f1e5260222ed18e766d0ac9d7428b83b/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=11417981-BDFB-477A-BA8D-661F29F0F90C&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2 B, 8.4 ms)
+20:26:49 GET /Audio/f1e5260222ed18e766d0ac9d7428b83b/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=329C25B7-43C6-42E4-94B6-7C32BC771EF6&PlaySessionId=11417981-BDFB-477A-BA8D-661F29F0F90C&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2146395 B, 10.0 ms)
+20:34:20 GET /rest/ping.view?v=1.16.1&c=Jukebox&f=json → 404 (0 B, 35.2 ms)20:34:20 GET /System/Info/Public → 200 (206 B, 161.7 ms)
+
+20:34:20 GET /QuickConnect/Enabled → 200 (5 B, 0.2 ms)
+20:34:44 GET /System/Info/Public → 200 (206 B, 22.7 ms)20:34:44 POST /Users/AuthenticateByName → 200 (3015 B, 23.3 ms)
+
+20:34:46 GET /Users/Me → 200 (2045 B, 559.7 ms)
+20:34:46 GET /Artists/AlbumArtists?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&StartIndex=0&Limit=1000&Fields=Genres%2COverview%2CItemCounts&SortBy=SortName&SortOrder=Ascending → 200 (17435 B, 51.0 ms)
+20:34:46 GET /System/Info/Public → 200 (206 B, 59.8 ms)
+20:34:46 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&IncludeItemTypes=Audio&Recursive=true&Fields=Genres%2CDateCreated&StartIndex=0&Limit=2000 → 200 (410238 B, 108.1 ms)
+20:34:46 GET /MusicGenres?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&Fields=ItemCounts → 200 (10278 B, 44.8 ms)
+20:34:46 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&StartIndex=0&Limit=1000&IncludeItemTypes=MusicAlbum&Recursive=true&Fields=Genres%2CDateCreated%2CChildCount&SortBy=SortName&SortOrder=Ascending → 200 (59798 B, 55.5 ms)20:34:46 GET /Items?userId=32c60d1fd64b4a7ca7da417c157fde48&EnableImageTypes=Primary&ImageTypeLimit=1&SortBy=SortName&SortOrder=Ascending&IncludeItemTypes=Playlist&Recursive=true&Fields=ChildCount%2CDateCreated → 200 (2823 B, 58.6 ms)
+
+20:34:47 GET /System/Info/Public → 200 (206 B, 0.7 ms)
+20:34:47 GET /Items/880e0a8fb2271301d9633062eb701aff/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=3c6e64c6e5b30bcd30c700460fb2b55a → 200 (31076 B, 53.1 ms)
+20:34:47 GET /Items/4bd72c149d5469b943672ef90a6239e4/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=bf88b7a968795028bf2da252af97c4c5 → 200 (31020 B, 5.9 ms)
+20:34:47 GET /Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=2fb0f06b97bcf99a2f653f257806c057 → 200 (31726 B, 146.7 ms)20:34:47 GET /Items/82c08b03063b74bef97472d75570d58f/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=1d4084a8aaece3175745e1f5fe7149d2 → 200 (30104 B, 16.4 ms)
+20:34:48 GET /Items/0992061833142d74658f41a17bd6922f/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=a50cabb03f616b0a71436230568d3664 → 200 (28823 B, 42.6 ms)
+20:34:48 GET /Items/4285e57269f41fadeb1ae6bcfd867769/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=65466c4dd4a3c3c11dde969c042002e9 → 200 (31626 B, 2.8 ms)
+
+20:34:48 GET /Items/f6b60ff94fb7005bb2eb608094880a2e/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=4793bfbcda09be9a7fa1f89bd3bdcbdf → 200 (32557 B, 20.5 ms)
+20:34:48 GET /Items/0481cba759b8ad7fb857d30f9e4ad028/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=a7ea7879e0a02d118ec166f47829f5ff → 200 (29398 B, 86.1 ms)
+20:34:48 GET /Items/87dc3814a61bc70583634f3487e5ec9a/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=0ed5cc5337e0f1f12b3edee595323b83 → 200 (22435 B, 1.7 ms)
+20:34:48 GET /Items/cdca736d01dcb7fef0e283e75b162731/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=a477a7cf6bab2b4688f3319be4591de7 → 200 (29131 B, 14.5 ms)
+20:34:48 GET /Items/1edd1d657a2dc61f54b22d2667b07d82/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=dc1fa02904fcf363dcdc8b8e0e5ca960 → 200 (30790 B, 60.5 ms)
+20:34:48 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 3.7 ms)
+20:34:48 GET /Items/58992d1f07933b22bb3258458b387168/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=bd38f54d2dfcf392c3e534338927fc5f → 200 (32290 B, 1.6 ms)
+20:34:48 GET /Items/2fbe9f354a3334913f5611690848d65e/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=8807e05ab9b39fb6299b6f29f67c2b16 → 200 (27659 B, 34.2 ms)
+20:34:48 GET /Items/989680fd001df90f983c677421fab9aa/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=8327b86b6ec8ed50f843da9f043a46ff → 200 (32634 B, 27.4 ms)20:34:48 GET /Items/60110d167e69142b83d3532ca0e2f90c/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=c708f26d715e2b52c884e9c18e070e19 → 200 (33669 B, 17.2 ms)
+
+20:34:48 GET /Items/bc7fd53cfb52628dd34080460c9e5b7b/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=846caeaa3f3f31f9c41c74d87554ab51 → 200 (33392 B, 2.1 ms)
+20:34:48 GET /Items/a5bc362cbd980fffc9b93e2c22f0db86/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=f3e4d2b68b6a117fc5bc230e760d26f6 → 200 (33184 B, 1.6 ms)
+20:34:48 GET /Items/0139313429dde304c3a2a06b3285f30a/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=e99546de9396f5e8291bffc1fb8dca0f → 200 (32148 B, 29.8 ms)
+20:34:48 GET /Items/c2f367132f21fc687c1142715207caab/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=c80e7e5eae4b0506ffc1abc42fb84db3 → 200 (29971 B, 21.2 ms)
+20:34:48 GET /Items/e6d15be55363baf434ac55a233580537/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=b0bfa33cb9c763dff715a5b67e785934 → 200 (31974 B, 16.0 ms)
+20:34:48 GET /Items/bbf55cd5265ae098dc1b5176f8f70c44/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=1abfab8edc9141fe5a96f4334aa43d3b → 200 (27949 B, 4.2 ms)
+20:34:48 GET /Items/996833f783322227ea8dcd54a57d6b8c/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=23972343e437ab0148f9f46e66991e53 → 200 (31907 B, 1.5 ms)
+20:34:48 GET /Items/90add26c127ce6def968a82a8f3f6dc7/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=d206f77bf58c9d2ffb7d1229b023c0aa → 200 (33204 B, 25.8 ms)
+20:34:48 GET /Items/db819dd856243bb2ee6e34f20cebf984/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=62134a8c790a8713ed989075650f1d1e → 200 (30246 B, 4.5 ms)20:34:48 GET /Items/1dff76a8b1aedbe6d4224ee4ca03a1a2/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=7eec245e1900dfa1c5edf9b7b8d9e635 → 200 (30037 B, 63.6 ms)
+20:34:48 GET /Items/f6b60ff94fb7005bb2eb608094880a2e/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=4793bfbcda09be9a7fa1f89bd3bdcbdf → 200 (32557 B, 0.2 ms)
+
+20:34:48 GET /Items/5c5274b24df129847f4133f87f48d93d/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=8f594e8a1fc332791e0bc7df88e68b5a → 200 (26119 B, 68.0 ms)
+20:34:48 GET /Items/6a8d61b2fa2b1434b17d7f2eeff7904a/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=ee898f5bec1e85bf2ce816d869952605 → 200 (29832 B, 2.5 ms)
+20:34:48 GET /Items/58250aa3da10c51763c56b19afda7496/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=d1f307beaf87583be4846c0229dc1eb6 → 200 (33591 B, 23.3 ms)
+20:34:48 GET /Items/3a74be17e154c79c263dd24df81591fd/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=a00d88b885fefbc482e7ddb881ef30d7 → 200 (29073 B, 79.0 ms)
+20:34:48 GET /Items/91ad6bcd3e6cd71b8f2d7ad2e3927783/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=c63f3324f249e78bbc229060fc2fd77d → 200 (33311 B, 1.6 ms)
+20:34:48 GET /Items/db819dd856243bb2ee6e34f20cebf984/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=62134a8c790a8713ed989075650f1d1e → 200 (30246 B, 0.2 ms)
+20:34:48 GET /Items/1cc8d0601d06f64b95fe8694f9557fac/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=5199ae621f5a03524bf640dd153c3952 → 200 (32219 B, 40.2 ms)
+20:34:48 GET /Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=2fb0f06b97bcf99a2f653f257806c057 → 200 (31726 B, 2.2 ms)
+20:34:48 GET /Items/90add26c127ce6def968a82a8f3f6dc7/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=d206f77bf58c9d2ffb7d1229b023c0aa → 200 (33204 B, 4.4 ms)
+20:34:48 GET /Items/0baf62c8e45a19eca3c3739b99c938d6/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=e8958f3795be8a005be6aab6ac526744 → 200 (32057 B, 17.2 ms)
+20:34:48 GET /Items/39802e24c152a1d2281534fedaa54aaf/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=21e96ac5cd32dd8e7e3af1262d950488 → 200 (32980 B, 73.4 ms)
+20:34:48 GET /Items/677e60e61702c7a0bf081202898e6ed3/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=e6f08abe1cffac260decc136bb7d6706 → 200 (32250 B, 38.5 ms)
+20:34:48 GET /Items/a5bc362cbd980fffc9b93e2c22f0db86/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=f3e4d2b68b6a117fc5bc230e760d26f6 → 200 (33184 B, 25.1 ms)
+20:34:51 GET /Items/92d24cdd8199d42ad48a5a100f99ce5a/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=504ae195ca150adf528db384e4c628df → 200 (32253 B, 122.4 ms)
+20:34:51 GET /Items/d02dc484a397a84c77a0a40460f07fc4/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=56b33600199d67f1dcaa119584eda537 → 200 (33755 B, 48.2 ms)20:34:51 GET /Items/52c302f95961f0cec5deefabda1a9404/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=b34f81da6e1fa4968d9f23013ede6451 → 200 (33244 B, 135.6 ms)
+20:34:51 GET /Items/18090d444bdbe7e36789a74b5778c080/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=b565a590c0e9189b9f6991c49005eddd → 200 (30134 B, 138.2 ms)
+20:34:51 GET /Items/b031e87f1f798c92b531e2c64728309e/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=f5887676b9805d08a08929a8aee31407 → 200 (30687 B, 2.0 ms)
+20:34:51 GET /Items/7fe5b8aa33834d1a241198d24d2d314f/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=94c2407d26afb23d1d89a27fcdf64e32 → 200 (24021 B, 181.1 ms)
+
+20:34:51 GET /Items/6388efa7922fb9e0601d76365fa331e3/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=821fe44295ab257f0b430a67ef87d732 → 200 (30884 B, 190.0 ms)
+20:34:51 GET /Items/0baf62c8e45a19eca3c3739b99c938d6/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=e8958f3795be8a005be6aab6ac526744 → 200 (32057 B, 1.6 ms)20:34:51 GET /Items/c08d5ab71c004c436c72bf7caaddd339/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=484a9509c773416cfe6ca7c0c44c6126 → 200 (28824 B, 7.9 ms)
+
+20:34:52 GET /Items/5c471f4750a2f3769f09d3b673593fb1/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=b36263e493465979b0975fc24215cf54 → 200 (29032 B, 91.4 ms)
+20:36:01 GET /Items/bbf55cd5265ae098dc1b5176f8f70c44/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=1abfab8edc9141fe5a96f4334aa43d3b → 200 (27949 B, 3.8 ms)20:36:01 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 4.8 ms)
+20:36:01 GET /Items/3a74be17e154c79c263dd24df81591fd/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=a00d88b885fefbc482e7ddb881ef30d7 → 200 (29073 B, 0.6 ms)
+20:36:01 GET /Items/6a8d61b2fa2b1434b17d7f2eeff7904a/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=ee898f5bec1e85bf2ce816d869952605 → 200 (29832 B, 0.7 ms)
+
+20:36:01 GET /Items/58250aa3da10c51763c56b19afda7496/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=d1f307beaf87583be4846c0229dc1eb6 → 200 (33591 B, 8.8 ms)
+20:36:01 GET /Items/1edd1d657a2dc61f54b22d2667b07d82/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=dc1fa02904fcf363dcdc8b8e0e5ca960 → 200 (30790 B, 3.6 ms)
+20:36:01 GET /Items/f8a05ce1c15501c7b377d84a87fce453/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=747e15943cf5ed47d23dd5d0ac240a73 → 200 (31560 B, 2.1 ms)
+20:36:01 GET /Items/c08d5ab71c004c436c72bf7caaddd339/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=484a9509c773416cfe6ca7c0c44c6126 → 200 (28824 B, 4.7 ms)
+20:36:01 GET /Items/cdca736d01dcb7fef0e283e75b162731/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=a477a7cf6bab2b4688f3319be4591de7 → 200 (29131 B, 2.1 ms)
+20:36:01 GET /Items/1cc8d0601d06f64b95fe8694f9557fac/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=5199ae621f5a03524bf640dd153c3952 → 200 (32219 B, 0.2 ms)
+20:36:01 GET /Items/677e60e61702c7a0bf081202898e6ed3/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=e6f08abe1cffac260decc136bb7d6706 → 200 (32250 B, 11.0 ms)
+20:36:01 GET /Items/92d24cdd8199d42ad48a5a100f99ce5a/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=504ae195ca150adf528db384e4c628df → 200 (32253 B, 1.5 ms)
+20:36:01 GET /Items/58250aa3da10c51763c56b19afda7496/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=d1f307beaf87583be4846c0229dc1eb6 → 200 (33591 B, 22.1 ms)
+20:36:01 GET /Items/3a74be17e154c79c263dd24df81591fd/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=a00d88b885fefbc482e7ddb881ef30d7 → 200 (29073 B, 3.2 ms)
+20:36:01 GET /Items/39802e24c152a1d2281534fedaa54aaf/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=21e96ac5cd32dd8e7e3af1262d950488 → 200 (32980 B, 3.4 ms)
+20:36:01 GET /Items/cdca736d01dcb7fef0e283e75b162731/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=a477a7cf6bab2b4688f3319be4591de7 → 200 (29131 B, 1.9 ms)
+20:36:01 GET /Items/4bd72c149d5469b943672ef90a6239e4/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=bf88b7a968795028bf2da252af97c4c5 → 200 (31020 B, 1.7 ms)
+20:36:01 GET /Items/1cc8d0601d06f64b95fe8694f9557fac/Images/Primary?fillWidth=240&fillHeight=240&quality=90&tag=5199ae621f5a03524bf640dd153c3952 → 200 (32219 B, 3.7 ms)
+20:36:01 GET /Items/677e60e61702c7a0bf081202898e6ed3/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=e6f08abe1cffac260decc136bb7d6706 → 200 (32250 B, 4.5 ms)
+20:36:55 GET /Items/a172111ba0011eb4696059462f5ce8cb/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=47ac47e3fd24f2f0e688b3b8dbb1e625 → 200 (33061 B, 93.8 ms)
+20:37:10 GET /Items/d69312c4d583d8619adbb036b73e79fe/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=c42c00ab834393026404f6c180f5f805 → 200 (33006 B, 221.4 ms)20:37:10 GET /Items/49965809dfa7c98b7f29bd4f9540f7a0/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=b9e46be1c156cbff867400743ec318b0 → 200 (31188 B, 45.5 ms)
+20:37:10 GET /Items/dd8d3d32a5463e6c3268e13ae14d462b/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=3353af5cf7c841dbc367b01ec8824248 → 200 (30805 B, 0.9 ms)
+20:37:10 GET /Items/6a16ef6996493cf98701fb24884d6b41/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=c9b4f33c061d0117dff5f79ffd5b80d3 → 200 (30703 B, 5.6 ms)
+
+20:37:10 GET /Items/3b915b79b495238bf73d9452349772f8/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=0021ff3a76392fb383caf7bc591d7fe1 → 200 (31190 B, 84.0 ms)
+20:37:10 GET /Items/960dab30f0f2c59bf3fc0b52dfee169f/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=1e1de4819acef25e336a97ac017c2faf → 200 (29437 B, 211.0 ms)
+20:37:11 GET /Items/609206c7bda6083111a8fbfaada723aa/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=e67158e1068f677d7e848b6eea3222ec → 200 (33686 B, 238.1 ms)
+20:37:11 GET /Items/071b84831c8a6d171eb1a30aa52773a8/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=6bfc03f5bd48a03381fb9af2a4fc759a → 200 (33087 B, 236.3 ms)
+20:37:11 GET /Items/501204a3f5b151607e71ba47aa795787/Images/Primary?fillWidth=600&fillHeight=600&quality=90&tag=c4ee8cd97e0a7a8bb6fc8fc5ca5a96c6 → 200 (32868 B, 243.4 ms)
+20:38:09 GET /Items/880e0a8fb2271301d9633062eb701aff/Images/Primary?fillWidth=120&fillHeight=120&quality=90&tag=3c6e64c6e5b30bcd30c700460fb2b55a → 200 (31076 B, 24.7 ms)
+20:38:09 GET /Audio/0a51a245918021091e997d6d425ff7e3/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=2460BF58-CF15-4483-8BB3-BB72D7704A37&PlaySessionId=98BD8E3E-D0E0-4A3A-8FF3-C9D77CA4D9F7&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2 B, 955.5 ms)
+20:38:09 GET /Audio/0a51a245918021091e997d6d425ff7e3/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=2460BF58-CF15-4483-8BB3-BB72D7704A37&PlaySessionId=98BD8E3E-D0E0-4A3A-8FF3-C9D77CA4D9F7&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (0 B, 123.8 ms)
+----------------------------------------
+Exception occurred during processing of request from ('::1', 58120, 0, 0)
+Traceback (most recent call last):
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 694, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 359, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socketserver.py", line 763, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 476, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/http/server.py", line 442, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/opt/homebrew/Cellar/python@3.15/3.15.2/Frameworks/Python.framework/Versions/3.15/lib/python3.15/socket.py", line 738, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+ConnectionResetError: [Errno 54] Connection reset by peer
+----------------------------------------
+20:38:10 GET /Audio/0a51a245918021091e997d6d425ff7e3/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=2460BF58-CF15-4483-8BB3-BB72D7704A37&PlaySessionId=98BD8E3E-D0E0-4A3A-8FF3-C9D77CA4D9F7&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (934693 B, 24.5 ms)
+20:38:10 GET /Audio/c11ff53812bababc2b6a1329ce648792/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=2460BF58-CF15-4483-8BB3-BB72D7704A37&PlaySessionId=1D930D3F-B981-45CC-920C-87A8B40B9A1D&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2621292 B, 45.4 ms)
+20:38:10 GET /Audio/c11ff53812bababc2b6a1329ce648792/universal?UserId=32c60d1fd64b4a7ca7da417c157fde48&DeviceId=2460BF58-CF15-4483-8BB3-BB72D7704A37&PlaySessionId=1D930D3F-B981-45CC-920C-87A8B40B9A1D&Container=mp3%2Caac%2Cm4a%7Caac%2Cm4a%7Calac%2Cm4b%7Caac%2Cmp4%7Caac%2Cmp4%7Calac%2Cflac%2Calac%2Cwav%2Caiff&Tran… → 206 (2 B, 125.9 ms)
+20:38:21 GET /Items/880e0a8fb2271301d9633062eb701aff/Images/Primary?fillWidth=1200&fillHeight=1200&quality=90&tag=3c6e64c6e5b30bcd30c700460fb2b55a → 200 (31076 B, 11.4 ms)
