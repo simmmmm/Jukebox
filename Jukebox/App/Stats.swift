@@ -74,8 +74,8 @@ enum Stats {
     /// secret come from the OpenPanel project (Settings › Clients); while the
     /// id is empty nothing is sent.
     static let api = URL(string: "https://stats.numa.photo/api/track")!
-    static let clientID = ""
-    static let clientSecret = ""
+    static let clientID = "4f8b948e-55ca-4c2c-9e10-06d2f5260c33"
+    static let clientSecret = "sec_f5fef333b75ba30ea16c"
 
     static func track(_ name: Name, _ props: [String: Value] = [:]) {
         guard on, !clientID.isEmpty else { return }
