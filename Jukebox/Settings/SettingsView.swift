@@ -613,8 +613,8 @@ private struct SettingsHistorySection: View {
 
 /// The anonymous usage counts (Stats, docs/STATS.md), on unless turned off
 /// here: the photographer's choice, "alles tracken wat je mag zonder cookie
-/// melding" (8 November 2026), as Aptabase sets no cookie and keeps no device
-/// id or address. The footer says what is counted, and what never is, as
+/// melding" (8 November 2026), as the app sets no cookie and keeps no id for
+/// them. The footer says what is counted, and what never is, as
 /// Last.fm's and Lyrics' footers say what leaves the phone.
 private struct SettingsPrivacySection: View {
     @Environment(AppSettings.self) private var settings

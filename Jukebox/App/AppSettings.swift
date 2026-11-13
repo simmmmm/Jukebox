@@ -87,8 +87,8 @@ final class AppSettings {
     /// Settings' Share Anonymous Usage (Stats, docs/STATS.md): on unless the
     /// listener turns it off. The photographer, 8 November 2026: "Kun je ook
     /// aptabase toevoegen van mijn account en alles tracken wat je mag zonder
-    /// cookie melding" — Aptabase sets no cookie and keeps no device id or
-    /// address, so nothing is asked first; the switch is the way out.
+    /// cookie melding" — the app sets no cookie and keeps no id for them, so
+    /// nothing is asked first; the switch is the way out.
     var shareUsage: Bool {
         didSet {
             // Turned off: counted once, before it is written, while counting

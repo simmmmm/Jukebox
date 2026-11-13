@@ -1,8 +1,10 @@
 # Usage counts (Stats)
 
 Anonymous counts of which screens and features of Jukebox are used, on the
-photographer's own Aptabase server (`https://stats.numa.photo`, open source,
-self-hosted), App Key `A-SH-1430104593` — not a secret: it ships in the app.
+photographer's own OpenPanel server (`https://panel.numa.photo`, open source,
+self-hosted). The client id and secret (`Stats.clientID`, `Stats.clientSecret`)
+come from the OpenPanel project and are not secrets: they ship in the app.
+While the id is empty nothing is sent.
 `Jukebox/App/Stats.swift` is all of it; every event is one line where it
 happens. Numa-mac's counts (`app/Numa/Stats.swift`, `docs/STATS_PLAN.md`) are
 the pattern, with one difference, below.
@@ -10,18 +12,27 @@ the pattern, with one difference, below.
 The photographer, 8 November 2026: "Kun je ook aptabase toevoegen van mijn
 account en alles tracken wat je mag zonder cookie melding."
 
+OpenPanel and not Aptabase since 13 November 2026: the photographer wants to
+see the order of what someone does in one visit and where a visit ends
+("user flows heb ik oneindig veel meer aan dan aantal bezoekers"), and
+Aptabase only counts. Jukebox uses no package for it: an event is one POST to
+`/api/track`, made in `Stats.swift`.
+
 ## Rules
 
-1. **On by default, without asking.** Aptabase sets no cookie, keeps no
-   device id and no IP address, and Jukebox stores nothing on the device for
-   it; its sessions are a number in memory that changes after an hour. So
-   there is nothing to consent to, as the photographer asked: "alles tracken
-   wat je mag zonder cookie melding". Numa asks first and is off by default,
-   because Numa had said "no analytics" until then; Jukebox never did.
+1. **On by default, without asking.** Jukebox sets no cookie and stores
+   nothing on the device for the counts, and sends no id. The server ties one
+   visit's events together itself: from the address and the user agent of the
+   request it makes a salted hash (OpenPanel's `device-id.ts`), and the salt
+   changes, so the hash does not follow someone over time. It also reads a
+   rough place (country, city) from the address. As the photographer asked:
+   "alles tracken wat je mag zonder cookie melding". Numa asks first and is
+   off by default, because Numa had said "no analytics" until then; Jukebox
+   never did. Not yet checked on the running server: how often the salt
+   changes, and that the address itself is not kept with an event.
 2. **The switch.** Settings › Privacy › Share Anonymous Usage
    (`AppSettings.shareUsage`, UserDefaults `shareUsage`). Off, `Stats.track`
-   returns before anything: Aptabase is not even set up while it is off (it
-   is set up lazily, on the first event while on). Turning it off is the
+   returns before anything: no request is made while it is off. Turning it off is the
    last event, `setting_changed` `share_usage` `off`, sent while it is still
    on; then nothing. Turning it on is not counted. A launch argument
    `-shareUsage NO` turns it off too (for a walk in the simulator).
@@ -32,10 +43,12 @@ account en alles tracken wat je mag zonder cookie melding."
    playlist's or a mix's name, a search, a server's address or name, a user
    name, an id of anything, an error's message. Counts and durations are in
    buckets (below), so no number tells one library from another.
-5. **What Aptabase adds** to every event: the app's version and build, the
-   system (iOS, iPadOS) and its version, the language, the device model, and
-   whether it is a debug build (CI's simulator runs and Xcode builds are
-   "debug" and kept apart on the server). Nothing else.
+5. **What every event carries** besides its own properties: the app's
+   version and build, the system (iOS, iPadOS) and its version (in the user
+   agent), the language, the device model, the time, and `debug` for a debug
+   build (CI's simulator runs and Xcode builds, kept apart on the server).
+   An event that got no answer waits in memory for the next one, 200 at
+   most, and is gone when the app quits.
 6. **Main actor.** `Stats.track` runs on the main actor, as everything in the
    app does by default; something running elsewhere hops there first.
 
@@ -102,19 +115,19 @@ over Cellular, how much is on the phone, or what was removed.
 Not counted: what is played, by whom or from where; titles, artists,
 albums, genres, playlists' and mixes' names; what was searched for; server
 addresses and names, user names; the Last.fm key; lyrics; error messages.
-No crash or error reports (`trackError` is not used).
+No crash or error reports.
 
 ## The App Store
 
 App Store Connect › App Privacy: **Usage Data › Product Interaction**, not
 linked to the user, not used for tracking, purpose **Analytics**. Nothing
 else is collected. `Jukebox/Resources/PrivacyInfo.xcprivacy` declares the
-same, with UserDefaults' reason CA92.1 (the app's own settings), and
-Aptabase's package brings its own manifest saying the same. XcodeGen puts the
+same, with UserDefaults' reason CA92.1 (the app's own settings). XcodeGen puts the
 manifest in the app's resources: `project.yml` takes everything under
 `Jukebox/`, and XcodeGen (2.40.1 and later) gives a file of a type it has no
 rule for, `.xcprivacy` among them, the Copy Bundle Resources phase.
 
 A privacy policy for the App Store's listing should say the same in words:
 anonymous counts of features used, on the developer's own server, no
-cookies, no device id, no address, off in Settings › Privacy.
+cookies, no id kept on the device, a rough place read from the address,
+off in Settings › Privacy.

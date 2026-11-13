@@ -1,25 +1,33 @@
-// Anonymous usage counts on the photographer's own Aptabase server
-// (stats.numa.photo, open source), as Numa counts (Numa-mac's Stats.swift),
+// Anonymous usage counts on the photographer's own OpenPanel server
+// (panel.numa.photo, open source), as Numa counts (Numa-mac's Stats.swift),
 // with one difference: on until the listener turns them off. The
 // photographer, 8 November 2026: "Kun je ook aptabase toevoegen van mijn
-// account en alles tracken wat je mag zonder cookie melding." Aptabase sets
-// no cookie, keeps no device id and no address, and the app stores nothing
-// for it, so there is nothing to ask first. Settings › Privacy › Share
+// account en alles tracken wat je mag zonder cookie melding." OpenPanel and
+// not Aptabase since 13 November 2026: the photographer wants to see the
+// order of what someone does in one visit and where a visit ends, and
+// Aptabase only counts. The app sets no cookie and keeps no id for it: the
+// server ties one visit's events together itself. Settings › Privacy › Share
 // Anonymous Usage turns it off; from then on nothing is set up or sent
 // (`track` returns first).
 //
 // The events are a closed list (`Name`) with coarse properties from fixed
 // lists: a screen's kind, a station's kind of seed, a bucket. Never a title,
 // an artist, an album, a search, a server's address or name, a user, an id.
-// Aptabase adds the app version and build, the system and its version, the
-// language and the device model. docs/STATS.md has every event and the
-// question it answers.
+// Every event also carries the app version and build, the system and its
+// version, the language and the device model. docs/STATS.md has every event
+// and the question it answers.
 
 import AVFoundation
-import Aptabase
 import Foundation
 import JukeboxKit
 import SwiftUI
+
+/// What a property may be: a word from the app's own lists, a number, yes or no.
+nonisolated protocol Value {}
+extension String: Value {}
+extension Bool: Value {}
+extension Int: Value {}
+extension Double: Value {}
 
 enum Stats {
     /// AppSettings.shareUsage's key. Read here as well: the counts come
@@ -62,17 +70,37 @@ enum Stats {
         return defaults.object(forKey: key) == nil || defaults.bool(forKey: key)
     }
 
-    // Made once, on the first event while counting is on: never while it
-    // is off, so then not even the client exists.
-    private static let start: Void = Aptabase.shared.initialize(
-        appKey: "A-SH-1430104593",
-        with: InitOptions(host: "https://stats.numa.photo")
-    )
+    /// Where the events go, and the project they belong to. The id and the
+    /// secret come from the OpenPanel project (Settings › Clients); while the
+    /// id is empty nothing is sent.
+    static let api = URL(string: "https://panel.numa.photo/api/track")!
+    static let clientID = ""
+    static let clientSecret = ""
 
     static func track(_ name: Name, _ props: [String: Value] = [:]) {
-        guard on else { return }
-        _ = start
-        Aptabase.shared.trackEvent(name.rawValue, with: props)
+        guard on, !clientID.isEmpty else { return }
+        var properties: [String: Any] = props
+        properties["__version"] = version
+        properties["__buildNumber"] = build
+        properties["__timestamp"] = ISO8601DateFormatter().string(from: Date())
+        properties["locale"] = Locale.preferredLanguages.first ?? ""
+        properties["model"] = model
+        // Xcode's and CI's builds, kept apart on the server.
+        #if DEBUG
+        properties["debug"] = true
+        #endif
+        let event: [String: Any] = ["type": "track", "payload": ["name": name.rawValue, "properties": properties]]
+        guard let body = try? JSONSerialization.data(withJSONObject: event) else { return }
+        var request = URLRequest(url: api)
+        request.httpMethod = "POST"
+        request.httpBody = body
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(agent, forHTTPHeaderField: "User-Agent")
+        request.setValue(clientID, forHTTPHeaderField: "openpanel-client-id")
+        if !clientSecret.isEmpty {
+            request.setValue(clientSecret, forHTTPHeaderField: "openpanel-client-secret")
+        }
+        Wire.shared.send(request)
     }
 
     // MARK: Buckets: coarse, so no number tells one library from another
@@ -221,6 +249,39 @@ enum Stats {
             return ["source": "failed", "synced": false]
         }
     }
+
+    // MARK: What every event carries
+
+    private static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+    private static let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+
+    /// The device model as the system names it ("iPhone17,1", "Mac15,6").
+    private static let model: String = {
+        var size = 0
+        #if os(macOS)
+        let name = "hw.model"
+        #else
+        let name = "hw.machine"
+        #endif
+        sysctlbyname(name, nil, &size, nil, 0)
+        guard size > 0 else { return "" }
+        var value = [CChar](repeating: 0, count: size)
+        sysctlbyname(name, &value, &size, nil, 0)
+        return String(cString: value)
+    }()
+
+    /// A browser's kind of user agent: OpenPanel reads the system and its
+    /// version from it, as it does for a website.
+    private static let agent: String = {
+        let v = ProcessInfo.processInfo.operatingSystemVersion
+        let system = "\(v.majorVersion)_\(v.minorVersion)"
+        #if os(macOS)
+        let device = "Macintosh; Intel Mac OS X \(system)"
+        #else
+        let device = model.hasPrefix("iPad") ? "iPad; CPU OS \(system) like Mac OS X" : "iPhone; CPU iPhone OS \(system) like Mac OS X"
+        #endif
+        return "Mozilla/5.0 (\(device)) AppleWebKit/605.1.15 (KHTML, like Gecko) Jukebox/\(version)"
+    }()
 }
 
 extension View {
@@ -249,5 +310,40 @@ private struct StatsOnce: ViewModifier {
             isCounted = true
             action()
         }
+    }
+}
+
+/// Sends the events one at a time, in order. One that got no answer (no
+/// network) waits for the next event and goes first then; one the server
+/// answered, also with a refusal, is done.
+// ponytail: waits in memory only, 200 at most, gone when the app quits; a
+// file on disk if visits without a network turn out to matter.
+// `nonisolated`: the app's types are the main actor's unless they say so
+// (project.yml), and this one works on its own queue.
+private nonisolated final class Wire: @unchecked Sendable {
+    static let shared = Wire()
+    private let queue = DispatchQueue(label: "jukebox.stats")
+    private var waiting: [URLRequest] = []
+    private var sending = false
+
+    func send(_ request: URLRequest) {
+        queue.async {
+            if self.waiting.count < 200 { self.waiting.append(request) }
+            self.next()
+        }
+    }
+
+    /// On `queue`.
+    private func next() {
+        guard !sending, let request = waiting.first else { return }
+        sending = true
+        URLSession.shared.dataTask(with: request) { _, response, _ in
+            self.queue.async {
+                self.sending = false
+                guard response is HTTPURLResponse else { return }
+                self.waiting.removeFirst()
+                self.next()
+            }
+        }.resume()
     }
 }
