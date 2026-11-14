@@ -17,7 +17,8 @@ radio chooses, with measurements; `docs/LINUX.md` is the Linux client.
   (Docker, no Swift needed on the machine), then `.build-linux/debug/Jukebox`.
 - The workflow file is generic and calls `ci/*.sh`: the session's token may not
   push workflow files, so change the scripts, not the workflow.
-- A commit message with `[testflight]` uploads that build to TestFlight.
+- A commit message with `[testflight]` anywhere in it, body included, uploads
+  that build to TestFlight (and skips the plain build and the screenshots).
 - Each platform at its best: Apple's HIG, SF Symbols and controls on the
   iPhone; GNOME's HIG and libadwaita's own widgets on Linux ("ik wil net als
   met numa dat het vooral super nice werkt op gnome"). On both, Jukebox's
