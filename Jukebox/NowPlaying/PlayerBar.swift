@@ -310,6 +310,7 @@ struct PlayerBar: View {
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 VolumeControl(followsAppearance: true)
+                    .controlSize(.mini)
                     .frame(width: 96, height: 32)
             }
         }
@@ -366,7 +367,9 @@ private struct PlayerBarPosition: View {
                 if let held { player.seek(to: held) }
                 held = nil
             })
-            .controlSize(.small)
+            // The smallest knob there is: Linux's line is thin, and a full
+            // Mac slider's white knob was the loudest thing in the bar.
+            .controlSize(.mini)
             .disabled(duration <= 0)
             .accessibilityLabel("Position")
             .accessibilityValue(duration > 0 ? String(localized: "\(shown.clock) of \(duration.clock)") : "")
