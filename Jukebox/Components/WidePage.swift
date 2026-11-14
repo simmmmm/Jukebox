@@ -428,8 +428,8 @@ private struct DesktopFont: ViewModifier {
     @ScaledMetric private var size: CGFloat
     let weight: Font.Weight
     let design: Font.Design
-    /// A view the iPhone shares: its own font (nil, the one it inherits)
-    /// wherever the surface is not wide.
+    /// A view the iPhone shares: its own font (nil, none) wherever the
+    /// surface is not wide.
     let isShared: Bool
     let phone: Font?
     /// Whether the surface is wide, when it knows better than its size
@@ -464,7 +464,8 @@ extension View {
 
     /// The same, in a view the iPhone shares: Linux's size where the
     /// surface is wide, the iPhone's own `phone` elsewhere, as it was (nil:
-    /// the font it inherits, untouched).
+    /// none, the system's body, for a view that had no font of its own and
+    /// no ancestor's).
     func desktopFont(_ size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default,
                      phone: Font?, wide: Bool? = nil) -> some View {
         modifier(DesktopFont(size: size, weight: weight, design: design, isShared: true, phone: phone, wide: wide))

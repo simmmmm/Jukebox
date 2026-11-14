@@ -252,15 +252,16 @@ struct TrackRow: View {
                 .lineLimit(1)
                 .foregroundStyle(isCurrent ? AnyShapeStyle(Theme.accent)
                                  : playable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+            // The iPhone's caption size, 11, not the Mac's 10.
             if library.isFavorite(track.id) {
                 Image(systemName: "heart.fill")
-                    .font(.caption2)
+                    .desktopFont(11)
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("Favorite")
             }
             if onPhone {
                 Image(systemName: "arrow.down.circle.fill")
-                    .font(.caption2)
+                    .desktopFont(11)
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("Downloaded")
             }
