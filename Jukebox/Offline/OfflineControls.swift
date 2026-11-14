@@ -6,7 +6,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 /// The bar's download control for one album, playlist or mix.
 struct OfflineDownloadButton: View {
@@ -94,7 +93,7 @@ private struct OfflineRemovalDialog: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .confirmationDialog(Text("Remove “\(name)” from this \(UIDevice.current.model)?"),
+            .confirmationDialog(Text("Remove “\(name)” from this \(Device.model)?"),
                                 isPresented: $isPresented, titleVisibility: .visible) {
                 Button("Remove Download", role: .destructive) {
                     offline.remove(reason)

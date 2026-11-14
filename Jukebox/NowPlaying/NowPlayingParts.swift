@@ -5,7 +5,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 // MARK: - Scrubber
 

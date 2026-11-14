@@ -19,7 +19,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 // StationArtCut, StationRoom, AverageColor and the cores' colours
 // (StationCore) are in ArtMeasures.swift: Linux draws from them too.

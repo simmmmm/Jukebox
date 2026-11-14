@@ -44,7 +44,6 @@
 import Combine
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 /// What the big area shows: the sleeve and its record, or in their place
 /// the lyrics or the queue, as Music swaps them.
@@ -154,7 +153,7 @@ struct NowPlayingView: View {
         }
         .onChange(of: player.errorMessage) { _, message in
             if let message {
-                UIAccessibility.post(notification: .announcement, argument: message)
+                AccessibilityNotification.Announcement(message).post()
             }
         }
         // The accent, once per cover (ImagePipeline keeps it), and D1's
@@ -678,7 +677,7 @@ struct NowPlayingView: View {
         HStack(spacing: Theme.Space.m) {
             Image(systemName: "speaker.fill")
                 .accessibilityHidden(true)
-            NowPlayingVolumeSlider()
+            VolumeControl()
                 .frame(height: 32)
             Image(systemName: "speaker.wave.3.fill")
                 .accessibilityHidden(true)
@@ -698,7 +697,7 @@ struct NowPlayingView: View {
                     .accessibilityHidden(true)
             }
             Spacer()
-            NowPlayingAirPlayButton()
+            RoutePicker()
                 .frame(width: 44, height: 44)
             Spacer()
             panelToggle(.queue, symbol: "list.bullet", onSymbol: "list.bullet", label: "Up Next")

@@ -8,15 +8,14 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 @MainActor
 final class ImagePipeline {
     static let shared = ImagePipeline()
 
-    private let memory = NSCache<NSURL, UIImage>()
+    private let memory = NSCache<NSURL, PlatformImage>()
     private let session: URLSession
-    private var inFlight: [URL: Task<UIImage?, Never>] = [:]
+    private var inFlight: [URL: Task<PlatformImage?, Never>] = [:]
 
     init() {
         let configuration = URLSessionConfiguration.default
@@ -29,26 +28,25 @@ final class ImagePipeline {
         memory.totalCostLimit = 256 << 20
     }
 
-    func cached(_ url: URL) -> UIImage? {
+    func cached(_ url: URL) -> PlatformImage? {
         memory.object(forKey: url as NSURL)
     }
 
-    func image(for url: URL) async -> UIImage? {
+    func image(for url: URL) async -> PlatformImage? {
         if let image = cached(url) { return image }
         if let task = inFlight[url] { return await task.value }
         let session = self.session
-        let task = Task<UIImage?, Never> {
+        let task = Task<PlatformImage?, Never> {
             guard let (data, response) = try? await session.data(from: url),
                   (response as? HTTPURLResponse)?.statusCode == 200,
-                  let image = UIImage(data: data) else { return nil }
-            return await image.byPreparingForDisplay() ?? image
+                  let image = PlatformImage(data: data) else { return nil }
+            return await image.preparedForDisplay()
         }
         inFlight[url] = task
         let image = await task.value
         inFlight[url] = nil
         if let image {
-            let pixels = image.size.width * image.scale * image.size.height * image.scale
-            memory.setObject(image, forKey: url as NSURL, cost: Int(pixels) * 4)
+            memory.setObject(image, forKey: url as NSURL, cost: image.pixelCount * 4)
         }
         return image
     }
@@ -75,7 +73,7 @@ final class ImagePipeline {
     /// The image drawn into 8 by 8 pixels, with high-quality interpolation,
     /// and those averaged: a cover's colour as the eye takes it in from
     /// across the room, not the colour of any one part of it.
-    static func averageColor(of image: UIImage) -> AverageColor? {
+    static func averageColor(of image: PlatformImage) -> AverageColor? {
         guard let pixels = Self.pixels(of: image, side: 8) else { return nil }
         // Premultiplied: a pixel's colour is already weighed by its alpha,
         // so the sums over the alphas' sum are the average of what shows.
@@ -116,7 +114,7 @@ final class ImagePipeline {
 
     /// The image drawn into `side` by `side` pixels, RGBA, premultiplied,
     /// with high-quality interpolation (each pixel the mean of its patch).
-    static func pixels(of image: UIImage, side: Int) -> [UInt8]? {
+    static func pixels(of image: PlatformImage, side: Int) -> [UInt8]? {
         var pixels = [UInt8](repeating: 0, count: side * side * 4)
         let drawn = pixels.withUnsafeMutableBytes { buffer -> Bool in
             guard let context = CGContext(data: buffer.baseAddress, width: side, height: side,
@@ -126,12 +124,10 @@ final class ImagePipeline {
                 return false
             }
             context.interpolationQuality = .high
-            // Drawn by UIKit, whatever backs the image; upside down in
-            // Core Graphics' coordinates, which neither an average nor a
-            // histogram minds.
-            UIGraphicsPushContext(context)
-            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
-            UIGraphicsPopContext()
+            // Drawn by UIKit (or AppKit's image as Core Graphics' on the
+            // Mac), whatever backs the image; upside down in Core Graphics'
+            // coordinates, which neither an average nor a histogram minds.
+            image.draw(into: context, rect: CGRect(x: 0, y: 0, width: side, height: side))
             return true
         }
         return drawn ? pixels : nil
@@ -155,7 +151,7 @@ struct ArtworkView: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.displayScale) private var displayScale
-    @State private var loaded: UIImage?
+    @State private var loaded: PlatformImage?
 
     init(_ artwork: Artwork?, size: CGFloat? = nil, cornerRadius: CGFloat = Theme.Radius.artwork,
          placeholder: String = "music.note") {
@@ -173,7 +169,7 @@ struct ArtworkView: View {
                 // The current url's cover first: `loaded` can still be the
                 // last one's for a moment after the artwork changes in place.
                 if let image = url.flatMap({ ImagePipeline.shared.cached($0) }) ?? loaded {
-                    Image(uiImage: image)
+                    Image(platformImage: image)
                         .resizable()
                         .scaledToFill()
                 } else {

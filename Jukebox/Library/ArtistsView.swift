@@ -174,7 +174,7 @@ struct ArtistDetailView: View {
         }
         .libraryScrolledTitle(shown.name, after: 240)
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Menu {
                     menu(shown)
                 } label: {

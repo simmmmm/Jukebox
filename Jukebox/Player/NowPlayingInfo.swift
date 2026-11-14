@@ -6,7 +6,6 @@
 import Foundation
 import JukeboxKit
 import MediaPlayer
-import UIKit
 
 final class NowPlayingInfo {
     private var info: [String: Any] = [:]
@@ -94,7 +93,7 @@ final class NowPlayingInfo {
 
     /// Made outside the main actor: the system asks for the image on its own
     /// thread, so the handler holds the image itself, not this object.
-    nonisolated private static func makeArtwork(_ image: UIImage) -> MPMediaItemArtwork {
+    nonisolated private static func makeArtwork(_ image: PlatformImage) -> MPMediaItemArtwork {
         MPMediaItemArtwork(boundsSize: image.size) { _ in image }
     }
 }

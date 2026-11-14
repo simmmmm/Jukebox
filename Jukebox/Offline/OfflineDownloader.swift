@@ -14,7 +14,9 @@
 
 import Foundation
 import JukeboxKit
+#if os(iOS)
 import UIKit
+#endif
 
 /// Which song a download is, for whom, at what quality.
 nonisolated struct OfflineDownloadTag: Codable, Sendable, Hashable {
@@ -253,8 +255,10 @@ enum OfflineBackgroundEvents {
     }
 }
 
+#if os(iOS)
 /// UIKit's delegate, for the one thing SwiftUI has no place for: the
-/// downloads' news while the app was in the background or not running.
+/// downloads' news while the app was in the background or not running. A
+/// Mac app is not woken for them; its session hands them over as it runs.
 final class JukeboxAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String,
                      completionHandler: @escaping () -> Void) {
@@ -268,3 +272,4 @@ final class JukeboxAppDelegate: NSObject, UIApplicationDelegate {
         _ = OfflineDownloader.shared
     }
 }
+#endif

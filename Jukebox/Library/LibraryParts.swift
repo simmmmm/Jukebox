@@ -258,7 +258,7 @@ struct LibraryScrolledTitle: ViewModifier {
         let limit = threshold
         return content
             .navigationTitle(isShown ? title : "")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
             .onScrollGeometryChange(for: Bool.self) { geometry in
                 geometry.contentOffset.y + geometry.contentInsets.top > limit
             } action: { _, isPast in

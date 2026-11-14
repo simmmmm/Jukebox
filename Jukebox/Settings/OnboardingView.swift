@@ -25,7 +25,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct OnboardingView: View {
     @Environment(AppModel.self) private var app
@@ -70,7 +69,7 @@ struct OnboardingView: View {
                 .scrollDismissesKeyboard(.interactively)
             }
             .background(Theme.ground.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
         }
     }
 
@@ -80,9 +79,7 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             OnboardingFields {
                 TextField("Server Address", text: $address, prompt: Text(verbatim: "music.example.com"))
-                    .keyboardType(.URL)
-                    .textContentType(.URL)
-                    .textInputAutocapitalization(.never)
+                    .urlEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.go)
                     .focused($isAddressFocused)
@@ -158,7 +155,7 @@ struct OnboardingView: View {
     private func show(_ message: String) {
         serverError = message
         // Inline text appears silently; VoiceOver is told.
-        UIAccessibility.post(notification: .announcement, argument: message)
+        AccessibilityNotification.Announcement(message).post()
     }
 
     private static func message(for error: Error, at url: URL) -> String {
@@ -241,7 +238,7 @@ private struct OnboardingAccountForm: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItem(placement: .barLeading) {
                 Button {
                     cancelQuickConnect()
                     changeServer()
@@ -314,7 +311,7 @@ private struct OnboardingAccountForm: View {
             OnboardingFields {
                 TextField("User Name", text: $username)
                     .textContentType(.username)
-                    .textInputAutocapitalization(.never)
+                    .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.next)
                     .focused($focus, equals: .username)
@@ -406,7 +403,7 @@ private struct OnboardingAccountForm: View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             OnboardingFields {
                 SecureField("API Key", text: $apiKey)
-                    .textInputAutocapitalization(.never)
+                    .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.go)
                     .focused($focus, equals: .apiKey)
@@ -572,7 +569,7 @@ private struct OnboardingAccountForm: View {
 
     private func show(_ message: String) {
         errorMessage = message
-        UIAccessibility.post(notification: .announcement, argument: message)
+        AccessibilityNotification.Announcement(message).post()
     }
 
     private static func signInMessage(for error: Error) -> String {

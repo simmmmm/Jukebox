@@ -25,7 +25,7 @@ struct AlbumsView: View {
         .navigationTitle("Albums")
         .searchable(text: $query, prompt: "Find in Albums")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Menu {
                     Picker("Sort By", selection: $sort) {
                         Text("Title").tag(LibraryAlbumSort.title)
@@ -121,12 +121,12 @@ struct AlbumDetailView: View {
             // Not when the server does not let this account download,
             // unless the album is on the phone already, to remove it.
             if offline.offersDownload(for: .album(album.id)) {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: tracks),
                                           isConfirmingRemoval: $isConfirmingRemoval)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Menu {
                     LibraryAlbumMenu(album: shown, tracks: tracks)
                 } label: {

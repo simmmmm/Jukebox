@@ -42,9 +42,9 @@ struct LibraryAddSongsSheet: View {
             }
             .listStyle(.plain)
             .navigationTitle("Add Songs")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
             // Always showing: finding the song is what the sheet is for.
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
+            .searchable(text: $query, placement: .alwaysShown,
                         prompt: "Find in Songs")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

@@ -40,9 +40,9 @@ struct RadioView: View {
         }
         .background(Theme.ground)
         .navigationTitle("Radio")
-        .navigationBarTitleDisplayMode(.large)
+        .largeTitle()
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Button {
                     isPicking = true
                 } label: {
@@ -50,7 +50,7 @@ struct RadioView: View {
                 }
                 .disabled(library.tracks.isEmpty)
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Button {
                     isShowingSettings = true
                 } label: {

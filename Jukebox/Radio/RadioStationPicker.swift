@@ -43,8 +43,8 @@ struct RadioStationPicker: View {
                 }
             }
             .navigationTitle("Start a Station")
-            .navigationBarTitleDisplayMode(.inline)
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
+            .inlineTitle()
+            .searchable(text: $query, placement: .alwaysShown,
                         prompt: "Artists, Songs, Albums, Genres")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

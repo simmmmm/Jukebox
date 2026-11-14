@@ -18,6 +18,10 @@ mkdir -p build/logs
 # build is a warning, not the job's verdict.
 mac_gates=false  # P1 sets this true once the Mac compiles
 
+# TEMPORARY, mac-p1 only: no screenshots while the Mac's port iterates.
+# Removed in the branch's last commit.
+if [[ ${GITHUB_REF_NAME:-} == mac-p1 ]]; then export SCREENSHOTS=false; fi
+
 # The newest released Xcode 26 the runner has.
 xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
 if [[ -n $xcode ]]; then sudo xcode-select -s "$xcode"; fi

@@ -64,6 +64,18 @@ final class AudioPlayer {
     }
     /// The last error, for a moment in Now Playing ("Could not play …").
     private(set) var errorMessage: String?
+    /// The listener's level, 0...1, kept across launches, as on Linux. The
+    /// Mac's slider sets it (VolumeControl); the iPhone's volume is the
+    /// phone's own, so there it stays 1. It multiplies the song's loudness
+    /// (`level(for:)`), so normalising never undoes it.
+    var volume: Double = UserDefaults.standard.object(forKey: "volume") as? Double ?? 1 {
+        didSet {
+            volume = min(1, max(0, volume))
+            UserDefaults.standard.set(volume, forKey: "volume")
+            // At once, not at the clock's next tick: a slider is being moved.
+            if let playing { engine.volume = level(for: playing.entry.track) }
+        }
+    }
 
     var server: (any MusicServer)?
     /// Set by AppModel; the radio this player asks for more.
@@ -162,7 +174,10 @@ final class AudioPlayer {
         engine.actionAtItemEnd = .advance
         // Music's own session: playback, long-form (AirPlay routes it as
         // music, not as a sound effect), on its own when the phone is silent.
+        // A Mac has no audio session: its apps simply play.
+        #if os(iOS)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
+        #endif
         observeEngine()
         observeNotifications()
         remote = RemoteCommands(player: self)
@@ -490,7 +505,9 @@ final class AudioPlayer {
         nowPlaying.clear()
         refreshRemoteFeedback()
         deliver(finished)
+        #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        #endif
     }
 
     // MARK: Editing Up Next
@@ -616,7 +633,7 @@ final class AudioPlayer {
         duration = entry.track.duration
         isSeeking = false
         pendingSeek = nil
-        engine.volume = volume(for: entry.track)
+        engine.volume = level(for: entry.track)
         preloadNext()
         publishNowPlaying()
         refreshRemoteFeedback()
@@ -689,13 +706,21 @@ final class AudioPlayer {
         return nil
     }
 
-    /// The server's loudness for the song (Jellyfin's NormalizationGain, a
-    /// Subsonic server's ReplayGain), as a volume: only ever softer, since
-    /// the engine cannot go above 1.
-    private func volume(for track: Track) -> Float {
-        guard settings.normalizeVolume, let gain = track.normalizationGain else { return 1 }
-        return Float(min(1, pow(10, gain / 20)))
+    /// The engine's one volume: the listener's level times the server's
+    /// loudness for the song (Jellyfin's NormalizationGain, a Subsonic
+    /// server's ReplayGain), which is only ever softer, since the engine
+    /// cannot go above 1.
+    private func level(for track: Track) -> Float {
+        let listener = Float(volume)
+        guard settings.normalizeVolume, let gain = track.normalizationGain else { return listener }
+        return listener * Float(min(1, pow(10, gain / 20)))
     }
+
+    #if os(macOS)
+    /// The engine, for the Mac's AirPlay picker, which routes one player's
+    /// sound rather than the system's (RoutePicker).
+    var routedPlayer: AVPlayer { engine }
+    #endif
 
     private func queueChanged() {
         preloadNext()
@@ -861,8 +886,8 @@ final class AudioPlayer {
             publishPlayback()
         }
         // Normalisation turned on or off in Settings takes effect at once.
-        let level = volume(for: playing.entry.track)
-        if engine.volume != level { engine.volume = level }
+        let wanted = level(for: playing.entry.track)
+        if engine.volume != wanted { engine.volume = wanted }
         if engine.timeControlStatus == .playing {
             if !playing.startReported {
                 reportStartIfNeeded()
@@ -959,6 +984,7 @@ final class AudioPlayer {
                 self.itemFailed(id)
             }
         })
+        #if os(iOS)
         notificationTokens.append(center.addObserver(forName: AVAudioSession.interruptionNotification,
                                                      object: nil, queue: .main) { [weak self] note in
             let type = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
@@ -976,8 +1002,10 @@ final class AudioPlayer {
                 self.routeChanged(reason: reason)
             }
         })
+        #endif
     }
 
+    #if os(iOS)
     /// A call, an alarm, Siri: paused by the system; resumed when it says
     /// so and the music was playing before.
     private func interruption(type rawType: UInt?, options rawOptions: UInt?) {
@@ -1003,9 +1031,12 @@ final class AudioPlayer {
         }
         pause()
     }
+    #endif
 
     private func activateAudioSession() {
+        #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(true)
+        #endif
     }
 
     // MARK: Telling the server and the lock screen

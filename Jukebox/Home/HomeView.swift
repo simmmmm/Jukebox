@@ -16,7 +16,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct HomeView: View {
     @Environment(LibraryStore.self) private var library
@@ -44,9 +43,9 @@ struct HomeView: View {
         // What part of the day it is, in the serif (Theme.styleNavigationBars):
         // sketch D's "Tonight" in the evening. The tab is still Home.
         .navigationTitle(RelativeDay.partOfDay())
-        .navigationBarTitleDisplayMode(.large)
+        .largeTitle()
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Button {
                     isShowingSettings = true
                 } label: {
@@ -191,7 +190,7 @@ private struct HomeOfflineNotice: View {
             ? String(localized: "Can’t reach \(serverName).")
             : String(localized: "You’re offline.")
         let still = offline.songCount > 0
-            ? String(localized: "The songs on this \(UIDevice.current.model) still play.")
+            ? String(localized: "The songs on this \(Device.model) still play.")
             : String(localized: "Showing your library from last time.")
         return "\(why) \(still)"
     }
