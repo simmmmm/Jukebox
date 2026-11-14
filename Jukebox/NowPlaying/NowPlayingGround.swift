@@ -80,7 +80,8 @@ nonisolated struct NowPlayingAnchorsKey: PreferenceKey {
 /// D1's colours for one cover: the wall as it is, for the iPhone and the
 /// iPad upright, where the top of the screen is all wall; and dark enough
 /// for white glyphs, for the iPad sideways, where the status bar runs over
-/// the wall and the floor at once.
+/// the wall and the floor at once, and for the room in a wide window, which
+/// is always dark.
 nonisolated struct NowPlayingWalls: Equatable, Sendable {
     let upright: CoverWall
     let sideways: CoverWall
@@ -153,6 +154,8 @@ struct NowPlayingGround: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.scenePhase) private var scenePhase
+    /// The room in a wide window: wide, with the title under the sleeve.
+    @Environment(\.inRoom) private var inRoom
 
     /// On the screen: Now Playing is open.
     @State private var isOnScreen = false
@@ -224,6 +227,15 @@ struct NowPlayingGround: View {
                 return
             }
             guard land?.key != key else { return }
+            // The same side on a screen of another size: a window being
+            // resized (the Mac's, the iPad's beside another app) asks at
+            // every step, and each drawing is a bitmap of up to 2900 pixels
+            // square that cancelling this task would not stop. Drawn once
+            // the size rests; the last land stays until then.
+            if land?.key.bands == key.bands {
+                try? await Task.sleep(for: .milliseconds(150))
+                guard !Task.isCancelled else { return }
+            }
             let rings = key.geometry.rings(bands: key.bands)
             let geometry = key.geometry
             let drawn = await Task.detached(priority: .userInitiated) {
@@ -302,9 +314,10 @@ struct NowPlayingGround: View {
     private static let floorBehindSleeve: CGFloat = 0.1
 
     /// Upright, the screen's width; sideways, to the controls' column, which
-    /// begins a margin before the title.
+    /// begins a margin before the title. In the room, where the title is
+    /// under the sleeve, the room's width.
     private var wallWidth: CGFloat {
-        guard wide, let title else { return size.width }
+        guard wide, !inRoom, let title else { return size.width }
         return max(0, title.minX - Theme.Space.xl)
     }
 
