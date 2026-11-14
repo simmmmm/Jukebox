@@ -53,11 +53,15 @@ struct HomeView: View {
         // has scrolled away.
         .homeTitle(RelativeDay.partOfDay(), isScrolled: isTitleScrolled)
         .toolbar {
-            ToolbarItem(placement: .barTrailing) {
-                Button {
-                    isShowingSettings = true
-                } label: {
-                    Label("Settings", systemImage: "person.crop.circle")
+            // A wide window's Settings are in the sidebar's menu, as on
+            // Linux, and the Mac's behind ⌘,.
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Button {
+                        isShowingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "person.crop.circle")
+                    }
                 }
             }
         }
