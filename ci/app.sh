@@ -15,9 +15,12 @@ cd "$(dirname "$0")/.."
 mkdir -p build/logs
 
 # The Mac compiles (run 43621164893, 14 November 2026): its build is part of
-# the job's verdict, and a [testflight] run uploads it too. False again
-# makes a red Mac build only a warning.
+# the job's verdict. False again makes a red Mac build only a warning.
 mac_gates=true
+# A [testflight] run uploads the Mac too once App Store Connect's Jukebox
+# has the macOS platform (Apps › Jukebox › + Add Platform › macOS); until
+# then it uploads the iPhone's build only.
+mac_upload=false
 
 # The newest released Xcode 26 the runner has.
 xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
@@ -172,11 +175,11 @@ if [[ $status != 0 ]] && grep -q -i "No suitable application records\|app record
   echo "::error::App Store Connect has no app with bundle ID com.tijmen.Jukebox yet: Apps › + › New App (README, TestFlight)."
 fi
 
-# Until the Mac compiles (mac_gates), a [testflight] run uploads the
-# iPhone's build only and stays green.
+# Until mac_upload, a [testflight] run uploads the iPhone's build only and
+# stays green.
 mac_status=0
-if [[ $mac_gates != true ]]; then
-  echo "::notice::The Mac is not uploaded until mac_gates is true."
+if [[ $mac_upload != true ]]; then
+  echo "::notice::The Mac is not uploaded until mac_upload is true."
 else
   # The Mac's build of the same app, to the same App Store Connect record.
   # Signed ad hoc when archived, so its sandbox entitlements are inside the
