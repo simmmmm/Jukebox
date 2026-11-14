@@ -76,14 +76,16 @@ without sound.
 GNOME's Human Interface Guidelines, with libadwaita's own widgets:
 
 - a sidebar of places that folds away in a narrow window;
-- each page with its header bar and Back;
+- each page with its header bar and Back, and the search field at the
+  header's end, the same on every page: a click in it (or typing on a
+  page) shows the Search page, which is not in the sidebar;
 - the primary menu (F10) with Preferences, Keyboard Shortcuts and About;
 - GNOME's own context menus;
 - toasts for a moment's news, a dialog before signing out;
 - header capitals on buttons and rows.
 
 Keys: Ctrl+Space plays and pauses, Ctrl+Right and Ctrl+Left skip, Ctrl+F
-searches, Ctrl+, opens Preferences, Ctrl+? shows them all.
+goes to the search field, Ctrl+, opens Preferences, Ctrl+? shows them all.
 
 GNOME's media controls (the clock's menu, the lock screen, the keyboard's
 keys) see Jukebox through MPRIS, with the cover. The Play key with nothing

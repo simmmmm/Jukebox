@@ -35,26 +35,52 @@ enum Shots {
                 try? await Task.sleep(for: .milliseconds(250))
             }
             await step("01-home", wait: 3)
+            // The pointer over Mixes: its first tile lit, › at its right
+            // edge; then moved on once, ‹ at its left too.
+            if let mixes = find(visiblePage(), { gtk_widget_has_css_class($0, "shelf") != 0 }) {
+                let tile = find(mixes, { gtk_widget_has_css_class($0, "tile") != 0 })
+                await hovering([mixes, tile], "01b-home-shelf-hover")
+                if let next = find(mixes, { gtk_widget_has_css_class($0, "shelf-arrow") != 0 && gtk_widget_get_halign($0) == GTK_ALIGN_END }) {
+                    gtk_widget_activate(next)
+                    try? await Task.sleep(for: .seconds(0.5))
+                    await hovering([mixes], "01c-home-shelf-moved")
+                }
+            }
             MainWindow.select(1)
             await step("02-radio", wait: 2)
             Pages.open(app.radio.station(for: .personal))
             await step("03-station", wait: 2)
-            MainWindow.select(4)
+            MainWindow.select(3)
             await step("04-albums", wait: 3)
+            await hovering([gridCell()], "04b-albums-hover")
             let albums = app.library.albums(sortedBy: .artist)
             if let album = albums.first {
                 Pages.open(album)
                 await step("05-album", wait: 2)
             }
             if let artist = app.library.artistsByName.first {
-                MainWindow.select(5)
+                MainWindow.select(4)
+                try? await Task.sleep(for: .seconds(2))
+                await hovering([gridCell()], "06a-artists-hover")
                 Pages.open(artist)
                 await step("06-artist", wait: 2)
             }
-            MainWindow.select(6)
+            MainWindow.select(5)
             await step("07-songs", wait: 2)
-            MainWindow.select(7)
+            MainWindow.select(6)
             await step("08-playlists", wait: 2)
+            await hovering([find(visiblePage(), { gtk_widget_has_css_class($0, "tile") != 0 })], "08a-playlists-hover")
+            // Search, through the header's field: nothing typed and nothing
+            // searched yet, then a search, then the searches kept.
+            MainWindow.showSearch()
+            await step("08b-search-empty", wait: 2)
+            SearchField.shared.text = "blue"
+            await step("08c-search-query", wait: 2)
+            SearchField.shared.remember()
+            SearchField.shared.text = "night"
+            SearchField.shared.remember()
+            SearchField.shared.text = ""
+            await step("08d-search-recents", wait: 2)
             // Music, as the designer's drawings have it (2027/notes.md):
             // Dust Windows on Home, then the panel on Up next over another
             // album's page.
@@ -74,7 +100,7 @@ enum Shots {
                 app.panel.toggle(.upNext)
                 // Albums made before the panel opened: its tiles follow the
                 // narrower page (160 at a margin of 32 at 1440).
-                MainWindow.select(4)
+                MainWindow.select(3)
                 await step("10a-albums-panel", wait: 2)
                 Pages.open(albums.first { $0.name == "Quiet Rooms" } ?? album)
                 await step("10-album-up-next", wait: 2)
@@ -94,7 +120,7 @@ enum Shots {
                 app.player.play(tracks, startingAt: tracks.firstIndex { $0.id == song.id } ?? 0,
                                 context: QueueContext(.album(albumID), title: album.name))
                 app.panel.toggle(.lyrics)
-                MainWindow.select(4)
+                MainWindow.select(3)
                 Pages.open(album)
                 try? await Task.sleep(for: .seconds(2))
                 app.player.seek(to: 1.5)
@@ -122,6 +148,38 @@ enum Shots {
             gtk_window_close(ptr(MainWindow.window))
             exit(0)
         }
+    }
+
+    /// The pointer over `widgets`, as a picture: Xvfb has no pointer, so
+    /// they are told they are under it, then told again they are not.
+    private static func hovering(_ widgets: [Widget?], _ name: String) async {
+        let lit = widgets.compactMap { $0 }
+        for widget in lit { gtk_widget_set_state_flags(widget, GTK_STATE_FLAG_PRELIGHT, 0) }
+        await step(name, wait: 0.5)
+        for widget in lit { gtk_widget_unset_state_flags(widget, GTK_STATE_FLAG_PRELIGHT) }
+    }
+
+    private static func visiblePage() -> Widget? {
+        adw_navigation_view_get_visible_page(ptr(Nav.view)).map { ptr($0) }
+    }
+
+    /// The first widget under `root`, in the order drawn, that `test` picks.
+    private static func find(_ root: Widget?, _ test: (Widget) -> Bool) -> Widget? {
+        guard let root else { return nil }
+        if test(root) { return root }
+        var child = gtk_widget_get_first_child(root)
+        while let widget = child {
+            if let found = find(widget, test) { return found }
+            child = gtk_widget_get_next_sibling(widget)
+        }
+        return nil
+    }
+
+    /// A grid's second cell (the first has the page's edge beside it).
+    private static func gridCell() -> Widget? {
+        guard let grid = find(visiblePage(), { String(cString: gtk_widget_get_css_name($0)) == "gridview" }),
+              let first = gtk_widget_get_first_child(grid) else { return nil }
+        return gtk_widget_get_next_sibling(first) ?? first
     }
 
     private static func step(_ name: String, wait seconds: Double) async {

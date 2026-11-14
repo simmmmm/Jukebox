@@ -18,11 +18,15 @@ enum Nav {
 
     /// A page: GNOME's header bar, flat on the page's ground, over the
     /// content. Its title shows only once the page's own serif title has
-    /// scrolled under it (spec §5).
+    /// scrolled under it (spec §5). At the header's end, on every page, the
+    /// search field (SearchField): "ik wil die searchbar gewoon bovenin de
+    /// vensterbar hebben" (the photographer, 14 November 2026).
     static func page(_ title: String, _ content: Widget, start: [Widget] = [], end: [Widget] = []) -> NavPage {
         let toolbar = adw_toolbar_view_new()!
         let header = adw_header_bar_new()!
         for widget in start { adw_header_bar_pack_start(ptr(header), widget) }
+        let search = SearchField.entry(typingIn: toolbar)
+        adw_header_bar_pack_end(ptr(header), search)
         for widget in end { adw_header_bar_pack_end(ptr(header), widget) }
         adw_header_bar_set_show_title(ptr(header), 0)
         if g_type_check_instance_is_a(ptr(content), gtk_scrolled_window_get_type()) != 0,
@@ -34,7 +38,14 @@ enum Nav {
         }
         adw_toolbar_view_add_top_bar(ptr(toolbar), header)
         adw_toolbar_view_set_content(ptr(toolbar), content)
-        return adw_navigation_page_new(toolbar, title)!
+        let page = adw_navigation_page_new(toolbar, title)!
+        g_object_set_data(ptr(raw(page)), "jukebox-search", raw(search))
+        return page
+    }
+
+    /// The search field in `page`'s header.
+    static func searchField(of page: NavPage) -> Widget? {
+        g_object_get_data(ptr(raw(page)), "jukebox-search").map { $0.assumingMemoryBound(to: GtkWidget.self) }
     }
 
     /// A page opened from anywhere, Now Playing too: Now Playing makes way.
@@ -314,17 +325,22 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
 // MARK: Covers
 
 /// A cover with its name 8 under it and a line under that, in a shelf or a
-/// grid: the page's tile size (192, 176 or 160), following the page.
+/// grid: the page's tile size (192, 176 or 160), following the page. Its
+/// own size in a grid's wider cell, so the hover is the tile's, not the
+/// cell's ("hover op linux gaat nog fout, op mac niet", 14 November 2026).
+/// `round`: an artist's, in a circle.
 final class Tile {
     let widget: Widget
     private let art: Art
     private let title = label("", "t15", "medium")
     private let subtitle = label("", "t13", "fact")
 
-    init() {
+    init(round: Bool = false) {
         let size = PageMeasure.shared.tile
         art = Art(size)
+        if round { art.widget.css("round") }
         widget = vbox(spacing: 0, [art.widget, title, subtitle]).size(width: size).css("grid-tile")
+            .align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_START)
         gtk_label_set_max_width_chars(ptr(title), 1)
         gtk_label_set_max_width_chars(ptr(subtitle), 1)
         title.expand(horizontal: true)
@@ -407,15 +423,68 @@ func tileButton(_ content: Widget, action: @escaping @MainActor () -> Void) -> W
 }
 
 /// Tiles 24 apart in a row that runs on past the page's edge (tells.md 8).
+/// No scrollbar: it crossed the tiles' words ("kun je hier een mooiere
+/// oplossing vinden voor de scrollbar", 14 November 2026). The wheel, the
+/// touchpad and a drag scroll it; under the pointer, ‹ and › at its edges,
+/// each only while there is more that way, as on the Mac.
 func shelf(_ tiles: [Widget]) -> Widget {
     // Room for the tiles' hover, which reaches 8 past them; the shelf's
     // CSS gives it back, so the tiles sit on the page's grid.
     let row = hbox(spacing: 24, tiles).margins(horizontal: 8, vertical: 8)
-    let scroller = scrolled(row, horizontal: true).css("shelf")
-    gtk_scrolled_window_set_overlay_scrolling(ptr(scroller), 1)
+    let scroller = scrolled(row, horizontal: true)
+    gtk_scrolled_window_set_policy(ptr(scroller), GTK_POLICY_EXTERNAL, GTK_POLICY_NEVER)
     // Grab and drag it sideways with the mouse (CGlue's jb_drag_to_scroll).
     jb_drag_to_scroll(scroller)
-    return scroller
+    let adjustment = gtk_scrolled_window_get_hadjustment(ptr(scroller))!
+    // A click moves on by what shows less one tile, in 300 ms, easing out
+    // (at once where the desktop asks for no animations), to a tile's edge
+    // at the page's margin, as the Mac's shelf snaps to its tiles.
+    let glide = adw_timed_animation_new(scroller, 0, 0, 300, adw_property_animation_target_new(ptr(adjustment), "value"))!
+    adw_timed_animation_set_easing(ptr(glide), ADW_EASE_OUT_CUBIC)
+    func arrow(_ icon: String, _ way: Double) -> Widget {
+        let button = gtk_button_new_from_icon_name(icon)!.css("shelf-arrow")
+        // The tiles are the keys' way along a shelf; the arrows the pointer's.
+        gtk_widget_set_focusable(button, 0)
+        on(button, "clicked") {
+            let value = gtk_adjustment_get_value(adjustment), page = gtk_adjustment_get_page_size(adjustment)
+            // Tile n sits at the margin at n steps of a tile and its 24.
+            let tile = Double(PageMeasure.shared.tile), step = tile + 24
+            let index = way > 0 ? max(((value + page - tile) / step).rounded(.down), (value / step).rounded(.down) + 1)
+                : min(((value - page + tile) / step).rounded(.up), (value / step).rounded(.up) - 1)
+            adw_timed_animation_set_value_from(ptr(glide), value)
+            adw_timed_animation_set_value_to(ptr(glide), min(max(0, index * step), gtk_adjustment_get_upper(adjustment) - page))
+            adw_animation_play(glide)
+        }
+        return button
+    }
+    let back = arrow("go-previous-symbolic", -1).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_START)
+    let next = arrow("go-next-symbolic", 1).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_START)
+    // 8 in from the shelf's edges: the art's own edge at the page's margin.
+    gtk_widget_set_margin_start(back, 8)
+    gtk_widget_set_margin_end(next, 8)
+    let shelf = gtk_overlay_new()!.css("shelf")
+    gtk_overlay_set_child(ptr(shelf), scroller)
+    gtk_overlay_add_overlay(ptr(shelf), back)
+    gtk_overlay_add_overlay(ptr(shelf), next)
+    // Shown (CSS fades it in under the pointer) and clickable only while
+    // there is more that way.
+    func follow() {
+        let value = gtk_adjustment_get_value(adjustment)
+        let end = gtk_adjustment_get_upper(adjustment) - gtk_adjustment_get_page_size(adjustment)
+        for (button, more) in [(back, value > 0.5), (next, value < end - 0.5)] {
+            if more { gtk_widget_add_css_class(button, "more") } else { gtk_widget_remove_css_class(button, "more") }
+            gtk_widget_set_can_target(button, more ? 1 : 0)
+        }
+    }
+    on(raw(adjustment), "value-changed") { follow() }
+    on(raw(adjustment), "changed") { follow() }
+    // Centred on the art (its top 8 into the shelf), not on the words.
+    observe(shelf) {
+        let top = 8 + (PageMeasure.shared.tile - 32) / 2
+        gtk_widget_set_margin_top(back, top)
+        gtk_widget_set_margin_top(next, top)
+    }
+    return shelf
 }
 
 /// The one filled button a screen may have, 40 tall.

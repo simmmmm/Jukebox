@@ -6,6 +6,7 @@
 import CAdw
 import Foundation
 import JukeboxKit
+import Observation
 
 // MARK: - Home
 
@@ -261,28 +262,133 @@ enum RadioPage {
 
 // MARK: - Search
 
-/// Search in the library in memory (LibraryStore.search): as you type.
+/// The search field at the end of every page's header bar, the Mac's
+/// toolbar field in GNOME's form: one text for all of them, which the
+/// Search page's results follow. A field always there rather than GNOME's
+/// usual button and search bar under the header: search is one of the
+/// app's main ways in, the HIG lets such a search stay in sight, and a bar
+/// under the header would be a second bar ("ik wil die searchbar gewoon
+/// bovenin de vensterbar hebben", the photographer, 14 November 2026).
+///
+/// The Search page is reached only through it: a click in a field (or
+/// Ctrl+F, or typing on a page) shows the Search page with its own field
+/// ready, the recent searches under it until something is typed.
+@Observable
+final class SearchField {
+    static let shared = SearchField()
+    /// What every page's field says.
+    var text = ""
+    /// The last eight searches, newest first: what was typed, not what it
+    /// found, so one typed again finds what the library has now.
+    private(set) var recents: [String] = []
+    /// The Search page's own field, the one typed in.
+    @ObservationIgnored var home: Widget?
+
+    /// A page's field. `page`: typing there, outside a field, goes into it.
+    static func entry(typingIn page: Widget) -> Widget {
+        let entry = gtk_search_entry_new()!
+        gtk_search_entry_set_placeholder_text(ptr(entry), "Search")
+        // As wide as 24 characters where the header has room; it gives way
+        // to the header's least in a narrow window.
+        gtk_editable_set_width_chars(ptr(entry), 4)
+        gtk_editable_set_max_width_chars(ptr(entry), 24)
+        gtk_search_entry_set_key_capture_widget(ptr(entry), page)
+        gtk_widget_set_valign(entry, GTK_ALIGN_CENTER)
+        observe(entry) {
+            let text = shared.text
+            guard String(cString: gtk_editable_get_text(ptr(entry))) != text else { return }
+            gtk_editable_set_text(ptr(entry), text)
+            gtk_editable_set_position(ptr(entry), -1)
+        }
+        // Only the field that shows is listened to: the others are being
+        // told the text, not typed in.
+        on(entry, "search-changed") {
+            guard gtk_widget_get_mapped(entry) != 0 else { return }
+            let typed = String(cString: gtk_editable_get_text(ptr(entry)))
+            guard typed != shared.text else { return }
+            shared.text = typed
+            if entry != shared.home && !typed.isEmpty { MainWindow.showSearch() }
+        }
+        // Enter keeps the search among the recent ones; Escape clears it.
+        on(entry, "activate") { shared.remember() }
+        on(entry, "stop-search") { gtk_editable_set_text(ptr(entry), "") }
+        // A click in another page's field is a click in the Search page's;
+        // the field's own ✕ still clears it where it is.
+        let click = gtk_gesture_click_new()!
+        gtk_event_controller_set_propagation_phase(ptr(click), GTK_PHASE_CAPTURE)
+        on(raw(click), "pressed") {
+            guard entry != shared.home else { return }
+            var x = 0.0, y = 0.0
+            gtk_gesture_get_point(ptr(click), gtk_gesture_single_get_current_sequence(ptr(click)), &x, &y)
+            if let picked = gtk_widget_pick(entry, x, y, GTK_PICK_DEFAULT),
+               String(cString: gtk_widget_get_css_name(picked)) == "image" { return }
+            gtk_gesture_set_state(ptr(click), GTK_EVENT_SEQUENCE_CLAIMED)
+            // After the click: its page may be the one replaced.
+            Task { MainWindow.showSearch() }
+        }
+        gtk_widget_add_controller(entry, ptr(click))
+        return entry
+    }
+
+    /// The Search page's field, with the keys and the text's end.
+    func focus() {
+        guard let home else { return }
+        gtk_widget_grab_focus(home)
+        gtk_editable_set_position(ptr(home), -1)
+    }
+
+    // The recent searches as the iPhone keeps them (SearchView's
+    // SearchRecents): one list per user, in UserDefaults, which Linux
+    // keeps in its settings file (DefaultsFile).
+    private var key: String { "recentSearches." + (app.credentials?.userID ?? "") }
+
+    func loadRecents() {
+        let saved = UserDefaults.standard.stringArray(forKey: key) ?? []
+        if saved != recents { recents = saved }
+    }
+
+    /// The text, on top: a result opened from it, or Enter. The same
+    /// search typed differently ("radiohead", "Radiohead") is kept once.
+    func remember() {
+        let term = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !term.isEmpty else { return }
+        var terms = recents.filter { $0.compare(term, options: [.caseInsensitive, .diacriticInsensitive]) != .orderedSame }
+        terms.insert(term, at: 0)
+        recents = Array(terms.prefix(8))
+        UserDefaults.standard.set(recents, forKey: key)
+    }
+
+    func clearRecents() {
+        recents = []
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+}
+
+/// Search in the library in memory (LibraryStore.search), following the
+/// header's field; the same page as the Mac's and the iPad's. Nothing
+/// typed: the recent searches. Typed: artists, albums, playlists and
+/// songs, each only when something matches.
 enum SearchPage {
     static func make() -> Widget {
-        let entry = gtk_search_entry_new()!
-        gtk_search_entry_set_placeholder_text(ptr(entry), "Artists, albums, songs, playlists")
-        gtk_widget_set_margin_top(entry, 24)
-        let results = vbox().css("group")
-        let column = vbox([entry, results])
+        let content = vbox().css("group")
+        let column = vbox([pageTitle("Search"), content])
         // Counted once a search, when the typing first rests (docs/STATS.md);
         // a field emptied is the next search.
         var isCounted = false
         var counting: Task<Void, Never>?
-        on(entry, "search-changed") {
-            let term = String(cString: gtk_editable_get_text(ptr(entry))).trimmingCharacters(in: .whitespaces)
-            clear(results)
+        observe(content) {
+            let term = SearchField.shared.text.trimmingCharacters(in: .whitespaces)
+            clear(content)
             defer { measure(column) }
             counting?.cancel()
             guard !term.isEmpty else {
                 isCounted = false
+                recents(in: content)
                 return
             }
-            let found = app.library.search(term, limit: 12)
+            // Not the recents here: keeping one would make the results
+            // again under the click that kept it.
+            let found = app.library.search(term, limit: 20)
             let count = found.artists.count + found.albums.count + found.tracks.count + found.playlists.count
             if !isCounted {
                 counting = Task {
@@ -293,30 +399,58 @@ enum SearchPage {
                 }
             }
             if found.isEmpty {
-                append(emptyLine("Nothing in your library matches “\(term)”. Try part of a title or a name."), to: results)
+                append(emptyLine("Nothing found for “\(term)”."), to: content)
                 return
             }
+            // A result opened keeps the search among the recent ones.
+            func remembering(_ tile: Widget) -> Widget {
+                on(tile, "clicked") { SearchField.shared.remember() }
+                return tile
+            }
             if !found.artists.isEmpty {
-                append(sectionTitle("Artists"), to: results)
-                append(shelf(found.artists.map(LibraryPages.artistTile)), to: results)
+                append(sectionTitle("Artists"), to: content)
+                append(shelf(found.artists.map { remembering(LibraryPages.artistTile($0, round: true)) }), to: content)
             }
             if !found.albums.isEmpty {
-                append(sectionTitle("Albums"), to: results)
-                append(shelf(found.albums.map { albumTile($0) }), to: results)
+                append(sectionTitle("Albums"), to: content)
+                append(shelf(found.albums.map { remembering(albumTile($0)) }), to: content)
             }
             if !found.playlists.isEmpty {
-                append(sectionTitle("Playlists"), to: results)
-                append(shelf(found.playlists.map(LibraryPages.playlistTile)), to: results)
+                append(sectionTitle("Playlists"), to: content)
+                append(shelf(found.playlists.map { remembering(LibraryPages.playlistTile($0)) }), to: content)
             }
             if !found.tracks.isEmpty {
-                append(sectionTitle("Songs"), to: results)
-                let list = trackList(found.tracks, context: { QueueContext(.search, title: "Search") })
-                append(list.widget, to: results)
+                append(sectionTitle("Songs", below: 8), to: content)
+                let list = trackList(Array(found.tracks.prefix(20)), context: { QueueContext(.search, title: "Search") },
+                                     subtitle: { [$0.artistLine, $0.albumName ?? ""].filter { !$0.isEmpty }.joined(separator: " · ") })
+                on(list.widget, "activate") { SearchField.shared.remember() }
+                append(list.widget, to: content)
             }
         }
-        // The place is for typing: the field has the keys when it shows.
-        on(entry, "map") { gtk_widget_grab_focus(entry) }
         return pageColumn(column)
+    }
+
+    /// The recent searches, newest first, each a plain row that searches
+    /// it again; Clear at their heading's end. None yet: what to search.
+    private static func recents(in content: Widget) {
+        let recents = SearchField.shared.recents
+        guard !recents.isEmpty else {
+            append(emptyLine("Search your artists, albums, songs and playlists."), to: content)
+            return
+        }
+        let heading = sectionTitle("Recent searches", below: 8)
+        let clear = button("Clear", "flat", "plain", "t15", "fact") { SearchField.shared.clearRecents() }
+        append(clear.expand(horizontal: true).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER), to: heading)
+        append(heading, to: content)
+        for term in recents {
+            let row = gtk_button_new()!.css("flat", "recent")
+            gtk_button_set_child(ptr(row), label(term, "t15"))
+            on(row, "clicked") {
+                SearchField.shared.text = term
+                SearchField.shared.focus()
+            }
+            append(row, to: content)
+        }
     }
 }
 
@@ -413,7 +547,7 @@ enum LibraryPages {
             }
             if !artists.isEmpty {
                 append(sectionTitle("Artists"), to: content)
-                append(shelf(artists.map(artistTile)), to: content)
+                append(shelf(artists.map { artistTile($0) }), to: content)
             }
             if !albums.isEmpty {
                 append(sectionTitle("Albums"), to: content)
@@ -427,8 +561,8 @@ enum LibraryPages {
         return pageColumn(column)
     }
 
-    static func artistTile(_ artist: Artist) -> Widget {
-        let tile = Tile()
+    static func artistTile(_ artist: Artist, round: Bool = false) -> Widget {
+        let tile = Tile(round: round)
         tile.show(artist.artwork, artist.name, "")
         let button = tileButton(tile.widget) { Pages.open(artist) }
         contextMenu(on: button) {
@@ -450,16 +584,19 @@ enum LibraryPages {
     /// as well, and Artists' title (pageTitle alone, not in a row) sat 24
     /// higher than every other page's — "artists heeft opeens een andere
     /// pagina container als de andere?" (14 November 2026).
+    /// A grid's tiles light 8 past their art inside their cells (Style's
+    /// `.grid-tile`), so the grid starts 8 sooner, left and top, and its
+    /// cells' 16 past the art end in the margin at the right.
     private static func listPage(_ heading: Widget, _ list: Widget, grid: Bool) -> Widget {
         let scroller = scrolled(list).expand(vertical: true)
-        gtk_widget_set_margin_top(scroller, 24)
+        gtk_widget_set_margin_top(scroller, grid ? 16 : 24)
         let column = vbox([heading, scroller])
         observe(column) {
             let margin = PageMeasure.shared.margin
             gtk_widget_set_margin_start(heading, margin)
             gtk_widget_set_margin_end(heading, margin)
-            gtk_widget_set_margin_start(list, margin)
-            gtk_widget_set_margin_end(list, grid ? margin - 24 : margin)
+            gtk_widget_set_margin_start(list, grid ? margin - 8 : margin)
+            gtk_widget_set_margin_end(list, grid ? margin - 16 : margin)
         }
         return column
     }

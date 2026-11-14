@@ -24,12 +24,15 @@ enum MainWindow {
     private static var playlists: [Playlist] = []
     private static var playlistRows: [Widget] = []
 
+    /// The Search page, reached through the header's field alone (SearchField):
+    /// "de search pagina mag uit het menu" (14 November 2026).
+    private static var searchPage: NavPage?
+
     /// The sidebar's places with their icons (spec §4), in order; nil is a
     /// gap between the two groups. Radio's is the mark's template cut.
     private static let sections: [(String, String, () -> Widget)?] = [
         ("Home", "go-home-symbolic", HomePage.make),
         ("Radio", Glyphs.name("radio"), RadioPage.make),
-        ("Search", "system-search-symbolic", SearchPage.make),
         nil,
         ("Albums", "media-optical-symbolic", LibraryPages.albums),
         ("Artists", "avatar-default-symbolic", LibraryPages.artists),
@@ -75,7 +78,7 @@ enum MainWindow {
             if let message = app.player.errorMessage { toast(message) }
         }
         action(application, "quit", "<Control>q") { gtk_window_close(ptr(window)) }
-        action(application, "search", "<Control>f") { if app.phase == .signedIn { select(2) } }
+        action(application, "search", "<Control>f") { showSearch() }
         action(application, "play", "<Control>space") { app.player.togglePlayPause() }
         action(application, "next", "<Control>Right") { app.player.next() }
         action(application, "previous", "<Control>Left") { app.player.previous() }
@@ -120,8 +123,34 @@ enum MainWindow {
 
     /// Signed out: the pages made for that account go.
     static func forgetPages() {
-        for page in pages.values { g_object_unref(raw(page)) }
+        for page in pages.values + [searchPage].compactMap({ $0 }) { g_object_unref(raw(page)) }
         pages = [:]
+        searchPage = nil
+        SearchField.shared.home = nil
+        SearchField.shared.text = ""
+    }
+
+    /// The Search page, with its field's keys: a click in any page's field,
+    /// Ctrl+F, or typing on a page. Made once and kept, as a place is.
+    static func showSearch() {
+        guard app.phase == .signedIn else { return }
+        // Over the Search page too, Now Playing makes way.
+        NowPlayingPage.close()
+        SearchField.shared.loadRecents()
+        if searchPage == nil {
+            let page = Nav.page("Search", SearchPage.make(), start: [sidebarButton()])
+            g_object_ref_sink(raw(page))
+            searchPage = page
+            SearchField.shared.home = Nav.searchField(of: page)
+        }
+        if adw_navigation_view_get_visible_page(ptr(Nav.view)) != searchPage {
+            Nav.show(searchPage!)
+            // No place in the sidebar is the one shown.
+            gtk_list_box_unselect_all(ptr(places))
+            if adw_overlay_split_view_get_collapsed(ptr(split)) != 0 { adw_overlay_split_view_set_show_sidebar(ptr(split), 0) }
+            Stats.track(.screen, ["name": "search"])
+        }
+        SearchField.shared.focus()
     }
 
     static func select(_ index: Int) {

@@ -78,22 +78,39 @@ enum Style {
         /* One radius, for artwork (tells.md 6). */
         .artwork { border-radius: 6px; background-color: alpha(currentColor, 0.08); }
         .artwork-empty { opacity: 0.35; }
+        /* An artist's, in a circle (Search's artists). */
+        .artwork.round { border-radius: 9999px; }
         /* Rows on the ground, not cards (tells.md 6). */
         gridview, listview { background: none; }
         /* A tile's content sits on the page's grid; its hover reaches 8
-           past it, so the button's padding is given back as margin. */
-        button.tile { padding: 8px; margin: -8px; background: none; box-shadow: none; font-weight: inherit; }
+           past it, so the button's padding is given back as margin. Its
+           corners concentric with the art's: 6 and 8. */
+        button.tile { padding: 8px; margin: -8px; border-radius: 14px; background: none; box-shadow: none; font-weight: inherit; }
         button.tile:hover { background-color: alpha(currentColor, 0.07); }
-        scrolledwindow.shelf { margin: -8px 0 -8px -8px; }
-        /* A grid's cell is wider than its tile, so GTK's own hover on the
-           cell stood beside the tile ("de hover hier is fucking raar", 14
-           November 2026): the cell shows nothing, the tile itself lights,
-           8 past it as on a shelf. */
-        gridview > child { padding: 0 24px 24px 0; background: none; }
+        overlay.shelf { margin: -8px 0 -8px -8px; }
+        /* A shelf's ‹ and ›: 32 round on the raised ground, fading in
+           under the pointer while there is more that way. */
+        button.shelf-arrow {
+          min-width: 32px; min-height: 32px; padding: 0; border-radius: 9999px;
+          background-color: alpha(\(raised), 0.9); box-shadow: 0 1px 4px alpha(black, 0.24);
+          opacity: 0; transition: opacity 200ms ease-out;
+        }
+        overlay.shelf:hover button.shelf-arrow.more { opacity: 1; }
+        button.shelf-arrow:hover { background-color: \(raised); }
+        /* A grid's cell is wider than its tile, so a hover on the cell
+           stood beside the tile ("hover op linux gaat nog fout, op mac
+           niet", 14 November 2026): the cell shows nothing, the tile its
+           own size lights, 8 past its art on every side, inside the cell
+           (which clips). The cell's 8 and the tile's 16 are the 24 between
+           arts; LibraryPages.listPage gives the 8 back at the edges. */
+        gridview > child { padding: 0 8px 8px 0; background: none; }
         gridview > child:hover, gridview > child:selected { background: none; }
-        gridview > child > .grid-tile { padding: 8px; margin: -8px; border-radius: 12px; }
+        gridview > child > .grid-tile { padding: 8px; border-radius: 14px; }
         gridview > child:hover > .grid-tile { background-color: alpha(currentColor, 0.07); }
         flowboxchild { padding: 0; }
+        /* Search's recent searches: plain rows of 40, their hover past the
+           margin; Clear quiet beside their heading. */
+        button.recent { min-height: 40px; padding: 0 8px; margin: 0 -8px; font-weight: inherit; }
         /* Songs' rows: 48 (64 with a cover), their hover past the margin. */
         /* min-width: an empty list's least stays 0 under its -16 of margin. */
         listview.rows { margin: 0 -8px; min-width: 16px; }
