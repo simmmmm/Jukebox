@@ -56,7 +56,7 @@ enum TestServers {
     }
 }
 
-@Suite("Servers: the contract, on every test server", .serialized, .enabled(if: !TestServers.available.isEmpty))
+@Suite("Servers: the contract, on every test server", .serialized, .timeLimit(.minutes(1)), .enabled(if: !TestServers.available.isEmpty))
 struct ServerContractTests {
     // MARK: The library
 

@@ -52,7 +52,7 @@ struct PlayStateWindowTests {
     }
 }
 
-@Suite("Play state: saved by one device, read by another", .serialized, .enabled(if: !TestServers.available.isEmpty))
+@Suite("Play state: saved by one device, read by another", .serialized, .timeLimit(.minutes(1)), .enabled(if: !TestServers.available.isEmpty))
 struct PlayStateServerTests {
     @Test("What is saved comes back: the songs, the current one, the position, the device",
           arguments: TestServers.available)

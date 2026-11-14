@@ -11,4 +11,8 @@ dev/navidrome-test-server.sh
 # real servers at once never finished — Linux's URLSession stopped answering
 # all of them (run 51, 9 November 2026: they hung from the ninth minute until
 # the job ran out its 30); one at a time, the whole suite takes 2.5 minutes.
-dev/kit-test.sh --no-parallel
+# A hang ends the job after ten minutes rather than thirty: a test that
+# talks to a server has a minute (.timeLimit), and its name is in the log
+# then, but a thread that is stuck keeps the tests from ending on their own
+# (14 November 2026: Linux's URLSession deadlocked, HTTPTransport.swift).
+timeout 10m dev/kit-test.sh --no-parallel

@@ -57,7 +57,7 @@ final class AddressFake: HTTPTransport, @unchecked Sendable {
     static func refused() throws -> HTTPResponse { throw URLError(.cannotConnectToHost) }
 }
 
-@Suite("Servers: which server is at an address")
+@Suite("Servers: which server is at an address", .timeLimit(.minutes(1)))
 struct ServerAddressTests {
     static let identity = ClientIdentity(clientName: "Jukebox", clientVersion: "1.0", deviceName: "Test",
                                          deviceID: "test-device")
@@ -231,6 +231,33 @@ struct ServerAddressTests {
             url.path.hasPrefix("/rest/") ? AddressFake.navidrome(url) : AddressFake.jellyfin(url)
         }
         #expect(try await MusicServers.detect("http://box:8096", identity: Self.identity, transport: one).kind == .jellyfin)
+    }
+
+    /// Detection cancels the addresses that lost, and on Linux a request
+    /// cancelled just as it ends deadlocked URLSession (HTTPTransport.swift):
+    /// so did this, within its first 200 rounds, against a port that
+    /// refuses at once. 1000 rounds take a quarter of a second.
+    @Test("Requests cancelled just as they are refused end, refused or cancelled")
+    func cancelledAsRefused() async {
+        let refused = URLRequest(url: URL(string: "http://127.0.0.1:1/")!)
+        for _ in 0..<1000 {
+            await withTaskGroup(of: Void.self) { group in
+                for _ in 0..<6 {
+                    group.addTask {
+                        do {
+                            _ = try await URLSessionTransport().send(refused)
+                            Issue.record("an answer from port 1")
+                        } catch let error as URLError {
+                            #expect(error.code == .cannotConnectToHost || error.code == .cancelled, "\(error.code)")
+                        } catch {
+                            Issue.record(error)
+                        }
+                    }
+                }
+                await group.next()
+                group.cancelAll()
+            }
+        }
     }
 
     // MARK: The real servers

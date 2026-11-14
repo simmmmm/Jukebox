@@ -11,7 +11,7 @@ import FoundationNetworking
 import Testing
 @testable import JukeboxKit
 
-@Suite("Offline: downloads from the real server", .serialized, .enabled(if: JellyfinTestServer.url != nil))
+@Suite("Offline: downloads from the real server", .serialized, .timeLimit(.minutes(1)), .enabled(if: JellyfinTestServer.url != nil))
 struct OfflineDownloadIntegrationTests {
     /// What the bytes are, by their first bytes: FLAC's "fLaC", an MP4's
     /// "ftyp" box, MP3 (ID3 tags or a frame sync with a layer) and ADTS AAC

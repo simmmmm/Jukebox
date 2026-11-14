@@ -207,7 +207,7 @@ struct ClassicalTrackTests {
     }
 }
 
-@Suite("Classical: on the test servers", .serialized, .enabled(if: !TestServers.available.isEmpty))
+@Suite("Classical: on the test servers", .serialized, .timeLimit(.minutes(1)), .enabled(if: !TestServers.available.isEmpty))
 struct ClassicalServerTests {
     /// The made-up library has two classical artists and no composer,
     /// work or movement tag: their albums are found, nothing else changes,
