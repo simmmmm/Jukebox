@@ -197,12 +197,12 @@ struct WideShell: View {
         }
         .onChange(of: navigator.searchQuery) { _, query in
             // Emptied on another place, it stays there.
-            guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
-            let wasPushed = !navigator.widePath.isEmpty
-            navigator.showSearch()
-            // Typed on a pushed page, which goes: the place's field goes
-            // on with the keys.
-            if wasPushed { isSearchFocused = true }
+            // Typed on a pushed page, which goes: the field stays in the
+            // bar with the keys, every letter in it (tried on the Mac, 15
+            // November 2026).
+            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                navigator.showSearch()
+            }
         }
         .onChange(of: navigator.searchRequests) { _, _ in
             isSearchFocused = true
