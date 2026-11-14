@@ -13,13 +13,14 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct MiniPlayer: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
+    #if os(iOS)
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    #endif
 
     init() {}
 
@@ -64,7 +65,7 @@ struct MiniPlayer: View {
             // Shown on this line silently; VoiceOver is told. Not while Now
             // Playing is open: it tells VoiceOver itself, and once is enough.
             if let message, !navigator.isNowPlayingPresented {
-                UIAccessibility.post(notification: .announcement, argument: message)
+                AccessibilityNotification.Announcement(message).post()
             }
         }
     }
@@ -201,7 +202,12 @@ struct MiniPlayer: View {
     /// Beside the minimised tab bar there is room for the title and one
     /// button only.
     private var isInline: Bool {
-        placement == .inline
+        #if os(iOS)
+        return placement == .inline
+        #else
+        // A Mac window's line under its content has room for all of it.
+        return false
+        #endif
     }
 
     private var isStation: Bool {

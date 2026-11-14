@@ -5,14 +5,19 @@
 // headphones). SwiftUI has neither, so these are the only UIKit in Now
 // Playing. Both are told they are on dark, whatever the phone's appearance:
 // Now Playing always is.
+//
+// On the Mac there is no MPVolumeView: the volume is the player's own, as
+// Music's window has it beside the system's (AudioPlayer.volume), and the
+// picker is AppKit's AVRoutePickerView, which routes one player's sound.
 
 import AVKit
 import MediaPlayer
 import SwiftUI
+#if os(iOS)
 import UIKit
 
 /// The system volume slider, alone.
-struct NowPlayingVolumeSlider: UIViewRepresentable {
+struct VolumeControl: UIViewRepresentable {
     func makeUIView(context: Context) -> NowPlayingSystemVolumeView {
         let view = NowPlayingSystemVolumeView(frame: .zero)
         // The filled part white, as Numa's slider; the rest the system's grey.
@@ -47,7 +52,7 @@ final class NowPlayingSystemVolumeView: MPVolumeView {
 }
 
 /// The AirPlay button: the system's picker of where the music plays.
-struct NowPlayingAirPlayButton: UIViewRepresentable {
+struct RoutePicker: UIViewRepresentable {
     func makeUIView(context: Context) -> AVRoutePickerView {
         let view = AVRoutePickerView(frame: .zero)
         // Grey like the lyrics and queue buttons beside it; white while
@@ -62,3 +67,36 @@ struct NowPlayingAirPlayButton: UIViewRepresentable {
 
     func updateUIView(_ uiView: AVRoutePickerView, context: Context) {}
 }
+#else
+
+/// The player's own volume, 0 to 1, kept across launches.
+struct VolumeControl: View {
+    @Environment(AudioPlayer.self) private var player
+
+    var body: some View {
+        @Bindable var player = player
+        Slider(value: $player.volume, in: 0...1) {
+            Text("Volume")
+        }
+        .labelsHidden()
+        // The filled part white, as on the iPhone.
+        .tint(.white)
+    }
+}
+
+/// The AirPlay button: AppKit's picker of where the player's sound goes.
+struct RoutePicker: NSViewRepresentable {
+    @Environment(AudioPlayer.self) private var player
+
+    func makeNSView(context: Context) -> AVRoutePickerView {
+        let view = AVRoutePickerView(frame: .zero)
+        // A plain glyph, as the buttons beside it are.
+        view.isRoutePickerButtonBordered = false
+        // On the Mac the picker routes one player, not the whole system.
+        view.player = player.routedPlayer
+        return view
+    }
+
+    func updateNSView(_ nsView: AVRoutePickerView, context: Context) {}
+}
+#endif

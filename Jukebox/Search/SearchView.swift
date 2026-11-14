@@ -259,7 +259,7 @@ private struct SearchBrowse: View {
 
     @Environment(LibraryStore.self) private var library
     @Environment(RadioController.self) private var radio
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.isWide) private var isWide
 
     init(recents: [String], pick: @escaping (String) -> Void, remove: @escaping (String) -> Void,
          clear: @escaping () -> Void) {
@@ -360,7 +360,7 @@ private struct SearchBrowse: View {
 
     /// Two across on the iPhone, as Music's categories; four on the iPad.
     private var genreColumns: [GridItem] {
-        let count = sizeClass == .regular ? 4 : 2
+        let count = isWide ? 4 : 2
         return Array(repeating: GridItem(.flexible(), spacing: Theme.Space.m), count: count)
     }
 }

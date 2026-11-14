@@ -11,10 +11,10 @@ import SwiftUI
 
 struct LibraryView: View {
     @Environment(LibraryStore.self) private var library
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
-        let recent = Array(library.recentlyAddedAlbums.prefix(sizeClass == .regular ? 16 : 12))
+        let recent = Array(library.recentlyAddedAlbums.prefix(isWide ? 16 : 12))
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 VStack(spacing: 0) {
@@ -53,7 +53,7 @@ struct LibraryView: View {
     /// Two columns on the iPhone, as Music has it; four where there is room.
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: Theme.Space.l, alignment: .top),
-              count: sizeClass == .regular ? 4 : 2)
+              count: isWide ? 4 : 2)
     }
 }
 

@@ -18,7 +18,11 @@ struct QueueView: View {
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
 
+    // The iPhone's Edit mode, for reordering and removing. A Mac's list
+    // has none: there a song is dragged to where it goes.
+    #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #endif
     /// Save as Playlist: the name in the alert's field, the one it started
     /// with, and the songs as they were when it was asked for (the radio
     /// adds more while the alert is open; the alert's count stays true).
@@ -92,7 +96,9 @@ struct QueueView: View {
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
+        #if os(iOS)
         .environment(\.editMode, $editMode)
+        #endif
         // The list fades out at its edges rather than being cut off.
         .mask {
             LinearGradient(stops: [
@@ -102,10 +108,12 @@ struct QueueView: View {
                 .init(color: .clear, location: 1),
             ], startPoint: .top, endPoint: .bottom)
         }
+        #if os(iOS)
         .onChange(of: upNext.isEmpty) { _, isEmpty in
             // Nothing left to reorder: out of Edit, or its Done would be gone.
             if isEmpty { editMode = .inactive }
         }
+        #endif
         // The confirmation, with the name to change if the listener likes,
         // as a mix's Save as Playlist asks it.
         .alert("Save as Playlist", isPresented: $isNaming) {
@@ -203,16 +211,20 @@ struct QueueView: View {
             Spacer(minLength: 0)
             if !isEmpty {
                 Button("Clear") {
+                    #if os(iOS)
                     editMode = .inactive
+                    #endif
                     player.clearUpcoming()
                 }
                 .buttonStyle(.borderless)
+                #if os(iOS)
                 Button(editMode.isEditing ? "Done" : "Edit") {
                     withAnimation {
                         editMode = editMode.isEditing ? .inactive : .active
                     }
                 }
                 .buttonStyle(.borderless)
+                #endif
             }
         }
         .font(.subheadline.weight(.semibold))

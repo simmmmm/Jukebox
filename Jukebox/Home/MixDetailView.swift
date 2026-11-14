@@ -53,7 +53,7 @@ struct MixDetailView: View {
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? mix.title : "")
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineTitle()
         // Which kinds of mix are opened (Stats): the kind, never the title.
         .countsOnce { Stats.track(.mixOpened, ["kind": mix.kind.rawValue]) }
         .onScrollGeometryChange(for: Bool.self) { geometry in
@@ -63,11 +63,11 @@ struct MixDetailView: View {
         }
         .toolbar {
             if offline.offersDownload(for: .mix(mix.id)) {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(mix: mix), isConfirmingRemoval: $isConfirmingRemoval)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Menu {
                     Section {
                         Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {

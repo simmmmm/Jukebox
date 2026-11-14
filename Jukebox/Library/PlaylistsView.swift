@@ -214,7 +214,7 @@ struct PlaylistDetailView: View {
         .libraryScrolledTitle(shown.name, after: 280)
         .toolbar {
             if !shown.isReadOnly {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .barTrailing) {
                     Button {
                         isAddingSongs = true
                     } label: {
@@ -222,20 +222,24 @@ struct PlaylistDetailView: View {
                     }
                     .disabled(entries == nil)
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                // The iPhone's Edit mode. A Mac's list has none: there a
+                // song is dragged to where it goes.
+                #if os(iOS)
+                ToolbarItem(placement: .barTrailing) {
                     // Off only while loading: after the last song is removed in
                     // edit mode, Done must still be there to leave it.
                     EditButton()
                         .disabled(entries == nil)
                 }
+                #endif
             }
             if offline.offersDownload(for: .playlist(playlist.id)) {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: tracks),
                                           isConfirmingRemoval: $isConfirmingRemoval)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Menu {
                     Section {
                         Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
@@ -513,7 +517,7 @@ struct AddToPlaylistSheet: View {
                 }
             }
             .navigationTitle("Add to Playlist")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

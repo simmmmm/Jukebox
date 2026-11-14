@@ -13,7 +13,9 @@
 // system's controls, one filled button a screen.
 
 import SwiftUI
+#if os(iOS)
 import UIKit
+#endif
 
 enum Theme {
     enum Space {
@@ -46,24 +48,18 @@ enum Theme {
     /// Aptabase package (run 22's screenshots) `Color.accentColor` drew the
     /// system's blue, though the catalog and its build setting were as
     /// before. JukeboxApp tints the whole app with this too.
-    static let accent = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0xFFB54D) : UIColor(rgb: 0xA84A17)
-    })
+    static let accent = Color(light: 0xA84A17, dark: 0xFFB54D)
 
     /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
     /// (9.9:1). Glow is a light colour: white on it would all but vanish.
-    static let onAccent = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0x2A1505) : .white
-    })
+    static let onAccent = Color(light: 0xFFFFFF, dark: 0x2A1505)
 
     /// The ground the main screens stand on, flat (tells.md, 2): warm paper,
     /// #F6F3EE, by day, as a sleeve's card stock; #121110 by night, a black
     /// with a little warmth in it. No vignette, no gradient. Lists the
     /// system draws (Settings, the library's long lists) keep the system's
     /// own grounds.
-    static let ground = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0x121110) : UIColor(rgb: 0xF6F3EE)
-    })
+    static let ground = Color(light: 0xF6F3EE, dark: 0x121110)
 
     /// The Arch's own colours (docs/BRAND.md, dev/brand/). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
@@ -83,9 +79,7 @@ enum Theme {
         static let ink = Color(rgb: 0x2A1505)
         /// The mark's core: amber (#F7A136) on light grounds, where a warm
         /// white would vanish; a warm white (#FFF1D6) on dark ones.
-        static let markCore = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark ? UIColor(rgb: 0xFFF1D6) : UIColor(rgb: 0xF7A136)
-        })
+        static let markCore = Color(light: 0xF7A136, dark: 0xFFF1D6)
 
         // Art only: the station on the air, which alone is lit.
 
@@ -105,11 +99,17 @@ enum Theme {
     /// (JukeboxApp), through UIKit's appearance proxy: SwiftUI has no
     /// modifier for the bar's own title font. The sizes follow the
     /// reader's text size (UIFontMetrics), as the system's own titles do.
+    /// A Mac window has no navigation bar to style: there the pages' own
+    /// titles are the serif ones.
     static func styleNavigationBars() {
+        #if os(iOS)
         let bar = UINavigationBar.appearance()
         bar.largeTitleTextAttributes = [.font: serifUIFont(.largeTitle)]
         bar.titleTextAttributes = [.font: serifUIFont(.body)]
+        #endif
     }
+
+    #if os(iOS)
 
     /// The system font's serif design (New York) for `style`, at the size
     /// the default text size gives it, scaled for the reader's.
@@ -119,6 +119,7 @@ enum Theme {
         let serif = base.withDesign(.serif) ?? base
         return UIFontMetrics(forTextStyle: style).scaledFont(for: UIFont(descriptor: serif, size: 0))
     }
+    #endif
 }
 
 extension Font {
@@ -228,7 +229,7 @@ struct Hairline: View {
         // a vertical line down the list (the photographer's phone, Played
         // lately: "Er zit een streep doorheen"). One pixel high, always.
         Rectangle()
-            .fill(Color(uiColor: .separator))
+            .fill(Color.separatorLine)
             // grid-ok: a hairline is one pixel.
             .frame(height: 1 / displayScale)
             .frame(maxWidth: .infinity)
@@ -310,8 +311,9 @@ extension View {
     }
 }
 
-// `nonisolated`: UIKit may ask a dynamic colour's provider for its colour
-// off the main actor, and the app's own code is on the main actor by default.
+// `nonisolated`: the system may ask a dynamic colour's provider for its
+// colour off the main actor (Color(light:dark:), Platform.swift), and the
+// app's own code is on the main actor by default.
 extension Color {
     /// An sRGB colour by its hex, as the brand board names it: 0xA84A17.
     nonisolated init(rgb: UInt32) {
@@ -320,16 +322,6 @@ extension Color {
                   green: Double((rgb >> 8) & 0xFF) / 255,
                   blue: Double(rgb & 0xFF) / 255,
                   opacity: 1)
-    }
-}
-
-extension UIColor {
-    /// UIKit's, for colours that change with the appearance.
-    nonisolated convenience init(rgb: UInt32) {
-        self.init(red: CGFloat((rgb >> 16) & 0xFF) / 255,
-                  green: CGFloat((rgb >> 8) & 0xFF) / 255,
-                  blue: CGFloat(rgb & 0xFF) / 255,
-                  alpha: 1)
     }
 }
 

@@ -81,14 +81,14 @@ struct StationDetailView: View {
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? station.title : "")
-        .navigationBarTitleDisplayMode(.inline)
+        .inlineTitle()
         .onScrollGeometryChange(for: Bool.self) { geometry in
             geometry.contentOffset.y + geometry.contentInsets.top > 300
         } action: { _, isPast in
             showsTitle = isPast
         }
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Menu {
                     Button("Save as Playlist…", systemImage: "music.note.list") {
                         askToSave()

@@ -1,8 +1,8 @@
 // The few words offline says, short enough for the mini player's one line,
 // and a list's question before a tapped song plays: is it on the phone?
 
+import Foundation
 import JukeboxKit
-import UIKit
 
 extension AudioPlayer {
     /// A song tapped in a list: offline, one that is not on the phone says
@@ -19,7 +19,7 @@ extension AudioPlayer {
 /// What offline says. First why ("You’re offline."), so the mini player's
 /// one line says it even when the rest is cut off.
 enum OfflineText {
-    static var device: String { UIDevice.current.model }
+    static var device: String { Device.model }
 
     static func notOnPhone(_ track: Track) -> String {
         String(localized: "You’re offline. “\(track.name)” isn’t on this \(device).")

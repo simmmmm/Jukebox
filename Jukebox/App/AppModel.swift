@@ -17,7 +17,6 @@ import JukeboxKit
 import Observation
 // NavigationPath, for clearing the Navigator's stacks at sign-out.
 import SwiftUI
-import UIKit
 
 @Observable
 final class AppModel {
@@ -51,7 +50,7 @@ final class AppModel {
         identity = ClientIdentity(
             clientName: "Jukebox",
             clientVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0",
-            deviceName: UIDevice.current.name,
+            deviceName: Device.name,
             deviceID: Self.deviceID()
         )
         settings = AppSettings()

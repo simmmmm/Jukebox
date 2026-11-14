@@ -6,7 +6,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
@@ -29,7 +28,7 @@ struct SettingsView: View {
                 SettingsAboutSection()
             }
             .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -82,7 +81,7 @@ private struct SettingsAccountSection: View {
                     Task { await app.signOut() }
                 }
             } message: {
-                Text("Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(UIDevice.current.model). Your music, playlists and favorites stay on the server.")
+                Text("Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(Device.model). Your music, playlists and favorites stay on the server.")
             }
         } header: {
             Text("Account")
@@ -211,7 +210,7 @@ private struct SettingsDownloadsSection: View {
             }
             Toggle(isOn: $settings.keepSongs) {
                 SettingsDetailLabel(title: "Keep Songs I Play",
-                                    detail: "Songs you play often or lately stay on this \(UIDevice.current.model), to play without a connection")
+                                    detail: "Songs you play often or lately stay on this \(Device.model), to play without a connection")
             }
             if settings.keepSongs {
                 Picker("Up To", selection: $settings.keepLimitGB) {
@@ -243,7 +242,7 @@ private struct SettingsDownloadsSection: View {
                 isConfirmingRemoveAll = true
             }
             .disabled(offline.songCount == 0 && offline.queuedCount == 0)
-            .confirmationDialog("Remove all downloads from this \(UIDevice.current.model)?",
+            .confirmationDialog("Remove all downloads from this \(Device.model)?",
                                 isPresented: $isConfirmingRemoveAll, titleVisibility: .visible) {
                 Button("Remove All Downloads", role: .destructive) {
                     offline.removeAll()
@@ -277,7 +276,7 @@ private struct SettingsDownloadsSection: View {
     /// (docs/OFFLINE.md), by a Subsonic server to MP3 at 320
     /// (SubsonicClient.downloadURL); High and Normal to AAC or MP3.
     private var qualityFooter: Text {
-        let model = UIDevice.current.model
+        let model = Device.model
         if app.credentials?.kind.isSubsonic == true {
             return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
         }
@@ -401,7 +400,7 @@ private struct SettingsLastFMSection: View {
         Section {
             TextField("API Key", text: $draft, prompt: Text("Paste your Last.fm API key"))
                 .font(.body.monospaced())
-                .textInputAutocapitalization(.never)
+                .plainTextEntry()
                 .autocorrectionDisabled()
                 .submitLabel(.done)
                 .onSubmit { check(draft, after: .zero) }
@@ -610,7 +609,7 @@ private struct SettingsHistorySection: View {
         } header: {
             Text("History")
         } footer: {
-            Text("What you play, skip and give a thumbs up or down to is how the radio and your mixes learn your taste. It stays on this \(UIDevice.current.model).")
+            Text("What you play, skip and give a thumbs up or down to is how the radio and your mixes learn your taste. It stays on this \(Device.model).")
         }
     }
 }

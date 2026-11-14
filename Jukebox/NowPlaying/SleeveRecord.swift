@@ -28,7 +28,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 // RecordLabel, and SleeveGrain's noise, are in ArtMeasures.swift: Linux
 // draws the same sleeve and label from them.

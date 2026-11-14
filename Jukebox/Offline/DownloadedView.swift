@@ -5,7 +5,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct DownloadedView: View {
     @Environment(OfflineStore.self) private var offline
@@ -59,7 +58,7 @@ struct DownloadedView: View {
                 }
             }
         }
-        .confirmationDialog(Text("Remove from this \(UIDevice.current.model)?"), isPresented: isConfirmingRemoval,
+        .confirmationDialog(Text("Remove from this \(Device.model)?"), isPresented: isConfirmingRemoval,
                             titleVisibility: .visible, presenting: pendingRemoval) { collection in
             Button("Remove “\(collection.title)”", role: .destructive) {
                 offline.remove(collection.reason)

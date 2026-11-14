@@ -1,7 +1,7 @@
 // Jukebox: the music of a Jellyfin, Navidrome or other Subsonic server on
-// the iPhone and the iPad — artists, albums, songs and playlists, playlists
-// it makes up itself, and a radio that plays on from anything and listens to
-// what is skipped.
+// the iPhone, the iPad and the Mac — artists, albums, songs and playlists,
+// playlists it makes up itself, and a radio that plays on from anything and
+// listens to what is skipped.
 
 import JukeboxKit
 import SwiftUI
@@ -9,8 +9,11 @@ import SwiftUI
 @main
 struct JukeboxApp: App {
     /// For the downloads' news while the app is in the background or not
-    /// running (Offline/OfflineDownloader.swift): UIKit's alone.
+    /// running (Offline/OfflineDownloader.swift): UIKit's alone. A Mac app
+    /// is not woken for them: its downloads go on while it runs.
+    #if os(iOS)
     @UIApplicationDelegateAdaptor(JukeboxAppDelegate.self) private var appDelegate
+    #endif
     @State private var app = AppModel()
 
     init() {
@@ -77,6 +80,9 @@ struct RootView: View {
 /// above the tab bar; tapped, Now Playing covers everything.
 struct MainTabView: View {
     @Environment(Navigator.self) private var navigator
+    #if os(macOS)
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    #endif
 
     var body: some View {
         @Bindable var navigator = navigator
@@ -104,6 +110,7 @@ struct MainTabView: View {
         }
         // On the iPad a sidebar, as Music has there; on the iPhone the tab bar.
         .tabViewStyle(.sidebarAdaptable)
+        #if os(iOS)
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
             MiniPlayer()
@@ -111,6 +118,25 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: $navigator.isNowPlayingPresented) {
             NowPlayingView()
         }
+        #else
+        // A Mac window has neither the bottom accessory nor a full-screen
+        // cover: what plays is a line under the window's content, and Now
+        // Playing covers the content, rising from it as the cover does on
+        // the iPhone. Until the desktop's own player bar and room.
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            MiniPlayer()
+                .padding(.vertical, Theme.Space.s)
+                .background(.bar)
+        }
+        .overlay {
+            if navigator.isNowPlayingPresented {
+                NowPlayingView()
+                    .transition(reduceMotion ? .opacity : .move(edge: .bottom))
+            }
+        }
+        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.4, dampingFraction: 0.9),
+                   value: navigator.isNowPlayingPresented)
+        #endif
         // The usage counts (Stats, `screen`): the tab shown first, then each
         // one chosen, Now Playing's station name to Radio too. Here, with
         // the tabs, rather than in Navigator: signing out puts the tab back
