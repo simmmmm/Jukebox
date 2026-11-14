@@ -199,6 +199,8 @@ struct ArtistTile: View {
 /// starting at the page's margin and running off the right edge, so the
 /// next tile peeks in (tells.md, 8). Wide, the tiles are 24 apart (spec §8),
 /// with room above and below for their hover, which reaches 8 past them.
+/// Under a pointer, as Linux's: no scrollbar, but ‹ and › at its ends when
+/// there is more that way, on the middle of the art. A finger swipes.
 struct Shelf<Item: Identifiable, Tile: View>: View {
     let items: [Item]
     var width: CGFloat = 160
@@ -207,21 +209,105 @@ struct Shelf<Item: Identifiable, Tile: View>: View {
     @ViewBuilder let tile: (Item) -> Tile
 
     @Environment(\.isWide) private var isWide
+    @State private var reach = ShelfReach()
+    @State private var isHovered = false
+
+    // Spelled out: the private state would make the memberwise one private.
+    init(items: [Item], width: CGFloat = 160, margin: CGFloat = Theme.margin,
+         @ViewBuilder tile: @escaping (Item) -> Tile) {
+        self.items = items
+        self.width = width
+        self.margin = margin
+        self.tile = tile
+    }
 
     var body: some View {
         let hover = isWide ? Theme.Space.s : 0
-        ScrollView(.horizontal) {
-            LazyHStack(alignment: .top, spacing: isWide ? Theme.Space.xl : Theme.Space.m) {
-                ForEach(items) { item in
-                    tile(item).frame(width: width)
+        let spacing = isWide ? Theme.Space.xl : Theme.Space.m
+        let stride = width + spacing
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal) {
+                LazyHStack(alignment: .top, spacing: spacing) {
+                    ForEach(items) { item in
+                        tile(item).frame(width: width)
+                    }
+                }
+                .scrollTargetLayout()
+                .padding(.vertical, hover)
+            }
+            .scrollIndicators(.hidden)
+            .scrollTargetBehavior(.viewAligned)
+            .contentMargins(.horizontal, margin, for: .scrollContent)
+            // Which tile is first, how many show, and is there more either
+            // way: these change a tile at a time, not with every point.
+            .onScrollGeometryChange(for: ShelfReach.self) { geometry in
+                let offset = geometry.contentOffset.x + geometry.contentInsets.leading
+                let end = geometry.contentSize.width + geometry.contentInsets.leading
+                    + geometry.contentInsets.trailing - geometry.containerSize.width
+                return ShelfReach(first: Int((offset / stride).rounded()),
+                                  shown: Int(geometry.containerSize.width / stride),
+                                  back: offset > 1,
+                                  on: offset < end - 1)
+            } action: { _, reach in
+                self.reach = reach
+            }
+            .overlay(alignment: .top) {
+                if isWide {
+                    HStack(spacing: 0) {
+                        if isHovered && reach.back {
+                            arrow("chevron.left", "Scroll Back") { step(-1, proxy) }
+                        }
+                        Spacer(minLength: 0)
+                        if isHovered && reach.on {
+                            arrow("chevron.right", "Scroll On") { step(1, proxy) }
+                        }
+                    }
+                    .padding(.horizontal, Theme.Space.s)
+                    // On the middle of the art, the tile's square top.
+                    .padding(.top, hover + width / 2 - 16)
+                    .animation(.easeInOut(duration: 0.15), value: isHovered)
+                    .animation(.easeInOut(duration: 0.15), value: reach)
                 }
             }
-            .scrollTargetLayout()
-            .padding(.vertical, hover)
         }
-        .scrollIndicators(.hidden)
-        .scrollTargetBehavior(.viewAligned)
-        .contentMargins(.horizontal, margin, for: .scrollContent)
+        .onHover { isHovered = isWide && $0 }
         .padding(.vertical, -hover)
     }
+
+    /// On by what shows less one tile, so the last one seen comes first.
+    private func step(_ direction: Int, _ proxy: ScrollViewProxy) {
+        guard !items.isEmpty else { return }
+        let target = min(max(reach.first + direction * max(1, reach.shown - 1), 0), items.count - 1)
+        withAnimation(.easeInOut(duration: 0.35)) {
+            proxy.scrollTo(items[target].id, anchor: .leading)
+        }
+    }
+
+    /// 32 round, on the ground one step up, a soft shadow.
+    private func arrow(_ symbol: String, _ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: symbol)
+                .desktopFont(13, weight: .semibold)
+                .foregroundStyle(.primary)
+                .frame(width: 32, height: 32)
+                .background {
+                    Circle()
+                        .fill(Theme.raised.opacity(0.9))
+                        .shadow(color: .black.opacity(0.2), radius: 6, y: 2)
+                }
+                .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(label)
+        .transition(.opacity)
+    }
+}
+
+/// Where a shelf is: its first tile, how many fit, and whether there is
+/// more before and after.
+private struct ShelfReach: Equatable {
+    var first = 0
+    var shown = 1
+    var back = false
+    var on = false
 }

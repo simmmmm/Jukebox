@@ -80,6 +80,24 @@ final class Navigator {
     /// Settings over the wide window on an iPad (the sidebar's menu, ⌘,).
     /// The Mac has its Settings window.
     var isSettingsPresented = false
+    /// What is typed in the wide window's one search field, in its bar
+    /// (WideShell): the Search place shows what it finds (SearchView). It
+    /// keeps its text, on any place, until it is cleared.
+    var searchQuery = ""
+    /// Return in that field: the search is kept as a recent one (SearchView).
+    var searchSubmits = 0
+    /// ⌘F: the field asked for the keys (JukeboxCommands, WideShell).
+    var searchRequests = 0
+
+    /// The Search place's own page, over Now Playing: the bar's field was
+    /// clicked into or typed in. The Search place has no row in the
+    /// sidebar; the field is its way in ("de search pagina mag uit het
+    /// menu", the photographer, 14 November 2026).
+    func showSearch() {
+        if isNowPlayingPresented { isNowPlayingPresented = false }
+        // A result opened from it: back to what was found.
+        if place != .search || !widePath.isEmpty { place = .search }
+    }
 
     /// Push `route` on the page the listener is on (the wide window's, else
     /// the tab's), closing Now Playing first.

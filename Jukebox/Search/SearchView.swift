@@ -5,12 +5,12 @@
 // Autoplay does. With nothing typed: the last searches, and the genres to
 // browse.
 //
-// In a wide window (the iPad, the Mac) Search is a place of the sidebar and
-// Linux's search page, 1:1 ("ik wil dat de linux app en de apple app 1:1 op
-// elkaar lijken", the photographer, 14 November 2026): the field at the top
-// of the page, holding the keys when the place shows; under it shelves of
-// artists, albums and playlists, then the songs, at the page's margin and
-// tile (DesktopMeasures, by the page's own width).
+// In a wide window (the iPad, the Mac) the field is the window bar's, on
+// every page ("ik wil die searchbar gewoon bovenin de vensterbar hebben",
+// the photographer, 14 November 2026), and this is the page it searches on,
+// the same as Linux's: its title; with nothing typed the recent searches;
+// with something, shelves of artists, albums and playlists, then the songs,
+// at the page's margin and tile (DesktopMeasures, by the page's own width).
 
 import JukeboxKit
 import SwiftUI
@@ -20,12 +20,9 @@ struct SearchView: View {
     @Environment(Navigator.self) private var navigator
     @Environment(\.isWide) private var isWide
 
+    /// The iPhone's field. Wide, the bar's: `navigator.searchQuery`.
     @State private var query = ""
     @State private var recents: [String] = []
-    /// Wide, the place is for typing: the field has the keys when it shows.
-    @FocusState private var isFieldFocused: Bool
-    /// The wide page's own width, for the field's margin.
-    @State private var width: CGFloat = 0
 
     init() {}
 
@@ -35,9 +32,9 @@ struct SearchView: View {
                 widePage
             } else {
                 compact
+                    .navigationTitle("Search")
             }
         }
-        .navigationTitle("Search")
         .task(id: app.credentials?.userID) {
             recents = SearchRecents.load(for: app.credentials?.userID)
         }
@@ -54,41 +51,81 @@ struct SearchView: View {
                          remove: { removed in forget(removed) },
                          clear: { clearRecents() })
         } else {
-            SearchResultsList(term: term, remember: { remember() })
+            SearchResultsList(term: term, remember: { remember(query) })
         }
     }
 
     private var compact: some View {
         content
             .searchable(text: $query, prompt: "Artists, albums, songs")
-            .onSubmit(of: .search) { remember() }
+            .onSubmit(of: .search) { remember(query) }
             // A result opened (an artist, an album, a genre…): the search
             // was worth keeping. NavigationLinks say nothing when tapped;
             // the search tab's path growing is that tap.
             .onChange(of: navigator.searchPath.count) { oldCount, newCount in
-                if newCount > oldCount { remember() }
+                if newCount > oldCount { remember(query) }
             }
     }
 
-    /// Linux's page: its search entry at the top, 24 down, at the page's
-    /// margin; what it finds under it. Its results keep the search
-    /// themselves as they open (SearchResultsList).
+    /// The page the bar's field searches on, one spec with Linux's (the
+    /// photographer, 14 November 2026). A search is kept as a recent one
+    /// when Return is pressed in the field or a result is opened.
     private var widePage: some View {
-        VStack(spacing: 0) {
-            SearchField(text: $query, isFocused: $isFieldFocused, submit: { remember() })
-                .padding(.horizontal, DesktopMeasures.page(width: Int(width)).side)
-                .padding(.top, Theme.Space.xl)
-            content
+        let typed = navigator.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        return WidePage(title: "Search") { page, _ in
+            PageTitle("Search")
+                .padding(.horizontal, page.side)
+            if typed.isEmpty {
+                recentRows(page)
+            } else {
+                SearchResultsList(term: typed, page: page, remember: { remember(navigator.searchQuery) })
+            }
         }
-        .background(Theme.ground)
-        .onPageWidth($width)
-        // Back from a result, the search stays as it was, unfocused.
-        .onAppear {
-            if query.isEmpty { isFieldFocused = true }
+        .onChange(of: navigator.searchSubmits) { _, _ in
+            remember(navigator.searchQuery)
         }
     }
 
-    private func remember() {
+    /// The last eight searches, newest first, as plain rows: one fills the
+    /// bar's field with it, and so searches. None yet: what the field is for.
+    @ViewBuilder private func recentRows(_ page: DesktopMeasures.Page) -> some View {
+        if recents.isEmpty {
+            PagePlainLine("Search your artists, albums, songs and playlists.")
+                .padding(.horizontal, page.side)
+        } else {
+            HStack(alignment: .firstTextBaseline) {
+                PageSectionTitle(String(localized: "Recent searches"), below: Theme.Space.s)
+                Spacer(minLength: Theme.Space.m)
+                Button("Clear") { clearRecents() }
+                    .buttonStyle(.plain)
+                    .desktopFont(15)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Clear Recent Searches")
+            }
+            .padding(.horizontal, page.side)
+            ForEach(recents.prefix(8), id: \.self) { term in
+                Button {
+                    navigator.searchQuery = term
+                } label: {
+                    Text(verbatim: term)
+                        .desktopFont(15)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button("Remove", systemImage: "xmark", role: .destructive) {
+                        forget(term)
+                    }
+                }
+                .padding(.horizontal, page.side)
+            }
+        }
+    }
+
+    private func remember(_ query: String) {
         let updated = SearchRecents.adding(query, to: recents)
         guard updated != recents else { return }
         recents = updated
@@ -106,92 +143,49 @@ struct SearchView: View {
     }
 }
 
-/// Linux's search entry on the page: a magnifier, the words, and a clear
-/// button once something is typed, on the ground one step up, with the
-/// system's own corners for a field. Return keeps the search.
-private struct SearchField: View {
-    @Binding var text: String
-    let isFocused: FocusState<Bool>.Binding
-    let submit: () -> Void
-
-    var body: some View {
-        HStack(spacing: Theme.Space.s) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-            TextField("Search", text: $text, prompt: Text("Artists, albums, songs, playlists"))
-                .textFieldStyle(.plain)
-                .autocorrectionDisabled()
-                .submitLabel(.search)
-                .focused(isFocused)
-                .onSubmit(submit)
-                .desktopFont(15)
-                // A search field to VoiceOver and to the screenshot walk.
-                .accessibilityAddTraits(.isSearchField)
-                .accessibilityIdentifier("search.field")
-            if !text.isEmpty {
-                Button {
-                    text = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("Clear")
-            }
-        }
-        .padding(.horizontal, Theme.Space.m)
-        .frame(height: 36)
-        .background(Color.primary.opacity(0.08), in: .rect(cornerRadius: Theme.Space.s))
-    }
-}
-
 // MARK: - Results
 
 private struct SearchResultsList: View {
     let term: String
+    /// The wide page's measures: its sections, in the page's scroll. Nil:
+    /// the iPhone's list.
+    let page: DesktopMeasures.Page?
     let remember: () -> Void
 
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
-    @Environment(\.isWide) private var isWide
     /// This search has been counted (Stats): once, when the typing first
     /// rests, not at every letter. These results go when the field is
     /// emptied, and with them this; the next search counts again.
     @State private var isCounted = false
-    /// The wide page's own width, for its measures.
-    @State private var width: CGFloat = 0
 
-    init(term: String, remember: @escaping () -> Void) {
+    init(term: String, page: DesktopMeasures.Page? = nil, remember: @escaping () -> Void) {
         self.term = term
+        self.page = page
         self.remember = remember
     }
 
     var body: some View {
         let results = library.search(term)
         Group {
-            if isWide {
-                page(results)
+            if let page {
+                sections(results, page)
             } else {
                 list(results)
-            }
-        }
-        .overlay(alignment: isWide ? .topLeading : .center) {
-            if results.isEmpty {
-                if isFirstLoad {
-                    // Nothing found because nothing is here yet, not because
-                    // the library lacks it.
-                    ContentUnavailableView("Loading Your Library", systemImage: "square.stack",
-                                           description: Text("Search finds your music once it has loaded."))
-                } else if isWide {
-                    // Linux's one plain line under the field.
-                    PagePlainLine("Nothing in your library matches “\(term)”. Try part of a title or a name.")
-                        .padding(.horizontal, DesktopMeasures.page(width: Int(width)).side)
-                } else {
-                    ContentUnavailableView.search(text: term)
-                }
+                    .overlay {
+                        if results.isEmpty {
+                            if isFirstLoad {
+                                // Nothing found because nothing is here yet, not
+                                // because the library lacks it.
+                                ContentUnavailableView("Loading Your Library", systemImage: "square.stack",
+                                                       description: Text("Search finds your music once it has loaded."))
+                            } else {
+                                ContentUnavailableView.search(text: term)
+                            }
+                        }
+                    }
             }
         }
         // How much a search finds, in buckets; never what was typed.
@@ -206,82 +200,70 @@ private struct SearchResultsList: View {
 
     // MARK: Wide
 
-    /// Linux's search page: shelves at the page's tile, the songs as every
-    /// wide page's rows, everything at the page's margin. A result opens through
-    /// the navigator, which keeps the search as it goes.
-    private func page(_ results: SearchResults) -> some View {
-        let measures = DesktopMeasures.page(width: Int(width))
-        let margin = measures.side
-        let tile = CGFloat(measures.tile)
-        return ScrollView {
-            // The spec's 40 between a page's sections.
-            VStack(alignment: .leading, spacing: 40) {
-                if !results.artists.isEmpty {
-                    pageSection("Artists", margin: margin) {
-                        Shelf(items: results.artists, width: tile, margin: margin) { artist in
-                            Button {
-                                open(.artist(artist))
-                            } label: {
-                                ArtistTile(artist: artist)
-                            }
-                            .buttonStyle(.plain)
-                            .contextMenu { artistMenu(artist) }
+    /// The wide page's: each kind only when it has matches, Artists,
+    /// Albums and Playlists as shelves at the page's tile, then at most 20
+    /// songs as every wide page's rows, all at the page's margin (one spec
+    /// with Linux's). A result opens through the navigator, which keeps the
+    /// search as it goes.
+    private func sections(_ results: SearchResults, _ page: DesktopMeasures.Page) -> some View {
+        let margin = page.side
+        let tile = CGFloat(page.tile)
+        return VStack(alignment: .leading, spacing: 0) {
+            if results.isEmpty {
+                // While the library still loads, its status.
+                PageEmptyLine("Nothing found for “\(term)”.")
+                    .padding(.horizontal, margin)
+            }
+            if !results.artists.isEmpty {
+                PageSectionTitle(String(localized: "Artists"))
+                    .padding(.horizontal, margin)
+                Shelf(items: results.artists, width: tile, margin: margin) { artist in
+                    Button {
+                        open(.artist(artist))
+                    } label: {
+                        // Round here, as an artist is in Search on Linux too.
+                        WideTile(name: artist.name, line: artist.albumCount.map { $0 == 1 ? "1 album" : "\($0) albums" }) {
+                            ArtistAvatar(artist: artist)
                         }
                     }
-                }
-                if !results.albums.isEmpty {
-                    pageSection("Albums", margin: margin) {
-                        Shelf(items: results.albums, width: tile, margin: margin) { album in
-                            Button {
-                                open(.album(album))
-                            } label: {
-                                AlbumTile(album: album)
-                            }
-                            .buttonStyle(.plain)
-                            .contextMenu { albumMenu(album) }
-                        }
-                    }
-                }
-                if !results.playlists.isEmpty {
-                    pageSection("Playlists", margin: margin) {
-                        Shelf(items: results.playlists, width: tile, margin: margin) { playlist in
-                            Button {
-                                open(.playlist(playlist))
-                            } label: {
-                                PlaylistTile(playlist: playlist)
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                if !results.tracks.isEmpty {
-                    // Songs' rows, as every wide page's (TrackRow's 64), 8
-                    // under their heading.
-                    pageSection("Songs", margin: margin, below: Theme.Space.s) {
-                        PageTrackRows(tracks: results.tracks, play: { track in
-                            startStation(from: track)
-                        })
-                        .padding(.horizontal, margin)
-                    }
+                    .buttonStyle(.plain)
+                    .contextMenu { artistMenu(artist) }
                 }
             }
-            // Linux's: a section title 40 below the field, 40 at the foot.
-            .padding(.vertical, 40)
-        }
-        .background(Theme.ground)
-        .scrollDismissesKeyboard(.immediately)
-        .onPageWidth($width)
-    }
-
-    /// A section of the wide page: its heading (PageSectionTitle) at the
-    /// page's margin, 16 above what it holds (8 above rows), as Linux's.
-    private func pageSection<Content: View>(_ title: String.LocalizationValue, margin: CGFloat,
-                                            below: CGFloat = Theme.Space.l,
-                                            @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            PageSectionTitle(String(localized: title), above: 0, below: below)
+            if !results.albums.isEmpty {
+                PageSectionTitle(String(localized: "Albums"))
+                    .padding(.horizontal, margin)
+                Shelf(items: results.albums, width: tile, margin: margin) { album in
+                    Button {
+                        open(.album(album))
+                    } label: {
+                        AlbumTile(album: album)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu { albumMenu(album) }
+                }
+            }
+            if !results.playlists.isEmpty {
+                PageSectionTitle(String(localized: "Playlists"))
+                    .padding(.horizontal, margin)
+                Shelf(items: results.playlists, width: tile, margin: margin) { playlist in
+                    Button {
+                        open(.playlist(playlist))
+                    } label: {
+                        PlaylistTile(playlist: playlist)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if !results.tracks.isEmpty {
+                // TrackRow's 64, 8 under their heading.
+                PageSectionTitle(String(localized: "Songs"), below: Theme.Space.s)
+                    .padding(.horizontal, margin)
+                PageTrackRows(tracks: Array(results.tracks.prefix(20)), play: { track in
+                    startStation(from: track)
+                })
                 .padding(.horizontal, margin)
-            content()
+            }
         }
     }
 
@@ -460,9 +442,6 @@ private struct SearchBrowse: View {
 
     @Environment(LibraryStore.self) private var library
     @Environment(RadioController.self) private var radio
-    @Environment(\.isWide) private var isWide
-    /// The page's own width, for the wide page's measures.
-    @State private var width: CGFloat = 0
 
     init(recents: [String], pick: @escaping (String) -> Void, remove: @escaping (String) -> Void,
          clear: @escaping () -> Void) {
@@ -474,8 +453,7 @@ private struct SearchBrowse: View {
 
     var body: some View {
         ScrollView {
-            // The spec's 40 between a wide page's sections.
-            VStack(alignment: .leading, spacing: isWide ? 40 : Theme.Space.xxl) {
+            VStack(alignment: .leading, spacing: Theme.Space.xxl) {
                 if !recents.isEmpty {
                     recentSection
                 }
@@ -483,12 +461,10 @@ private struct SearchBrowse: View {
                     genreSection
                 }
             }
-            // Wide, 40 under the page's field, as the results' first title.
-            .padding(.vertical, isWide ? 40 : Theme.Space.l)
+            .padding(.vertical, Theme.Space.l)
         }
         .background(Theme.ground)
         .scrollDismissesKeyboard(.immediately)
-        .onPageWidth($width)
         .overlay {
             if recents.isEmpty && library.genres.isEmpty {
                 ContentUnavailableView {
@@ -503,8 +479,7 @@ private struct SearchBrowse: View {
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: Theme.Space.s) {
             HStack(alignment: .firstTextBaseline) {
-                // SectionHeader's look, with Clear where See All would be;
-                // wide, a page's section title.
+                // SectionHeader's look, with Clear where See All would be.
                 Text("Recent searches")
                     .desktopFont(24, design: .serif, phone: .serif(.title2))
                     .accessibilityAddTraits(.isHeader)
@@ -543,22 +518,15 @@ private struct SearchBrowse: View {
                 }
             }
             .padding(.leading, margin)
-            // Wide, the rows end at the page's margin too, as Linux's do.
-            .padding(.trailing, isWide ? margin : 0)
         }
     }
 
     private var genreSection: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
-            // Wide, a page's section title at the page's margin; Genres is
-            // the sidebar's too, so no See All.
-            if isWide {
-                PageSectionTitle(String(localized: "Genres"), above: 0, below: Theme.Space.xs)
-                    .padding(.horizontal, margin)
-            } else {
-                SectionHeader("Genres", route: .genres)
-            }
-            LazyVGrid(columns: genreColumns, spacing: 0) {
+            SectionHeader("Genres", route: .genres)
+            // Two across, as Music's categories.
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Theme.Space.m), count: 2),
+                      spacing: 0) {
                 ForEach(library.genres) { genre in
                     NavigationLink(value: Route.genre(genre)) {
                         SearchGenreTile(name: genre.name)
@@ -576,23 +544,7 @@ private struct SearchBrowse: View {
         }
     }
 
-    /// The page's margin: the iPhone's, or DesktopMeasures' by the page's
-    /// own width.
-    private var margin: CGFloat {
-        isWide ? DesktopMeasures.page(width: Int(width)).side : Theme.margin
-    }
-
-    /// Two across on the iPhone, as Music's categories; wide, as many as
-    /// the page's tiles would take, so a genre is as wide as an album.
-    private var genreColumns: [GridItem] {
-        var count = 2
-        if isWide {
-            let page = DesktopMeasures.page(width: Int(width))
-            let gap = Int(Theme.Space.m)
-            count = max(2, (Int(width) - 2 * page.margin + gap) / (page.tile + gap))
-        }
-        return Array(repeating: GridItem(.flexible(), spacing: Theme.Space.m), count: count)
-    }
+    private var margin: CGFloat { Theme.margin }
 }
 
 /// A genre to browse: its name on the ground over a hairline, no tile
