@@ -366,6 +366,18 @@ walk() {
   echo "$label: $verdict; $pictures pictures"
 }
 
+# XCTest ends a walk whose app stops answering its questions for a while
+# ("Timed out while evaluating UI query": the 13-inch's walk after its first
+# picture, on the run of c617121). An iPad's walk goes once more then, while
+# there is time: signed in already, its pictures, named as Linux names its
+# own, replace the first try's. Not the iPhone's: numbered as they are taken,
+# a second try's pictures would not line up with the first's.
+walk_again() {
+  if grep -q 'Timed out while evaluating UI query' "$out/$3.log" 2> /dev/null; then
+    walk "$1" "$2" "$3-again" "$4"
+  fi
+}
+
 # A device's round: its simulator booted and made to look the same each time,
 # a first start of the app, then its walks.
 round() {
@@ -405,8 +417,14 @@ round() {
     # Linux's walk, some twenty pictures: 450 s with every wide step a skip
     # (run of da76341), and once music plays each step waits 10 to 40 s for
     # the app to be idle, so the merged walk, all its steps real, needs more.
-    ipad) walk ipad testPad ipad-dark 1080 ;;
-    ipad11) walk ipad11 testPadUpright ipad11-dark 480 ;;
+    ipad)
+      walk ipad testPad ipad-dark 1080
+      walk_again ipad testPad ipad-dark 1080
+      ;;
+    ipad11)
+      walk ipad11 testPadUpright ipad11-dark 480
+      walk_again ipad11 testPadUpright ipad11-dark 480
+      ;;
   esac
   bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1 || true
   endgroup

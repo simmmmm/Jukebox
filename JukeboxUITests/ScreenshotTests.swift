@@ -1039,13 +1039,18 @@ final class Walk {
     }
 
     /// A place of the sidebar (`place.<name>`), tapped. Folded away (an
-    /// upright iPad), the sidebar is shown first. True when it was tapped.
+    /// upright iPad: the places fold below 900 wide), the sidebar is shown
+    /// first. Held sideways it never folds, and is not asked: each question
+    /// is a snapshot of the whole window, which a busy app may not answer in
+    /// time. True when it was tapped.
     @discardableResult
     func place(_ name: String) throws -> Bool {
         let id = "place." + name
-        let row = app.descendants(matching: .any).matching(identifier: id).firstMatch
-        if !(row.waitForExistence(timeout: 3) && isHittable(row)) { showSidebar() }
-        guard let found = byID(id, timeout: 2), try tap(found, id, timeout: 1) else { return false }
+        if XCUIDevice.shared.orientation.isPortrait,
+           !app.descendants(matching: .any).matching(identifier: id).firstMatch.exists {
+            showSidebar()
+        }
+        guard let found = byID(id, timeout: 3), try tap(found, id, timeout: 1) else { return false }
         pause(2)
         return true
     }
