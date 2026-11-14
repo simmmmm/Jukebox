@@ -271,9 +271,10 @@ final class ScreenshotTests: XCTestCase {
         walk.picture("08-playlists")
 
         // Music, as Linux's walk has it: Dust Windows playing on Home, then
-        // Up Next in the panel over the albums and over another album's page.
-        // (Linux also queues two songs from elsewhere; a walk that taps has
-        // no quick way to.)
+        // Up Next in the panel over the albums and over another album's page:
+        // the first cover, Dust Parades, where Linux opens Quiet Rooms, which
+        // lies far down the grid. (Linux also queues two songs from
+        // elsewhere; a walk that taps has no quick way to.)
         if try walk.place("albums"), try walk.openAlbum("Dust Windows") {
             _ = try walk.play("Dust Windows: Play")
         }
@@ -282,7 +283,7 @@ final class ScreenshotTests: XCTestCase {
         try walk.showPanel("upNext")
         let albumsBeside = try walk.place("albums")
         walk.picture("10a-albums-panel")
-        if albumsBeside { _ = try walk.openAlbum("Quiet Rooms") }
+        if albumsBeside { _ = try walk.openAlbum(nil) }
         walk.picture("10-album-up-next")
         // Now Playing as the room, from the bar's song, Up Next beside it;
         // then its More.
@@ -297,8 +298,8 @@ final class ScreenshotTests: XCTestCase {
 
         // The panel on the words: Silver Roads begins with Night Drive, whose
         // lyrics are timed (dev/demo/lyrics.json).
-        if try walk.place("albums"), try walk.openAlbum("Silver Roads") {
-            _ = try walk.play("Silver Roads: Play")
+        if try walk.place("albums"), try walk.openAlbum("Silver Roads"), try walk.play("Silver Roads: Play") {
+            walk.waitForSong("Night Drive")
         }
         try walk.showPanel("lyrics")
         walk.picture("11-album-lyrics")
@@ -351,8 +352,8 @@ final class ScreenshotTests: XCTestCase {
         walk.waitForLibrary()
         walk.picture("01-home")
 
-        if try walk.place("albums"), try walk.openAlbum("Quiet Rooms") {
-            _ = try walk.play("Quiet Rooms: Play")
+        if try walk.place("albums"), try walk.openAlbum(nil) {
+            _ = try walk.play("The album: Play")
         }
         try walk.showPanel("upNext")
         walk.picture("10-album-up-next")
@@ -1113,14 +1114,24 @@ final class Walk {
 
     /// An album's page from the albums' grid: the cover whose label begins
     /// with `name` (a cover says "Album, Artist"), else the first cover.
+    /// The grid is lazy, a cover made only near the screen, so the walk goes
+    /// down the page until it comes, eight swipes at most.
     func openAlbum(_ name: String?) throws -> Bool {
         var cover: XCUIElement?
         if let name {
             let named = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
-            if named.waitForExistence(timeout: 4) {
+            var found = named.waitForExistence(timeout: 3)
+            for _ in 0..<8 where !found {
+                // Slowly, so that no row is flung past and let go.
+                XCTExpectFailure("A swipe of the screenshot walk", strict: false) {
+                    self.app.swipeUp(velocity: .slow)
+                }
+                found = named.waitForExistence(timeout: 1.5)
+            }
+            if found {
                 cover = named
             } else {
-                note("Albums: no cover of \(name); the first cover instead")
+                note("Albums: no cover of \(name) after eight swipes; the first on the screen instead")
             }
         }
         guard let tile = cover ?? firstTile("Albums: an album's cover") else { return false }
@@ -1142,14 +1153,28 @@ final class Walk {
         return true
     }
 
-    /// The room closed by `nowPlaying.close`; without it, as the cover is
+    /// The room closed by `nowPlaying.close`, until it is gone: a menu
+    /// still up takes the first tap for itself, and a room left open would
+    /// lie over every picture after it. Without the close, as the cover is
     /// closed on the iPhone (its Close, else a pull down).
     func closeRoom() throws {
-        if let close = byID("nowPlaying.close", timeout: 2), try tap(close, "nowPlaying.close", timeout: 1) {
-            pause(2)
+        guard let close = byID("nowPlaying.close", timeout: 2) else {
+            try closeNowPlaying()
             return
         }
-        try closeNowPlaying()
+        for _ in 0..<2 where close.exists {
+            try tap(close, "nowPlaying.close", timeout: 1)
+            pause(2)
+        }
+        if close.exists { note("Now Playing: still open after two taps of nowPlaying.close") }
+    }
+
+    /// Until the bar's song (`bar.song`, labelled with the song) is
+    /// `title`: a Play while something else plays says Pause at once.
+    func waitForSong(_ title: String) {
+        let song = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == %@ AND label CONTAINS %@", "bar.song", title)).firstMatch
+        if !song.waitForExistence(timeout: 15) { note("the bar's song was not \(title) within 15 s") }
     }
 
     /// Settings: in the wide window from the sidebar head's Main Menu, item
