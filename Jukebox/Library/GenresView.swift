@@ -182,23 +182,18 @@ struct GenreDetailView: View {
     }
 }
 
-/// A genre's art on a wide page: its own image when the server has one,
-/// else the covers of its first four albums.
+/// A genre's art on a wide page: the covers of its first four albums.
 struct LibraryGenreArt: View {
     let genre: Genre
 
     @Environment(LibraryStore.self) private var library
 
     var body: some View {
-        if let artwork = genre.artwork {
-            ArtworkView(artwork, placeholder: "guitars")
+        let covers = Array(library.albums(inGenre: genre).lazy.compactMap(\.artwork).prefix(4))
+        if covers.isEmpty {
+            ArtworkView(nil, placeholder: "guitars")
         } else {
-            let covers = Array(library.albums(inGenre: genre).lazy.compactMap(\.artwork).prefix(4))
-            if covers.isEmpty {
-                ArtworkView(nil, placeholder: "guitars")
-            } else {
-                CollageArtwork(artworks: covers)
-            }
+            CollageArtwork(artworks: covers)
         }
     }
 }
