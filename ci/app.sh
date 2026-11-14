@@ -14,13 +14,10 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/logs
 
-# The Mac is red by design until its code is ported: until then its failed
-# build is a warning, not the job's verdict.
-mac_gates=false  # P1 sets this true once the Mac compiles
-
-# TEMPORARY, mac-p1 only: no screenshots while the Mac's port iterates.
-# Removed in the branch's last commit.
-if [[ ${GITHUB_REF_NAME:-} == mac-p1 ]]; then export SCREENSHOTS=false; fi
+# The Mac compiles (run 43621164893, 14 November 2026): its build is part of
+# the job's verdict, and a [testflight] run uploads it too. False again
+# makes a red Mac build only a warning.
+mac_gates=true
 
 # The newest released Xcode 26 the runner has.
 xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
