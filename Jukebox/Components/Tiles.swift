@@ -239,11 +239,13 @@ struct Shelf<Item: Identifiable, Tile: View>: View {
             .scrollTargetBehavior(.viewAligned)
             .contentMargins(.horizontal, margin, for: .scrollContent)
             // Which tile is first, how many show, and is there more either
-            // way: these change a tile at a time, not with every point.
+            // way: these change a tile at a time, not with every point. The
+            // container is the width between the margins, as measured on
+            // the Mac (15 November 2026): the offset runs from 0 to the
+            // content's width less the container's.
             .onScrollGeometryChange(for: ShelfReach.self) { geometry in
                 let offset = geometry.contentOffset.x + geometry.contentInsets.leading
-                let end = geometry.contentSize.width + geometry.contentInsets.leading
-                    + geometry.contentInsets.trailing - geometry.containerSize.width
+                let end = geometry.contentSize.width - geometry.containerSize.width
                 return ShelfReach(first: Int((offset / stride).rounded()),
                                   shown: Int(geometry.containerSize.width / stride),
                                   back: offset > 1,

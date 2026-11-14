@@ -111,7 +111,8 @@ struct SearchView: View {
                         .desktopFont(15)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
-                        .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
+                        // 40 a row, as Linux's.
+                        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -168,7 +169,8 @@ private struct SearchResultsList: View {
     }
 
     var body: some View {
-        let results = library.search(term)
+        // Wide, 20 of each, as Linux's; the iPhone's list as it was.
+        let results = page == nil ? library.search(term) : library.search(term, limit: 20)
         Group {
             if let page {
                 sections(results, page)
@@ -200,11 +202,11 @@ private struct SearchResultsList: View {
 
     // MARK: Wide
 
-    /// The wide page's: each kind only when it has matches, Artists,
-    /// Albums and Playlists as shelves at the page's tile, then at most 20
-    /// songs as every wide page's rows, all at the page's margin (one spec
-    /// with Linux's). A result opens through the navigator, which keeps the
-    /// search as it goes.
+    /// The wide page's: each kind only when it has matches, at most 20 of
+    /// each, Artists, Albums and Playlists as shelves at the page's tile,
+    /// then the songs as every wide page's rows, all at the page's margin
+    /// (one spec with Linux's). A result opens through the navigator, which
+    /// keeps the search as it goes.
     private func sections(_ results: SearchResults, _ page: DesktopMeasures.Page) -> some View {
         let margin = page.side
         let tile = CGFloat(page.tile)
@@ -221,8 +223,8 @@ private struct SearchResultsList: View {
                     Button {
                         open(.artist(artist))
                     } label: {
-                        // Round here, as an artist is in Search on Linux too.
-                        WideTile(name: artist.name, line: artist.albumCount.map { $0 == 1 ? "1 album" : "\($0) albums" }) {
+                        // Round, and the name alone, as Linux's Search.
+                        WideTile(name: artist.name) {
                             ArtistAvatar(artist: artist)
                         }
                     }
@@ -259,7 +261,7 @@ private struct SearchResultsList: View {
                 // TrackRow's 64, 8 under their heading.
                 PageSectionTitle(String(localized: "Songs"), below: Theme.Space.s)
                     .padding(.horizontal, margin)
-                PageTrackRows(tracks: Array(results.tracks.prefix(20)), play: { track in
+                PageTrackRows(tracks: results.tracks, play: { track in
                     startStation(from: track)
                 })
                 .padding(.horizontal, margin)
