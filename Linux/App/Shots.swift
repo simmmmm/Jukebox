@@ -70,17 +70,31 @@ enum Shots {
             MainWindow.select(6)
             await step("08-playlists", wait: 2)
             await hovering([find(visiblePage(), { gtk_widget_has_css_class($0, "tile") != 0 })], "08a-playlists-hover")
-            // Search, through the header's field: nothing typed and nothing
-            // searched yet, then a search, then the searches kept.
-            MainWindow.showSearch()
+            // Search, through the header's fields themselves: Ctrl+F with
+            // nothing searched yet; typed in Playlists' field, which goes to
+            // the Search page; Enter twice; emptied, the searches kept; a
+            // kept one chosen.
+            SearchField.shared.clearRecents()
+            gtk_widget_activate_action_variant(MainWindow.window, "app.search", nil)
             await step("08b-search-empty", wait: 2)
-            SearchField.shared.text = "blue"
+            MainWindow.select(6)
+            try? await Task.sleep(for: .seconds(1))
+            if let page = adw_navigation_view_get_visible_page(ptr(Nav.view)), let field = Nav.searchField(of: page) {
+                gtk_editable_set_text(ptr(field), "blue")
+            }
             await step("08c-search-query", wait: 2)
-            SearchField.shared.remember()
-            SearchField.shared.text = "night"
-            SearchField.shared.remember()
-            SearchField.shared.text = ""
-            await step("08d-search-recents", wait: 2)
+            if let home = SearchField.shared.home {
+                enter(home)
+                gtk_editable_set_text(ptr(home), "night")
+                enter(home)
+                gtk_editable_set_text(ptr(home), "")
+                await step("08d-search-recents", wait: 2)
+                if let kept = find(visiblePage(), { gtk_widget_has_css_class($0, "recent") != 0 }) {
+                    gtk_widget_activate(kept)
+                    await step("08e-search-again", wait: 2)
+                }
+                gtk_editable_set_text(ptr(home), "")
+            }
             // Music, as the designer's drawings have it (2027/notes.md):
             // Dust Windows on Home, then the panel on Up next over another
             // album's page.
@@ -157,6 +171,15 @@ enum Shots {
         for widget in lit { gtk_widget_set_state_flags(widget, GTK_STATE_FLAG_PRELIGHT, 0) }
         await step(name, wait: 0.5)
         for widget in lit { gtk_widget_unset_state_flags(widget, GTK_STATE_FLAG_PRELIGHT) }
+    }
+
+    /// Enter in a search field: its "activate", as the key sends it.
+    private static func enter(_ field: Widget) {
+        var instance = GValue()
+        g_value_init(&instance, gtk_search_entry_get_type())
+        g_value_set_object(&instance, raw(field))
+        g_signal_emitv(&instance, g_signal_lookup("activate", gtk_search_entry_get_type()), 0, nil)
+        g_value_unset(&instance)
     }
 
     private static func visiblePage() -> Widget? {

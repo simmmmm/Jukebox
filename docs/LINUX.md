@@ -77,8 +77,8 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
 
 - a sidebar of places that folds away in a narrow window;
 - each page with its header bar and Back, and the search field at the
-  header's end, the same on every page: a click in it (or typing on a
-  page) shows the Search page, which is not in the sidebar;
+  header's end, the same on every page: a click in it (or Ctrl+F) shows
+  the Search page, which is not in the sidebar;
 - the primary menu (F10) with Preferences, Keyboard Shortcuts and About;
 - GNOME's own context menus;
 - toasts for a moment's news, a dialog before signing out;

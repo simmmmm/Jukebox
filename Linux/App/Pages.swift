@@ -294,34 +294,43 @@ final class SearchField {
         gtk_editable_set_max_width_chars(ptr(entry), 24)
         gtk_search_entry_set_key_capture_widget(ptr(entry), page)
         gtk_widget_set_valign(entry, GTK_ALIGN_CENTER)
+        // Being told: setting the text empties it first, and an empty
+        // field says so at once, which is not the listener's doing.
+        var isTold = false
         observe(entry) {
             let text = shared.text
             guard String(cString: gtk_editable_get_text(ptr(entry))) != text else { return }
+            isTold = true
             gtk_editable_set_text(ptr(entry), text)
+            isTold = false
             gtk_editable_set_position(ptr(entry), -1)
         }
-        // Only the field that shows is listened to: the others are being
-        // told the text, not typed in.
-        on(entry, "search-changed") {
-            guard gtk_widget_get_mapped(entry) != 0 else { return }
+        /// What this field says, for every field and the Search page.
+        func take() {
             let typed = String(cString: gtk_editable_get_text(ptr(entry)))
             guard typed != shared.text else { return }
             shared.text = typed
             if entry != shared.home && !typed.isEmpty { MainWindow.showSearch() }
         }
-        // Enter keeps the search among the recent ones; Escape clears it.
-        on(entry, "activate") { shared.remember() }
+        // Only the field that shows is listened to: the others are being
+        // told the text, not typed in.
+        on(entry, "search-changed") { if gtk_widget_get_mapped(entry) != 0 && !isTold { take() } }
+        // Enter keeps the search among the recent ones, with the text as it
+        // is (the typing may not have rested yet); Escape clears it.
+        on(entry, "activate") {
+            take()
+            shared.remember()
+        }
         on(entry, "stop-search") { gtk_editable_set_text(ptr(entry), "") }
         // A click in another page's field is a click in the Search page's;
-        // the field's own ✕ still clears it where it is.
+        // the field's own ✕ (its last part) still clears it where it is.
         let click = gtk_gesture_click_new()!
         gtk_event_controller_set_propagation_phase(ptr(click), GTK_PHASE_CAPTURE)
         on(raw(click), "pressed") {
             guard entry != shared.home else { return }
             var x = 0.0, y = 0.0
             gtk_gesture_get_point(ptr(click), gtk_gesture_single_get_current_sequence(ptr(click)), &x, &y)
-            if let picked = gtk_widget_pick(entry, x, y, GTK_PICK_DEFAULT),
-               String(cString: gtk_widget_get_css_name(picked)) == "image" { return }
+            if let picked = gtk_widget_pick(entry, x, y, GTK_PICK_DEFAULT), picked == gtk_widget_get_last_child(entry) { return }
             gtk_gesture_set_state(ptr(click), GTK_EVENT_SEQUENCE_CLAIMED)
             // After the click: its page may be the one replaced.
             Task { MainWindow.showSearch() }
