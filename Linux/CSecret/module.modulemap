@@ -1,0 +1,4 @@
+module CSecret [system] {
+    header "secret.h"
+    export *
+}

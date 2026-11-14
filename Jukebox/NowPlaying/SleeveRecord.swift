@@ -30,19 +30,8 @@ import JukeboxKit
 import SwiftUI
 import UIKit
 
-/// The words on the record's label: the album's title, its artist, and its
-/// disc's number when the album has more than one ("Disc 2").
-nonisolated struct RecordLabel: Equatable, Sendable {
-    let title: String
-    let artist: String
-    let disc: Int?
-
-    init(title: String, artist: String, disc: Int?) {
-        self.title = title
-        self.artist = artist
-        self.disc = disc
-    }
-}
+// RecordLabel, and SleeveGrain's noise, are in ArtMeasures.swift: Linux
+// draws the same sleeve and label from them.
 
 // MARK: - The sleeve
 
@@ -156,35 +145,15 @@ struct SleeveCard: View {
     }
 }
 
-/// Paper grain: 128 pixels of noise, each a little lighter or darker than
-/// the print under it (white or black at up to 15%), so the cover reads as
-/// ink on card, not as a screen. Made once, the same every time (its
-/// numbers come from a fixed seed), and tiled.
-enum SleeveGrain {
+/// Paper grain as an image: SleeveGrain's noise (ArtMeasures.swift), made
+/// once and tiled.
+extension SleeveGrain {
     static let image: CGImage? = make()
 
     private static func make() -> CGImage? {
-        let side = 128
-        var bytes = [UInt8](repeating: 0, count: side * side * 4)
-        var seed: UInt64 = 7
-        for i in 0..<(side * side) {
-            // Three uniforms summed: near enough a bell, around 1.5.
-            var sum = 0.0
-            for _ in 0..<3 {
-                seed = seed &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
-                sum += Double(seed >> 11) / 9_007_199_254_740_992
-            }
-            let deviation = (sum - 1.5) / 1.5
-            let alpha = UInt8((min(1, abs(deviation)) * 0.15 * 255).rounded())
-            // Premultiplied: white at `alpha` is (alpha, alpha, alpha, alpha).
-            let ink: UInt8 = deviation > 0 ? alpha : 0
-            bytes[i * 4] = ink
-            bytes[i * 4 + 1] = ink
-            bytes[i * 4 + 2] = ink
-            bytes[i * 4 + 3] = alpha
-        }
+        let pixels = bytes()
         guard let space = CGColorSpace(name: CGColorSpace.sRGB),
-              let provider = CGDataProvider(data: Data(bytes) as CFData) else { return nil }
+              let provider = CGDataProvider(data: Data(pixels) as CFData) else { return nil }
         return CGImage(width: side, height: side, bitsPerComponent: 8, bitsPerPixel: 32, bytesPerRow: side * 4,
                        space: space, bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue),
                        provider: provider, decode: nil, shouldInterpolate: false, intent: .defaultIntent)

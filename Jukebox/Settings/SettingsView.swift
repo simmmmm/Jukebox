@@ -55,7 +55,7 @@ private struct SettingsAccountSection: View {
                 // Its name, and under it which kind of server it is and its
                 // version ("Navidrome 0.64.2"): the sign-in screen's words.
                 LabeledContent {
-                    VStack(alignment: .trailing, spacing: 2) {
+                    VStack(alignment: .trailing, spacing: Theme.Space.xs) {
                         Text(verbatim: credentials.serverName)
                         Text(verbatim: ServerWords.product(credentials.kind, version: credentials.serverVersion))
                             .font(.footnote)
@@ -640,7 +640,7 @@ private struct SettingsAboutSection: View {
         Section {
             HStack(spacing: Theme.Space.m) {
                 ShellAppMark(side: 44)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("Jukebox")
                         .font(.headline)
                     Text("Made for Jellyfin, Navidrome and other Subsonic servers")
@@ -673,7 +673,7 @@ private struct SettingsDetailLabel: View {
     let detail: LocalizedStringKey
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Theme.Space.xs) {
             Text(title)
             Text(detail)
                 .font(.footnote)

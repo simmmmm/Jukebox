@@ -104,7 +104,7 @@ private struct LibraryAddSongRow: View {
         Button(action: add) {
             HStack(spacing: Theme.Space.m) {
                 ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(track.name)
                         .foregroundStyle(.primary)
                         .lineLimit(1)

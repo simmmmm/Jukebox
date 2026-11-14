@@ -29,6 +29,7 @@ enum Theme {
         /// The one radius (tells.md, 6): artwork of every size, and the one
         /// filled button. Nothing else Jukebox draws is rounded; the
         /// system's own controls keep theirs.
+        // grid-ok: the brand's one radius (docs/BRAND.md), not a distance.
         static let artwork: CGFloat = 6
     }
 
@@ -228,6 +229,7 @@ struct Hairline: View {
         // lately: "Er zit een streep doorheen"). One pixel high, always.
         Rectangle()
             .fill(Color(uiColor: .separator))
+            // grid-ok: a hairline is one pixel.
             .frame(height: 1 / displayScale)
             .frame(maxWidth: .infinity)
             .padding(.leading, inset)

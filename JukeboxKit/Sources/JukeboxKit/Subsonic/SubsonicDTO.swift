@@ -203,6 +203,7 @@ struct SubsonicBody: Decodable {
     var tokenInfo: SubsonicTokenInfo?
     var openSubsonicExtensions: [SubsonicExtension]
     var scanStatus: SubsonicScanStatus?
+    var playQueue: SubsonicPlayQueue?
 
     var isOK: Bool { status?.lowercased() == "ok" }
 
@@ -234,6 +235,7 @@ struct SubsonicBody: Decodable {
         tokenInfo = c.lenient(SubsonicTokenInfo.self, key("tokenInfo"))
         openSubsonicExtensions = c.lenientList(SubsonicExtension.self, key("openSubsonicExtensions"))
         scanStatus = c.lenient(SubsonicScanStatus.self, key("scanStatus"))
+        playQueue = c.lenient(SubsonicPlayQueue.self, key("playQueue"))
     }
 }
 
@@ -328,10 +330,23 @@ struct SubsonicChild: Decodable {
     var suffix: String?
     var trackGain: Double?
     var albumGain: Double?
+    /// OpenSubsonic: who else is credited, and Navidrome's joined composers.
+    var contributors: [SubsonicContributor]
+    var displayComposer: String?
+    /// OpenSubsonic (March 2026): the work, the movement, GROUPING, each a
+    /// list of which the first is read.
+    var work: String?
+    var movement: Movement?
+    var grouping: String?
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: SubsonicKey.self)
         func key(_ name: String) -> SubsonicKey { SubsonicKey(name) }
+        contributors = c.lenientList(SubsonicContributor.self, key("contributors"))
+        displayComposer = c.lenientString(key("displayComposer"))
+        work = c.lenientNames(key("works")).first
+        movement = c.lenientList(SubsonicMovement.self, key("movements")).lazy.compactMap(\.movement).first
+        grouping = c.lenientNames(key("groupings")).first
         id = c.lenientString(key("id"))
         isDir = c.lenientBool(key("isDir"))
         type = c.lenientString(key("type"))
@@ -357,6 +372,63 @@ struct SubsonicChild: Decodable {
         let gain = c.lenient(SubsonicReplayGain.self, key("replayGain"))
         trackGain = gain?.trackGain
         albumGain = gain?.albumGain
+    }
+}
+
+/// OpenSubsonic's Contributor: `{role, subRole?, artist: {id, name}}`.
+/// Navidrome 0.64.2 sends composer, conductor, performer (subRole the
+/// instrument, capitalised: "Violin", "Orchestra"), lyricist (measured);
+/// arranger by its mapping.
+struct SubsonicContributor: Decodable {
+    var role: String?
+    var subRole: String?
+    var artist: SubsonicNameID?
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: SubsonicKey.self)
+        role = c.lenientString(SubsonicKey("role"))
+        subRole = c.lenientString(SubsonicKey("subRole"))
+        artist = c.lenient(SubsonicNameID.self, SubsonicKey("artist"))
+    }
+
+    var credit: Credit? {
+        guard let role = role.flatMap({ Credit.Role(rawValue: $0.lowercased()) }), let ref = artist?.ref else {
+            return nil
+        }
+        let instrument = subRole?.trimmingCharacters(in: .whitespacesAndNewlines)
+        return Credit(role: role, artist: ref, instrument: instrument?.isEmpty == false ? instrument : nil)
+    }
+}
+
+/// OpenSubsonic's Movement: `{name, number?, count?}`.
+struct SubsonicMovement: Decodable {
+    var name: String?
+    var number: Int?
+    var count: Int?
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: SubsonicKey.self)
+        name = c.lenientString(SubsonicKey("name"))
+        number = c.lenientInt(SubsonicKey("number"))
+        count = c.lenientInt(SubsonicKey("count"))
+    }
+
+    var movement: Movement? {
+        guard let name = name?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else { return nil }
+        return Movement(name: name, number: number.flatMap { $0 > 0 ? $0 : nil },
+                        count: count.flatMap { $0 > 0 ? $0 : nil })
+    }
+}
+
+/// OpenSubsonic's DiscTitle on an album: `{disc, title}`.
+struct SubsonicDiscTitle: Decodable {
+    var disc: Int?
+    var title: String?
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: SubsonicKey.self)
+        disc = c.lenientInt(SubsonicKey("disc"))
+        title = c.lenientString(SubsonicKey("title"))
     }
 }
 
@@ -390,10 +462,17 @@ struct SubsonicAlbum: Decodable {
     var playCount: Int?
     var played: String?
     var song: [SubsonicChild]
+    /// OpenSubsonic: each disc's title by its number ("Act I", "Act II").
+    var discTitles: [Int: String]
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: SubsonicKey.self)
         func key(_ name: String) -> SubsonicKey { SubsonicKey(name) }
+        discTitles = Dictionary(c.lenientList(SubsonicDiscTitle.self, key("discTitles")).compactMap { disc in
+            guard let number = disc.disc, let title = disc.title?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !title.isEmpty else { return nil }
+            return (number, title)
+        }, uniquingKeysWith: { first, _ in first })
         id = c.lenientString(key("id"))
         // getAlbumList (not ID3) calls it `title`; AlbumID3 `name`.
         name = c.lenientString(key("name")) ?? c.lenientString(key("title")) ?? c.lenientString(key("album"))
@@ -638,7 +717,28 @@ extension SubsonicChild {
             // 2.0's −18 LUFS); a file with only an album gain plays at that.
             normalizationGain: trackGain ?? albumGain,
             playlistEntryID: nil,
-            container: suffix.flatMap { $0.isEmpty ? nil : $0.lowercased() })
+            container: suffix.flatMap { $0.isEmpty ? nil : $0.lowercased() },
+            credits: credits,
+            work: work,
+            movement: movement,
+            grouping: grouping)
+    }
+
+    /// The contributors by role, in Role's order: Navidrome lists them in
+    /// another order on each song of one album (measured), and the same
+    /// people must make the same Track. Without a composer among them,
+    /// `displayComposer`.
+    var credits: [Credit]? {
+        var credits = contributors.compactMap(\.credit)
+        if !credits.contains(where: { $0.role == .composer }),
+           let name = displayComposer?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty {
+            credits.append(Credit(role: .composer, artist: ArtistRef(id: nil, name: name)))
+        }
+        var seen = Set<Credit>()
+        let ordered = Credit.Role.allCases.flatMap { role in
+            credits.filter { $0.role == role && seen.insert($0).inserted }
+        }
+        return ordered.isEmpty ? nil : ordered
     }
 }
 

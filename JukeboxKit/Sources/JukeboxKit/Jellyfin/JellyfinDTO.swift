@@ -90,6 +90,10 @@ struct JellyfinItem: Decodable, Sendable {
     var songCount: Int?
     var albumCount: Int?
     var overview: String?
+    /// Only with Fields=People: the composer (and the album's and track's
+    /// artists again); 12.4 drops a file's conductor, performers and
+    /// lyricist (measured for the classical research, 14 November 2026).
+    var people: [JellyfinPerson]?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
@@ -120,6 +124,21 @@ struct JellyfinItem: Decodable, Sendable {
         case songCount = "SongCount"
         case albumCount = "AlbumCount"
         case overview = "Overview"
+        case people = "People"
+    }
+}
+
+/// One of an item's People: `{Name, Id, Role, Type}`, Type "Composer",
+/// "Artist", "AlbumArtist", ….
+struct JellyfinPerson: Decodable, Sendable {
+    var name: String?
+    var id: String?
+    var type: String?
+
+    enum CodingKeys: String, CodingKey {
+        case name = "Name"
+        case id = "Id"
+        case type = "Type"
     }
 }
 
@@ -365,6 +384,17 @@ extension JellyfinItem {
         (genres ?? []).filter { !$0.isEmpty }
     }
 
+    /// People whose type is a Credit.Role ("Composer"); Artist and
+    /// AlbumArtist are the track's artists again and are left out.
+    var credits: [Credit]? {
+        let credits = (people ?? []).compactMap { person -> Credit? in
+            guard let role = person.type.flatMap({ Credit.Role(rawValue: $0.lowercased()) }),
+                  let name = person.name, !name.isEmpty else { return nil }
+            return Credit(role: role, artist: ArtistRef(id: person.id.flatMap { $0.isEmpty ? nil : $0 }, name: name))
+        }
+        return credits.isEmpty ? nil : credits
+    }
+
     func asTrack() -> Track? {
         guard let id = itemID else { return nil }
         return Track(
@@ -386,7 +416,8 @@ extension JellyfinItem {
             lastPlayed: userData?.lastPlayedDate.flatMap(JellyfinDate.parse),
             dateAdded: dateCreated.flatMap(JellyfinDate.parse),
             normalizationGain: normalizationGain,
-            playlistEntryID: playlistItemID.flatMap { $0.isEmpty ? nil : $0 }
+            playlistEntryID: playlistItemID.flatMap { $0.isEmpty ? nil : $0 },
+            credits: credits
         )
     }
 

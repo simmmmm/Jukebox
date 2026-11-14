@@ -1,4 +1,5 @@
-// The pieces Home and Radio share: which station is on the air, what a tab
+// The pieces Home and Radio share (which station is on the air is
+// RadioController.stationOnAir, shared with Linux): what a tab
 // shows while the library loads or when it has nothing, a station's tile
 // that opens its page and its long-press menu, a station's kind in words,
 // the grey placeholders a shelf shows while the mixes are being made, and a
@@ -8,20 +9,9 @@
 import JukeboxKit
 import SwiftUI
 
-extension RadioController {
-    /// The station on the air: one is starting, or the player is playing
-    /// its queue. `station` alone can outlive the music (the player was
-    /// stopped from the lock screen), so the player's context decides.
-    func stationOnAir(player: AudioPlayer) -> Station? {
-        guard let station else { return nil }
-        if isStarting || player.context?.station?.id == station.id { return station }
-        return nil
-    }
-}
-
 extension AudioPlayer {
     /// A mix from `index`, named after the mix in Now Playing ("Playing
-    /// from Daily Mix 1").
+    /// from 1990s Rock").
     func playMix(_ mix: Mix, from index: Int = 0, shuffled: Bool = false) {
         // Which kind of mix is played (Stats): its kind, never its title.
         Stats.track(.mixPlayed, ["kind": mix.kind.rawValue])
@@ -225,7 +215,7 @@ struct HomePlaceholderShelf: View {
                 RoundedRectangle(cornerRadius: Theme.Radius.artwork)
                     .fill(.quaternary)
                     .aspectRatio(1, contentMode: .fit)
-                Text("Daily Mix 1")
+                Text("1990s Rock")
                     .font(.subheadline.weight(.medium))
                 Text("Artists you love and more")
                     .font(.subheadline)

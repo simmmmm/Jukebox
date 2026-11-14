@@ -1,0 +1,423 @@
+// The player's bar under the window, in three zones as the desktop's music
+// players have it (Spotify, Feishin): the song at the left, the transport
+// and where it is in the song in the middle of the window, the volume and
+// the panel's buttons at the right. Hidden until there is a song.
+//
+// It was redrawn for one complaint, the photographer's, 14 November 2026:
+// "ook klopt er geen fuck van deze verhoudingen". So the middle is the
+// window's middle, whatever the song's title, and the zones keep their
+// shares from 760 to 2560 wide (ThreeZones).
+
+import CAdw
+import Foundation
+import JukeboxKit
+
+enum PlayerBar {
+    /// What a narrow window changes (MainWindow's breakpoints): the volume
+    /// becomes a button below 900, the times go below 600.
+    private(set) static var times: [Widget] = []
+    private(set) static var volume: Widget!
+    private(set) static var volumeButton: Widget!
+    /// The heart and Not This beside the song; below 900 they are in its menu.
+    private(set) static var songActions: Widget!
+
+    // Measures from the designer's spec (build/design-round/2027/spec.md, §2):
+    // 88 tall (12 + Play 40 + 8 + the position 16 + 12), cover 56, buttons
+    // 32, Play 40, the times 40 wide.
+    static func make() -> Widget {
+        // The song, only as wide as its content: the cover and the words
+        // open Now Playing.
+        let art = Art(56)
+        let title = label("", "bar-title")
+        let artist = label("", "fact", "bar-fact")
+        // On a station: "MC Polder  ⌂ Your Station", the template mark 12
+        // and the name in the accent.
+        let stationMark = gtk_image_new_from_icon_name(Glyphs.name("radio"))!.css("accent")
+        gtk_image_set_pixel_size(ptr(stationMark), 12)
+        let stationName = label("", "bar-fact", "accent")
+        let station = hbox(spacing: 4, [stationMark, stationName])
+        let second = hbox(spacing: 8, [artist, station])
+        let words = vbox(spacing: 4, [title, second]).align(vertical: GTK_ALIGN_CENTER)
+        let song = tileButton(hbox(spacing: 12, [art.widget, words])) { NowPlayingPage.open() }
+        song.tooltip("Now Playing").align(vertical: GTK_ALIGN_CENTER)
+        contextMenu(on: song) { songMenu(narrow: !songActions.isVisible) }
+        // Not This on a station, then the heart (32 each, 4 apart).
+        let notThis = iconButton(Glyphs.name("not-this"), "Not This", "flat") {
+            if let track = app.player.currentTrack { app.radio.dislike(track) }
+        }
+        let heart = heartButton { app.player.currentTrack.map { .track($0.id) } }
+        songActions = hbox(spacing: 4, [notThis, heart]).align(vertical: GTK_ALIGN_CENTER)
+        // Its own width, down to its zone's: then the title ends in "…"
+        // rather than push the middle aside.
+        let songZone = hbox(spacing: 16, [song, songActions]).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
+        songZone.margins(horizontal: 16)
+
+        // The transport, over where it is in the song. Play keeps
+        // libadwaita's own fill, never the accent: the page's Play is the
+        // one filled button.
+        let previous = iconButton("media-skip-backward-symbolic", "Previous", "flat") { app.player.previous() }
+        let play = iconButton("media-playback-start-symbolic", "Play", "circular", "play") { app.player.togglePlayPause() }
+        let next = iconButton("media-skip-forward-symbolic", "Next", "flat") { app.player.next() }
+        // Shuffle and repeat flank the transport, as every desktop player
+        // has them ("mis ook nog repeat, repeat all en shuffle", 14 November
+        // 2026): lit in the accent while on. A station chooses its own
+        // order, so there they rest, dimmed.
+        let shuffle = gtk_toggle_button_new()!.css("flat", "mode").tooltip("Shuffle")
+        gtk_button_set_icon_name(ptr(shuffle), "media-playlist-shuffle-symbolic")
+        var isSettingMode = false
+        on(shuffle, "toggled") { if !isSettingMode { app.player.toggleShuffle() } }
+        let again = iconButton("media-playlist-repeat-symbolic", "Repeat", "flat", "mode") { app.player.cycleRepeat() }
+        let transport = hbox(spacing: 16, [shuffle, previous, play, next, again]).align(horizontal: GTK_ALIGN_CENTER)
+        observe(transport) {
+            let player = app.player
+            let station = player.context?.isRadio == true
+            shuffle.isSensitive = player.hasTrack && !station
+            again.isSensitive = player.hasTrack && !station
+            isSettingMode = true
+            gtk_toggle_button_set_active(ptr(shuffle), player.isShuffled ? 1 : 0)
+            isSettingMode = false
+            if player.isShuffled { gtk_widget_add_css_class(shuffle, "accent") } else { gtk_widget_remove_css_class(shuffle, "accent") }
+            setIcon(again, player.repeatMode == .one ? "media-playlist-repeat-song-symbolic" : "media-playlist-repeat-symbolic")
+            if player.repeatMode == .off { gtk_widget_remove_css_class(again, "accent") } else { gtk_widget_add_css_class(again, "accent") }
+            again.tooltip(station ? "The station chooses the order"
+                          : player.repeatMode == .off ? "Repeat" : player.repeatMode == .all ? "Repeat All" : "Repeat One")
+            shuffle.tooltip(station ? "The station chooses the order" : "Shuffle")
+        }
+
+        let elapsed = label("0:00", "fact", "times", "bar-fact").size(width: 40)
+        let total = label("0:00", "fact", "times", "bar-fact").size(width: 40)
+        gtk_label_set_xalign(ptr(elapsed), 1)
+        times = [elapsed, total]
+        let scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 1)!
+        gtk_scale_set_draw_value(ptr(scale), 0)
+        scale.expand(horizontal: true).tooltip("Position")
+        // The listener's hand on the slider, as against the song moving it:
+        // a drag seeks once it rests, not at every step of the way.
+        var isSetting = false
+        var seekTask: Task<Void, Never>?
+        on(scale, "value-changed") {
+            guard !isSetting else { return }
+            let target = gtk_range_get_value(ptr(scale))
+            setText(elapsed, clock(target))
+            seekTask?.cancel()
+            seekTask = Task {
+                try? await Task.sleep(for: .milliseconds(150))
+                guard !Task.isCancelled else { return }
+                app.player.seek(to: target)
+                seekTask = nil
+            }
+        }
+        let position = hbox(spacing: 8, [elapsed, scale, total])
+        let middle = vbox(spacing: 8, [transport, position]).align(vertical: GTK_ALIGN_CENTER)
+
+        // The tools: the panel's two buttons (Panel.swift), then the level;
+        // below 900 the level is a button with the slider in its popover.
+        let lyrics = panelButton("media-view-subtitles-symbolic", "Lyrics", .lyrics)
+        let upNext = panelButton("view-list-ordered-symbolic", "Up Next", .upNext)
+        let (speaker, level) = (gtk_image_new_from_icon_name("audio-volume-high-symbolic")!, levelScale(width: 96))
+        volume = hbox(spacing: 8, [speaker, level])
+        gtk_widget_set_margin_start(volume, 8)
+        let popover = gtk_popover_new()!
+        gtk_popover_set_child(ptr(popover), levelScale(width: 160).margins(8))
+        volumeButton = gtk_menu_button_new()!.css("flat").tooltip("Volume")
+        gtk_menu_button_set_popover(ptr(volumeButton), popover)
+        volumeButton.isVisible = false
+        gtk_widget_set_margin_start(volumeButton, 8)
+        // Lyrics shows only where there are lyrics to be had (the server's,
+        // or LRCLIB's when Preferences allow it), as on the iPhone.
+        observe(lyrics) { lyrics.isVisible = lyricsToBeHad() }
+        let tools = hbox(spacing: 8, [lyrics, upNext, volume, volumeButton]).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER)
+        tools.margins(horizontal: 16)
+
+        let bar = ThreeZones.make(songZone, middle, tools).css("player-bar")
+        observe(bar) {
+            let player = app.player
+            let track = player.currentTrack
+            bar.isVisible = track != nil
+            art.show(track?.artwork)
+            setText(title, track?.name ?? "")
+            setText(artist, track?.artistLine ?? "")
+            let onStation = player.context?.station
+            station.isVisible = onStation != nil
+            setText(stationName, onStation?.title ?? "")
+            notThis.isVisible = onStation != nil
+            let disliked = track.map { app.radio.disliked.contains($0.id) } ?? false
+            if disliked { gtk_widget_add_css_class(notThis, "given") } else { gtk_widget_remove_css_class(notThis, "given") }
+            setIcon(play, player.isPlaying ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
+            play.tooltip(player.isPlaying ? "Pause" : "Play")
+        }
+        observe(speaker) {
+            let icon = app.player.volume == 0 ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic"
+            gtk_image_set_from_icon_name(ptr(speaker), icon)
+            gtk_menu_button_set_icon_name(ptr(volumeButton), icon)
+        }
+        // The clock apart: it moves twice a second, the rest when a song does.
+        observe(scale) {
+            let player = app.player
+            setText(total, clock(player.duration))
+            guard seekTask == nil else { return }
+            isSetting = true
+            gtk_range_set_range(ptr(scale), 0, max(1, player.duration))
+            gtk_range_set_value(ptr(scale), player.elapsed)
+            isSetting = false
+            setText(elapsed, clock(player.elapsed))
+        }
+        return bar
+    }
+
+    /// The song's menu, the bar's right-click and Now Playing's ⋮: where it
+    /// comes from, a station from it, and (`narrow`, below 900, where they
+    /// leave the bar) the heart and, on a station, the thumbs.
+    static func songMenu(narrow: Bool) -> [(String, () -> Void)] {
+        guard let track = app.player.currentTrack else { return [] }
+        var items: [(String, () -> Void)] = []
+        if let albumID = track.albumID, let album = app.library.album(id: albumID) {
+            items.append(("Go to Album", { Pages.open(album) }))
+        }
+        if let ref = track.primaryArtist, let artist = app.library.artist(ref) {
+            items.append(("Go to Artist", { Pages.open(artist) }))
+        }
+        items.append(("Start a Station", { app.radio.start(.track(track.id)) }))
+        if app.player.context?.isRadio == true {
+            items.append((app.radio.liked.contains(track.id) ? "Liked" : "More Like This", { app.radio.like(track) }))
+            if narrow {
+                items.append((app.radio.disliked.contains(track.id) ? "Not This (Undo)" : "Not This", { app.radio.dislike(track) }))
+            }
+        }
+        if narrow {
+            let favorite = app.library.isFavorite(track.id)
+            items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
+                          { Task { await app.library.setFavorite(!favorite, item: .track(track.id)) } }))
+        }
+        return items
+    }
+
+    /// The listener's level, 0 to 1, as the player keeps it.
+    private static func levelScale(width: Int32) -> Widget {
+        let level = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.05)!.css("level")
+        gtk_scale_set_draw_value(ptr(level), 0)
+        level.size(width: width).tooltip("Volume")
+        var isSetting = false
+        on(level, "value-changed") {
+            guard !isSetting else { return }
+            app.player.volume = gtk_range_get_value(ptr(level))
+        }
+        observe(level) {
+            let value = app.player.volume
+            isSetting = true
+            gtk_range_set_value(ptr(level), value)
+            isSetting = false
+        }
+        return level
+    }
+
+    /// One of the panel's buttons: lit (pressed, the glyph in the accent)
+    /// while the panel shows its content; pressed then, it closes the panel.
+    private static func panelButton(_ icon: String, _ name: String, _ content: PanelState.Content) -> Widget {
+        let toggle = gtk_toggle_button_new()!.css("flat").tooltip(name)
+        gtk_button_set_icon_name(ptr(toggle), icon)
+        var isSetting = false
+        on(toggle, "toggled") { if !isSetting { app.panel.toggle(content) } }
+        observe(toggle) {
+            let shown = app.panel.isShown && app.panel.content == content
+            isSetting = true
+            gtk_toggle_button_set_active(ptr(toggle), shown ? 1 : 0)
+            isSetting = false
+        }
+        return toggle
+    }
+}
+
+/// Three zones in a row: the middle one a share of the row, in the row's
+/// own middle; the two outer ones what is left, half each. So the middle is
+/// the window's middle and not the middle of the room the song's title
+/// leaves. The widths are DesktopMeasures.zones (Jukebox/Components), the
+/// iPad's and the Mac's bar's too. Narrower than the outer zones' least
+/// allows (below 600, where the spec has the iPhone's mini player, not
+/// built yet), the middle gives way, down to its own least.
+nonisolated enum ThreeZones {
+    @MainActor static func make(_ start: Widget, _ middle: Widget, _ end: Widget) -> Widget {
+        // A box for its children; laid out by the functions below.
+        let row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0)!
+        gtk_widget_set_layout_manager(row, gtk_custom_layout_new(nil, measure, allocate))
+        for zone in [start, middle, end] { gtk_box_append(ptr(row), zone) }
+        return row
+    }
+
+    private static func zones(_ row: Widget) -> [Widget] {
+        var found: [Widget] = []
+        var child = gtk_widget_get_first_child(row)
+        while let zone = child {
+            found.append(zone)
+            child = gtk_widget_get_next_sibling(zone)
+        }
+        return found
+    }
+
+    private static func size(_ zone: Widget, _ orientation: GtkOrientation) -> (least: Int32, natural: Int32) {
+        var least: Int32 = 0, natural: Int32 = 0
+        gtk_widget_measure(zone, orientation, -1, &least, &natural, nil, nil)
+        return (least, natural)
+    }
+
+    private static let measure: GtkCustomMeasureFunc = { row, orientation, _, least, natural, leastBaseline, naturalBaseline in
+        leastBaseline?.pointee = -1
+        naturalBaseline?.pointee = -1
+        guard let row else { return }
+        let all = zones(row)
+        guard all.count == 3 else { return }
+        let sizes = all.map { size($0, orientation) }
+        if orientation == GTK_ORIENTATION_HORIZONTAL {
+            // The children's own least, not the 304: the window's least is 360.
+            least?.pointee = 2 * max(sizes[0].least, sizes[2].least) + sizes[1].least
+            natural?.pointee = 2 * max(sizes[0].natural, sizes[2].natural) + max(sizes[1].natural, Int32(DesktopMeasures.middleLeast))
+        } else {
+            least?.pointee = sizes.map(\.least).max() ?? 0
+            natural?.pointee = sizes.map(\.natural).max() ?? 0
+        }
+    }
+
+    private static let allocate: GtkCustomAllocateFunc = { row, width, height, _ in
+        guard let row else { return }
+        let all = zones(row)
+        guard all.count == 3 else { return }
+        let side = max(size(all[0], GTK_ORIENTATION_HORIZONTAL).least, size(all[2], GTK_ORIENTATION_HORIZONTAL).least)
+        let widths = DesktopMeasures.zones(width: Int(width), sides: Int(side),
+                                           middle: Int(size(all[1], GTK_ORIENTATION_HORIZONTAL).least))
+        let start = Int32(widths.start), middle = Int32(widths.middle)
+        place(all[0], x: 0, width: start, height: height)
+        place(all[1], x: start, width: middle, height: height)
+        place(all[2], x: start + middle, width: Int32(widths.end), height: height)
+    }
+
+    private static func place(_ zone: Widget, x: Int32, width: Int32, height: Int32) {
+        var box = GtkAllocation(x: x, y: 0, width: max(0, width), height: height)
+        gtk_widget_size_allocate(zone, &box, -1)
+    }
+}
+
+/// Now Playing: a room over the places and the page (the designer's spec,
+/// §6), rising from the bar's song and going down again by its chevron or
+/// Escape. The bar and the panel stay as they were, open or not, and lose
+/// their own ground over it: the bar is the transport, and what plays next
+/// and the words are the panel's. Always dark, as on the iPhone; in Glow
+/// (the photographer chose the one accent over the cover's own).
+enum NowPlayingPage {
+    private static var stack: Widget!
+    private static var down: Widget!
+    /// ⋮ at the header's end (the screenshot walk opens it too).
+    private(set) static var more: Widget!
+    private static var sleeve: SleeveArt!
+    /// The sleeve's share of the room's height (472 at 1440 × 900).
+    private static let sleeveShare = 0.62
+
+    static var isOpen: Bool {
+        guard let stack, let name = gtk_stack_get_visible_child_name(ptr(stack)) else { return false }
+        return String(cString: name) == "now-playing"
+    }
+
+    /// The room's stack: the library under, Now Playing over it.
+    static func room(over library: Widget) -> Widget {
+        stack = gtk_stack_new()!
+        gtk_stack_set_transition_duration(ptr(stack), 250)
+        gtk_stack_add_named(ptr(stack), library, "library")
+        gtk_stack_add_named(ptr(stack), make(), "now-playing")
+        gtk_stack_set_visible_child_name(ptr(stack), "library")
+        return stack
+    }
+
+    static func open() {
+        guard !isOpen else { return }
+        Stats.track(.screen, ["name": "now_playing"])
+        sleeve.show(app.player.currentTrack)
+        gtk_stack_set_transition_type(ptr(stack), GTK_STACK_TRANSITION_TYPE_OVER_UP)
+        gtk_stack_set_visible_child_name(ptr(stack), "now-playing")
+        ground()
+        // The keys inside the room, so Escape closes it.
+        gtk_widget_grab_focus(down)
+    }
+
+    static func close() {
+        guard isOpen else { return }
+        gtk_stack_set_transition_type(ptr(stack), GTK_STACK_TRANSITION_TYPE_UNDER_DOWN)
+        gtk_stack_set_visible_child_name(ptr(stack), "library")
+        ground()
+    }
+
+    /// The room's ground: dark whatever the system's appearance while it is
+    /// open, the bar's and the docked panel's own gone (Style's `in-room`).
+    /// Lying over the page, the panel keeps its ground: the room shows
+    /// under it otherwise.
+    private static func ground() {
+        guard let window = MainWindow.window else { return }
+        let open = isOpen
+        adw_style_manager_set_color_scheme(adw_style_manager_get_default(), open ? ADW_COLOR_SCHEME_FORCE_DARK : ADW_COLOR_SCHEME_DEFAULT)
+        for (name, on) in [("in-room", open), ("room-docked", open && !app.panel.isOverlaid)] {
+            if on { gtk_widget_add_css_class(window, name) } else { gtk_widget_remove_css_class(window, name) }
+        }
+    }
+
+    private static func make() -> Widget {
+        // The sleeve with its record half out, still (Drawings.swift), at
+        // 0.62 of the room's height.
+        sleeve = SleeveArt(side: 300)
+        let sleeve = sleeve!
+        let title = label("", "serif", "page-title", lines: 2)
+        let artist = label("", "t17", "fact", lines: 2)
+        // As wide as the sleeve and its record, not wider: the words start
+        // at the sleeve's left edge.
+        for words in [title, artist] { gtk_label_set_max_width_chars(ptr(words), 1) }
+        gtk_widget_set_margin_top(title, 32)
+        let content = vbox([sleeve.widget, title, artist]).align(horizontal: GTK_ALIGN_CENTER, vertical: GTK_ALIGN_CENTER)
+
+        // The room itself, flat (the land under it is not built: whether it
+        // turns is the photographer's to say); its size sets the sleeve's.
+        let room = gtk_drawing_area_new()!.expand(horizontal: true, vertical: true)
+        on(raw(room), "resize") {
+            let height = Double(gtk_widget_get_height(room)), width = Double(gtk_widget_get_width(room))
+            // The pair and 24 either side within the width, too.
+            let fits = (width - 48 - Double(SleeveLayout.recordBeyond)) / (1 + Double(SleeveLayout.recordSide) / 2)
+            let side = Double(Int(min(height * sleeveShare, fits)) / 4 * 4)
+            // Told while the room is allocated: drawn after it.
+            if side >= 120, side != sleeve.side { Task { sleeve.resize(side) } }
+        }
+        let overlay = gtk_overlay_new()!
+        gtk_overlay_set_child(ptr(overlay), room)
+        gtk_overlay_add_overlay(ptr(overlay), content)
+
+        down = iconButton("go-down-symbolic", "Close Now Playing", "flat") { close() }
+        // ⋮: the song's menu, made as it opens (the song and the window's
+        // width decide it), under the button.
+        more = iconButton("view-more-symbolic", "More", "flat") {
+            showMenu(at: more, x: Double(gtk_widget_get_width(more)) / 2, y: Double(gtk_widget_get_height(more)),
+                     PlayerBar.songMenu(narrow: !PlayerBar.songActions.isVisible))
+        }
+        let header = adw_header_bar_new()!
+        adw_header_bar_set_show_title(ptr(header), 0)
+        adw_header_bar_pack_start(ptr(header), down)
+        adw_header_bar_pack_end(ptr(header), more)
+        let page = adw_toolbar_view_new()!
+        adw_toolbar_view_add_top_bar(ptr(page), header)
+        adw_toolbar_view_set_content(ptr(page), overlay)
+        let keys = gtk_shortcut_controller_new()!
+        gtk_shortcut_controller_add_shortcut(ptr(keys), gtk_shortcut_new(gtk_shortcut_trigger_parse_string("Escape"),
+                                                                     gtk_named_action_new("app.close-now-playing")))
+        gtk_widget_add_controller(page, ptr(keys))
+
+        observe(content) {
+            let track = app.player.currentTrack
+            // Drawn only while the room shows (`open` draws it as it rises).
+            if isOpen { sleeve.show(track) }
+            setText(title, track?.name ?? "Nothing playing")
+            setText(artist, [track?.artistLine, track?.albumName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+            // Nothing playing (the queue ended, or signed out): down again.
+            if track == nil { close() }
+        }
+        // The panel docking or lying over while the room is open.
+        observe(page) {
+            _ = app.panel.isOverlaid
+            ground()
+        }
+        return page
+    }
+}

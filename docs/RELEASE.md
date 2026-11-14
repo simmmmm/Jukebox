@@ -40,9 +40,10 @@ alone is very likely taken. Candidates that say what it is:
 > Familiar to Adventurous. Thumbs down, and you hear less like it.
 >
 > MIXES
-> Home has playlists Jukebox makes for you from what you play: Daily Mixes,
-> On Repeat, Rediscover, Deep Cuts, New Arrivals, Loved Tracks, and a mix
-> for each genre and decade of your library.
+> Home has playlists Jukebox makes for you from what you play: moods named
+> after their songs ("Rock & Shoegaze", "1990s Jazz"), On Repeat,
+> Rediscover, Deep Cuts, New Arrivals, Loved Tracks, and a mix for each
+> genre and decade of your library.
 >
 > NOW PLAYING
 > The album's sleeve with its record half out, on a page that is the record
@@ -77,12 +78,14 @@ published.
 
 ## Screenshots
 
-Required: iPhone 6.9" (1320 × 2868) and iPad 13" (2064 × 2752). From the
-screenshot walk (`ci/screenshots.sh`, made-up library and covers, ours to
-use): Home, Now Playing (D2), a station's page, an album, Up Next with the
-dial, Lyrics, Settings › Downloads. The walk runs on an iPhone 17 Pro
-(1206 × 2622) today; for the store, one run on an iPhone 17 Pro Max and the
-iPad 13". Text over the pictures: none (tells.md).
+- **Sizes required**: iPhone 6.9" (1320 × 2868) and iPad 13" (2064 × 2752).
+- **Source**: the screenshot walk (`ci/screenshots.sh`), with a made-up
+  library and covers, ours to use.
+- **Screens**: Home, Now Playing (D2), a station's page, an album, Up Next
+  with the dial, Lyrics, Settings › Downloads.
+- **Devices**: the walk runs on an iPhone 17 Pro (1206 × 2622) today. For the
+  store, one run on an iPhone 17 Pro Max and the iPad 13".
+- **Text over the pictures**: none (tells.md).
 
 ## App Privacy (the questionnaire)
 

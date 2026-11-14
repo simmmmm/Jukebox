@@ -2,7 +2,7 @@
 // are printed by MixesEvaluationTests (lines starting MIXES-EVAL). Each
 // builder returns its mix, or nothing when it would have fewer than eight
 // tracks, with how much the listener would want it today ("want", 0 … 1),
-// by which the mixes after the daily ones are ordered. The wants are a
+// by which the mixes after the moods are ordered. The wants are a
 // judgement, not a measurement: what the listener plays now first (On
 // Repeat 0.9), then the new (0.85), the loved (0.75), the forgotten (0.7),
 // the unheard of liked artists (0.65), genres (0.6) and decades (0.55),
@@ -21,37 +21,54 @@ extension MixModel {
     /// A Mix from tracks in their order. Its id is kind, key and day; its
     /// station, unless another fits better, plays on from its own tracks.
     func make(_ kind: MixKind, key: String? = nil, title: String, tracks: [Int], lead: [Int] = [],
-              coverOrder: [Int]? = nil, station: StationSeed? = nil) -> Mix? {
+              unnamed: Int? = nil, coverOrder: [Int]? = nil, station: StationSeed? = nil) -> Mix? {
         guard tracks.count >= Self.minimumTracks else { return nil }
         let id = ([kind.rawValue] + (key.map { [$0] } ?? []) + [day]).joined(separator: "-")
         let ids = tracks.map { snapshot.tracks[$0].id }
-        return Mix(id: id, kind: kind, title: title, subtitle: artistLine(tracks, lead: lead),
+        return Mix(id: id, kind: kind, title: title, subtitle: artistLine(tracks, lead: lead, skipping: unnamed),
                    tracks: tracks.map { snapshot.tracks[$0] }, artwork: covers(coverOrder ?? tracks),
                    stationSeed: station ?? .collection(id: id, name: title, trackIDs: ids))
     }
 
-    // MARK: - Daily Mix 1 … 6
+    // MARK: - Moods
+
+    // These were "Daily Mix 1" to "Daily Mix 6". The photographer, 14
+    // November 2026: "en de daily mix 1 t/m 6 - het mag wel IETS minder
+    // duidelijk gejat zijn van spotify zeg", and "Noem het moods oid, zorg
+    // dat het altijd bestaat uit meerdere artiesten en noem de mood naar
+    // iets dat past bij de gekozen playlist". So a mood has no number: it
+    // is named after the songs chosen for it (`moodTitles`), and it is
+    // never one artist's (`evened`).
 
     /// The artists the listener plays, in clusters of who sounds like whom,
-    /// one mix each, biggest liking first.
-    static let dailyArtists = 48
+    /// one mood each, biggest liking first.
+    static let moodArtists = 48
     static let maxClusterSize = 8
     /// The average graph weight two clusters need to be one: about what two
     /// artists who share their main genre and nothing else get from the
     /// library alone (0.20), less a margin; artists of different genres
     /// get 0 … 0.1 unless Last.fm or a guest spot says otherwise.
     static let clusterLinkage = 0.12
-    static let dailyLength = 35
-    static let dailyFamiliarShare = 0.6
-    static let dailyMinimum = 15
+    static let moodLength = 35
+    static let moodFamiliarShare = 0.6
+    static let moodMinimum = 15
+    /// What fits on a tile's one line; a longer name is used only when
+    /// there is no shorter one.
+    static let moodTitleLength = 22
 
-    func dailyMixes() -> [Mix] {
+    func moods() -> [Mix] {
         let clusters = artistClusters()
         var mixes: [Mix] = []
         var used = Set<Int>()
+        var taken = Set<String>()
+        // A genre with a mix of its own on Home: "Rock" next to "Rock Mix"
+        // reads as two names for one thing, so a mood is called that only
+        // when its songs give it no other name.
+        let beside = Set(mixGenres.map { index.genreNames[$0] })
         for cluster in clusters {
             if mixes.count == 6 { break }
-            guard let mix = dailyMix(cluster, number: mixes.count + 1, used: &used) else { continue }
+            guard let mix = mood(cluster, number: mixes.count + 1, used: &used, taken: &taken, beside: beside)
+            else { continue }
             mixes.append(mix)
         }
         return mixes
@@ -67,7 +84,7 @@ extension MixModel {
         for a in rankedArtists where artistAffinity[a] > 0.05 && !index.artistOwnTracks[a].isEmpty {
             pool.append(a)
             weight.append(artistAffinity[a])
-            if pool.count == Self.dailyArtists { break }
+            if pool.count == Self.moodArtists { break }
         }
         if pool.count < 8 {
             // Little or nothing heard: the biggest artists stand in, a little
@@ -141,8 +158,8 @@ extension MixModel {
         clusters.sort { $0.weight != $1.weight ? $0.weight > $1.weight : $0.first < $1.first }
         // A cluster with a twentieth of the first one's liking is a passing
         // interest, not a mix of its own. (The made-up listener's Folk and
-        // Pop, played a little, hold 0.4 against Rock's 5.7, and are Daily
-        // Mix 4 and 5.)
+        // Pop, played a little, hold 0.4 against Rock's 5.7, and are the
+        // fourth and fifth mood.)
         let top = clusters.first?.weight ?? 0
         return clusters.filter { $0.weight >= 0.05 * top }.map { ($0.artists, $0.weight) }
     }
@@ -176,18 +193,140 @@ extension MixModel {
         return nx > 0 && ny > 0 ? dot / (nx * ny) : 0
     }
 
-    /// One daily mix: about 60% songs of the cluster's artists the listener
-    /// knows and likes, 40% songs they have rarely or never heard, by the
-    /// cluster's artists and their neighbours in the graph; no track that
-    /// an earlier daily mix has.
-    func dailyMix(_ cluster: (artists: [Int], weight: Double), number: Int, used: inout Set<Int>) -> Mix? {
-        let memberSet = Set(cluster.artists)
+    /// One mood: its songs (`moodPicks`) in order, under a name no mood
+    /// before it has. A cluster too thin to be a mix of artists is tried
+    /// once more with its nearest neighbours as members; when that is no
+    /// mix either, there is no such mood.
+    func mood(_ cluster: (artists: [Int], weight: Double), number: Int, used: inout Set<Int>,
+              taken: inout Set<String>, beside: Set<String>) -> Mix? {
+        var artists = cluster.artists
+        var picks = moodPicks(artists, used: used)
+        if picks == nil {
+            artists = widened(artists)
+            guard artists.count > cluster.artists.count else { return nil }
+            picks = moodPicks(artists, used: used)
+        }
+        guard let picks else { return nil }
+        let tracks = order([picks.known, picks.fresh], separation: 2)
+        // The first name still free. When its songs' genres and years give
+        // none (no genre tags, or a second mood of one genre), it is named
+        // after the artist it is built around, the first of the cluster
+        // with a song in it, who then is not named again under the title.
+        let titles = moodTitles(tracks).filter { !taken.contains($0) }
+        let free = titles.first { !beside.contains($0) } ?? titles.first
+        let around = artists.first { a in
+            !taken.contains("Around \(artistName(a))") && tracks.contains { primaryArtist($0) == a }
+        }
+        guard let title = free ?? around.map({ "Around \(artistName($0))" }) else { return nil }
+        // Its id keeps the number and "daily" (MixKind): a download and the
+        // queue's context hold it.
+        guard let mix = make(.mood, key: String(number), title: title, tracks: tracks, lead: artists,
+                             unnamed: free == nil ? around : nil, coverOrder: picks.known + picks.fresh)
+        else { return nil }
+        used.formUnion(tracks)
+        taken.insert(title)
+        return mix
+    }
+
+    /// The cluster and the neighbours that would have been clustered with
+    /// it (the same linkage, to any member) had it not been full or they
+    /// not in the listener's top artists: the nearest first, up to
+    /// `maxClusterSize` in all. As members their known songs count too.
+    func widened(_ artists: [Int]) -> [Int] {
+        let members = Set(artists)
+        var link: [Int: Double] = [:]
+        for a in artists {
+            let genres = genreShares(of: a)
+            for neighbor in graph.similarArtists(to: index.artistKeys[a], limit: 25) {
+                guard let b = index.artistByKey[neighbor.key], !members.contains(b), artistAffinity[b] > -0.3,
+                      !index.artistOwnTracks[b].isEmpty else { continue }
+                let w = neighbor.weight * (0.4 + 0.6 * cosine(genres, genreShares(of: b)))
+                link[b] = max(link[b] ?? 0, w)
+            }
+        }
+        let nearest = link.filter { $0.value >= Self.clusterLinkage }.sorted { x, y in
+            x.value != y.value ? x.value > y.value : index.artistKeys[x.key] < index.artistKeys[y.key]
+        }
+        return artists + nearest.prefix(max(0, Self.maxClusterSize - artists.count)).map(\.key)
+    }
+
+    /// "zorg dat het altijd bestaat uit meerdere artiesten": no artist has
+    /// more than a third of a mood, which makes it three artists at least
+    /// and never one with a guest. Songs of the artist with the most are
+    /// taken out, the last drawn first and the new before the known, until
+    /// that holds; what is left may be too short to be a mood.
+    func evened(known: [Int], fresh: [Int]) -> (known: [Int], fresh: [Int]) {
+        var lanes = [known, fresh]
+        var count: [Int: Int] = [:]
+        for t in known + fresh {
+            if let a = primaryArtist(t) { count[a, default: 0] += 1 }
+        }
+        var total = known.count + fresh.count
+        while let most = count.max(by: { $0.value != $1.value ? $0.value < $1.value : $0.key > $1.key }),
+              most.value * 3 > total {
+            for lane in [1, 0] {
+                guard let at = lanes[lane].lastIndex(where: { primaryArtist($0) == most.key }) else { continue }
+                lanes[lane].remove(at: at)
+                break
+            }
+            count[most.key] = most.value - 1
+            total -= 1
+        }
+        return (lanes[0], lanes[1])
+    }
+
+    /// What a mood can be called, best first, from its own songs: the
+    /// genre two thirds of them have (the narrowest of those, which says
+    /// most), with the decade when six in ten are from one ("1990s Rock"),
+    /// alone ("Rock"), or with another genre a quarter of them have ("Rock
+    /// & Shoegaze"). Facts about the songs, as the kit has nothing on how
+    /// they sound. Empty when no genre is on a quarter of them.
+    func moodTitles(_ tracks: [Int]) -> [String] {
+        var genreCount: [Int: Int] = [:]
+        var decadeCount: [Int: Int] = [:]
+        for t in tracks {
+            for g in index.trackGenres[t] { genreCount[g, default: 0] += 1 }
+            let year = index.trackYear[t]
+            if year > 0 { decadeCount[year / 10 * 10, default: 0] += 1 }
+        }
+        let most = (2 * tracks.count + 2) / 3, quarter = (tracks.count + 3) / 4
+        let main = genreCount.filter { $0.value >= most }.keys.sorted { x, y in
+            let sx = index.genreTracks[x].count, sy = index.genreTracks[y].count
+            return sx != sy ? sx < sy : index.genreKeys[x] < index.genreKeys[y]
+        }
+        let side = genreCount.filter { $0.value >= quarter && $0.value < most }.sorted { x, y in
+            x.value != y.value ? x.value > y.value : index.genreKeys[x.key] < index.genreKeys[y.key]
+        }.map(\.key)
+        let ranked = main + side
+        guard let first = ranked.first.map({ index.genreNames[$0] }) else { return [] }
+        var titles: [String] = []
+        if !main.isEmpty {
+            let decade = decadeCount.max { $0.value != $1.value ? $0.value < $1.value : $0.key < $1.key }
+            if let decade, decade.value * 5 >= tracks.count * 3 { titles.append("\(decade.key)s \(first)") }
+            titles.append(first)
+        }
+        // "Rock & Hard Rock" says rock twice: not a pair.
+        titles += ranked.dropFirst().map { index.genreNames[$0] }.filter {
+            !$0.localizedCaseInsensitiveContains(first) && !first.localizedCaseInsensitiveContains($0)
+        }.map { "\(first) & \($0)" }
+        // A genre on a quarter of the songs is not the mood's name alone.
+        titles += main.dropFirst().map { index.genreNames[$0] }
+        return titles.filter { $0.count <= Self.moodTitleLength } + titles.filter { $0.count > Self.moodTitleLength }
+    }
+
+    /// A mood's songs: about 60% songs of the cluster's artists the
+    /// listener knows and likes, 40% songs they have rarely or never heard,
+    /// by the cluster's artists and their neighbours in the graph; no track
+    /// that an earlier mood has. Nothing when they are not a mix of
+    /// artists (`evened`) of `moodMinimum` songs.
+    func moodPicks(_ artists: [Int], used: Set<Int>) -> (known: [Int], fresh: [Int])? {
+        let memberSet = Set(artists)
         // How near each artist is to the cluster: its own 1, a neighbour by
         // its strongest edge to a member.
         var closeness: [Int: Double] = [:]
-        for a in cluster.artists { closeness[a] = 1 }
+        for a in artists { closeness[a] = 1 }
         var neighborEdge: [Int: Double] = [:]
-        for a in cluster.artists {
+        for a in artists {
             for neighbor in graph.similarArtists(to: index.artistKeys[a], limit: 25) {
                 guard let b = index.artistByKey[neighbor.key], !memberSet.contains(b), artistAffinity[b] > -0.3,
                       !index.artistOwnTracks[b].isEmpty else { continue }
@@ -217,7 +356,7 @@ extension MixModel {
         // cluster's genres a song has, the less it counts (a fifth for none).
         var genreShare: [Int: Double] = [:]
         var ownSongs = 0
-        for a in cluster.artists {
+        for a in artists {
             for t in index.artistOwnTracks[a] {
                 ownSongs += 1
                 for g in index.trackGenres[t] { genreShare[g, default: 0] += 1 }
@@ -248,14 +387,15 @@ extension MixModel {
             }
         }
 
-        let length = Self.dailyLength
-        var familiarCount = min(familiar.count, Int((Double(length) * Self.dailyFamiliarShare).rounded()))
+        let length = Self.moodLength
+        var familiarCount = min(familiar.count, Int((Double(length) * Self.moodFamiliarShare).rounded()))
         let freshCount = min(fresh.count, length - familiarCount)
         familiarCount = min(familiar.count, length - freshCount)
-        guard familiarCount + freshCount >= Self.dailyMinimum else { return nil }
+        guard familiarCount + freshCount >= Self.moodMinimum else { return nil }
 
-        let lead = cluster.artists[0]
-        let daySeed = seed("daily", index.artistKeys[lead])
+        // "daily" is what these were called; the seed keeps it, so the day's
+        // songs are the ones it had.
+        let daySeed = seed("daily", index.artistKeys[artists[0]])
         // A fifth of the mix at most by one artist: with two songs between
         // two by one artist a third is the most there can be, and three
         // artists at a quarter each left the made-up Pop mix nothing to
@@ -264,10 +404,11 @@ extension MixModel {
         var counts = MixCounts()
         let knownPicks = draw(familiar, count: familiarCount, seed: daySeed, artistCap: cap, counts: &counts)
         let freshPicks = draw(fresh, count: freshCount, seed: daySeed &+ 1, artistCap: cap, counts: &counts)
-        let tracks = order([knownPicks, freshPicks], separation: 2)
-        used.formUnion(tracks)
-        return make(.daily, key: String(number), title: "Daily Mix \(number)", tracks: tracks,
-                    lead: cluster.artists, coverOrder: knownPicks + freshPicks)
+        // The cap gives way in a thin cluster; a third is where it stops.
+        let picks = evened(known: knownPicks, fresh: freshPicks)
+        let all = picks.known + picks.fresh
+        guard all.count >= Self.moodMinimum, artistCount(all, atLeast: 3) else { return nil }
+        return picks
     }
 
     // MARK: - The others
@@ -452,8 +593,11 @@ extension MixModel {
         return chosen
     }
 
+    /// The genres that get a mix of their own.
+    var mixGenres: [Int] { topGenres(count: 3, minimumTracks: 15) }
+
     func genreMixes() -> [Made] {
-        topGenres(count: 3, minimumTracks: 15).compactMap { g in
+        mixGenres.compactMap { g in
             let name = index.genreNames[g]
             guard let mix = tasteMix(.genre, key: index.genreKeys[g], title: "\(name) Mix", members: index.genreTracks[g],
                                      station: .genre(key: index.genreKeys[g], name: name), genre: g) else { return nil }

@@ -82,6 +82,7 @@ private struct HomeFeed: View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 HomeOfflineNotice()
+                HomeHandoffNotice()
                 HomeStationHero()
                     .padding(.horizontal, Theme.margin)
                 Hairline()
@@ -120,6 +121,33 @@ enum HomeLayout {
 /// With songs on the phone it says those still play (OfflineStore): offline,
 /// only they do. Only when there is a library on screen; without one
 /// HomeLibraryStatus says it full size.
+/// Music on another device, or this one's from last time, and the one
+/// thing to do about it: go on with it here (HandoffStore). The
+/// photographer, 13 November 2026: "zodat ik verder kan waar ik gebleven was
+/// als ik wegga van mijn pc". Words on the ground, as the notice above it.
+private struct HomeHandoffNotice: View {
+    @Environment(HandoffStore.self) private var handoff
+
+    var body: some View {
+        if let offer = handoff.offer {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                Text(offer.heading)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("\(offer.track.name) · \(offer.track.artistLine)")
+                    .lineLimit(2)
+                Button(offer.isOwn ? String(localized: "Continue") : String(localized: "Continue Here")) {
+                    handoff.continueHere()
+                }
+                .buttonStyle(.secondary)
+            }
+            .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+            .accessibilityElement(children: .contain)
+            .padding(.horizontal, Theme.margin)
+        }
+    }
+}
+
 private struct HomeOfflineNotice: View {
     @Environment(LibraryStore.self) private var library
     @Environment(OfflineStore.self) private var offline
@@ -442,7 +470,7 @@ private struct HomePlayedRow: View {
     private func row<Art: View>(title: String, detail: String, @ViewBuilder art: () -> Art) -> some View {
         HStack(spacing: Theme.Space.m) {
             art()
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(title)
                     .foregroundStyle(.primary)
                     .lineLimit(1)

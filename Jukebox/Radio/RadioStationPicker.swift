@@ -202,7 +202,7 @@ private struct RadioPickerRow<Leading: View>: View {
         Button(action: action) {
             HStack(spacing: Theme.Space.m) {
                 leading
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(title)
                         .foregroundStyle(.primary)
                         .lineLimit(1)

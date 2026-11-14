@@ -207,7 +207,7 @@ private struct SearchAlbumRow: View {
     var body: some View {
         HStack(spacing: Theme.Space.m) {
             ArtworkView(album.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(album.name)
                     .lineLimit(1)
                 Text(verbatim: subtitle)
@@ -235,7 +235,7 @@ private struct SearchPlaylistRow: View {
         HStack(spacing: Theme.Space.m) {
             ArtworkView(playlist.artwork, size: 48, cornerRadius: Theme.Radius.artwork,
                         placeholder: "music.note.list")
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(playlist.name)
                     .lineLimit(1)
                 if let count = playlist.trackCount {

@@ -21,89 +21,8 @@ import JukeboxKit
 import SwiftUI
 import UIKit
 
-/// The art's measures in a 300-unit square (station.py's `Cut`). `t` the
-/// tube's stroke, `g` the gaps, `rw` the window's half width, `top` the
-/// outer tube's top edge, `base` where the window, the legs and the core end.
-nonisolated struct StationArtCut: Equatable, Sendable {
-    let t: CGFloat
-    let g: CGFloat
-    let rw: CGFloat
-    let top: CGFloat
-    let base: CGFloat
-
-    /// The inner and the outer tube's centre lines.
-    var innerRadius: CGFloat { rw + g + t / 2 }
-    var outerRadius: CGFloat { innerRadius + t + g }
-    /// Where the arcs spring from.
-    var spring: CGFloat { top + t / 2 + outerRadius }
-    var leg: CGFloat { base - t / 2 }
-    var windowTop: CGFloat { spring - rw }
-    /// The lit core's radius, in proportion to the window as on the board.
-    var coreRadius: CGFloat { rw * 25 / 70 }
-
-    /// From 60 points: a tile, a row, a station's page. The name is never
-    /// drawn into the art: the page's title, in the serif, is right under
-    /// it, and a subtitle that repeats a title goes (tells.md, 5).
-    static let tile = StationArtCut(t: 6, g: 6.5, rw: 82, top: 26, base: 274)
-    /// Under 60 points (a row's thumbnail, the mini player): heavier tubes,
-    /// and one cover, as four would be specks.
-    static let small = StationArtCut(t: 9, g: 8, rw: 80, top: 22, base: 280)
-
-    static func forSide(_ side: CGFloat) -> StationArtCut {
-        side >= 60 ? .tile : .small
-    }
-}
-
-/// The room a station's art stands in: the first cover's hue, its
-/// saturation held to 0.5 so the room is never louder than the music in the
-/// window, at brightness 0.14, flat. Until the cover's colour is known,
-/// Cabinet.
-nonisolated struct StationRoom: Hashable, Sendable {
-    var hue: Double
-    var saturation: Double
-
-    init(_ average: AverageColor) {
-        let hsb = average.hueSaturationBrightness
-        hue = hsb.hue
-        saturation = min(hsb.saturation, 0.5)
-    }
-
-    static let groundBrightness = 0.14
-}
-
-/// A cover's average colour, each 0 … 1 (ImagePipeline.averageColor).
-nonisolated struct AverageColor: Hashable, Sendable {
-    var red: Double
-    var green: Double
-    var blue: Double
-
-    init(red: Double, green: Double, blue: Double) {
-        self.red = red
-        self.green = green
-        self.blue = blue
-    }
-
-    /// Hue 0 … 1 (a turn), saturation and brightness 0 … 1, as Color(hue:
-    /// saturation:brightness:) takes them.
-    var hueSaturationBrightness: (hue: Double, saturation: Double, brightness: Double) {
-        let high = max(red, green, blue)
-        let low = min(red, green, blue)
-        let range = high - low
-        let saturation = high > 0 ? range / high : 0
-        guard range > 0 else { return (0, saturation, high) }
-        var hue: Double
-        if high == red {
-            hue = (green - blue) / range
-        } else if high == green {
-            hue = 2 + (blue - red) / range
-        } else {
-            hue = 4 + (red - green) / range
-        }
-        hue /= 6
-        if hue < 0 { hue += 1 }
-        return (hue, saturation, high)
-    }
-}
+// StationArtCut, StationRoom, AverageColor and the cores' colours
+// (StationCore) are in ArtMeasures.swift: Linux draws from them too.
 
 /// A station's artwork, square, its corners the one radius. `size` nil: as
 /// wide as offered. Lit only while its station is on the air.
@@ -113,6 +32,7 @@ struct StationArtwork: View {
     var cornerRadius: CGFloat
 
     @Environment(AppModel.self) private var app
+    @Environment(LibraryStore.self) private var library
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
     /// The first cover's colour, once worked out (ImagePipeline keeps it),
@@ -137,8 +57,8 @@ struct StationArtwork: View {
         let onAir = radio.stationOnAir(player: player)?.id == station.id
         GeometryReader { proxy in
             let side = min(proxy.size.width, proxy.size.height)
-            StationArtworkFace(station: station, side: side,
-                               room: hasCoreWindow ? nil : known.map(StationRoom.init), isOnAir: onAir)
+            StationArtworkFace(station: station, covers: covers, core: core, side: side,
+                               room: core != nil ? nil : known.map(StationRoom.init), isOnAir: onAir)
                 .frame(width: proxy.size.width, height: proxy.size.height)
         }
         .aspectRatio(1, contentMode: .fit)
@@ -149,7 +69,7 @@ struct StationArtwork: View {
         .environment(\.colorScheme, .dark)
         .accessibilityHidden(true)
         .task(id: toneURL) {
-            guard let toneURL, !hasCoreWindow else { return }
+            guard let toneURL, core == nil else { return }
             if ImagePipeline.shared.cachedAverageColor(toneURL) != nil { return }
             guard let found = await ImagePipeline.shared.averageColor(for: toneURL) else { return }
             // A newer station has its own task; this colour is not its.
@@ -160,15 +80,40 @@ struct StationArtwork: View {
         }
     }
 
-    /// The stations of the listener's own taste: the core, not covers.
-    private var hasCoreWindow: Bool {
-        StationArtworkFace.core(for: station) != nil
+    /// The stations made from taste alone (Your Station, Discovery, Loved)
+    /// show the music they draw from, not the mark's core: "de muziek gaat
+    /// voor" (the photographer, 14 November 2026). Your Station what is
+    /// played most, Loved the favourite albums, Discovery today's albums to
+    /// explore; the core stays only while the library has none to show.
+    private var ownCovers: [Artwork] {
+        let albums: [Album]
+        switch station.seed {
+        case .personal:
+            albums = HomeShelves.mostPlayed(tracks: library.tracks, album: library.album(id:), minimumPlays: 1, limit: 4)
+        case .favorites:
+            albums = Array(library.favoriteAlbums.prefix(4))
+        case .discovery:
+            albums = HomeShelves.explore(albums: library.albums, day: HomeShelves.dayNumber(of: Date()), limit: 4)
+        default:
+            return []
+        }
+        return albums.compactMap(\.artwork)
+    }
+
+    private var covers: [Artwork] {
+        let own = ownCovers
+        return own.isEmpty ? station.artwork : own
+    }
+
+    /// The core, for a taste station with no music to show yet.
+    private var core: StationArtworkFace.Core? {
+        ownCovers.isEmpty ? StationArtworkFace.core(for: station) : nil
     }
 
     /// The first cover, small: its colour is all that is wanted of it, and
     /// 120 pixels is the size a shelf's panes and a row's thumbnail fetch.
     private var toneURL: URL? {
-        guard let cover = station.artwork.first, let server = app.server else { return nil }
+        guard let cover = covers.first, let server = app.server else { return nil }
         return server.artworkURL(cover, maxPixelSize: 120)
     }
 }
@@ -176,42 +121,44 @@ struct StationArtwork: View {
 /// The art at one size.
 private struct StationArtworkFace: View {
     let station: Station
+    /// What the window shows: the station's covers, or for a taste station
+    /// the music it draws from (StationArtwork.covers).
+    let covers: [Artwork]
+    /// The core, for a taste station with nothing to show; nil otherwise.
+    let core: Core?
     let side: CGFloat
     /// The covers' room; nil: Cabinet.
     let room: StationRoom?
     /// The station plays: lit. Otherwise flat.
     let isOnAir: Bool
 
-    init(station: Station, side: CGFloat, room: StationRoom?, isOnAir: Bool) {
+    init(station: Station, covers: [Artwork], core: Core?, side: CGFloat, room: StationRoom?, isOnAir: Bool) {
         self.station = station
+        self.covers = covers
+        self.core = core
         self.side = side
         self.room = room
         self.isOnAir = isOnAir
     }
 
     /// The core in the window of a station made from the listener's own
-    /// taste: Your Station's a warm white; Discovery's paler, newer; Loved's
-    /// warmer, rosier. Calm differences, one family. Any station whose
-    /// covers are not known yet has Your Station's, rather than an empty
-    /// window. `flat` is the core at rest; `top` and `foot` the core lit,
-    /// on the air.
+    /// taste, in StationCore's colours (ArtMeasures.swift). `flat` is the
+    /// core at rest; `top` and `foot` the core lit, on the air.
     struct Core {
         let flat: Color
         let top: Color
         let foot: Color
 
-        static let yours = Core(flat: Color(rgb: 0xFFEDCC), top: Color(rgb: 0xFFFBF0), foot: Color(rgb: 0xFFD58E))
-        static let discovery = Core(flat: Color(rgb: 0xFAF6EC), top: .white, foot: Color(rgb: 0xFFE9B8))
-        static let loved = Core(flat: Color(rgb: 0xFFD3BE), top: Color(rgb: 0xFFF1EA), foot: Color(rgb: 0xFFB58E))
+        init(_ core: StationCore) {
+            let colors = core.colors
+            flat = Color(rgb: colors.flat)
+            top = Color(rgb: colors.top)
+            foot = Color(rgb: colors.foot)
+        }
     }
 
     static func core(for station: Station) -> Core? {
-        switch station.seed {
-        case .personal: return .yours
-        case .discovery: return .discovery
-        case .favorites: return .loved
-        default: return station.artwork.isEmpty ? .yours : nil
-        }
+        StationCore.of(station).map { Core($0) }
     }
 
     var body: some View {
@@ -247,6 +194,8 @@ private struct StationArtworkFace: View {
                 inner.stroke(isOnAir ? Theme.Arch.innerTube : Theme.Arch.glow, style: tubeLine)
             }
             .frame(width: side, height: side)
+            // Flat at half strength, so the covers lead; full on the air.
+            .opacity(isOnAir ? 1 : 0.55)
         }
         .frame(width: side, height: side)
     }
@@ -264,8 +213,7 @@ private struct StationArtworkFace: View {
 
     @ViewBuilder
     private func window(cut: StationArtCut, u: CGFloat, width: CGFloat, height: CGFloat) -> some View {
-        let covers = station.artwork
-        if let core = Self.core(for: station) {
+        if let core {
             coreWindow(core, cut: cut, u: u, width: width, height: height)
         } else if covers.count >= 4 && cut != .small && showsPanes {
             // Four covers as panes, two by two, each cover square and cut to
@@ -286,9 +234,12 @@ private struct StationArtworkFace: View {
             }
             .frame(width: width, height: height)
             .background(Color.black.opacity(0.5))
-        } else {
+        } else if let first = covers.first {
             // One cover as tall as the window, its middle seen through it.
-            pane(covers[0], side: height, width: width, height: height)
+            pane(first, side: height, width: width, height: height)
+        } else {
+            // An empty place, as a cover's is before it comes.
+            Color.white.opacity(0.08)
         }
     }
 

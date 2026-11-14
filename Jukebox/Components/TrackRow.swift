@@ -74,7 +74,7 @@ struct TrackRow: View {
                 EmptyView()
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 HStack(spacing: 4) {
                     Text(track.name)
                         .lineLimit(1)

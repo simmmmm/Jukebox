@@ -254,7 +254,7 @@ private struct RadioStationRow: View {
         NavigationLink(value: Route.station(station)) {
             HStack(spacing: Theme.Space.m) {
                 StationArtwork(station: station, size: Self.art)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(station.title)
                         .foregroundStyle(.primary)
                         .lineLimit(1)

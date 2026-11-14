@@ -275,7 +275,7 @@ private struct OnboardingAccountForm: View {
     }
 
     private var header: some View {
-        VStack(spacing: 2) {
+        VStack(spacing: Theme.Space.xs) {
             Text("Signing in to \(server.name)")
                 .font(.headline)
             Text(verbatim: serverDetail)

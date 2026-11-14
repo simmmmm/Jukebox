@@ -32,6 +32,7 @@ struct JukeboxApp: App {
                 .environment(app.radio)
                 .environment(app.mixes)
                 .environment(app.offline)
+                .environment(app.handoff)
                 // Every control's tint (toggles, sliders, links, the tab
                 // bar's selection) in Copper or Glow, not the system's blue.
                 .tint(Theme.accent)
@@ -49,7 +50,11 @@ struct RootView: View {
             // In front again: is the server there (or gone), and do the
             // downloads that waited go on.
             .onChange(of: scenePhase) { _, phase in
-                if phase == .active { app.offline.appBecameActive() }
+                guard phase == .active else { return }
+                app.offline.appBecameActive()
+                // What the computer was playing, there when the phone is
+                // picked up, not a quarter of a minute later.
+                Task { await app.handoff.refresh() }
             }
     }
 

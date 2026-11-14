@@ -71,7 +71,7 @@ struct MixCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             CollageArtwork(artworks: mix.artwork)
-                .padding(.bottom, 2)
+                .padding(.bottom, Theme.Space.xs)
             Text(mix.title)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.primary)
@@ -96,7 +96,7 @@ struct StationCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             StationArtwork(station: station)
-                .padding(.bottom, 2)
+                .padding(.bottom, Theme.Space.xs)
             Text(station.title)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.primary)

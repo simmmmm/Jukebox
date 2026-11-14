@@ -133,7 +133,7 @@ private struct DownloadedRow: View {
     var body: some View {
         HStack(spacing: Theme.Space.m) {
             cover
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(collection.title)
                     .lineLimit(1)
                 Text(fact)

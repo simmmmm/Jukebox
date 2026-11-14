@@ -450,7 +450,7 @@ private struct StationPlaceholderRows: View {
                 RoundedRectangle(cornerRadius: Theme.Radius.artwork)
                     .fill(.quaternary)
                     .frame(width: 48, height: 48)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("A song of the station")
                     Text("Its artist")
                         .font(.subheadline)

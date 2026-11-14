@@ -7,6 +7,9 @@ options:
   bundleIdPrefix: com.tijmen
   deploymentTarget:
     iOS: "26.0"
+    # The Mac's year matches the iPhone's, so shared views need no
+    # `if #available`.
+    macOS: "26.0"
   developmentLanguage: en
   createIntermediateGroups: true
 settings:
@@ -28,19 +31,22 @@ packages:
   JukeboxKit:
     path: JukeboxKit
 targets:
+  # One target for the iPhone, the iPad and the Mac (a native macOS
+  # destination, not Catalyst): one bundle ID, so one App Store record and one
+  # purchase.
   Jukebox:
     type: application
-    platform: iOS
+    platform: auto
+    supportedDestinations: [iOS, macOS]
     sources:
       # The Swift files, and as resources the asset catalog and
       # Resources/PrivacyInfo.xcprivacy: XcodeGen gives a file of a type it
       # has no rule for the Copy Bundle Resources phase (2.40.1 and later).
       - path: Jukebox
+    # Swift links the system frameworks it imports itself.
     dependencies:
       - package: JukeboxKit
-      - sdk: AVFoundation.framework
-      - sdk: MediaPlayer.framework
-      - sdk: AVKit.framework
+    # One Info.plist for both: the Mac ignores the UI* keys.
     info:
       path: Jukebox/Info.plist
       properties:
@@ -77,6 +83,11 @@ targets:
         ENABLE_PREVIEWS: YES
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        # The Mac's alone: the Mac App Store asks for the sandbox (the
+        # iPhone's is built in), and the hardened runtime is Xcode's default
+        # for a Mac app.
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Jukebox/Jukebox-macOS.entitlements
+        "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES
 
   # The screenshot walk (JukeboxUITests/ScreenshotTests.swift), run in the
   # simulator by ci/screenshots.sh. Built only by build-for-testing: the

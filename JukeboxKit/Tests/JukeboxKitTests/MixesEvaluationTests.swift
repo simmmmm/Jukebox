@@ -1,6 +1,7 @@
 // How good Home's mixes are, measured (lines starting MIXES-EVAL):
-// the made-up listener's daily mixes (do they hold one kind of music, are
-// they 60% known, are artists kept apart), the other mixes and their order,
+// the made-up listener's moods (do they hold one kind of music, are they
+// 60% known, are artists kept apart, is each a mix of artists under a name
+// of its own), the other mixes and their order,
 // a brand-new listener, the test server's real library, and how much the
 // mixes change from one day to the next and within a day of listening.
 
@@ -18,23 +19,26 @@ final class MixesEvaluationTests: XCTestCase {
         MixesCheck.line("made-up listener (\(library.tracks.count) tracks, \(library.base.artists.count) artists): \(mixes.count) mixes")
         for mix in mixes { MixesCheck.line("  \(MixesCheck.describe(mix, snapshot: snapshot))") }
 
-        let daily = mixes.filter { $0.kind == .daily }
-        XCTAssertGreaterThanOrEqual(daily.count, 3)
-        XCTAssertLessThanOrEqual(daily.count, 6)
-        // Daily mixes first, numbered in order.
-        XCTAssertEqual(Array(mixes.prefix(daily.count).map(\.kind)), [MixKind](repeating: .daily, count: daily.count))
-        XCTAssertEqual(daily.map(\.title), (1...daily.count).map { "Daily Mix \($0)" })
+        let moods = mixes.filter { $0.kind == .mood }
+        XCTAssertGreaterThanOrEqual(moods.count, 3)
+        XCTAssertLessThanOrEqual(moods.count, 6)
+        // The moods first, each named after its songs; their ids keep the
+        // number and "daily", which downloads hold.
+        XCTAssertEqual(Array(mixes.prefix(moods.count).map(\.kind)), [MixKind](repeating: .mood, count: moods.count))
+        XCTAssertEqual(moods.map(\.title), ["Rock & Alternative", "Electronic & Ambient", "Jazz & Bebop", "Folk", "Pop"])
+        XCTAssertEqual(moods.map(\.id), (1...moods.count).map { "daily-\($0)-2026-10-29" })
+        MixesCheck.assertMoods(mixes, snapshot: snapshot)
 
-        var allDaily: [Track] = []
+        var allMoods: [Track] = []
         var purities: [Double] = []
         var familiarShares: [Double] = []
         var separation = 0
-        for mix in daily {
+        for mix in moods {
             XCTAssertTrue((25...40).contains(mix.tracks.count), "\(mix.title): \(mix.tracks.count) tracks")
             XCTAssertEqual(MixesCheck.duplicates(mix.tracks), 0)
             XCTAssertEqual(MixesCheck.albumBackToBack(mix.tracks), 0, mix.title)
             separation += MixesCheck.separationViolations(mix.tracks, snapshot: snapshot, window: 2)
-            allDaily += mix.tracks
+            allMoods += mix.tracks
 
             // One kind of music: the share of the mix's most common cluster.
             let clusters = mix.tracks.compactMap { snapshot.primaryArtistKey(of: $0).flatMap { library.base.clusterOfArtist[$0] } }
@@ -58,16 +62,16 @@ final class MixesEvaluationTests: XCTestCase {
             MixesCheck.line("  \(mix.title): cluster \(MixesRadio.clusterName(purity.value)) \(MixesCheck.fmt(purity.share)), "
                             + "known \(MixesCheck.fmt(familiarShares.last ?? 0)), \(mix.subtitle)")
         }
-        XCTAssertEqual(MixesCheck.duplicates(allDaily), 0, "no track in two daily mixes")
+        XCTAssertEqual(MixesCheck.duplicates(allMoods), 0, "no track in two moods")
         XCTAssertEqual(separation, 0, "two songs between two by one artist")
         let meanPurity = purities.reduce(0, +) / Double(purities.count)
         let meanKnown = familiarShares.reduce(0, +) / Double(familiarShares.count)
-        MixesCheck.line("daily mixes: purity \(MixesCheck.fmt(meanPurity)) (min \(MixesCheck.fmt(purities.min() ?? 0))), "
+        MixesCheck.line("moods: purity \(MixesCheck.fmt(meanPurity)) (min \(MixesCheck.fmt(purities.min() ?? 0))), "
                         + "known \(MixesCheck.fmt(meanKnown)), separation violations \(separation)")
         XCTAssertGreaterThanOrEqual(meanPurity, 0.85)
         XCTAssertEqual(meanKnown, 0.6, accuracy: 0.12)
         // The listener's two loved clusters lead.
-        let leading = Set(daily.prefix(2).compactMap { mix in
+        let leading = Set(moods.prefix(2).compactMap { mix in
             MixesCheck.purity(mix.tracks.compactMap { snapshot.primaryArtistKey(of: $0).flatMap { library.base.clusterOfArtist[$0] } }).value
         })
         XCTAssertTrue(leading.isSubset(of: [0, 1]), "Rock and Electronic first, not \(leading)")
@@ -164,14 +168,15 @@ final class MixesEvaluationTests: XCTestCase {
         let mixes = generator.mixes()
         MixesCheck.line("brand-new listener: " + mixes.map { "\($0.title) (\($0.tracks.count))" }.joined(separator: ", "))
         let kinds = Set(mixes.map(\.kind))
-        // By the library's structure: daily mixes of its biggest artists,
+        // By the library's structure: moods of its biggest artists,
         // what is new, decades and genres.
-        XCTAssertTrue(kinds.isSuperset(of: [.daily, .newArrivals, .decade, .genre]), "\(kinds)")
+        XCTAssertTrue(kinds.isSuperset(of: [.mood, .newArrivals, .decade, .genre]), "\(kinds)")
         // Nothing that needs a history.
         XCTAssertTrue(kinds.isDisjoint(with: [.onRepeat, .rediscover, .deepCuts, .favorites]), "\(kinds)")
-        let daily = mixes.filter { $0.kind == .daily }
-        XCTAssertGreaterThanOrEqual(daily.count, 3)
-        for mix in daily {
+        let moods = mixes.filter { $0.kind == .mood }
+        XCTAssertGreaterThanOrEqual(moods.count, 3)
+        MixesCheck.assertMoods(mixes, snapshot: snapshot)
+        for mix in moods {
             XCTAssertGreaterThanOrEqual(mix.tracks.count, 25)
             let clusters = mix.tracks.compactMap { snapshot.primaryArtistKey(of: $0).flatMap { base.clusterOfArtist[$0] } }
             XCTAssertGreaterThanOrEqual(MixesCheck.purity(clusters).share, 0.8, mix.subtitle)
@@ -217,9 +222,12 @@ final class MixesEvaluationTests: XCTestCase {
             XCTAssertFalse(mix.subtitle.contains(";"), mix.subtitle)
         }
         XCTAssertTrue(mixes.contains { $0.kind == .newArrivals }, "the whole library is new")
+        MixesCheck.assertMoods(mixes, snapshot: snapshot)
+        XCTAssertEqual(mixes.filter { $0.kind == .mood }.map(\.title),
+                       ["Pop & Electronic", "Rock & Alternative", "Jazz & Bebop", "Folk", "Hip-Hop", "Indie"])
 
-        // A listener who has played rock and folk for a month: their daily
-        // mixes, by cluster.
+        // A listener who has played rock and folk for a month: their moods,
+        // by cluster.
         var events: [PlayEvent] = []
         var played: [Track] = []
         var rng = SplitMix64(seed: 3)
@@ -236,9 +244,10 @@ final class MixesEvaluationTests: XCTestCase {
         let theirMixes = listener.mixes()
         MixesCheck.line("test server, a month of rock and folk: \(theirMixes.count) mixes")
         for mix in theirMixes { MixesCheck.line("  \(MixesCheck.describe(mix, snapshot: listenerSnapshot))") }
-        let daily = theirMixes.filter { $0.kind == .daily }
-        XCTAssertGreaterThanOrEqual(daily.count, 2)
-        for mix in daily.prefix(2) {
+        MixesCheck.assertMoods(theirMixes, snapshot: listenerSnapshot)
+        let moods = theirMixes.filter { $0.kind == .mood }
+        XCTAssertGreaterThanOrEqual(moods.count, 2)
+        for mix in moods.prefix(2) {
             let genres = mix.tracks.flatMap { listenerSnapshot.genreKeys(of: $0) }
             let rockOrFolk = mix.tracks.filter { t in
                 let g = Set(listenerSnapshot.genreKeys(of: t))
@@ -261,26 +270,30 @@ final class MixesEvaluationTests: XCTestCase {
         let a = library.generator(at: morning).mixes()
         let b = library.generator(at: lunch).mixes()
         XCTAssertEqual(a, b)
+        // The moods' names with them: they come from the day's songs.
+        XCTAssertEqual(a.map(\.title), b.map(\.title))
+        MixesCheck.assertMoods(a, snapshot: library.snapshot)
         XCTAssertEqual(library.generator(at: morning).suggestedStations(), library.generator(at: lunch).suggestedStations())
 
-        // The next day: new mixes of the same kinds, the daily ones about
-        // the same artists, with other songs.
+        // The next day: new mixes of the same kinds, the moods about the
+        // same artists, with other songs.
         let c = library.generator(at: tomorrow).mixes()
         XCTAssertTrue(c.allSatisfy { $0.id.hasSuffix("2026-10-31") })
+        MixesCheck.assertMoods(c, snapshot: library.snapshot)
         var overlaps: [String] = []
-        var dailyOverlap: [Double] = []
+        var moodOverlap: [Double] = []
         for mix in a {
             let key = mix.id.replacingOccurrences(of: "2026-10-30", with: "2026-10-31")
             guard let next = c.first(where: { $0.id == key }) else { continue }
             let j = MixesCheck.jaccard(mix.tracks, next.tracks)
             overlaps.append("\(mix.title) \(MixesCheck.fmt(j))")
-            if mix.kind == .daily { dailyOverlap.append(j) }
+            if mix.kind == .mood { moodOverlap.append(j) }
         }
         MixesCheck.line("day to day, the share of the same songs (Jaccard): " + overlaps.joined(separator: ", "))
-        let mean = dailyOverlap.reduce(0, +) / Double(max(1, dailyOverlap.count))
-        MixesCheck.line("daily mixes from one day to the next: \(MixesCheck.fmt(mean)) the same")
-        XCTAssertLessThan(mean, 0.6, "tomorrow's daily mixes are mostly new songs")
-        XCTAssertGreaterThanOrEqual(dailyOverlap.count, 3, "the same clusters tomorrow")
+        let mean = moodOverlap.reduce(0, +) / Double(max(1, moodOverlap.count))
+        MixesCheck.line("moods from one day to the next: \(MixesCheck.fmt(mean)) the same")
+        XCTAssertLessThan(mean, 0.6, "tomorrow's moods are mostly new songs")
+        XCTAssertGreaterThanOrEqual(moodOverlap.count, 3, "the same clusters tomorrow")
     }
 
     /// A morning of listening, then the app makes the mixes again at lunch,
@@ -293,7 +306,7 @@ final class MixesEvaluationTests: XCTestCase {
         let before = library.generator(at: morning).mixes()
         let first = try XCTUnwrap(before.first)
 
-        // The first 20 songs of Daily Mix 1 heard to the end, one of them
+        // The first 20 songs of the first mood heard to the end, one of them
         // thumbed down; Jellyfin counts each play.
         var history = library.history
         var tracks = library.tracks
@@ -322,13 +335,15 @@ final class MixesEvaluationTests: XCTestCase {
             changed += lost
             changes.append("\(mix.title) \(lost)")
         }
-        MixesCheck.line("after a morning of Daily Mix 1 (20 songs, one thumbed down), songs changed by lunch: "
+        MixesCheck.line("after a morning of \(first.title) (20 songs, one thumbed down), songs changed by lunch: "
                         + changes.joined(separator: ", "))
         let again = try XCTUnwrap(after.first { $0.id == first.id })
-        // The thumbed-down song is gone at once; the rest of Daily Mix 1 stays.
+        // The thumbed-down song is gone at once; the rest of the mood stays,
+        // under the name it had.
         XCTAssertFalse(again.tracks.contains { $0.id == disliked })
         let kept = Set(first.tracks.map(\.id)).intersection(again.tracks.map(\.id)).count
-        MixesCheck.line("Daily Mix 1 kept \(kept) of \(first.tracks.count)")
+        MixesCheck.line("\(first.title) kept \(kept) of \(first.tracks.count)")
+        XCTAssertEqual(again.title, first.title)
         XCTAssertGreaterThanOrEqual(kept, first.tracks.count - 3)
     }
 }

@@ -1,0 +1,149 @@
+// The screenshot walk, Linux's own (the iPhone's is JukeboxUITests): with
+// JUKEBOX_SHOTS=<folder> the app walks its main screens by itself, saves a
+// picture of each at the window's true size, and quits. dev/linux-screens.sh
+// runs it without a desktop (Xvfb) against the demo library.
+//
+// It is here because of a player's bar nobody had seen at its real width:
+// "ook klopt er geen fuck van deze verhoudingen" (the photographer, 14
+// November 2026). A screen is judged from its picture, not from its code.
+
+import CAdw
+import Foundation
+import JukeboxKit
+
+enum Shots {
+    static var folder: String? { ProcessInfo.processInfo.environment["JUKEBOX_SHOTS"] }
+
+    /// "1440x900" in JUKEBOX_WINDOW: the window's size for the walk.
+    static var windowSize: (Int32, Int32)? {
+        guard let text = ProcessInfo.processInfo.environment["JUKEBOX_WINDOW"] else { return nil }
+        let parts = text.split(separator: "x").compactMap { Int32($0) }
+        return parts.count == 2 ? (parts[0], parts[1]) : nil
+    }
+
+    static func walk() {
+        guard let folder else { return }
+        // The walk opens and closes the panel: the listener's choice stays
+        // the listener's. Before the first step, which closes it.
+        app.panel.remembers = false
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        Task {
+            // The panel as a listener first finds it: closed.
+            app.panel.isOpen = false
+            // The library, the mixes and the first covers.
+            for _ in 0..<80 where app.library.tracks.isEmpty || app.mixes.mixes.isEmpty {
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+            await step("01-home", wait: 3)
+            MainWindow.select(1)
+            await step("02-radio", wait: 2)
+            Pages.open(app.radio.station(for: .personal))
+            await step("03-station", wait: 2)
+            MainWindow.select(4)
+            await step("04-albums", wait: 3)
+            let albums = app.library.albums(sortedBy: .artist)
+            if let album = albums.first {
+                Pages.open(album)
+                await step("05-album", wait: 2)
+            }
+            if let artist = app.library.artistsByName.first {
+                MainWindow.select(5)
+                Pages.open(artist)
+                await step("06-artist", wait: 2)
+            }
+            MainWindow.select(6)
+            await step("07-songs", wait: 2)
+            MainWindow.select(7)
+            await step("08-playlists", wait: 2)
+            // Music, as the designer's drawings have it (2027/notes.md):
+            // Dust Windows on Home, then the panel on Up next over another
+            // album's page.
+            if let album = albums.first(where: { $0.name == "Dust Windows" }) ?? albums.dropFirst(3).first {
+                let tracks = app.library.tracks(inAlbum: album.id)
+                app.player.play(tracks, startingAt: 1, context: QueueContext(.album(album.id), title: album.name))
+                MainWindow.select(0)
+                await step("09-home-playing", wait: 4)
+                // Narrow, the places folded away come over the page.
+                if MainWindow.showPlaces() {
+                    await step("09-places-over", wait: 1)
+                    MainWindow.select(0)
+                }
+                // Two songs queued from elsewhere, as the drawing's "Then".
+                let queued = ["Velvet Sky", "Night Drive"].compactMap { name in app.library.tracks.first { $0.name == name } }
+                app.player.addToQueue(queued)
+                app.panel.toggle(.upNext)
+                // Albums made before the panel opened: its tiles follow the
+                // narrower page (160 at a margin of 32 at 1440).
+                MainWindow.select(4)
+                await step("10a-albums-panel", wait: 2)
+                Pages.open(albums.first { $0.name == "Quiet Rooms" } ?? album)
+                await step("10-album-up-next", wait: 2)
+                // Now Playing as the designer drew it: Up next beside it.
+                NowPlayingPage.open()
+                await step("10b-now-playing", wait: 3)
+                gtk_widget_activate(NowPlayingPage.more)
+                await step("10c-now-playing-menu", wait: 1)
+            }
+            // The panel on the lyrics: Night Drive's are timed, and a few
+            // lines in. dev/demo/lyrics.json's times are ticks (100 ns), so
+            // its lines come 0.9 s apart: the fourth starts at 2.7 s.
+            if let song = app.library.tracks.first(where: { $0.name == "Night Drive" }),
+               let albumID = song.albumID, let album = app.library.album(id: albumID) {
+                let tracks = app.library.tracks(inAlbum: albumID)
+                app.player.play(tracks, startingAt: tracks.firstIndex { $0.id == song.id } ?? 0,
+                                context: QueueContext(.album(albumID), title: album.name))
+                app.panel.toggle(.lyrics)
+                MainWindow.select(4)
+                Pages.open(album)
+                try? await Task.sleep(for: .seconds(2))
+                app.player.seek(to: 1.5)
+                await step("11-album-lyrics", wait: 1.5)
+                NowPlayingPage.open()
+                await step("12-now-playing-lyrics", wait: 3)
+            }
+            // Your Station on the air; then the panel with the radio's reasons.
+            app.panel.isOpen = false
+            app.radio.start(.personal)
+            MainWindow.select(1)
+            await step("13-radio-on-air", wait: 4)
+            app.panel.toggle(.upNext)
+            await step("14-radio-up-next", wait: 2)
+            NowPlayingPage.open()
+            await step("15-now-playing-station", wait: 3)
+            Preferences.present()
+            await step("16-preferences", wait: 2)
+            if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
+                adw_dialog_force_close(dialog)
+            }
+            MainWindow.showSignIn()
+            await step("17-sign-in", wait: 2)
+            gtk_window_close(ptr(MainWindow.window))
+            exit(0)
+        }
+    }
+
+    private static func step(_ name: String, wait seconds: Double) async {
+        try? await Task.sleep(for: .seconds(seconds))
+        guard let folder else { return }
+        save(MainWindow.window, to: "\(folder)/\(name).png")
+    }
+
+    /// The window as it is drawn, to a PNG.
+    private static func save(_ window: Widget, to path: String) {
+        let width = gtk_widget_get_width(window), height = gtk_widget_get_height(window)
+        guard width > 0, height > 0, let paintable = gtk_widget_paintable_new(window),
+              let snapshot = gtk_snapshot_new() else { return }
+        // At the screen's own scale (GDK_SCALE=2 under Xvfb): the drawings
+        // are made for it, and a 1x picture of them would hide that.
+        let scale = Screen.shared.scale
+        gtk_snapshot_scale(snapshot, Float(scale), Float(scale))
+        gdk_paintable_snapshot(paintable, ptr(snapshot), Double(width), Double(height))
+        g_object_unref(raw(paintable))
+        guard let node = gtk_snapshot_free_to_node(snapshot) else { return }
+        defer { gsk_render_node_unref(node) }
+        guard let native = gtk_widget_get_native(window), let renderer = gtk_native_get_renderer(native),
+              let texture = gsk_renderer_render_texture(renderer, node, nil) else { return }
+        gdk_texture_save_to_png(texture, path)
+        g_object_unref(raw(texture))
+    }
+}

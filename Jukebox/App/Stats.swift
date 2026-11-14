@@ -17,10 +17,12 @@
 // version, the language and the device model. docs/STATS.md has every event
 // and the question it answers.
 
-import AVFoundation
 import Foundation
 import JukeboxKit
-import SwiftUI
+// Linux keeps URLSession apart from Foundation.
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 
 /// What a property may be: a word from the app's own lists, a number, yes or no.
 nonisolated protocol Value {}
@@ -218,25 +220,6 @@ enum Stats {
         }
     }
 
-    /// Why a song could not be played, from the error AVFoundation gave:
-    /// the network (a URL error, or one under it), the server (its setup,
-    /// or not letting this client have the song), a file it cannot read.
-    static func playbackFailure(_ error: Error?) -> String {
-        guard let error else { return "other" }
-        let failure = error as NSError
-        let underlying = failure.userInfo[NSUnderlyingErrorKey] as? NSError
-        if failure.domain == NSURLErrorDomain || underlying?.domain == NSURLErrorDomain { return "network" }
-        guard failure.domain == AVFoundationErrorDomain else { return "other" }
-        switch AVError.Code(rawValue: failure.code) {
-        case .fileFormatNotRecognized?, .fileFailedToParse?, .decoderNotFound?, .decodeFailed?:
-            return "unsupported"
-        case .serverIncorrectlyConfigured?, .contentIsNotAuthorized?:
-            return "server"
-        default:
-            return "other"
-        }
-    }
-
     /// Where the lyrics shown for a song came from, and whether they are
     /// timed; never the song or its words.
     static func lyrics(_ answer: LyricsAnswer) -> [String: Value] {
@@ -252,11 +235,21 @@ enum Stats {
 
     // MARK: What every event carries
 
+    #if os(Linux)
+    // Linux has no Info.plist: project.yml's MARKETING_VERSION, by hand.
+    private static let version = "1.0"
+    private static let build = "1"
+    #else
     private static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
     private static let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? ""
+    #endif
 
     /// The device model as the system names it ("iPhone17,1", "Mac15,6").
     private static let model: String = {
+        #if os(Linux)
+        // A PC has no model worth counting, and no sysctlbyname.
+        return "Linux"
+        #else
         var size = 0
         #if os(macOS)
         let name = "hw.model"
@@ -268,6 +261,7 @@ enum Stats {
         var value = [CChar](repeating: 0, count: size)
         sysctlbyname(name, &value, &size, nil, 0)
         return String(cString: value)
+        #endif
     }()
 
     /// A browser's kind of user agent: OpenPanel reads the system and its
@@ -275,42 +269,15 @@ enum Stats {
     private static let agent: String = {
         let v = ProcessInfo.processInfo.operatingSystemVersion
         let system = "\(v.majorVersion)_\(v.minorVersion)"
-        #if os(macOS)
+        #if os(Linux)
+        let device = "X11; Linux x86_64"
+        #elseif os(macOS)
         let device = "Macintosh; Intel Mac OS X \(system)"
         #else
         let device = model.hasPrefix("iPad") ? "iPad; CPU OS \(system) like Mac OS X" : "iPhone; CPU iPhone OS \(system) like Mac OS X"
         #endif
         return "Mozilla/5.0 (\(device)) AppleWebKit/605.1.15 (KHTML, like Gecko) Jukebox/\(version)"
     }()
-}
-
-extension View {
-    /// `action` once for as long as this view lives: a page pushed, a sheet
-    /// or a cover opened, a panel shown. Not again when it shows again after
-    /// what covered it has gone, as `onAppear` alone would: then Back would
-    /// count as another visit.
-    func countsOnce(_ action: @escaping () -> Void) -> some View {
-        modifier(StatsOnce(action: action))
-    }
-
-    /// The `screen` event for this view, once for as long as it lives.
-    /// `name` is a kind of screen from docs/STATS.md, never what it shows.
-    func countsScreen(_ name: String) -> some View {
-        countsOnce { Stats.track(.screen, ["name": name]) }
-    }
-}
-
-private struct StatsOnce: ViewModifier {
-    let action: () -> Void
-    @State private var isCounted = false
-
-    func body(content: Content) -> some View {
-        content.onAppear {
-            guard !isCounted else { return }
-            isCounted = true
-            action()
-        }
-    }
 }
 
 /// Sends the events one at a time, in order. One that got no answer (no

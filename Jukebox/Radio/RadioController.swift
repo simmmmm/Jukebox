@@ -142,6 +142,13 @@ final class RadioController {
         }
     }
 
+    /// A station that was on the air on another device, taken over with
+    /// its queue (HandoffStore): the song that plays goes on where it is,
+    /// and the station chooses what comes after it, as it would have there.
+    func continueStation(_ station: Station) {
+        begin(station, excluding: player.currentTrack?.id, continuing: true)
+    }
+
     /// Music's Autoplay, from the player when an album or a playlist ends:
     /// a station from its last track that does not play that track again.
     /// That track is still the player's current one, but it has ended: the
@@ -793,6 +800,19 @@ final class RadioController {
             guard !Task.isCancelled else { return }
             self?.rebuildGraph()
         }
+    }
+}
+
+// Moved from Home/HomeParts.swift, so Linux lights the same station at the
+// same moments as the iPhone (build/design-round/drawings/spec.md).
+extension RadioController {
+    /// The station on the air: one is starting, or the player is playing
+    /// its queue. `station` alone can outlive the music (the player was
+    /// stopped from the lock screen), so the player's context decides.
+    func stationOnAir(player: AudioPlayer) -> Station? {
+        guard let station else { return nil }
+        if isStarting || player.context?.station?.id == station.id { return station }
+        return nil
     }
 }
 

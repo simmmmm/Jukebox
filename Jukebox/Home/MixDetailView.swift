@@ -148,7 +148,7 @@ struct MixDetailView: View {
         .frame(maxWidth: .infinity)
     }
 
-    /// "Daily Mix 1, 8 Nov 2026": the mix of that day, as it was.
+    /// "1990s Rock, 8 Nov 2026": the mix of that day, as it was.
     private var defaultName: String {
         "\(mix.title), \(Date().formatted(date: .abbreviated, time: .omitted))"
     }

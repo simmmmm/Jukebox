@@ -327,6 +327,7 @@ struct NowPlayingView: View {
         return VStack(spacing: Theme.Space.xs) {
             Capsule()
                 .fill(ink.opacity(0.35))
+                // grid-ok: the system's own grabber is 36 by 5.
                 .frame(width: 36, height: 5)
                 .accessibilityHidden(true)
             HStack(spacing: Theme.Space.m) {
@@ -444,10 +445,10 @@ struct NowPlayingView: View {
     /// helemaal en dan kap je die af. … Anders zet je het hartje lager en
     /// laat je de titel af en toe voorbij scrollen?"
     private var titleRow: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Theme.Space.xs) {
             title(.serif(.title))
             HStack(alignment: .top, spacing: Theme.Space.s) {
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     artistLine(.title3)
                     source
                         .padding(.top, Theme.Space.s)
@@ -475,7 +476,7 @@ struct NowPlayingView: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Show Record")
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 title(.serif(.title3))
                 artistLine(.subheadline)
             }
@@ -530,7 +531,7 @@ struct NowPlayingView: View {
             Button {
                 show(.queue)
             } label: {
-                HStack(spacing: 6) {
+                HStack(spacing: Theme.Space.s) {
                     ArchMark(size: 16, style: .template)
                     Text(station.title)
                         .lineLimit(1)
@@ -678,7 +679,7 @@ struct NowPlayingView: View {
             Image(systemName: "speaker.fill")
                 .accessibilityHidden(true)
             NowPlayingVolumeSlider()
-                .frame(height: 30)
+                .frame(height: 32)
             Image(systemName: "speaker.wave.3.fill")
                 .accessibilityHidden(true)
         }

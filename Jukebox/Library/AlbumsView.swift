@@ -186,7 +186,7 @@ struct AlbumDetailView: View {
     }
 
     private func footer(_ shown: Album, tracks: [Track]) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Theme.Space.xs) {
             if let year = shown.year {
                 Text(String(year))
             }

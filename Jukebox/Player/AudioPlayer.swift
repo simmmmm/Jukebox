@@ -39,57 +39,8 @@ import JukeboxKit
 import MediaPlayer
 import Observation
 
-enum RepeatMode: String, CaseIterable, Sendable {
-    case off
-    case all
-    case one
-}
-
-/// What the queue was started from: its name in Now Playing ("Playing from
-/// Kid A") and whether a station plays.
-struct QueueContext: Hashable, Sendable {
-    enum Kind: Hashable, Sendable {
-        case album(ItemID)
-        case artist(ItemID)
-        case playlist(ItemID)
-        case mix(String)
-        case genre(String)
-        case songs
-        case favorites
-        case search
-        case radio(Station)
-        case other
-    }
-
-    var kind: Kind
-    var title: String
-
-    init(_ kind: Kind, title: String) {
-        self.kind = kind
-        self.title = title
-    }
-
-    var station: Station? {
-        if case let .radio(station) = kind { return station }
-        return nil
-    }
-
-    var isRadio: Bool { station != nil }
-}
-
-/// One place in the queue: the same track can be in it twice.
-struct QueueEntry: Identifiable, Hashable, Sendable {
-    let id: UUID
-    let track: Track
-    /// Why the radio chose it, shown under it in Up Next.
-    let reason: PickReason?
-
-    init(track: Track, reason: PickReason? = nil) {
-        id = UUID()
-        self.track = track
-        self.reason = reason
-    }
-}
+// RepeatMode, QueueContext and QueueEntry are in PlayQueue.swift: Linux's
+// player (Linux/App/AudioPlayer.swift) has the same queue.
 
 @Observable
 final class AudioPlayer {
@@ -188,6 +139,9 @@ final class AudioPlayer {
     @ObservationIgnored private var wantsToPlay = false
     @ObservationIgnored private var resumeAfterInterruption = false
     @ObservationIgnored private var isSeeking = false
+    /// Where to go once the current item can seek: a queue taken over from
+    /// another device starts part-way, and is asked to before it is ready.
+    @ObservationIgnored private var pendingSeek: TimeInterval?
     @ObservationIgnored private var seekGeneration = 0
     @ObservationIgnored private var consecutiveFailures = 0
     @ObservationIgnored private var isAskingRadio = false
@@ -442,11 +396,19 @@ final class AudioPlayer {
     }
 
     func seek(to seconds: TimeInterval) {
-        guard playing != nil else { return }
+        guard let playing else { return }
         let upper = duration > 0 ? duration : max(seconds, 0)
         let target = max(0, min(seconds, upper))
         elapsed = target
         isSeeking = true
+        // An item just loaded cannot seek yet (HandoffStore plays and seeks
+        // in one go), and AVPlayer is not to be asked before it is ready
+        // (Apple's QA1820): itemStatusChanged asks then.
+        guard playing.loaded.item.status == .readyToPlay else {
+            pendingSeek = target
+            return
+        }
+        pendingSeek = nil
         seekGeneration += 1
         let generation = seekGeneration
         PlayerSignals.seek(engine, to: target) { [weak self] in
@@ -647,6 +609,7 @@ final class AudioPlayer {
         elapsed = 0
         duration = entry.track.duration
         isSeeking = false
+        pendingSeek = nil
         engine.volume = volume(for: entry.track)
         preloadNext()
         publishNowPlaying()
@@ -913,7 +876,13 @@ final class AudioPlayer {
 
     private func itemStatusChanged(_ id: ObjectIdentifier) {
         let items = [playing?.loaded.item, preloaded?.item].compactMap { $0 }
-        guard let item = items.first(where: { ObjectIdentifier($0) == id }), item.status == .failed else { return }
+        guard let item = items.first(where: { ObjectIdentifier($0) == id }) else { return }
+        // Ready, and a place to start from was waiting for that (seek).
+        if item.status == .readyToPlay, let target = pendingSeek, item === playing?.loaded.item {
+            seek(to: target)
+            return
+        }
+        guard item.status == .failed else { return }
         itemFailed(id)
     }
 

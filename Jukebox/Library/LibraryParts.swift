@@ -232,7 +232,7 @@ struct LibraryPlaylistRow: View {
         HStack(spacing: Theme.Space.m) {
             ArtworkView(playlist.artwork, size: 56, cornerRadius: Theme.Radius.artwork,
                         placeholder: "music.note.list")
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(playlist.name)
                     .lineLimit(1)
                 if let count = playlist.trackCount {

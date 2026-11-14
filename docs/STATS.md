@@ -1,56 +1,68 @@
 # Usage counts (Stats)
 
-Anonymous counts of which screens and features of Jukebox are used, on the
-photographer's own OpenPanel server (`https://stats.numa.photo`, open source,
-self-hosted). The client id and secret (`Stats.clientID`, `Stats.clientSecret`)
-come from the OpenPanel project and are not secrets: they ship in the app.
-While the id is empty nothing is sent.
-`Jukebox/App/Stats.swift` is all of it; every event is one line where it
-happens. Numa-mac's counts (`app/Numa/Stats.swift`, `docs/STATS_PLAN.md`) are
-the pattern, with one difference, below.
+Anonymous counts of which screens and features of Jukebox are used, sent to
+the photographer's own OpenPanel server (`https://stats.numa.photo`, open
+source, self-hosted).
+
+- `Jukebox/App/Stats.swift` is all of it. Every event is one line where it
+  happens.
+- An event is one POST to `/api/track`, made in `Stats.swift`; no package.
+- The client id and secret (`Stats.clientID`, `Stats.clientSecret`) come from
+  the OpenPanel project. They are not secrets: they ship in the app. While the
+  id is empty nothing is sent.
+- Numa-mac's counts (`app/Numa/Stats.swift`, `docs/STATS_PLAN.md`) are the
+  pattern, with one difference (rule 1).
 
 The photographer, 8 November 2026: "Kun je ook aptabase toevoegen van mijn
 account en alles tracken wat je mag zonder cookie melding."
 
-OpenPanel and not Aptabase since 13 November 2026: the photographer wants to
-see the order of what someone does in one visit and where a visit ends
-("user flows heb ik oneindig veel meer aan dan aantal bezoekers"), and
-Aptabase only counts. Jukebox uses no package for it: an event is one POST to
-`/api/track`, made in `Stats.swift`.
+OpenPanel replaced Aptabase on 13 November 2026. The photographer wants to see
+the order of what someone does in one visit and where a visit ends ("user
+flows heb ik oneindig veel meer aan dan aantal bezoekers"); Aptabase only
+counts.
 
 ## Rules
 
-1. **On by default, without asking.** Jukebox sets no cookie and stores
-   nothing on the device for the counts, and sends no id. The server ties one
-   visit's events together itself: from the address and the user agent of the
-   request it makes a salted hash (OpenPanel's `device-id.ts`), and the salt
-   changes, so the hash does not follow someone over time. It also reads a
-   rough place (country, city) from the address. As the photographer asked:
-   "alles tracken wat je mag zonder cookie melding". Numa asks first and is
-   off by default, because Numa had said "no analytics" until then; Jukebox
-   never did. Not yet checked on the running server: how often the salt
-   changes, and that the address itself is not kept with an event.
-2. **The switch.** Settings › Privacy › Share Anonymous Usage
-   (`AppSettings.shareUsage`, UserDefaults `shareUsage`). Off, `Stats.track`
-   returns before anything: no request is made while it is off. Turning it off is the
-   last event, `setting_changed` `share_usage` `off`, sent while it is still
-   on; then nothing. Turning it on is not counted. A launch argument
-   `-shareUsage NO` turns it off too (for a walk in the simulator).
-3. **A closed list.** The events are `Stats.Name`. A new one goes there and
-   in the table below, in the same change.
+1. **On by default, without asking**, as the photographer asked: "alles
+   tracken wat je mag zonder cookie melding".
+   - Jukebox sets no cookie, stores nothing on the device for the counts, and
+     sends no id.
+   - The server ties one visit's events together itself: a salted hash of the
+     request's address and user agent (OpenPanel's `device-id.ts`). The salt
+     changes, so the hash does not follow someone over time.
+   - The server also reads a rough place (country, city) from the address.
+   - Numa asks first and is off by default, because Numa had said "no
+     analytics" until then. Jukebox never did.
+   - Not yet checked on the running server: how often the salt changes, and
+     that the address itself is not kept with an event.
+2. **The switch**: Settings › Privacy › Share Anonymous Usage
+   (`AppSettings.shareUsage`, UserDefaults `shareUsage`).
+   - Off: `Stats.track` returns before anything. No request is made.
+   - Turning it off sends one last event, `setting_changed` `share_usage`
+     `off`, while it is still on. Then nothing.
+   - Turning it on is not counted.
+   - The launch argument `-shareUsage NO` turns it off too (for a walk in the
+     simulator).
+3. **A closed list.** The events are `Stats.Name`. A new one goes there and in
+   the table below, in the same change.
 4. **Coarse properties from fixed lists only**: a kind of screen, a kind of
    seed, a bucket, on or off. Never a title, an artist, an album, a
    playlist's or a mix's name, a search, a server's address or name, a user
    name, an id of anything, an error's message. Counts and durations are in
    buckets (below), so no number tells one library from another.
-5. **What every event carries** besides its own properties: the app's
-   version and build, the system (iOS, iPadOS) and its version (in the user
-   agent), the language, the device model, the time, and `debug` for a debug
-   build (CI's simulator runs and Xcode builds, kept apart on the server).
-   An event that got no answer waits in memory for the next one, 200 at
-   most, and is gone when the app quits.
-6. **Main actor.** `Stats.track` runs on the main actor, as everything in the
-   app does by default; something running elsewhere hops there first.
+5. **Every event also carries** the app's version and build, the system
+   (iOS, iPadOS) and its version (in the user agent), the language, the device
+   model, the time, and `debug` for a debug build (CI's simulator runs and
+   Xcode builds, kept apart on the server).
+   **Linux** sends the same events from the same `Stats.swift`, for the
+   screens it has, as system `Linux`: the model is the word "Linux" and the
+   user agent says "X11; Linux x86_64". Never the distribution, the desktop
+   or the machine's name. Its switch is Preferences › Privacy › Share
+   Anonymous Usage.
+6. **Unsent events** wait in memory for the next one, 200 at most, and are
+   gone when the app quits.
+7. **Main actor.** `Stats.track` runs on the main actor, as everything in the
+   app does by default. Code running elsewhere hops there first.
 
 Buckets:
 
@@ -78,7 +90,7 @@ Buckets:
 | `dial_changed` | `value` (bucket) | Where people set the dial | the three dials, when let go |
 | `track_ended` | `outcome` (`completed`, `partial`, `skipped`), `station` (bool) | How much is heard to the end, on the radio and off it | `AudioPlayer.deliver` |
 | `lyrics_shown` | `source` (`server`, `lrclib`, `none`, `failed`), `synced` (bool) | How often lyrics are there, and from where | LyricsView |
-| `mix_opened` | `kind` (the MixKind: `daily`, `newArrivals`, `rediscover`, `deepCuts`, `favorites`, `onRepeat`, `decade`, `genre`) | Which of Home's mixes are opened | MixDetailView |
+| `mix_opened` | `kind` (the MixKind: `daily` (the moods; the word is kept so the counts go on), `newArrivals`, `rediscover`, `deepCuts`, `favorites`, `onRepeat`, `decade`, `genre`) | Which of Home's mixes are opened | MixDetailView |
 | `mix_played` | `kind` (as above) | Which mixes are played | `AudioPlayer.playMix` |
 | `playlist_created` | `from` (`library`, `mix`, `station`, `queue`, `add_to_playlist`) | Where playlists are made; is Save as Playlist used | PlaylistsView, MixDetailView, StationDetailView, QueueView, AddToPlaylistSheet |
 | `playlist_songs_added` | `from` (`add_songs`, `add_to_playlist`) | How playlists are filled | AddSongsSheet, AddToPlaylistSheet |
@@ -90,44 +102,65 @@ Buckets:
 | `download_chosen` | `kind` (`album`, `playlist`, `mix`) | Are downloads used, and for what | `OfflineStore.download`, each Download on a page |
 | `offline_play_started` | `from` (as `play_started`'s) | Is music played offline, and from what | `AudioPlayer.play`, `playRadio`, while offline (with `play_started`) |
 
-The `server` property is the kind of server, coarsely (`Stats.server`):
-`jellyfin`, `navidrome`, and `subsonic` for every other Subsonic server —
-Gonic, Airsonic, Ampache, LMS, the original, and one that names itself in
-its own word, which is never sent — or `none` signed out. Never which
-server, its name, address or version. Asked for with Navidrome and the
-other Subsonic servers (9 November 2026). Until then `app_open` had no
-properties, it was counted in `JukeboxApp.init`, `signed_in`'s `server` was
+### `server`
+
+The kind of server, coarsely (`Stats.server`):
+
+- `jellyfin`
+- `navidrome`
+- `subsonic` for every other Subsonic server: Gonic, Airsonic, Ampache, LMS,
+  the original, and one that names itself in its own word (that word is never
+  sent)
+- `none` when signed out
+
+Never which server, its name, address or version. Asked for with Navidrome
+and the other Subsonic servers (9 November 2026). Before that, `app_open` had
+no properties and was counted in `JukeboxApp.init`, `signed_in`'s `server` was
 always `jellyfin`, and `not_a_server` was `not_jellyfin`.
 
-What the `from` of `station_started` means: `page` a station's page (its
-Play or a song on it); `tile_menu` a station's long press, Play Station;
-`hero` Your Station's Play on Home's card or Radio's; `menu` any Start Radio
-of a song, album, artist, playlist, genre or mix (in a menu or under a
-page's Play); `autoplay` Autoplay after an album or playlist ended; `search`
-a Start Radio or a song in Search. Start a Station (the picker) opens the
-station's page since 8 November 2026, so what it starts counts as `page`;
-`picker` stays in the list for a picker that would play at once.
+### `station_started`'s `from`
 
-Downloads count only that one was chosen, of what kind, and that music
-started while offline; not the download quality, the keep's size, Download
+| Value | Where the station was started |
+|---|---|
+| `page` | A station's page: its Play, or a song on it |
+| `tile_menu` | A station's long press, Play Station |
+| `hero` | Your Station's Play, on Home's card or Radio's |
+| `menu` | Any Start Radio of a song, album, artist, playlist, genre or mix (in a menu or under a page's Play) |
+| `autoplay` | Autoplay after an album or playlist ended |
+| `search` | A Start Radio or a song in Search |
+| `picker` | Reserved. Start a Station (the picker) opens the station's page since 8 November 2026, so what it starts counts as `page`; `picker` stays for a picker that would play at once. |
+
+### Downloads
+
+Counted: that a download was chosen, of what kind, and that music started
+while offline. Not counted: the download quality, the keep's size, Download
 over Cellular, how much is on the phone, or what was removed.
 
-Not counted: what is played, by whom or from where; titles, artists,
-albums, genres, playlists' and mixes' names; what was searched for; server
-addresses and names, user names; the Last.fm key; lyrics; error messages.
+## Never in an event
+
+- What is played, by whom or from where
+- Titles, artists, albums, genres, playlists' and mixes' names
+- What was searched for
+- Server addresses and names, user names
+- The Last.fm key
+- Lyrics
+- Error messages
+
 No crash or error reports.
 
 ## The App Store
 
 App Store Connect › App Privacy: **Usage Data › Product Interaction**, not
-linked to the user, not used for tracking, purpose **Analytics**. Nothing
-else is collected. `Jukebox/Resources/PrivacyInfo.xcprivacy` declares the
-same, with UserDefaults' reason CA92.1 (the app's own settings). XcodeGen puts the
+linked to the user, not used for tracking, purpose **Analytics**. Nothing else
+is collected.
+
+`Jukebox/Resources/PrivacyInfo.xcprivacy` declares the same, with
+UserDefaults' reason CA92.1 (the app's own settings). XcodeGen puts the
 manifest in the app's resources: `project.yml` takes everything under
 `Jukebox/`, and XcodeGen (2.40.1 and later) gives a file of a type it has no
 rule for, `.xcprivacy` among them, the Copy Bundle Resources phase.
 
 A privacy policy for the App Store's listing should say the same in words:
-anonymous counts of features used, on the developer's own server, no
-cookies, no id kept on the device, a rough place read from the address,
-off in Settings › Privacy.
+anonymous counts of features used, on the developer's own server, no cookies,
+no id kept on the device, a rough place read from the address, off in
+Settings › Privacy.

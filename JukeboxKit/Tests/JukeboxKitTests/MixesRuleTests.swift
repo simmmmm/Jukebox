@@ -1,7 +1,8 @@
 // The mixes' rules one by one, on small hand-made libraries: what goes into
 // On Repeat, Rediscover, Deep Cuts, Loved Tracks, New Arrivals, the decade
-// and genre mixes; a thumbs down; the eight-track minimum; the day; the
-// stations; and that the mixes do not depend on the library's order.
+// and genre mixes; what a mood is called and that it is a mix of artists; a
+// thumbs down; the eight-track minimum; the day; the stations; and that the
+// mixes do not depend on the library's order.
 
 import Foundation
 @testable import JukeboxKit
@@ -201,6 +202,112 @@ final class MixesRuleTests: XCTestCase {
         XCTAssertEqual(titles, ["Folk Mix"])
     }
 
+    /// "noem de mood naar iets dat past bij de gekozen playlist" (the
+    /// photographer, 14 November 2026): from the genres and years of the
+    /// songs chosen.
+    func testAMoodIsNamedAfterItsSongs() {
+        // Twelve artists of six songs, three of each kind: shoegaze of the
+        // 1990s, rock of every decade (two of them hard rock), jazz of the
+        // 1960s, and three without a genre.
+        let years = [1994, 1994, 1994, 1971, 1985, 2003, 1962, 1962, 1962, 2000, 2000, 2000]
+        let tracks = Self.library(artists: 12, perArtist: 6, genres: { a in
+            switch a {
+            case 0..<3: return ["Rock", "Shoegaze"]
+            case 3..<5: return ["Rock", "Hard Rock"]
+            case 5: return ["Rock"]
+            case 6..<9: return ["Jazz"]
+            default: return []
+            }
+        }, year: { years[$0] })
+        let model = T.generator(tracks).model
+        func titles(_ artists: Range<Int>) -> [String] { model.moodTitles(Array(artists.lowerBound * 6..<artists.upperBound * 6)) }
+        // The narrowest genre two thirds of the songs have, with their decade.
+        XCTAssertEqual(titles(0..<3), ["1990s Shoegaze", "Shoegaze", "Shoegaze & Rock", "Rock"])
+        XCTAssertEqual(titles(6..<9), ["1960s Jazz", "Jazz"])
+        // All rock, half of it shoegaze and a third hard rock, of every
+        // decade; "Rock & Hard Rock" would say rock twice.
+        XCTAssertEqual(titles(0..<6), ["Rock", "Rock & Shoegaze"])
+        XCTAssertEqual(titles(3..<6), ["Hard Rock", "Rock"])
+        // No genre tags: no name from the songs.
+        XCTAssertEqual(titles(9..<12), [])
+
+        // On Home: the three without a genre are a mood only because
+        // Last.fm says they are alike, and it is named after the artist it
+        // is built around, who is then not named again under the title.
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        var graph = SimilarityGraph.fromLibrary(snapshot)
+        for a in 9..<12 { for b in 9..<12 where a != b { graph.addArtistEdge(NameKey.artist("Artist \(a)"), NameKey.artist("Artist \(b)"), weight: 0.8) } }
+        let mixes = MixGenerator(snapshot: snapshot, taste: TasteProfile(snapshot: snapshot, history: ListeningHistory(), now: T.now),
+                                 history: ListeningHistory(), graph: graph, now: T.now, calendar: MixesCheck.calendar).mixes()
+        MixesCheck.assertMoods(mixes, snapshot: snapshot)
+        let moods = mixes.filter { $0.kind == .mood }
+        XCTAssertTrue(moods.contains { $0.title == "1960s Jazz" }, "\(moods.map(\.title))")
+        let around = moods.filter { $0.title.hasPrefix("Around ") }
+        XCTAssertEqual(around.count, 1, "\(moods.map(\.title))")
+        for mix in around {
+            XCTAssertTrue(mix.tracks.allSatisfy { $0.genres.isEmpty })
+            XCTAssertFalse(mix.subtitle.contains(mix.title.dropFirst("Around ".count)), mix.subtitle)
+            XCTAssertEqual(mix.id, "daily-\(1 + (moods.firstIndex(of: mix) ?? 0))-2026-11-08")
+        }
+    }
+
+    /// "zorg dat het altijd bestaat uit meerdere artiesten" (the
+    /// photographer, 14 November 2026): three artists at least, none of
+    /// them more than a third of the mood.
+    func testAMoodIsAMixOfArtists() throws {
+        // One jazz artist and three of rock, nothing heard: jazz alone is
+        // that artist's page, not a mood.
+        let lonely = Self.library(artists: 4, perArtist: 20, genres: { a in a == 0 ? ["Jazz"] : ["Rock"] })
+        let lonelyMixes = T.generator(lonely).mixes()
+        MixesCheck.assertMoods(lonelyMixes, snapshot: LibrarySnapshot(tracks: lonely))
+        let rock = lonelyMixes.filter { $0.kind == .mood }
+        XCTAssertEqual(rock.count, 1)
+        XCTAssertTrue(rock.first?.tracks.allSatisfy { $0.genres == ["Rock"] } ?? false)
+        // Two artists are not a mix either.
+        XCTAssertFalse(T.generator(Self.library(artists: 2, perArtist: 20)).mixes().contains { $0.kind == .mood })
+
+        // Four of rock, one of them played all the time: the mood has that
+        // artist's songs, and as many of each of two others at least.
+        var loved = Self.library(artists: 4, perArtist: 20)
+        for i in 0..<20 {
+            loved[i].playCount = 15
+            loved[i].lastPlayed = T.daysAgo(4)
+        }
+        let lovedSnapshot = LibrarySnapshot(tracks: loved)
+        let lovedMixes = T.generator(loved).mixes()
+        MixesCheck.assertMoods(lovedMixes, snapshot: lovedSnapshot)
+        let mood = try XCTUnwrap(lovedMixes.first { $0.kind == .mood })
+        XCTAssertTrue(mood.tracks.contains { $0.albumArtist?.name == "Artist 0" })
+        XCTAssertEqual(MixesCheck.artists(mood, snapshot: lovedSnapshot).count, 4)
+
+        // The rule itself: ten songs by one artist and two each by two
+        // others leave two of each.
+        let model = T.generator(loved).model
+        let evened = model.evened(known: Array(0..<10), fresh: [20, 21, 40, 41])
+        XCTAssertEqual(evened.known, [0, 1])
+        XCTAssertEqual(evened.fresh, [20, 21, 40, 41])
+
+        // Nine of rock, all played: eight are a cluster and a mood, the
+        // ninth is left over. Alone it is no mood; with its neighbours as
+        // members it is one, under another name.
+        var nine = Self.library(artists: 9, perArtist: 20)
+        for i in nine.indices {
+            nine[i].playCount = 10
+            nine[i].lastPlayed = T.daysAgo(4)
+        }
+        let nineSnapshot = LibrarySnapshot(tracks: nine)
+        let generator = T.generator(nine)
+        let clusters = generator.model.artistClusters()
+        XCTAssertEqual(clusters.map(\.artists.count).sorted(), [1, 8])
+        let single = try XCTUnwrap(clusters.first { $0.artists.count == 1 }).artists
+        XCTAssertNil(generator.model.moodPicks(single, used: []))
+        XCTAssertEqual(generator.model.widened(single).count, MixModel.maxClusterSize)
+        XCTAssertEqual(generator.model.widened(single).first, single.first)
+        let nineMixes = generator.mixes()
+        MixesCheck.assertMoods(nineMixes, snapshot: nineSnapshot)
+        XCTAssertEqual(nineMixes.filter { $0.kind == .mood }.map(\.title), ["2000s Rock", "Rock"])
+    }
+
     func testTheSubtitleNamesTheLeadingArtists() {
         let tracks = [T.track("1", "Portishead", album: "a"), T.track("2", "Massive Attack", album: "b"),
                       T.track("3", "Portishead", album: "c"), T.track("4", "Tricky", album: "d"),
@@ -212,6 +319,8 @@ final class MixesRuleTests: XCTestCase {
         XCTAssertEqual(model.artistLine([]), "")
         // The cluster's lead first, whatever the counts.
         XCTAssertEqual(model.artistLine([0, 1, 2, 3, 4], lead: [model.index.artistByKey["tricky"] ?? -1]), "Tricky, Portishead and more")
+        // Not the artist the title names ("Around Portishead").
+        XCTAssertEqual(model.artistLine([0, 1, 2, 3, 4], skipping: model.index.artistByKey["portishead"]), "Massive Attack and Tricky")
     }
 
     func testTheCoversAreFourAlbumsOfDifferentArtistsFirst() {
@@ -297,12 +406,13 @@ final class MixesRuleTests: XCTestCase {
         XCTAssertEqual(mixes.map(\.id), again.map(\.id))
         for (a, b) in zip(mixes, again) {
             XCTAssertEqual(a.tracks.map(\.id), b.tracks.map(\.id), a.title)
+            XCTAssertEqual(a.title, b.title)
             XCTAssertEqual(a.subtitle, b.subtitle)
             XCTAssertEqual(a.artwork, b.artwork)
         }
 
         // An album added today, by an artist the listener does not know:
-        // the daily mixes stay as they were.
+        // the moods stay as they were.
         var added = library.tracks
         for k in 0..<10 {
             added.append(T.track("new\(k)", "Newcomer", album: "new-album", genres: ["Classical"], year: 2026, added: library.now))
@@ -311,7 +421,7 @@ final class MixesRuleTests: XCTestCase {
         let after = MixGenerator(snapshot: withAlbum, taste: TasteProfile(snapshot: withAlbum, history: library.history, now: library.now),
                                  history: library.history, graph: .fromLibrary(withAlbum), now: library.now,
                                  calendar: MixesCheck.calendar).mixes()
-        for mix in mixes where mix.kind == .daily {
+        for mix in mixes where mix.kind == .mood {
             XCTAssertEqual(after.first { $0.id == mix.id }?.tracks.map(\.id), mix.tracks.map(\.id), mix.title)
         }
         XCTAssertTrue(after.first { $0.kind == .newArrivals }?.tracks.contains { $0.albumID == "new-album" } ?? false)

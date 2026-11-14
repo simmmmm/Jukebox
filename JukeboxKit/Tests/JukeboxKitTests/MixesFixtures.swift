@@ -7,6 +7,7 @@
 
 import Foundation
 @testable import JukeboxKit
+import XCTest
 
 struct MixesLibrary {
     let base: RadioSyntheticLibrary
@@ -114,6 +115,30 @@ enum MixesCheck {
         let x = Set(a.map(\.id)), y = Set(b.map(\.id))
         let union = x.union(y).count
         return union == 0 ? 1 : Double(x.intersection(y).count) / Double(union)
+    }
+
+    /// How many artists a mix's songs are filed under, and the share of it
+    /// the one with the most has.
+    static func artists(_ mix: Mix, snapshot: LibrarySnapshot) -> (count: Int, most: Double) {
+        var count: [String: Int] = [:]
+        for key in mix.tracks.compactMap({ snapshot.primaryArtistKey(of: $0) }) { count[key, default: 0] += 1 }
+        return (count.count, Double(count.values.max() ?? 0) / Double(max(1, mix.tracks.count)))
+    }
+
+    /// What holds for the moods of any library: each a mix of at least
+    /// three artists, none of them more than a third of it; each under a
+    /// name of its own, none of them "Daily Mix".
+    static func assertMoods(_ mixes: [Mix], snapshot: LibrarySnapshot, file: StaticString = #filePath, line: UInt = #line) {
+        for mix in mixes where mix.kind == .mood {
+            let artists = artists(mix, snapshot: snapshot)
+            XCTAssertGreaterThanOrEqual(artists.count, 3, mix.title, file: file, line: line)
+            XCTAssertLessThanOrEqual(artists.most, 1.0 / 3 + 1e-9, mix.title, file: file, line: line)
+            XCTAssertGreaterThanOrEqual(mix.tracks.count, MixModel.moodMinimum, mix.title, file: file, line: line)
+            XCTAssertFalse(mix.title.isEmpty, file: file, line: line)
+        }
+        let titles = mixes.map(\.title)
+        XCTAssertEqual(Set(titles).count, titles.count, "\(titles)", file: file, line: line)
+        XCTAssertFalse(titles.contains { $0.localizedCaseInsensitiveContains("daily") }, "\(titles)", file: file, line: line)
     }
 
     static func describe(_ mix: Mix, snapshot: LibrarySnapshot) -> String {

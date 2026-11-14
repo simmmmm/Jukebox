@@ -4,7 +4,7 @@
 //
 // Home's playlists that Jukebox makes up itself ("op de homepage wil ik dat
 // de app zelf leuke playlists verzint", the photographer, 8 November 2026):
-// daily mixes around what the listener plays, new arrivals, what they have
+// moods around what the listener plays, new arrivals, what they have
 // not heard in a while, deep cuts of artists they like, their favourites,
 // decades and genres. The same for a whole day (seeded by the date), new the
 // next morning, so a mix one liked at breakfast is still there at lunch.
@@ -12,8 +12,13 @@
 import Foundation
 
 public enum MixKind: String, Codable, Sendable, Hashable, CaseIterable {
-    /// "Daily Mix 1…6": one per cluster of artists the listener plays.
-    case daily
+    /// A mood, "1990s Rock" or "Folk & Americana": one per cluster of
+    /// artists the listener plays, up to six, named after its songs. These
+    /// were "Daily Mix 1…6" ("het mag wel IETS minder duidelijk gejat zijn
+    /// van spotify zeg", the photographer, 14 November 2026). The raw value
+    /// stays "daily": downloads on disk (SavedMix), mix ids and the usage
+    /// counts (`mix_opened`'s kind) hold it.
+    case mood = "daily"
     /// "New Arrivals": tracks from albums added in the last weeks.
     case newArrivals
     /// "Rediscover": tracks once played a lot, not in months.
@@ -34,7 +39,7 @@ public struct Mix: Identifiable, Hashable, Sendable {
     /// Stable for the day: kind, key and date.
     public var id: String
     public var kind: MixKind
-    /// "Daily Mix 1", "New Arrivals", "1990s Mix".
+    /// "1990s Rock", "New Arrivals", "1990s Mix".
     public var title: String
     /// "Radiohead, Portishead and more".
     public var subtitle: String
@@ -69,7 +74,7 @@ public struct MixGenerator: Sendable {
         model = MixModel(snapshot: snapshot, taste: taste, history: history, graph: graph, now: now, calendar: calendar)
     }
 
-    /// Home's "Made for You", best first: the daily mixes, then the others
+    /// Home's "Made for You", best first: the moods, then the others
     /// that have enough tracks (25–50 each; a mix of fewer than 8 is left out).
     public func mixes() -> [Mix] {
         guard !model.snapshot.isEmpty else { return [] }
@@ -79,7 +84,7 @@ public struct MixGenerator: Sendable {
             let kx = kinds.firstIndex(of: x.mix.kind) ?? 0, ky = kinds.firstIndex(of: y.mix.kind) ?? 0
             return kx != ky ? kx < ky : x.mix.id < y.mix.id
         }
-        return model.dailyMixes() + others.map(\.mix)
+        return model.moods() + others.map(\.mix)
     }
 
     /// Stations to suggest on Home and Radio: Your Station, Discovery,
