@@ -15,6 +15,8 @@ struct JukeboxApp: App {
     @UIApplicationDelegateAdaptor(JukeboxAppDelegate.self) private var appDelegate
     #endif
     @State private var app = AppModel()
+    /// The wide window's panel, open or closed and on what: one for the app.
+    @State private var panel = PanelState()
 
     init() {
         // `app_open` (Stats) is counted by AppModel.restore, once a launch,
@@ -26,27 +28,45 @@ struct JukeboxApp: App {
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environment(app)
-                .environment(app.navigator)
-                .environment(app.settings)
-                .environment(app.library)
-                .environment(app.history)
-                .environment(app.player)
-                .environment(app.radio)
-                .environment(app.mixes)
-                .environment(app.offline)
-                .environment(app.handoff)
-                // Every control's tint (toggles, sliders, links, the tab
-                // bar's selection) in Copper or Glow, not the system's blue.
-                .tint(Theme.accent)
+                .appEnvironment(app, panel: panel)
                 .task { await app.restore() }
         }
+        .commands { JukeboxCommands(app: app) }
+        #if os(macOS)
+        // ⌘, opens Settings in a window of its own, as every Mac app's.
+        Settings {
+            SettingsView()
+                .appEnvironment(app, panel: panel)
+        }
+        #endif
+    }
+}
+
+private extension View {
+    /// The app's stores and its tint, for each of its windows: a scene does
+    /// not inherit another's.
+    func appEnvironment(_ app: AppModel, panel: PanelState) -> some View {
+        environment(app)
+            .environment(app.navigator)
+            .environment(app.settings)
+            .environment(app.library)
+            .environment(app.history)
+            .environment(app.player)
+            .environment(app.radio)
+            .environment(app.mixes)
+            .environment(app.offline)
+            .environment(app.handoff)
+            .environment(panel)
+            // Every control's tint (toggles, sliders, links, the tab
+            // bar's selection) in Copper or Glow, not the system's blue.
+            .tint(Theme.accent)
     }
 }
 
 struct RootView: View {
     @Environment(AppModel.self) private var app
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
         content
@@ -58,6 +78,18 @@ struct RootView: View {
                 // What the computer was playing, there when the phone is
                 // picked up, not a quarter of a minute later.
                 Task { await app.handoff.refresh() }
+            }
+            // Which page `open` pushes on: the wide window's or the tab's.
+            .onChange(of: isWide, initial: true) { _, wide in
+                app.navigator.isWide = wide
+            }
+            // Signed out, as AppModel puts the tabs back on Home: the next
+            // sign-in, perhaps to another server, starts on Home in the
+            // wide window too, not on the last account's playlist.
+            .onChange(of: app.phase) { _, phase in
+                guard phase == .signedOut else { return }
+                app.navigator.place = .home
+                app.navigator.isSettingsPresented = false
             }
     }
 
@@ -71,18 +103,28 @@ struct RootView: View {
         case .signedOut:
             OnboardingView()
         case .signedIn:
-            MainTabView()
+            // The iPad at regular width and the Mac: Linux's window, the
+            // places, the page, the panel and the bar. The iPhone, and an
+            // iPad window made narrow: the tabs.
+            #if os(iOS)
+            if isWide {
+                WideShell()
+            } else {
+                MainTabView()
+            }
+            #else
+            WideShell()
+            #endif
         }
     }
 }
 
+#if os(iOS)
 /// The four tabs, Music's: Home, Radio, Library, Search. What plays sits
-/// above the tab bar; tapped, Now Playing covers everything.
+/// above the tab bar; tapped, Now Playing covers everything. The iPhone's,
+/// and an iPad window's when it is narrow; the Mac's window is always wide.
 struct MainTabView: View {
     @Environment(Navigator.self) private var navigator
-    #if os(macOS)
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    #endif
 
     var body: some View {
         @Bindable var navigator = navigator
@@ -108,9 +150,8 @@ struct MainTabView: View {
                 }
             }
         }
-        // On the iPad a sidebar, as Music has there; on the iPhone the tab bar.
+        // The tab bar; a narrow iPad window has it too.
         .tabViewStyle(.sidebarAdaptable)
-        #if os(iOS)
         .tabBarMinimizeBehavior(.onScrollDown)
         .tabViewBottomAccessory {
             MiniPlayer()
@@ -118,25 +159,6 @@ struct MainTabView: View {
         .fullScreenCover(isPresented: $navigator.isNowPlayingPresented) {
             NowPlayingView()
         }
-        #else
-        // A Mac window has neither the bottom accessory nor a full-screen
-        // cover: what plays is a line under the window's content, and Now
-        // Playing covers the content, rising from it as the cover does on
-        // the iPhone. Until the desktop's own player bar and room.
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            MiniPlayer()
-                .padding(.vertical, Theme.Space.s)
-                .background(.bar)
-        }
-        .overlay {
-            if navigator.isNowPlayingPresented {
-                NowPlayingView()
-                    .transition(reduceMotion ? .opacity : .move(edge: .bottom))
-            }
-        }
-        .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.4, dampingFraction: 0.9),
-                   value: navigator.isNowPlayingPresented)
-        #endif
         // The usage counts (Stats, `screen`): the tab shown first, then each
         // one chosen, Now Playing's station name to Radio too. Here, with
         // the tabs, rather than in Navigator: signing out puts the tab back
@@ -154,3 +176,4 @@ struct MainTabView: View {
         }
     }
 }
+#endif

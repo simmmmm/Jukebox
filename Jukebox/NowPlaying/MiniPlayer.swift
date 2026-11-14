@@ -10,17 +10,20 @@
 // Playing shows it as a banner, but most of the time Now Playing is closed,
 // and a song that silently does not play, or a station that silently does
 // not start, reads as a broken button.
+//
+// The tabs' alone (the iPhone, a narrow iPad window). The wide window, the
+// iPad's and the Mac's, has the player's bar across its foot instead, as
+// Linux's (PlayerBar), so this is never there.
 
 import JukeboxKit
 import SwiftUI
 
+#if os(iOS)
 struct MiniPlayer: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
-    #if os(iOS)
     @Environment(\.tabViewBottomAccessoryPlacement) private var placement
-    #endif
 
     init() {}
 
@@ -202,12 +205,7 @@ struct MiniPlayer: View {
     /// Beside the minimised tab bar there is room for the title and one
     /// button only.
     private var isInline: Bool {
-        #if os(iOS)
-        return placement == .inline
-        #else
-        // A Mac window's line under its content has room for all of it.
-        return false
-        #endif
+        placement == .inline
     }
 
     private var isStation: Bool {
@@ -256,3 +254,4 @@ struct MiniPlayer: View {
         navigator.isNowPlayingPresented = true
     }
 }
+#endif
