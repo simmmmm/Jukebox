@@ -11,6 +11,12 @@
 // see what it would play before it plays ("ipv dat je kan zien wat je van
 // de playlist gemaakt hebt"); Your Station's Play, and every long press's
 // Play Station, play at once.
+//
+// On a wide page (the iPad, the Mac) as Linux's Radio, 1:1 ("ik wil dat de
+// linux app en de apple app 1:1 op elkaar lijken", the photographer, 14
+// November 2026): the title in the serif; the station on air, lit, only
+// while one is; then "Stations" and "By genre and decade" as shelves of
+// tiles, every arch flat but the one on air. The dial is in Up next.
 
 import JukeboxKit
 import SwiftUI
@@ -21,26 +27,33 @@ struct RadioView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
     @Environment(Navigator.self) private var navigator
+    @Environment(\.isWide) private var isWide
 
     @State private var isPicking = false
     @State private var isShowingSettings = false
     /// The station chosen in Start a Station, opened once its sheet has gone.
     @State private var picked: Station?
+    /// The page's own width, for its measures on a wide page.
+    @State private var pageWidth = 1200
+    /// A wide page's own title has scrolled under the bar.
+    @State private var isTitleScrolled = false
 
     init() {}
 
     var body: some View {
+        let measures = HomeMeasures(isWide: isWide, width: pageWidth)
         // A ZStack, as Home's: the sheets sit on one view whatever it shows.
         ZStack {
             if library.tracks.isEmpty {
                 HomeLibraryStatus()
             } else {
-                RadioFeed(isShowingSettings: $isShowingSettings)
+                RadioFeed(measures: measures, isShowingSettings: $isShowingSettings,
+                          isTitleScrolled: $isTitleScrolled)
             }
         }
         .background(Theme.ground)
-        .navigationTitle("Radio")
-        .largeTitle()
+        .homePageWidth($pageWidth)
+        .homeTitle(String(localized: "Radio"), isScrolled: isTitleScrolled)
         .toolbar {
             ToolbarItem(placement: .barTrailing) {
                 Button {
@@ -50,11 +63,15 @@ struct RadioView: View {
                 }
                 .disabled(library.tracks.isEmpty)
             }
-            ToolbarItem(placement: .barTrailing) {
-                Button {
-                    isShowingSettings = true
-                } label: {
-                    Label("Settings", systemImage: "person.crop.circle")
+            // A wide window's Settings are in the sidebar's menu, as on
+            // Linux, and the Mac's behind ⌘,.
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Button {
+                        isShowingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "person.crop.circle")
+                    }
                 }
             }
         }
@@ -77,12 +94,16 @@ struct RadioView: View {
     private func openPicked() {
         guard let station = picked else { return }
         picked = nil
-        navigator.radioPath.append(Route.station(station))
+        // The sheet is only shown from Radio: on the iPhone this is the
+        // Radio tab's stack, in a wide window the page's.
+        navigator.open(.station(station))
     }
 }
 
 private struct RadioFeed: View {
+    let measures: HomeMeasures
     @Binding var isShowingSettings: Bool
+    @Binding var isTitleScrolled: Bool
 
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
@@ -90,19 +111,60 @@ private struct RadioFeed: View {
     @Environment(AppSettings.self) private var settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(isShowingSettings: Binding<Bool>) {
+    init(measures: HomeMeasures, isShowingSettings: Binding<Bool>, isTitleScrolled: Binding<Bool>) {
+        self.measures = measures
         _isShowingSettings = isShowingSettings
+        _isTitleScrolled = isTitleScrolled
     }
 
     var body: some View {
         let onAir = radio.stationOnAir(player: player)
+        Group {
+            if measures.isWide {
+                wide(onAir)
+            } else {
+                compact(onAir)
+            }
+        }
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top > HomePageTitle.scrolledPast
+        } action: { _, isPast in
+            isTitleScrolled = measures.isWide && isPast
+        }
+    }
+
+    /// As Linux's Radio: the title, the station on air while one is, the
+    /// stations, then those by genre and decade (spec §5).
+    private func wide(_ onAir: Station?) -> some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: measures.betweenSections) {
+                // The station on air 32 under the title, as Home's Your
+                // Station; nothing on air, "Stations" a section's 40.
+                HomePageTitle(String(localized: "Radio"), measures: measures)
+                    .padding(.bottom, onAir == nil ? 0 : -Theme.Space.s)
+                if let onAir {
+                    RadioOnAirCard(station: onAir, measures: measures)
+                        .padding(.horizontal, measures.margin)
+                        .transition(.opacity)
+                }
+                RadioStationList(hiding: onAir?.id, measures: measures)
+                RadioStationShelf(title: "By genre and decade", stations: genreAndDecadeStations,
+                                  measures: measures)
+            }
+            .padding(.top, Theme.Space.xl)
+            .padding(.bottom, Theme.Space.xxl)
+            .animation(reduceMotion ? nil : .default, value: onAir?.id)
+        }
+    }
+
+    private func compact(_ onAir: Station?) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 Group {
                     if let onAir {
-                        RadioOnAirCard(station: onAir)
+                        RadioOnAirCard(station: onAir, measures: measures)
                     } else {
-                        HomeStationHero()
+                        HomeStationHero(measures: measures)
                     }
                 }
                 .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
@@ -112,10 +174,10 @@ private struct RadioFeed: View {
                 Hairline()
                 // Your Station is on top while nothing is on the air: the
                 // list has it again once a station plays.
-                RadioStationList(hidesYourStation: onAir == nil)
-                RadioStationShelf(title: "Artist stations", stations: artistStations)
-                RadioStationShelf(title: "Genre stations", stations: genreStations)
-                RadioStationShelf(title: "Decades", stations: decadeStations)
+                RadioStationList(hiding: onAir == nil ? Station.id(for: .personal) : nil, measures: measures)
+                RadioStationShelf(title: "Artist stations", stations: artistStations, measures: measures)
+                RadioStationShelf(title: "Genre stations", stations: genreStations, measures: measures)
+                RadioStationShelf(title: "Decades", stations: decadeStations, measures: measures)
                 if !settings.hasLastFM {
                     lastFMFooter
                         .padding(.horizontal, Theme.margin)
@@ -150,8 +212,12 @@ private struct RadioFeed: View {
     private var artistStations: [Station] { mixes.stations.filter { Self.isArtist($0.seed) } }
     private var genreStations: [Station] { mixes.stations.filter { Self.isGenre($0.seed) } }
     private var decadeStations: [Station] { mixes.stations.filter { Self.isDecade($0.seed) } }
+    /// One shelf on a wide page, as Linux's.
+    private var genreAndDecadeStations: [Station] {
+        mixes.stations.filter { Self.isGenre($0.seed) || Self.isDecade($0.seed) }
+    }
 
-    private static func isArtist(_ seed: StationSeed) -> Bool {
+    static func isArtist(_ seed: StationSeed) -> Bool {
         if case .artist = seed { return true }
         return false
     }
@@ -173,27 +239,41 @@ private struct RadioFeed: View {
 /// Discovery, Loved — then the ones played lately, newest first, each once,
 /// as rows on hairlines with when each last played on this device
 /// ("Played Thursday", "Not played yet"). Each row opens the station's page;
-/// a long press plays it.
+/// a long press plays it. On a wide page tiles with the same facts, as
+/// Linux's, the artists' stations among them, twelve at most.
 private struct RadioStationList: View {
-    let hidesYourStation: Bool
+    /// The station shown above, not again here: Your Station while nothing
+    /// is on the air (the iPhone's hero), the one on the air on a wide page.
+    let hiding: String?
+    let measures: HomeMeasures
 
     @Environment(RadioController.self) private var radio
     @Environment(MixStore.self) private var mixes
     @Environment(LibraryStore.self) private var library
     @Environment(HistoryStore.self) private var history
 
-    init(hidesYourStation: Bool) {
-        self.hidesYourStation = hidesYourStation
+    init(hiding: String?, measures: HomeMeasures) {
+        self.hiding = hiding
+        self.measures = measures
     }
 
     var body: some View {
         let stations = listed
         let dates = HomeShelves.stationDates(events: history.history.events)
-        VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            SectionHeader("Stations")
-            VStack(spacing: 0) {
-                ForEach(stations) { station in
-                    RadioStationRow(station: station, fact: RelativeDay.played(dates[station.id]))
+        if measures.isWide {
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle("Stations", measures: measures)
+                Shelf(items: stations, width: measures.tile, margin: measures.margin) { station in
+                    StationTileLink(station: station, fact: RelativeDay.played(dates[station.id]))
+                }
+            }
+        } else {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                SectionHeader("Stations")
+                VStack(spacing: 0) {
+                    ForEach(stations) { station in
+                        RadioStationRow(station: station, fact: RelativeDay.played(dates[station.id]))
+                    }
                 }
             }
         }
@@ -201,9 +281,7 @@ private struct RadioStationList: View {
 
     private var listed: [Station] {
         var stations: [Station] = []
-        if !hidesYourStation {
-            stations.append(own(.personal))
-        }
+        stations.append(own(.personal))
         stations.append(own(.discovery))
         // Loved needs favourites to start from: the mixes leave it out when
         // there are none; before they are built, the library says.
@@ -212,11 +290,18 @@ private struct RadioStationList: View {
         } else if mixes.builtAt == nil && !library.favoriteTracks.isEmpty {
             stations.append(radio.station(for: .favorites))
         }
-        var seen = Set(stations.map(\.id))
-        // Your Station on top while nothing is on the air: not again here.
-        if hidesYourStation { seen.insert(Station.id(for: .personal)) }
+        var seen: Set<String> = []
+        // The station shown above: not again here.
+        if let hiding { seen.insert(hiding) }
+        stations = stations.filter { seen.insert($0.id).inserted }
         for station in radio.recentStations where seen.insert(station.id).inserted {
             stations.append(station)
+        }
+        if measures.isWide {
+            for station in mixes.stations where RadioFeed.isArtist(station.seed) && seen.insert(station.id).inserted {
+                stations.append(station)
+            }
+            return Array(stations.prefix(12))
         }
         return stations
     }
@@ -290,26 +375,30 @@ private struct RadioStationRow: View {
 private struct RadioStationShelf: View {
     let title: String
     let stations: [Station]
+    let measures: HomeMeasures
 
     @Environment(MixStore.self) private var mixes
 
-    init(title: String, stations: [Station]) {
+    init(title: String, stations: [Station], measures: HomeMeasures) {
         self.title = title
         self.stations = stations
+        self.measures = measures
     }
 
     var body: some View {
         if !stations.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader(title)
-                Shelf(items: stations, width: HomeLayout.tileWidth) { station in
-                    StationTileLink(station: station)
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle(title, measures: measures)
+                Shelf(items: stations, width: measures.tile, margin: measures.margin) { station in
+                    // On a wide page what it draws from under its name, as
+                    // Linux's tiles ("Rock from your library").
+                    StationTileLink(station: station, fact: measures.isWide ? station.subtitle : nil)
                 }
             }
         } else if mixes.stations.isEmpty && (mixes.isBuilding || mixes.builtAt == nil) {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader(title)
-                HomePlaceholderShelf(kind: .station, width: HomeLayout.tileWidth)
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle(title, measures: measures)
+                HomePlaceholderShelf(kind: .station, width: measures.tile, margin: measures.margin)
             }
         }
     }
