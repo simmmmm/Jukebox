@@ -402,9 +402,10 @@ round() {
       sim ui "$udid" appearance light || problem "the iPhone simulator did not turn light"
       walk iphone testPhoneLight iphone-light 480
       ;;
-    # Linux's walk, some twenty pictures; the 13-inch's old walk of nine
-    # took six minutes.
-    ipad) walk ipad testPad ipad-dark 960 ;;
+    # Linux's walk, some twenty pictures: 450 s with every wide step a skip
+    # (run of da76341), and once music plays each step waits 10 to 40 s for
+    # the app to be idle, so the merged walk, all its steps real, needs more.
+    ipad) walk ipad testPad ipad-dark 1080 ;;
     ipad11) walk ipad11 testPadUpright ipad11-dark 480 ;;
   esac
   bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1 || true
