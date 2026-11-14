@@ -160,9 +160,13 @@ enum Style {
         /* grid-ok: the same centring */
         scale.dial > trough > slider { min-width: 16px; min-height: 16px; margin: -6px; }
         /* Now Playing (spec §6): the bar and the docked panel lose their
-           own ground over the room. */
+           own ground over the room, fading as long as the room does
+           (NowPlayingPage): at once, they jumped while all else faded. */
         window.in-room toolbarview > .bottom-bar { background: none; box-shadow: none; }
-        window.room-docked .sidebar-pane { background: none; }
+        window.room-docked .panel-split > .sidebar-pane { background: none; }
+        toolbarview > .bottom-bar, .panel-split > .sidebar-pane {
+          transition: background-color 200ms linear, box-shadow 200ms linear;
+        }
         """
         gtk_css_provider_load_from_string(provider, css)
     }

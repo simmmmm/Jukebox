@@ -40,6 +40,12 @@ enum PlayerBar {
         let words = vbox(spacing: 4, [title, second]).align(vertical: GTK_ALIGN_CENTER)
         let song = tileButton(hbox(spacing: 12, [art.widget, words])) { NowPlayingPage.open() }
         song.tooltip("Now Playing").align(vertical: GTK_ALIGN_CENTER)
+        // The pointer over the song, a click may follow: Now Playing's sleeve
+        // drawn now, at the room's size as it is now (the window may have
+        // changed since the song began; a sleeve takes 100 ms or more).
+        let hover = gtk_event_controller_motion_new()!
+        on(raw(hover), "enter") { NowPlayingPage.prepare() }
+        gtk_widget_add_controller(song, hover)
         contextMenu(on: song) { songMenu(narrow: !songActions.isVisible) }
         // Not This on a station, then the heart (32 each, 4 apart).
         let notThis = iconButton(Glyphs.name("not-this"), "Not This", "flat") {
@@ -297,29 +303,40 @@ nonisolated enum ThreeZones {
 }
 
 /// Now Playing: a room over the places and the page (the designer's spec,
-/// §6), rising from the bar's song and going down again by its chevron or
-/// Escape. The bar and the panel stay as they were, open or not, and lose
+/// §6), opened from the bar's song and closed by its chevron or Escape. The bar and the panel stay as they were, open or not, and lose
 /// their own ground over it: the bar is the transport, and what plays next
 /// and the words are the panel's. Always dark, as on the iPhone; in Glow
 /// (the photographer chose the one accent over the cover's own).
 enum NowPlayingPage {
     private static var stack: Widget!
+    private static var header: Widget!
     private static var down: Widget!
     /// ⋮ at the header's end (the screenshot walk opens it too).
     private(set) static var more: Widget!
     private static var sleeve: SleeveArt!
     /// The sleeve's share of the room's height (472 at 1440 × 900).
     private static let sleeveShare = 0.62
+    /// Opened, and waiting a moment for the sleeve to be drawn.
+    private static var isWaiting = false
+
+    /// The sleeve is drawn for the song, at the room's size (the
+    /// screenshot walk's check on the transition).
+    static var isSleeveDrawn: Bool { sleeve.isReady }
 
     static var isOpen: Bool {
         guard let stack, let name = gtk_stack_get_visible_child_name(ptr(stack)) else { return false }
         return String(cString: name) == "now-playing"
     }
 
-    /// The room's stack: the library under, Now Playing over it.
+    /// The room's stack: the library under, Now Playing over it. One fades
+    /// into the other in 200 ms, both ways ("de transitie op linux iig is
+    /// niet heel nice nu", 14 November 2026); the whole room sliding up over
+    /// the window was abrupt. GtkStack leaves it out where the desktop asks
+    /// for no animations.
     static func room(over library: Widget) -> Widget {
         stack = gtk_stack_new()!
-        gtk_stack_set_transition_duration(ptr(stack), 250)
+        gtk_stack_set_transition_type(ptr(stack), GTK_STACK_TRANSITION_TYPE_CROSSFADE)
+        gtk_stack_set_transition_duration(ptr(stack), 200)
         gtk_stack_add_named(ptr(stack), library, "library")
         gtk_stack_add_named(ptr(stack), make(), "now-playing")
         gtk_stack_set_visible_child_name(ptr(stack), "library")
@@ -327,21 +344,54 @@ enum NowPlayingPage {
     }
 
     static func open() {
-        guard !isOpen else { return }
+        guard !isOpen, !isWaiting else { return }
         Stats.track(.screen, ["name": "now_playing"])
-        sleeve.show(app.player.currentTrack)
-        gtk_stack_set_transition_type(ptr(stack), GTK_STACK_TRANSITION_TYPE_OVER_UP)
+        prepare()
+        if sleeve.isReady { return appear() }
+        // Not drawn yet (the window resized since, a song just begun): the
+        // room waits for its sleeve rather than fade in without it. A third
+        // of a second at most: a cover slow to come from the server is not
+        // waited for.
+        isWaiting = true
+        Task {
+            for _ in 0..<20 where isWaiting && !sleeve.isReady { try? await Task.sleep(for: .milliseconds(16)) }
+            guard isWaiting else { return }
+            isWaiting = false
+            appear()
+        }
+    }
+
+    static func close() {
+        isWaiting = false
+        guard isOpen else { return }
+        gtk_stack_set_visible_child_name(ptr(stack), "library")
+        ground()
+    }
+
+    private static func appear() {
         gtk_stack_set_visible_child_name(ptr(stack), "now-playing")
         ground()
         // The keys inside the room, so Escape closes it.
         gtk_widget_grab_focus(down)
     }
 
-    static func close() {
-        guard isOpen else { return }
-        gtk_stack_set_transition_type(ptr(stack), GTK_STACK_TRANSITION_TYPE_UNDER_DOWN)
-        gtk_stack_set_visible_child_name(ptr(stack), "library")
-        ground()
+    /// The sleeve's side in a room of `width` by `height`: 0.62 of its
+    /// height, with the pair and 24 either side within its width, on the
+    /// grid.
+    private static func sleeveSide(width: Double, height: Double) -> Double {
+        let fits = (width - 48 - Double(SleeveLayout.recordBeyond)) / (1 + Double(SleeveLayout.recordSide) / 2)
+        return Double(Int(min(height * sleeveShare, fits)) / 4 * 4)
+    }
+
+    /// The sleeve drawn ahead, at the size the room will give it. The room
+    /// is laid out only while it shows, so its size is the stack's, less
+    /// its header.
+    static func prepare() {
+        var headerHeight: Int32 = 0
+        gtk_widget_measure(header, GTK_ORIENTATION_VERTICAL, -1, nil, &headerHeight, nil, nil)
+        let side = sleeveSide(width: Double(gtk_widget_get_width(stack)), height: Double(gtk_widget_get_height(stack) - headerHeight))
+        if side >= 120 { sleeve.resize(side) }
+        sleeve.show(app.player.currentTrack)
     }
 
     /// The room's ground: dark whatever the system's appearance while it is
@@ -374,10 +424,7 @@ enum NowPlayingPage {
         // turns is the photographer's to say); its size sets the sleeve's.
         let room = gtk_drawing_area_new()!.expand(horizontal: true, vertical: true)
         on(raw(room), "resize") {
-            let height = Double(gtk_widget_get_height(room)), width = Double(gtk_widget_get_width(room))
-            // The pair and 24 either side within the width, too.
-            let fits = (width - 48 - Double(SleeveLayout.recordBeyond)) / (1 + Double(SleeveLayout.recordSide) / 2)
-            let side = Double(Int(min(height * sleeveShare, fits)) / 4 * 4)
+            let side = sleeveSide(width: Double(gtk_widget_get_width(room)), height: Double(gtk_widget_get_height(room)))
             // Told while the room is allocated: drawn after it.
             if side >= 120, side != sleeve.side { Task { sleeve.resize(side) } }
         }
@@ -392,7 +439,7 @@ enum NowPlayingPage {
             showMenu(at: more, x: Double(gtk_widget_get_width(more)) / 2, y: Double(gtk_widget_get_height(more)),
                      PlayerBar.songMenu(narrow: !PlayerBar.songActions.isVisible))
         }
-        let header = adw_header_bar_new()!
+        header = adw_header_bar_new()!
         adw_header_bar_set_show_title(ptr(header), 0)
         adw_header_bar_pack_start(ptr(header), down)
         adw_header_bar_pack_end(ptr(header), more)
@@ -406,8 +453,9 @@ enum NowPlayingPage {
 
         observe(content) {
             let track = app.player.currentTrack
-            // Drawn only while the room shows (`open` draws it as it rises).
-            if isOpen { sleeve.show(track) }
+            // Each song's sleeve is drawn as it begins, open or not, so the
+            // room comes up with it.
+            prepare()
             setText(title, track?.name ?? "Nothing playing")
             setText(artist, [track?.artistLine, track?.albumName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
             // Nothing playing (the queue ended, or signed out): down again.

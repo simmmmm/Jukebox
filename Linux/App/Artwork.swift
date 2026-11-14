@@ -344,8 +344,13 @@ final class SleeveArt {
     private var layout: SleeveLayout
     private var width: Double
     private var wanted: String?
+    /// The drawing up now: `wanted` once it is drawn.
+    private var shown: String?
     private var track: Track?
     private var isGone = false
+
+    /// Drawn as last asked, at its size: Now Playing opens only then.
+    var isReady: Bool { shown == wanted }
 
     init(side: Double) {
         self.side = side
@@ -379,11 +384,13 @@ final class SleeveArt {
     func show(_ track: Track?) {
         self.track = track
         let scale = Screen.shared.scale
-        // Black at 1.5 on a dark ground, as on D2's land; softer on a light
-        // one, as on D1's wall (SleeveCard's `strength`).
-        let strength = Screen.shared.isDark ? 1.5 : 0.95
+        // Black at 1.5, as on D2's land (SleeveCard's `strength`): the room
+        // is always dark, and the sleeve is drawn ahead while the window
+        // may still be light.
+        let strength = 1.5
         guard let track else {
             wanted = nil
+            shown = nil
             jb_drawing_set(widget, nil, 0, 0, 0, 0)
             return
         }
@@ -402,6 +409,13 @@ final class SleeveArt {
         let spill = (left: Self.spill.left * grow, top: Self.spill.top * grow, right: Self.spill.right * grow, bottom: Self.spill.bottom * grow)
         let layout = layout, bands = turn.bands
         let wide = width + spill.left + spill.right, high = side + spill.top + spill.bottom
+        let set = { [weak self] (drawing: Texture) in
+            guard let self, !self.isGone, self.wanted == named else { return }
+            self.shown = named
+            jb_drawing_set(self.widget, drawing.pointer, -spill.left, -spill.top, wide, high)
+        }
+        // Drawn before (the room opened on this song already): at once.
+        if let done = DrawingCache.get(named) { return set(done) }
         Task {
             var covers: [Texture] = []
             if let url, let texture = await ArtworkLoader.shared.texture(for: url) { covers.append(texture) }
@@ -409,9 +423,8 @@ final class SleeveArt {
                   let drawing = await drawn(key, width: wide, height: high, scale: scale, covers: covers, { cr, covers in
                       Draw.sleeveAndRecord(cr, scale: scale, layout: layout, x: spill.left, y: spill.top, cover: covers.first,
                                            bands: bands, label: label, strength: strength)
-                  }),
-                  !self.isGone, self.wanted == named else { return }
-            jb_drawing_set(self.widget, drawing.pointer, -spill.left, -spill.top, wide, high)
+                  }) else { return }
+            set(drawing)
         }
     }
 }

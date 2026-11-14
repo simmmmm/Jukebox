@@ -235,7 +235,7 @@ enum MainWindow {
 
         // The panel around places, pages and Now Playing, so it stays where
         // it was in each (spec §6).
-        panel = adw_overlay_split_view_new()!
+        panel = adw_overlay_split_view_new()!.css("panel-split")
         adw_overlay_split_view_set_sidebar_position(ptr(panel), GTK_PACK_END)
         adw_overlay_split_view_set_content(ptr(panel), NowPlayingPage.room(over: split))
         adw_overlay_split_view_set_sidebar(ptr(panel), Panel.make())

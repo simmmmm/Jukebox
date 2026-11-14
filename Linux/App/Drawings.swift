@@ -31,24 +31,14 @@ import Observation
 /// What the drawings are made for, read in `observe` so a change draws them
 /// again. `scale`: the window's device pixels a point, fractional
 /// (gdk_surface_get_scale, GTK 4.12), not GTK's rounded-up integer: a bitmap
-/// drawn at 2 and shown at 1.5 smears its fine lines. `isDark`: the
-/// appearance, for what falls on the page's own ground (the sleeve's
-/// shadows).
+/// drawn at 2 and shown at 1.5 smears its fine lines.
 @Observable
 final class Screen {
     static let shared = Screen()
     private(set) var scale = 1.0
-    private(set) var isDark = true
 
     /// Once the window has its surface.
     static func follow(_ window: Widget) {
-        let manager = adw_style_manager_get_default()!
-        let readDark = {
-            let dark = adw_style_manager_get_dark(manager) != 0
-            if dark != shared.isDark { shared.isDark = dark }
-        }
-        readDark()
-        on(manager, "notify::dark") { readDark() }
         guard let native = gtk_widget_get_native(window), let surface = gtk_native_get_surface(native) else { return }
         let read = {
             let scale = gdk_surface_get_scale(surface)

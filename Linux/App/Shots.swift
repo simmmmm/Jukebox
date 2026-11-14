@@ -78,8 +78,9 @@ enum Shots {
                 await step("10a-albums-panel", wait: 2)
                 Pages.open(albums.first { $0.name == "Quiet Rooms" } ?? album)
                 await step("10-album-up-next", wait: 2)
-                // Now Playing as the designer drew it: Up next beside it.
-                NowPlayingPage.open()
+                // Now Playing as the designer drew it: Up next beside it;
+                // first as it opens, the first time, from the bar's song.
+                await frames("10b-opening") { NowPlayingPage.open() }
                 await step("10b-now-playing", wait: 3)
                 gtk_widget_activate(NowPlayingPage.more)
                 await step("10c-now-playing-menu", wait: 1)
@@ -100,6 +101,7 @@ enum Shots {
                 await step("11-album-lyrics", wait: 1.5)
                 NowPlayingPage.open()
                 await step("12-now-playing-lyrics", wait: 3)
+                await frames("12b-closing") { NowPlayingPage.close() }
             }
             // Your Station on the air; then the panel with the radio's reasons.
             app.panel.isOpen = false
@@ -124,24 +126,55 @@ enum Shots {
 
     private static func step(_ name: String, wait seconds: Double) async {
         try? await Task.sleep(for: .seconds(seconds))
-        guard let folder else { return }
-        save(MainWindow.window, to: "\(folder)/\(name).png")
+        guard let folder, let node = picture(MainWindow.window) else { return }
+        write(node, to: "\(folder)/\(name).png")
     }
 
-    /// The window as it is drawn, to a PNG.
-    private static func save(_ window: Widget, to path: String) {
+    /// A change in motion (Now Playing opening, closing) as pictures: the
+    /// window as the click finds it, then 60, 120 and 200 ms after it,
+    /// with when each was taken and whether the sleeve was drawn in
+    /// frames.txt. A transition is judged from its frames ("de transitie op
+    /// linux iig is niet heel nice nu", 14 November 2026).
+    private static func frames(_ name: String, _ change: () -> Void) async {
+        guard let folder, let before = picture(MainWindow.window) else { return }
+        var taken = [(0, before)]
+        var log = ""
+        let clock = ContinuousClock(), start = clock.now
+        change()
+        for planned in [60, 120, 200] {
+            try? await Task.sleep(until: start + .milliseconds(planned), clock: clock)
+            let at = (clock.now - start).components
+            guard let node = picture(MainWindow.window) else { continue }
+            taken.append((planned, node))
+            log += "\(name) \(planned) ms: taken at \(at.seconds * 1000 + at.attoseconds / 1_000_000_000_000_000) ms, "
+                + "sleeve drawn: \(NowPlayingPage.isSleeveDrawn)\n"
+        }
+        // Written after the last, so writing holds none of them up.
+        for (planned, node) in taken {
+            write(node, to: "\(folder)/\(name)-\(String(format: "%03d", planned))ms.png")
+        }
+        let file = "\(folder)/frames.txt"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+    }
+
+    /// The window as it is drawn now: its render node, quick to take.
+    private static func picture(_ window: Widget) -> OpaquePointer? {
         let width = gtk_widget_get_width(window), height = gtk_widget_get_height(window)
         guard width > 0, height > 0, let paintable = gtk_widget_paintable_new(window),
-              let snapshot = gtk_snapshot_new() else { return }
+              let snapshot = gtk_snapshot_new() else { return nil }
         // At the screen's own scale (GDK_SCALE=2 under Xvfb): the drawings
         // are made for it, and a 1x picture of them would hide that.
         let scale = Screen.shared.scale
         gtk_snapshot_scale(snapshot, Float(scale), Float(scale))
         gdk_paintable_snapshot(paintable, ptr(snapshot), Double(width), Double(height))
         g_object_unref(raw(paintable))
-        guard let node = gtk_snapshot_free_to_node(snapshot) else { return }
+        return gtk_snapshot_free_to_node(snapshot)
+    }
+
+    /// A picture to a PNG, rendered as the window's own are.
+    private static func write(_ node: OpaquePointer, to path: String) {
         defer { gsk_render_node_unref(node) }
-        guard let native = gtk_widget_get_native(window), let renderer = gtk_native_get_renderer(native),
+        guard let native = gtk_widget_get_native(MainWindow.window), let renderer = gtk_native_get_renderer(native),
               let texture = gsk_renderer_render_texture(renderer, node, nil) else { return }
         gdk_texture_save_to_png(texture, path)
         g_object_unref(raw(texture))
