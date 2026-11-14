@@ -3,19 +3,98 @@
 // progress, the Last.fm check) redraws only that one. The system's own
 // section headers, as the system's Settings has them; nothing of its own
 // (docs/design/tells.md, 4: no tracked uppercase labels of Jukebox's).
+//
+// In a wide window (the iPad, the Mac, the iPad app on a Mac) it is Linux's
+// Preferences (16-preferences.png), a sheet over the window opened from the
+// app itself: the groups in Linux's order and with its titles, bold and in
+// sentence case ("ik wil dat de linux app en de apple app 1:1 op elkaar
+// lijken", the photographer, 14 November 2026), then what only these have
+// (downloads, the library, the history). The Mac's ⌘, window can show the
+// same form (`asWindow`).
 
 import JukeboxKit
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct SettingsView: View {
+    /// The Mac's Settings window (⌘,) rather than a sheet: no Done, the
+    /// window has its own close button.
+    let asWindow: Bool
+
     @Environment(AppSettings.self) private var settings
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isWide) private var isWide
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
-    init() {}
+    init(asWindow: Bool = false) {
+        self.asWindow = asWindow
+    }
 
     var body: some View {
+        #if os(macOS)
+        // A settings window's width, not a page's, as Linux's dialog is: the
+        // rows' words and their controls within one glance.
+        Group {
+            if asWindow {
+                form
+                    .countsScreen("settings")
+            } else {
+                sheet
+            }
+        }
+        .frame(width: 560)
+        .frame(minHeight: 400, idealHeight: 720)
+        #else
+        sheet
+        #endif
+    }
+
+    private var sheet: some View {
         NavigationStack {
-            Form {
+            form
+                .navigationTitle("Settings")
+                .inlineTitle()
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+        }
+        .countsScreen("settings")
+        #if os(iOS)
+        // A sheet on the iPad may call itself compact, being narrower than
+        // the window: it is Linux's Preferences on every iPad all the same,
+        // so its sections are told wide.
+        .environment(\.horizontalSizeClass, isPad ? .regular : horizontalSizeClass)
+        #endif
+    }
+
+    private var isPad: Bool {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .pad
+        #else
+        return false
+        #endif
+    }
+
+    private var form: some View {
+        Form {
+            if isWide || isPad {
+                // Linux's order: what plays, the radio, privacy, the server.
+                SettingsPlaybackSection()
+                SettingsRadioSection()
+                SettingsLastFMSection(savedKey: settings.lastFMAPIKey)
+                SettingsPrivacySection()
+                SettingsAccountSection()
+                SettingsDownloadsSection()
+                SettingsLibrarySection()
+                SettingsHistorySection()
+                SettingsAboutSection()
+            } else {
                 SettingsAccountSection()
                 SettingsPlaybackSection()
                 SettingsDownloadsSection()
@@ -27,15 +106,13 @@ struct SettingsView: View {
                 SettingsPrivacySection()
                 SettingsAboutSection()
             }
-            .navigationTitle("Settings")
-            .inlineTitle()
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
         }
-        .countsScreen("settings")
+        #if os(macOS)
+        // Libadwaita's boxed rows and switches have the Mac's own: the
+        // grouped form, as System Settings draws its panes.
+        .formStyle(.grouped)
+        .toggleStyle(.switch)
+        #endif
     }
 }
 
@@ -44,6 +121,7 @@ struct SettingsView: View {
 private struct SettingsAccountSection: View {
     @Environment(AppModel.self) private var app
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isWide) private var isWide
     @State private var isConfirmingSignOut = false
 
     init() {}
@@ -73,6 +151,9 @@ private struct SettingsAccountSection: View {
             Button("Sign Out", role: .destructive) {
                 isConfirmingSignOut = true
             }
+            // The Mac's Settings window opens signed out too (⌘, from the
+            // sign-in screen): nothing to sign out of then.
+            .disabled(app.credentials == nil)
             .confirmationDialog(signOutTitle, isPresented: $isConfirmingSignOut, titleVisibility: .visible) {
                 Button("Sign Out", role: .destructive) {
                     // The sheet first, so it does not hang over the swap to
@@ -84,7 +165,7 @@ private struct SettingsAccountSection: View {
                 Text("Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(Device.model). Your music, playlists and favorites stay on the server.")
             }
         } header: {
-            Text("Account")
+            SettingsHeader(isWide ? "Server" : "Account")
         }
     }
 
@@ -101,32 +182,34 @@ private struct SettingsAccountSection: View {
 private struct SettingsPlaybackSection: View {
     @Environment(AppSettings.self) private var settings
     @Environment(AppModel.self) private var app
+    @Environment(\.isWide) private var isWide
 
     init() {}
 
     var body: some View {
         @Bindable var settings = settings
         Section {
-            // Music's own words for the two.
-            Picker("Wi-Fi Streaming", selection: $settings.wifiQuality) {
-                qualityOptions
-            }
-            Picker("Cellular Streaming", selection: $settings.cellularQuality) {
-                qualityOptions
-            }
-            // Only where the server gives songs a loudness (Jellyfin 10.9+,
-            // an OpenSubsonic server's ReplayGain): elsewhere the switch
-            // would do nothing, so it is off and says why.
-            if app.can(.replayGain) {
-                Toggle(isOn: $settings.normalizeVolume) {
-                    SettingsDetailLabel(title: "Normalize Volume", detail: normalizeDetail)
+            if runsOnMac {
+                // A Mac has no mobile network of its own: what costs data
+                // there is a phone's hotspot or Low Data Mode (NetworkCost),
+                // so the words say that.
+                Picker("Streaming", selection: $settings.wifiQuality) {
+                    qualityOptions
+                }
+                Picker("Streaming on a Hotspot", selection: $settings.cellularQuality) {
+                    qualityOptions
                 }
             } else {
-                Toggle(isOn: .constant(false)) {
-                    SettingsDetailLabel(title: "Normalize Volume",
-                                        detail: "\(app.serverKindName) doesn’t give songs a loudness, so each plays as it is")
+                // Music's own words for the two.
+                Picker("Wi-Fi Streaming", selection: $settings.wifiQuality) {
+                    qualityOptions
                 }
-                .disabled(true)
+                Picker("Cellular Streaming", selection: $settings.cellularQuality) {
+                    qualityOptions
+                }
+            }
+            if !isWide {
+                normalizeRow
             }
             Toggle(isOn: $settings.autoplay) {
                 SettingsDetailLabel(title: "Autoplay",
@@ -138,6 +221,15 @@ private struct SettingsPlaybackSection: View {
                 SettingsDetailLabel(title: "Continue Where You Left Off",
                                     detail: "When Jukebox opens, the song you last played, here or on another device, is ready to play")
             }
+            if isWide {
+                // Linux's order, and its lyrics row here rather than a
+                // section of their own; the row says what LRCLIB is sent.
+                normalizeRow
+                Toggle(isOn: $settings.findLyricsOnline) {
+                    SettingsDetailLabel(title: "Find Lyrics Online",
+                                        detail: "When your server has no lyrics for a song, ask LRCLIB (lrclib.net), with its title, artist, album and length")
+                }
+            }
             // Now Playing's motion (NowPlayingGround.swift): off, the page
             // is sketch D1, the still wall, as it is anyway in Low Power
             // Mode and with Reduce Motion.
@@ -146,9 +238,27 @@ private struct SettingsPlaybackSection: View {
                                     detail: "Now Playing's record turns, and its grooves move on with each song. Off, as in Low Power Mode and with Reduce Motion, it stands still on a wall of the cover's colours.")
             }
         } header: {
-            Text("Playback")
+            SettingsHeader(isWide ? "Playing" : "Playback")
         } footer: {
             Text("Original plays your files as they are. The others have \(app.serverKindName) convert them to \(format) at that rate, which uses less data.")
+        }
+    }
+
+    /// Only where the server gives songs a loudness (Jellyfin 10.9+, an
+    /// OpenSubsonic server's ReplayGain): elsewhere the switch would do
+    /// nothing, so it is off and says why.
+    @ViewBuilder private var normalizeRow: some View {
+        @Bindable var settings = settings
+        if app.can(.replayGain) {
+            Toggle(isOn: $settings.normalizeVolume) {
+                SettingsDetailLabel(title: "Normalize Volume", detail: normalizeDetail)
+            }
+        } else {
+            Toggle(isOn: .constant(false)) {
+                SettingsDetailLabel(title: "Normalize Volume",
+                                    detail: "\(app.serverKindName) doesn’t give songs a loudness, so each plays as it is")
+            }
+            .disabled(true)
         }
     }
 
@@ -225,8 +335,13 @@ private struct SettingsDownloadsSection: View {
                         .tag(quality)
                 }
             }
-            // Music's words, as Cellular Streaming above.
-            Toggle("Download over Cellular", isOn: $settings.downloadOverCellular)
+            if runsOnMac {
+                // As Streaming on a Hotspot above.
+                Toggle("Download on a Hotspot", isOn: $settings.downloadOverCellular)
+            } else {
+                // Music's words, as Cellular Streaming above.
+                Toggle("Download over Cellular", isOn: $settings.downloadOverCellular)
+            }
             LabeledContent("Downloaded") {
                 Text(offline.chosenBytes, format: .byteCount(style: .file))
             }
@@ -251,7 +366,7 @@ private struct SettingsDownloadsSection: View {
                 Text("Every downloaded album, playlist, mix and kept song goes, and Keep Songs I Play is turned off. They still play from your server.")
             }
         } header: {
-            Text("Downloads")
+            SettingsHeader("Downloads")
         } footer: {
             qualityFooter
         }
@@ -277,6 +392,12 @@ private struct SettingsDownloadsSection: View {
     /// (SubsonicClient.downloadURL); High and Normal to AAC or MP3.
     private var qualityFooter: Text {
         let model = Device.model
+        if runsOnMac {
+            if app.credentials?.kind.isSubsonic == true {
+                return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
+            }
+            return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
+        }
         if app.credentials?.kind.isSubsonic == true {
             return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
         }
@@ -320,6 +441,24 @@ private struct SettingsRadioSection: View {
     var body: some View {
         @Bindable var settings = settings
         Section {
+            #if os(macOS)
+            // The Mac's own slider: its name at the start of the row and its
+            // two ends beside it, as System Settings sets a dial.
+            Slider(value: $settings.adventurousness, in: 0...1, label: {
+                Text("Adventurousness")
+            }, minimumValueLabel: {
+                Text("Familiar")
+            }, maximumValueLabel: {
+                Text("Adventurous")
+            }, onEditingChanged: { editing in
+                editingChanged(editing)
+            })
+            .accessibilityValue(dialValue)
+            // VoiceOver's steps and the arrow keys move it without a drag.
+            .onChange(of: settings.adventurousness) { _, _ in
+                if !isDragging { radio.adventurousnessChanged() }
+            }
+            #else
             VStack(alignment: .leading, spacing: Theme.Space.s) {
                 // The slider's own label is VoiceOver's; this one is the eyes'.
                 Text("Adventurousness")
@@ -327,14 +466,7 @@ private struct SettingsRadioSection: View {
                 Slider(value: $settings.adventurousness, in: 0...1, label: {
                     Text("Adventurousness")
                 }, onEditingChanged: { editing in
-                    isDragging = editing
-                    // Once, when the finger lifts: the radio chooses its next
-                    // songs again, and every step of a drag would be wasted.
-                    // So too the count (Stats): where it was let go.
-                    if !editing {
-                        radio.adventurousnessChanged()
-                        Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
-                    }
+                    editingChanged(editing)
                 })
                 .accessibilityValue(dialValue)
                 HStack {
@@ -352,10 +484,22 @@ private struct SettingsRadioSection: View {
             .onChange(of: settings.adventurousness) { _, _ in
                 if !isDragging { radio.adventurousnessChanged() }
             }
+            #endif
         } header: {
-            Text("Radio")
+            SettingsHeader("Radio")
         } footer: {
             Text("Familiar stays close to where a station started and to songs you know. Adventurous goes further out and plays more that is new to you.")
+        }
+    }
+
+    private func editingChanged(_ editing: Bool) {
+        isDragging = editing
+        // Once, when the finger lifts: the radio chooses its next songs
+        // again, and every step of a drag would be wasted. So too the count
+        // (Stats): where it was let go.
+        if !editing {
+            radio.adventurousnessChanged()
+            Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
         }
     }
 
@@ -418,7 +562,7 @@ private struct SettingsLastFMSection: View {
             statusRow
             Link("Get a Free API Key", destination: Self.createKeyURL)
         } header: {
-            Text("Last.fm")
+            SettingsHeader("Last.fm")
         } footer: {
             Text("With a key, the radio knows which artists and songs sound alike. Only artist names and song titles are sent to Last.fm.")
         }
@@ -431,6 +575,10 @@ private struct SettingsLastFMSection: View {
         case .checking:
             HStack(spacing: Theme.Space.s) {
                 ProgressView()
+                    #if os(macOS)
+                    // A row's spinner, not a page's.
+                    .controlSize(.small)
+                    #endif
                 Text("Checking…")
             }
             .foregroundStyle(.secondary)
@@ -498,7 +646,7 @@ private struct SettingsLyricsSection: View {
         Section {
             Toggle("Find Lyrics Online", isOn: $settings.findLyricsOnline)
         } header: {
-            Text("Lyrics")
+            SettingsHeader("Lyrics")
         } footer: {
             Text("When your server has no lyrics for a song, Jukebox looks them up on LRCLIB (lrclib.net), a free and open lyrics database. It sends the song's title, artist, album and length.")
         }
@@ -525,14 +673,29 @@ private struct SettingsLibrarySection: View {
                     }
                 }
             }
+            #if os(macOS)
+            // The Mac's form draws a button as a push button: its progress
+            // sits beside it, not inside it.
+            HStack(spacing: Theme.Space.s) {
+                Button {
+                    Task { await library.refresh() }
+                } label: {
+                    isLoading ? Text("Refreshing Library…") : Text("Refresh Library")
+                }
+                .disabled(isLoading)
+                Spacer(minLength: 0)
+                loadingProgress
+            }
+            #else
             Button {
                 Task { await library.refresh() }
             } label: {
                 refreshLabel
             }
             .disabled(isLoading)
+            #endif
         } header: {
-            Text("Library")
+            SettingsHeader("Library")
         } footer: {
             if let failure {
                 Text(failure)
@@ -550,14 +713,21 @@ private struct SettingsLibrarySection: View {
                 Text("Refresh Library")
             }
             Spacer(minLength: 0)
-            if isLoading {
-                if let progress {
-                    Text(progress, format: .percent.precision(.fractionLength(0)))
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                }
-                ProgressView()
+            loadingProgress
+        }
+    }
+
+    @ViewBuilder private var loadingProgress: some View {
+        if isLoading {
+            if let progress {
+                Text(progress, format: .percent.precision(.fractionLength(0)))
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
             }
+            ProgressView()
+                #if os(macOS)
+                .controlSize(.small)
+                #endif
         }
     }
 
@@ -607,7 +777,7 @@ private struct SettingsHistorySection: View {
                 Text("The radio and your mixes start learning your taste again from your library and favorites. Play counts on the server stay as they are.")
             }
         } header: {
-            Text("History")
+            SettingsHeader("History")
         } footer: {
             Text("What you play, skip and give a thumbs up or down to is how the radio and your mixes learn your taste. It stays on this \(Device.model).")
         }
@@ -631,7 +801,7 @@ private struct SettingsPrivacySection: View {
         Section {
             Toggle("Share Anonymous Usage", isOn: $settings.shareUsage)
         } header: {
-            Text("Privacy")
+            SettingsHeader("Privacy")
         } footer: {
             Text("Jukebox counts which screens and features are used — never titles, artists, searches, server addresses or names — on the developer's own server, without cookies or a device id. It helps decide what to improve.")
         }
@@ -657,7 +827,7 @@ private struct SettingsAboutSection: View {
             .accessibilityElement(children: .combine)
             LabeledContent("Version", value: version)
         } header: {
-            Text("About")
+            SettingsHeader("About")
         }
     }
 
@@ -671,6 +841,39 @@ private struct SettingsAboutSection: View {
 }
 
 // MARK: - Parts
+
+/// A Mac, the app's own or the iPad's app on it (the photographer uses that
+/// one): no mobile network of its own.
+private var runsOnMac: Bool {
+    #if os(macOS)
+    return true
+    #else
+    return ProcessInfo.processInfo.isiOSAppOnMac
+    #endif
+}
+
+/// A section's title: the system's own on the iPhone; wide, Linux's group
+/// title (16-preferences.png), bold, in the text's colour, in sentence case.
+private struct SettingsHeader: View {
+    let title: LocalizedStringKey
+
+    @Environment(\.isWide) private var isWide
+
+    init(_ title: LocalizedStringKey) {
+        self.title = title
+    }
+
+    var body: some View {
+        if isWide {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.primary)
+                .textCase(nil)
+        } else {
+            Text(title)
+        }
+    }
+}
 
 /// A row's title with a line of grey under it, as Settings explains a switch.
 private struct SettingsDetailLabel: View {
