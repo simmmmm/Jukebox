@@ -23,6 +23,9 @@ enum Preferences {
         adw_preferences_group_add(ptr(playing), toggle(
             "Autoplay", "When an album or a playlist ends, play on with a station from its last song.",
             settings.autoplay) { settings.autoplay = $0 })
+        adw_preferences_group_add(ptr(playing), toggle(
+            "Continue Where You Left Off", "When Jukebox opens, the song you last played, here or on another device, is ready to play.",
+            settings.resumeOnLaunch) { settings.resumeOnLaunch = $0 })
         if app.can(.replayGain) {
             adw_preferences_group_add(ptr(playing), toggle(
                 "Normalize Volume", "Play every song at the loudness your server measured.",

@@ -1,8 +1,9 @@
 // The listener's choices, kept in UserDefaults: streaming quality on Wi-Fi
 // and on the mobile network, loudness normalisation, the Last.fm key, how
 // adventurous the radio is, whether lyrics are looked up online, whether Now
-// Playing's record spins, whether the anonymous usage counts are sent, and
-// how songs are downloaded (Settings › Downloads). Observable, so a change shows at once.
+// Playing's record spins, whether the music last played waits in the player
+// at launch, whether the anonymous usage counts are sent, and how songs are
+// downloaded (Settings › Downloads). Observable, so a change shows at once.
 // A change of a choice is itself counted (Stats, `setting_changed`): its
 // name and its new value, which are Jukebox's own words, never the key.
 
@@ -84,6 +85,18 @@ final class AppSettings {
         }
     }
 
+    /// At launch, the music last played (here, or left off on another
+    /// device) waits in the player, paused, rather than in Home's notice
+    /// (HandoffStore). The photographer, 14 November 2026, of "Where you
+    /// left off · Continue": "ik denk dat het nummer gewoon onderin de player
+    /// al klaar moet staan, optie voor in preferences die standaard aan staat".
+    var resumeOnLaunch: Bool {
+        didSet {
+            defaults.set(resumeOnLaunch, forKey: Keys.resumeOnLaunch)
+            if resumeOnLaunch != oldValue { Stats.track(.settingChanged, ["name": "resume_on_launch", "value": Stats.onOff(resumeOnLaunch)]) }
+        }
+    }
+
     /// Settings' Share Anonymous Usage (Stats, docs/STATS.md): on unless the
     /// listener turns it off. The photographer, 8 November 2026: "Kun je ook
     /// aptabase toevoegen van mijn account en alles tracken wat je mag zonder
@@ -149,6 +162,7 @@ final class AppSettings {
         adventurousness = defaults.object(forKey: Keys.adventurousness) as? Double ?? 0.35
         findLyricsOnline = defaults.object(forKey: Keys.findLyricsOnline) as? Bool ?? true
         spinRecord = defaults.object(forKey: Keys.spinRecord) as? Bool ?? true
+        resumeOnLaunch = defaults.object(forKey: Keys.resumeOnLaunch) as? Bool ?? true
         // As Stats.on reads it: a launch argument ("-shareUsage NO") is a
         // string, which `as? Bool` would not read.
         shareUsage = defaults.object(forKey: Keys.shareUsage) == nil || defaults.bool(forKey: Keys.shareUsage)
@@ -170,6 +184,7 @@ final class AppSettings {
         static let autoplay = "autoplay"
         static let findLyricsOnline = "findLyricsOnline"
         static let spinRecord = "spinRecord"
+        static let resumeOnLaunch = "resumeOnLaunch"
         static let shareUsage = Stats.key
         static let keepSongs = "keepSongs"
         static let keepLimitGB = "keepLimitGB"

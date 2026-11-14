@@ -186,12 +186,17 @@ final class AudioPlayer {
 
     /// Replace the queue with `tracks` and play from `index`; shuffled
     /// starts at a random track unless `index` is given explicitly as
-    /// anything but 0.
-    func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false) {
+    /// anything but 0. `paused`: loaded, waiting for Play (HandoffStore's
+    /// music from last time, at launch).
+    func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false,
+              paused: Bool = false) {
         guard !tracks.isEmpty else { return }
         var tracks = tracks
         var index = index
         if let offline, offline.isOffline {
+            // Made ready unasked: offline, nothing, rather than another song
+            // or an error no one asked for (Home's notice still offers it).
+            guard !paused else { return }
             // Offline, the songs on the phone, in their order. Play (from
             // the top) starts at the first of them; a song tapped further
             // down that is not on the phone says why, and nothing changes.
@@ -214,7 +219,8 @@ final class AudioPlayer {
             Stats.track(.offlinePlayStarted, ["from": Stats.source(context.kind)])
         }
         // What music is started from, by its kind (Stats); never the album.
-        Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled])
+        // Music only made ready has not started.
+        if !paused { Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled]) }
         // Anything but a station ends the station that played.
         if !context.isRadio { radio?.stop() }
         let entries = tracks.map { QueueEntry(track: $0) }
@@ -229,12 +235,12 @@ final class AudioPlayer {
             queue = [first] + rest
             originalOrder = entries.map(\.id)
             isShuffled = true
-            load(0, play: true)
+            load(0, play: !paused)
         } else {
             queue = entries
             originalOrder = nil
             isShuffled = false
-            load(start, play: true)
+            load(start, play: !paused)
         }
     }
 
@@ -401,9 +407,9 @@ final class AudioPlayer {
         let target = max(0, min(seconds, upper))
         elapsed = target
         isSeeking = true
-        // An item just loaded cannot seek yet (HandoffStore plays and seeks
-        // in one go), and AVPlayer is not to be asked before it is ready
-        // (Apple's QA1820): itemStatusChanged asks then.
+        // An item just loaded cannot seek yet (HandoffStore loads and seeks
+        // in one go, playing or paused), and AVPlayer is not to be asked
+        // before it is ready (Apple's QA1820): itemStatusChanged asks then.
         guard playing.loaded.item.status == .readyToPlay else {
             pendingSeek = target
             return
@@ -922,7 +928,8 @@ final class AudioPlayer {
                 deliver(finished)
                 return
             }
-            load(next, play: true)
+            // Paused (music waiting at launch, HandoffStore), the next waits too.
+            load(next, play: wantsToPlay)
         } else if let preloaded, ObjectIdentifier(preloaded.item) == id {
             // Tried again, fresh, when its turn comes (itemDidEnd loads it).
             engine.remove(preloaded.item)

@@ -133,6 +133,12 @@ private struct SettingsPlaybackSection: View {
                 SettingsDetailLabel(title: "Autoplay",
                                     detail: "When an album or playlist ends, keep playing similar music")
             }
+            // In the player at launch, paused, rather than in Home's notice
+            // (HandoffStore).
+            Toggle(isOn: $settings.resumeOnLaunch) {
+                SettingsDetailLabel(title: "Continue Where You Left Off",
+                                    detail: "When Jukebox opens, the song you last played, here or on another device, is ready to play")
+            }
             // Now Playing's motion (NowPlayingGround.swift): off, the page
             // is sketch D1, the still wall, as it is anyway in Low Power
             // Mode and with Reduce Motion.

@@ -171,10 +171,13 @@ final class AudioPlayer {
 
     /// Replace the queue with `tracks` and play from `index`; shuffled
     /// starts at a random track unless `index` is given explicitly as
-    /// anything but 0.
-    func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false) {
+    /// anything but 0. `paused`: loaded, waiting for Play (HandoffStore's
+    /// music from last time, at launch).
+    func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false,
+              paused: Bool = false) {
         guard !tracks.isEmpty else { return }
-        Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled])
+        // Music only made ready has not started.
+        if !paused { Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled]) }
         // Anything but a station ends the station that played.
         if !context.isRadio { radio?.stop() }
         let entries = tracks.map { QueueEntry(track: $0) }
@@ -189,12 +192,12 @@ final class AudioPlayer {
             queue = [first] + rest
             originalOrder = entries.map(\.id)
             isShuffled = true
-            load(0, play: true)
+            load(0, play: !paused)
         } else {
             queue = entries
             originalOrder = nil
             isShuffled = false
-            load(start, play: true)
+            load(start, play: !paused)
         }
     }
 
@@ -797,7 +800,8 @@ final class AudioPlayer {
             deliver(finished)
             return
         }
-        load(next, play: true)
+        // Paused (music waiting at launch, HandoffStore), the next waits too.
+        load(next, play: wantsToPlay)
     }
 
     // MARK: Telling the server

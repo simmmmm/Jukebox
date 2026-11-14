@@ -229,6 +229,13 @@ minute while music plays. It reads every 15 s and before every save.
   hebben", 14 November 2026).
 - A device's own last session is offered at its next launch ("Where you
   left off"). On Linux the keyboard's Play key takes it.
+- With Continue Where You Left Off on (Settings, Preferences; on by
+  default), that first offer is not a notice: its queue waits in the
+  player, paused at its song and place, and Play is Continue Here ("ik denk
+  dat het nummer gewoon onderin de player al klaar moet staan", 14 November
+  2026). It is this device's last session or another's left off; one
+  playing elsewhere is still said, "Playing on …". Nothing is saved until
+  Play.
 - Continue Here plays the queue from its song, at its place (or where it is
   by now, while the other still plays). A station plays on as a station
   (`RadioController.continueStation`).

@@ -293,7 +293,7 @@ enum SearchPage {
                 }
             }
             if found.isEmpty {
-                append(emptyPage("No results", "Nothing in your library matches “\(term)”."), to: results)
+                append(emptyLine("Nothing in your library matches “\(term)”. Try part of a title or a name."), to: results)
                 return
             }
             if !found.artists.isEmpty {
@@ -389,7 +389,7 @@ enum LibraryPages {
             defer { measure(column) }
             let playlists = app.library.playlists
             if playlists.isEmpty {
-                append(emptyPage("No playlists", "Playlists on your \(app.library.serverKind) server appear here."), to: tiles)
+                append(emptyLine("Make a playlist on your \(app.library.serverKind) server and it appears here."), to: tiles)
             } else {
                 let flow = flow(playlists.map(playlistTile))
                 gtk_widget_set_margin_top(flow, 24)
@@ -408,7 +408,7 @@ enum LibraryPages {
             let library = app.library
             let artists = library.favoriteArtists, albums = library.favoriteAlbums, tracks = library.favoriteTracks
             if artists.isEmpty && albums.isEmpty && tracks.isEmpty {
-                append(emptyPage("No favorites yet", "Songs, albums and artists you mark as favorites appear here."), to: content)
+                append(emptyLine("Mark a song, album or artist with ♡ and it appears here."), to: content)
                 return
             }
             if !artists.isEmpty {
@@ -445,14 +445,19 @@ enum LibraryPages {
 
     /// A long list under a heading: the heading stays, the list scrolls
     /// (it makes only the rows on screen, so it must be the scroller's own).
-    /// A grid's tiles carry their 24 of gap at their end.
+    /// A grid's tiles carry their 24 of gap at their end. The heading on the
+    /// page's margin and no other: `margins(horizontal:)` set its top to 0
+    /// as well, and Artists' title (pageTitle alone, not in a row) sat 24
+    /// higher than every other page's — "artists heeft opeens een andere
+    /// pagina container als de andere?" (14 November 2026).
     private static func listPage(_ heading: Widget, _ list: Widget, grid: Bool) -> Widget {
         let scroller = scrolled(list).expand(vertical: true)
         gtk_widget_set_margin_top(scroller, 24)
         let column = vbox([heading, scroller])
         observe(column) {
             let margin = PageMeasure.shared.margin
-            heading.margins(horizontal: margin)
+            gtk_widget_set_margin_start(heading, margin)
+            gtk_widget_set_margin_end(heading, margin)
             gtk_widget_set_margin_start(list, margin)
             gtk_widget_set_margin_end(list, grid ? margin - 24 : margin)
         }

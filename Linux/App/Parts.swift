@@ -124,7 +124,18 @@ func sectionTitle(_ title: String, fact: String? = nil, below: Int32 = 16) -> Wi
     return row
 }
 
-/// What a page says when it has nothing to show (libadwaita's status page).
+/// What a page says when it has nothing to show: one plain line of what
+/// to do, where its content would start, under the title and on its margin
+/// — not a status page in the middle of the page ("favourites heeft een
+/// vage empty state", the photographer, 14 November 2026).
+func emptyLine(_ text: String) -> Widget {
+    let line = label(text, "fact", lines: 0)
+    gtk_widget_set_margin_top(line, 24)
+    return line
+}
+
+/// The library not there yet, or not at all (Home before it has loaded):
+/// libadwaita's status page, the whole window's state, with no page under it.
 func emptyPage(_ title: String, _ description: String) -> Widget {
     let page = adw_status_page_new()!
     adw_status_page_set_title(ptr(page), title)

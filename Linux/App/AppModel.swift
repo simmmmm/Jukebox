@@ -44,7 +44,7 @@ final class AppModel {
         player = AudioPlayer(settings: settings, history: history)
         radio = RadioController(player: player, library: library, history: history, settings: settings)
         mixes = MixStore()
-        handoff = HandoffStore(player: player, radio: radio, library: library, identity: identity)
+        handoff = HandoffStore(player: player, radio: radio, library: library, settings: settings, identity: identity)
         player.radio = radio
         // What moves play counts and "Played lately" when a song is heard
         // to the end.

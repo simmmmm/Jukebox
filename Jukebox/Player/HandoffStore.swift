@@ -14,6 +14,12 @@
 // request), and before every save, which is how a device learns the music
 // was taken over from it, and stops rather than save over that. A phone in a pocket with nothing playing asks nothing: the
 // system has the app asleep.
+//
+// At launch, with Settings' "Continue Where You Left Off" on (the default),
+// the first music to go on with is not a notice: it waits in the player,
+// paused, at its song and place, and Play is Continue Here. The
+// photographer, 14 November 2026, of "Where you left off · Continue": "ik
+// denk dat het nummer gewoon onderin de player al klaar moet staan".
 
 import Foundation
 import JukeboxKit
@@ -50,6 +56,8 @@ final class HandoffStore {
             offer = nil
             lastSavedAt = nil
             hasYielded = false
+            ready = nil
+            mayMakeReady = true
             if server != nil { Task { await refresh() } }
         }
     }
@@ -57,6 +65,7 @@ final class HandoffStore {
     private let player: AudioPlayer
     private let radio: RadioController
     private let library: LibraryStore
+    private let settings: AppSettings
     private let identity: ClientIdentity
 
     /// When this device last saved, by its own clock: another device's
@@ -77,13 +86,23 @@ final class HandoffStore {
         get { UserDefaults.standard.double(forKey: "handoffObeyedTakeover") }
         set { UserDefaults.standard.set(newValue, forKey: "handoffObeyedTakeover") }
     }
+    /// The music waiting in the player, paused, since launch, until Play
+    /// (or other music) — `entry` its song in the queue. Nothing is saved
+    /// meanwhile: the state it came from stays on the server as it was.
+    @ObservationIgnored private var ready: (state: PlayState, isOwn: Bool, entry: UUID)?
+    /// Nothing has been in the player since launch: the first music to go
+    /// on with may wait there. Once only — music stopped by hand is not
+    /// brought back a quarter of a minute later.
+    @ObservationIgnored private var mayMakeReady = true
     @ObservationIgnored private var saveTask: Task<Void, Never>?
     @ObservationIgnored private var loop: Task<Void, Never>?
 
-    init(player: AudioPlayer, radio: RadioController, library: LibraryStore, identity: ClientIdentity) {
+    init(player: AudioPlayer, radio: RadioController, library: LibraryStore, settings: AppSettings,
+         identity: ClientIdentity) {
         self.player = player
         self.radio = radio
         self.library = library
+        self.settings = settings
         self.identity = identity
     }
 
@@ -139,7 +158,15 @@ final class HandoffStore {
                 player.pause()
             }
         }
-        offer = makeOffer(state, isOwn: isOwn)
+        var made = makeOffer(state, isOwn: isOwn)
+        // At launch, in the player rather than on Home. Not what plays on
+        // another device right now: that is said, "Playing on …".
+        if let first = made, mayMakeReady, settings.resumeOnLaunch, !player.hasTrack,
+           first.isOwn || !first.state.isLive() {
+            mayMakeReady = false
+            if goOn(with: first, playing: false) { made = nil }
+        }
+        offer = made
         return taken
     }
 
@@ -149,8 +176,10 @@ final class HandoffStore {
             // This device's own last session, while nothing is loaded.
             return player.hasTrack ? nil : Offer(state: state, track: track, isOwn: true)
         }
-        // Another device's, unless this one has done something since.
+        // Another device's, unless this one has done something since, or
+        // has it waiting in the player: then only a newer save is news.
         if player.hasTrack, !hasYielded, let lastSavedAt, lastSavedAt >= state.updatedAt { return nil }
+        if let ready, ready.state.deviceID == state.deviceID, state.updatedAt <= ready.state.updatedAt { return nil }
         return Offer(state: state, track: track, isOwn: false)
     }
 
@@ -159,7 +188,14 @@ final class HandoffStore {
     /// The offered music, here: its queue from its song, where that was —
     /// or is by now, when the other device is still playing it.
     func continueHere() {
-        guard let offer else { return }
+        guard let offer, goOn(with: offer, playing: true) else { return }
+        self.offer = nil
+    }
+
+    /// The offer's queue in the player, at its song and place. Playing, it
+    /// is taken over now; paused, it waits for Play (`ready`), which takes
+    /// it over then. False when the player would not have it.
+    private func goOn(with offer: Offer, playing: Bool) -> Bool {
         let state = offer.state
         // Songs this library does not have (removed since) are passed over.
         var tracks: [Track] = []
@@ -169,7 +205,7 @@ final class HandoffStore {
             if position == state.index { index = tracks.count }
             tracks.append(track)
         }
-        guard !tracks.isEmpty else { return }
+        guard !tracks.isEmpty else { return false }
         var position = state.position
         // Another device's, still playing: it played on since it was saved.
         // (This device's own last session did not: the app was closed.)
@@ -181,20 +217,33 @@ final class HandoffStore {
             }
         }
         let title = state.title ?? state.station?.title ?? String(localized: "Continued")
-        player.play(tracks, startingAt: index, context: QueueContext(.other, title: title))
+        player.play(tracks, startingAt: index, context: QueueContext(.other, title: title), paused: !playing)
         // Offline, the player may have refused, or started another song (the
         // first one on the phone): then nothing was taken over.
-        guard player.currentTrack?.id == tracks[index].id else { return }
-        takenFrom = offer.isOwn ? nil : state.deviceID
-        takenAt = offer.isOwn ? nil : Date()
+        guard let entry = player.current, entry.track.id == tracks[index].id else { return false }
         hasYielded = false
-        self.offer = nil
+        ready = nil
+        if position > 1 { player.seek(to: position) }
+        if playing {
+            takeOver(state, isOwn: offer.isOwn)
+            save()
+        } else {
+            ready = (state, offer.isOwn, entry.id)
+        }
+        return true
+    }
+
+    /// Gone on with here: said in this device's saves from now on, and a
+    /// station plays on as a station (it chooses what comes next). For
+    /// music waiting paused, at Play: a station started earlier would have
+    /// played at once (continueAsRadio plays). One the listener started on
+    /// it meanwhile (Start Radio) stays.
+    private func takeOver(_ state: PlayState, isOwn: Bool) {
+        takenFrom = isOwn ? nil : state.deviceID
+        takenAt = isOwn ? nil : Date()
         // Acted on: from here on that state is no longer news.
         lastSavedAt = Date()
-        if position > 1 { player.seek(to: position) }
-        // A station plays on as a station: it chooses what comes next.
-        if let station = state.station { radio.continueStation(station) }
-        save()
+        if let station = state.station, player.context?.isRadio != true { radio.continueStation(station) }
     }
 
     /// Signed out: nothing of that account's is offered to the next.
@@ -205,6 +254,8 @@ final class HandoffStore {
         takenFrom = nil
         takenAt = nil
         hasYielded = false
+        ready = nil
+        mayMakeReady = true
     }
 
     // MARK: Saving
@@ -225,6 +276,17 @@ final class HandoffStore {
     }
 
     private func playerChanged() {
+        if player.hasTrack { mayMakeReady = false }
+        // Play on the music waiting since launch (or Next, or a song of its
+        // queue): Continue Here, from where it was. Other music started
+        // instead is only that.
+        if player.isPlaying, let ready {
+            self.ready = nil
+            // Acted on either way: that state is no longer news, nor offered
+            // again before this device's own save covers it.
+            lastSavedAt = Date()
+            if player.queue.contains(where: { $0.id == ready.entry }) { takeOver(ready.state, isOwn: ready.isOwn) }
+        }
         // Playing again, by the listener's own hand: this device's music.
         if player.isPlaying { hasYielded = false }
         if player.hasTrack, offer?.isOwn == true { offer = nil }
@@ -244,8 +306,9 @@ final class HandoffStore {
 
     private func save() {
         // Nothing loaded is not saved: what was left off stays on the
-        // server for the next device, or this one's next launch.
-        guard let server, !hasYielded, player.hasTrack else { return }
+        // server for the next device, or this one's next launch. Nor music
+        // only waiting in the player: it is that same state still.
+        guard let server, !hasYielded, player.hasTrack, ready == nil else { return }
         Task {
             // Read before writing: another device may have taken the music
             // over since this one last looked, and a save now would cover
@@ -257,7 +320,7 @@ final class HandoffStore {
                 if !player.isPlaying, !there.isOwn(identity),
                    there.updatedAt > (lastSavedAt ?? .distantPast) { return }
             }
-            guard !hasYielded, let index = player.currentIndex, player.hasTrack else { return }
+            guard !hasYielded, ready == nil, let index = player.currentIndex, player.hasTrack else { return }
             let now = Date()
             let state = PlayState(deviceID: identity.deviceID, deviceName: identity.deviceName, updatedAt: now,
                                   isPlaying: player.isPlaying, queue: player.queue.map(\.track.id), index: index,
