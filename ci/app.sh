@@ -22,6 +22,16 @@ mac_gates=true
 # then it uploads the iPhone's build only.
 mac_upload=false
 
+# Uploads and screenshots belong to mac and main. On a work branch a commit
+# that happens to name the upload's token uploads nothing, and the job is the
+# two builds only, quick to iterate on; a branch ending in "walk" keeps the
+# screenshots, for working on the walk itself.
+case ${GITHUB_REF_NAME:-mac} in
+  mac|main) ;;
+  *walk) TESTFLIGHT=false ;;
+  *) TESTFLIGHT=false; SCREENSHOTS=${SCREENSHOTS:-false} ;;
+esac
+
 # The newest released Xcode 26 the runner has.
 xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
 if [[ -n $xcode ]]; then sudo xcode-select -s "$xcode"; fi

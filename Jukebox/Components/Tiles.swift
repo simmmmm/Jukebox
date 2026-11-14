@@ -129,6 +129,8 @@ struct ArtistTile: View {
 struct Shelf<Item: Identifiable, Tile: View>: View {
     let items: [Item]
     var width: CGFloat = 160
+    /// The page's margin: the iPhone's, or DesktopMeasures' on a wide page.
+    var margin: CGFloat = Theme.margin
     @ViewBuilder let tile: (Item) -> Tile
 
     var body: some View {
@@ -142,6 +144,6 @@ struct Shelf<Item: Identifiable, Tile: View>: View {
         }
         .scrollIndicators(.hidden)
         .scrollTargetBehavior(.viewAligned)
-        .contentMargins(.horizontal, Theme.margin, for: .scrollContent)
+        .contentMargins(.horizontal, margin, for: .scrollContent)
     }
 }
