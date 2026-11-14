@@ -47,7 +47,10 @@ struct WideShell: View {
                             }
                             page(folds: folds)
                         }
+                        // Under the room, out of VoiceOver's and the
+                        // keyboard's reach.
                         .accessibilityHidden(navigator.isNowPlayingPresented)
+                        .disabled(navigator.isNowPlayingPresented)
                         if navigator.isNowPlayingPresented {
                             NowPlayingView()
                                 .environment(\.inRoom, true)
@@ -88,13 +91,10 @@ struct WideShell: View {
                 .animation(.easeInOut(duration: 0.25), value: showsPlaces)
 
                 // The bar across the window's whole foot, under the places,
-                // the page and the panel, as on Linux.
+                // the page and the panel, as on Linux. Its hairline and its
+                // ground (in the room too) are its own.
                 if player.hasTrack {
-                    Divider()
                     PlayerBar()
-                        // Its ground on to the window's foot, under the
-                        // iPad's home indicator.
-                        .background(raised.ignoresSafeArea(edges: .bottom))
                 }
             }
             .onChange(of: overlaid, initial: true) { _, overlaid in
@@ -109,6 +109,11 @@ struct WideShell: View {
         // sends the places lying over the page away.
         .onChange(of: panelShown) { _, shown in
             if shown { showsPlaces = false }
+        }
+        // Nothing plays any more: the room closes, as on Linux. The player
+        // empties and fills its queue in one go, so a new album does not.
+        .onChange(of: player.hasTrack) { _, hasTrack in
+            if !hasTrack { navigator.isNowPlayingPresented = false }
         }
         // The usage counts (Stats, `screen`): the place shown first, then
         // each one chosen, as MainTabView counts its tabs. Here, not in
@@ -137,11 +142,11 @@ struct WideShell: View {
         panel.isShown && player.hasTrack
     }
 
+    /// The panel, 360 at every width; its ground is its own (PanelView).
     private var panelPane: some View {
         PanelView()
             .frame(width: CGFloat(DesktopMeasures.panel))
             .frame(maxHeight: .infinity)
-            .background(raised.ignoresSafeArea())
     }
 
     /// The page beside a pane lying over it: a click there closes the pane.
@@ -315,7 +320,8 @@ private struct PlaceRow<Icon: View>: View {
     var body: some View {
         let isChosen = navigator.place == place
         Button {
-            if !isChosen { navigator.place = place }
+            // Chosen again, the place's own page, as Linux's Nav.show.
+            navigator.place = place
             chosen()
         } label: {
             HStack(spacing: Theme.Space.m) {
