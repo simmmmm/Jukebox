@@ -187,12 +187,12 @@ struct AlbumDetailView: View {
                                              above: disc.id == discs.first?.id ? 0 : Theme.Space.xl,
                                              below: Theme.Space.s)
                         }
-                        LibraryTrackRows(tracks: disc.tracks, numbered: true,
-                                         subtitle: { Self.subtitle(of: $0, on: shown) },
-                                         play: { track in
-                                             let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
-                                             play(tracks, from: i, album: shown, shuffled: false)
-                                         })
+                        PageTrackRows(tracks: disc.tracks, numbered: true,
+                                      subtitle: { Self.subtitle(of: $0, on: shown) },
+                                      play: { track in
+                                          let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
+                                          play(tracks, from: i, album: shown, shuffled: false)
+                                      })
                     }
                 }
             }

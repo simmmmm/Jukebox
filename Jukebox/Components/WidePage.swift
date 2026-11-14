@@ -471,3 +471,30 @@ extension View {
         modifier(DesktopFont(size: size, weight: weight, design: design, isShared: true, phone: phone, wide: wide))
     }
 }
+
+/// Songs as rows on a wide page (TrackRow's wide form), on the margin the
+/// caller gives; a click plays from that song.
+struct PageTrackRows: View {
+    let tracks: [Track]
+    var numbered = false
+    var subtitle: (Track) -> String? = { $0.artistLine }
+    let play: (Track) -> Void
+
+    @Environment(AudioPlayer.self) private var player
+
+    var body: some View {
+        LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(tracks) { track in
+                Button {
+                    // Offline, a song not on the device says why rather than play.
+                    guard !player.refusesOffline(track) else { return }
+                    play(track)
+                } label: {
+                    TrackRow(track, leading: numbered ? .number(track.trackNumber) : .artwork,
+                             subtitle: subtitle(track))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}

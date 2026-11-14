@@ -119,7 +119,7 @@ struct GenreDetailView: View {
         return WidePage(title: genre.name, hasHead: true) { page, width in
             PageHead(page: page, title: genre.name,
                      facts: tracks.isEmpty ? String(localized: "No songs in the library carry this genre.")
-                            : LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks))) { _ in
+                         : LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks))) { _ in
                 LibraryGenreArt(genre: genre)
             } actions: {
                 PagePlayButtons(play: { play(tracks, shuffled: false) },

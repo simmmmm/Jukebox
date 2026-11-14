@@ -79,7 +79,7 @@ struct DownloadedView: View {
             if !kept.isEmpty {
                 PageSectionTitle(String(localized: "Songs you play"), below: Theme.Space.s)
                     .padding(.horizontal, page.side)
-                LibraryTrackRows(tracks: kept, play: { track in
+                PageTrackRows(tracks: kept, play: { track in
                     play(track, in: kept)
                 })
                 .padding(.horizontal, page.side)

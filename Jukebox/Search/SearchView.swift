@@ -81,11 +81,7 @@ struct SearchView: View {
             content
         }
         .background(Theme.ground)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.width
-        } action: { measured in
-            width = measured
-        }
+        .onPageWidth($width)
         // Back from a result, the search stays as it was, unfocused.
         .onAppear {
             if query.isEmpty { isFieldFocused = true }
@@ -210,8 +206,8 @@ private struct SearchResultsList: View {
 
     // MARK: Wide
 
-    /// Linux's search page: shelves at the page's tile, the songs on
-    /// hairlines, everything at the page's margin. A result opens through
+    /// Linux's search page: shelves at the page's tile, the songs as every
+    /// wide page's rows, everything at the page's margin. A result opens through
     /// the navigator, which keeps the search as it goes.
     private func page(_ results: SearchResults) -> some View {
         let measures = DesktopMeasures.page(width: Int(width))
@@ -262,7 +258,7 @@ private struct SearchResultsList: View {
                     // Songs' rows, as every wide page's (TrackRow's 64), 8
                     // under their heading.
                     pageSection("Songs", margin: margin, below: Theme.Space.s) {
-                        LibraryTrackRows(tracks: results.tracks, play: { track in
+                        PageTrackRows(tracks: results.tracks, play: { track in
                             startStation(from: track)
                         })
                         .padding(.horizontal, margin)
@@ -274,11 +270,7 @@ private struct SearchResultsList: View {
         }
         .background(Theme.ground)
         .scrollDismissesKeyboard(.immediately)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.width
-        } action: { measured in
-            width = measured
-        }
+        .onPageWidth($width)
     }
 
     /// A section of the wide page: its heading (PageSectionTitle) at the
@@ -496,11 +488,7 @@ private struct SearchBrowse: View {
         }
         .background(Theme.ground)
         .scrollDismissesKeyboard(.immediately)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.width
-        } action: { measured in
-            width = measured
-        }
+        .onPageWidth($width)
         .overlay {
             if recents.isEmpty && library.genres.isEmpty {
                 ContentUnavailableView {

@@ -38,7 +38,7 @@ struct SongsView: View {
                     WordButton(searching ? "Shuffle These" : "Shuffle") {
                         player.play(shown, context: context(searching: searching), shuffled: true)
                     }
-                    LibraryTrackRows(tracks: shown, play: { track in
+                    PageTrackRows(tracks: shown, play: { track in
                         let i = shown.firstIndex(where: { $0.id == track.id }) ?? 0
                         player.play(shown, startingAt: i, context: context(searching: searching))
                     })

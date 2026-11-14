@@ -55,7 +55,7 @@ struct FavoritesView: View {
             if !tracks.isEmpty {
                 Group {
                     PageSectionTitle(String(localized: "Songs"), below: Theme.Space.s)
-                    LibraryTrackRows(tracks: tracks, play: { track in
+                    PageTrackRows(tracks: tracks, play: { track in
                         let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
                         player.play(tracks, startingAt: i, context: context)
                     })
