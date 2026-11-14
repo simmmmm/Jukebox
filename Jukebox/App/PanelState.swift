@@ -20,8 +20,8 @@ final class PanelState {
     var isOpen: Bool { didSet { remember() } }
     var content: Content { didSet { remember() } }
     /// The window is narrow enough that the panel lies over the page
-    /// (Linux's MainWindow follows its split view's `collapsed`; Apple's
-    /// inspector decides that itself, and this stays false).
+    /// (Linux's MainWindow follows its split view's `collapsed`, the iPad's
+    /// and the Mac's WideShell its width: below 1280).
     var isOverlaid = false
     /// False while a screenshot walk opens and closes the panel: the
     /// listener's choice stays the listener's.

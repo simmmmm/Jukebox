@@ -35,7 +35,7 @@ struct JukeboxApp: App {
         #if os(macOS)
         // ⌘, opens Settings in a window of its own, as every Mac app's.
         Settings {
-            SettingsView()
+            SettingsView(asWindow: true)
                 .appEnvironment(app, panel: panel)
         }
         #endif

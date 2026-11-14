@@ -70,7 +70,8 @@ enum Device {
     /// "iPhone", "iPad" or "Mac": "Songs on this iPad".
     static var model: String {
         #if os(iOS)
-        return UIDevice.current.model
+        // The iPad's app run on a Mac is on a Mac: "Songs on this Mac".
+        return ProcessInfo.processInfo.isiOSAppOnMac ? "Mac" : UIDevice.current.model
         #else
         return "Mac"
         #endif
