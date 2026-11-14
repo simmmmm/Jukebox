@@ -159,7 +159,8 @@ struct PlayerBar: View {
             radio.dislike(track)
         } label: {
             Image(systemName: disliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                .foregroundStyle(disliked ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
+                // Given, in the accent, as Linux's.
+                .foregroundStyle(disliked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
                 .frame(width: 32, height: 32)
                 .contentShape(.rect)
         }

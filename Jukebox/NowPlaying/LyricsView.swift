@@ -53,7 +53,7 @@ struct LyricsView: View {
                 if lyrics.isSynced {
                     LyricsSyncedLines(lyrics: lyrics, credit: credit(fromLRCLIB: fromLRCLIB), inPanel: inPanel)
                 } else {
-                    LyricsPlainText(lines: lyrics.lines, credit: credit(fromLRCLIB: fromLRCLIB))
+                    LyricsPlainText(lines: lyrics.lines, credit: credit(fromLRCLIB: fromLRCLIB), inPanel: inPanel)
                 }
             case .instrumental:
                 if inPanel {
@@ -205,8 +205,9 @@ private struct LyricsSyncedLines: View {
                 }
                 .padding(.horizontal, Theme.Space.xl)
                 // Room above the first line and below the last, so either
-                // can come to the reading place.
-                .padding(.vertical, 120)
+                // can come to the reading place; in the panel 24, as
+                // Linux's, the first lines right under its head.
+                .padding(.vertical, inPanel ? Theme.Space.xl : 120)
             }
             .scrollIndicators(.hidden)
             .onChange(of: current, initial: true) { _, line in
@@ -221,7 +222,7 @@ private struct LyricsSyncedLines: View {
             }
         }
         .mask {
-            LyricsEdgeFade()
+            LyricsEdgeFade(isFlat: inPanel)
         }
     }
 
@@ -260,17 +261,20 @@ private struct LyricsPlainText: View {
     let lines: [Lyrics.Line]
     /// Where they are from, under the words; nil for none.
     let credit: String?
+    let inPanel: Bool
 
-    init(lines: [Lyrics.Line], credit: String?) {
+    init(lines: [Lyrics.Line], credit: String?, inPanel: Bool) {
         self.lines = lines
         self.credit = credit
+        self.inPanel = inPanel
     }
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 Text(lines.map(\.text).joined(separator: "\n"))
-                    .font(.title3.weight(.semibold))
+                    // The panel's as its timed lines (Linux's).
+                    .font(inPanel ? .headline : .title3.weight(.semibold))
                     .lineSpacing(6)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
@@ -279,25 +283,29 @@ private struct LyricsPlainText: View {
                 }
             }
             .padding(.horizontal, Theme.Space.xl)
-            .padding(.top, Theme.Space.xxl)
+            // In the panel 24 all round, as Linux's, and no fade.
+            .padding(.top, inPanel ? Theme.Space.xl : Theme.Space.xxl)
             // Past the edge's fade, so the credit can be read at the end.
-            .padding(.bottom, credit != nil ? Theme.Space.xxl * 2 : Theme.Space.xxl)
+            .padding(.bottom, inPanel ? Theme.Space.xl : credit != nil ? Theme.Space.xxl * 2 : Theme.Space.xxl)
         }
         .scrollIndicators(.hidden)
         .mask {
-            LyricsEdgeFade()
+            LyricsEdgeFade(isFlat: inPanel)
         }
     }
 }
 
-/// Lines fade out at the top and the bottom rather than being cut off.
+/// Lines fade out at the top and the bottom rather than being cut off. Not
+/// in the panel (`isFlat`), which is cut off at its head as Linux's is.
 private struct LyricsEdgeFade: View {
+    var isFlat = false
+
     var body: some View {
         LinearGradient(stops: [
-            .init(color: .clear, location: 0),
+            .init(color: isFlat ? .black : .clear, location: 0),
             .init(color: .black, location: 0.08),
             .init(color: .black, location: 0.9),
-            .init(color: .clear, location: 1),
+            .init(color: isFlat ? .black : .clear, location: 1),
         ], startPoint: .top, endPoint: .bottom)
     }
 }
