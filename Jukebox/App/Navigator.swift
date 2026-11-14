@@ -142,11 +142,18 @@ extension View {
     /// Every Route's screen, for a tab's NavigationStack and the wide
     /// window's page.
     func routeDestinations() -> some View {
+        routeDestinations(each: EmptyModifier())
+    }
+
+    /// The same, each pushed page in `modifier` too: the wide window's bar
+    /// (WideShell's PageBar).
+    func routeDestinations(each modifier: some ViewModifier) -> some View {
         navigationDestination(for: Route.self) { route in
             RoutePage(route: route)
                 // Once a push, whether by a link or by `open`: not again when
                 // the listener comes Back to it.
                 .countsScreen(route.statsName)
+                .modifier(modifier)
         }
     }
 }

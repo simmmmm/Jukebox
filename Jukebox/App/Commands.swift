@@ -40,7 +40,11 @@ struct JukeboxCommands: Commands {
         }
         // The wide window's search field, in its bar: ⌘F, as the Mac's Find.
         CommandGroup(before: .textEditing) {
-            Button("Search") { app.navigator.searchRequests += 1 }
+            Button("Search") {
+                // The page first, so the field there is the one that shows.
+                app.navigator.showSearch()
+                app.navigator.searchRequests += 1
+            }
                 .keyboardShortcut("f")
                 .disabled(!app.navigator.isWide || app.phase != .signedIn)
         }

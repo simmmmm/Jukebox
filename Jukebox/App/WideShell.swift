@@ -186,27 +186,23 @@ struct WideShell: View {
                     }
                 }
                 #endif
-                .routeDestinations()
-        }
-        // One field for the whole library, at the bar's trailing end on
-        // every page: "kun je die search optie wel toevoegen bij beide
-        // vensterbalken op dezelfde (os native plek)" (the photographer,
-        // 14 November 2026). On the stack, so a place chosen while typing
-        // keeps it.
-        .searchable(text: $navigator.searchQuery, placement: .toolbar)
-        .searchFocused($isSearchFocused)
-        .onSubmit(of: .search) {
-            navigator.showSearch()
-            navigator.searchSubmits += 1
+                // Outside the place's id: a place chosen while typing keeps
+                // the field, and its keys.
+                .modifier(PageBar())
+                .searchFocused($isSearchFocused)
+                .routeDestinations(each: PageBar(isPushed: true))
         }
         .onChange(of: isSearchFocused) { _, focused in
             if focused { navigator.showSearch() }
         }
         .onChange(of: navigator.searchQuery) { _, query in
             // Emptied on another place, it stays there.
-            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                navigator.showSearch()
-            }
+            guard !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+            let wasPushed = !navigator.widePath.isEmpty
+            navigator.showSearch()
+            // Typed on a pushed page, which goes: the place's field goes
+            // on with the keys.
+            if wasPushed { isSearchFocused = true }
         }
         .onChange(of: navigator.searchRequests) { _, _ in
             isSearchFocused = true
@@ -225,6 +221,19 @@ struct WideShell: View {
             if folds && navigator.widePath.isEmpty {
                 ToolbarItem(placement: .navigation) {
                     placesButton
+                }
+            }
+            // The bar's own Back, after the head: the system's comes
+            // before every other item, by the traffic lights (PageBar
+            // hides it).
+            if !navigator.widePath.isEmpty {
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        navigator.widePath.removeLast()
+                    } label: {
+                        Label("Back", systemImage: "chevron.left")
+                    }
+                    .keyboardShortcut("[", modifiers: .command)
                 }
             }
         }
@@ -362,6 +371,29 @@ private struct Places: View {
             Image(systemName: symbol)
                 .desktopFont(15)
         }
+    }
+}
+
+/// The window bar's part of a wide page, the place's own and each pushed
+/// one: the one field for the whole library, at the bar's trailing end,
+/// "op dezelfde (os native plek)" (the photographer, 14 November 2026).
+/// On the page, not the stack: on the stack the Mac's bar showed no field.
+private struct PageBar: ViewModifier {
+    var isPushed = false
+
+    @Environment(Navigator.self) private var navigator
+
+    func body(content: Content) -> some View {
+        @Bindable var navigator = navigator
+        content
+            .searchable(text: $navigator.searchQuery, placement: .toolbar)
+            .onSubmit(of: .search) {
+                navigator.showSearch()
+                navigator.searchSubmits += 1
+            }
+            #if os(macOS)
+            .navigationBarBackButtonHidden(isPushed)
+            #endif
     }
 }
 
