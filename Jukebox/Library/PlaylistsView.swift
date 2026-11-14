@@ -16,6 +16,12 @@
 // Delete, no Add Songs, no Edit, and it is not among Add to Playlist's
 // choices. Reordering is offered where the server can (Jellyfin; a Subsonic
 // server from API 1.14, ServerCapability.playlistReorder).
+//
+// In a wide window, as Linux's (08-playlists): the playlists as a grid of
+// the page's tiles, New Playlist… in the toolbar; a playlist's page with
+// the cover at the left and its title at the foot, the songs in rows. On
+// the Mac a song is dragged to its place and removed from its menu (a
+// right-click); the iPad keeps Edit.
 
 import JukeboxKit
 import SwiftUI
@@ -23,12 +29,77 @@ import SwiftUI
 struct PlaylistsView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
+    @Environment(\.isWide) private var isWide
     @State private var isNaming = false
     @State private var newName = ""
     @State private var pendingDelete: Playlist?
     @State private var errorMessage: String?
 
     var body: some View {
+        Group {
+            if isWide {
+                wide
+            } else {
+                compact
+            }
+        }
+        .alert("New Playlist", isPresented: $isNaming) {
+            TextField("Name", text: $newName)
+            Button("Cancel", role: .cancel) {}
+            Button("Create") { create() }
+        } message: {
+            Text("Then add songs with Add Songs on its page, or from any song’s or album’s menu.")
+        }
+        .confirmationDialog("Delete Playlist?", isPresented: isConfirmingDelete, titleVisibility: .visible,
+                            presenting: pendingDelete) { playlist in
+            Button("Delete “\(playlist.name)”", role: .destructive) {
+                delete(playlist)
+            }
+        } message: { _ in
+            Text("It is deleted from your \(library.serverKind) server, for every app. Its songs stay in your library.")
+        }
+        .libraryErrorAlert("Could Not Change Playlists", message: $errorMessage)
+    }
+
+    /// Linux's Playlists: a grid of tiles; Delete in an own one's menu.
+    private var wide: some View {
+        LibraryWidePage(title: "Playlists") { page, width in
+            LibraryPageTitle("Playlists")
+                .padding(.horizontal, page.side)
+            if library.playlists.isEmpty {
+                LibraryEmptyLine("Make one with New Playlist…, or add songs to one from any song’s menu.")
+                    .padding(.horizontal, page.side)
+            } else {
+                LibraryTileGrid(items: library.playlists, page: page, width: width) { playlist in
+                    NavigationLink(value: Route.playlist(playlist)) {
+                        PlaylistTile(playlist: playlist)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        if !playlist.isReadOnly {
+                            Button("Delete Playlist", systemImage: "trash", role: .destructive) {
+                                pendingDelete = playlist
+                            }
+                        }
+                    }
+                }
+                .padding(.top, Theme.Space.xl)
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .barTrailing) {
+                Button {
+                    newName = ""
+                    isNaming = true
+                } label: {
+                    Label("New Playlist…", systemImage: "plus")
+                }
+            }
+        }
+        .refreshable { await library.refresh() }
+    }
+
+    private var compact: some View {
         List {
             Button {
                 newName = ""
@@ -50,22 +121,6 @@ struct PlaylistsView: View {
         .listStyle(.plain)
         .navigationTitle("Playlists")
         .refreshable { await library.refresh() }
-        .alert("New Playlist", isPresented: $isNaming) {
-            TextField("Name", text: $newName)
-            Button("Cancel", role: .cancel) {}
-            Button("Create") { create() }
-        } message: {
-            Text("Then add songs with Add Songs on its page, or from any song’s or album’s menu.")
-        }
-        .confirmationDialog("Delete Playlist?", isPresented: isConfirmingDelete, titleVisibility: .visible,
-                            presenting: pendingDelete) { playlist in
-            Button("Delete “\(playlist.name)”", role: .destructive) {
-                delete(playlist)
-            }
-        } message: { _ in
-            Text("It is deleted from your \(library.serverKind) server, for every app. Its songs stay in your library.")
-        }
-        .libraryErrorAlert("Could Not Change Playlists", message: $errorMessage)
     }
 
     /// Someone else's playlist opens and plays; only the listener's own
@@ -139,6 +194,9 @@ struct PlaylistDetailView: View {
     @Environment(RadioController.self) private var radio
     @Environment(OfflineStore.self) private var offline
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isWide) private var isWide
+    /// The page's own width, for its measures (wide).
+    @State private var width: CGFloat = 1000
     /// Nil until the server has answered.
     @State private var entries: [LibraryPlaylistEntry]?
     @State private var isConfirmingRemoval = false
@@ -153,6 +211,154 @@ struct PlaylistDetailView: View {
         let shown = library.playlists.first(where: { $0.id == playlist.id }) ?? playlist
         let tracks = entries?.map(\.track) ?? []
 
+        Group {
+            if isWide {
+                wide(shown, tracks: tracks)
+            } else {
+                compact(shown, tracks: tracks)
+            }
+        }
+        .toolbar {
+            if !shown.isReadOnly {
+                ToolbarItem(placement: .barTrailing) {
+                    Button {
+                        isAddingSongs = true
+                    } label: {
+                        Label("Add Songs", systemImage: "plus")
+                    }
+                    .disabled(entries == nil)
+                }
+                // The iPhone's Edit mode. A Mac's list has none: there a
+                // song is dragged to where it goes.
+                #if os(iOS)
+                ToolbarItem(placement: .barTrailing) {
+                    // Off only while loading: after the last song is removed in
+                    // edit mode, Done must still be there to leave it.
+                    EditButton()
+                        .disabled(entries == nil)
+                }
+                #endif
+            }
+            if offline.offersDownload(for: .playlist(playlist.id)) {
+                ToolbarItem(placement: .barTrailing) {
+                    OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: tracks),
+                                          isConfirmingRemoval: $isConfirmingRemoval)
+                }
+            }
+            // Wide, the head has its own "…".
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Menu {
+                        moreItems(shown, tracks: tracks)
+                    } label: {
+                        Label("More", systemImage: "ellipsis")
+                    }
+                }
+            }
+        }
+        .confirmationDialog("Delete “\(shown.name)”?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
+            Button("Delete Playlist", role: .destructive) {
+                deletePlaylist(shown)
+            }
+        } message: {
+            Text("It is deleted from your \(library.serverKind) server, for every app. Its songs stay in your library.")
+        }
+        .libraryErrorAlert("Could Not Change the Playlist", message: $errorMessage)
+        .offlineRemovalDialog($isConfirmingRemoval, for: .playlist(playlist.id), name: shown.name)
+        .sheet(isPresented: $isAddingSongs, onDismiss: { Task { await load() } }) {
+            LibraryAddSongsSheet(playlist: shown, songsInPlaylist: Set(tracks.map(\.id)))
+        }
+        // Every time the page appears, not only the first: songs added from
+        // Now Playing or another app while it was covered are shown.
+        .task(id: playlist.id) { await load() }
+        // A song added from a menu while the page is open (Add to Playlist…
+        // changes the count at once); not while Add Songs is open, which
+        // reloads once when it closes.
+        .onChange(of: shown.trackCount) { _, count in
+            guard !isAddingSongs, let entries, count != entries.count else { return }
+            Task { await load() }
+        }
+        .refreshable { await load() }
+    }
+
+    /// Linux's playlist page: the head (the cover, the title at its foot,
+    /// how many songs and how long, Play, Shuffle, "…"), a hairline, the
+    /// songs in rows. A List still, for the order: on the Mac a song is
+    /// dragged to its place, and its menu has Remove from Playlist; the iPad
+    /// keeps Edit.
+    private func wide(_ shown: Playlist, tracks: [Track]) -> some View {
+        let page = DesktopMeasures.page(width: Int(width))
+        let count = entries?.count ?? shown.trackCount ?? 0
+        let duration = entries == nil ? (shown.duration ?? 0) : LibraryText.totalDuration(tracks)
+        return List {
+            Group {
+                LibraryHead(page: page, title: shown.name,
+                            facts: LibraryText.summary(count: count, duration: duration)) { size in
+                    cover(shown, tracks: tracks, size: size)
+                } actions: {
+                    LibraryPlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
+                                       shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
+                        .disabled(tracks.isEmpty)
+                    LibraryMoreMenu {
+                        moreItems(shown, tracks: tracks)
+                    }
+                }
+                LibraryRule(page: page)
+            }
+            .listRowInsets(EdgeInsets())
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+
+            if let entries {
+                ForEach(entries) { entry in
+                    Button {
+                        guard !player.refusesOffline(entry.track) else { return }
+                        let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
+                        play(tracks, from: i, playlist: shown, shuffled: false)
+                    } label: {
+                        TrackRow(entry.track, subtitle: entry.track.artistLine,
+                                 removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) })
+                    }
+                    .buttonStyle(.plain)
+                }
+                .onDelete(perform: deleteAction(shown))
+                .onMove(perform: moveAction(shown))
+                .libraryWideRow(page)
+
+                if entries.isEmpty {
+                    VStack(alignment: .leading, spacing: 0) {
+                        LibraryPlainLine(shown.isReadOnly ? "No songs yet."
+                                         : "Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
+                        if !shown.isReadOnly {
+                            LibraryWordButton("Add Songs") {
+                                isAddingSongs = true
+                            }
+                        }
+                    }
+                    .libraryWideRow(page)
+                }
+            } else if let loadError {
+                VStack(alignment: .leading, spacing: 0) {
+                    LibraryPlainLine("\(loadError)")
+                    LibraryWordButton("Try Again") {
+                        self.loadError = nil
+                        Task { await load() }
+                    }
+                }
+                .libraryWideRow(page)
+            } else {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .libraryWideRow(page)
+            }
+        }
+        .listStyle(.plain)
+        .pageGround()
+        .libraryPageWidth($width)
+        .libraryScrolledTitle(shown.name, after: page.cover + Theme.Space.xl)
+    }
+
+    private func compact(_ shown: Playlist, tracks: [Track]) -> some View {
         List {
             header(shown, tracks: tracks)
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
@@ -212,87 +418,35 @@ struct PlaylistDetailView: View {
         }
         .listStyle(.plain)
         .libraryScrolledTitle(shown.name, after: 280)
-        .toolbar {
-            if !shown.isReadOnly {
-                ToolbarItem(placement: .barTrailing) {
-                    Button {
-                        isAddingSongs = true
-                    } label: {
-                        Label("Add Songs", systemImage: "plus")
-                    }
-                    .disabled(entries == nil)
-                }
-                // The iPhone's Edit mode. A Mac's list has none: there a
-                // song is dragged to where it goes.
-                #if os(iOS)
-                ToolbarItem(placement: .barTrailing) {
-                    // Off only while loading: after the last song is removed in
-                    // edit mode, Done must still be there to leave it.
-                    EditButton()
-                        .disabled(entries == nil)
-                }
-                #endif
+    }
+
+    /// The page's "…": in the toolbar on the iPhone, in the head when wide.
+    @ViewBuilder
+    private func moreItems(_ shown: Playlist, tracks: [Track]) -> some View {
+        Section {
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
+                radio.start(seed(for: shown, tracks: tracks))
             }
-            if offline.offersDownload(for: .playlist(playlist.id)) {
-                ToolbarItem(placement: .barTrailing) {
-                    OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: tracks),
-                                          isConfirmingRemoval: $isConfirmingRemoval)
-                }
+            .disabled(tracks.isEmpty)
+        }
+        Section {
+            Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
+                player.playNext(tracks)
             }
-            ToolbarItem(placement: .barTrailing) {
-                Menu {
-                    Section {
-                        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                            Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
-                            radio.start(seed(for: shown, tracks: tracks))
-                        }
-                        .disabled(tracks.isEmpty)
-                    }
-                    Section {
-                        Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
-                            player.playNext(tracks)
-                        }
-                        .disabled(tracks.isEmpty)
-                        Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
-                            player.addToQueue(tracks)
-                        }
-                        .disabled(tracks.isEmpty)
-                    }
-                    if !shown.isReadOnly {
-                        Section {
-                            Button("Delete Playlist", systemImage: "trash", role: .destructive) {
-                                isConfirmingDelete = true
-                            }
-                        }
-                    }
-                } label: {
-                    Label("More", systemImage: "ellipsis")
+            .disabled(tracks.isEmpty)
+            Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
+                player.addToQueue(tracks)
+            }
+            .disabled(tracks.isEmpty)
+        }
+        if !shown.isReadOnly {
+            Section {
+                Button("Delete Playlist", systemImage: "trash", role: .destructive) {
+                    isConfirmingDelete = true
                 }
             }
         }
-        .confirmationDialog("Delete “\(shown.name)”?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
-            Button("Delete Playlist", role: .destructive) {
-                deletePlaylist(shown)
-            }
-        } message: {
-            Text("It is deleted from your \(library.serverKind) server, for every app. Its songs stay in your library.")
-        }
-        .libraryErrorAlert("Could Not Change the Playlist", message: $errorMessage)
-        .offlineRemovalDialog($isConfirmingRemoval, for: .playlist(playlist.id), name: shown.name)
-        .sheet(isPresented: $isAddingSongs, onDismiss: { Task { await load() } }) {
-            LibraryAddSongsSheet(playlist: shown, songsInPlaylist: Set(tracks.map(\.id)))
-        }
-        // Every time the page appears, not only the first: songs added from
-        // Now Playing or another app while it was covered are shown.
-        .task(id: playlist.id) { await load() }
-        // A song added from a menu while the page is open (Add to Playlist…
-        // changes the count at once); not while Add Songs is open, which
-        // reloads once when it closes.
-        .onChange(of: shown.trackCount) { _, count in
-            guard !isAddingSongs, let entries, count != entries.count else { return }
-            Task { await load() }
-        }
-        .refreshable { await load() }
     }
 
     private func header(_ shown: Playlist, tracks: [Track]) -> some View {
@@ -322,14 +476,14 @@ struct PlaylistDetailView: View {
     /// The playlist's own image when the server has made one (Jellyfin's,
     /// Navidrome's mosaic), else the covers of its first albums.
     @ViewBuilder
-    private func cover(_ shown: Playlist, tracks: [Track]) -> some View {
+    private func cover(_ shown: Playlist, tracks: [Track], size: CGFloat = 240) -> some View {
         let covers = Self.firstCovers(of: tracks)
         if let artwork = shown.artwork {
-            ArtworkView(artwork, size: 240, placeholder: "music.note.list")
+            ArtworkView(artwork, size: size, placeholder: "music.note.list")
         } else if covers.isEmpty {
-            ArtworkView(nil, size: 240, placeholder: "music.note.list")
+            ArtworkView(nil, size: size, placeholder: "music.note.list")
         } else {
-            CollageArtwork(artworks: covers, size: 240)
+            CollageArtwork(artworks: covers, size: size)
         }
     }
 
@@ -390,6 +544,12 @@ struct PlaylistDetailView: View {
     private func moveAction(_ shown: Playlist) -> ((IndexSet, Int) -> Void)? {
         guard !shown.isReadOnly, library.can(.playlistReorder) else { return nil }
         return { source, destination in move(from: source, to: destination, in: shown) }
+    }
+
+    /// Remove from Playlist in a song's menu (wide), as a swipe would.
+    private func removeEntry(_ id: String, from shown: Playlist) {
+        guard let i = entries?.firstIndex(where: { $0.id == id }) else { return }
+        remove(at: IndexSet(integer: i), from: shown)
     }
 
     /// Gone from the list at once; back from the server if it said no.
@@ -476,6 +636,16 @@ private struct LibraryPlaylistEntry: Identifiable {
     let track: Track
 }
 
+private extension View {
+    /// A row of a wide playlist page: on the page's margin and its ground,
+    /// with no separator, as Linux's rows.
+    func libraryWideRow(_ page: DesktopMeasures.Page) -> some View {
+        listRowInsets(EdgeInsets(top: 0, leading: page.side, bottom: 0, trailing: page.side))
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+    }
+}
+
 /// "Add to Playlist…" from any menu: a new playlist with these songs, or one
 /// of the listener's; a tap adds and closes.
 struct AddToPlaylistSheet: View {
@@ -487,6 +657,7 @@ struct AddToPlaylistSheet: View {
 
     @Environment(LibraryStore.self) private var library
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isWide) private var isWide
     @State private var isNaming = false
     @State private var newName = ""
     @State private var isWorking = false
@@ -536,6 +707,8 @@ struct AddToPlaylistSheet: View {
             }
             .libraryErrorAlert("Could Not Add to the Playlist", message: $errorMessage)
         }
+        // A Mac's sheet is only as big as its list asks: room for the list.
+        .frame(minWidth: isWide ? 400 : nil, minHeight: isWide ? 480 : nil)
         .presentationDetents([.medium, .large])
     }
 

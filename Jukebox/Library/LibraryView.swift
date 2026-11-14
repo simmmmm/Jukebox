@@ -105,13 +105,38 @@ private struct LibraryRowButtonStyle: ButtonStyle {
     }
 }
 
-/// Every album, the newest first.
+/// Every album, the newest first. Wide, as Albums: the page's tiles.
 struct RecentlyAddedView: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    private var wide: some View {
         let albums = library.recentlyAddedAlbums
-        ScrollView {
+        return LibraryWidePage(title: "Recently Added") { page, width in
+            LibraryPageTitle("Recently Added")
+                .padding(.horizontal, page.side)
+            if albums.isEmpty {
+                LibraryEmptyLine("Albums added to your \(library.serverKind) server appear here.")
+                    .padding(.horizontal, page.side)
+            } else {
+                LibraryAlbumGrid(albums: albums, page: page, width: width)
+                    .padding(.top, Theme.Space.xl)
+            }
+        }
+        .refreshable { await library.refresh() }
+    }
+
+    private var compact: some View {
+        let albums = library.recentlyAddedAlbums
+        return ScrollView {
             LibraryAlbumGrid(albums: albums)
                 .padding(.vertical, Theme.Space.l)
         }

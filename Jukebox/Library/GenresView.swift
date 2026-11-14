@@ -7,18 +7,62 @@
 // A genre's page reads only the library, never the server by the genre's
 // id: a genre the server has no item of exactly that name for has an id
 // of the app's own ("genre:shoegaze").
+//
+// In a wide window, as the other library pages (Linux has no Genres): the
+// genres as a grid of tiles, each the covers of its first four albums, and
+// a genre's page with that collage as its head's cover, the albums in tiles.
 
 import JukeboxKit
 import SwiftUI
 
 struct GenresView: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(\.isWide) private var isWide
     @State private var query = ""
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    private var wide: some View {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let genres = term.isEmpty ? library.genres : library.genres.filter { $0.name.localizedStandardContains(term) }
-        List {
+        return LibraryWidePage(title: "Genres") { page, width in
+            LibraryPageTitle("Genres")
+                .padding(.horizontal, page.side)
+            if genres.isEmpty {
+                Group {
+                    if term.isEmpty {
+                        LibraryEmptyLine("The genres in your music’s tags appear here.")
+                    } else {
+                        LibraryPlainLine("Nothing in Genres matches “\(term)”.")
+                    }
+                }
+                .padding(.horizontal, page.side)
+            } else {
+                LibraryTileGrid(items: genres, page: page, width: width) { genre in
+                    NavigationLink(value: Route.genre(genre)) {
+                        LibraryTile(name: genre.name, line: LibraryText.songs(count(of: genre))) {
+                            LibraryGenreArt(genre: genre)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(.top, Theme.Space.xl)
+            }
+        }
+        .searchable(text: $query, prompt: "Find in Genres")
+        .refreshable { await library.refresh() }
+    }
+
+    private var compact: some View {
+        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        let genres = term.isEmpty ? library.genres : library.genres.filter { $0.name.localizedStandardContains(term) }
+        return List {
             ForEach(genres) { genre in
                 NavigationLink(value: Route.genre(genre)) {
                     LabeledContent {
@@ -56,11 +100,52 @@ struct GenreDetailView: View {
 
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
+    @Environment(RadioController.self) private var radio
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    /// As an album's page: the collage, the name at its foot, how many songs
+    /// and how long, Play, Shuffle and "…" (Start Radio); then its albums.
+    private var wide: some View {
         let tracks = library.tracks(inGenre: genre)
         let albums = library.albums(inGenre: genre)
-        ScrollView {
+        return LibraryWidePage(title: genre.name, hasHead: true) { page, width in
+            LibraryHead(page: page, title: genre.name,
+                        facts: tracks.isEmpty ? String(localized: "No songs in the library carry this genre.")
+                            : LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks))) { _ in
+                LibraryGenreArt(genre: genre)
+            } actions: {
+                LibraryPlayButtons(play: { play(tracks, shuffled: false) },
+                                   shuffle: { play(tracks, shuffled: true) })
+                    .disabled(tracks.isEmpty)
+                LibraryMoreMenu {
+                    Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                        let seed = StationSeed.genre(key: genre.key, name: genre.name)
+                        Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
+                        radio.start(seed)
+                    }
+                }
+                .disabled(tracks.isEmpty)
+            }
+            if !albums.isEmpty {
+                LibrarySectionTitle(String(localized: "Albums"))
+                    .padding(.horizontal, page.side)
+                LibraryAlbumGrid(albums: albums, page: page, width: width)
+            }
+        }
+    }
+
+    private var compact: some View {
+        let tracks = library.tracks(inGenre: genre)
+        let albums = library.albums(inGenre: genre)
+        return ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 VStack(alignment: .leading, spacing: Theme.Space.m) {
                     Text(LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks)))
@@ -94,5 +179,21 @@ struct GenreDetailView: View {
     private func play(_ tracks: [Track], shuffled: Bool) {
         guard !tracks.isEmpty else { return }
         player.play(tracks, context: QueueContext(.genre(genre.name), title: genre.name), shuffled: shuffled)
+    }
+}
+
+/// A genre's art on a wide page: the covers of its first four albums.
+struct LibraryGenreArt: View {
+    let genre: Genre
+
+    @Environment(LibraryStore.self) private var library
+
+    var body: some View {
+        let covers = Array(library.albums(inGenre: genre).lazy.compactMap(\.artwork).prefix(4))
+        if covers.isEmpty {
+            ArtworkView(nil, placeholder: "guitars")
+        } else {
+            CollageArtwork(artworks: covers)
+        }
     }
 }
