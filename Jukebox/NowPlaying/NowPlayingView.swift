@@ -42,9 +42,11 @@
 // Gone with sketch E: the record player — its deck, plinth and arm.
 //
 // In a wide window (the iPad at regular width, the Mac) it is a room over
-// the places and the page (`inRoom`; the designer's spec, §6), as Linux has
-// it: the window's bar and the panel stay beside it and do its transport
-// and its Up Next and Lyrics, so the room is the sleeve and its record, the
+// the places and the page (`inRoom`; the designer's spec, §6), Linux's 1:1
+// — the photographer, 14 November 2026: "ik wil dat de linux app en de
+// apple app 1:1 op elkaar lijken". The window's bar and the panel stay
+// beside it and do its transport and its Up Next and Lyrics, so the room is
+// the sleeve and its record, still, on flat Night (NowPlayingGround), the
 // title under them, Close and More. Dark by its own environment, not the
 // window's: the bar and the panel keep the window's appearance.
 
@@ -315,17 +317,18 @@ struct NowPlayingView: View {
         return max(0, (min(size.height * 0.62, fits) / 4).rounded(.down) * 4)
     }
 
-    /// The room's top: Close, which Escape presses too, and More. No
-    /// grabber: nothing here is pulled down. Glyphs in the room's dark
-    /// environment's white.
+    /// The room's top, as Linux's header bar: 48 high, Close at its start
+    /// (Escape presses it too), More at its end, plain white glyphs. No
+    /// grabber: nothing here is pulled down.
     private var roomHeader: some View {
-        HStack(spacing: Theme.Space.m) {
+        HStack(spacing: 0) {
             Button {
                 close()
             } label: {
                 Image(systemName: "chevron.down")
-                    .font(.title3.weight(.semibold))
-                    .frame(width: 44, height: 44)
+                    .font(Self.roomGlyph)
+                    .foregroundStyle(.white)
+                    .frame(width: 40, height: 40)
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
@@ -340,9 +343,9 @@ struct NowPlayingView: View {
                     TrackMenu(track: track)
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.title3.weight(.semibold))
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
+                        .font(Self.roomGlyph)
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
                         .contentShape(.rect)
                 }
                 // The glyph alone, as Close: no border, no arrow.
@@ -353,53 +356,46 @@ struct NowPlayingView: View {
                 .accessibilityIdentifier("nowPlaying.more")
             }
         }
-        .padding(.top, Theme.Space.s)
-        .padding(.horizontal, Theme.Space.m)
+        .padding(.horizontal, Theme.Space.s)
+        .frame(height: 48)
     }
 
-    /// The title in the serif and "Artist · Album" under it, as wide as the
-    /// sleeve and its record, two lines each at most: nothing in the room
-    /// loops (spec §10), so a long title wraps rather than scroll by. Laid
-    /// out as one line of each, the rest hanging below, so a title that
-    /// wraps does not lift the sleeve from one song to the next.
+    /// The header's glyphs at the size of Linux's symbolic icons.
+    private static var roomGlyph: Font {
+        .system(size: 16, weight: .semibold)
+    }
+
+    /// As Linux's: the title in the serif, white, and "Artist · Album" under
+    /// it at 60%, as wide as the sleeve and its record, two lines each at
+    /// most (nothing in the room loops, spec §10, so a long title wraps
+    /// rather than scroll by). The room counts one line of each, 48 and 24,
+    /// and the rest hangs below, so a title that wraps does not lift the
+    /// sleeve from one song to the next.
     private var roomTitle: some View {
-        let titleFont = Font.system(size: roomTitleSize, weight: .regular, design: .serif)
-        let bylineFont = Font.system(size: roomBylineSize)
-        return VStack(alignment: .leading, spacing: 0) {
-            Text(verbatim: " ").font(titleFont)
-            Text(verbatim: " ").font(bylineFont)
-        }
-        .hidden()
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .overlay(alignment: .topLeading) {
-            VStack(alignment: .leading, spacing: 0) {
-                if let track = currentTrack {
-                    Text(track.name)
-                        .font(titleFont)
+        VStack(alignment: .leading, spacing: 0) {
+            if let track = currentTrack {
+                Text(track.name)
+                    .font(.system(size: roomTitleSize, weight: .regular, design: .serif))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                let byline = [track.artistLine, track.albumName ?? ""]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " · ")
+                if !byline.isEmpty {
+                    Text(byline)
+                        .font(.system(size: roomBylineSize))
+                        .foregroundStyle(Color.white.opacity(0.6))
                         .lineLimit(2)
-                    let byline = [track.artistLine, track.albumName ?? ""]
-                        .filter { !$0.isEmpty }
-                        .joined(separator: " · ")
-                    if !byline.isEmpty {
-                        Text(byline)
-                            .font(bylineFont)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
-                } else {
-                    Text("Not Playing")
-                        .font(titleFont)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
                 }
+            } else {
+                Text("Not Playing")
+                    .font(.system(size: roomTitleSize, weight: .regular, design: .serif))
+                    .foregroundStyle(Color.white.opacity(0.6))
+                    .lineLimit(1)
             }
-            .fixedSize(horizontal: false, vertical: true)
         }
-        // Where the title is, for the land: the playing song's band starts
-        // just above it, under the sleeve.
-        .anchorPreference(key: NowPlayingAnchorsKey.self, value: .bounds) { bounds in
-            NowPlayingAnchors(title: bounds)
-        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(height: roomTitleSize * 1.2 + roomBylineSize * 24 / 17, alignment: .topLeading)
     }
 
     @ViewBuilder private var panelContent: some View {
