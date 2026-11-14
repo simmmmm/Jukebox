@@ -213,7 +213,9 @@ struct NowPlayingGround: View {
         .clipped()
         .animation(.easeInOut(duration: 0.4), value: still)
         .accessibilityHidden(true)
-        .allowsHitTesting(false)
+        // The room lies over the places and the page: its ground takes a
+        // click on it, so nothing under the room answers one.
+        .allowsHitTesting(inRoom)
         .onAppear { isOnScreen = true }
         .onDisappear { isOnScreen = false }
         .onChange(of: turns, initial: true) { _, turning in
