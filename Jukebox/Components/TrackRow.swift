@@ -3,6 +3,9 @@
 // track has, in a long press and behind its "…". A song on the phone has
 // Music's small arrow after its title; offline, a song that is not on the
 // phone is dimmed, as it cannot play (OfflineStore), and a tap on it says why.
+// In a wide window (the iPad's, the Mac's) it is Linux's row (spec §3, §5):
+// the length at its end, the song playing in the accent, its menu a
+// right-click or a long press.
 
 import JukeboxKit
 import SwiftUI
@@ -20,19 +23,25 @@ struct TrackRow: View {
     var subtitle: String?
     var reason: PickReason?
     var showsMenu = true
+    /// A playlist's own song in a wide window: Remove in its menu, where
+    /// the iPhone swipes it away.
+    var removal: (() -> Void)?
 
     @Environment(AudioPlayer.self) private var player
     @Environment(LibraryStore.self) private var library
     @Environment(AppModel.self) private var app
     @Environment(OfflineStore.self) private var offline
+    @Environment(\.isWide) private var isWide
+    @State private var isHovered = false
 
     init(_ track: Track, leading: Leading = .artwork, subtitle: String? = nil, reason: PickReason? = nil,
-         showsMenu: Bool = true) {
+         showsMenu: Bool = true, removal: (() -> Void)? = nil) {
         self.track = track
         self.leading = leading
         self.subtitle = subtitle
         self.reason = reason
         self.showsMenu = showsMenu
+        self.removal = removal
     }
 
     /// Why the radio chose it, in the kit's words but for the server's
@@ -50,9 +59,17 @@ struct TrackRow: View {
     }
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    private var compact: some View {
         let onPhone = offline.has(track.id)
         let playable = onPhone || !offline.isOffline
-        HStack(spacing: Theme.Space.m) {
+        return HStack(spacing: Theme.Space.m) {
             switch leading {
             case .artwork:
                 ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
@@ -139,6 +156,118 @@ struct TrackRow: View {
         }
     }
 
+    /// Linux's row: numbered (an album's page, whose cover is the page's
+    /// own), the number in a column of 32, 16, the title with a guest after
+    /// it, 48 tall; else the cover 48, 12, the title over the artist, 64 tall
+    /// (72 with the radio's reason). The length at the end, 13 tabular. The
+    /// song playing: its title in the accent and, numbered, the bars for its
+    /// number. No "…": the menu is a right-click, as on Linux, or a long press.
+    private var wide: some View {
+        let onPhone = offline.has(track.id)
+        let playable = onPhone || !offline.isOffline
+        let words = subtitle.flatMap { $0.isEmpty ? nil : $0 }
+        return HStack(spacing: showsArtwork ? Theme.Space.m : Theme.Space.l) {
+            switch leading {
+            case .artwork:
+                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
+                    .opacity(playable ? 1 : 0.5)
+            case let .number(number):
+                Group {
+                    if isCurrent {
+                        Image(systemName: "waveform")
+                            .symbolEffect(.variableColor.iterative, isActive: player.isPlaying)
+                            .foregroundStyle(Theme.accent)
+                            .accessibilityLabel("Playing")
+                    } else {
+                        Text(number.map(String.init) ?? "")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .libraryFont(15)
+                .frame(width: 32, alignment: .trailing)
+            case .none:
+                EmptyView()
+            }
+
+            if showsArtwork {
+                VStack(alignment: .leading, spacing: 0) {
+                    wideTitle(playable: playable, onPhone: onPhone)
+                    if let words {
+                        Text(words)
+                            .libraryFont(13)
+                            .foregroundStyle(playable ? HierarchicalShapeStyle.secondary : HierarchicalShapeStyle.tertiary)
+                            .lineLimit(1)
+                    }
+                    if let reason {
+                        Text(reasonText(reason))
+                            .libraryFont(13)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
+                }
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: Theme.Space.s) {
+                    wideTitle(playable: playable, onPhone: onPhone)
+                        .layoutPriority(1)
+                    if let words {
+                        Text(words)
+                            .libraryFont(13)
+                            .foregroundStyle(playable ? HierarchicalShapeStyle.secondary : HierarchicalShapeStyle.tertiary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+
+            Text(track.duration.clock)
+                .monospacedDigit()
+                .libraryFont(13)
+                .foregroundStyle(.secondary)
+        }
+        .frame(minHeight: showsArtwork ? (reason == nil ? 64 : 72) : 48)
+        .contentShape(.rect)
+        // The pointer over it: the whole row lit, 8 past its ends.
+        .background {
+            RoundedRectangle(cornerRadius: Theme.Space.s)
+                .fill(Color.primary.opacity(isHovered ? 0.07 : 0))
+                .padding(.horizontal, -Theme.Space.s)
+        }
+        .onHover { isHovered = $0 }
+        .contextMenu {
+            TrackMenu(track: track, removal: removal)
+        } preview: {
+            // As the iPhone's: the preview's hosting controller needs the
+            // AppModel carried into it.
+            TrackPreview(track: track)
+                .environment(app)
+        }
+    }
+
+    /// The title in 15, the playing song's in the accent; Music's small
+    /// heart and arrow after it.
+    private func wideTitle(playable: Bool, onPhone: Bool) -> some View {
+        HStack(spacing: 4) {
+            Text(track.name)
+                .lineLimit(1)
+                .foregroundStyle(isCurrent ? AnyShapeStyle(Theme.accent)
+                                 : playable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+            if library.isFavorite(track.id) {
+                Image(systemName: "heart.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Favorite")
+            }
+            if onPhone {
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Downloaded")
+            }
+        }
+        .libraryFont(15)
+    }
+
     private var isCurrent: Bool { player.currentTrack?.id == track.id }
 
     private var showsArtwork: Bool {
@@ -165,6 +294,8 @@ private struct TrackPreview: View {
 /// What can be done with a track, as Music orders it.
 struct TrackMenu: View {
     let track: Track
+    /// A playlist's own song, on a wide page: Remove from Playlist.
+    var removal: (() -> Void)?
 
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
@@ -202,6 +333,13 @@ struct TrackMenu: View {
             if let ref = track.primaryArtist, let artist = library.artist(ref) {
                 Button("Go to Artist", systemImage: "music.mic") {
                     navigator.open(.artist(artist))
+                }
+            }
+        }
+        if let removal {
+            Section {
+                Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive) {
+                    removal()
                 }
             }
         }
