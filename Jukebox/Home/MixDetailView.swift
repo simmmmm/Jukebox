@@ -4,6 +4,11 @@
 // a playlist it stays on the server after today's mixes have made way for
 // tomorrow's; downloaded (the bar's arrow) it stays on the phone as it was
 // today, in Library › Downloaded.
+//
+// On a wide page (the iPad, the Mac) its head is Linux's (spec §5, as an
+// album's): the collage at the left, and at its foot the title, its
+// artists, its length, Play, Shuffle and ⋮ with the rest, Start Radio
+// first; a hairline under it, the songs as rows.
 
 import JukeboxKit
 import SwiftUI
@@ -20,6 +25,7 @@ struct MixDetailView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
     @Environment(OfflineStore.self) private var offline
+    @Environment(\.isWide) private var isWide
 
     @State private var showsTitle = false
     @State private var isConfirmingRemoval = false
@@ -28,28 +34,36 @@ struct MixDetailView: View {
     @State private var isSaving = false
     @State private var saved: Playlist?
     @State private var saveError: String?
+    /// The page's own width, for its measures on a wide page.
+    @State private var pageWidth = 1200
 
     var body: some View {
+        let measures = HomeMeasures(isWide: isWide, width: pageWidth)
         List {
-            header
-                .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
-                                          bottom: Theme.Space.l, trailing: Theme.margin))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-
-            ForEach(Array(mix.tracks.enumerated()), id: \.offset) { index, track in
-                Button {
-                    guard !player.refusesOffline(track) else { return }
-                    player.playMix(mix, from: index)
-                } label: {
-                    TrackRow.standard(track)
+            Group {
+                if measures.isWide {
+                    wideHeader(measures: measures)
+                } else {
+                    header
                 }
-                .buttonStyle(.plain)
             }
+            .listRowInsets(measures.headInsets)
+            .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
+
+            if measures.isWide {
+                // The rows on the ground at the page's margin, as Linux's:
+                // the hairline under the head is the one line.
+                rows
+                    .listRowInsets(measures.rowInsets)
+                    .listRowSeparator(.hidden)
+            } else {
+                rows
+            }
         }
         .listStyle(.plain)
         .pageGround()
+        .homePageWidth($pageWidth)
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? mix.title : "")
@@ -67,30 +81,16 @@ struct MixDetailView: View {
                     OfflineDownloadButton(collection: OfflineCollection(mix: mix), isConfirmingRemoval: $isConfirmingRemoval)
                 }
             }
-            ToolbarItem(placement: .barTrailing) {
-                Menu {
-                    Section {
-                        Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
-                            player.playNext(mix.tracks)
-                        }
-                        Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
-                            player.addToQueue(mix.tracks)
-                        }
+            // On a wide page ⋮ is in the head, beside Play, as Linux's.
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Menu {
+                        moreItems
+                    } label: {
+                        Label("More", systemImage: "ellipsis")
                     }
-                    Section {
-                        Button("Save as Playlist…", systemImage: "music.note.list") {
-                            playlistName = defaultName
-                            isNaming = true
-                        }
-                        .disabled(isSaving)
-                        Button("Add to Playlist…", systemImage: "text.badge.plus") {
-                            navigator.addToPlaylist = AddToPlaylistRequest(tracks: mix.tracks)
-                        }
-                    }
-                } label: {
-                    Label("More", systemImage: "ellipsis")
+                    .disabled(mix.tracks.isEmpty)
                 }
-                .disabled(mix.tracks.isEmpty)
             }
         }
         .offlineRemovalDialog($isConfirmingRemoval, for: .mix(mix.id), name: mix.title)
@@ -146,6 +146,85 @@ struct MixDetailView: View {
             .accessibilityHint("Plays on from this mix, for as long as you listen")
         }
         .frame(maxWidth: .infinity)
+    }
+
+    private var rows: some View {
+        ForEach(Array(mix.tracks.enumerated()), id: \.offset) { index, track in
+            Button {
+                guard !player.refusesOffline(track) else { return }
+                player.playMix(mix, from: index)
+            } label: {
+                TrackRow.standard(track)
+            }
+            .buttonStyle(.plain)
+        }
+        .listRowBackground(Color.clear)
+    }
+
+    /// The rest of what can be done with the mix: the toolbar's ⋮ on the
+    /// iPhone, the head's on a wide page.
+    @ViewBuilder
+    private var moreItems: some View {
+        Section {
+            Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
+                player.playNext(mix.tracks)
+            }
+            Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
+                player.addToQueue(mix.tracks)
+            }
+        }
+        Section {
+            Button("Save as Playlist…", systemImage: "music.note.list") {
+                playlistName = defaultName
+                isNaming = true
+            }
+            .disabled(isSaving)
+            Button("Add to Playlist…", systemImage: "text.badge.plus") {
+                navigator.addToPlaylist = AddToPlaylistRequest(tracks: mix.tracks)
+            }
+        }
+    }
+
+    /// The head on a wide page: the collage, and at its foot the title, its
+    /// artists, its length, Play, Shuffle as a word, and ⋮.
+    private func wideHeader(measures: HomeMeasures) -> some View {
+        HomeDetailHead(title: mix.title, lead: mix.subtitle,
+                       facts: HomeText.summary(count: mix.tracks.count, duration: mix.duration)) {
+            CollageArtwork(artworks: mix.artwork, size: measures.cover)
+        } actions: {
+            Button {
+                player.playMix(mix)
+            } label: {
+                Text("Play")
+            }
+            .buttonStyle(.prominent)
+            .fixedSize()
+            Button {
+                player.playMix(mix, shuffled: true)
+            } label: {
+                Text("Shuffle")
+            }
+            .buttonStyle(.secondary)
+            Menu {
+                Section {
+                    Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                        Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
+                        radio.start(mix.stationSeed)
+                    }
+                }
+                moreItems
+            } label: {
+                Label("More", systemImage: "ellipsis")
+                    .labelStyle(.iconOnly)
+                    .frame(width: 32, height: 32)
+                    .contentShape(.rect)
+            }
+            .menuStyle(.button)
+            .buttonStyle(.borderless)
+            .menuIndicator(.hidden)
+            .fixedSize()
+        }
+        .disabled(mix.tracks.isEmpty)
     }
 
     /// "1990s Rock, 8 Nov 2026": the mix of that day, as it was.

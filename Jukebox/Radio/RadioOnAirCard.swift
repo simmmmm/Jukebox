@@ -14,17 +14,88 @@ import SwiftUI
 
 struct RadioOnAirCard: View {
     let station: Station
+    let measures: HomeMeasures
 
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
     @Environment(Navigator.self) private var navigator
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    init(station: Station) {
+    init(station: Station, measures: HomeMeasures) {
         self.station = station
+        self.measures = measures
     }
 
     var body: some View {
+        if measures.isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    /// As Linux's (spec §5): the art 176, lit; beside it, in the middle of
+    /// its height, "On air", the name in the serif at 32, the song, and 16
+    /// under them Pause, the page's one filled button, and Stop. The dial is
+    /// in Up next and the thumbs are the bar's: "de muziek gaat voor".
+    private var wide: some View {
+        HStack(alignment: .center, spacing: Theme.Space.xl) {
+            Button {
+                navigator.isNowPlayingPresented = true
+            } label: {
+                StationArtwork(station: station, size: Self.wideArt)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(station.title))
+            .accessibilityHint("Shows Now Playing")
+
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                Eyebrow("On air")
+                Text(station.title)
+                    .homeSerif(32)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                // Linux says when it started where it knows; the song
+                // otherwise, as here.
+                Group {
+                    if radio.isStarting {
+                        Text("Choosing the first songs…")
+                    } else if let track = player.currentTrack {
+                        Text(verbatim: [track.name, track.artistLine].filter { !$0.isEmpty }.joined(separator: " · "))
+                    }
+                }
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                HStack(spacing: Theme.Space.l) {
+                    Button {
+                        player.togglePlayPause()
+                    } label: {
+                        Text(player.isPlaying ? "Pause" : "Play")
+                    }
+                    .buttonStyle(.prominent)
+                    .fixedSize()
+                    .disabled(radio.isStarting)
+                    Button {
+                        // The station first, so the song that stops is not
+                        // taken as a skip; then the music.
+                        radio.stop()
+                        player.stop()
+                    } label: {
+                        Text("Stop")
+                    }
+                    .buttonStyle(.secondary)
+                }
+                .padding(.top, Theme.Space.m)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The station on air's art on a wide page (spec §8).
+    private static let wideArt: CGFloat = 176
+
+    private var compact: some View {
         VStack(alignment: .leading, spacing: Theme.Space.l) {
             Button {
                 navigator.isNowPlayingPresented = true

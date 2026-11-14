@@ -18,6 +18,11 @@
 // Picks as a word beside it, facts rather than a slogan under the title
 // (what kind of station, when it last played), sentence-case headings and
 // no reasons under the songs — those are the queue's.
+//
+// On a wide page (the iPad, the Mac) its head is Linux's (spec §5, as an
+// album's): the arch at the left, and at its foot the title, the facts,
+// Play and New Picks, a hairline under it, the songs as rows. The dial is
+// in Up next there, beside the station on air.
 
 import JukeboxKit
 import SwiftUI
@@ -36,6 +41,7 @@ struct StationDetailView: View {
     @Environment(Navigator.self) private var navigator
     @Environment(HistoryStore.self) private var history
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isWide) private var isWide
 
     /// The songs the station would start with; nil until they are chosen
     /// (and while it is on the air, when the player's queue is shown).
@@ -61,23 +67,40 @@ struct StationDetailView: View {
     @State private var isSaving = false
     @State private var saved: Playlist?
     @State private var saveError: String?
+    /// The page's own width, for its measures on a wide page.
+    @State private var pageWidth = 1200
+
+    private var measures: HomeMeasures {
+        HomeMeasures(isWide: isWide, width: pageWidth)
+    }
 
     var body: some View {
         let onAir = isOnAir
+        let measures = self.measures
         List {
-            header(onAir: onAir)
-                .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
-                                          bottom: Theme.Space.l, trailing: Theme.margin))
-                .listRowSeparator(.hidden)
-                .listRowBackground(Color.clear)
-            if onAir {
-                onAirRows
+            Group {
+                if measures.isWide {
+                    wideHeader(onAir: onAir, measures: measures)
+                } else {
+                    header(onAir: onAir)
+                }
+            }
+            .listRowInsets(measures.headInsets)
+            .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
+            if measures.isWide {
+                // The rows on the ground at the page's margin, as Linux's:
+                // the hairline under the head is the one line.
+                rows(onAir: onAir)
+                    .listRowInsets(measures.rowInsets)
+                    .listRowSeparator(.hidden)
             } else {
-                previewRows
+                rows(onAir: onAir)
             }
         }
         .listStyle(.plain)
         .pageGround()
+        .homePageWidth($pageWidth)
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? station.title : "")
@@ -164,6 +187,20 @@ struct StationDetailView: View {
 
     private static let controlsWidth: CGFloat = 480
 
+    /// The head on a wide page: the arch, and at its foot the title, what
+    /// it draws from and when it last played, Play and New Picks (or on the
+    /// air Pause and Stop).
+    private func wideHeader(onAir: Bool, measures: HomeMeasures) -> some View {
+        let facts = [station.subtitle ?? StationText.kind(station), RelativeDay.played(lastPlayed)]
+            .filter { !$0.isEmpty }
+            .joined(separator: " · ")
+        return HomeDetailHead(title: station.title, facts: facts) {
+            StationArtwork(station: station, size: measures.cover)
+        } actions: {
+            buttons(onAir: onAir)
+        }
+    }
+
     /// When the station last played here, from the history.
     private var lastPlayed: Date? {
         HomeShelves.stationDates(events: history.history.events)[station.id]
@@ -173,7 +210,8 @@ struct StationDetailView: View {
     /// word; on the air, Play or Pause, and Stop.
     @ViewBuilder
     private func buttons(onAir: Bool) -> some View {
-        HStack(spacing: Theme.Space.xl) {
+        // 16 apart in a wide page's head, as Linux's.
+        HStack(spacing: isWide ? Theme.Space.l : Theme.Space.xl) {
             if onAir {
                 Button {
                     // Its first songs are being chosen (it was started from
@@ -229,6 +267,15 @@ struct StationDetailView: View {
 
     // MARK: The songs
 
+    @ViewBuilder
+    private func rows(onAir: Bool) -> some View {
+        if onAir {
+            onAirRows
+        } else {
+            previewRows
+        }
+    }
+
     /// What the station would play, before it plays.
     @ViewBuilder
     private var previewRows: some View {
@@ -241,7 +288,10 @@ struct StationDetailView: View {
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
         } else {
-            heading("Up first")
+            // Linux's page has the songs straight under its head.
+            if !isWide {
+                heading("Up first")
+            }
             if let picks {
                 // By place, not by song: a library of a few songs repeats
                 // them, and the list would have the same song twice. No
