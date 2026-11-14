@@ -235,14 +235,13 @@ final class ScreenshotTests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         let walk = Walk(test: self, name: "pad", numbered: false)
         defer { walk.finish() }
-        let app = walk.app
 
         // D2's land, standing still (see testPhone). The panel closed, as a
         // listener first finds it, whatever an earlier launch left: the
         // argument domain wins over what PanelState remembered.
         try walk.launch(extra: ["-showLandStill", "YES", "-panelOpen", "NO"])
         guard try walk.signIn(takingPictures: true,
-                              names: ["17-sign-in", "17b-sign-in-server", "17c-sign-in-account"])
+                              names: ["17-sign-in", "17b-sign-in-address", "17c-sign-in-filled"])
         else { return }
         walk.waitForLibrary()
         walk.picture("01-home")
@@ -285,10 +284,16 @@ final class ScreenshotTests: XCTestCase {
         walk.picture("10a-albums-panel")
         if albumsBeside { _ = try walk.openAlbum("Quiet Rooms") }
         walk.picture("10-album-up-next")
-        // Now Playing as the room, from the bar's song, Up Next beside it.
+        // Now Playing as the room, from the bar's song, Up Next beside it;
+        // then its More.
         let room = try walk.openRoom()
         walk.picture("10b-now-playing")
-        if room { try walk.closeRoom() }
+        if room {
+            let menu = try walk.openRoomMenu()
+            walk.picture("10c-now-playing-menu")
+            if menu { walk.dismissMenu() }
+            try walk.closeRoom()
+        }
 
         // The panel on the words: Silver Roads begins with Night Drive, whose
         // lyrics are timed (dev/demo/lyrics.json).
@@ -319,11 +324,9 @@ final class ScreenshotTests: XCTestCase {
         walk.picture("16-preferences")
         if settings { try walk.closeSheet(with: "Done") }
 
-        // Return sends the keyboard away: Linux's window has none over its
-        // bar.
-        let search = try walk.place("search")
-        let field = app.searchFields.firstMatch
-        if search, walk.find(field, "Search: the search field", timeout: 8) {
+        // The field in the page (`search.field`). Return sends the keyboard
+        // away: Linux's window has none over its bar.
+        if try walk.place("search"), let field = walk.byID("search.field", timeout: 8) {
             try walk.enter(walk.searchTerm, into: field, "Search: typing a term")
             walk.pressReturn(in: field)
             walk.pause(2.5)
@@ -375,11 +378,6 @@ final class Walk {
     private let prefix: String
     private let numbered: Bool
     private var count = 0
-    /// What the walk opened the panel on ("upNext", "lyrics"), nil while it
-    /// is closed. The bar's buttons toggle (PanelState.toggle: the one shown
-    /// closes it), so the walk keeps count and taps only to change it. Each
-    /// launch starts it closed (`-panelOpen NO`).
-    private var panel: String?
     private var lastPicture = "the start"
     private var missed: [String] = []
     /// Where ci/screenshots.sh wants every picture as a file as well
@@ -723,15 +721,17 @@ final class Walk {
     }
 
     /// The first album of a grid of covers: the first cover-shaped button on
-    /// the screen inside its scroll view, else anywhere above the tab bar.
+    /// the screen inside a scroll view, else anywhere above the tab bar.
     /// Cover-shaped (at least nearly as tall as wide): beside a sidebar and
-    /// a panel, their rows are wide buttons too.
+    /// a panel, their rows are wide buttons too. Not a place: the wide
+    /// window's sidebar is a scroll view of buttons, before the page's.
     func firstTile(_ step: String) -> XCUIElement? {
-        let inGrid = app.scrollViews.firstMatch.buttons
+        let notPlaces = NSPredicate(format: "NOT (identifier BEGINSWITH %@)", "place.")
+        let inGrid = app.scrollViews.buttons.matching(notPlaces)
         if inGrid.firstMatch.waitForExistence(timeout: 15), let tile = firstLarge(inGrid, minWidth: 100, tall: true) {
             return tile
         }
-        if let tile = firstLarge(app.buttons, minWidth: 120, tall: true) { return tile }
+        if let tile = firstLarge(app.buttons.matching(notPlaces), minWidth: 120, tall: true) { return tile }
         note("\(step): none on the screen")
         return nil
     }
@@ -785,7 +785,9 @@ final class Walk {
     func openStation(_ title: String) throws -> Bool {
         let link = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", title)).firstMatch
         guard try tap(link, "Radio: the \(title) station") else { return false }
-        let upNext = app.staticTexts.matching(NSPredicate(format: "label ==[c] %@", "Up next")).firstMatch
+        // "Up first" before it plays, on the wide window's page.
+        let upNext = app.staticTexts.matching(NSPredicate(format: "label ==[c] %@ OR label ==[c] %@",
+                                                          "Up next", "Up first")).firstMatch
         let page = [app.buttons["New Picks"].firstMatch, upNext]
         guard waitForAny(page, timeout: 10) else {
             note("Radio: the \(title) station's page did not open (no New Picks, no Up Next)")
@@ -858,7 +860,10 @@ final class Walk {
         // Both steps are on the screen while they cross-fade.
         pause(1.5)
 
-        let user = app.textFields.firstMatch
+        // The wide window's sign-in is one page, its address the first
+        // field: the user name by its identifier there.
+        let named = app.textFields["signIn.user"].firstMatch
+        let user = named.exists ? named : app.textFields.firstMatch
         try enter("test", into: user, "Sign in: the user name")
         // Return moves on to the password, as the form does it.
         pressReturn(in: user)
@@ -1057,22 +1062,53 @@ final class Walk {
     }
 
     /// The panel on `content` ("upNext", "lyrics"), by the bar's button for
-    /// it (`bar.upNext`, `bar.lyrics`); already there, untouched.
+    /// it (`bar.upNext`, `bar.lyrics`). The buttons toggle (PanelState: the
+    /// one lit closes the panel), so a lit one, said selected, is left be.
     func showPanel(_ content: String) throws {
-        guard panel != content, let button = byID("bar." + content) else { return }
-        if try tap(button, "bar." + content, timeout: 1) {
-            panel = content
-            pause(2.5)
+        guard let button = byID("bar." + content), !isSelected(button) else { return }
+        if try tap(button, "bar." + content, timeout: 1) { pause(2.5) }
+    }
+
+    /// The panel closed, by the bar's lit button.
+    func closePanel() throws {
+        for content in ["upNext", "lyrics"] {
+            let button = app.descendants(matching: .any).matching(identifier: "bar." + content).firstMatch
+            if isSelected(button) {
+                if try tap(button, "bar." + content, timeout: 1) { pause(1.5) }
+                return
+            }
         }
     }
 
-    /// The panel closed, by the bar's button of what it shows.
-    func closePanel() throws {
-        guard let content = panel, let button = byID("bar." + content) else { return }
-        if try tap(button, "bar." + content, timeout: 1) {
-            panel = nil
-            pause(1.5)
+    /// Whether a bar's button is lit: the bar says so as the selected trait.
+    func isSelected(_ element: XCUIElement) -> Bool {
+        XCTExpectFailure("Whether a button is lit, for the screenshot walk", strict: false) { () -> Bool in
+            element.exists && element.isSelected
         }
+    }
+
+    /// Now Playing's More (`nowPlaying.more`), opened. True when tapped.
+    func openRoomMenu() throws -> Bool {
+        guard let more = byID("nowPlaying.more", timeout: 2), try tap(more, "nowPlaying.more", timeout: 1) else {
+            return false
+        }
+        pause(1.5)
+        return true
+    }
+
+    /// A menu sent away as a finger does, by a touch beside it: the system's
+    /// own place for that, else the room's empty top (a touch on its ground
+    /// stays in the room).
+    func dismissMenu() {
+        let outside = app.otherElements["PopoverDismissRegion"].firstMatch
+        XCTExpectFailure("Sending a menu away, for the screenshot walk", strict: false) {
+            if outside.exists {
+                outside.tap()
+            } else {
+                self.app.coordinate(withNormalizedOffset: CGVector(dx: 0.4, dy: 0.05)).tap()
+            }
+        }
+        pause(1.5)
     }
 
     /// An album's page from the albums' grid: the cover whose label begins
@@ -1116,13 +1152,21 @@ final class Walk {
         try closeNowPlaying()
     }
 
-    /// Settings, from its place in the sidebar (`place.settings`) or a
-    /// button that says Settings (Home's toolbar on the tabs). True once
+    /// Settings: in the wide window from the sidebar head's Main Menu, item
+    /// "Settings…", where Linux's primary menu keeps its Preferences; on the
+    /// tabs from the button that says Settings in Home's toolbar. True once
     /// tapped.
     func openSettings() throws -> Bool {
-        let either = NSPredicate(format: "identifier == %@ OR label == %@", "place.settings", "Settings")
-        guard try tap(app.buttons.matching(either).firstMatch, "Settings (place.settings, or a button Settings)",
-                      timeout: 5) else { return false }
+        let menu = app.buttons["Main Menu"].firstMatch
+        var opened = false
+        if menu.waitForExistence(timeout: 3) {
+            if try tap(menu, "the sidebar's Main Menu", timeout: 1) {
+                opened = try tap(app.buttons["Settings…"], "Main Menu: Settings…", timeout: 4)
+            }
+        } else {
+            opened = try tap(app.buttons["Settings"], "Settings (no Main Menu, no button Settings)", timeout: 4)
+        }
+        guard opened else { return false }
         _ = app.navigationBars["Settings"].firstMatch.waitForExistence(timeout: 8)
         pause(1.5)
         return true
