@@ -66,10 +66,19 @@ final class NowPlayingInfo {
         artwork = nil
         artworkImage = nil
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+        #if os(macOS)
+        MPNowPlayingInfoCenter.default().playbackState = .stopped
+        #endif
     }
 
     private func publish() {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
+        #if os(macOS)
+        // The Mac's Control Centre and media keys go by the state the app
+        // says it is in; the iPhone takes it from the audio session.
+        let rate = info[MPNowPlayingInfoPropertyPlaybackRate] as? Double ?? 0
+        MPNowPlayingInfoCenter.default().playbackState = rate > 0 ? .playing : .paused
+        #endif
     }
 
     /// The cover at 600 pixels, from the app's own image cache when it is
