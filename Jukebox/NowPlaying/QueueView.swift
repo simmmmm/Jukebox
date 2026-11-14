@@ -7,6 +7,13 @@
 // chooses the order, and keeps choosing as it is listened to. In their place
 // a "…" keeps the station as a playlist: a station that played well is gone
 // once another starts, and this is how an evening of it stays.
+//
+// In the iPad's and the Mac's panel (`inPanel`) it is Up Next as Linux's
+// panel has it (UpNextList, shared): where it plays from at the top (the
+// album's cover and title, or the station's mark, name and dial), a
+// hairline, the song playing and the ones to come, "Then", and a foot that
+// counts them ("6 songs · 27 min"). Shuffle and repeat are in the bar there.
+// A song is dragged to where it goes, or moved and removed from its menu.
 
 import JukeboxKit
 import SwiftUI
@@ -17,6 +24,10 @@ struct QueueView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
+    @Environment(MixStore.self) private var mixes
+
+    /// The wide layout's panel, rather than Now Playing's cover place.
+    private let inPanel: Bool
 
     // The iPhone's Edit mode, for reordering and removing. A Mac's list
     // has none: there a song is dragged to where it goes.
@@ -34,9 +45,46 @@ struct QueueView: View {
     @State private var saved: Playlist?
     @State private var saveError: String?
 
-    init() {}
+    init(inPanel: Bool = false) {
+        self.inPanel = inPanel
+    }
 
     var body: some View {
+        Group {
+            if inPanel {
+                panelList
+            } else {
+                phoneList
+            }
+        }
+        // The confirmation, with the name to change if the listener likes,
+        // as a mix's Save as Playlist asks it.
+        .alert("Save as Playlist", isPresented: $isNaming) {
+            TextField("Playlist Name", text: $playlistName)
+            Button("Save") { save() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            saveMessage
+        }
+        .alert("Playlist Saved", isPresented: presence($saved), presenting: saved) { playlist in
+            Button("Show Playlist") {
+                // Closes Now Playing and opens it in the tab underneath.
+                navigator.open(.playlist(playlist))
+            }
+            Button("OK", role: .cancel) {}
+        } message: { playlist in
+            Text("“\(playlist.name)” is in your playlists now.")
+        }
+        .alert("Could Not Save the Playlist", isPresented: presence($saveError), presenting: saveError) { _ in
+            Button("OK", role: .cancel) {}
+        } message: { message in
+            Text(message)
+        }
+        // Each time the panel opens (Stats).
+        .countsScreen("queue")
+    }
+
+    @ViewBuilder private var phoneList: some View {
         let upNext = player.upNext
         let history = Array(player.played.reversed())
         let station = player.context?.station
@@ -114,31 +162,173 @@ struct QueueView: View {
             if isEmpty { editMode = .inactive }
         }
         #endif
-        // The confirmation, with the name to change if the listener likes,
-        // as a mix's Save as Playlist asks it.
-        .alert("Save as Playlist", isPresented: $isNaming) {
-            TextField("Playlist Name", text: $playlistName)
-            Button("Save") { save() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            saveMessage
-        }
-        .alert("Playlist Saved", isPresented: presence($saved), presenting: saved) { playlist in
-            Button("Show Playlist") {
-                // Closes Now Playing and opens it in the tab underneath.
-                navigator.open(.playlist(playlist))
+    }
+
+    // MARK: The panel
+
+    /// Up Next as the wide layout's panel shows it, from UpNextList, as
+    /// Linux's panel does.
+    private var panelList: some View {
+        // ponytail: no songs "queued from elsewhere" yet: the iPhone's player
+        // does not keep which ones were (Linux's `addedIDs`), so "Then" comes
+        // only before Autoplay. Pass them once the queue is shared.
+        let items = UpNextList.items(current: player.current, upNext: player.upNext, context: player.context,
+                                     currentIndex: player.currentIndex, added: [],
+                                     autoplay: settings.autoplay, repeatMode: player.repeatMode)
+        let head = UpNextList.head(player.context, playing: player.currentTrack, library: library, mixes: mixes)
+        return List {
+            if let head {
+                panelHead(head)
+                    .padding(.top, Theme.Space.s)
+                    .padding(.bottom, Theme.Space.l)
+                    .overlay(alignment: .bottom) {
+                        Hairline(inset: 0)
+                    }
+                    .padding(.bottom, Theme.Space.m)
+                    .panelRow()
             }
-            Button("OK", role: .cancel) {}
-        } message: { playlist in
-            Text("“\(playlist.name)” is in your playlists now.")
+            ForEach(items, id: \.panelKey) { item in
+                panelItem(item)
+                    .moveDisabled(!item.isUpcoming)
+                    .deleteDisabled(!item.isUpcoming)
+            }
+            // The list's places count the playing row and the words too;
+            // the queue's count only the songs to come.
+            .onMove { source, destination in
+                let offsets = IndexSet(source.compactMap { upNextOffset(items[$0]) })
+                let target = items[..<destination].filter(\.isUpcoming).count
+                player.moveUpcoming(fromOffsets: offsets, toOffset: target)
+            }
+            .onDelete { places in
+                player.removeUpcoming(atOffsets: IndexSet(places.compactMap { upNextOffset(items[$0]) }))
+            }
         }
-        .alert("Could Not Save the Playlist", isPresented: presence($saveError), presenting: saveError) { _ in
-            Button("OK", role: .cancel) {}
-        } message: { message in
-            Text(message)
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
+        .environment(\.defaultMinListRowHeight, 0)
+    }
+
+    /// Where it plays from: an album's, a playlist's or a mix's cover and
+    /// title with its artist; or a station's mark (the one lit arch a
+    /// screen is the hero's, so here it is flat), its name and its dial.
+    @ViewBuilder private func panelHead(_ head: UpNextList.Head) -> some View {
+        switch head {
+        case let .collection(title, line, cover, collage):
+            HStack(spacing: Theme.Space.m) {
+                if let collage {
+                    CollageArtwork(artworks: collage, size: 48)
+                } else {
+                    ArtworkView(cover, size: 48)
+                }
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(title)
+                        .font(.serif(.title3))
+                        .lineLimit(1)
+                    if !line.isEmpty {
+                        Text(line)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                Spacer(minLength: 0)
+            }
+            .frame(minHeight: 48)
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Text("Playing from \(title)"))
+        case let .station(station):
+            VStack(alignment: .leading, spacing: Theme.Space.l) {
+                HStack(spacing: Theme.Space.m) {
+                    ArchMark(size: 24, style: .template)
+                        .foregroundStyle(Theme.accent)
+                    Text(station.title)
+                        .font(.serif(.title3))
+                        .lineLimit(1)
+                        .accessibilityLabel(Text("Playing from \(station.title)"))
+                    Spacer(minLength: 0)
+                    stationMenu(station)
+                }
+                .frame(minHeight: 48)
+                // The dial, above the songs it chooses.
+                RadioDial()
+            }
         }
-        // Each time the panel opens (Stats).
-        .countsScreen("queue")
+    }
+
+    @ViewBuilder private func panelItem(_ item: UpNextList.Item) -> some View {
+        switch item {
+        case let .song(entry, number, style, playing, words):
+            QueuePanelRow(entry: entry, number: number, style: style, playing: playing, words: words)
+                .contentShape(.rect)
+                .onTapGesture {
+                    if !playing { player.skip(to: entry) }
+                }
+                .contextMenu {
+                    panelMenu(entry, playing: playing)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(playing ? [] : .isButton)
+                .accessibilityHint(playing ? "" : "Plays this song")
+                .panelRow()
+        case .then:
+            panelWords("Then")
+                .padding(.top, Theme.Space.xl)
+                .padding(.bottom, Theme.Space.xs)
+                .panelRow()
+        case let .note(text):
+            panelWords(text)
+                .panelRow()
+        case let .foot(text):
+            panelWords(text)
+                .padding(.top, Theme.Space.xl)
+                .padding(.bottom, Theme.Space.l)
+                .panelRow()
+        }
+    }
+
+    /// "Then", Autoplay's note, the foot: a fact, small and quiet.
+    private func panelWords(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// A song's menu: moved or taken out for the ones to come (a Mac's list
+    /// has no Edit), then what every song has. Found by id when chosen: the
+    /// list may have moved since.
+    @ViewBuilder private func panelMenu(_ entry: QueueEntry, playing: Bool) -> some View {
+        if !playing, let at = player.upNext.firstIndex(where: { $0.id == entry.id }) {
+            Section {
+                Button("Move Up", systemImage: "arrow.up") {
+                    move(entry, by: -1)
+                }
+                .disabled(at == 0)
+                Button("Move Down", systemImage: "arrow.down") {
+                    move(entry, by: 1)
+                }
+                .disabled(at == player.upNext.count - 1)
+                Button("Remove from Queue", systemImage: "minus.circle", role: .destructive) {
+                    if let at = upNextOffset(entry) { player.removeUpcoming(atOffsets: [at]) }
+                }
+            }
+        }
+        TrackMenu(track: entry.track)
+    }
+
+    private func move(_ entry: QueueEntry, by step: Int) {
+        guard let at = upNextOffset(entry), player.upNext.indices.contains(at + step) else { return }
+        // Before the place it goes: one past the next song to go down.
+        player.moveUpcoming(fromOffsets: [at], toOffset: step > 0 ? at + 2 : at - 1)
+    }
+
+    private func upNextOffset(_ entry: QueueEntry) -> Int? {
+        player.upNext.firstIndex { $0.id == entry.id }
+    }
+
+    private func upNextOffset(_ item: UpNextList.Item) -> Int? {
+        guard case let .song(entry, _, _, playing, _) = item, !playing else { return nil }
+        return upNextOffset(entry)
     }
 
     // MARK: Rows
@@ -358,5 +548,131 @@ private extension View {
         listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .listRowInsets(EdgeInsets(top: 6, leading: Theme.Space.xl, bottom: 6, trailing: Theme.Space.xl))
+    }
+
+    /// A row of the panel: on its ground, no separator, 16 from its sides;
+    /// its height its own (Linux's measures: 48, 64 with a cover, 72 on a
+    /// station).
+    func panelRow() -> some View {
+        listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: 0, leading: Theme.Space.l, bottom: 0, trailing: Theme.Space.l))
+    }
+}
+
+private extension UpNextList.Item {
+    /// Its place in the list: a song by its entry, the words by what they are.
+    var panelKey: String {
+        switch self {
+        case let .song(entry, _, _, _, _): entry.id.uuidString
+        case .then: "then"
+        case .note: "note"
+        case .foot: "foot"
+        }
+    }
+
+    /// A song still to come: what can be moved and taken out.
+    var isUpcoming: Bool {
+        if case let .song(_, _, _, playing, _) = self { return !playing }
+        return false
+    }
+}
+
+/// A song of the panel's Up Next, as Linux's: numbered (an album or a
+/// playlist; its guests after the title), with its cover (songs queued from
+/// elsewhere), or with its cover and the radio's reason (a station). The
+/// playing one has the bars for its number and its title in the accent: the
+/// only accent row.
+private struct QueuePanelRow: View {
+    let entry: QueueEntry
+    let number: Int?
+    let style: UpNextList.Style
+    let playing: Bool
+    let words: String
+
+    @Environment(AudioPlayer.self) private var player
+    @Environment(LibraryStore.self) private var library
+
+    var body: some View {
+        let track = entry.track
+        HStack(spacing: Theme.Space.m) {
+            if style == .numbered {
+                Group {
+                    if playing {
+                        bars
+                    } else {
+                        Text(number.map(String.init) ?? "")
+                            .monospacedDigit()
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .font(.subheadline)
+                .frame(width: 24, alignment: .trailing)
+            } else {
+                ArtworkView(track.artwork, size: 48)
+            }
+
+            VStack(alignment: .leading, spacing: 0) {
+                if style == .numbered {
+                    HStack(alignment: .firstTextBaseline, spacing: Theme.Space.s) {
+                        title(track)
+                        if !words.isEmpty {
+                            fact(words)
+                        }
+                    }
+                } else {
+                    title(track)
+                    fact(words)
+                    if style == .station, let reason = entry.reason {
+                        // Why the radio chose it: here and nowhere else.
+                        Text(reasonText(reason))
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
+                }
+            }
+            Spacer(minLength: 0)
+
+            if playing && style == .station {
+                bars
+            } else {
+                Text(track.duration.clock)
+                    .font(.footnote)
+                    .monospacedDigit()
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .frame(minHeight: style == .numbered ? 48 : style == .covered ? 64 : 72)
+    }
+
+    private func title(_ track: Track) -> some View {
+        Text(track.name)
+            .font(.subheadline)
+            .foregroundStyle(playing ? Theme.accent : Color.primary)
+            .lineLimit(1)
+    }
+
+    private func fact(_ text: String) -> some View {
+        Text(text)
+            .font(.footnote)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+    }
+
+    /// The playing song's mark, as its row on an album's page has it.
+    private var bars: some View {
+        Image(systemName: "waveform")
+            .symbolEffect(.variableColor.iterative, isActive: player.isPlaying)
+            .foregroundStyle(Theme.accent)
+            .accessibilityLabel("Playing")
+    }
+
+    /// The kit's words, but for the server's own mix (TrackRow's rule).
+    private func reasonText(_ reason: PickReason) -> String {
+        if case .instantMix = reason {
+            return String(localized: "From \(library.serverKind)’s mix")
+        }
+        return reason.text
     }
 }

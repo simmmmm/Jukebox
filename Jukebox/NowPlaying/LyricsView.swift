@@ -5,6 +5,13 @@
 // so. Synced lyrics follow the song as Music's do: the line being sung
 // bright, the others dim, the view keeping it in sight, a tap on a line
 // playing from there. Unsynced lyrics are the text, to read along.
+//
+// In the iPad's and the Mac's panel (`inPanel`) they read as Linux's
+// (Linux/App/Panel.swift, the designer's spec §3): smaller and closer
+// together ("Kun je de lyrics ook wat nicer opmaken, iets dichter op
+// elkaar", the photographer, 14 November 2026), the other lines at 40 %,
+// where they came from always under them, and a quiet line where there are
+// none rather than a status page.
 
 import JukeboxKit
 import SwiftUI
@@ -22,28 +29,52 @@ struct LyricsView: View {
         case failed(server: Bool)
     }
 
+    /// The wide layout's panel, rather than Now Playing's cover place.
+    private let inPanel: Bool
+
     @State private var content: Content = .loading
+
+    init(inPanel: Bool = false) {
+        self.inPanel = inPanel
+    }
 
     var body: some View {
         Group {
             switch content {
             case .loading:
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                if inPanel {
+                    // Nothing for the moment it takes, as on Linux.
+                    Color.clear
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
             case let .lyrics(lyrics, fromLRCLIB):
                 if lyrics.isSynced {
-                    LyricsSyncedLines(lines: lyrics.lines, credit: fromLRCLIB)
+                    LyricsSyncedLines(lyrics: lyrics, credit: credit(fromLRCLIB: fromLRCLIB), inPanel: inPanel)
                 } else {
-                    LyricsPlainText(lines: lyrics.lines, credit: fromLRCLIB)
+                    LyricsPlainText(lines: lyrics.lines, credit: credit(fromLRCLIB: fromLRCLIB))
                 }
             case .instrumental:
-                ContentUnavailableView("Instrumental", systemImage: "pianokeys")
+                if inPanel {
+                    quiet(Text("Instrumental"))
+                } else {
+                    ContentUnavailableView("Instrumental", systemImage: "pianokeys")
+                }
             case .unavailable:
-                ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
-                                       description: unavailableDescription)
+                if inPanel {
+                    quiet(Text("No lyrics for this song"))
+                } else {
+                    ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
+                                           description: unavailableDescription)
+                }
             case let .failed(server):
-                ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
-                                       description: failedDescription(server: server))
+                if inPanel {
+                    quiet(failedDescription(server: server))
+                } else {
+                    ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
+                                           description: failedDescription(server: server))
+                }
             }
         }
         // Settings, where LRCLIB is turned on and off, cannot open over Now
@@ -53,6 +84,22 @@ struct LyricsView: View {
         }
         // Each time the panel opens (Stats); the songs' answers in `show`.
         .countsScreen("lyrics")
+    }
+
+    /// Under the lyrics: LRCLIB's, whose listeners wrote them; in the panel
+    /// the server's too ("Lyrics from Jellyfin").
+    private func credit(fromLRCLIB: Bool) -> String? {
+        if fromLRCLIB { return "LRCLIB" }
+        return inPanel ? app.serverKindName : nil
+    }
+
+    /// The panel's line where there are no lyrics: quiet, at the top.
+    private func quiet(_ text: Text) -> some View {
+        text
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .padding(Theme.Space.xl)
     }
 
     private var unavailableDescription: Text {
@@ -107,12 +154,16 @@ struct LyricsView: View {
     }
 }
 
-/// Under LRCLIB's lyrics: where they are from. Its listeners wrote them.
+/// Under the lyrics: where they are from ("LRCLIB", "Jellyfin").
 private struct LyricsCredit: View {
-    init() {}
+    let source: String
+
+    init(_ source: String) {
+        self.source = source
+    }
 
     var body: some View {
-        Text("Lyrics from LRCLIB")
+        Text("Lyrics from \(source)")
             .font(.footnote)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -122,29 +173,34 @@ private struct LyricsCredit: View {
 /// Timed lines: the one being sung bright, the view keeping it a third of
 /// the way down, a tap on a line playing from there.
 private struct LyricsSyncedLines: View {
-    let lines: [Lyrics.Line]
-    /// LRCLIB's: the credit under the last line.
-    let credit: Bool
+    let lyrics: Lyrics
+    /// Where they are from, under the last line; nil for none.
+    let credit: String?
+    let inPanel: Bool
 
     @Environment(AudioPlayer.self) private var player
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(lines: [Lyrics.Line], credit: Bool) {
-        self.lines = lines
+    init(lyrics: Lyrics, credit: String?, inPanel: Bool) {
+        self.lyrics = lyrics
         self.credit = credit
+        self.inPanel = inPanel
     }
 
     var body: some View {
-        let current = currentLine(at: player.elapsed)
+        // The line sung (JukeboxKit's, as Linux's panel has it).
+        let current = lyrics.lineIndex(at: player.elapsed)
         ScrollViewReader { proxy in
             ScrollView {
-                VStack(alignment: .leading, spacing: Theme.Space.xl) {
-                    ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                // In the panel 20 between lines, as Linux's: closer than
+                // Now Playing's 24.
+                VStack(alignment: .leading, spacing: inPanel ? Theme.Space.l + Theme.Space.xs : Theme.Space.xl) {
+                    ForEach(Array(lyrics.lines.enumerated()), id: \.offset) { index, line in
                         lineButton(line, isCurrent: index == current)
                             .id(index)
                     }
-                    if credit {
-                        LyricsCredit()
+                    if let credit {
+                        LyricsCredit(credit)
                     }
                 }
                 .padding(.horizontal, Theme.Space.xl)
@@ -180,10 +236,12 @@ private struct LyricsSyncedLines: View {
         } label: {
             // An empty line is an instrumental break; Music shows it as a beat.
             Text(line.text.isEmpty ? "♪" : line.text)
-                .font(.title.bold())
+                // The panel's as Linux's (600, 18 on 24): the headline's
+                // semibold, the line sung in full and the rest at 40 %.
+                .font(inPanel ? .headline : .title.bold())
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundStyle(isCurrent ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.tertiary)
+                .foregroundStyle(lineStyle(isCurrent: isCurrent))
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -191,31 +249,19 @@ private struct LyricsSyncedLines: View {
         .accessibilityHint("Plays from this line")
     }
 
-    /// The last line that has begun. A quarter second early: the line
-    /// lights as it is sung, not after (the player's clock ticks every half
-    /// second).
-    private func currentLine(at elapsed: TimeInterval) -> Int? {
-        let now = elapsed + 0.25
-        var found: Int?
-        for (index, line) in lines.enumerated() {
-            guard let start = line.start else { continue }
-            if start <= now {
-                found = index
-            } else {
-                break
-            }
-        }
-        return found
+    private func lineStyle(isCurrent: Bool) -> AnyShapeStyle {
+        if isCurrent { return AnyShapeStyle(HierarchicalShapeStyle.primary) }
+        return inPanel ? AnyShapeStyle(Color.primary.opacity(0.4)) : AnyShapeStyle(HierarchicalShapeStyle.tertiary)
     }
 }
 
 /// Untimed lyrics: the words, to read along.
 private struct LyricsPlainText: View {
     let lines: [Lyrics.Line]
-    /// LRCLIB's: the credit under the words.
-    let credit: Bool
+    /// Where they are from, under the words; nil for none.
+    let credit: String?
 
-    init(lines: [Lyrics.Line], credit: Bool) {
+    init(lines: [Lyrics.Line], credit: String?) {
         self.lines = lines
         self.credit = credit
     }
@@ -228,14 +274,14 @@ private struct LyricsPlainText: View {
                     .lineSpacing(6)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
-                if credit {
-                    LyricsCredit()
+                if let credit {
+                    LyricsCredit(credit)
                 }
             }
             .padding(.horizontal, Theme.Space.xl)
             .padding(.top, Theme.Space.xxl)
             // Past the edge's fade, so the credit can be read at the end.
-            .padding(.bottom, credit ? Theme.Space.xxl * 2 : Theme.Space.xxl)
+            .padding(.bottom, credit != nil ? Theme.Space.xxl * 2 : Theme.Space.xxl)
         }
         .scrollIndicators(.hidden)
         .mask {
