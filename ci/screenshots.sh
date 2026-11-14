@@ -5,12 +5,16 @@
 #     (dev/fake-jellyfin.py, dev/demo);
 #   - the app and its UI tests built for the simulator;
 #   - every main screen walked on an iPhone in dark, Home and Now Playing
-#     again in light, and the main screens on an iPad
-#     (JukeboxUITests/ScreenshotTests.swift);
+#     again in light, Linux's walk on a 13-inch iPad held sideways (each
+#     picture named as its Linux twin), and the narrowest wide window on an
+#     11-inch iPad held upright (JukeboxUITests/ScreenshotTests.swift);
 #   - the pictures, named, in build/logs/screenshots/<device>/, which the
 #     workflow uploads with build/logs;
 #   - one contact sheet per device;
-#   - all of it on the `screenshots` branch, one commit that replaces the last.
+#   - all of it on the `screenshots` branch, one commit that replaces the last:
+#     mac's and main's round at its top, a work branch's (one whose name ends
+#     in "walk", ci/app.sh) in branches/<name>/, so it never replaces mac's.
+# The Mac's own window is not walked: GitHub's runner cannot drive it here.
 #
 # Why: there is no Mac here, so nobody has seen the app. The photographer
 # asked for pictures ("Als je plaatjes hebt om te delen zie ik ze graag") and
@@ -32,7 +36,8 @@ cd "$(dirname "$0")/.." || exit 0
 
 start=$SECONDS
 budget=${SHOTS_BUDGET:-2400}
-devices=${SHOTS_DEVICES:-iphone ipad}
+# Walked in this order; the last is the first left out when time runs short.
+devices=${SHOTS_DEVICES:-iphone ipad ipad11}
 out=build/logs/screenshots
 # Result bundles, exports, the derived data and the branch: not uploaded.
 work=build/screenshots
@@ -142,7 +147,8 @@ grep '^iOS' <<< "$runtimes"
 
 # The simulator for a device kind, on the newest iOS 26 or later, made when
 # the runner has none: an iPhone 17 Pro, else the newest numbered iPhone (a
-# Pro first); a 13-inch iPad Pro, else a 13-inch iPad, else any iPad.
+# Pro first); a 13-inch iPad Pro, else a 13-inch iPad, else any iPad; an
+# 11-inch iPad Pro (834 points upright), else another 11-inch iPad.
 # Prints "udid<TAB>name<TAB>runtime".
 cat > "$work/pick.py" <<'PY'
 import json, re, subprocess, sys
@@ -174,6 +180,10 @@ def rank(name):
         if m:
             return (2 if m.group(2) else 1, int(m.group(1)))
         return (0, 0)
+    if kind == "ipad11":
+        if not name.startswith("iPad") or "11-inch" not in name:
+            return None
+        return (1 if name.startswith("iPad Pro") else 0, 0)
     if not name.startswith("iPad"):
         return None
     if "13-inch" in name:
@@ -267,9 +277,10 @@ import json, os, re, shutil, sys
 export, direct, dst, label = sys.argv[1:5]
 os.makedirs(dst, exist_ok=True)
 PICTURES = (".png", ".jpg", ".jpeg")
-# The walk's own names, "07-albums" or "light-01-home": not XCTest's own
-# screenshots and recordings, which a result can hold as well.
-WALK = re.compile(r"^(?:[a-z]+-)?\d{2,}-")
+# The walk's own names, "07-albums", "light-01-home" or the iPad's Linux
+# twins' "10b-now-playing": not XCTest's own screenshots and recordings,
+# which a result can hold as well.
+WALK = re.compile(r"^(?:[a-z]+-)?\d{2,}[a-z]?-")
 pictures = {}  # name -> source file
 missed = {}  # "export" or "direct" -> source file
 manifest = os.path.join(export, "manifest.json")
@@ -385,13 +396,17 @@ round() {
   # at the welcome.
   sim uninstall "$udid" com.tijmen.Jukebox > /dev/null 2>&1 || true
   sim keychain "$udid" reset || problem "the $kind simulator's keychain was not reset"
-  if [[ $kind == iphone ]]; then
-    walk iphone testPhone iphone-dark 1200
-    sim ui "$udid" appearance light || problem "the iPhone simulator did not turn light"
-    walk iphone testPhoneLight iphone-light 480
-  else
-    walk ipad testPad ipad-dark 720
-  fi
+  case $kind in
+    iphone)
+      walk iphone testPhone iphone-dark 1200
+      sim ui "$udid" appearance light || problem "the iPhone simulator did not turn light"
+      walk iphone testPhoneLight iphone-light 480
+      ;;
+    # Linux's walk, some twenty pictures; the 13-inch's old walk of nine
+    # took six minutes.
+    ipad) walk ipad testPad ipad-dark 960 ;;
+    ipad11) walk ipad11 testPadUpright ipad11-dark 480 ;;
+  esac
   bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1 || true
   endgroup
 }
@@ -453,6 +468,7 @@ title_of() {
   case $1 in
     iphone) echo "iPhone" ;;
     ipad) echo "iPad" ;;
+    ipad11) echo "iPad, upright" ;;
     *) echo "$1" ;;
   esac
 }
@@ -470,7 +486,9 @@ readme() {
   echo
   echo "Every main screen of the app, walked in the iOS Simulator on GitHub's Mac against a made-up"
   echo "Jellyfin library (\`dev/fake-jellyfin.py\`), by \`ci/screenshots.sh\` after each push. This branch"
-  echo "holds the latest round only: each round replaces it."
+  echo "holds the latest round of mac and main at its top, and the latest of each work branch in"
+  echo "\`branches/<name>/\`: each round replaces its own. The iPad's pictures are named as their twins"
+  echo "in Linux's walk (\`Linux/App/Shots.swift\`, 1440x900; upright, 760x900)."
   echo
   echo "From \`$short\` on \`$ref\`, run ${GITHUB_RUN_NUMBER:-local}, $(date -u '+%Y-%m-%d %H:%M UTC')."
   for kind in $devices; do
@@ -505,40 +523,77 @@ readme() {
   fi
 }
 
+# Where on the screenshots branch: mac's and main's round at its top, where
+# the README's links and the photographer's bookmarks point; a work branch's
+# in a folder of its own, so that its round never replaces mac's pictures.
+case $ref in
+  mac|main) place= ;;
+  *) place="branches/${ref//\//-}/" ;;
+esac
 pushed=false
 # The push may take what is left before ci/app.sh's watchdog (the budget and
 # 120 s), less a little for the summary and the sheets printed after it: a
 # slow push must not cost the lead the sheets in the log.
 push_limit=$(( budget + 100 - (SECONDS - start) ))
 if (( push_limit > 180 )); then push_limit=180; fi
+push_until=$(( SECONDS + push_limit ))
 if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png > /dev/null 2>&1; then
-  group "Onto the screenshots branch"
-  branch="$work/branch"
-  mkdir -p "$branch/logs"
+  group "Onto the screenshots branch, ${place:-its top}"
+  # This round's part of the branch, as it goes there.
+  part="$PWD/$work/part"
+  mkdir -p "$part/logs"
   for kind in $devices; do
-    [[ -d $out/$kind ]] && cp -R "$out/$kind" "$branch/"
+    [[ -d $out/$kind ]] && cp -R "$out/$kind" "$part/"
     for sheet in "$out/$kind-sheet.png" "$out/$kind-sheet.jpg"; do
-      [[ -f $sheet ]] && cp "$sheet" "$branch/"
+      [[ -f $sheet ]] && cp "$sheet" "$part/"
     done
   done
   # The walks' logs and the fake server's; the simulator build's errors only
   # (its whole log is many megabytes, and in the artifact).
   for log in "$out"/*.log; do
-    [[ -f $log && $log != */build-for-testing.log ]] && cp "$log" "$branch/logs/"
+    [[ -f $log && $log != */build-for-testing.log ]] && cp "$log" "$part/logs/"
   done
   grep -E 'error:' "$out/build-for-testing.log" 2> /dev/null | sed "s#$PWD/##g" | sort -u \
-    > "$branch/logs/build-for-testing-errors.txt"
-  readme > "$branch/README.md"
-  if (
-    cd "$branch" || exit 1
-    git init -q . && git symbolic-ref HEAD refs/heads/screenshots && git add -A \
-      && git -c user.name="github-actions[bot]" \
-        -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
-        commit -q -m "Screenshots of $short ($ref, run ${GITHUB_RUN_NUMBER:-local})" \
-      && bounded "$push_limit" git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/$repo.git" HEAD:screenshots
-  ) > "$work/push.log" 2>&1; then
-    pushed=true
-    echo "On https://github.com/$repo/tree/screenshots"
+    > "$part/logs/build-for-testing-errors.txt"
+  readme > "$part/README.md"
+  remote="https://x-access-token:${GH_TOKEN}@github.com/$repo.git"
+  # The branch as it is, with this round's place emptied and filled again,
+  # as one new commit without a parent, so the branch stays one commit. The
+  # lease refuses the push when another round pushed since the clone (mac's
+  # and a work branch's runs can end together): then once more, from the
+  # newer branch. No branch at all yet: the lease expects none.
+  for try in 1 2; do
+    if (
+      branch="$PWD/$work/branch"
+      rm -rf "$branch"
+      old=
+      if bounded "$(( push_until - SECONDS ))" git clone -q --depth 1 --branch screenshots "$remote" "$branch"; then
+        old=$(git -C "$branch" rev-parse HEAD) || exit 1
+      else
+        rm -rf "$branch"
+        git init -q "$branch" || exit 1
+      fi
+      cd "$branch" || exit 1
+      if [[ -z $place ]]; then
+        # mac's and main's: all but the work branches' folders.
+        find . -mindepth 1 -maxdepth 1 ! -name .git ! -name branches -exec rm -rf {} +
+      else
+        rm -rf "./$place"
+      fi
+      mkdir -p "./$place" && cp -R "$part"/. "./$place" \
+        && git symbolic-ref HEAD refs/heads/round && git add -A \
+        && git -c user.name="github-actions[bot]" \
+          -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+          commit -q -m "Screenshots of $short ($ref, run ${GITHUB_RUN_NUMBER:-local})" \
+        && bounded "$(( push_until - SECONDS ))" git push -q --force-with-lease="screenshots:$old" \
+          "$remote" HEAD:screenshots
+    ) > "$work/push.log" 2>&1; then
+      pushed=true
+      break
+    fi
+  done
+  if $pushed; then
+    echo "On https://github.com/$repo/tree/screenshots/$place"
   else
     problem "the push to the screenshots branch failed"
     sed "s/${GH_TOKEN}/***/g" "$work/push.log" | tail -20
@@ -559,8 +614,10 @@ fi
     echo "**$(title_of "$kind")** ($(cat "$out/$kind/device.txt" 2> /dev/null)): $(count_of "$kind") pictures"
     [[ -f $out/$kind/verdict.txt ]] && sed 's/^/- /' "$out/$kind/verdict.txt"
     if $pushed; then
-      echo "- the sheet: https://github.com/$repo/blob/screenshots/$kind-sheet.png"
-      echo "- every picture: https://github.com/$repo/tree/screenshots/$kind"
+      echo "- the sheet: https://github.com/$repo/blob/screenshots/$place$kind-sheet.png"
+      echo "- every picture: https://github.com/$repo/tree/screenshots/$place$kind"
+    else
+      echo "- not on the screenshots branch: in this run's artifact (logs-${GITHUB_RUN_NUMBER:-local}), screenshots/$kind"
     fi
     if [[ -s $out/$kind/missed.txt ]]; then
       echo "- steps that found nothing to tap:"
