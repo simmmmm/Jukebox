@@ -129,6 +129,9 @@ private struct SearchField: View {
                 .submitLabel(.search)
                 .focused(isFocused)
                 .onSubmit(submit)
+                // A search field to VoiceOver and to the screenshot walk.
+                .accessibilityAddTraits(.isSearchField)
+                .accessibilityIdentifier("search.field")
             if !text.isEmpty {
                 Button {
                     text = ""

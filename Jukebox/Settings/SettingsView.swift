@@ -14,6 +14,9 @@
 
 import JukeboxKit
 import SwiftUI
+#if os(iOS)
+import UIKit
+#endif
 
 struct SettingsView: View {
     /// The Mac's Settings window (⌘,) rather than a sheet: no Done, the
@@ -23,6 +26,9 @@ struct SettingsView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isWide) private var isWide
+    #if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     init(asWindow: Bool = false) {
         self.asWindow = asWindow
@@ -59,11 +65,25 @@ struct SettingsView: View {
                 }
         }
         .countsScreen("settings")
+        #if os(iOS)
+        // A sheet on the iPad may call itself compact, being narrower than
+        // the window: it is Linux's Preferences on every iPad all the same,
+        // so its sections are told wide.
+        .environment(\.horizontalSizeClass, isPad ? .regular : horizontalSizeClass)
+        #endif
+    }
+
+    private var isPad: Bool {
+        #if os(iOS)
+        return UIDevice.current.userInterfaceIdiom == .pad
+        #else
+        return false
+        #endif
     }
 
     private var form: some View {
         Form {
-            if isWide {
+            if isWide || isPad {
                 // Linux's order: what plays, the radio, privacy, the server.
                 SettingsPlaybackSection()
                 SettingsRadioSection()
@@ -169,25 +189,25 @@ private struct SettingsPlaybackSection: View {
     var body: some View {
         @Bindable var settings = settings
         Section {
-            #if os(macOS)
-            // A Mac has no mobile network of its own: what costs data there
-            // is a phone's hotspot or Low Data Mode (NetworkCost), so the
-            // words say that.
-            Picker("Streaming", selection: $settings.wifiQuality) {
-                qualityOptions
+            if runsOnMac {
+                // A Mac has no mobile network of its own: what costs data
+                // there is a phone's hotspot or Low Data Mode (NetworkCost),
+                // so the words say that.
+                Picker("Streaming", selection: $settings.wifiQuality) {
+                    qualityOptions
+                }
+                Picker("Streaming on a Hotspot", selection: $settings.cellularQuality) {
+                    qualityOptions
+                }
+            } else {
+                // Music's own words for the two.
+                Picker("Wi-Fi Streaming", selection: $settings.wifiQuality) {
+                    qualityOptions
+                }
+                Picker("Cellular Streaming", selection: $settings.cellularQuality) {
+                    qualityOptions
+                }
             }
-            Picker("Streaming on a Hotspot", selection: $settings.cellularQuality) {
-                qualityOptions
-            }
-            #else
-            // Music's own words for the two.
-            Picker("Wi-Fi Streaming", selection: $settings.wifiQuality) {
-                qualityOptions
-            }
-            Picker("Cellular Streaming", selection: $settings.cellularQuality) {
-                qualityOptions
-            }
-            #endif
             if !isWide {
                 normalizeRow
             }
@@ -315,13 +335,13 @@ private struct SettingsDownloadsSection: View {
                         .tag(quality)
                 }
             }
-            #if os(macOS)
-            // As Streaming on a Hotspot above.
-            Toggle("Download on a Hotspot", isOn: $settings.downloadOverCellular)
-            #else
-            // Music's words, as Cellular Streaming above.
-            Toggle("Download over Cellular", isOn: $settings.downloadOverCellular)
-            #endif
+            if runsOnMac {
+                // As Streaming on a Hotspot above.
+                Toggle("Download on a Hotspot", isOn: $settings.downloadOverCellular)
+            } else {
+                // Music's words, as Cellular Streaming above.
+                Toggle("Download over Cellular", isOn: $settings.downloadOverCellular)
+            }
             LabeledContent("Downloaded") {
                 Text(offline.chosenBytes, format: .byteCount(style: .file))
             }
@@ -372,17 +392,16 @@ private struct SettingsDownloadsSection: View {
     /// (SubsonicClient.downloadURL); High and Normal to AAC or MP3.
     private var qualityFooter: Text {
         let model = Device.model
-        #if os(macOS)
-        if app.credentials?.kind.isSubsonic == true {
-            return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
+        if runsOnMac {
+            if app.credentials?.kind.isSubsonic == true {
+                return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
+            }
+            return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
         }
-        return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
-        #else
         if app.credentials?.kind.isSubsonic == true {
             return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
         }
         return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
-        #endif
     }
 
     /// "1.2 GB of 5 GB": what the keep holds, against its limit.
@@ -822,6 +841,16 @@ private struct SettingsAboutSection: View {
 }
 
 // MARK: - Parts
+
+/// A Mac, the app's own or the iPad's app on it (the photographer uses that
+/// one): no mobile network of its own.
+private var runsOnMac: Bool {
+    #if os(macOS)
+    return true
+    #else
+    return ProcessInfo.processInfo.isiOSAppOnMac
+    #endif
+}
 
 /// A section's title: the system's own on the iPhone; wide, Linux's group
 /// title (16-preferences.png), bold, in the text's colour, in sentence case.

@@ -23,10 +23,13 @@
 // The address and the user name are remembered for the next sign-in (after a
 // sign-out); the password never is — the keychain's AutoFill offers it.
 //
-// In a wide window (the iPad, the Mac) the same column, centred in the
-// window, its words starting at its left edge as Linux's sign-in has them
-// (tells.md, 8), "Jukebox" at a page title's size, and the one filled button
-// as wide as its word.
+// In a wide window (the iPad, the Mac) it is Linux's sign-in, 1:1
+// (17-sign-in.png; "ik wil dat de linux app en de apple app 1:1 op elkaar
+// lijken", the photographer, 14 November 2026): a column of 420 centred in
+// the window, its words starting at its left edge, "Jukebox" at a page
+// title's size, and one page, not two steps: the address, the user name
+// and the password in one group of rows, Sign In centred under them, as
+// wide as its word (OnboardingWideForm).
 
 import JukeboxKit
 import SwiftUI
@@ -122,7 +125,6 @@ struct OnboardingView: View {
                 OnboardingButtonLabel(title: "Continue", isWorking: isConnecting)
             }
             .buttonStyle(.prominent)
-            .fixedSize(horizontal: isWide, vertical: false)
             .disabled(trimmedAddress.isEmpty)
             .accessibilityLabel(isConnecting ? Text("Connecting") : Text("Continue"))
             .padding(.top, Theme.Space.s)
@@ -701,6 +703,8 @@ private struct OnboardingWideForm: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.xl) {
             OnboardingFields {
+                // Named for the screenshot walk: here the first text field
+                // is the address, not the user name as on the second step.
                 TextField("Server Address", text: $address)
                     .urlEntry()
                     .autocorrectionDisabled()
@@ -708,6 +712,7 @@ private struct OnboardingWideForm: View {
                     .focused($focus, equals: .address)
                     .onSubmit { focus = usesAPIKey ? .secret : .username }
                     .frame(minHeight: 52)
+                    .accessibilityIdentifier("signIn.address")
                 if !usesAPIKey {
                     Divider()
                     TextField("User Name", text: $username)
@@ -718,6 +723,7 @@ private struct OnboardingWideForm: View {
                         .focused($focus, equals: .username)
                         .onSubmit { focus = .secret }
                         .frame(minHeight: 52)
+                        .accessibilityIdentifier("signIn.user")
                 }
                 Divider()
                 Group {
@@ -734,6 +740,7 @@ private struct OnboardingWideForm: View {
                 .focused($focus, equals: .secret)
                 .onSubmit { signIn() }
                 .frame(minHeight: 52)
+                .accessibilityIdentifier("signIn.password")
             }
             if let errorMessage {
                 OnboardingErrorText(message: errorMessage)
@@ -872,8 +879,7 @@ private struct OnboardingWideForm: View {
         if detectedAt == typed, let serverSignIn { return serverSignIn }
         do {
             let found = try await app.detectServer(at: typed)
-            keep(found, at: typed, first: first)
-            return serverSignIn
+            return keep(found, at: typed, first: first)
         } catch {
             // The address as typed's error, as the iPhone's first step says.
             Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
@@ -893,13 +899,18 @@ private struct OnboardingWideForm: View {
         }
     }
 
-    private func keep(_ found: DetectedServer, at typed: String, first: URL) {
+    /// The server that answered and the way in to it, kept for this
+    /// address; the way returned.
+    @discardableResult
+    private func keep(_ found: DetectedServer, at typed: String, first: URL) -> any ServerSignIn {
+        let way = app.signIn(to: found)
         server = found
-        serverSignIn = app.signIn(to: found)
+        serverSignIn = way
         detectedAt = typed
         // What answered, for the next sign-in: the port written out when it
         // took a fallback, so the next one goes straight there.
         OnboardingMemory.serverAddress = found.url == first ? typed : found.url.absoluteString
+        return way
     }
 
     private func show(_ message: String) {
