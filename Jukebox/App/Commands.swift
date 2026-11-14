@@ -2,7 +2,8 @@
 // iPad's keyboard (the iPad app on a Mac too): Space plays or pauses, ⌘→
 // and ⌘← go to the next and the previous song, ⌘↑ and ⌘↓ turn the
 // volume up and down on the Mac. ⌘, opens Settings: the Mac's Settings
-// window, or the wide window's sheet on an iPad.
+// window, or the wide window's sheet on an iPad. ⌘F gives the window bar's
+// search field the keys.
 
 import SwiftUI
 #if os(macOS)
@@ -36,6 +37,16 @@ struct JukeboxCommands: Commands {
             Button("Decrease Volume") { app.player.volume -= 0.1 }
                 .keyboardShortcut(.downArrow)
             #endif
+        }
+        // The wide window's search field, in its bar: ⌘F, as the Mac's Find.
+        CommandGroup(before: .textEditing) {
+            Button("Search") {
+                // The page first, so the field there is the one that shows.
+                app.navigator.showSearch()
+                app.navigator.searchRequests += 1
+            }
+                .keyboardShortcut("f")
+                .disabled(!app.navigator.isWide || app.phase != .signedIn)
         }
         #if os(iOS)
         CommandGroup(replacing: .appSettings) {

@@ -8,6 +8,12 @@
 // inspector, whose sidebar, selection and columns look and fold their own
 // way: "ik wil dat de linux app en de apple app 1:1 op elkaar lijken" (the
 // photographer, 14 November 2026). The iPhone keeps its tabs (MainTabView).
+//
+// Over the page, the window's own bar on every place and pushed page, as
+// the Playlists page first had it on the Mac ("vind die wel mooier"): Back,
+// the page's title once its own has scrolled away, the page's actions, and
+// at the trailing end the one search field, which searches the whole
+// library on the Search place's page.
 
 import JukeboxKit
 import SwiftUI
@@ -26,6 +32,8 @@ struct WideShell: View {
     @Environment(LibraryStore.self) private var library
     /// The folded places, lying over the page.
     @State private var showsPlaces = false
+    /// The bar's search field has the keys: the Search place shows.
+    @FocusState private var isSearchFocused: Bool
 
     var body: some View {
         @Bindable var navigator = navigator
@@ -101,6 +109,11 @@ struct WideShell: View {
             }
         }
         .background(Theme.ground.ignoresSafeArea())
+        #if os(macOS)
+        // The room has its own head, Close and More, as on Linux: the
+        // window's bar steps aside for it.
+        .toolbar(navigator.isNowPlayingPresented ? .hidden : .automatic, for: .windowToolbar)
+        #endif
         // One thing over the page at a time (spec §1): the panel opened
         // sends the places lying over the page away.
         .onChange(of: panelShown) { _, shown in
@@ -118,6 +131,9 @@ struct WideShell: View {
         .countsOnce { Stats.track(.screen, ["name": self.navigator.place.statsName]) }
         .onChange(of: navigator.place) { _, place in
             Stats.track(.screen, ["name": place.statsName])
+            // Another place chosen leaves Search: a click in the field
+            // again comes back to it. The field keeps its text.
+            if place != .search { isSearchFocused = false }
         }
         // While Now Playing is open it presents this sheet itself, as on
         // the iPhone; here it waits, so the two never both try.
@@ -161,22 +177,78 @@ struct WideShell: View {
                 // Another place, another page: not the last one's state with
                 // another playlist in it.
                 .id(navigator.place)
+                #if os(iOS)
                 .toolbar {
-                    // Folded, the places' button at the start of a place's
-                    // header lays them over the page (Linux's sidebarButton).
                     if folds {
                         ToolbarItem(placement: .barLeading) {
-                            Button {
-                                // One thing over the page at a time.
-                                if panel.isShown { panel.isOpen = false }
-                                showsPlaces = true
-                            } label: {
-                                Label("Show Sidebar", systemImage: "sidebar.left")
-                            }
+                            placesButton
                         }
                     }
                 }
-                .routeDestinations()
+                #endif
+                // Outside the place's id: a place chosen while typing keeps
+                // the field, and its keys.
+                .modifier(PageBar())
+                .searchFocused($isSearchFocused)
+                .routeDestinations(each: PageBar(isPushed: true))
+        }
+        .onChange(of: isSearchFocused) { _, focused in
+            if focused { navigator.showSearch() }
+        }
+        .onChange(of: navigator.searchQuery) { _, query in
+            // Emptied on another place, it stays there.
+            // Typed on a pushed page, which goes: the field stays in the
+            // bar with the keys, every letter in it (tried on the Mac, 15
+            // November 2026).
+            if !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                navigator.showSearch()
+            }
+        }
+        .onChange(of: navigator.searchRequests) { _, _ in
+            isSearchFocused = true
+        }
+        #if os(macOS)
+        .toolbar {
+            // The places' head beside the traffic lights, in the title
+            // bar's row: "kun je ook op mac het jukebox logo naast in het
+            // vensterding zetten naast de stoplichten" (the photographer,
+            // 14 November 2026). As wide as the places, so Back and the
+            // title start over the page.
+            ToolbarItem(placement: .navigation) {
+                BrandHead()
+            }
+            .sharedBackgroundVisibility(.hidden)
+            if folds && navigator.widePath.isEmpty {
+                ToolbarItem(placement: .navigation) {
+                    placesButton
+                }
+            }
+            // The bar's own Back, after the head: the system's comes
+            // before every other item, by the traffic lights (PageBar
+            // hides it).
+            if !navigator.widePath.isEmpty {
+                ToolbarItem(placement: .navigation) {
+                    Button {
+                        navigator.widePath.removeLast()
+                    } label: {
+                        Label("Back", systemImage: "chevron.left")
+                    }
+                    .keyboardShortcut("[", modifiers: .command)
+                }
+            }
+        }
+        #endif
+    }
+
+    /// Folded, the places' button at the start of a place's header lays
+    /// them over the page (Linux's sidebarButton).
+    private var placesButton: some View {
+        Button {
+            // One thing over the page at a time.
+            if panel.isShown { panel.isOpen = false }
+            showsPlaces = true
+        } label: {
+            Label("Show Sidebar", systemImage: "sidebar.left")
         }
     }
 
@@ -194,8 +266,8 @@ struct WideShell: View {
     }
 }
 
-/// The sidebar, as Linux's (spec §4): the mark and the name, then Home,
-/// Radio and Search; a hair; the library's kinds; a hair; the playlists
+/// The sidebar, as Linux's (spec §4): the mark and the name, then Home and
+/// Radio; a hair; the library's kinds; a hair; the playlists
 /// themselves with their covers. The place chosen has a quiet fill, as
 /// GNOME's sidebar, not the accent.
 ///
@@ -208,7 +280,13 @@ private struct Places: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // The Mac's is in the title bar's row (BrandHead), and its
+            // Settings… in the app menu: "op mac mag het more menutje daar
+            // weg omdat je op mac de bovenbalk hebt, hier trumpt native de
+            // 1:1 requirement" (the photographer, 14 November 2026).
+            #if os(iOS)
             head
+            #endif
             ScrollView {
                 LazyVStack(spacing: 0) {
                     glyphRow(.home, "Home", symbol: "house")
@@ -217,7 +295,7 @@ private struct Places: View {
                     PlaceRow(place: .radio, title: Text("Radio"), chosen: chosen) {
                         ArchMark(size: 16, style: .template)
                     }
-                    glyphRow(.search, "Search", symbol: "magnifyingglass")
+                    // No Search: the bar's field is its way in.
                     hair
                     glyphRow(.library(.albums), "Albums", symbol: "opticaldisc")
                     glyphRow(.library(.artists), "Artists", symbol: "person.fill")
@@ -248,6 +326,7 @@ private struct Places: View {
         .background(Theme.raised.ignoresSafeArea())
     }
 
+    #if os(iOS)
     /// The flat mark 20 and the name in the serif, the main menu at the end.
     /// The mark stands over the places' icons and the name over their words
     /// ("heb t gevoel dat het logo linksboven in lijn moet staan met het
@@ -256,23 +335,13 @@ private struct Places: View {
     /// the mark 20 in, 20 wide and 8 from the name, at 48 too.
     private var head: some View {
         HStack(spacing: Theme.Space.s) {
-            ArchMark(size: 20)
-            // Linux's brand-name: the serif, 18.
-            Text("Jukebox")
-                .desktopFont(18, design: .serif)
-                .accessibilityAddTraits(.isHeader)
+            BrandMark()
             Spacer(minLength: 0)
             // GNOME's primary menu, where Linux's Preferences are.
             Menu {
-                #if os(macOS)
-                SettingsLink {
-                    Text("Settings…")
-                }
-                #else
                 Button("Settings…") {
                     navigator.isSettingsPresented = true
                 }
-                #endif
             } label: {
                 Image(systemName: "line.3.horizontal")
                     .desktopFont(15)
@@ -288,6 +357,7 @@ private struct Places: View {
         .padding(.trailing, Theme.Space.s)
         .frame(height: 48)
     }
+    #endif
 
     /// A hair between groups of rows, 16 tall, as wide as the rows' content.
     private var hair: some View {
@@ -303,6 +373,53 @@ private struct Places: View {
         }
     }
 }
+
+/// The window bar's part of a wide page, the place's own and each pushed
+/// one: the one field for the whole library, at the bar's trailing end,
+/// "op dezelfde (os native plek)" (the photographer, 14 November 2026).
+/// On the page, not the stack: on the stack the Mac's bar showed no field.
+private struct PageBar: ViewModifier {
+    var isPushed = false
+
+    @Environment(Navigator.self) private var navigator
+
+    func body(content: Content) -> some View {
+        @Bindable var navigator = navigator
+        content
+            .searchable(text: $navigator.searchQuery, placement: .toolbar)
+            .onSubmit(of: .search) {
+                navigator.showSearch()
+                navigator.searchSubmits += 1
+            }
+            #if os(macOS)
+            .navigationBarBackButtonHidden(isPushed)
+            #endif
+    }
+}
+
+/// The mark, flat at 20, and the name in Linux's brand-name: the serif, 18.
+private struct BrandMark: View {
+    var body: some View {
+        HStack(spacing: Theme.Space.s) {
+            ArchMark(size: 20)
+            Text("Jukebox")
+                .desktopFont(18, design: .serif)
+                .accessibilityAddTraits(.isHeader)
+        }
+    }
+}
+
+#if os(macOS)
+/// The places' head in the Mac's title bar, beside the traffic lights: as
+/// wide as what is left of the places there, so what follows it in the bar
+/// starts over the page.
+private struct BrandHead: View {
+    var body: some View {
+        BrandMark()
+            .frame(width: CGFloat(DesktopMeasures.sidebar) - 92, alignment: .leading)
+    }
+}
+#endif
 
 /// One place: its icon (16 at 60 %, full when chosen) or a playlist's cover,
 /// 12, its name; 40 tall, 48 with a cover; inset 8, padding 12.

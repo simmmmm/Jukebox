@@ -90,6 +90,7 @@ struct RootView: View {
                 guard phase == .signedOut else { return }
                 app.navigator.place = .home
                 app.navigator.isSettingsPresented = false
+                app.navigator.searchQuery = ""
             }
     }
 
