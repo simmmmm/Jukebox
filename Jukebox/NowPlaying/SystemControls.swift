@@ -10,10 +10,10 @@
 // On the Mac there is no MPVolumeView: the volume is the player's own, as
 // Music's window has it beside the system's (AudioPlayer.volume), and the
 // picker is AppKit's AVRoutePickerView, which routes one player's sound.
-// The iPad app on a Mac takes the player's own volume too: there, tapping
-// the song to open Now Playing crashed (build 68, the photographer, 14
-// November 2026), and MPVolumeView, which the Mac's iOS runtime may lack,
-// is the main suspect.
+// The iPad app on a Mac takes the player's own volume too, and has no
+// AirPlay button: there, tapping the song to open Now Playing crashed
+// (build 68, the photographer, 14 November 2026), and MPVolumeView and
+// AVRoutePickerView, which the Mac's iOS runtime may lack, are the suspects.
 
 import AVKit
 import MediaPlayer
@@ -108,8 +108,10 @@ final class NowPlayingSystemVolumeView: MPVolumeView {
     }
 }
 
-/// The AirPlay button: the system's picker of where the music plays.
-struct RoutePicker: UIViewRepresentable {
+/// The AirPlay button: the system's picker of where the music plays. None
+/// in the iPad app on a Mac: AVRoutePickerView is the other suspect for
+/// build 68's crash there, and the Mac's own menu bar chooses the speaker.
+struct RoutePicker: View {
     /// On the app's own ground (the wide layout's bar), by day and by night,
     /// rather than on Now Playing's dark.
     let followsAppearance: Bool
@@ -117,6 +119,16 @@ struct RoutePicker: UIViewRepresentable {
     init(followsAppearance: Bool = false) {
         self.followsAppearance = followsAppearance
     }
+
+    var body: some View {
+        if !ProcessInfo.processInfo.isiOSAppOnMac {
+            SystemRoutePicker(followsAppearance: followsAppearance)
+        }
+    }
+}
+
+private struct SystemRoutePicker: UIViewRepresentable {
+    let followsAppearance: Bool
 
     func makeUIView(context: Context) -> AVRoutePickerView {
         let view = AVRoutePickerView(frame: .zero)

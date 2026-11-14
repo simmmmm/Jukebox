@@ -13,6 +13,8 @@ struct PanelView: View {
     @Environment(PanelState.self) private var panel
     @Environment(AppModel.self) private var app
     @Environment(AppSettings.self) private var settings
+    @Environment(Navigator.self) private var navigator
+    @Environment(\.colorScheme) private var colorScheme
 
     init() {}
 
@@ -38,11 +40,17 @@ struct PanelView: View {
             .padding(.horizontal, Theme.Space.s)
             .frame(height: 48)
         }
-        .background(PlayerBar.ground.ignoresSafeArea())
+        // The bar's ground; over Now Playing's room the room's, dark.
+        .background(PlayerBar.groundFor(inRoom: inRoom).ignoresSafeArea())
+        .environment(\.colorScheme, inRoom ? .dark : colorScheme)
         // No lyrics to be had at all: Up Next, and no Lyrics tab.
         .onChange(of: offersLyrics, initial: true) { _, offers in
             if !offers && panel.content == .lyrics { panel.content = .upNext }
         }
+    }
+
+    private var inRoom: Bool {
+        navigator.isNowPlayingPresented
     }
 
     /// One of the head's two tabs.

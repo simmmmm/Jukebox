@@ -10,8 +10,8 @@
 // app 1:1 op elkaar lijken", the photographer, 14 November 2026), with
 // Apple's own where it looks and works the same: SF Symbols, a Slider for
 // the position, the system's AirPlay picker and volume. A flat ground one
-// step up from the page and a hairline on top, both gone over Now Playing's
-// room: the bar is its transport there, on its land.
+// step up from the page and a hairline on top; over Now Playing's room the
+// room's ground and dark, no hairline: the bar is its transport there.
 
 import JukeboxKit
 import SwiftUI
@@ -24,6 +24,8 @@ struct PlayerBar: View {
     @Environment(AppModel.self) private var app
     @Environment(AppSettings.self) private var settings
     @Environment(PanelState.self) private var panel
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.displayScale) private var displayScale
 
     /// The bar's width, which sets its zones.
     @State private var width: CGFloat = 1024
@@ -58,20 +60,27 @@ struct PlayerBar: View {
         }
         .background {
             // Down under the iPad's home indicator too.
-            if !inRoom {
-                Self.ground.ignoresSafeArea(edges: .bottom)
-            }
+            Self.groundFor(inRoom: inRoom).ignoresSafeArea(edges: .bottom)
         }
         .overlay(alignment: .top) {
             if !inRoom {
                 Hairline(inset: 0)
             }
         }
+        // Over the room always dark, as Now Playing is.
+        .environment(\.colorScheme, inRoom ? .dark : colorScheme)
     }
 
     /// Sidebar, panel and bar: one step up from the page (the designer's
     /// spec, §1), #1B1918 by night and #ECE7DF by day.
     static let ground = Color(light: 0xECE7DF, dark: 0x1B1918)
+
+    /// The bar's and the panel's ground: their own, or over Now Playing's
+    /// room the room's (#121110, with the scheme dark), no ground of their
+    /// own, as Linux's `in-room` has it.
+    static func groundFor(inRoom: Bool) -> Color {
+        inRoom ? Theme.ground : Self.ground
+    }
 
     // MARK: The song
 
@@ -96,6 +105,12 @@ struct PlayerBar: View {
                 }
                 .buttonStyle(.plain)
                 .help("Now Playing")
+                // A hand over the song may open the room: its sleeve's
+                // cover and colour fetched now, as Linux draws its sleeve
+                // on hover.
+                .onHover { inside in
+                    if inside { prefetchRoom(track) }
+                }
                 .accessibilityIdentifier("bar.song")
                 .accessibilityLabel(spokenTitle(track))
                 .accessibilityHint("Opens Now Playing")
@@ -141,6 +156,19 @@ struct PlayerBar: View {
                     .foregroundStyle(Theme.accent)
                 }
             }
+        }
+    }
+
+    /// The room's cover at about its sleeve's size (0.62 of a window's
+    /// height, some 560 points) and at the 120 pixels its colour is taken
+    /// from (NowPlayingGround), into ImagePipeline's cache.
+    private func prefetchRoom(_ track: Track) {
+        guard let artwork = track.artwork, let server = app.server else { return }
+        let sleeve = server.artworkURL(artwork, maxPixelSize: ImagePipeline.bucket(Int(560 * displayScale)))
+        let tone = server.artworkURL(artwork, maxPixelSize: 120)
+        Task {
+            _ = await ImagePipeline.shared.image(for: sleeve)
+            _ = await ImagePipeline.shared.averageColor(for: tone)
         }
     }
 
