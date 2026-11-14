@@ -59,7 +59,7 @@ struct ArtistsView: View {
                 .padding(.top, Theme.Space.xl)
             }
         }
-        .searchable(text: $query, prompt: "Find in Artists")
+        // No find field when wide: Linux's pages have none, Search is a place.
         .refreshable { await library.refresh() }
     }
 

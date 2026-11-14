@@ -47,7 +47,7 @@ struct SongsView: View {
             }
             .padding(.horizontal, page.side)
         }
-        .searchable(text: $query, prompt: "Find in Songs")
+        // No find field when wide: Linux's pages have none, Search is a place.
         .refreshable { await library.refresh() }
     }
 
