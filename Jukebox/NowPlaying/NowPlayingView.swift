@@ -40,6 +40,15 @@
 // Gone with sketch D: the cover's colours blurred behind everything,
 // "Playing From", the station as a spaced label in a capsule, round buttons.
 // Gone with sketch E: the record player — its deck, plinth and arm.
+//
+// In a wide window (the iPad at regular width, the Mac) it is a room over
+// the places and the page (`inRoom`; the designer's spec, §6), Linux's 1:1
+// — the photographer, 14 November 2026: "ik wil dat de linux app en de
+// apple app 1:1 op elkaar lijken". The window's bar and the panel stay
+// beside it and do its transport and its Up Next and Lyrics, so the room is
+// the sleeve and its record, still, on flat Night (NowPlayingGround), the
+// title under them, Close and More. Dark by its own environment, not the
+// window's: the bar and the panel keep the window's appearance.
 
 import Combine
 import JukeboxKit
@@ -61,6 +70,8 @@ struct NowPlayingView: View {
     @Environment(AppModel.self) private var app
     @Environment(AppSettings.self) private var settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The room in a wide window (WideShell), not the iPhone's cover.
+    @Environment(\.inRoom) private var inRoom
 
     @State private var panel: NowPlayingPanel = .cover
     /// Low Power Mode, kept up to date by the system's notification.
@@ -87,19 +98,30 @@ struct NowPlayingView: View {
 
     @ScaledMetric(relativeTo: .title) private var skipGlyph: CGFloat = 30
     @ScaledMetric(relativeTo: .largeTitle) private var playGlyph: CGFloat = 44
+    /// The room's title, 40 points as the desktop's titles (spec §7), and
+    /// "Artist · Album" under it, 17; on the iPad they follow the reader's
+    /// text size.
+    @ScaledMetric(relativeTo: .largeTitle) private var roomTitleSize: CGFloat = 40
+    @ScaledMetric(relativeTo: .body) private var roomBylineSize: CGFloat = 17
 
     var body: some View {
         GeometryReader { proxy in
             // An iPad held sideways: the sleeve on the left, the rest on
-            // the right, as Music lays it out. The iPhone is portrait.
-            let wide = proxy.size.width > proxy.size.height && proxy.size.width >= 700
+            // the right, as Music lays it out. The iPhone is portrait. The
+            // room shows the whole record, as sideways, whatever its shape.
+            let wide = inRoom || (proxy.size.width > proxy.size.height && proxy.size.width >= 700)
             VStack(spacing: 0) {
-                header(wide: wide)
-                if wide {
-                    wideLayout
+                if inRoom {
+                    roomHeader
+                    roomLayout
                 } else {
-                    tallLayout
-                        .frame(maxWidth: 560)
+                    header(wide: wide)
+                    if wide {
+                        wideLayout
+                    } else {
+                        tallLayout
+                            .frame(maxWidth: 560)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -128,13 +150,21 @@ struct NowPlayingView: View {
                        value: player.errorMessage)
         }
         // A pull down closes it; over the lyrics and the queue only the top
-        // does, so their own scrolling and reordering keep working.
+        // does, so their own scrolling and reordering keep working. The room
+        // is not pulled: its chevron and Escape close it.
         .contentShape(.rect)
-        .gesture(dismissDrag, including: panel == .cover ? .all : .subviews)
+        .gesture(dismissDrag, including: panel == .cover && !inRoom ? .all : .subviews)
         .offset(y: dragOffset)
         .accessibilityAction(.escape) {
             close()
         }
+        #if os(macOS)
+        // Escape where the keys are inside the room; its Close button's
+        // shortcut answers it otherwise.
+        .onExitCommand {
+            close()
+        }
+        #endif
         // The cover's accent as the tint (see the top). Inside the dark
         // environment and before the sheet, which keeps the app's own.
         .tint(accentColor)
@@ -143,8 +173,10 @@ struct NowPlayingView: View {
         // menus and the system's volume and AirPlay views are drawn for dark
         // even when the phone is in light mode. A presentation's preference:
         // the app under it keeps its own appearance. Over a light wall (D1)
-        // light, so the status bar's time and battery are dark on it.
-        .preferredColorScheme(wallIsLight ? ColorScheme.light : ColorScheme.dark)
+        // light, so the status bar's time and battery are dark on it. Not
+        // the room: it is no presentation, and the preference would turn the
+        // whole window dark, the bar and the panel beside it too.
+        .preferredColorScheme(inRoom ? nil : wallIsLight ? ColorScheme.light : ColorScheme.dark)
         // The system says when Low Power Mode changes, on a thread of its
         // own; the state is changed on the main one.
         .onReceive(NotificationCenter.default.publisher(for: .NSProcessInfoPowerStateDidChange)
@@ -251,6 +283,119 @@ struct NowPlayingView: View {
         }
         .padding(.horizontal, Theme.Space.xxl)
         .padding(.vertical, Theme.Space.l)
+    }
+
+    /// The room (spec §6): the sleeve with its record half out, and under
+    /// it, 32 below and from its left edge, the title and "Artist · Album";
+    /// together in the middle of the room. Sized here, from the room's own
+    /// size as it is laid out, so the ground draws them once at that size:
+    /// on Linux they were drawn again as the room rose, and the photographer,
+    /// 14 November 2026: "de transitie op linux iig is niet heel nice nu".
+    /// The room's size, not the window's: with the panel open beside it the
+    /// sleeve gives way.
+    private var roomLayout: some View {
+        GeometryReader { proxy in
+            let side = Self.roomSleeveSide(in: proxy.size)
+            let width = side * (1 + SleeveLayout.recordSide / 2) + SleeveLayout.recordBeyond
+            VStack(alignment: .leading, spacing: Theme.Space.xxl) {
+                // Exactly the pair's size: SleeveLayout puts the sleeve at
+                // its left edge, where the title starts.
+                sleeveRoom
+                    .frame(width: width, height: side)
+                roomTitle
+                    .frame(width: width, alignment: .leading)
+            }
+            .frame(width: proxy.size.width, height: proxy.size.height)
+        }
+    }
+
+    /// The sleeve's side in a room of `size`: 0.62 of its height (472 in
+    /// Linux's window of 1440 by 900), or what its width leaves the sleeve
+    /// and its record with 24 either side; on the 4 grid.
+    private static func roomSleeveSide(in size: CGSize) -> CGFloat {
+        let fits = (size.width - 2 * Theme.Space.xl - SleeveLayout.recordBeyond) / (1 + SleeveLayout.recordSide / 2)
+        return max(0, (min(size.height * 0.62, fits) / 4).rounded(.down) * 4)
+    }
+
+    /// The room's top, as Linux's header bar: 48 high, Close at its start
+    /// (Escape presses it too), More at its end, plain white glyphs. No
+    /// grabber: nothing here is pulled down.
+    private var roomHeader: some View {
+        HStack(spacing: 0) {
+            Button {
+                close()
+            } label: {
+                Image(systemName: "chevron.down")
+                    .font(Self.roomGlyph)
+                    .foregroundStyle(.white)
+                    .frame(width: 40, height: 40)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(.plain)
+            .keyboardShortcut(.cancelAction)
+            .accessibilityLabel("Close")
+            .accessibilityIdentifier("nowPlaying.close")
+
+            Spacer(minLength: 0)
+
+            if let track = currentTrack {
+                Menu {
+                    TrackMenu(track: track)
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(Self.roomGlyph)
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .contentShape(.rect)
+                }
+                // The glyph alone, as Close: no border, no arrow.
+                .menuStyle(.button)
+                .buttonStyle(.borderless)
+                .menuIndicator(.hidden)
+                .accessibilityLabel("More")
+                .accessibilityIdentifier("nowPlaying.more")
+            }
+        }
+        .padding(.horizontal, Theme.Space.s)
+        .frame(height: 48)
+    }
+
+    /// The header's glyphs at the size of Linux's symbolic icons.
+    private static var roomGlyph: Font {
+        .system(size: 16, weight: .semibold)
+    }
+
+    /// As Linux's: the title in the serif, white, and "Artist · Album" under
+    /// it at 60%, as wide as the sleeve and its record, two lines each at
+    /// most (nothing in the room loops, spec §10, so a long title wraps
+    /// rather than scroll by). The room counts one line of each, 48 and 24,
+    /// and the rest hangs below, so a title that wraps does not lift the
+    /// sleeve from one song to the next.
+    private var roomTitle: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            if let track = currentTrack {
+                Text(track.name)
+                    .font(.system(size: roomTitleSize, weight: .regular, design: .serif))
+                    .foregroundStyle(.white)
+                    .lineLimit(2)
+                let byline = [track.artistLine, track.albumName ?? ""]
+                    .filter { !$0.isEmpty }
+                    .joined(separator: " · ")
+                if !byline.isEmpty {
+                    Text(byline)
+                        .font(.system(size: roomBylineSize))
+                        .foregroundStyle(Color.white.opacity(0.6))
+                        .lineLimit(2)
+                }
+            } else {
+                Text("Not Playing")
+                    .font(.system(size: roomTitleSize, weight: .regular, design: .serif))
+                    .foregroundStyle(Color.white.opacity(0.6))
+                    .lineLimit(1)
+            }
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .frame(height: roomTitleSize * 1.2 + roomBylineSize * 24 / 17, alignment: .topLeading)
     }
 
     @ViewBuilder private var panelContent: some View {
