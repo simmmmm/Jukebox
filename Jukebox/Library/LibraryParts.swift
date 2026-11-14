@@ -321,10 +321,18 @@ struct LibraryWidePage<Content: View>: View {
     /// The page opens with a head (a cover, the title at its foot) rather
     /// than a title alone.
     var hasHead = false
-    @ViewBuilder let content: (DesktopMeasures.Page, CGFloat) -> Content
+    let content: (DesktopMeasures.Page, CGFloat) -> Content
 
     /// The default row of the table until the page has been measured.
     @State private var width: CGFloat = 1000
+
+    // Spelled out: the private state would make the memberwise one private.
+    init(title: String, hasHead: Bool = false,
+         @ViewBuilder content: @escaping (DesktopMeasures.Page, CGFloat) -> Content) {
+        self.title = title
+        self.hasHead = hasHead
+        self.content = content
+    }
 
     var body: some View {
         let page = DesktopMeasures.page(width: Int(width))

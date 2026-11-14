@@ -1,6 +1,9 @@
 // Favorites: the songs, albums and artists the listener has hearted, in
 // Jellyfin (so every Jellyfin app shares them), one kind at a time. Spelled
 // as Apple's Music spells it, "Favorite", in every string the listener sees.
+//
+// In a wide window, as Linux's: one page, the artists and the albums in
+// shelves of tiles and the songs in rows, under one title.
 
 import JukeboxKit
 import SwiftUI
@@ -9,8 +12,61 @@ struct FavoritesView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
     @AppStorage("library.favoritesKind") private var kind: LibraryFavoritesKind = .songs
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    /// Linux's Favorites: Artists, Albums and Songs, each under its heading
+    /// when there is any; one line when there is none.
+    private var wide: some View {
+        let artists = library.favoriteArtists
+        let albums = library.favoriteAlbums
+        let tracks = library.favoriteTracks
+        return LibraryWidePage(title: "Favorites") { page, _ in
+            LibraryPageTitle("Favorites")
+                .padding(.horizontal, page.side)
+            if artists.isEmpty && albums.isEmpty && tracks.isEmpty {
+                LibraryEmptyLine("Choose Favorite in a song’s, album’s or artist’s menu, and it appears here.")
+                    .padding(.horizontal, page.side)
+            }
+            if !artists.isEmpty {
+                LibrarySectionTitle(String(localized: "Artists"))
+                    .padding(.horizontal, page.side)
+                Shelf(items: artists, width: CGFloat(page.tile), margin: page.side) { artist in
+                    NavigationLink(value: Route.artist(artist)) {
+                        ArtistTile(artist: artist)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if !albums.isEmpty {
+                LibrarySectionTitle(String(localized: "Albums"))
+                    .padding(.horizontal, page.side)
+                Shelf(items: albums, width: CGFloat(page.tile), margin: page.side) { album in
+                    LibraryAlbumLink(album: album)
+                }
+            }
+            if !tracks.isEmpty {
+                Group {
+                    LibrarySectionTitle(String(localized: "Songs"), below: Theme.Space.s)
+                    LibraryTrackRows(tracks: tracks, play: { track in
+                        let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
+                        player.play(tracks, startingAt: i, context: context)
+                    })
+                }
+                .padding(.horizontal, page.side)
+            }
+        }
+        .refreshable { await library.refresh() }
+    }
+
+    private var compact: some View {
         content
             .safeAreaInset(edge: .top, spacing: 0) {
                 Picker("Show", selection: $kind) {

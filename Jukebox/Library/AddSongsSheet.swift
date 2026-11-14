@@ -22,6 +22,7 @@ struct LibraryAddSongsSheet: View {
 
     @Environment(LibraryStore.self) private var library
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isWide) private var isWide
     @State private var query = ""
     /// Added while the sheet is open.
     @State private var added: Set<ItemID> = []
@@ -60,6 +61,8 @@ struct LibraryAddSongsSheet: View {
             .sensoryFeedback(.success, trigger: added)
             .libraryErrorAlert("Could Not Add to the Playlist", message: $errorMessage)
         }
+        // A Mac's sheet is only as big as its list asks: room for the list.
+        .frame(minWidth: isWide ? 480 : nil, minHeight: isWide ? 560 : nil)
     }
 
     private func state(of track: Track) -> LibraryAddSongState {
