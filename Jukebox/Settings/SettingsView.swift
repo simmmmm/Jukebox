@@ -81,7 +81,18 @@ struct SettingsView: View {
         #endif
     }
 
-    private var form: some View {
+    @ViewBuilder private var form: some View {
+        if isWide || isPad {
+            // Linux's Preferences: the rows in 15, not the Mac's 13; the
+            // lines under them 13 (SettingsDetailLabel).
+            formRows
+                .desktopFont(15)
+        } else {
+            formRows
+        }
+    }
+
+    private var formRows: some View {
         Form {
             if isWide || isPad {
                 // Linux's order: what plays, the radio, privacy, the server.
@@ -135,7 +146,7 @@ private struct SettingsAccountSection: View {
                     VStack(alignment: .trailing, spacing: Theme.Space.xs) {
                         Text(verbatim: credentials.serverName)
                         Text(verbatim: ServerWords.product(credentials.kind, version: credentials.serverVersion))
-                            .font(.footnote)
+                            .desktopFont(13, phone: .footnote)
                     }
                 } label: {
                     Text("Server")
@@ -474,7 +485,7 @@ private struct SettingsRadioSection: View {
                     Spacer()
                     Text("Adventurous")
                 }
-                .font(.footnote)
+                .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             }
@@ -543,7 +554,7 @@ private struct SettingsLastFMSection: View {
     var body: some View {
         Section {
             TextField("API Key", text: $draft, prompt: Text("Paste your Last.fm API key"))
-                .font(.body.monospaced())
+                .desktopFont(15, design: .monospaced, phone: .body.monospaced())
                 .plainTextEntry()
                 .autocorrectionDisabled()
                 .submitLabel(.done)
@@ -817,9 +828,9 @@ private struct SettingsAboutSection: View {
                 ShellAppMark(side: 44)
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("Jukebox")
-                        .font(.headline)
+                        .desktopFont(15, weight: .bold, phone: .headline)
                     Text("Made for Jellyfin, Navidrome and other Subsonic servers")
-                        .font(.subheadline)
+                        .desktopFont(13, phone: .subheadline)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -866,7 +877,7 @@ private struct SettingsHeader: View {
     var body: some View {
         if isWide {
             Text(title)
-                .font(.headline)
+                .desktopFont(15, weight: .bold)
                 .foregroundStyle(.primary)
                 .textCase(nil)
         } else {
@@ -884,7 +895,7 @@ private struct SettingsDetailLabel: View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             Text(title)
             Text(detail)
-                .font(.footnote)
+                .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
         }
     }

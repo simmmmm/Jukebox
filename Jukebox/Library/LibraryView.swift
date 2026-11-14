@@ -120,11 +120,11 @@ struct RecentlyAddedView: View {
 
     private var wide: some View {
         let albums = library.recentlyAddedAlbums
-        return LibraryWidePage(title: "Recently Added") { page, width in
-            LibraryPageTitle("Recently Added")
+        return WidePage(title: "Recently Added") { page, width in
+            PageTitle("Recently Added")
                 .padding(.horizontal, page.side)
             if albums.isEmpty {
-                LibraryEmptyLine("Albums added to your \(library.serverKind) server appear here.")
+                PageEmptyLine("Albums added to your \(library.serverKind) server appear here.")
                     .padding(.horizontal, page.side)
             } else {
                 LibraryAlbumGrid(albums: albums, page: page, width: width)

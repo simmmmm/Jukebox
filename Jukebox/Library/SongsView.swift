@@ -25,17 +25,17 @@ struct SongsView: View {
     private var wide: some View {
         let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let shown = searching ? library.matchingTracks(query) : library.songsByTitle
-        return LibraryWidePage(title: "Songs") { page, _ in
+        return WidePage(title: "Songs") { page, _ in
             Group {
-                LibraryPageTitle("Songs", fact: shown.isEmpty ? nil : LibraryText.songs(shown.count))
+                PageTitle("Songs", fact: shown.isEmpty ? nil : LibraryText.songs(shown.count))
                 if shown.isEmpty {
                     if searching {
-                        LibraryPlainLine("Nothing in Songs matches “\(query)”.")
+                        PagePlainLine("Nothing in Songs matches “\(query)”.")
                     } else {
-                        LibraryEmptyLine("Songs on your \(library.serverKind) server appear here.")
+                        PageEmptyLine("Songs on your \(library.serverKind) server appear here.")
                     }
                 } else {
-                    LibraryWordButton(searching ? "Shuffle These" : "Shuffle") {
+                    WordButton(searching ? "Shuffle These" : "Shuffle") {
                         player.play(shown, context: context(searching: searching), shuffled: true)
                     }
                     LibraryTrackRows(tracks: shown, play: { track in

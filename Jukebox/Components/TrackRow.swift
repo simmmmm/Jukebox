@@ -184,7 +184,7 @@ struct TrackRow: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .libraryFont(15)
+                .desktopFont(15)
                 .frame(width: 32, alignment: .trailing)
             case .none:
                 EmptyView()
@@ -195,13 +195,13 @@ struct TrackRow: View {
                     wideTitle(playable: playable, onPhone: onPhone)
                     if let words {
                         Text(words)
-                            .libraryFont(13)
+                            .desktopFont(13)
                             .foregroundStyle(playable ? HierarchicalShapeStyle.secondary : HierarchicalShapeStyle.tertiary)
                             .lineLimit(1)
                     }
                     if let reason {
                         Text(reasonText(reason))
-                            .libraryFont(13)
+                            .desktopFont(13)
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)
                     }
@@ -212,7 +212,7 @@ struct TrackRow: View {
                         .layoutPriority(1)
                     if let words {
                         Text(words)
-                            .libraryFont(13)
+                            .desktopFont(13)
                             .foregroundStyle(playable ? HierarchicalShapeStyle.secondary : HierarchicalShapeStyle.tertiary)
                             .lineLimit(1)
                     }
@@ -222,7 +222,7 @@ struct TrackRow: View {
 
             Text(track.duration.clock)
                 .monospacedDigit()
-                .libraryFont(13)
+                .desktopFont(13)
                 .foregroundStyle(.secondary)
         }
         .frame(minHeight: showsArtwork ? (reason == nil ? 64 : 72) : 48)
@@ -265,7 +265,7 @@ struct TrackRow: View {
                     .accessibilityLabel("Downloaded")
             }
         }
-        .libraryFont(15)
+        .desktopFont(15)
     }
 
     private var isCurrent: Bool { player.currentTrack?.id == track.id }

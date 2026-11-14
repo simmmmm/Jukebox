@@ -15,8 +15,6 @@ struct DownloadedView: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(\.isWide) private var isWide
     @State private var pendingRemoval: OfflineCollection?
-    /// The wide page's own width, for its measures.
-    @State private var width: CGFloat = 0
 
     var body: some View {
         let collections = offline.collections
@@ -29,16 +27,16 @@ struct DownloadedView: View {
                 page(albums: albums, playlists: playlists, mixes: mixes, kept: kept)
             } else {
                 list(albums: albums, playlists: playlists, mixes: mixes, kept: kept)
-            }
-        }
-        .navigationTitle("Downloaded")
-        .overlay {
-            if collections.isEmpty && kept.isEmpty {
-                ContentUnavailableView {
-                    Label("No Downloads", systemImage: "arrow.down.circle")
-                } description: {
-                    Text("Download an album, a playlist or a mix with \(Image(systemName: "arrow.down.circle")) on its page. Keep Songs I Play, in Settings, keeps what you play often.")
-                }
+                    .navigationTitle("Downloaded")
+                    .overlay {
+                        if collections.isEmpty && kept.isEmpty {
+                            ContentUnavailableView {
+                                Label("No Downloads", systemImage: "arrow.down.circle")
+                            } description: {
+                                Text("Download an album, a playlist or a mix with \(Image(systemName: "arrow.down.circle")) on its page. Keep Songs I Play, in Settings, keeps what you play often.")
+                            }
+                        }
+                    }
             }
         }
         .confirmationDialog(Text("Remove from this \(Device.model)?"), isPresented: isConfirmingRemoval,
@@ -53,86 +51,62 @@ struct DownloadedView: View {
 
     // MARK: Wide
 
-    /// The albums, playlists and mixes as covers, each with its one fact
-    /// under its name; then the kept songs on hairlines. Shuffle All is the
-    /// page's one filled button.
+    /// A wide page as every other (WidePage): the title; Shuffle All, the
+    /// page's one filled button; the albums, playlists and mixes as grids
+    /// of covers, each with its one fact under its name; then the kept
+    /// songs as rows. Nothing here: one plain line of what to do.
     private func page(albums: [OfflineCollection], playlists: [OfflineCollection], mixes: [OfflineCollection],
                       kept: [Track]) -> some View {
-        let measures = DesktopMeasures.page(width: Int(width))
-        return ScrollView {
-            // The spec's 40 between a page's sections.
-            VStack(alignment: .leading, spacing: 40) {
-                if offline.songCount > 0 {
-                    Button("Shuffle All") {
-                        shuffleAll(kept: kept)
-                    }
-                    .buttonStyle(.prominent)
-                    .fixedSize()
-                }
-                grid("Albums", albums, tile: CGFloat(measures.tile))
-                grid("Playlists", playlists, tile: CGFloat(measures.tile))
-                grid("Mixes", mixes, tile: CGFloat(measures.tile))
-                if !kept.isEmpty {
-                    pageSection("Songs you play") {
-                        LazyVStack(spacing: 0) {
-                            ForEach(kept) { track in
-                                Button {
-                                    play(track, in: kept)
-                                } label: {
-                                    // Rows of 64: the cover 48 and 8 above and below.
-                                    TrackRow.standard(track)
-                                        .padding(.vertical, Theme.Space.s)
-                                }
-                                .buttonStyle(.plain)
-                                Hairline(inset: 48 + Theme.Space.m)
-                            }
-                        }
-                    }
-                }
+        WidePage(title: String(localized: "Downloaded")) { page, width in
+            PageTitle(String(localized: "Downloaded"))
+                .padding(.horizontal, page.side)
+            if offline.collections.isEmpty && kept.isEmpty {
+                PagePlainLine("Download an album, a playlist or a mix with \(Image(systemName: "arrow.down.circle")) on its page. Keep Songs I Play, in Settings, keeps what you play often.")
+                    .padding(.horizontal, page.side)
             }
-            .padding(.horizontal, CGFloat(measures.margin))
-            .padding(.vertical, Theme.Space.xl)
-        }
-        .background(Theme.ground)
-        .onGeometryChange(for: CGFloat.self) { proxy in
-            proxy.size.width
-        } action: { measured in
-            width = measured
+            if offline.songCount > 0 {
+                Button("Shuffle All") {
+                    shuffleAll(kept: kept)
+                }
+                .buttonStyle(.prominent)
+                .fixedSize()
+                .padding(.top, Theme.Space.xl)
+                .padding(.horizontal, page.side)
+            }
+            grid("Albums", albums, page: page, width: width)
+            grid("Playlists", playlists, page: page, width: width)
+            grid("Mixes", mixes, page: page, width: width)
+            if !kept.isEmpty {
+                PageSectionTitle(String(localized: "Songs you play"), below: Theme.Space.s)
+                    .padding(.horizontal, page.side)
+                LibraryTrackRows(tracks: kept, play: { track in
+                    play(track, in: kept)
+                })
+                .padding(.horizontal, page.side)
+            }
         }
     }
 
-    /// One kind of download as a grid of covers, at least a tile wide.
+    /// One kind of download as a grid of covers at the page's tile.
     @ViewBuilder
-    private func grid(_ title: LocalizedStringKey, _ collections: [OfflineCollection], tile: CGFloat) -> some View {
+    private func grid(_ title: String.LocalizationValue, _ collections: [OfflineCollection],
+                      page: DesktopMeasures.Page, width: CGFloat) -> some View {
         if !collections.isEmpty {
-            pageSection(title) {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: tile), spacing: Theme.Space.xl, alignment: .top)],
-                          alignment: .leading, spacing: Theme.Space.xl) {
-                    ForEach(collections) { collection in
-                        NavigationLink(value: Self.route(for: collection)) {
-                            DownloadedTile(collection: collection)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button("Remove Download", systemImage: "trash", role: .destructive) {
-                                pendingRemoval = collection
-                            }
-                        }
+            PageSectionTitle(String(localized: title))
+                .padding(.horizontal, page.side)
+            TileGrid(items: collections, page: page, width: width) { collection in
+                NavigationLink(value: Self.route(for: collection)) {
+                    WideTile(name: collection.title, line: offline.fact(of: collection)) {
+                        DownloadedCover(collection: collection, size: nil)
+                    }
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button("Remove Download", systemImage: "trash", role: .destructive) {
+                        pendingRemoval = collection
                     }
                 }
             }
-        }
-    }
-
-    /// A heading in the serif 16 above what it holds, as Linux's section
-    /// titles.
-    private func pageSection<Content: View>(_ title: LocalizedStringKey,
-                                            @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Space.l) {
-            Text(title)
-                .font(.serif(.title2))
-                .accessibilityAddTraits(.isHeader)
-            content()
         }
     }
 
@@ -250,32 +224,6 @@ private struct DownloadedRow: View {
                     .lineLimit(1)
             }
         }
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// A download on the wide page: its cover as wide as the tile, its name,
-/// and the row's one fact under it, as Library's tiles have the artist.
-private struct DownloadedTile: View {
-    let collection: OfflineCollection
-
-    @Environment(OfflineStore.self) private var offline
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            DownloadedCover(collection: collection, size: nil)
-                .padding(.bottom, Theme.Space.xs)
-            Text(collection.title)
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-            Text(offline.fact(of: collection))
-                .font(.subheadline)
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-        }
-        .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
 }

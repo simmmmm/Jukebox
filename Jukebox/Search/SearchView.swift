@@ -76,7 +76,7 @@ struct SearchView: View {
     private var widePage: some View {
         VStack(spacing: 0) {
             SearchField(text: $query, isFocused: $isFieldFocused, submit: { remember() })
-                .padding(.horizontal, CGFloat(DesktopMeasures.page(width: Int(width)).margin))
+                .padding(.horizontal, DesktopMeasures.page(width: Int(width)).side)
                 .padding(.top, Theme.Space.xl)
             content
         }
@@ -129,6 +129,7 @@ private struct SearchField: View {
                 .submitLabel(.search)
                 .focused(isFocused)
                 .onSubmit(submit)
+                .desktopFont(15)
                 // A search field to VoiceOver and to the screenshot walk.
                 .accessibilityAddTraits(.isSearchField)
                 .accessibilityIdentifier("search.field")
@@ -190,10 +191,8 @@ private struct SearchResultsList: View {
                                            description: Text("Search finds your music once it has loaded."))
                 } else if isWide {
                     // Linux's one plain line under the field.
-                    Text("Nothing in your library matches “\(term)”. Try part of a title or a name.")
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, CGFloat(DesktopMeasures.page(width: Int(width)).margin))
-                        .padding(.top, Theme.Space.xl)
+                    PagePlainLine("Nothing in your library matches “\(term)”. Try part of a title or a name.")
+                        .padding(.horizontal, DesktopMeasures.page(width: Int(width)).side)
                 } else {
                     ContentUnavailableView.search(text: term)
                 }
@@ -216,7 +215,7 @@ private struct SearchResultsList: View {
     /// the navigator, which keeps the search as it goes.
     private func page(_ results: SearchResults) -> some View {
         let measures = DesktopMeasures.page(width: Int(width))
-        let margin = CGFloat(measures.margin)
+        let margin = measures.side
         let tile = CGFloat(measures.tile)
         return ScrollView {
             // The spec's 40 between a page's sections.
@@ -260,20 +259,12 @@ private struct SearchResultsList: View {
                     }
                 }
                 if !results.tracks.isEmpty {
-                    pageSection("Songs", margin: margin) {
-                        LazyVStack(spacing: 0) {
-                            ForEach(results.tracks) { track in
-                                Button {
-                                    startStation(from: track)
-                                } label: {
-                                    // Rows of 64: the cover 48 and 8 above and below.
-                                    TrackRow.standard(track)
-                                        .padding(.vertical, Theme.Space.s)
-                                }
-                                .buttonStyle(.plain)
-                                Hairline(inset: 48 + Theme.Space.m)
-                            }
-                        }
+                    // Songs' rows, as every wide page's (TrackRow's 64), 8
+                    // under their heading.
+                    pageSection("Songs", margin: margin, below: Theme.Space.s) {
+                        LibraryTrackRows(tracks: results.tracks, play: { track in
+                            startStation(from: track)
+                        })
                         .padding(.horizontal, margin)
                     }
                 }
@@ -290,15 +281,13 @@ private struct SearchResultsList: View {
         }
     }
 
-    /// A section of the wide page: its heading in the serif at the page's
-    /// margin (SectionHeader keeps the iPhone's), 16 above what it holds,
-    /// as Linux's section titles.
-    private func pageSection<Content: View>(_ title: LocalizedStringKey, margin: CGFloat,
+    /// A section of the wide page: its heading (PageSectionTitle) at the
+    /// page's margin, 16 above what it holds (8 above rows), as Linux's.
+    private func pageSection<Content: View>(_ title: String.LocalizationValue, margin: CGFloat,
+                                            below: CGFloat = Theme.Space.l,
                                             @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: Theme.Space.l) {
-            Text(title)
-                .font(.serif(.title2))
-                .accessibilityAddTraits(.isHeader)
+        VStack(alignment: .leading, spacing: 0) {
+            PageSectionTitle(String(localized: title), above: 0, below: below)
                 .padding(.horizontal, margin)
             content()
         }
@@ -526,12 +515,14 @@ private struct SearchBrowse: View {
     private var recentSection: some View {
         VStack(alignment: .leading, spacing: Theme.Space.s) {
             HStack(alignment: .firstTextBaseline) {
-                // SectionHeader's look, with Clear where See All would be.
+                // SectionHeader's look, with Clear where See All would be;
+                // wide, a page's section title.
                 Text("Recent searches")
-                    .font(.serif(.title2))
+                    .desktopFont(24, design: .serif, phone: .serif(.title2))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button("Clear") { clear() }
+                    .desktopFont(15, phone: nil)
                     .accessibilityLabel("Clear Recent Searches")
             }
             .padding(.horizontal, margin)
@@ -550,6 +541,7 @@ private struct SearchBrowse: View {
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
+                        .desktopFont(15, phone: nil)
                         .padding(.vertical, Theme.Space.m)
                         .contentShape(.rect)
                     }
@@ -570,10 +562,14 @@ private struct SearchBrowse: View {
 
     private var genreSection: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
-            // SectionHeader stands at the iPhone's margin; wide, the rest of
-            // the page's is added.
-            SectionHeader("Genres", route: .genres)
-                .padding(.horizontal, margin - Theme.margin)
+            // Wide, a page's section title at the page's margin; Genres is
+            // the sidebar's too, so no See All.
+            if isWide {
+                PageSectionTitle(String(localized: "Genres"), above: 0, below: Theme.Space.xs)
+                    .padding(.horizontal, margin)
+            } else {
+                SectionHeader("Genres", route: .genres)
+            }
             LazyVGrid(columns: genreColumns, spacing: 0) {
                 ForEach(library.genres) { genre in
                     NavigationLink(value: Route.genre(genre)) {
@@ -595,7 +591,7 @@ private struct SearchBrowse: View {
     /// The page's margin: the iPhone's, or DesktopMeasures' by the page's
     /// own width.
     private var margin: CGFloat {
-        isWide ? CGFloat(DesktopMeasures.page(width: Int(width)).margin) : Theme.margin
+        isWide ? DesktopMeasures.page(width: Int(width)).side : Theme.margin
     }
 
     /// Two across on the iPhone, as Music's categories; wide, as many as
@@ -620,6 +616,7 @@ private struct SearchGenreTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(verbatim: name)
+                .desktopFont(15, phone: nil)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
                 .lineLimit(2)

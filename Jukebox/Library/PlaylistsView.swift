@@ -63,14 +63,14 @@ struct PlaylistsView: View {
 
     /// Linux's Playlists: a grid of tiles; Delete in an own one's menu.
     private var wide: some View {
-        LibraryWidePage(title: "Playlists") { page, width in
-            LibraryPageTitle("Playlists")
+        WidePage(title: "Playlists") { page, width in
+            PageTitle("Playlists")
                 .padding(.horizontal, page.side)
             if library.playlists.isEmpty {
-                LibraryEmptyLine("Make one with New Playlist…, or add songs to one from any song’s menu.")
+                PageEmptyLine("Make one with New Playlist…, or add songs to one from any song’s menu.")
                     .padding(.horizontal, page.side)
             } else {
-                LibraryTileGrid(items: library.playlists, page: page, width: width) { playlist in
+                TileGrid(items: library.playlists, page: page, width: width) { playlist in
                     NavigationLink(value: Route.playlist(playlist)) {
                         PlaylistTile(playlist: playlist)
                     }
@@ -292,18 +292,18 @@ struct PlaylistDetailView: View {
         let duration = entries == nil ? (shown.duration ?? 0) : LibraryText.totalDuration(tracks)
         return List {
             Group {
-                LibraryHead(page: page, title: shown.name,
-                            facts: LibraryText.summary(count: count, duration: duration)) { size in
+                PageHead(page: page, title: shown.name,
+                         facts: LibraryText.summary(count: count, duration: duration)) { size in
                     cover(shown, tracks: tracks, size: size)
                 } actions: {
-                    LibraryPlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
-                                       shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
+                    PagePlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
+                                    shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
                         .disabled(tracks.isEmpty)
-                    LibraryMoreMenu {
+                    MoreMenu {
                         moreItems(shown, tracks: tracks)
                     }
                 }
-                LibraryRule(page: page)
+                PageRule(page: page)
             }
             .listRowInsets(EdgeInsets())
             .listRowSeparator(.hidden)
@@ -323,38 +323,38 @@ struct PlaylistDetailView: View {
                 }
                 .onDelete(perform: deleteAction(shown))
                 .onMove(perform: moveAction(shown))
-                .libraryWideRow(page)
+                .pageRow(page)
 
                 if entries.isEmpty {
                     VStack(alignment: .leading, spacing: 0) {
-                        LibraryPlainLine(shown.isReadOnly ? "No songs yet."
-                                         : "Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
+                        PagePlainLine(shown.isReadOnly ? "No songs yet."
+                                      : "Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
                         if !shown.isReadOnly {
-                            LibraryWordButton("Add Songs") {
+                            WordButton("Add Songs") {
                                 isAddingSongs = true
                             }
                         }
                     }
-                    .libraryWideRow(page)
+                    .pageRow(page)
                 }
             } else if let loadError {
                 VStack(alignment: .leading, spacing: 0) {
-                    LibraryPlainLine("\(loadError)")
-                    LibraryWordButton("Try Again") {
+                    PagePlainLine("\(loadError)")
+                    WordButton("Try Again") {
                         self.loadError = nil
                         Task { await load() }
                     }
                 }
-                .libraryWideRow(page)
+                .pageRow(page)
             } else {
                 ProgressView()
                     .frame(maxWidth: .infinity)
-                    .libraryWideRow(page)
+                    .pageRow(page)
             }
         }
         .listStyle(.plain)
         .pageGround()
-        .libraryPageWidth($width)
+        .onPageWidth($width)
         .libraryScrolledTitle(shown.name, after: page.cover + Theme.Space.xl)
     }
 
@@ -634,16 +634,6 @@ struct PlaylistDetailView: View {
 private struct LibraryPlaylistEntry: Identifiable {
     let id: String
     let track: Track
-}
-
-private extension View {
-    /// A row of a wide playlist page: on the page's margin and its ground,
-    /// with no separator, as Linux's rows.
-    func libraryWideRow(_ page: DesktopMeasures.Page) -> some View {
-        listRowInsets(EdgeInsets(top: 0, leading: page.side, bottom: 0, trailing: page.side))
-            .listRowSeparator(.hidden)
-            .listRowBackground(Color.clear)
-    }
 }
 
 /// "Add to Playlist…" from any menu: a new playlist with these songs, or one

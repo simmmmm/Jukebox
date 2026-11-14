@@ -35,14 +35,14 @@ struct MixDetailView: View {
     @State private var saved: Playlist?
     @State private var saveError: String?
     /// The page's own width, for its measures on a wide page.
-    @State private var pageWidth = 1200
+    @State private var pageWidth: CGFloat = 1200
 
     var body: some View {
         let measures = HomeMeasures(isWide: isWide, width: pageWidth)
         List {
             Group {
-                if measures.isWide {
-                    wideHeader(measures: measures)
+                if let page = measures.page {
+                    wideHeader(page: page)
                 } else {
                     header
                 }
@@ -51,19 +51,18 @@ struct MixDetailView: View {
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
 
-            if measures.isWide {
+            if let page = measures.page {
                 // The rows on the ground at the page's margin, as Linux's:
                 // the hairline under the head is the one line.
                 rows
-                    .listRowInsets(measures.rowInsets)
-                    .listRowSeparator(.hidden)
+                    .pageRow(page)
             } else {
                 rows
             }
         }
         .listStyle(.plain)
         .pageGround()
-        .homePageWidth($pageWidth)
+        .onPageWidth($pageWidth)
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? mix.title : "")
@@ -185,46 +184,30 @@ struct MixDetailView: View {
         }
     }
 
-    /// The head on a wide page: the collage, and at its foot the title, its
-    /// artists, its length, Play, Shuffle as a word, and ⋮.
-    private func wideHeader(measures: HomeMeasures) -> some View {
-        HomeDetailHead(title: mix.title, lead: mix.subtitle,
-                       facts: HomeText.summary(count: mix.tracks.count, duration: mix.duration)) {
-            CollageArtwork(artworks: mix.artwork, size: measures.cover)
-        } actions: {
-            Button {
-                player.playMix(mix)
-            } label: {
-                Text("Play")
-            }
-            .buttonStyle(.prominent)
-            .fixedSize()
-            Button {
-                player.playMix(mix, shuffled: true)
-            } label: {
-                Text("Shuffle")
-            }
-            .buttonStyle(.secondary)
-            Menu {
-                Section {
-                    Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                        Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
-                        radio.start(mix.stationSeed)
+    /// The head on a wide page, as an album's (PageHead): the collage, and
+    /// at its foot the title, its artists, its length, Play, Shuffle as a
+    /// word, and ⋮; the hairline under it.
+    private func wideHeader(page: DesktopMeasures.Page) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            PageHead(page: page, title: mix.title, lead: mix.subtitle,
+                     facts: HomeText.summary(count: mix.tracks.count, duration: mix.duration)) { side in
+                CollageArtwork(artworks: mix.artwork, size: side)
+            } actions: {
+                PagePlayButtons(play: { player.playMix(mix) },
+                                shuffle: { player.playMix(mix, shuffled: true) })
+                MoreMenu {
+                    Section {
+                        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                            Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
+                            radio.start(mix.stationSeed)
+                        }
                     }
+                    moreItems
                 }
-                moreItems
-            } label: {
-                Label("More", systemImage: "ellipsis")
-                    .labelStyle(.iconOnly)
-                    .frame(width: 32, height: 32)
-                    .contentShape(.rect)
             }
-            .menuStyle(.button)
-            .buttonStyle(.borderless)
-            .menuIndicator(.hidden)
-            .fixedSize()
+            .disabled(mix.tracks.isEmpty)
+            PageRule(page: page)
         }
-        .disabled(mix.tracks.isEmpty)
     }
 
     /// "1990s Rock, 8 Nov 2026": the mix of that day, as it was.

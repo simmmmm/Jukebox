@@ -68,7 +68,7 @@ struct StationDetailView: View {
     @State private var saved: Playlist?
     @State private var saveError: String?
     /// The page's own width, for its measures on a wide page.
-    @State private var pageWidth = 1200
+    @State private var pageWidth: CGFloat = 1200
 
     private var measures: HomeMeasures {
         HomeMeasures(isWide: isWide, width: pageWidth)
@@ -79,8 +79,8 @@ struct StationDetailView: View {
         let measures = self.measures
         List {
             Group {
-                if measures.isWide {
-                    wideHeader(onAir: onAir, measures: measures)
+                if let page = measures.page {
+                    wideHeader(onAir: onAir, page: page)
                 } else {
                     header(onAir: onAir)
                 }
@@ -88,19 +88,18 @@ struct StationDetailView: View {
             .listRowInsets(measures.headInsets)
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
-            if measures.isWide {
+            if let page = measures.page {
                 // The rows on the ground at the page's margin, as Linux's:
                 // the hairline under the head is the one line.
                 rows(onAir: onAir)
-                    .listRowInsets(measures.rowInsets)
-                    .listRowSeparator(.hidden)
+                    .pageRow(page)
             } else {
                 rows(onAir: onAir)
             }
         }
         .listStyle(.plain)
         .pageGround()
-        .homePageWidth($pageWidth)
+        .onPageWidth($pageWidth)
         // The name in the bar only once the header, which shows it large,
         // has scrolled away, as Music's playlist pages do.
         .navigationTitle(showsTitle ? station.title : "")
@@ -187,17 +186,20 @@ struct StationDetailView: View {
 
     private static let controlsWidth: CGFloat = 480
 
-    /// The head on a wide page: the arch, and at its foot the title, what
-    /// it draws from and when it last played, Play and New Picks (or on the
-    /// air Pause and Stop).
-    private func wideHeader(onAir: Bool, measures: HomeMeasures) -> some View {
+    /// The head on a wide page, as an album's (PageHead): the arch, and at
+    /// its foot the title, what it draws from and when it last played, Play
+    /// and New Picks (or on the air Pause and Stop); the hairline under it.
+    private func wideHeader(onAir: Bool, page: DesktopMeasures.Page) -> some View {
         let facts = [station.subtitle ?? StationText.kind(station), RelativeDay.played(lastPlayed)]
             .filter { !$0.isEmpty }
             .joined(separator: " · ")
-        return HomeDetailHead(title: station.title, facts: facts) {
-            StationArtwork(station: station, size: measures.cover)
-        } actions: {
-            buttons(onAir: onAir)
+        return VStack(alignment: .leading, spacing: 0) {
+            PageHead(page: page, title: station.title, facts: facts) { side in
+                StationArtwork(station: station, size: side)
+            } actions: {
+                buttons(onAir: onAir)
+            }
+            PageRule(page: page)
         }
     }
 
@@ -245,8 +247,9 @@ struct StationDetailView: View {
                     Stats.track(.stationPage, ["action": "play"])
                     play(from: 0)
                 } label: {
+                    // Wide, as wide as its word, as Linux's.
                     Text("Play")
-                        .frame(minWidth: 64)
+                        .frame(minWidth: isWide ? nil : 64)
                 }
                 .buttonStyle(.prominent)
                 .fixedSize()
@@ -494,6 +497,8 @@ nonisolated private struct StationPreviewKey: Hashable, Sendable {
 /// Grey rows where the songs will be, while they are chosen, so the page
 /// does not jump when they come.
 private struct StationPlaceholderRows: View {
+    @Environment(\.isWide) private var isWide
+
     var body: some View {
         ForEach(0..<6, id: \.self) { _ in
             HStack(spacing: Theme.Space.m) {
@@ -502,11 +507,14 @@ private struct StationPlaceholderRows: View {
                     .frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("A song of the station")
+                        .desktopFont(15, phone: nil)
                     Text("Its artist")
-                        .font(.subheadline)
+                        .desktopFont(13, phone: .subheadline)
                 }
                 Spacer(minLength: 0)
             }
+            // Wide, as tall as the rows that come (TrackRow's 64).
+            .frame(minHeight: isWide ? 64 : nil)
             .redacted(reason: .placeholder)
             .accessibilityHidden(true)
         }

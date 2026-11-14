@@ -37,87 +37,49 @@ enum HomeText {
 /// How Home, Radio and a mix's or a station's page lay out: the iPhone by
 /// its own numbers, as before; a wide page (the iPad, the Mac) by the
 /// designer's table, by the page's own width (DesktopMeasures.page, spec
-/// §5), so the panel opened beside it leaves the page its proportions.
+/// §5), so the panel opened beside it leaves the page its proportions. The
+/// wide page's parts themselves are WidePage.swift's, every page's.
 struct HomeMeasures {
     /// The table's row; nil on the iPhone.
     let page: DesktopMeasures.Page?
 
-    init(isWide: Bool, width: Int) {
-        page = isWide ? DesktopMeasures.page(width: width) : nil
+    init(page: DesktopMeasures.Page?) {
+        self.page = page
+    }
+
+    init(isWide: Bool, width: CGFloat) {
+        page = isWide ? DesktopMeasures.page(width: Int(width)) : nil
     }
 
     var isWide: Bool { page != nil }
-    var margin: CGFloat { page.map { CGFloat($0.margin) } ?? Theme.margin }
+    var margin: CGFloat { page?.side ?? Theme.margin }
     var tile: CGFloat { page.map { CGFloat($0.tile) } ?? HomeLayout.tileWidth }
     /// Played lately's columns.
     var columns: Int { page?.columns ?? 1 }
-    /// A mix's or a station's art at the head of its page, as an album's
-    /// cover (spec §5): 224, and 160 on a page under 720.
-    var cover: CGFloat { page?.margin == 24 ? 160 : 224 }
     /// From a section's heading to what it heads.
     var belowHeading: CGFloat { isWide ? Theme.Space.l : Theme.Space.m }
     /// From one section to the next: 40 on a wide page (spec §5).
     var betweenSections: CGFloat { isWide ? Theme.Space.xxl + Theme.Space.s : Theme.Space.xl }
 
-    /// A page's head in its List: 24 under the bar on a wide page, at its
-    /// margin; as the iPhone's has it otherwise.
+    /// A page's head in its List: none of its own on a wide page, where
+    /// PageHead keeps its own measures; as the iPhone's has it otherwise.
     var headInsets: EdgeInsets {
         isWide
-            ? EdgeInsets(top: Theme.Space.xl, leading: margin, bottom: Theme.Space.l, trailing: margin)
+            ? EdgeInsets()
             : EdgeInsets(top: Theme.Space.l, leading: Theme.margin, bottom: Theme.Space.l, trailing: Theme.margin)
-    }
-
-    /// A song's row in a page's List on a wide page: the page's margin, and
-    /// 8 above and below, so a row with its cover of 48 is 64 (spec §8).
-    /// nil: the List's own, the iPhone's.
-    var rowInsets: EdgeInsets? {
-        isWide ? EdgeInsets(top: Theme.Space.s, leading: margin, bottom: Theme.Space.s, trailing: margin) : nil
     }
 }
 
 extension View {
-    /// The page's own width into `width`, for HomeMeasures: the page's,
-    /// not the window's.
-    func homePageWidth(_ width: Binding<Int>) -> some View {
-        onGeometryChange(for: Int.self) { proxy in
-            Int(proxy.size.width)
-        } action: { measured in
-            width.wrappedValue = measured
-        }
-    }
-
-    /// A title in the serif at a size of the designer's (spec §7: 40 a
-    /// page's, 32 the station on air, 24 a section's), following the
-    /// reader's text size as the large title does. The text styles' own
-    /// sizes are the iPhone's; the Mac's are far smaller, and the titles
-    /// there would no longer read as a sleeve's.
-    func homeSerif(_ size: CGFloat) -> some View {
-        modifier(HomeSerif(size: size))
-    }
-
-    /// A wide page's title is its own, in the serif in the content; the bar
-    /// shows it small once that has scrolled away (spec §5). The iPhone's
-    /// is the bar's large title, as before.
-    func homeTitle(_ title: String, isScrolled: Bool) -> some View {
-        modifier(HomeTitled(title: title, isScrolled: isScrolled))
-    }
-}
-
-private struct HomeSerif: ViewModifier {
-    @ScaledMetric private var size: CGFloat
-
-    init(size: CGFloat) {
-        _size = ScaledMetric(wrappedValue: size, relativeTo: .largeTitle)
-    }
-
-    func body(content: Content) -> some View {
-        content.font(.system(size: size, weight: .regular, design: .serif))
+    /// The iPhone's large title, as before. A wide page's title is its own
+    /// (WidePage), in the serif in the content.
+    func homeTitle(_ title: String) -> some View {
+        modifier(HomeTitled(title: title))
     }
 }
 
 private struct HomeTitled: ViewModifier {
     let title: String
-    let isScrolled: Bool
 
     @Environment(\.isWide) private var isWide
 
@@ -125,8 +87,6 @@ private struct HomeTitled: ViewModifier {
     func body(content: Content) -> some View {
         if isWide {
             content
-                .navigationTitle(isScrolled ? title : "")
-                .inlineTitle()
         } else {
             content
                 .navigationTitle(title)
@@ -135,33 +95,9 @@ private struct HomeTitled: ViewModifier {
     }
 }
 
-/// A wide page's own title (spec §5): the serif at 40, at the margin. The
-/// bar's title takes over once it has scrolled past `scrolledPast`.
-struct HomePageTitle: View {
-    let title: String
-    let measures: HomeMeasures
-
-    /// Its foot: 24 under the bar, 48 tall.
-    static let scrolledPast: CGFloat = 72
-
-    init(_ title: String, measures: HomeMeasures) {
-        self.title = title
-        self.measures = measures
-    }
-
-    var body: some View {
-        Text(title)
-            .homeSerif(40)
-            .foregroundStyle(.primary)
-            .lineLimit(2)
-            .accessibilityAddTraits(.isHeader)
-            .padding(.horizontal, measures.margin)
-    }
-}
-
-/// A section's heading: on a wide page the serif at 24 with its fact beside
-/// it, as Linux has it, at the page's margin; on the iPhone SectionHeader,
-/// as before.
+/// A section's heading: on a wide page Linux's (PageSectionTitle), at the
+/// page's margin, the space around it the page's own; on the iPhone
+/// SectionHeader, as before.
 struct HomeSectionTitle: View {
     let title: String
     var fact: String?
@@ -177,89 +113,10 @@ struct HomeSectionTitle: View {
 
     var body: some View {
         if measures.isWide {
-            HStack(alignment: .firstTextBaseline, spacing: Theme.Space.m) {
-                Text(title)
-                    .homeSerif(24)
-                    .foregroundStyle(.primary)
-                    .accessibilityAddTraits(.isHeader)
-                if let fact {
-                    Text(fact)
-                        .font(.subheadline)
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
-                if let route {
-                    NavigationLink(value: route) {
-                        Text("See All")
-                            .font(.subheadline)
-                            .foregroundStyle(Theme.accent)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(Text("See All \(title)"))
-                }
-            }
-            .padding(.horizontal, measures.margin)
+            PageSectionTitle(title, fact: fact, above: 0, below: 0)
+                .padding(.horizontal, measures.margin)
         } else {
             SectionHeader(title, fact: fact, route: route)
-        }
-    }
-}
-
-/// The head of a mix's or a station's page on a wide page, as Linux's
-/// album head (spec §5): the art at the left, 32, and at its foot the title
-/// in the serif, a line of who, the facts, and 24 under them the one Play
-/// and the rest as words, 16 apart. Library's pages have no head of their own to
-/// share yet; this one is Home's and Radio's.
-struct HomeDetailHead<Art: View, Actions: View>: View {
-    let title: String
-    let lead: String?
-    let facts: String
-    let art: Art
-    let actions: Actions
-
-    init(title: String, lead: String? = nil, facts: String,
-         @ViewBuilder art: () -> Art, @ViewBuilder actions: () -> Actions) {
-        self.title = title
-        self.lead = lead
-        self.facts = facts
-        self.art = art()
-        self.actions = actions()
-    }
-
-    var body: some View {
-        // The hairline 32 under it, from the margin, under the art too.
-        VStack(alignment: .leading, spacing: Theme.Space.xxl) {
-            head
-            Hairline(inset: 0)
-        }
-    }
-
-    private var head: some View {
-        HStack(alignment: .bottom, spacing: Theme.Space.xxl) {
-            art
-            VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                Text(title)
-                    .homeSerif(40)
-                    .foregroundStyle(.primary)
-                    .lineLimit(3)
-                    .accessibilityAddTraits(.isHeader)
-                if let lead, !lead.isEmpty {
-                    Text(lead)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                }
-                Text(facts)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-                HStack(spacing: Theme.Space.l) {
-                    actions
-                }
-                .padding(.top, Theme.Space.xl - Theme.Space.xs)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
@@ -316,9 +173,9 @@ struct HomeLoadingView: View {
             ArchMark(size: 48)
             VStack(spacing: Theme.Space.xs) {
                 Text("Loading your library…")
-                    .font(.headline)
+                    .desktopFont(17, weight: .semibold, phone: .headline)
                 Text("The first time takes a moment. After that, Jukebox opens at once.")
-                    .font(.subheadline)
+                    .desktopFont(15, phone: .subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -327,7 +184,7 @@ struct HomeLoadingView: View {
                     ProgressView(value: progress)
                         .frame(maxWidth: 240)
                     Text(progress, format: .percent.precision(.fractionLength(0)))
-                        .font(.footnote)
+                        .desktopFont(13, phone: .footnote)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }
@@ -384,19 +241,8 @@ struct StationTileLink: View {
     var body: some View {
         let onAir = radio.stationOnAir(player: player)?.seed == station.seed
         NavigationLink(value: Route.station(station)) {
-            if let fact {
-                VStack(alignment: .leading, spacing: 0) {
-                    StationCard(station: station)
-                    Text(fact)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-                .contentShape(.rect)
-                .accessibilityElement(children: .combine)
-            } else {
-                StationCard(station: station)
-            }
+            // The fact under the name in the tile itself, as Linux's.
+            StationCard(station: station, fact: fact)
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -465,9 +311,9 @@ struct HomePlaceholderShelf: View {
                     .fill(.quaternary)
                     .aspectRatio(1, contentMode: .fit)
                 Text("1990s Rock")
-                    .font(.subheadline.weight(.medium))
+                    .desktopFont(15, weight: .medium, phone: .subheadline.weight(.medium))
                 Text("Artists you love and more")
-                    .font(.subheadline)
+                    .desktopFont(13, phone: .subheadline)
             }
             .redacted(reason: .placeholder)
         }

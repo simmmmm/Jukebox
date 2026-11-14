@@ -53,6 +53,8 @@ struct PlayerBar: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 88)
+        // The glyphs at Linux's 16 icons, not the Mac's body of 13.
+        .desktopFont(15)
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.width
         } action: { newWidth in
@@ -71,15 +73,11 @@ struct PlayerBar: View {
         .environment(\.colorScheme, inRoom ? .dark : colorScheme)
     }
 
-    /// Sidebar, panel and bar: one step up from the page (the designer's
-    /// spec, §1), #1B1918 by night and #ECE7DF by day.
-    static let ground = Color(light: 0xECE7DF, dark: 0x1B1918)
-
-    /// The bar's and the panel's ground: their own, or over Now Playing's
-    /// room the room's (#121110, with the scheme dark), no ground of their
-    /// own, as Linux's `in-room` has it.
+    /// The bar's and the panel's ground: one step up from the page
+    /// (Theme.raised), or over Now Playing's room the room's (#121110, with
+    /// the scheme dark), no ground of their own, as Linux's `in-room` has it.
     static func groundFor(inRoom: Bool) -> Color {
-        inRoom ? Theme.ground : Self.ground
+        inRoom ? Theme.ground : Theme.raised
     }
 
     // MARK: The song
@@ -93,11 +91,12 @@ struct PlayerBar: View {
                     HStack(spacing: Theme.Space.m) {
                         ArtworkView(track.artwork, size: 56, cornerRadius: Theme.Radius.artwork)
                         VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                            // Linux's bar-title, 15 medium, and bar-fact, 13.
                             Text(track.name)
-                                .font(.subheadline.weight(.medium))
+                                .desktopFont(15, weight: .medium)
                                 .lineLimit(1)
                             secondLine(track)
-                                .font(.footnote)
+                                .desktopFont(13)
                                 .lineLimit(1)
                         }
                     }
@@ -238,7 +237,7 @@ struct PlayerBar: View {
             }
             transportButton("backward.fill", label: "Previous", size: 32) { player.previous() }
             transportButton(player.isPlaying ? "pause.fill" : "play.fill",
-                            label: player.isPlaying ? "Pause" : "Play", size: 40, font: .title3) {
+                            label: player.isPlaying ? "Pause" : "Play", size: 40, font: 17) {
                 player.togglePlayPause()
             }
             .background(Color.primary.opacity(0.1), in: .circle)
@@ -251,11 +250,11 @@ struct PlayerBar: View {
         .disabled(!player.hasTrack)
     }
 
-    private func transportButton(_ symbol: String, label: LocalizedStringKey, size: CGFloat, font: Font = .body,
+    private func transportButton(_ symbol: String, label: LocalizedStringKey, size: CGFloat, font: CGFloat = 15,
                                  action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .font(font)
+                .desktopFont(font)
                 .contentTransition(.symbolEffect(.replace))
                 .frame(width: size, height: size)
                 .contentShape(.rect)
@@ -307,7 +306,7 @@ struct PlayerBar: View {
                 .padding(.leading, Theme.Space.l)
             HStack(spacing: Theme.Space.s) {
                 Image(systemName: player.volume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .font(.footnote)
+                    .desktopFont(13)
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 VolumeControl(followsAppearance: true)
@@ -374,7 +373,7 @@ private struct PlayerBarPosition: View {
             Text(duration > 0 ? duration.clock : "--:--")
                 .frame(width: 40, alignment: .leading)
         }
-        .font(.footnote)
+        .desktopFont(13)
         .monospacedDigit()
         .foregroundStyle(.secondary)
     }

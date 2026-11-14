@@ -61,6 +61,11 @@ enum Theme {
     /// own grounds.
     static let ground = Color(light: 0xF6F3EE, dark: 0x121110)
 
+    /// One step up from the ground, for the wide window's sidebar, panel
+    /// and bar (the designer's spec, §1; Linux's Style.swift `raised`):
+    /// #ECE7DF by day, #1B1918 by night.
+    static let raised = Color(light: 0xECE7DF, dark: 0x1B1918)
+
     /// The Arch's own colours (docs/BRAND.md, dev/brand/). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
     /// only — the station on the air, the icon — never for text.
@@ -143,7 +148,8 @@ struct Eyebrow: View {
 
     var body: some View {
         Text(text)
-            .font(Theme.label)
+            // Wide, Linux's: 13 in the accent.
+            .desktopFont(13, phone: Theme.label)
             .foregroundStyle(Theme.accent)
             .accessibilityAddTraits(.isHeader)
     }
@@ -196,6 +202,7 @@ extension SectionHeader where Destination == Route {
 
 /// A heading inside a List (a section's, a group of rows'): the serif, in
 /// sentence case, as SectionHeader is on a page. The list gives its margins.
+/// Wide, 20, as Linux's panel's head.
 struct ListHeading: View {
     let title: String
 
@@ -205,7 +212,7 @@ struct ListHeading: View {
 
     var body: some View {
         Text(title)
-            .font(.serif(.title3))
+            .desktopFont(20, design: .serif, phone: .serif(.title3))
             .foregroundStyle(.primary)
             .textCase(nil)
             .accessibilityAddTraits(.isHeader)
@@ -241,15 +248,16 @@ struct Hairline: View {
 /// The one filled button of a screen (Play, Sign In): a plain rectangle in
 /// the accent, 6 pt corners, its own ink on it. No glow, no shadow, and no
 /// icon unless the word needs one. Callers that want it compact give it
-/// `.fixedSize()`.
+/// `.fixedSize()`. Wide, Linux's page-button: 40 tall, 15 bold.
 struct ProminentButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isWide) private var isWide
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body.weight(.semibold))
+            .desktopFont(15, weight: .bold, phone: .body.weight(.semibold))
             .foregroundStyle(Theme.onAccent)
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: isWide ? 40 : 44)
             .padding(.horizontal, Theme.Space.xl)
             .background(Theme.accent, in: .rect(cornerRadius: Theme.Radius.artwork))
             .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
@@ -258,15 +266,19 @@ struct ProminentButtonStyle: ButtonStyle {
 }
 
 /// Every other action (Shuffle, Stop, New Picks): a word in the accent, no
-/// ground under it — a text button, as the system's own are.
+/// ground under it — a text button, as the system's own are. Wide, Linux's
+/// word: 40 tall, 15 bold, 8 either side of the word, so beside Play it
+/// stands 24 from it.
 struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isWide) private var isWide
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .desktopFont(15, weight: .bold, phone: .body)
             .foregroundStyle(Theme.accent)
-            .frame(minHeight: 44)
+            .padding(.horizontal, isWide ? Theme.Space.s : 0)
+            .frame(minHeight: isWide ? 40 : 44)
             .opacity(isEnabled ? (configuration.isPressed ? 0.5 : 1) : 0.4)
             .contentShape(.rect)
     }

@@ -28,15 +28,15 @@ struct FavoritesView: View {
         let artists = library.favoriteArtists
         let albums = library.favoriteAlbums
         let tracks = library.favoriteTracks
-        return LibraryWidePage(title: "Favorites") { page, _ in
-            LibraryPageTitle("Favorites")
+        return WidePage(title: "Favorites") { page, _ in
+            PageTitle("Favorites")
                 .padding(.horizontal, page.side)
             if artists.isEmpty && albums.isEmpty && tracks.isEmpty {
-                LibraryEmptyLine("Choose Favorite in a song’s, album’s or artist’s menu, and it appears here.")
+                PageEmptyLine("Choose Favorite in a song’s, album’s or artist’s menu, and it appears here.")
                     .padding(.horizontal, page.side)
             }
             if !artists.isEmpty {
-                LibrarySectionTitle(String(localized: "Artists"))
+                PageSectionTitle(String(localized: "Artists"))
                     .padding(.horizontal, page.side)
                 Shelf(items: artists, width: CGFloat(page.tile), margin: page.side) { artist in
                     NavigationLink(value: Route.artist(artist)) {
@@ -46,7 +46,7 @@ struct FavoritesView: View {
                 }
             }
             if !albums.isEmpty {
-                LibrarySectionTitle(String(localized: "Albums"))
+                PageSectionTitle(String(localized: "Albums"))
                     .padding(.horizontal, page.side)
                 Shelf(items: albums, width: CGFloat(page.tile), margin: page.side) { album in
                     LibraryAlbumLink(album: album)
@@ -54,7 +54,7 @@ struct FavoritesView: View {
             }
             if !tracks.isEmpty {
                 Group {
-                    LibrarySectionTitle(String(localized: "Songs"), below: Theme.Space.s)
+                    PageSectionTitle(String(localized: "Songs"), below: Theme.Space.s)
                     LibraryTrackRows(tracks: tracks, play: { track in
                         let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
                         player.play(tracks, startingAt: i, context: context)

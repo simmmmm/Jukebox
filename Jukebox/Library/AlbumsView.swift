@@ -32,9 +32,9 @@ struct AlbumsView: View {
     private var wide: some View {
         let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let albums = searching ? library.matchingAlbums(query) : library.albums(sortedBy: sort)
-        return LibraryWidePage(title: "Albums") { page, width in
+        return WidePage(title: "Albums") { page, width in
             HStack(alignment: .bottom, spacing: Theme.Space.m) {
-                LibraryPageTitle("Albums")
+                PageTitle("Albums")
                 Spacer(minLength: 0)
                 // The sort at the title's end, as Linux's drop-down.
                 Picker("Sort By", selection: $sort) {
@@ -52,9 +52,9 @@ struct AlbumsView: View {
             if albums.isEmpty {
                 Group {
                     if searching {
-                        LibraryPlainLine("Nothing in Albums matches “\(query)”.")
+                        PagePlainLine("Nothing in Albums matches “\(query)”.")
                     } else {
-                        LibraryEmptyLine("Albums on your \(library.serverKind) server appear here.")
+                        PageEmptyLine("Albums on your \(library.serverKind) server appear here.")
                     }
                 }
                 .padding(.horizontal, page.side)
@@ -160,22 +160,22 @@ struct AlbumDetailView: View {
     /// numbered (a guest artist after the title), then More by the artist
     /// in tiles. "Disc 2" over a second disc's songs.
     private func wide(_ shown: Album, tracks: [Track], discs: [Disc], isLoading: Bool, moreBy: Artist?) -> some View {
-        LibraryWidePage(title: shown.name, hasHead: true) { page, _ in
-            LibraryHead(page: page, title: shown.name, lead: shown.artistLine,
-                        leadAction: { goToArtist(shown) }, facts: Self.facts(shown, tracks: tracks)) { size in
+        WidePage(title: shown.name, hasHead: true) { page, _ in
+            PageHead(page: page, title: shown.name, lead: shown.artistLine,
+                     leadAction: { goToArtist(shown) }, facts: Self.facts(shown, tracks: tracks)) { size in
                 ArtworkView(shown.artwork, size: size)
             } actions: {
-                LibraryPlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
-                                   shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
+                PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
+                                shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
                     .disabled(tracks.isEmpty)
                 HStack(spacing: Theme.Space.s) {
-                    LibraryHeartButton(item: .album(shown.id))
-                    LibraryMoreMenu {
+                    HeartButton(item: .album(shown.id))
+                    MoreMenu {
                         LibraryAlbumMenu(album: shown, tracks: tracks)
                     }
                 }
             }
-            LibraryRule(page: page)
+            PageRule(page: page)
             Group {
                 if isLoading {
                     ProgressView()
@@ -183,9 +183,9 @@ struct AlbumDetailView: View {
                 } else {
                     ForEach(discs) { disc in
                         if discs.count > 1 {
-                            LibrarySectionTitle("Disc \(disc.number)",
-                                                above: disc.id == discs.first?.id ? 0 : Theme.Space.xl,
-                                                below: Theme.Space.s)
+                            PageSectionTitle("Disc \(disc.number)",
+                                             above: disc.id == discs.first?.id ? 0 : Theme.Space.xl,
+                                             below: Theme.Space.s)
                         }
                         LibraryTrackRows(tracks: disc.tracks, numbered: true,
                                          subtitle: { Self.subtitle(of: $0, on: shown) },
@@ -200,7 +200,7 @@ struct AlbumDetailView: View {
             if let artist = moreBy {
                 let others = library.albums(by: artist).filter { $0.id != shown.id }
                 if !others.isEmpty {
-                    LibrarySectionTitle("More by \(artist.name)")
+                    PageSectionTitle("More by \(artist.name)")
                         .padding(.horizontal, page.side)
                     Shelf(items: others, width: CGFloat(page.tile), margin: page.side) { other in
                         LibraryAlbumLink(album: other, showsArtist: false)

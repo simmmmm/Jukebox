@@ -31,20 +31,20 @@ struct ArtistsView: View {
     private var wide: some View {
         let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let artists = searching ? library.matchingArtists(query) : library.artistsByName
-        return LibraryWidePage(title: "Artists") { page, width in
-            LibraryPageTitle("Artists")
+        return WidePage(title: "Artists") { page, width in
+            PageTitle("Artists")
                 .padding(.horizontal, page.side)
             if artists.isEmpty {
                 Group {
                     if searching {
-                        LibraryPlainLine("Nothing in Artists matches “\(query)”.")
+                        PagePlainLine("Nothing in Artists matches “\(query)”.")
                     } else {
-                        LibraryEmptyLine("Artists on your \(library.serverKind) server appear here.")
+                        PageEmptyLine("Artists on your \(library.serverKind) server appear here.")
                     }
                 }
                 .padding(.horizontal, page.side)
             } else {
-                LibraryTileGrid(items: artists, page: page, width: width) { artist in
+                TileGrid(items: artists, page: page, width: width) { artist in
                     NavigationLink(value: Route.artist(artist)) {
                         ArtistTile(artist: artist)
                     }
@@ -182,16 +182,16 @@ struct ArtistDetailView: View {
         if albums.count > 1 { counts.append(String(localized: "\(albums.count) albums")) }
         if songs > 0 { counts.append(LibraryText.songs(songs)) }
         let facts = counts.joined(separator: " · ")
-        return LibraryWidePage(title: shown.name, hasHead: true) { page, _ in
-            LibraryHead(page: page, title: shown.name, facts: facts) { size in
+        return WidePage(title: shown.name, hasHead: true) { page, _ in
+            PageHead(page: page, title: shown.name, facts: facts) { size in
                 ArtworkView(shown.artwork, size: size, placeholder: "music.mic")
             } actions: {
-                LibraryPlayButtons(play: { playAll(shown, shuffled: false) },
-                                   shuffle: { playAll(shown, shuffled: true) })
+                PagePlayButtons(play: { playAll(shown, shuffled: false) },
+                                shuffle: { playAll(shown, shuffled: true) })
                     .disabled(songs == 0)
                 HStack(spacing: Theme.Space.s) {
-                    LibraryHeartButton(item: .artist(shown.id))
-                    LibraryMoreMenu {
+                    HeartButton(item: .artist(shown.id))
+                    MoreMenu {
                         menu(shown)
                     }
                 }
@@ -199,8 +199,8 @@ struct ArtistDetailView: View {
 
             if !top.isEmpty {
                 Group {
-                    LibrarySectionTitle(isRanked ? String(localized: "Top songs") : String(localized: "Songs"),
-                                        below: Theme.Space.s)
+                    PageSectionTitle(isRanked ? String(localized: "Top songs") : String(localized: "Songs"),
+                                     below: Theme.Space.s)
                     LibraryTrackRows(tracks: top, subtitle: { $0.albumName }, play: { track in
                         let i = topQueue.firstIndex(where: { $0.id == track.id }) ?? 0
                         player.play(topQueue, startingAt: i,
@@ -217,7 +217,7 @@ struct ArtistDetailView: View {
                 wideShelf(String(localized: "Appears on"), albums: appearances, showsArtist: true, page: page)
             }
             if !similar.isEmpty {
-                LibrarySectionTitle(String(localized: "Similar artists"))
+                PageSectionTitle(String(localized: "Similar artists"))
                     .padding(.horizontal, page.side)
                 Shelf(items: similar, width: CGFloat(page.tile), margin: page.side) { other in
                     NavigationLink(value: Route.artist(other)) {
@@ -229,13 +229,13 @@ struct ArtistDetailView: View {
 
             if let overview = shown.overview?.trimmingCharacters(in: .whitespacesAndNewlines), !overview.isEmpty {
                 VStack(alignment: .leading, spacing: Theme.Space.s) {
-                    LibrarySectionTitle(String(localized: "About"), below: 0)
+                    PageSectionTitle(String(localized: "About"), below: 0)
                     Text(overview)
-                        .libraryFont(15)
+                        .desktopFont(15)
                         .foregroundStyle(.secondary)
                         .lineLimit(showsWholeOverview ? nil : 4)
                         .frame(maxWidth: 640, alignment: .leading)
-                    LibraryWordButton(showsWholeOverview ? "Less" : "More") {
+                    WordButton(showsWholeOverview ? "Less" : "More") {
                         showsWholeOverview.toggle()
                     }
                 }
@@ -247,7 +247,7 @@ struct ArtistDetailView: View {
     private func wideShelf(_ title: String, albums: [Album], showsArtist: Bool,
                            page: DesktopMeasures.Page) -> some View {
         VStack(alignment: .leading, spacing: 0) {
-            LibrarySectionTitle(title)
+            PageSectionTitle(title)
                 .padding(.horizontal, page.side)
             Shelf(items: albums, width: CGFloat(page.tile), margin: page.side) { album in
                 LibraryAlbumLink(album: album, showsArtist: showsArtist)

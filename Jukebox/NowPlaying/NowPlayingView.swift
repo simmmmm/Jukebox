@@ -880,7 +880,7 @@ struct NowPlayingView: View {
     @ViewBuilder private var errorBanner: some View {
         if let message = player.errorMessage {
             Label(message, systemImage: "exclamationmark.triangle.fill")
-                .font(.footnote.weight(.semibold))
+                .desktopFont(13, weight: .semibold, phone: .footnote.weight(.semibold), wide: inRoom)
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)

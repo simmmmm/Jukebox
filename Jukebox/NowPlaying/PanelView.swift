@@ -60,7 +60,8 @@ struct PanelView: View {
             panel.content = content
         } label: {
             Text(title)
-                .font(.subheadline.weight(.semibold))
+                // Linux's panel-tab: 15 at 600.
+                .desktopFont(15, weight: .semibold)
                 .foregroundStyle(isChosen ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
                 .padding(.horizontal, Theme.Space.l)
                 .frame(height: 32)

@@ -81,6 +81,8 @@ struct OnboardingView: View {
                     // stretched across 1000 points reads as nothing. Wide,
                     // Linux's: 420 with its margins of 24.
                     .frame(maxWidth: isWide ? 372 : 440)
+                    // Wide, the fields and their words in Linux's 15.
+                    .desktopFont(15, phone: nil)
                     .padding(.horizontal, isWide ? Theme.Space.xl : Theme.margin)
                     .padding(.vertical, Theme.Space.xl)
                     // Centred in the screen while it fits, scrolling when the
@@ -114,7 +116,7 @@ struct OnboardingView: View {
                     .frame(minHeight: 52)
             }
             Text("The address you open your Jellyfin or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
-                .font(.footnote)
+                .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let serverError {
                 OnboardingErrorText(message: serverError)
@@ -318,9 +320,9 @@ private struct OnboardingAccountForm: View {
     private var header: some View {
         VStack(alignment: isWide ? .leading : .center, spacing: Theme.Space.xs) {
             Text("Signing in to \(server.name)")
-                .font(.headline)
+                .desktopFont(15, weight: .bold, phone: .headline)
             Text(verbatim: serverDetail)
-                .font(.subheadline)
+                .desktopFont(13, phone: .subheadline)
                 .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(isWide ? .leading : .center)
@@ -393,7 +395,7 @@ private struct OnboardingAccountForm: View {
                 .buttonStyle(.secondary)
                 .disabled(isSigningIn)
                 Text("Sign in from another Jellyfin app that is already signed in, without typing your password here.")
-                    .font(.footnote)
+                    .desktopFont(13, phone: .footnote)
                     .foregroundStyle(.secondary)
             }
             if apiKeySignIn != nil {
@@ -456,7 +458,7 @@ private struct OnboardingAccountForm: View {
                     .frame(minHeight: 52)
             }
             Text("A key made in the server’s own settings, for Jukebox alone: it can be taken back there without changing your password.")
-                .font(.footnote)
+                .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let errorMessage {
                 OnboardingErrorText(message: errorMessage)
@@ -538,20 +540,20 @@ private struct OnboardingAccountForm: View {
                         // Read digit by digit, as it is typed.
                         .accessibilityLabel(Text(verbatim: code.map { String($0) }.joined(separator: " ")))
                     Text("Enter this code in another Jellyfin app: Settings › Quick Connect")
-                        .font(.subheadline)
+                        .desktopFont(13, phone: .subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     HStack(spacing: Theme.Space.s) {
                         ProgressView()
                         Text("Waiting…")
                     }
-                    .font(.footnote)
+                    .desktopFont(13, phone: .footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityElement(children: .combine)
                 } else {
                     ProgressView()
                     Text("Asking \(server.name) for a code…")
-                        .font(.subheadline)
+                        .desktopFont(13, phone: .subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -926,20 +928,18 @@ private struct OnboardingWideForm: View {
 /// fact, not a slogan.
 private struct OnboardingWelcome: View {
     @Environment(\.isWide) private var isWide
-    /// A page title's size in a wide window (the spec's 40, as Linux's
-    /// sign-in sets "Jukebox"), following the reader's text size.
-    @ScaledMetric(relativeTo: .largeTitle) private var wideTitle: CGFloat = 40
 
     var body: some View {
         // Wide, Linux's column: 24 between the mark, the name and the fact.
         VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.l) {
             ShellAppMark(side: 112, animatesIn: true)
             VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.s) {
+                // Wide, a page title's 40, as Linux's sign-in sets "Jukebox".
                 Text("Jukebox")
-                    .font(isWide ? Font.system(size: wideTitle, weight: .regular, design: .serif) : Font.serif(.largeTitle))
+                    .desktopFont(40, design: .serif, phone: .serif(.largeTitle))
                     .accessibilityAddTraits(.isHeader)
                 Text("Music from your Jellyfin, Navidrome or other Subsonic server.")
-                    .font(.body)
+                    .desktopFont(15, phone: .body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(isWide ? .leading : .center)
                     // Two lines rather than cut short where the page is
@@ -1021,7 +1021,7 @@ private struct OnboardingErrorText: View {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(.red)
         }
-        .font(.footnote)
+        .desktopFont(13, phone: .footnote)
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
     }

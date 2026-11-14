@@ -96,7 +96,8 @@ struct LyricsView: View {
     /// The panel's line where there are no lyrics: quiet, at the top.
     private func quiet(_ text: Text) -> some View {
         text
-            .font(.subheadline)
+            // Linux's lyrics-quiet, 15.
+            .desktopFont(15)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(Theme.Space.xl)
@@ -157,14 +158,16 @@ struct LyricsView: View {
 /// Under the lyrics: where they are from ("LRCLIB", "Jellyfin").
 private struct LyricsCredit: View {
     let source: String
+    let inPanel: Bool
 
-    init(_ source: String) {
+    init(_ source: String, inPanel: Bool) {
         self.source = source
+        self.inPanel = inPanel
     }
 
     var body: some View {
         Text("Lyrics from \(source)")
-            .font(.footnote)
+            .desktopFont(13, phone: .footnote, wide: inPanel)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -200,7 +203,7 @@ private struct LyricsSyncedLines: View {
                             .id(index)
                     }
                     if let credit {
-                        LyricsCredit(credit)
+                        LyricsCredit(credit, inPanel: inPanel)
                     }
                 }
                 .padding(.horizontal, Theme.Space.xl)
@@ -237,9 +240,9 @@ private struct LyricsSyncedLines: View {
         } label: {
             // An empty line is an instrumental break; Music shows it as a beat.
             Text(line.text.isEmpty ? "♪" : line.text)
-                // The panel's as Linux's (600, 18 on 24): the headline's
-                // semibold, the line sung in full and the rest at 40 %.
-                .font(inPanel ? .headline : .title.bold())
+                // The panel's as Linux's (600, 18 on 24), the line sung in
+                // full and the rest at 40 %.
+                .desktopFont(18, weight: .semibold, phone: .title.bold(), wide: inPanel)
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(lineStyle(isCurrent: isCurrent))
@@ -274,12 +277,12 @@ private struct LyricsPlainText: View {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 Text(lines.map(\.text).joined(separator: "\n"))
                     // The panel's as its timed lines (Linux's).
-                    .font(inPanel ? .headline : .title3.weight(.semibold))
+                    .desktopFont(18, weight: .semibold, phone: .title3.weight(.semibold), wide: inPanel)
                     .lineSpacing(6)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
                 if let credit {
-                    LyricsCredit(credit)
+                    LyricsCredit(credit, inPanel: inPanel)
                 }
             }
             .padding(.horizontal, Theme.Space.xl)

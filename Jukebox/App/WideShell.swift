@@ -19,10 +19,6 @@ extension EnvironmentValues {
     @Entry var inRoom = false
 }
 
-/// The sidebar's and the panel's ground: one step up from the page's (the
-/// spec's §1, Linux's Style.swift `raised`).
-private let raised = Color(light: 0xECE7DF, dark: 0x1B1918)
-
 struct WideShell: View {
     @Environment(Navigator.self) private var navigator
     @Environment(AudioPlayer.self) private var player
@@ -248,7 +244,8 @@ private struct Places: View {
         }
         .frame(width: CGFloat(DesktopMeasures.sidebar))
         .frame(maxHeight: .infinity)
-        .background(raised.ignoresSafeArea())
+        // One step up from the page's (Theme.raised).
+        .background(Theme.raised.ignoresSafeArea())
     }
 
     /// The flat mark 20 and the name in the serif, the main menu at the end.
@@ -260,8 +257,9 @@ private struct Places: View {
     private var head: some View {
         HStack(spacing: Theme.Space.s) {
             ArchMark(size: 20)
+            // Linux's brand-name: the serif, 18.
             Text("Jukebox")
-                .font(.serif(.headline))
+                .desktopFont(18, design: .serif)
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: 0)
             // GNOME's primary menu, where Linux's Preferences are.
@@ -277,6 +275,7 @@ private struct Places: View {
                 #endif
             } label: {
                 Image(systemName: "line.3.horizontal")
+                    .desktopFont(15)
                     .frame(width: 32, height: 32)
                     .contentShape(.rect)
             }
@@ -300,7 +299,7 @@ private struct Places: View {
     private func glyphRow(_ place: Place, _ title: LocalizedStringKey, symbol: String) -> some View {
         PlaceRow(place: place, title: Text(title), chosen: chosen) {
             Image(systemName: symbol)
-                .font(.subheadline)
+                .desktopFont(15)
         }
     }
 }
@@ -329,8 +328,9 @@ private struct PlaceRow<Icon: View>: View {
                     .frame(minWidth: 16, minHeight: 16)
                     .opacity(dimsIcon && !isChosen ? 0.6 : 1)
                     .accessibilityHidden(true)
+                // GNOME's own row label, 15, as Linux's sidebar.
                 title
-                    .font(.subheadline)
+                    .desktopFont(15)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 Spacer(minLength: 0)

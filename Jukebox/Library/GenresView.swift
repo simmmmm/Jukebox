@@ -31,22 +31,22 @@ struct GenresView: View {
     private var wide: some View {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let genres = term.isEmpty ? library.genres : library.genres.filter { $0.name.localizedStandardContains(term) }
-        return LibraryWidePage(title: "Genres") { page, width in
-            LibraryPageTitle("Genres")
+        return WidePage(title: "Genres") { page, width in
+            PageTitle("Genres")
                 .padding(.horizontal, page.side)
             if genres.isEmpty {
                 Group {
                     if term.isEmpty {
-                        LibraryEmptyLine("The genres in your music’s tags appear here.")
+                        PageEmptyLine("The genres in your music’s tags appear here.")
                     } else {
-                        LibraryPlainLine("Nothing in Genres matches “\(term)”.")
+                        PagePlainLine("Nothing in Genres matches “\(term)”.")
                     }
                 }
                 .padding(.horizontal, page.side)
             } else {
-                LibraryTileGrid(items: genres, page: page, width: width) { genre in
+                TileGrid(items: genres, page: page, width: width) { genre in
                     NavigationLink(value: Route.genre(genre)) {
-                        LibraryTile(name: genre.name, line: LibraryText.songs(count(of: genre))) {
+                        WideTile(name: genre.name, line: LibraryText.songs(count(of: genre))) {
                             LibraryGenreArt(genre: genre)
                         }
                     }
@@ -116,16 +116,16 @@ struct GenreDetailView: View {
     private var wide: some View {
         let tracks = library.tracks(inGenre: genre)
         let albums = library.albums(inGenre: genre)
-        return LibraryWidePage(title: genre.name, hasHead: true) { page, width in
-            LibraryHead(page: page, title: genre.name,
-                        facts: tracks.isEmpty ? String(localized: "No songs in the library carry this genre.")
+        return WidePage(title: genre.name, hasHead: true) { page, width in
+            PageHead(page: page, title: genre.name,
+                     facts: tracks.isEmpty ? String(localized: "No songs in the library carry this genre.")
                             : LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks))) { _ in
                 LibraryGenreArt(genre: genre)
             } actions: {
-                LibraryPlayButtons(play: { play(tracks, shuffled: false) },
-                                   shuffle: { play(tracks, shuffled: true) })
+                PagePlayButtons(play: { play(tracks, shuffled: false) },
+                                shuffle: { play(tracks, shuffled: true) })
                     .disabled(tracks.isEmpty)
-                LibraryMoreMenu {
+                MoreMenu {
                     Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
                         let seed = StationSeed.genre(key: genre.key, name: genre.name)
                         Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
@@ -135,7 +135,7 @@ struct GenreDetailView: View {
                 .disabled(tracks.isEmpty)
             }
             if !albums.isEmpty {
-                LibrarySectionTitle(String(localized: "Albums"))
+                PageSectionTitle(String(localized: "Albums"))
                     .padding(.horizontal, page.side)
                 LibraryAlbumGrid(albums: albums, page: page, width: width)
             }

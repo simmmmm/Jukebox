@@ -33,27 +33,20 @@ struct RadioView: View {
     @State private var isShowingSettings = false
     /// The station chosen in Start a Station, opened once its sheet has gone.
     @State private var picked: Station?
-    /// The page's own width, for its measures on a wide page.
-    @State private var pageWidth = 1200
-    /// A wide page's own title has scrolled under the bar.
-    @State private var isTitleScrolled = false
 
     init() {}
 
     var body: some View {
-        let measures = HomeMeasures(isWide: isWide, width: pageWidth)
         // A ZStack, as Home's: the sheets sit on one view whatever it shows.
         ZStack {
             if library.tracks.isEmpty {
                 HomeLibraryStatus()
             } else {
-                RadioFeed(measures: measures, isShowingSettings: $isShowingSettings,
-                          isTitleScrolled: $isTitleScrolled)
+                RadioFeed(isShowingSettings: $isShowingSettings)
             }
         }
         .background(Theme.ground)
-        .homePageWidth($pageWidth)
-        .homeTitle(String(localized: "Radio"), isScrolled: isTitleScrolled)
+        .homeTitle(String(localized: "Radio"))
         .toolbar {
             ToolbarItem(placement: .barTrailing) {
                 Button {
@@ -101,47 +94,36 @@ struct RadioView: View {
 }
 
 private struct RadioFeed: View {
-    let measures: HomeMeasures
     @Binding var isShowingSettings: Bool
-    @Binding var isTitleScrolled: Bool
 
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
     @Environment(MixStore.self) private var mixes
     @Environment(AppSettings.self) private var settings
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.isWide) private var isWide
 
-    init(measures: HomeMeasures, isShowingSettings: Binding<Bool>, isTitleScrolled: Binding<Bool>) {
-        self.measures = measures
+    init(isShowingSettings: Binding<Bool>) {
         _isShowingSettings = isShowingSettings
-        _isTitleScrolled = isTitleScrolled
     }
 
     var body: some View {
         let onAir = radio.stationOnAir(player: player)
-        Group {
-            if measures.isWide {
-                wide(onAir)
-            } else {
-                compact(onAir)
-            }
-        }
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top > HomePageTitle.scrolledPast
-        } action: { _, isPast in
-            isTitleScrolled = measures.isWide && isPast
+        if isWide {
+            wide(onAir)
+        } else {
+            compact(onAir)
         }
     }
 
     /// As Linux's Radio: the title, the station on air while one is, the
     /// stations, then those by genre and decade (spec §5).
     private func wide(_ onAir: Station?) -> some View {
-        ScrollView {
+        WidePage(title: String(localized: "Radio")) { page, _ in
+            let measures = HomeMeasures(page: page)
+            PageTitle(String(localized: "Radio"))
+                .padding(.horizontal, page.side)
             VStack(alignment: .leading, spacing: measures.betweenSections) {
-                // The station on air 32 under the title, as Home's Your
-                // Station; nothing on air, "Stations" a section's 40.
-                HomePageTitle(String(localized: "Radio"), measures: measures)
-                    .padding(.bottom, onAir == nil ? 0 : -Theme.Space.s)
                 if let onAir {
                     RadioOnAirCard(station: onAir, measures: measures)
                         .padding(.horizontal, measures.margin)
@@ -151,14 +133,16 @@ private struct RadioFeed: View {
                 RadioStationShelf(title: "By genre and decade", stations: genreAndDecadeStations,
                                   measures: measures)
             }
-            .padding(.top, Theme.Space.xl)
-            .padding(.bottom, Theme.Space.xxl)
+            // The station on air 32 under the title, as Home's Your
+            // Station; nothing on air, "Stations" a section's 40.
+            .padding(.top, onAir == nil ? measures.betweenSections : Theme.Space.xxl)
             .animation(reduceMotion ? nil : .default, value: onAir?.id)
         }
     }
 
     private func compact(_ onAir: Station?) -> some View {
-        ScrollView {
+        let measures = HomeMeasures(page: nil)
+        return ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 Group {
                     if let onAir {

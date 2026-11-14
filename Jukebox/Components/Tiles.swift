@@ -16,7 +16,7 @@ struct AlbumTile: View {
 
     var body: some View {
         if isWide {
-            LibraryTile(name: album.name, line: showsArtist ? album.artistLine : album.year.map(String.init)) {
+            WideTile(name: album.name, line: showsArtist ? album.artistLine : album.year.map(String.init)) {
                 ArtworkView(album.artwork)
             }
         } else {
@@ -56,7 +56,7 @@ struct PlaylistTile: View {
 
     var body: some View {
         if isWide {
-            LibraryTile(name: playlist.name, line: playlist.trackCount.map { $0 == 1 ? "1 song" : "\($0) songs" }) {
+            WideTile(name: playlist.name, line: playlist.trackCount.map { $0 == 1 ? "1 song" : "\($0) songs" }) {
                 art
             }
         } else {
@@ -104,7 +104,8 @@ struct MixCard: View {
 
     var body: some View {
         if isWide {
-            LibraryTile(name: mix.title, line: mix.subtitle, lines: 2) {
+            // One line of its artists, as Linux's tile.
+            WideTile(name: mix.title, line: mix.subtitle) {
                 CollageArtwork(artworks: mix.artwork)
             }
         } else {
@@ -133,15 +134,17 @@ struct MixCard: View {
 /// A station: its arch over its seed's music, flat unless it is on the air;
 /// its name under it as real text, which follows the reader's text size.
 /// No subtitle: "Radiohead and artists like them" only repeats "Radiohead
-/// Radio" (tells.md, 5).
+/// Radio" (tells.md, 5). In a wide window a fact under it where the page
+/// gives one ("Played Thursday"), as Linux's tile.
 struct StationCard: View {
     let station: Station
+    var fact: String?
 
     @Environment(\.isWide) private var isWide
 
     var body: some View {
         if isWide {
-            LibraryTile(name: station.title) {
+            WideTile(name: station.title, line: fact) {
                 StationArtwork(station: station)
             }
         } else {
@@ -171,7 +174,7 @@ struct ArtistTile: View {
     var body: some View {
         if isWide {
             // Square and left-aligned, as Linux's Artists.
-            LibraryTile(name: artist.name, line: artist.albumCount.map { $0 == 1 ? "1 album" : "\($0) albums" }) {
+            WideTile(name: artist.name, line: artist.albumCount.map { $0 == 1 ? "1 album" : "\($0) albums" }) {
                 ArtworkView(artist.artwork, placeholder: "music.mic")
             }
         } else {
@@ -220,82 +223,5 @@ struct Shelf<Item: Identifiable, Tile: View>: View {
         .scrollTargetBehavior(.viewAligned)
         .contentMargins(.horizontal, margin, for: .scrollContent)
         .padding(.vertical, -hover)
-    }
-}
-
-/// A tile in a wide window, as Linux's (spec §8): the art as wide as the
-/// tile, 8, the name in 15 medium, a fact under it in 13 at 60%. The whole
-/// tile is lit under the pointer (TileHover).
-struct LibraryTile<Art: View>: View {
-    let name: String
-    var line: String?
-    var lines = 1
-    @ViewBuilder let art: Art
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            art
-                .padding(.bottom, Theme.Space.s)
-            Text(name)
-                .libraryFont(15, weight: .medium)
-                .foregroundStyle(.primary)
-                .lineLimit(1)
-            if let line, !line.isEmpty {
-                Text(line)
-                    .libraryFont(13)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(lines)
-            }
-        }
-        .contentShape(.rect)
-        .modifier(TileHover())
-        .accessibilityElement(children: .combine)
-    }
-}
-
-/// The pointer over a tile (the Mac's, the iPad's): the whole tile lit, 8
-/// past it on every side, its corners concentric with the art's, so the
-/// light sits on the tile — on Linux a hover that did not was "fucking
-/// raar" (the photographer, 14 November 2026).
-private struct TileHover: ViewModifier {
-    @State private var isHovered = false
-
-    func body(content: Content) -> some View {
-        content
-            .background {
-                RoundedRectangle(cornerRadius: Theme.Radius.artwork + Theme.Space.s)
-                    .fill(Color.primary.opacity(isHovered ? 0.07 : 0))
-                    .padding(-Theme.Space.s)
-            }
-            .onHover { isHovered = $0 }
-    }
-}
-
-/// The desktop spec's sizes (§7) on a wide page: Linux's pixels as points,
-/// the same on the Mac and the iPad ("ik wil dat de linux app en de apple
-/// app 1:1 op elkaar lijken", the photographer, 14 November 2026), where
-/// Apple's text styles differ by a quarter (the Mac's body is 13, the
-/// iPad's 17). Scaled with the reader's text size, as a text style is.
-private struct LibraryFont: ViewModifier {
-    @ScaledMetric private var size: CGFloat
-    let weight: Font.Weight
-    let design: Font.Design
-
-    init(size: CGFloat, weight: Font.Weight, design: Font.Design) {
-        _size = ScaledMetric(wrappedValue: size, relativeTo: .body)
-        self.weight = weight
-        self.design = design
-    }
-
-    func body(content: Content) -> some View {
-        content.font(.system(size: size, weight: weight, design: design))
-    }
-}
-
-extension View {
-    /// 40 a page's title (serif), 24 a section's (serif), 17 an album's
-    /// artist, 15 rows and tile names, 13 facts, second lines and times.
-    func libraryFont(_ size: CGFloat, weight: Font.Weight = .regular, design: Font.Design = .default) -> some View {
-        modifier(LibraryFont(size: size, weight: weight, design: design))
     }
 }

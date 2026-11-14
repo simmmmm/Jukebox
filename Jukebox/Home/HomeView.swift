@@ -26,15 +26,10 @@ struct HomeView: View {
     @Environment(\.isWide) private var isWide
 
     @State private var isShowingSettings = false
-    /// The page's own width, for its measures on a wide page.
-    @State private var pageWidth = 1200
-    /// A wide page's own title has scrolled under the bar.
-    @State private var isTitleScrolled = false
 
     init() {}
 
     var body: some View {
-        let measures = HomeMeasures(isWide: isWide, width: pageWidth)
         // A ZStack, not a Group: a Group hands its modifiers to whichever
         // branch shows, so Settings, opened during the first load, would
         // close and open again (losing what was typed) when the load ends.
@@ -42,16 +37,15 @@ struct HomeView: View {
             if library.tracks.isEmpty {
                 HomeLibraryStatus()
             } else {
-                HomeFeed(measures: measures, isTitleScrolled: $isTitleScrolled)
+                HomeFeed()
             }
         }
         .background(Theme.ground)
-        .homePageWidth($pageWidth)
         // What part of the day it is, in the serif (Theme.styleNavigationBars):
         // sketch D's "Tonight" in the evening. The tab is still Home. On a
-        // wide page the title is the page's own, and the bar's once that
-        // has scrolled away.
-        .homeTitle(RelativeDay.partOfDay(), isScrolled: isTitleScrolled)
+        // wide page the title is the page's own (WidePage), and the bar's
+        // once that has scrolled away.
+        .homeTitle(RelativeDay.partOfDay())
         .toolbar {
             // A wide window's Settings are in the sidebar's menu, as on
             // Linux, and the Mac's behind ⌘,.
@@ -84,53 +78,55 @@ struct HomeView: View {
 /// Home with music: each section its own view, so a change in one (the
 /// station that plays, a play count) redraws only that one.
 private struct HomeFeed: View {
-    let measures: HomeMeasures
-    @Binding var isTitleScrolled: Bool
-
     @Environment(LibraryStore.self) private var library
     @Environment(HistoryStore.self) private var history
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
+    @Environment(\.isWide) private var isWide
 
-    init(measures: HomeMeasures, isTitleScrolled: Binding<Bool>) {
-        self.measures = measures
-        _isTitleScrolled = isTitleScrolled
-    }
+    init() {}
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: measures.betweenSections) {
-                if measures.isWide {
-                    // As Linux's: the part of the day 24 under the bar, and
-                    // Your Station 32 under it, not a section's 40 (spec §5).
-                    HomePageTitle(RelativeDay.partOfDay(), measures: measures)
-                        .padding(.bottom, -Theme.Space.s)
+        Group {
+            if isWide {
+                // As Linux's: the part of the day 24 under the bar, as every
+                // wide page's title, and Your Station 32 under it, not a
+                // section's 40 (spec §5).
+                WidePage(title: RelativeDay.partOfDay()) { page, _ in
+                    PageTitle(RelativeDay.partOfDay())
+                        .padding(.horizontal, page.side)
+                    sections(HomeMeasures(page: page))
+                        .padding(.top, Theme.Space.xxl)
                 }
-                HomeOfflineNotice(margin: measures.margin)
-                HomeHandoffNotice(margin: measures.margin)
-                HomeStationHero(measures: measures)
-                    .padding(.horizontal, measures.margin)
-                // On a wide page the space alone parts them, as on Linux.
-                if !measures.isWide {
-                    Hairline()
+            } else {
+                ScrollView {
+                    sections(HomeMeasures(page: nil))
+                        .padding(.top, Theme.Space.s)
+                        .padding(.bottom, Theme.Space.xxl)
                 }
-                HomeMixesSection(measures: measures)
-                HomePlayedLatelySection(measures: measures)
-                HomeMostPlayedSection(measures: measures)
-                HomeExploreSection(measures: measures)
-                HomeRecentlyAddedSection(measures: measures)
             }
-            .padding(.top, measures.isWide ? Theme.Space.xl : Theme.Space.s)
-            .padding(.bottom, Theme.Space.xxl)
-        }
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.contentOffset.y + geometry.contentInsets.top > HomePageTitle.scrolledPast
-        } action: { _, isPast in
-            isTitleScrolled = measures.isWide && isPast
         }
         .refreshable {
             await library.refresh()
             await mixes.rebuild(library: library, history: history, settings: settings)
+        }
+    }
+
+    private func sections(_ measures: HomeMeasures) -> some View {
+        VStack(alignment: .leading, spacing: measures.betweenSections) {
+            HomeOfflineNotice(margin: measures.margin)
+            HomeHandoffNotice(margin: measures.margin)
+            HomeStationHero(measures: measures)
+                .padding(.horizontal, measures.margin)
+            // On a wide page the space alone parts them, as on Linux.
+            if !measures.isWide {
+                Hairline()
+            }
+            HomeMixesSection(measures: measures)
+            HomePlayedLatelySection(measures: measures)
+            HomeMostPlayedSection(measures: measures)
+            HomeExploreSection(measures: measures)
+            HomeRecentlyAddedSection(measures: measures)
         }
     }
 }
@@ -170,10 +166,12 @@ private struct HomeHandoffNotice: View {
     var body: some View {
         if let offer = handoff.offer {
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                // Wide, Linux's: both lines 15, the first at 60%.
                 Text(offer.heading)
-                    .font(.subheadline)
+                    .desktopFont(15, phone: .subheadline)
                     .foregroundStyle(.secondary)
                 Text("\(offer.track.name) · \(offer.track.artistLine)")
+                    .desktopFont(15, phone: nil)
                     .lineLimit(2)
                 Button(offer.isOwn ? String(localized: "Continue") : String(localized: "Continue Here")) {
                     handoff.continueHere()
@@ -208,7 +206,7 @@ private struct HomeOfflineNotice: View {
                     Image(systemName: offline.hasNetwork ? "wifi.exclamationmark" : "wifi.slash")
                         .foregroundStyle(.secondary)
                 }
-                .font(.subheadline)
+                .desktopFont(15, phone: .subheadline)
                 Button("Try Again") {
                     offline.checkServer()
                     Task { await library.refresh() }
@@ -341,21 +339,23 @@ struct HomeStationHero: View {
                         Text("\(track.name) · \(track.artistLine)")
                     }
                 }
-                .font(.subheadline)
+                .desktopFont(13, phone: .subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
             } else {
                 name(String(localized: "Your Station"))
                     .foregroundStyle(.primary)
                 // A fact, not a slogan: when it last played on this device.
+                // Wide, 8 under the name, as Linux's.
                 Text(RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
-                    .font(.subheadline)
+                    .desktopFont(13, phone: .subheadline)
                     .foregroundStyle(.secondary)
+                    .padding(.top, measures.isWide ? Theme.Space.xs : 0)
             }
             // Play at the art's foot; on a wide page 16 under the words,
             // which stand in the middle of the art.
             if measures.isWide {
-                Color.clear.frame(height: Theme.Space.m)
+                Color.clear.frame(height: Theme.Space.s)
             } else {
                 Spacer(minLength: Theme.Space.m)
             }
@@ -368,7 +368,7 @@ struct HomeStationHero: View {
     @ViewBuilder
     private func name(_ title: String) -> some View {
         if measures.isWide {
-            Text(title).homeSerif(24)
+            Text(title).desktopFont(24, design: .serif)
         } else {
             Text(title).font(.serif(.title2))
         }
@@ -397,7 +397,8 @@ struct HomeStationHero: View {
                     Text("Play")
                 }
             }
-            .frame(minWidth: 64)
+            // Wide, as wide as its word, as Linux's.
+            .frame(minWidth: measures.isWide ? nil : 64)
         }
         .buttonStyle(.prominent)
         .fixedSize()
@@ -580,13 +581,14 @@ private struct HomePlayedRow: View {
         let line = isWide ? [detail, when].filter { !$0.isEmpty }.joined(separator: " · ") : detail
         return HStack(spacing: isWide ? Theme.Space.l : Theme.Space.m) {
             art()
-            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+            VStack(alignment: .leading, spacing: isWide ? 0 : Theme.Space.xs) {
                 Text(title)
+                    .desktopFont(15, phone: nil, wide: isWide)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 if !line.isEmpty {
                     Text(line)
-                        .font(.subheadline)
+                        .desktopFont(13, phone: .subheadline, wide: isWide)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
