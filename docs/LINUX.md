@@ -137,7 +137,9 @@ The iPad at regular width and the Mac draw the same window, 1:1
 The iPhone has each of these, and Linux is ready for them:
 
 - Quick Connect at sign-in (the kit has it: `QuickConnectSignIn`).
-- Making and editing playlists (they are listed and played).
+- Editing a playlist's songs: removing one, moving one. Making, filling
+  (Add Songs, Add to Playlist…, a station's Save as Playlist…) and
+  deleting them is here since 15 November 2026 (`Choosers.swift`).
 - The drawings in motion: the label turning, the land under Now Playing
   (once the photographer decides whether it turns), the mark warming up,
   the mark before a station's name in Now Playing and the player's bar.
@@ -153,7 +155,9 @@ Albums, an album, Now Playing, the radio playing on from song to song,
 MPRIS's Play, Next and metadata, the handoff both ways. Since 15 November
 2026 the walk (`dev/linux-screens.sh`) also downloads an album, a playlist
 and a mix from the fake Jellyfin by their pages' buttons and plays one from
-its file; `frames.txt` says what came.
+its file; it starts a station from Radio's +, saves one as a playlist, makes
+a playlist, fills it with Add Songs and deletes it, and starts a song's
+station from Search. `frames.txt` says what came.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
 calls are tested in the kit), KDE, XFCE and Hyprland themselves; offline on

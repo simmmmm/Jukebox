@@ -224,6 +224,7 @@ func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
     var items: [(String, () -> Void)] = [
         ("Play Next", { app.player.playNext(tracks) }),
         ("Add to Queue", { app.player.addToQueue(tracks) }),
+        ("Add to Playlist…", { Playlists.add(tracks) }),
     ]
     if tracks.count == 1 {
         items.append(("Start Radio", { app.radio.start(.track(first.id)) }))
@@ -394,6 +395,7 @@ func albumMenu(_ album: Album) -> [(String, () -> Void)] {
     return [("Play", { app.player.play(tracks, context: QueueContext(.album(album.id), title: album.name)) }),
             ("Play Next", { app.player.playNext(tracks) }),
             ("Add to Queue", { app.player.addToQueue(tracks) }),
+            ("Add to Playlist…", { Playlists.add(tracks) }),
             ("Start a Station", { app.radio.start(.album(album.id)) })]
 }
 

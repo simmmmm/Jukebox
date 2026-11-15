@@ -221,8 +221,9 @@ final class ScreenshotTests: XCTestCase {
     /// linux-screens/1440x900-dark, so the two lie side by side ("ik wil dat
     /// de linux app en de apple app 1:1 op elkaar lijken", the photographer,
     /// 14 November 2026). Linux's sign-in is its last picture; here it is the
-    /// first thing done, and keeps its name. Search, which Linux's walk
-    /// leaves out, comes after the last twin.
+    /// first thing done, and keeps its name. Search typed in the bar comes
+    /// after Settings, so no picture before it shows the term; the sidebar
+    /// with fewer places last, as it needs a launch of its own.
     ///
     /// It goes by the sidebar's places and the bar's buttons only, never by
     /// tabs or back buttons: an edge drag over a sidebar would press a place.
@@ -235,6 +236,7 @@ final class ScreenshotTests: XCTestCase {
         XCUIDevice.shared.orientation = .landscapeLeft
         let walk = Walk(test: self, name: "pad", numbered: false)
         defer { walk.finish() }
+        let app = walk.app
 
         // D2's land, standing still (see testPhone). The panel closed, as a
         // listener first finds it, whatever an earlier launch left: the
@@ -323,16 +325,47 @@ final class ScreenshotTests: XCTestCase {
         try walk.place("home")
         let settings = try walk.openSettings()
         walk.picture("16-preferences")
-        if settings { try walk.closeSheet(with: "Done") }
+        if settings {
+            // Down to Pages, as Linux's 16c scrolls its Preferences to them.
+            let pages = app.switches["Playlists in the Sidebar"].firstMatch
+            for _ in 0..<4 where !walk.onScreen(pages) {
+                try walk.swipe(up: true)
+            }
+            if !walk.onScreen(pages) { walk.note("Settings: no Pages switches after four swipes") }
+            walk.picture("16c-preferences-pages")
+            try walk.closeSheet(with: "Done")
+        }
 
-        // The field in the page (`search.field`). Return sends the keyboard
-        // away: Linux's window has none over its bar.
-        if try walk.place("search"), let field = walk.byID("search.field", timeout: 8) {
-            try walk.enter(walk.searchTerm, into: field, "Search: typing a term")
+        // Search is the window bar's field (`.searchable` in the toolbar),
+        // where Linux's header has it; typed in, the Search page shows.
+        // Linux's twin (08c-search-query) types "blue", so this does too.
+        // Return sends the keyboard away: Linux's window has none over its bar.
+        let field = app.searchFields.firstMatch
+        if !field.waitForExistence(timeout: 5) {
+            walk.note("Search: no field in the bar within 5 s; its Search button instead")
+            try walk.tap(app.buttons["Search"], "Search: the bar's Search button", timeout: 2)
+        }
+        if field.waitForExistence(timeout: 3) {
+            let given = ProcessInfo.processInfo.environment["JUKEBOX_SEARCH"] ?? ""
+            try walk.enter(given.isEmpty ? "blue" : given, into: field, "Search: typing a term")
             walk.pressReturn(in: field)
             walk.pause(2.5)
+        } else {
+            walk.note("Search: no field in the bar")
         }
-        walk.picture("18-search")
+        walk.picture("08c-search-query")
+
+        // A sidebar with fewer places (Settings › Pages), as Linux's 23:
+        // launched again with the pages Linux's walk switches off in the
+        // argument domain, which wins over what was chosen, and leaves it be.
+        // The values are AppSettings.Page's raw ones; unquoted, as the
+        // argument domain reads an array.
+        app.terminate()
+        try walk.launch(extra: ["-hiddenPages", "(radio,songs,favorites,genres,recently_added,sidebar_playlists)"])
+        guard try walk.signIn(takingPictures: false) else { return }
+        walk.waitForLibrary()
+        try walk.place("albums")
+        walk.picture("23-pages-trimmed")
     }
 
     /// The tightest wide window: an 11-inch iPad held upright, 834 points,
