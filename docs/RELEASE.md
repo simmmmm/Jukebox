@@ -58,6 +58,8 @@ alone is very likely taken. Candidates that say what it is:
 > AND
 > Favourites and playlists that stay in sync with your server. AirPlay,
 > the lock screen and Control Center, Up Next. iPhone and iPad.
+
+(**Open**: "iPhone, iPad and Mac" once the Mac ships, below.)
 >
 > Jukebox has no account, no ads and no tracking. Your music and your
 > listening stay between the app and your own server.
@@ -71,8 +73,8 @@ support.)
 **Support URL** — **Open**: a page with a way to reach the photographer;
 the repository's README works (`https://github.com/simmmmm/Jukebox`).
 
-**Privacy Policy URL** — **Open**: where `docs/privacy.md` (below) is
-published.
+**Privacy Policy URL** — **Open**: a published page that says what
+`docs/STATS.md` (The App Store) asks a policy to say. None is written yet.
 
 **Copyright**: 2026 Tijmen (or the name the photographer publishes under).
 
@@ -83,8 +85,9 @@ published.
   library and covers, ours to use.
 - **Screens**: Home, Now Playing (D2), a station's page, an album, Up Next
   with the dial, Lyrics, Settings › Downloads.
-- **Devices**: the walk runs on an iPhone 17 Pro (1206 × 2622) today. For the
-  store, one run on an iPhone 17 Pro Max and the iPad 13".
+- **Devices**: the walk runs on an iPhone 17 Pro (1206 × 2622), a 13-inch
+  iPad held sideways and an 11-inch iPad held upright. For the store, one
+  run on an iPhone 17 Pro Max.
 - **Text over the pictures**: none (tells.md).
 
 ## App Privacy (the questionnaire)
@@ -138,11 +141,41 @@ so the notes point at Navidrome's public demo:
 Check before submitting that demo.navidrome.org is up and the demo user can
 play and download.
 
+## The Mac
+
+The Mac's Jukebox is the same app: a native macOS destination of the same
+target (project.yml), with the same bundle ID. So it ships through the same
+App Store Connect record, one purchase for the iPhone, the iPad and the Mac
+(universal purchase).
+
+- It ships once the photographer adds the platform there: Apps › Jukebox ›
+  + Add Platform › macOS. Then `mac_upload=true` in `ci/app.sh`. Until then
+  an upload sends the iPhone's build only, and the run stays green.
+- The Mac's version page needs its own screenshots — **Open**: the walk
+  runs on the iPhone and the iPad only.
+
+## Builds
+
+- **A push** builds the iPhone's app and the Mac's, unsigned. A red Mac
+  build makes the run red (`mac_gates=true`).
+- **On main** (and the `mac` branch) the screenshot walk runs after the
+  builds. An upload, when asked (README, TestFlight), archives and uploads
+  in their place.
+- **On a work branch** only the two builds run: no screenshots unless the
+  branch's name ends in "walk", and never an upload, whatever the commit
+  says.
+- **A fast loop**: the photographer's Mac, a MacBook, builds over SSH. The
+  build is signed with that Mac's Apple Development certificate from a
+  Terminal session on the Mac itself, because an SSH session cannot reach
+  the keychain. Such a debug build has no provisioning profile, so it keeps
+  the sign-in in the file-based keychain and stays signed in from one build
+  to the next (`Jukebox/App/Keychain.swift`).
+
 ## Before submitting
 
 1. The release build from main on TestFlight, played through on a phone:
    sign in to Jellyfin and to the Navidrome demo, a station, a download,
-   airplane mode.
+   airplane mode. Once the Mac uploads, the same on the Mac.
 2. `MARKETING_VERSION` 1.0 (project.yml); the build number is CI's run
    number.
 3. In App Store Connect: the listing above, the screenshots, App Privacy,

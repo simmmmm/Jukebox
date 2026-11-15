@@ -51,9 +51,13 @@ counts.
    name, an id of anything, an error's message. Counts and durations are in
    buckets (below), so no number tells one library from another.
 5. **Every event also carries** the app's version and build, the system
-   (iOS, iPadOS) and its version (in the user agent), the language, the device
+   (iOS, iPadOS, macOS) and its version (in the user agent), the language, the device
    model, the time, and `debug` for a debug build (CI's simulator runs and
    Xcode builds, kept apart on the server).
+   **The Mac** sends the same events from the same `Stats.swift`: its user
+   agent says "Macintosh; Intel Mac OS X" with the system's version, and the
+   model is the Mac's own (`hw.model`, "Mac15,6"). Its switch is in the
+   Settings window, Privacy.
    **Linux** sends the same events from the same `Stats.swift`, for the
    screens it has, as system `Linux`: the model is the word "Linux" and the
    user agent says "X11; Linux x86_64". Never the distribution, the desktop
@@ -82,7 +86,7 @@ Buckets:
 | `sign_in_failed` | `reason` (`unreachable`, `not_a_server`, `wrong_password`, `needs_api_key`, `needs_https`, `other`) | Where people stop before the music | OnboardingView |
 | `signed_out` | none | Do people leave, or move servers | `AppModel.signOut` |
 | `library_loaded` | `tracks` (bucket), `from` (`cache`, `server`), `seconds` (bucket) | How large libraries are; how long a launch and a load take | LibraryStore |
-| `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings` | Which screens are used, which never | MainTabView (tabs), `routeDestinations()` (pushes), the cover, panels and sheet |
+| `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a place in the wide window (`home`, `radio`, `search`, `playlist`, or a library kind: `albums`, `artists`, `songs`, `playlists`, `favorites`, `genres`, `recently_added`, `downloaded`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings`. The wide window never sends `library`: its kinds are places there | Which screens are used, which never | MainTabView (tabs), WideShell (the wide window's places, and Search from its field), `routeDestinations()` (pushes), the cover, panels and sheet |
 | `play_started` | `from` (`album`, `playlist`, `mix`, `songs`, `favorites`, `search`, `artist`, `genre`, `station`, `other`), `shuffled` (bool) | Where music is started from; is Shuffle used | `AudioPlayer.play`, `playRadio` |
 | `station_started` | `seed` (`track`, `artist`, `album`, `genre`, `decade`, `collection`, `personal`, `discovery`, `favorites`), `from` (`page`, `tile_menu`, `hero`, `menu`, `autoplay`, `search`; `picker` is reserved) | Which stations people play, and from where | each Start Radio, Play Station, Your Station's Play, a station's page, Autoplay |
 | `station_page` | `action` (`opened`, `new_picks`, `row`, `play`) | Is the page looked at before playing; is New Picks used | StationDetailView |

@@ -22,17 +22,16 @@ two are written per platform, each its own way.
 | | iPhone and iPad | Linux |
 |---|---|---|
 | Servers, library, radio, mixes, lyrics, play state | `JukeboxKit/`, the same package | the same |
-| The app's stores: `LibraryStore`, `RadioController`, `MixStore`, `HistoryStore`, `HandoffStore`, `OfflineStore`, `AppSettings`, `Stats`, `HomeShelves`, `LyricsFinder`, the queue's types | `Jukebox/` | the same files, named in `Package.swift`'s `shared` |
+| The app's stores: `LibraryStore`, `RadioController`, `MixStore`, `HistoryStore`, `HandoffStore`, `OfflineStore`, `AppSettings`, `Stats`, `HomeShelves`, `LyricsFinder`, the queue's types; the wide window's `PanelState`, `DesktopMeasures` and `UpNextList` | `Jukebox/` | the same files, named in `Package.swift`'s `shared` |
 | Screens | SwiftUI (`Jukebox/`) | GTK 4 and libadwaita (`Linux/App/`) |
 | Sound | AVFoundation (`Jukebox/Player/AudioPlayer.swift`) | GStreamer (`Linux/App/AudioPlayer.swift`), the same queue and rules |
 | The session's secret | the Keychain | the desktop's keyring, or a file only the user reads |
 | Songs kept | Application Support, a background URLSession (`docs/OFFLINE.md`) | `$XDG_DATA_HOME/jukebox/offline`, a URLSession while Jukebox runs |
 | System controls | lock screen, remote commands | MPRIS (`Linux/CGlue/mpris.c`) |
 
-Measured on 15 November 2026: 13 607 lines of kit and 5 750 of the app's
-stores compile for both. Linux's own code is 7 424 lines of Swift and 594 of
-C. The C is glue only, for what Swift cannot call as it is (C functions with
-"…", macros, D-Bus by hand).
+The kit and the app's stores compile for both. Linux's own code is Swift,
+with a little C as glue only, for what Swift cannot call as it is (C
+functions with "…", macros, D-Bus by hand).
 
 A shared file stays shared by importing only Foundation, Observation and
 JukeboxKit. Linux compiles them as project.yml does for the iPhone (Swift 5
@@ -123,6 +122,15 @@ The design and its spec are in `build/design-round/2027/` (`spec.md`, `sheet.png
 - **The places** at the left are 240 wide, the Mac's 1:1: Home, Radio; Albums, Artists, Songs, Playlists, Favorites, Genres, Recently Added, Downloaded; the playlists ("Linux erbij", 15 November 2026). Below 900 they fold and lie over the page; F9 brings them back.
 - **Preferences › Pages** takes places out (`AppSettings.hiddenPages`, shared). The place shown switched off goes Home. Every one off, there is no sidebar: Home, the panel and the bar, with the main menu at the end of the page's header.
 - **Now Playing** covers the places and the page. The bar and the panel stay.
+- **Shelves** have no scrollbar over their words. Under the pointer a round
+  ‹ and › fade in, 32 wide, while there is more that way; a click moves on
+  by what shows, less one tile. The keys go along the tiles.
+- **A tile's hover** lights the tile at its own size, 8 past its art on every
+  side, corners 14, concentric with the art's 6. A grid's cell shows nothing
+  ("hover op linux gaat nog fout, op mac niet", 14 November 2026).
+
+The iPad at regular width and the Mac draw the same window, 1:1
+(`Jukebox/App/WideShell.swift`, `docs/ARCHITECTURE.md`).
 
 ## What comes next
 

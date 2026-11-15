@@ -2,9 +2,10 @@
 
 The photographer's own music app for their server's music: artists, albums,
 songs, playlists, playlists the app makes up itself on Home, and a radio
-that plays on from anything. iPhone and iPad; Linux since 14 November 2026
-(the same Swift under GTK and libadwaita, `docs/LINUX.md`). Jellyfin; since
-9 November 2026 also Navidrome and other Subsonic servers.
+that plays on from anything. iPhone, iPad and the Mac (one SwiftUI target);
+Linux since 14 November 2026 (the same Swift under GTK and libadwaita,
+`docs/LINUX.md`). Jellyfin; since 9 November 2026 also Navidrome and other
+Subsonic servers.
 
 Asked for on 8 November 2026: "op de homepage wil ik dat de app zelf leuke
 playlists verzint en of een goede radio functie heeft — ik vind vooral de
@@ -14,20 +15,21 @@ Design: Apple's HIG and native controls, with a brand of its own, the Arch
 (`docs/BRAND.md`): two bands and a core, Copper and Glow, Cabinet. A sibling
 of Numa in restraint, no longer in its shapes. Drawn by the rules of
 `docs/design/tells.md` ("more soul": light means on air, flat grounds,
-titles in New York, facts not slogans).
+titles in New York, facts not slogans). A wide window, the iPad's and the
+Mac's, is Linux's window, 1:1 (below).
 
 ## Layout
 
 | Path | What |
 |---|---|
 | `JukeboxKit/` | Swift package, Foundation only, Swift 6 strict. Jellyfin, Subsonic, Last.fm and LRCLIB clients, the library index, the radio, the mixes, the LRC parser. Built and tested on Linux (`dev/kit-test.sh`) against a real Jellyfin (`dev/jellyfin-test-server.sh`). |
-| `Jukebox/` | The SwiftUI app: iOS 26, Swift 5 mode, MainActor default isolation (project.yml). Compiled only on GitHub's macOS (`ci/app.sh`); there is no Mac here, so read its Swift twice before pushing. |
+| `Jukebox/` | The SwiftUI app for the iPhone, the iPad and the Mac: iOS 26 and macOS 26, Swift 5 mode, MainActor default isolation (project.yml). The Mac is a native macOS destination of the same target, not Catalyst; `Components/Platform.swift` holds the few things the two spell differently (the image type, the device's name, the bar's placements, `\.isWide`). Compiled on GitHub's macOS (`ci/app.sh`) and, for a quick try, on the photographer's Mac (`docs/RELEASE.md`); not on the Linux machine, so read its Swift twice before pushing. |
 | `Linux/` | The Linux client: `App/` (Swift on GTK 4, libadwaita, GStreamer), `CGlue/` (the C Swift cannot call as it is, and MPRIS), `data/` (icon, desktop entry). Built and run here: `dev/linux-build.sh`. `docs/LINUX.md`. |
 | `Package.swift` | The Linux client's package. Its `shared` list names the files of `Jukebox/` Linux compiles too (the stores, not the screens). A file that gains `import SwiftUI` leaves the list, or loses the import. |
-| `project.yml` | XcodeGen. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
-| `ci/` | What `.github/workflows/ci.yml` runs. The workflow stays generic: the Claude session may not push workflow files. |
+| `project.yml` | XcodeGen. One target for the iPhone, the iPad and the Mac: one bundle ID, so one App Store record and one purchase. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
+| `ci/` | What `.github/workflows/ci.yml` runs: the iPhone's build and the Mac's, the screenshot walk, the upload (`docs/RELEASE.md`). The workflow stays generic: the Claude session may not push workflow files. |
 | `dev/` | The test server, the made-up library, the kit tests, the icon (`make-icon.py`), the brand's drawings (`brand/`). |
-| `docs/` | This; `RADIO.md` (how the radio chooses); `BRAND.md` (the Arch, its rules and colours); `SERVERS.md` (Jellyfin and Subsonic, call by call); `OFFLINE.md` (songs kept on the phone); `LINUX.md` (the Linux client); `STATS.md` (anonymous usage counts); `brand/` (the boards); `design/` (sketch D and its rules; `tells.md`, the reference for every screen). |
+| `docs/` | This; `RADIO.md` (how the radio chooses); `BRAND.md` (the Arch, its rules and colours); `SERVERS.md` (Jellyfin and Subsonic, call by call); `OFFLINE.md` (songs kept on the phone); `LINUX.md` (the Linux client); `STATS.md` (anonymous usage counts); `RELEASE.md` (the App Store, the builds, the Mac); `brand/` (the boards); `design/` (sketch D and its rules; `tells.md`, the reference for every screen). |
 
 ## Rules for every part
 
@@ -45,7 +47,8 @@ titles in New York, facts not slogans).
   Symbols. iOS 26 is the minimum; use its APIs plainly (Tab,
   `tabViewBottomAccessory`, `glassEffect` only where Apple's own apps use
   glass). UIKit only where SwiftUI has nothing (MPVolumeView,
-  AVRoutePickerView).
+  AVRoutePickerView). The wide window is the one thing drawn by hand,
+  1:1 with Linux's (below).
 - **The Arch** (`Theme.swift`, `docs/BRAND.md`, `docs/design/tells.md`).
   `Theme.accent` is the one accent (Copper #A84A17 by day, Glow #FFB54D by
   night), `Theme.onAccent` on it. One filled button per screen
@@ -82,7 +85,7 @@ titles in New York, facts not slogans).
 
 | Part | Files |
 |---|---|
-| Lead | `project.yml`, `ci/`, `dev/`, `Jukebox/App/*`, `Jukebox/Components/*`, kit `Models.swift`, `NameKey.swift`, `HTTPTransport.swift`, `LibraryCache.swift` |
+| Lead | `project.yml`, `ci/`, `dev/`, `Jukebox/App/*` (with WideShell, PanelState, Commands: the Mac's menus and ⌘F), `Jukebox/Components/*` (with Platform, WidePage, DesktopMeasures), kit `Models.swift`, `NameKey.swift`, `HTTPTransport.swift`, `LibraryCache.swift` |
 | Kit: Jellyfin | `JukeboxKit/Sources/JukeboxKit/Jellyfin/*` (client, DTOs), its tests |
 | Kit: radio | `Library/LibrarySnapshot.swift`, `Radio/*`, tests, `docs/RADIO.md` |
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
@@ -92,7 +95,7 @@ titles in New York, facts not slogans).
 | Kit: offline | `Offline/*` (OfflineManifest, KeepPolicy: the automatic keep, JellyfinClient.downloadURL), tests, `docs/OFFLINE.md` except "In the app" |
 | App: library | `Jukebox/Library/*`: LibraryStore, every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift`: AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
-| App: now playing | `Jukebox/NowPlaying/*`: MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume |
+| App: now playing | `Jukebox/NowPlaying/*`: MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume; the wide window's PlayerBar and PanelView; UpNextList (Up Next's rows, shared with Linux) |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController: MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*`: OnboardingView (sign in to any server: the address, then a password, Quick Connect or an API key), SettingsView, SearchView |
 | App: offline | `Jukebox/Offline/*`: OfflineStore (songs on the phone per account, the queue, the keep's runs, offline or not, plays heard offline), OfflineStore+Apple (the network, Low Power Mode, the folder), OfflineDownloader (the background URLSession, JukeboxAppDelegate), OfflineDisk (folders and files), OfflineText, OfflineDownloadButton, DownloadedView; `docs/OFFLINE.md`'s "In the app". The store, the disk and the words are Linux's too (`shared`). |
@@ -108,13 +111,17 @@ each must exist with exactly this initializer.
   `GenreDetailView(genre: Genre)`, `FavoritesView()`, `RecentlyAddedView()`,
   `AddToPlaylistSheet(tracks: [Track])`.
 - Offline: `DownloadedView()` (`Route.downloaded`, Library › Downloaded).
-- Now playing: `MiniPlayer()`, inside `tabViewBottomAccessory`, reading
+- Now playing: on the iPhone `MiniPlayer()`, inside
+  `tabViewBottomAccessory`, reading
   `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
-  expanded; `NowPlayingView()`, in a fullScreenCover.
+  expanded, and `NowPlayingView()` in a fullScreenCover. In the wide window
+  `PlayerBar()`, `PanelView()`, and `NowPlayingView()` as the room.
 - Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
   `StationDetailView(station: Station)` (`Route.station(station)`).
-- Shell: `OnboardingView()`, `SearchView()`, `SettingsView()` (a sheet from
-  Home's toolbar).
+- Shell: `OnboardingView()`, `SearchView()` (a tab on the iPhone, the bar's
+  field in the wide window), `SettingsView()` (a sheet from Home's toolbar
+  on the iPhone and from the places' ≡ menu on the iPad;
+  `SettingsView(asWindow: true)` is the Mac's Settings window, ⌘,).
 
 ### Now Playing
 
@@ -153,11 +160,45 @@ meteen van alles te spelen ipv dat je kan zien wat je van de playlist gemaakt
 hebt" (8 November 2026). A long press's Play Station, Your Station's Play on
 Home and Radio, and every "Start Radio" still play at once.
 
+## The wide window
+
+The iPad at regular width and the Mac always (`\.isWide`) get Linux's window
+in place of the tabs: `App/WideShell.swift`, drawn by hand 1:1 with Linux's
+`MainWindow.swift`. NavigationSplitView and the inspector would fold and look
+their own way. The photographer, 14 November 2026: "ik wil dat de linux app
+en de apple app 1:1 op elkaar lijken". The iPhone, and an iPad window made
+narrow, keep their tabs (`MainTabView`).
+
+- **The places**, 240 at the left: Home and Radio, a hair, the library's
+  kinds, a hair, the playlists with their covers. Below 900 wide they fold
+  away and come over the page when asked for.
+- **The page**: a NavigationStack on `navigator.widePath`, with the window's
+  bar on every page. At its trailing end sits the one search field (⌘F); a
+  click in it shows the Search page. Search has no row of its own.
+- **The panel**, 360 at the right (`NowPlaying/PanelView.swift`): Up Next or
+  the lyrics, opened from the bar. `PanelState`, shared with Linux, keeps it
+  across launches. Below 1280 it lies over the page.
+- **The bar**, 88 across the window's foot (`NowPlaying/PlayerBar.swift`),
+  its three zones from `DesktopMeasures`, shared with Linux.
+- **Now Playing** is a room over the places and the page (`\.inRoom`); the
+  bar and the panel stay.
+
+Every wide page is built from `Components/WidePage.swift`: `desktopFont`
+(Linux's pixel sizes as points, the same on the Mac and the iPad),
+`WidePage`, `PageTitle`, `PageHead`, `TileGrid`. A `Shelf`
+(`Components/Tiles.swift`) shows ‹ and › under a pointer, as Linux's.
+
+The rule: 1:1 with Linux. Native wins only where the OS has its own place
+for a thing: the Mac's menu bar in place of the ≡ menu, the toolbar's search
+field, the logo beside the traffic lights. "hier trumpt native de 1:1
+requirement" (14 November 2026).
+
 ## The environment
 
 `JukeboxApp` puts these in the environment, read with `@Environment(X.self)`:
 `AppModel`, `Navigator`, `AppSettings`, `LibraryStore`, `HistoryStore`,
-`AudioPlayer`, `RadioController`, `MixStore`, `OfflineStore`, `HandoffStore`.
+`AudioPlayer`, `RadioController`, `MixStore`, `OfflineStore`, `HandoffStore`,
+`PanelState`.
 
 - `AppModel.server` is the signed-in server, `any MusicServer` (Jellyfin or
   Subsonic); `AppModel.credentials` its `ServerCredentials`;
