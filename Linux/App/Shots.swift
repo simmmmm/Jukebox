@@ -162,6 +162,7 @@ enum Shots {
                 adw_dialog_force_close(dialog)
             }
             await pages()
+            await stationClicks()
             MainWindow.showSignIn()
             await step("17-sign-in", wait: 2)
             gtk_window_close(ptr(MainWindow.window))
@@ -355,6 +356,31 @@ enum Shots {
             let file = "\(shots)/frames.txt"
             try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
         }
+    }
+
+    /// A song on a station's page plays when it is clicked, and the list
+    /// after it — also once the list has started its station, and at the
+    /// second click of two: such a click once started the station anew
+    /// with other songs ("speelt er elke keer een heel ander nummer af",
+    /// the photographer, 16 November 2026). In frames.txt, no picture.
+    private static func stationClicks() async {
+        let station = app.radio.station(for: .personal)
+        // The page's own list: the same draw from the same library.
+        let picks = await app.radio.preview(station, randomSeed: app.radio.pageSeed(for: station)).map(\.track.name)
+        Pages.open(station)
+        try? await Task.sleep(for: .seconds(2))
+        guard picks.count > 5, let songs = find(visiblePage(), { gtk_widget_has_css_class($0, "rows") != 0 }) else { return }
+        var log = ""
+        for (row, clicks) in [(2, 1), (4, 2)] {
+            for _ in 0..<clicks { gtk_widget_activate_action_variant(songs, "list.activate-item", g_variant_new_uint32(UInt32(row))) }
+            try? await Task.sleep(for: .seconds(1.5))
+            let plays = [app.player.currentTrack?.name ?? "nothing", app.player.upNext.first?.track.name ?? "nothing"]
+            log += "a station's row \(row) clicked \(clicks)x: \(picks[row...(row + 1)]) asked, \(plays) plays: "
+                + "\(plays == Array(picks[row...(row + 1)]) ? "ok" : "WRONG")\n"
+        }
+        guard let shots = folder else { return }
+        let file = "\(shots)/frames.txt"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
     }
 
     /// The dialog over the window, if one is up.
