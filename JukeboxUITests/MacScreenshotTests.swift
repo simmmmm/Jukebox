@@ -402,24 +402,27 @@ final class MacWalk {
 
     /// An album's page from the albums' grid, by the cover whose words
     /// begin with `name`. The grid is lazy, a cover made only near the
-    /// window, so the walk scrolls down the page until the cover can be
-    /// clicked, ten times at most; then the first cover in the window
-    /// instead.
+    /// window, so the walk scrolls through the page until the cover can be
+    /// clicked; then the first cover in the window instead.
     func openAlbum(_ name: String) throws -> Bool {
         let named = buttons(beginning: name).firstMatch
         var found = named.waitForExistence(timeout: 3) && isHittable(named)
-        for _ in 0..<10 where !found {
-            // Less than the page is tall, so no row is passed unseen. The
-            // pointer is at the window's middle for it, over the page.
+        // Down the page, then back up it: which way a negative delta goes
+        // is not known here, and the first run found no Silver Roads going
+        // one way (run 43766325380).
+        for step in 0..<30 where !found {
+            // Less than the page is tall, even in a window cut short by a
+            // small screen, so no row is passed unseen. The pointer is at
+            // the window's middle for it, over the page.
             XCTExpectFailure("A scroll of the screenshot walk", strict: false) {
-                self.app.windows.firstMatch.scroll(byDeltaX: 0, deltaY: -600)
+                self.app.windows.firstMatch.scroll(byDeltaX: 0, deltaY: step < 12 ? -360 : 360)
             }
-            pause(1)
+            pause(0.7)
             found = isHittable(named)
         }
         var cover: XCUIElement? = named
         if !found {
-            note("Albums: no cover of \(name) after ten scrolls; the first in the window instead")
+            note("Albums: no cover of \(name) after thirty scrolls; the first in the window instead")
             cover = firstCover()
         }
         guard let cover, try click(cover, "Albums: open \(name)", timeout: 1) else { return false }

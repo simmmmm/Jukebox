@@ -436,6 +436,17 @@ round() {
     osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to true' \
       -e 'tell application "System Events" to set picture of every desktop to "/System/Library/Desktop Pictures/Solid Colors/Black.png"' \
       > /dev/null 2>&1 || problem "the Mac's desktop did not turn dark and black"
+    # A screen that holds the store's window, 1440 x 900 under the menu bar
+    # (the runner's is 1024 x 768), and no Dock taking its foot.
+    if bounded "$(allow 300)" xcrun swiftc -O dev/mac-display.swift -o "$work/mac-display" \
+        > "$work/mac-display-build.log" 2>&1; then
+      "$work/mac-display" || problem "the Mac's display stayed too small for a window of 1440 x 900"
+    else
+      problem "dev/mac-display.swift did not build"
+      tail -20 "$work/mac-display-build.log"
+    fi
+    defaults write com.apple.dock autohide -bool true && killall Dock
+    sleep 3
     walk mac testMac mac-dark 720
     endgroup
     return
