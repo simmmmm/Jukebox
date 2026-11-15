@@ -140,9 +140,17 @@ enum Style {
            (build/design-round/2027/spec.md, §2): 88 tall, buttons 32, Play
            40, the position's track 4 with its knob only under the pointer. */
         .player-bar { padding: 12px 0; }
-        .player-bar button.tile { padding: 0; margin: 0; }
+        /* The song's artist and station, each a button over its words
+           (PlayerBar.link): plain words, underlined under the pointer as a
+           link is; the words under them not drawn. */
+        .player-bar button.bar-link { padding: 0; min-width: 0; min-height: 0; background: none; box-shadow: none; font-weight: inherit; }
+        .player-bar button.bar-link:hover label { text-decoration-line: underline; }
+        .player-bar .covered { opacity: 0; }
         .player-bar .bar-title { font-size: 15px; font-weight: 500; line-height: 20px; }
-        .player-bar button.flat, .player-bar menubutton > button { min-width: 32px; min-height: 32px; padding: 0; }
+        /* Not the song's tile, a flat button too: it keeps the tile's 8
+           round its cover and words (the hover ended flush on the words,
+           "ik zie een bug", the photographer, 15 November 2026). */
+        .player-bar button.flat:not(.tile), .player-bar menubutton > button { min-width: 32px; min-height: 32px; padding: 0; }
         .player-bar button.play { min-width: 40px; min-height: 40px; padding: 0; }
         .player-bar button.toggle:checked { color: @accent_color; }
         button.given { color: @accent_color; }
