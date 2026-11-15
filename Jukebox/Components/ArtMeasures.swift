@@ -11,7 +11,7 @@ import JukeboxKit
 
 // MARK: - The mark
 
-/// The mark's measures in its 32-unit box (dev/brand/geom.py's `Cut`).
+/// The mark's measures in its 32-unit box: the one source of its geometry.
 /// `nonisolated`, as the shapes that read it are: SwiftUI may ask a shape
 /// for its path away from the main actor.
 nonisolated struct ArchCut: Equatable, Sendable {
@@ -61,7 +61,7 @@ nonisolated struct ArchSquare: Sendable {
 
 // MARK: - A station's art
 
-/// The art's measures in a 300-unit square (station.py's `Cut`). `t` the
+/// The art's measures in a 300-unit square. `t` the
 /// tube's stroke, `g` the gaps, `rw` the window's half width, `top` the
 /// outer tube's top edge, `base` where the window, the legs and the core end.
 nonisolated struct StationArtCut: Equatable, Sendable {

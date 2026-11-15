@@ -4,8 +4,8 @@ What makes a Jukebox screen feel made by someone: a record shop's care, not
 a template's. The photographer, 14 November 2026: "niet 'minder ai' maar
 vooral meer ziel". (The list began on 8 November 2026 as the answer to "Kun
 je het design iets minder ai maken?"; these are the same rules, said as what
-to reach for.) Sketch D (`sheet-d.png`) shows them on Home, Now Playing and
-Radio.
+to reach for.) Sketch D first drew them, on Home, Now Playing and Radio;
+the app's own screenshots show them now.
 
 | # | Reach for | In place of |
 |---|---|---|

@@ -1,5 +1,5 @@
-// CoverAccent on made-up covers of 32 by 32: the colours dev/accent.py
-// gives for the same pixels (so the sketches show what the app will), the
+// CoverAccent on made-up covers of 32 by 32: the colours the sketches'
+// Python gave for the same pixels (the steps were tuned there), the
 // second colour where a cover has one and not where it is a speck, a cover
 // without colour of its own keeping Glow, and every accent readable on
 // Cabinet.

@@ -1,5 +1,5 @@
-// The station on the air, at the top of the Radio tab, as sketch D draws it
-// (docs/design/radio-after.png): the screen's one small label, "On air";
+// The station on the air, at the top of the Radio tab, as sketch D drew it:
+// the screen's one small label, "On air";
 // the station's art, the one lit thing on the page; its name in the serif;
 // the song; the dial from Familiar to Adventurous; Pause and Stop as words;
 // the thumbs as plain glyphs. On the ground, no card: "a card in a card,

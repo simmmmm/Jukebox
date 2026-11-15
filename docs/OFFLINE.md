@@ -420,7 +420,7 @@ The checks on what came are the iPhone's. A song is moved into `files/` only
 once whole; from another file system it is copied beside it as
 `.<name>.part` and renamed. Download sits at the end of a page's header,
 Downloaded is a place, Preferences has Downloads (without Download over
-Cellular). `dev/fake-jellyfin.py --slow-downloads` takes 0.4–2 s a song, so
+Cellular). `dev/fake-jellyfin.swift --slow-downloads` takes 0.4–2 s a song, so
 the walk's ring shows.
 
 ### Counted

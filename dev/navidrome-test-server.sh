@@ -82,11 +82,9 @@ again() {
 # (the server busy or restarting): one look that fails is one look, not
 # the end of the script.
 json() {
-  python3 -c "import json,sys
-try:
-    d=json.load(sys.stdin)['subsonic-response']; print($1)
-except Exception:
-    print('${2:-}')"
+  local value
+  value=$(jq -r ".[\"subsonic-response\"] | $1" 2> /dev/null) || value=
+  echo "${value:-${2:-}}"
 }
 
 # Up: the Subsonic ping answers (with error 10, unauthenticated) once the
@@ -118,19 +116,19 @@ before=""
 have=0 listed=0 albums=0 artists=0 settled=no
 for i in $(seq 1 120); do
   status=$(rest getScanStatus || true)
-  scanning=$(json 'd["scanStatus"]["scanning"]' unknown <<<"$status")
-  have=$(json 'd["scanStatus"].get("count", 0)' 0 <<<"$status")
+  scanning=$(json '.scanStatus.scanning | if . == null then "unknown" else . end' unknown <<<"$status")
+  have=$(json '.scanStatus.count // 0' 0 <<<"$status")
   listed=$(rest search3 "query=&artistCount=0&albumCount=0&songCount=5000" \
-    | json 'len(d.get("searchResult3", {}).get("song", []))' 0 || true)
-  albums=$(rest getAlbumList2 "type=alphabeticalByName&size=500" | json 'len(d.get("albumList2", {}).get("album", []))' 0 || true)
-  artists=$(rest getArtists | json 'sum(len(i.get("artist", [])) for i in d.get("artists", {}).get("index", []))' 0 || true)
+    | json '.searchResult3.song // [] | length' 0 || true)
+  albums=$(rest getAlbumList2 "type=alphabeticalByName&size=500" | json '.albumList2.album // [] | length' 0 || true)
+  artists=$(rest getArtists | json '[.artists.index // [] | .[] | .artist // [] | length] | add // 0' 0 || true)
   now="$listed/$albums/$artists"
-  if [[ $scanning == False && $have -ge $want && $listed -ge $want && $now == "$before" ]]; then
+  if [[ $scanning == false && $have -ge $want && $listed -ge $want && $now == "$before" ]]; then
     settled=yes
     break
   fi
   before=$now
-  if [[ $scanning == False && $listed -lt $want ]] && (( i % 10 == 1 )); then
+  if [[ $scanning == false && $listed -lt $want ]] && (( i % 10 == 1 )); then
     rest startScan >/dev/null || true
   fi
   sleep 2
@@ -143,6 +141,6 @@ if [[ $settled != yes ]]; then
   exit 1
 fi
 
-version=$(rest ping | json 'd.get("serverVersion")' unknown)
+version=$(rest ping | json '.serverVersion // "unknown"' unknown)
 echo "Navidrome $version at $URL (Docker: http://$alias:4533): $listed of $want tracks listed," \
   "$albums albums, $artists artists, user test/test"

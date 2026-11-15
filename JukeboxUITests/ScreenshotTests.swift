@@ -1,6 +1,6 @@
 // The screenshot walk: Jukebox used as a listener would use it, in the iOS
 // Simulator on GitHub's Mac, against the fake Jellyfin of
-// dev/fake-jellyfin.py on localhost. Every main screen of the iPhone in dark
+// dev/fake-jellyfin.swift on localhost. Every main screen of the iPhone in dark
 // (`testPhone`), Home and Now Playing again in light (`testPhoneLight`),
 // Linux's walk on an iPad held sideways (`testPad`), and the narrowest wide
 // window on an 11-inch iPad held upright (`testPadUpright`).
