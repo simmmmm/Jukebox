@@ -2,8 +2,9 @@
 // and on the mobile network, loudness normalisation, the Last.fm key, how
 // adventurous the radio is, whether lyrics are looked up online, whether Now
 // Playing's record spins, whether the music last played waits in the player
-// at launch, whether the anonymous usage counts are sent, and how songs are
-// downloaded (Settings › Downloads). Observable, so a change shows at once.
+// at launch, whether the anonymous usage counts are sent, how songs are
+// downloaded (Settings › Downloads), and which pages the sidebar and the tabs
+// show (Settings › Pages). Observable, so a change shows at once.
 // A change of a choice is itself counted (Stats, `setting_changed`): its
 // name and its new value, which are Jukebox's own words, never the key.
 
@@ -145,6 +146,51 @@ final class AppSettings {
         didSet { defaults.set(downloadOverCellular, forKey: Keys.downloadOverCellular) }
     }
 
+    /// A page with a switch in Settings › Pages, in the sidebar's order, by
+    /// the places' names in the usage counts. Home has none: it is always
+    /// there. The photographer, 15 November 2026: "wellicht ook in de
+    /// preferences dat je alle pagina's zelf aan of uit kan zetten naast home
+    /// (dan zijn er uberhaupt geen pages) kan je zelf bepalen hoe
+    /// minimalistisch je alles wilt hebben". A plain value, of no actor, as
+    /// DesktopMeasures' are: SwiftUI's lists and Sets take it anywhere.
+    nonisolated enum Page: String, CaseIterable, Sendable {
+        case radio
+        case albums, artists, songs, playlists, favorites, genres
+        case recentlyAdded = "recently_added"
+        case downloaded
+        /// The playlists themselves, under the sidebar's kinds.
+        case sidebarPlaylists = "sidebar_playlists"
+
+        /// One of the library's kinds: the iPhone's Library tab has it.
+        var isLibraryKind: Bool { self != .radio && self != .sidebarPlaylists }
+    }
+
+    /// The pages switched off. The ones off are kept rather than the ones
+    /// on, so a page added later starts on. A page that is off leaves the
+    /// sidebar and the tabs only: it stays reachable from Home and Search.
+    var hiddenPages: Set<Page> {
+        didSet {
+            defaults.set(hiddenPages.map(\.rawValue).sorted(), forKey: Keys.hiddenPages)
+            for page in hiddenPages.symmetricDifference(oldValue) {
+                Stats.track(.settingChanged, ["name": "page_\(page.rawValue)", "value": Stats.onOff(!hiddenPages.contains(page))])
+            }
+        }
+    }
+
+    func shows(_ page: Page) -> Bool { !hiddenPages.contains(page) }
+
+    func setShows(_ page: Page, _ shown: Bool) {
+        if shown { hiddenPages.remove(page) } else { hiddenPages.insert(page) }
+    }
+
+    /// Any page but Home on: the wide window has its sidebar. Every one off,
+    /// only Home is left and the sidebar goes ("dan zijn er uberhaupt geen
+    /// pages").
+    var showsAnyPage: Bool { Page.allCases.contains(where: shows) }
+
+    /// Any of the library's kinds on: the iPhone has its Library tab.
+    var showsLibrary: Bool { Page.allCases.contains { $0.isLibraryKind && shows($0) } }
+
     /// Settings' sizes for the keep, in gigabytes.
     static let keepLimits = [1, 2, 5, 10, 20]
 
@@ -171,6 +217,7 @@ final class AppSettings {
         keepLimitGB = Self.keepLimits.contains(limit) ? limit : 5
         downloadQuality = DownloadQuality(rawValue: defaults.string(forKey: Keys.downloadQuality) ?? "") ?? .high
         downloadOverCellular = defaults.object(forKey: Keys.downloadOverCellular) as? Bool ?? false
+        hiddenPages = Set((defaults.stringArray(forKey: Keys.hiddenPages) ?? []).compactMap(Page.init(rawValue:)))
     }
 
     var hasLastFM: Bool { !lastFMAPIKey.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -190,5 +237,6 @@ final class AppSettings {
         static let keepLimitGB = "keepLimitGB"
         static let downloadQuality = "downloadQuality"
         static let downloadOverCellular = "downloadOverCellular"
+        static let hiddenPages = "hiddenPages"
     }
 }

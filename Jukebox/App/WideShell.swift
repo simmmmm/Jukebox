@@ -14,6 +14,11 @@
 // the page's title once its own has scrolled away, the page's actions, and
 // at the trailing end the one search field, which searches the whole
 // library on the Search place's page.
+//
+// Settings › Pages takes rows out of the places (AppSettings.hiddenPages);
+// with every one off only Home is left, and the places go altogether: the
+// window is Home, the panel and the bar, "dan zijn er uberhaupt geen pages"
+// (the photographer, 15 November 2026).
 
 import JukeboxKit
 import SwiftUI
@@ -30,6 +35,7 @@ struct WideShell: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(PanelState.self) private var panel
     @Environment(LibraryStore.self) private var library
+    @Environment(AppSettings.self) private var settings
     /// The folded places, lying over the page.
     @State private var showsPlaces = false
     /// The bar's search field has the keys: the Search place shows.
@@ -45,7 +51,7 @@ struct WideShell: View {
                 HStack(spacing: 0) {
                     ZStack {
                         HStack(spacing: 0) {
-                            if !folds {
+                            if !folds && hasPlaces {
                                 Places { showsPlaces = false }
                                 Divider()
                             }
@@ -119,6 +125,11 @@ struct WideShell: View {
         .onChange(of: panelShown) { _, shown in
             if shown { showsPlaces = false }
         }
+        // A page switched off while it shows: Home, which is always there.
+        .onChange(of: settings.hiddenPages) { _, _ in
+            if !settings.shows(place: navigator.place) { navigator.place = .home }
+            if !hasPlaces { showsPlaces = false }
+        }
         // Nothing plays any more: the room closes, as on Linux. The player
         // empties and fills its queue in one go, so a new album does not.
         .onChange(of: player.hasTrack) { _, hasTrack in
@@ -146,6 +157,12 @@ struct WideShell: View {
             SettingsView()
         }
         #endif
+    }
+
+    /// Any place but Home in the sidebar (Settings › Pages): else there is
+    /// none.
+    private var hasPlaces: Bool {
+        settings.showsAnyPage
     }
 
     /// Open as the listener left it, and only with a song: the buttons that
@@ -179,7 +196,13 @@ struct WideShell: View {
                 .id(navigator.place)
                 #if os(iOS)
                 .toolbar {
-                    if folds {
+                    if !hasPlaces {
+                        // The places' head had Settings: without them it is
+                        // here, or the pages could never come back.
+                        ToolbarItem(placement: .barLeading) {
+                            MainMenu()
+                        }
+                    } else if folds {
                         ToolbarItem(placement: .barLeading) {
                             placesButton
                         }
@@ -215,10 +238,10 @@ struct WideShell: View {
             // 14 November 2026). As wide as the places, so Back and the
             // title start over the page.
             ToolbarItem(placement: .navigation) {
-                BrandHead()
+                BrandHead(overPlaces: hasPlaces)
             }
             .sharedBackgroundVisibility(.hidden)
-            if folds && navigator.widePath.isEmpty {
+            if folds && hasPlaces && navigator.widePath.isEmpty {
                 ToolbarItem(placement: .navigation) {
                     placesButton
                 }
@@ -275,6 +298,7 @@ struct WideShell: View {
 private struct Places: View {
     @Environment(Navigator.self) var navigator
     @Environment(LibraryStore.self) var library
+    @Environment(AppSettings.self) var settings
     /// A place chosen: lying over the page, the places go.
     let chosen: () -> Void
 
@@ -292,11 +316,16 @@ private struct Places: View {
                     glyphRow(.home, "Home", symbol: "house")
                     // The mark's template cut, as on Linux: the arch means a
                     // station.
-                    PlaceRow(place: .radio, title: Text("Radio"), chosen: chosen) {
-                        ArchMark(size: 16, style: .template)
+                    if settings.shows(.radio) {
+                        PlaceRow(place: .radio, title: Text("Radio"), chosen: chosen) {
+                            ArchMark(size: 16, style: .template)
+                        }
                     }
-                    // No Search: the bar's field is its way in.
-                    hair
+                    // No Search: the bar's field is its way in. A hair only
+                    // before a group with rows: Home's is never empty.
+                    if settings.showsLibrary {
+                        hair
+                    }
                     glyphRow(.library(.albums), "Albums", symbol: "opticaldisc")
                     glyphRow(.library(.artists), "Artists", symbol: "person.fill")
                     glyphRow(.library(.songs), "Songs", symbol: "music.note")
@@ -307,7 +336,7 @@ private struct Places: View {
                     glyphRow(.library(.genres), "Genres", symbol: "guitars")
                     glyphRow(.library(.recentlyAdded), "Recently Added", symbol: "clock")
                     glyphRow(.library(.downloaded), "Downloaded", symbol: "arrow.down.circle")
-                    if !library.playlists.isEmpty {
+                    if settings.shows(.sidebarPlaylists) && !library.playlists.isEmpty {
                         hair
                         ForEach(library.playlists) { playlist in
                             PlaceRow(place: .playlist(playlist.id), height: 48, dimsIcon: false,
@@ -337,21 +366,7 @@ private struct Places: View {
         HStack(spacing: Theme.Space.s) {
             BrandMark()
             Spacer(minLength: 0)
-            // GNOME's primary menu, where Linux's Preferences are.
-            Menu {
-                Button("Settings…") {
-                    navigator.isSettingsPresented = true
-                }
-            } label: {
-                Image(systemName: "line.3.horizontal")
-                    .desktopFont(15)
-                    .frame(width: 32, height: 32)
-                    .contentShape(.rect)
-            }
-            .menuStyle(.button)
-            .buttonStyle(.plain)
-            .menuIndicator(.hidden)
-            .accessibilityLabel("Main Menu")
+            MainMenu()
         }
         .padding(.leading, 20)
         .padding(.trailing, Theme.Space.s)
@@ -366,11 +381,59 @@ private struct Places: View {
             .frame(height: Theme.Space.l)
     }
 
+    /// A place's row, unless Settings › Pages has it off.
+    @ViewBuilder
     private func glyphRow(_ place: Place, _ title: LocalizedStringKey, symbol: String) -> some View {
-        PlaceRow(place: place, title: Text(title), chosen: chosen) {
-            Image(systemName: symbol)
-                .desktopFont(15)
+        if settings.shows(place: place) {
+            PlaceRow(place: place, title: Text(title), chosen: chosen) {
+                Image(systemName: symbol)
+                    .desktopFont(15)
+            }
         }
+    }
+}
+
+#if os(iOS)
+/// GNOME's primary menu, where Linux's Preferences are: in the places' head,
+/// or on Home's bar when there are no places.
+private struct MainMenu: View {
+    @Environment(Navigator.self) private var navigator
+
+    var body: some View {
+        Menu {
+            Button("Settings…") {
+                navigator.isSettingsPresented = true
+            }
+        } label: {
+            Image(systemName: "line.3.horizontal")
+                .desktopFont(15)
+                .frame(width: 32, height: 32)
+                .contentShape(.rect)
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .accessibilityLabel("Main Menu")
+    }
+}
+#endif
+
+extension Place {
+    /// The place's switch in Settings › Pages; Home and Search have none.
+    var page: AppSettings.Page? {
+        switch self {
+        case .home, .search: return nil
+        case .playlist: return .sidebarPlaylists
+        case .radio, .library: return AppSettings.Page(rawValue: statsName)
+        }
+    }
+}
+
+extension AppSettings {
+    /// Whether `place` has its row in the sidebar: Home and Search always.
+    func shows(place: Place) -> Bool {
+        guard let page = place.page else { return true }
+        return shows(page)
     }
 }
 
@@ -414,9 +477,12 @@ private struct BrandMark: View {
 /// wide as what is left of the places there, so what follows it in the bar
 /// starts over the page.
 private struct BrandHead: View {
+    /// Over the places; without them (Settings › Pages) as wide as it is.
+    let overPlaces: Bool
+
     var body: some View {
         BrandMark()
-            .frame(width: CGFloat(DesktopMeasures.sidebar) - 92, alignment: .leading)
+            .frame(width: overPlaces ? CGFloat(DesktopMeasures.sidebar) - 92 : nil, alignment: .leading)
     }
 }
 #endif
