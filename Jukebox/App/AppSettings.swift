@@ -151,8 +151,9 @@ final class AppSettings {
     /// there. The photographer, 15 November 2026: "wellicht ook in de
     /// preferences dat je alle pagina's zelf aan of uit kan zetten naast home
     /// (dan zijn er uberhaupt geen pages) kan je zelf bepalen hoe
-    /// minimalistisch je alles wilt hebben".
-    enum Page: String, CaseIterable {
+    /// minimalistisch je alles wilt hebben". A plain value, of no actor, as
+    /// DesktopMeasures' are: SwiftUI's lists and Sets take it anywhere.
+    nonisolated enum Page: String, CaseIterable, Sendable {
         case radio
         case albums, artists, songs, playlists, favorites, genres
         case recentlyAdded = "recently_added"
