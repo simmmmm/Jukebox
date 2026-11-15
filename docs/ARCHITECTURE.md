@@ -66,7 +66,7 @@ Mac's, is Linux's window, 1:1 (below).
 - **The 4-point grid.** Every distance and size is a multiple of 4:
   `Theme.Space` (4, 8, 12, 16, 24, 32) on the iPhone, the same numbers on
   Linux. "zorg dat alles past op een 4pt grid" (14 November 2026).
-  `dev/grid-check.py` walks both and names what is off. A line that must
+  `dev/grid-check.sh` walks both and names what is off. A line that must
   differ says `grid-ok` and why (a hairline is a pixel; the system's own
   grabber is 36 by 5).
 - **Each platform's own guidelines.** Apple's HIG on the iPhone, GNOME's on

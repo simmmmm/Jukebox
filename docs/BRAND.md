@@ -101,7 +101,7 @@ labels are its own.
 
 Every distance and size is on a 4-point grid, on both platforms: 4, 8, 12,
 16, 24, 32 and multiples (`Theme.Space`). The photographer, 14 November
-2026: "zorg dat alles past op een 4pt grid". `dev/grid-check.py` checks it.
+2026: "zorg dat alles past op een 4pt grid". `dev/grid-check.sh` checks it.
 The one radius, 6, is the brand's own and not a distance. What is drawn in
 its own units (the mark, a station's art, the sleeve and record, Now
 Playing's ground) and font sizes are outside the grid; a line marked

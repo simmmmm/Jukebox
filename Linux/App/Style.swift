@@ -8,7 +8,7 @@
 //
 // Every distance and size is a multiple of 4 ("zorg dat alles past op een
 // 4pt grid", the photographer, 14 November 2026), here and in the screens:
-// 4, 8, 12, 16, 24, 32, as the iPhone's Theme.Space. dev/grid-check.py says
+// 4, 8, 12, 16, 24, 32, as the iPhone's Theme.Space. dev/grid-check.sh says
 // where one is not, on either platform. The one radius stays the brand's 6.
 
 import CAdw

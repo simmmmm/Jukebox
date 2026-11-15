@@ -94,7 +94,7 @@ Jukebox's soul is in the content, as on the iPhone (`docs/BRAND.md`,
 `docs/design/tells.md`): Copper by day and Glow by night as the accent,
 Paper and Night as the grounds, titles in a serif, the arch for a station
 and light for the one on air. Every measure is on the 4-point grid
-(`dev/grid-check.py` walks both platforms).
+(`dev/grid-check.sh` walks both platforms).
 
 ## At ease everywhere else
 
