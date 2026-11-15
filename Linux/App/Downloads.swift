@@ -180,14 +180,23 @@ enum DownloadedPage {
         return pageColumn(column)
     }
 
-    /// The Mac's line, its arrow drawn in it.
+    /// The Mac's line, its arrow in it, wrapping as one line of words does:
+    /// a text of its own, the arrow a child in it (a label holds no icon).
     private static func hint() -> Widget {
-        let arrow = gtk_image_new_from_icon_name(Glyphs.name("download"))!.css("fact")
-        let row = hbox(spacing: 4, [label("Download an album, a playlist or a mix with", "fact"), arrow,
-                                    label("on its page. Keep Songs I Play, in Preferences, keeps what you play often.", "fact", lines: 0)
-                                        .expand(horizontal: true)])
-        gtk_widget_set_margin_top(row, 24)
-        return row
+        let view = gtk_text_view_new()!.css("hint", "fact")
+        gtk_text_view_set_editable(ptr(view), 0)
+        gtk_text_view_set_cursor_visible(ptr(view), 0)
+        gtk_text_view_set_wrap_mode(ptr(view), GTK_WRAP_WORD_CHAR)
+        gtk_widget_set_focusable(view, 0)
+        let buffer = gtk_text_view_get_buffer(ptr(view))
+        var end = GtkTextIter()
+        gtk_text_buffer_get_end_iter(buffer, &end)
+        gtk_text_buffer_insert(buffer, &end, "Download an album, a playlist or a mix with ", -1)
+        let anchor = gtk_text_buffer_create_child_anchor(buffer, &end)
+        gtk_text_buffer_insert(buffer, &end, " on its page. Keep Songs I Play, in Preferences, keeps what you play often.", -1)
+        gtk_text_view_add_child_at_anchor(ptr(view), gtk_image_new_from_icon_name(Glyphs.name("download")), anchor)
+        gtk_widget_set_margin_top(view, 24)
+        return view
     }
 
     /// A download's tile: an album's cover, a playlist's (or its first

@@ -108,6 +108,8 @@ enum Style {
         gridview > child > .grid-tile { padding: 8px; border-radius: 14px; }
         gridview > child:hover > .grid-tile { background-color: alpha(currentColor, 0.07); }
         flowboxchild { padding: 0; }
+        /* Downloaded's line with its arrow: words on the ground. */
+        textview.hint, textview.hint > text { background: none; font-size: 15px; }
         /* Search's recent searches: plain rows of 40, their hover past the
            margin; Clear quiet beside their heading. */
         button.recent { min-height: 40px; padding: 0 8px; margin: 0 -8px; font-weight: inherit; }

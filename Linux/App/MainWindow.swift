@@ -32,6 +32,8 @@ enum MainWindow {
     private static var playlistRows: [Widget] = []
     /// The hair between Home and Radio and the library's places.
     private static var libraryGap: Widget!
+    /// The places' main menu, F10's while there are places.
+    private static var placesMenu: Widget!
     /// The place shown, by its row; nil on Search.
     private static var current: Int?
     /// Whether the places are folded away, for the buttons that show them.
@@ -251,6 +253,7 @@ enum MainWindow {
         }
 
         let menu = mainMenu()
+        placesMenu = menu
         let sidebar = adw_toolbar_view_new()!
         let header = adw_header_bar_new()!
         // The flat mark 20 and the name in the serif, where the title was.
@@ -343,6 +346,10 @@ enum MainWindow {
             }
             libraryGap.isVisible = settings.showsLibrary
             let hasPlaces = settings.showsAnyPage
+            // F10 is one menu's: the places', or with none the page's.
+            gtk_menu_button_set_primary(ptr(placesMenu), hasPlaces ? 1 : 0)
+            // Nor does a swipe from the edge bring them.
+            adw_overlay_split_view_set_enable_show_gesture(ptr(split), hasPlaces ? 1 : 0)
             if !hasPlaces {
                 adw_overlay_split_view_set_show_sidebar(ptr(split), 0)
             } else if !fold.isCollapsed {

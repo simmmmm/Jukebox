@@ -156,4 +156,7 @@ and a mix from the fake Jellyfin by their pages' buttons and plays one from
 its file; `frames.txt` says what came.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
-calls are tested in the kit), KDE, XFCE and Hyprland themselves.
+calls are tested in the kit), KDE, XFCE and Hyprland themselves; offline on
+Linux (the server away, only the files playing, the plays held for it: the
+iPhone's rules, ported, never run here), and F10 with Preferences › Pages
+all off.

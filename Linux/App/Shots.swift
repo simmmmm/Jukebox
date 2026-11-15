@@ -268,7 +268,13 @@ enum Shots {
         settings.hiddenPages = Set(AppSettings.Page.allCases)
         await step("24-pages-none", wait: 2)
         settings.hiddenPages = before
-        try? await Task.sleep(for: .seconds(1))
+        // Remove All Downloads, as Preferences does it: Downloaded with
+        // nothing, its one line. The keep (turned off with it) on again
+        // for the next size.
+        app.offline.removeAll()
+        MainWindow.select(10)
+        await step("25-downloaded-empty", wait: 2)
+        settings.keepSongs = true
     }
 
     /// The pointer over `widgets`, as a picture: Xvfb has no pointer, so

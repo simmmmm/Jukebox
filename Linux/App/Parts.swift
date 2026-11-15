@@ -27,7 +27,12 @@ enum Nav {
         for widget in start { adw_header_bar_pack_start(ptr(header), widget) }
         // The places' main menu, here when there are no places.
         let menu = MainWindow.mainMenu()
-        observe(menu) { menu.isVisible = !app.settings.showsAnyPage }
+        observe(menu) {
+            let shown = !app.settings.showsAnyPage
+            menu.isVisible = shown
+            // F10's only while it shows: the places' has it otherwise.
+            gtk_menu_button_set_primary(ptr(menu), shown ? 1 : 0)
+        }
         adw_header_bar_pack_end(ptr(header), menu)
         let search = SearchField.entry(typingIn: toolbar)
         adw_header_bar_pack_end(ptr(header), search)
