@@ -53,6 +53,24 @@ enum Preferences {
         adw_preferences_group_set_description(
             ptr(radio), "With a Last.fm API key, the radio also knows which artists and songs sound alike.")
 
+        // Which places the sidebar shows (AppSettings.hiddenPages), in its
+        // order; Home has no switch. The photographer, 15 November 2026:
+        // "kan je zelf bepalen hoe minimalistisch je alles wilt hebben".
+        let pages = group("Pages", on: page)
+        adw_preferences_group_set_description(ptr(pages), "Home is always there. Pages that are off stay reachable from Home and Search.")
+        let titles: [AppSettings.Page: String] = [
+            .radio: "Radio", .albums: "Albums", .artists: "Artists", .songs: "Songs", .playlists: "Playlists",
+            .favorites: "Favorites", .genres: "Genres", .recentlyAdded: "Recently Added", .downloaded: "Downloaded",
+            .sidebarPlaylists: "Playlists in the Sidebar",
+        ]
+        for shown in AppSettings.Page.allCases {
+            let row = adw_switch_row_new()!
+            adw_preferences_row_set_title(ptr(row), titles[shown] ?? shown.rawValue)
+            adw_switch_row_set_active(ptr(row), settings.shows(shown) ? 1 : 0)
+            on(row, "notify::active") { settings.setShows(shown, adw_switch_row_get_active(ptr(row)) != 0) }
+            adw_preferences_group_add(ptr(pages), row)
+        }
+
         let privacy = group("Privacy", on: page)
         adw_preferences_group_add(ptr(privacy), toggle(
             "Share Anonymous Usage", "Which screens and features are used. Never a title, an artist, a search or a server.",

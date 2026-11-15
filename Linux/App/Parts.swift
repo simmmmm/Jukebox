@@ -25,6 +25,10 @@ enum Nav {
         let toolbar = adw_toolbar_view_new()!
         let header = adw_header_bar_new()!
         for widget in start { adw_header_bar_pack_start(ptr(header), widget) }
+        // The places' main menu, here when there are no places.
+        let menu = MainWindow.mainMenu()
+        observe(menu) { menu.isVisible = !app.settings.showsAnyPage }
+        adw_header_bar_pack_end(ptr(header), menu)
         let search = SearchField.entry(typingIn: toolbar)
         adw_header_bar_pack_end(ptr(header), search)
         for widget in end { adw_header_bar_pack_end(ptr(header), widget) }

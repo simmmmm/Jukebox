@@ -6,11 +6,18 @@
 // page, then the places fold away and lie over it when asked for
 // (libadwaita's overlay split views). Until someone is signed in, the
 // sign-in page alone.
+//
+// Preferences › Pages takes places out of the sidebar
+// (AppSettings.hiddenPages), as on the Mac and the iPad; with every one off
+// only Home is left and the sidebar goes altogether — the window is Home,
+// the panel and the bar: "dan zijn er uberhaupt geen pages" (the
+// photographer, 15 November 2026).
 
 import CAdw
 import CGlue
 import Foundation
 import JukeboxKit
+import Observation
 
 enum MainWindow {
     private(set) static var window: Widget!
@@ -23,6 +30,12 @@ enum MainWindow {
     /// The playlists listed under the places, in their rows' order.
     private static var playlists: [Playlist] = []
     private static var playlistRows: [Widget] = []
+    /// The hair between Home and Radio and the library's places.
+    private static var libraryGap: Widget!
+    /// The place shown, by its row; nil on Search.
+    private static var current: Int?
+    /// Whether the places are folded away, for the buttons that show them.
+    private static let fold = Fold()
 
     /// The Search page, reached through the header's field alone (SearchField):
     /// "de search pagina mag uit het menu" (14 November 2026).
@@ -32,19 +45,19 @@ enum MainWindow {
     /// gap between the two groups. Radio's is the mark's template cut. The
     /// Mac's sidebar, 1:1 (WideShell.swift): "Linux erbij", the
     /// photographer, 15 November 2026, of its three more rows.
-    private static let sections: [(String, String, () -> Widget)?] = [
-        ("Home", "go-home-symbolic", HomePage.make),
-        ("Radio", Glyphs.name("radio"), RadioPage.make),
+    private static let sections: [(String, String, AppSettings.Page?, () -> Widget)?] = [
+        ("Home", "go-home-symbolic", nil, HomePage.make),
+        ("Radio", Glyphs.name("radio"), .radio, RadioPage.make),
         nil,
-        ("Albums", "media-optical-symbolic", LibraryPages.albums),
-        ("Artists", "avatar-default-symbolic", LibraryPages.artists),
-        ("Songs", "audio-x-generic-symbolic", LibraryPages.songs),
-        ("Playlists", Glyphs.name("playlists"), LibraryPages.playlists),
-        ("Favorites", Glyphs.name("heart"), LibraryPages.favorites),
-        ("Genres", Glyphs.name("genres"), LibraryPages.genres),
-        ("Recently Added", Glyphs.name("clock"), LibraryPages.recentlyAdded),
+        ("Albums", "media-optical-symbolic", .albums, LibraryPages.albums),
+        ("Artists", "avatar-default-symbolic", .artists, LibraryPages.artists),
+        ("Songs", "audio-x-generic-symbolic", .songs, LibraryPages.songs),
+        ("Playlists", Glyphs.name("playlists"), .playlists, LibraryPages.playlists),
+        ("Favorites", Glyphs.name("heart"), .favorites, LibraryPages.favorites),
+        ("Genres", Glyphs.name("genres"), .genres, LibraryPages.genres),
+        ("Recently Added", Glyphs.name("clock"), .recentlyAdded, LibraryPages.recentlyAdded),
         // What is on this computer: what plays without a connection.
-        ("Downloaded", Glyphs.name("download"), DownloadedPage.make),
+        ("Downloaded", Glyphs.name("download"), .downloaded, DownloadedPage.make),
     ]
 
     static func present(in application: UnsafeMutablePointer<AdwApplication>) {
@@ -94,7 +107,7 @@ enum MainWindow {
         action(application, "close-now-playing", nil) { NowPlayingPage.close() }
         // Folded, the places come over the page (GNOME's F9).
         action(application, "sidebar", "F9") {
-            guard adw_overlay_split_view_get_collapsed(ptr(split)) != 0 else { return }
+            guard adw_overlay_split_view_get_collapsed(ptr(split)) != 0, app.settings.showsAnyPage else { return }
             adw_overlay_split_view_set_show_sidebar(ptr(split), adw_overlay_split_view_get_show_sidebar(ptr(split)) == 0 ? 1 : 0)
         }
         action(application, "sign-out", nil) { confirmSignOut() }
@@ -153,6 +166,7 @@ enum MainWindow {
             Nav.show(searchPage!)
             // No place in the sidebar is the one shown.
             gtk_list_box_unselect_all(ptr(places))
+            current = nil
             if adw_overlay_split_view_get_collapsed(ptr(split)) != 0 { adw_overlay_split_view_set_show_sidebar(ptr(split), 0) }
             Stats.track(.screen, ["name": "search"])
         }
@@ -168,11 +182,13 @@ enum MainWindow {
     private static func show(_ index: Int) {
         // A playlist under the places, after their gap: a place of its own.
         if index > sections.count, playlists.indices.contains(index - sections.count - 1) {
+            current = index
             Pages.open(playlists[index - sections.count - 1], place: [sidebarButton()])
             if adw_overlay_split_view_get_collapsed(ptr(split)) != 0 { adw_overlay_split_view_set_show_sidebar(ptr(split), 0) }
             return
         }
-        guard sections.indices.contains(index), let (title, _, make) = sections[index] else { return }
+        guard sections.indices.contains(index), let (title, _, _, make) = sections[index] else { return }
+        current = index
         // A place is made when first chosen and kept: going back to Albums
         // finds it where it was left.
         if pages[index] == nil {
@@ -191,14 +207,15 @@ enum MainWindow {
     private static func main() -> Widget {
         places = gtk_list_box_new()!.css("navigation-sidebar")
         for section in sections {
-            if let (title, icon, _) = section {
+            if let (title, icon, _, _) = section {
                 // The icon 16 at 60 % (full when chosen), 12, the place.
                 let image = gtk_image_new_from_icon_name(icon)!.css("place-icon")
                 let row = gtk_list_box_row_new()!
                 gtk_list_box_row_set_child(ptr(row), hbox(spacing: 12, [image, label(title, "t15")]))
                 gtk_list_box_append(ptr(places), row)
             } else {
-                gtk_list_box_append(ptr(places), gapRow())
+                libraryGap = gapRow()
+                gtk_list_box_append(ptr(places), libraryGap)
             }
         }
         on(raw(places), "row-activated", argument: { row in
@@ -209,6 +226,10 @@ enum MainWindow {
         // collage of its first albums' when it has none of its own).
         observe(places) {
             let listed = app.library.playlists
+            // Preferences › Pages' Playlists in the Sidebar: the hair and
+            // the rows, made or not.
+            let shown = app.settings.shows(.sidebarPlaylists)
+            defer { for row in playlistRows { row.isVisible = shown } }
             guard listed.map(\.id) != playlists.map(\.id) else { return }
             for row in playlistRows { gtk_list_box_remove(ptr(places), row) }
             playlistRows = []
@@ -229,19 +250,7 @@ enum MainWindow {
             for row in playlistRows { gtk_list_box_append(ptr(places), row) }
         }
 
-        // GNOME's primary menu: F10 opens it; its items are the app's
-        // actions, so their keys show beside them.
-        let items = g_menu_new()!
-        g_menu_append(items, "Preferences", "app.preferences")
-        g_menu_append(items, "Keyboard Shortcuts", "win.show-help-overlay")
-        g_menu_append(items, "About Jukebox", "app.about")
-        let account = g_menu_new()!
-        g_menu_append(account, "Sign Out…", "app.sign-out")
-        g_menu_append_section(items, nil, ptr(account))
-        let menu = gtk_menu_button_new()!.tooltip("Main Menu")
-        gtk_menu_button_set_icon_name(ptr(menu), "open-menu-symbolic")
-        gtk_menu_button_set_menu_model(ptr(menu), ptr(items))
-        gtk_menu_button_set_primary(ptr(menu), 1)
+        let menu = mainMenu()
         let sidebar = adw_toolbar_view_new()!
         let header = adw_header_bar_new()!
         // The flat mark 20 and the name in the serif, where the title was.
@@ -267,6 +276,8 @@ enum MainWindow {
         adw_overlay_split_view_set_content(ptr(split), pageBin())
         adw_overlay_split_view_set_min_sidebar_width(ptr(split), Double(DesktopMeasures.sidebar))
         adw_overlay_split_view_set_max_sidebar_width(ptr(split), Double(DesktopMeasures.sidebar))
+        on(raw(split), "notify::collapsed") { fold.isCollapsed = adw_overlay_split_view_get_collapsed(ptr(split)) != 0 }
+        followPages()
 
         // The panel around places, pages and Now Playing, so it stays where
         // it was in each (spec §6).
@@ -292,6 +303,63 @@ enum MainWindow {
         adw_toolbar_view_set_bottom_bar_style(ptr(whole), ADW_TOOLBAR_RAISED)
         breakpoints()
         return whole
+    }
+
+    /// GNOME's primary menu: F10 opens it; its items are the app's actions,
+    /// so their keys show beside them. In the places' header; with none
+    /// (Preferences › Pages, every page off) at the end of every page's,
+    /// or Preferences could never be reached to bring them back.
+    static func mainMenu() -> Widget {
+        let menu = gtk_menu_button_new()!.tooltip("Main Menu")
+        gtk_menu_button_set_icon_name(ptr(menu), "open-menu-symbolic")
+        gtk_menu_button_set_menu_model(ptr(menu), ptr(menuItems))
+        gtk_menu_button_set_primary(ptr(menu), 1)
+        return menu
+    }
+
+    private static let menuItems: OpaquePointer = {
+        let items = g_menu_new()!
+        g_menu_append(items, "Preferences", "app.preferences")
+        g_menu_append(items, "Keyboard Shortcuts", "win.show-help-overlay")
+        g_menu_append(items, "About Jukebox", "app.about")
+        let account = g_menu_new()!
+        g_menu_append(account, "Sign Out…", "app.sign-out")
+        g_menu_append_section(items, nil, ptr(account))
+        return items
+    }()
+
+    /// Preferences › Pages, as the Mac's sidebar follows it: a place off
+    /// leaves the sidebar; the hair before the library's places only while
+    /// one of them is there (the playlists' follows their own switch); the
+    /// place shown switched off, Home. Every one off: no sidebar at all,
+    /// folded or not, and nothing that brings it back but Preferences.
+    private static func followPages() {
+        observe(places) {
+            let settings = app.settings
+            for (index, section) in sections.enumerated() {
+                guard let section, let page = section.2,
+                      let row = gtk_list_box_get_row_at_index(ptr(places), Int32(index)) else { continue }
+                ptr(row).isVisible = settings.shows(page)
+            }
+            libraryGap.isVisible = settings.showsLibrary
+            let hasPlaces = settings.showsAnyPage
+            if !hasPlaces {
+                adw_overlay_split_view_set_show_sidebar(ptr(split), 0)
+            } else if !fold.isCollapsed {
+                // Unfolded the places show, as libadwaita shows them itself
+                // when a window widens: again after a switch made them go.
+                adw_overlay_split_view_set_show_sidebar(ptr(split), 1)
+            }
+            guard let current, !shows(current, settings) else { return }
+            select(0)
+        }
+    }
+
+    /// Whether the place at `index` has its row (Home's always).
+    private static func shows(_ index: Int, _ settings: AppSettings) -> Bool {
+        if index > sections.count { return settings.shows(.sidebarPlaylists) }
+        guard sections.indices.contains(index), let page = sections[index]?.2 else { return true }
+        return settings.shows(page)
     }
 
     /// A hair between groups of rows, 16 tall, neither chosen nor played.
@@ -351,7 +419,8 @@ enum MainWindow {
     private static func sidebarButton() -> Widget {
         let button = gtk_toggle_button_new()!.tooltip("Show Sidebar")
         gtk_button_set_icon_name(ptr(button), "sidebar-show-symbolic")
-        g_object_bind_property(raw(split), "collapsed", raw(button), "visible", G_BINDING_SYNC_CREATE)
+        // Only while they are folded away, and only while there are any.
+        observe(button) { button.isVisible = fold.isCollapsed && app.settings.showsAnyPage }
         g_object_bind_property(raw(split), "show-sidebar", raw(button), "active",
                                GBindingFlags(G_BINDING_SYNC_CREATE.rawValue | G_BINDING_BIDIRECTIONAL.rawValue))
         return button
@@ -485,4 +554,11 @@ enum About {
         adw_about_dialog_set_comments(ptr(dialog), "Music from your Jellyfin, Navidrome or other Subsonic server, with a radio that plays on from anything.")
         adw_dialog_present(ptr(dialog), MainWindow.window)
     }
+}
+
+/// Whether the places are folded away (libadwaita's `collapsed`), where the
+/// buttons that show them, and Preferences › Pages, can follow it.
+@Observable
+private final class Fold {
+    var isCollapsed = false
 }

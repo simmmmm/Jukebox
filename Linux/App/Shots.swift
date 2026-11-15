@@ -156,9 +156,11 @@ enum Shots {
             Preferences.present()
             await step("16-preferences", wait: 2)
             if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
-                await scrolledToEnd(ptr(dialog), "16b-preferences-downloads")
+                await scrolled(ptr(dialog), to: 0.4, "16c-preferences-pages")
+                await scrolled(ptr(dialog), to: 1, "16b-preferences-downloads")
                 adw_dialog_force_close(dialog)
             }
+            await pages()
             MainWindow.showSignIn()
             await step("17-sign-in", wait: 2)
             gtk_window_close(ptr(MainWindow.window))
@@ -202,7 +204,7 @@ enum Shots {
         }
         MainWindow.select(10)
         await step("22-downloaded", wait: 3)
-        await scrolledToEnd(visiblePage(), "22b-downloaded-songs")
+        await scrolled(visiblePage(), to: 1, "22b-downloaded-songs")
         // A downloaded song plays from its file.
         let offline = app.offline
         if let collection = offline.collections.last, let first = collection.tracks.first(where: { offline.has($0.id) }) {
@@ -246,12 +248,27 @@ enum Shots {
             + (app.offline.collection(for: reason).map { app.offline.fact(of: $0) } ?? "not chosen") + "\n"
     }
 
-    /// `root`'s first scroller at its end, as a picture.
-    private static func scrolledToEnd(_ root: Widget?, _ name: String) async {
+    /// `root`'s first scroller `fraction` of the way down, as a picture.
+    private static func scrolled(_ root: Widget?, to fraction: Double, _ name: String) async {
         guard let scroller = find(root, { String(cString: gtk_widget_get_css_name($0)) == "scrolledwindow" }),
               let adjustment = gtk_scrolled_window_get_vadjustment(ptr(scroller)) else { return }
-        gtk_adjustment_set_value(adjustment, gtk_adjustment_get_upper(adjustment))
+        gtk_adjustment_set_value(adjustment, (gtk_adjustment_get_upper(adjustment) - gtk_adjustment_get_page_size(adjustment)) * fraction)
         await step(name, wait: 1)
+    }
+
+    /// Preferences › Pages: a sidebar with fewer places, on Albums; then
+    /// every page off, from Albums, which goes Home: no sidebar at all,
+    /// Home, the panel and the bar. The listener's choice put back after.
+    private static func pages() async {
+        let settings = app.settings
+        let before = settings.hiddenPages
+        settings.hiddenPages = [.radio, .songs, .favorites, .genres, .recentlyAdded, .sidebarPlaylists]
+        MainWindow.select(3)
+        await step("23-pages-trimmed", wait: 2)
+        settings.hiddenPages = Set(AppSettings.Page.allCases)
+        await step("24-pages-none", wait: 2)
+        settings.hiddenPages = before
+        try? await Task.sleep(for: .seconds(1))
     }
 
     /// The pointer over `widgets`, as a picture: Xvfb has no pointer, so
