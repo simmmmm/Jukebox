@@ -1,0 +1,40 @@
+# Jukebox as a Flatpak (dev/linux-flatpak.sh builds it). The photographer,
+# 15 November 2026: "zet dan ook maar flatpak in de releases".
+#
+# The binary is the one dev/linux-build.sh makes, put in as it is, not built
+# again here: Flathub's Swift (6.3) is not the one the app is built and tried
+# with (6.2, dev/linux/Dockerfile), and one toolchain means a release is what
+# was run here. GNOME's runtime has the rest: GTK 4, libadwaita, GStreamer
+# with MP3, FLAC, AAC and HLS, libsecret, libcurl.
+app-id: com.tijmen.Jukebox
+runtime: org.gnome.Platform
+runtime-version: '50'
+sdk: org.gnome.Sdk
+command: jukebox
+finish-args:
+  - --share=ipc
+  - --socket=wayland
+  - --socket=fallback-x11
+  - --device=dri
+  - --socket=pulseaudio
+  # The listener's own server, and LRCLIB for lyrics.
+  - --share=network
+  # The signed-in session in the desktop's keyring (Platform.swift's
+  # Keychain); without this Jukebox sees no keyring and keeps it in its file.
+  - --talk-name=org.freedesktop.secrets
+  # The desktop's media controls (CGlue/mpris.c).
+  - --own-name=org.mpris.MediaPlayer2.Jukebox
+modules:
+  - name: jukebox
+    buildsystem: simple
+    build-commands:
+      - install -Dm755 Jukebox /app/bin/jukebox
+      - install -Dm644 -t /app/share/applications com.tijmen.Jukebox.desktop
+      - install -Dm644 -t /app/share/icons/hicolor/scalable/apps com.tijmen.Jukebox.svg
+    sources:
+      - type: file
+        path: ../../.build-linux/release/Jukebox
+      - type: file
+        path: com.tijmen.Jukebox.desktop
+      - type: file
+        path: com.tijmen.Jukebox.svg

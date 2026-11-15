@@ -43,12 +43,20 @@ CI's Mac sees it.
     dev/linux-build.sh            # in Docker: no Swift needed on the machine
     .build-linux/debug/Jukebox
     dev/linux-install.sh          # release build into ~/.local, with icon and desktop entry
+    dev/linux-flatpak.sh          # the release build as a Flatpak -> build/flatpak/
 
 The image (`dev/linux/Dockerfile`) is Swift 6.2 on Ubuntu 24.04 with GTK
 4.14, libadwaita 1.5 and GStreamer; those versions are the floor. Swift's
 own libraries are linked into the binary. A machine that runs it needs GTK
 4, libadwaita, GStreamer (with its good and bad plugins, for MP3, FLAC, AAC
 and HLS) and libsecret: libraries, nothing of a desktop.
+
+The Flatpak (`Linux/data/com.tijmen.Jukebox.yml`) is that same binary in
+GNOME's runtime, for a distribution below the floor: "zet dan ook maar
+flatpak in de releases" (the photographer, 15 November 2026). It is not
+built again there: Flathub's Swift is 6.3, and one toolchain means a release
+is what was run here. `dev/linux-flatpak.sh install` installs it,
+`release` attaches it to GitHub's release (`docs/RELEASE.md`).
 
 `JUKEBOX_AUDIO_SINK=fakesink` plays to nowhere, in time, for trying things
 without sound.
@@ -143,7 +151,9 @@ The iPhone has each of these, and Linux is ready for them:
 - The drawings in motion: the label turning, the land under Now Playing
   (once the photographer decides whether it turns), the mark warming up,
   the mark before a station's name in Now Playing and the player's bar.
-- A Flatpak. Until then `dev/linux-install.sh` installs for one user.
+- The Flatpak's page in GNOME Software (a metainfo file): it names a
+  licence, and the photographer has not chosen one. Flathub wants that too,
+  and a build from source.
 - CI. The workflow file calls `ci/*.sh`, and the session's token may not
   push workflow files, so Linux is built here, not yet on GitHub.
 
@@ -158,6 +168,10 @@ and a mix from the fake Jellyfin by their pages' buttons and plays one from
 its file; it starts a station from Radio's +, saves one as a playlist, makes
 a playlist, fills it with Add Songs and deletes it, and starts a song's
 station from Search. `frames.txt` says what came.
+
+The Flatpak, 16 November 2026: in its sandbox under Broadway it signs in to
+the fake Jellyfin from the file, loads the library and its covers. Not yet
+tried in it: sound, the keyring, the media controls.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
 calls are tested in the kit), KDE, XFCE and Hyprland themselves; offline on

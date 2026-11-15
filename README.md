@@ -16,6 +16,10 @@ builds Jukebox in Docker and installs it for you (binary, icon, desktop
 entry). It needs only libraries (GTK 4, libadwaita, GStreamer, libsecret): at home on GNOME, at
 ease on KDE, XFCE and Hyprland. More in `docs/LINUX.md`.
 
+Or the Flatpak, from [Releases](https://github.com/simmmmm/Jukebox/releases):
+
+    flatpak install --user Jukebox-1.0-x86_64.flatpak
+
 ## TestFlight
 
 GitHub's macOS runners build and upload it, so no Mac is needed.

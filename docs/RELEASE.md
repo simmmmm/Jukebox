@@ -183,3 +183,10 @@ App Store Connect record, one purchase for the iPhone, the iPad and the Mac
 3. In App Store Connect: the listing above, the screenshots, App Privacy,
    age rating, the review notes; "Manually release this version" so the
    photographer chooses the day.
+
+## Linux
+
+`dev/linux-flatpak.sh release` builds the Flatpak (`docs/LINUX.md`) from a
+pushed commit and attaches it to GitHub's release `v<MARKETING_VERSION>`. A
+new release starts as a draft: the photographer publishes it, and chooses
+the day. A version is released once; the next file needs the next number.
