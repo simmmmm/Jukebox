@@ -29,7 +29,9 @@ enum MainWindow {
     private static var searchPage: NavPage?
 
     /// The sidebar's places with their icons (spec §4), in order; nil is a
-    /// gap between the two groups. Radio's is the mark's template cut.
+    /// gap between the two groups. Radio's is the mark's template cut. The
+    /// Mac's sidebar, 1:1 (WideShell.swift): "Linux erbij", the
+    /// photographer, 15 November 2026, of its three more rows.
     private static let sections: [(String, String, () -> Widget)?] = [
         ("Home", "go-home-symbolic", HomePage.make),
         ("Radio", Glyphs.name("radio"), RadioPage.make),
@@ -39,6 +41,7 @@ enum MainWindow {
         ("Songs", "audio-x-generic-symbolic", LibraryPages.songs),
         ("Playlists", Glyphs.name("playlists"), LibraryPages.playlists),
         ("Favorites", Glyphs.name("heart"), LibraryPages.favorites),
+        ("Genres", Glyphs.name("genres"), LibraryPages.genres),
     ]
 
     static func present(in application: UnsafeMutablePointer<AdwApplication>) {
@@ -179,7 +182,7 @@ enum MainWindow {
         if adw_overlay_split_view_get_collapsed(ptr(split)) != 0 { adw_overlay_split_view_set_show_sidebar(ptr(split), 0) }
         // Which places are used (docs/STATS.md, `screen`): its kind, in the
         // list's own words.
-        Stats.track(.screen, ["name": title.lowercased()])
+        Stats.track(.screen, ["name": title.lowercased().replacingOccurrences(of: " ", with: "_")])
     }
 
     private static func main() -> Widget {

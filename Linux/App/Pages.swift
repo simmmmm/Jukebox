@@ -570,6 +570,42 @@ enum LibraryPages {
         return pageColumn(column)
     }
 
+    /// Every genre in the library's tags, as the Mac's Genres (GenresView):
+    /// tiles, each the covers of the genre's first four albums, the songs
+    /// the library has in it under its name. A tag that joins several
+    /// ("Rock; Shoegaze") is each of them, as the radio counts them.
+    static func genres() -> Widget {
+        let grid = ItemList<Genre, Tile>(
+            grid: true,
+            make: {
+                let tile = Tile(emptyIcon: Glyphs.name("genres"))
+                return (tile.widget, tile)
+            },
+            fill: { tile, genre, _ in
+                tile.show(collage: genreCovers(genre), genre.name, LibraryText.songs(songCount(of: genre)))
+            },
+            activate: { genre, _, _ in Pages.open(genre) })
+        let empty = emptyLine("The genres in your music’s tags appear here.")
+        observe(grid.widget) {
+            let genres = app.library.genres
+            if genres != grid.items { grid.set(genres) }
+            empty.isVisible = genres.isEmpty && !app.library.tracks.isEmpty
+        }
+        return listPage(vbox([pageTitle("Genres"), empty]), grid.widget, grid: true)
+    }
+
+    /// The covers of a genre's first four albums: its tile's and its page's
+    /// art (the Mac's LibraryGenreArt).
+    static func genreCovers(_ genre: Genre) -> [Artwork] {
+        Array(app.library.albums(inGenre: genre).lazy.compactMap(\.artwork).prefix(4))
+    }
+
+    /// The library's own songs in the genre, else the server's count.
+    private static func songCount(of genre: Genre) -> Int {
+        let own = app.library.trackCount(inGenre: genre)
+        return own > 0 ? own : (genre.songCount ?? 0)
+    }
+
     static func artistTile(_ artist: Artist, round: Bool = false) -> Widget {
         let tile = Tile(round: round)
         tile.show(artist.artwork, artist.name, "")
@@ -782,6 +818,42 @@ enum Pages {
         } else {
             Nav.push(playlist.name, pageColumn(column))
         }
+    }
+
+    /// A genre's page, as the Mac's (GenreDetailView): its collage as the
+    /// head's cover, how many songs and how long, Play, Shuffle and ⋮ with
+    /// Start Radio; then its albums in tiles. Only the library is read: a
+    /// genre the server has no item of that name for has an id of the
+    /// app's own.
+    static func open(_ genre: Genre) {
+        let tracks = app.library.tracks(inGenre: genre)
+        let albums = app.library.albums(inGenre: genre)
+        let context = QueueContext(.genre(genre.name), title: genre.name)
+        let art = cover()
+        art.emptyIcon = Glyphs.name("genres")
+        art.show(collage: LibraryPages.genreCovers(genre))
+        let seed = StationSeed.genre(key: genre.key, name: genre.name)
+        let actions = [
+            playButton { app.player.play(tracks, context: context) },
+            wordButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
+            moreButton([("Start Radio", {
+                Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
+                app.radio.start(seed)
+            })]),
+        ]
+        for action in actions where tracks.isEmpty { gtk_widget_set_sensitive(action, 0) }
+        let top = heading(art: art.widget, title: genre.name,
+                          facts: facts([tracks.isEmpty ? "No songs in the library carry this genre."
+                                                       : length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })]),
+                          actions: actions)
+        keep(art, on: raw(top), as: "art")
+        let column = vbox([top])
+        if !albums.isEmpty {
+            append(sectionTitle("Albums"), to: column)
+            append(LibraryPages.flow(albums.map { albumTile($0) }), to: column)
+        }
+        Stats.track(.screen, ["name": "genre"])
+        Nav.push(genre.name, pageColumn(column))
     }
 
     /// The covers of the first four albums among `tracks`: a playlist's

@@ -112,6 +112,8 @@ final class Art {
     /// The image has gone (its page was rebuilt) while a cover was on its
     /// way: nothing is left to show it in.
     private var isGone = false
+    /// What stands in for no cover: a note, or a genre's guitar.
+    var emptyIcon = "folder-music-symbolic"
 
     init(_ size: Int32) {
         self.size = size
@@ -204,7 +206,7 @@ final class Art {
     }
 
     private func placeholder() {
-        gtk_image_set_from_icon_name(ptr(image), "folder-music-symbolic")
+        gtk_image_set_from_icon_name(ptr(image), emptyIcon)
         gtk_image_set_pixel_size(ptr(image), max(16, grid(size / 3)))
         gtk_widget_add_css_class(image, "artwork-empty")
     }

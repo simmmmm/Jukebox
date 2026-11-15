@@ -335,9 +335,10 @@ final class Tile {
     private let title = label("", "t15", "medium")
     private let subtitle = label("", "t13", "fact")
 
-    init(round: Bool = false) {
+    init(round: Bool = false, emptyIcon: String? = nil) {
         let size = PageMeasure.shared.tile
         art = Art(size)
+        if let emptyIcon { art.emptyIcon = emptyIcon }
         if round { art.widget.css("round") }
         widget = vbox(spacing: 0, [art.widget, title, subtitle]).size(width: size).css("grid-tile")
             .align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_START)

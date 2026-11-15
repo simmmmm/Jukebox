@@ -8,7 +8,7 @@
 // id: a genre the server has no item of exactly that name for has an id
 // of the app's own ("genre:shoegaze").
 //
-// In a wide window, as the other library pages (Linux has no Genres): the
+// In a wide window, as the other library pages and as Linux's: the
 // genres as a grid of tiles, each the covers of its first four albums, and
 // a genre's page with that collage as its head's cover, the albums in tiles.
 
