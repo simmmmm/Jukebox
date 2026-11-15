@@ -169,11 +169,10 @@ struct QueueView: View {
     /// Up Next as the wide layout's panel shows it, from UpNextList, as
     /// Linux's panel does.
     private var panelList: some View {
-        // ponytail: no songs "queued from elsewhere" yet: the iPhone's player
-        // does not keep which ones were (Linux's `addedIDs`), so "Then" comes
-        // only before Autoplay. Pass them once the queue is shared.
+        // The songs queued from elsewhere come under "Then", as on Linux:
+        // one queue (PlayQueue) keeps which ones they are on both.
         let items = UpNextList.items(current: player.current, upNext: player.upNext, context: player.context,
-                                     currentIndex: player.currentIndex, added: [],
+                                     currentIndex: player.currentIndex, added: player.addedIDs,
                                      autoplay: settings.autoplay, repeatMode: player.repeatMode)
         let head = UpNextList.head(player.context, playing: player.currentTrack, library: library, mixes: mixes)
         return List {
