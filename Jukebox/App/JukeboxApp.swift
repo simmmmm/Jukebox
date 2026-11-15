@@ -126,6 +126,7 @@ struct RootView: View {
 /// and an iPad window's when it is narrow; the Mac's window is always wide.
 struct MainTabView: View {
     @Environment(Navigator.self) private var navigator
+    @Environment(AppSettings.self) private var settings
 
     var body: some View {
         @Bindable var navigator = navigator
@@ -135,14 +136,21 @@ struct MainTabView: View {
                     HomeView().routeDestinations()
                 }
             }
-            Tab("Radio", systemImage: "dot.radiowaves.left.and.right", value: AppTab.radio) {
-                NavigationStack(path: navigator.path(for: .radio)) {
-                    RadioView().routeDestinations()
+            // Settings › Pages: Radio off, its tab goes; every library kind
+            // off, the Library's. The tab shown stays until another is
+            // chosen: Settings is a sheet from Radio, and would go with it.
+            if settings.shows(.radio) || navigator.tab == .radio {
+                Tab("Radio", systemImage: "dot.radiowaves.left.and.right", value: AppTab.radio) {
+                    NavigationStack(path: navigator.path(for: .radio)) {
+                        RadioView().routeDestinations()
+                    }
                 }
             }
-            Tab("Library", systemImage: "square.stack.fill", value: AppTab.library) {
-                NavigationStack(path: navigator.path(for: .library)) {
-                    LibraryView().routeDestinations()
+            if settings.showsLibrary || navigator.tab == .library {
+                Tab("Library", systemImage: "square.stack.fill", value: AppTab.library) {
+                    NavigationStack(path: navigator.path(for: .library)) {
+                        LibraryView().routeDestinations()
+                    }
                 }
             }
             Tab(value: AppTab.search, role: .search) {
