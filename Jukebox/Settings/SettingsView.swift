@@ -99,6 +99,7 @@ struct SettingsView: View {
                 SettingsPlaybackSection()
                 SettingsRadioSection()
                 SettingsLastFMSection(savedKey: settings.lastFMAPIKey)
+                SettingsPagesSection(hasSidebar: true)
                 SettingsPrivacySection()
                 SettingsAccountSection()
                 SettingsDownloadsSection()
@@ -112,6 +113,7 @@ struct SettingsView: View {
                 SettingsRadioSection()
                 SettingsLastFMSection(savedKey: settings.lastFMAPIKey)
                 SettingsLyricsSection()
+                SettingsPagesSection(hasSidebar: false)
                 SettingsLibrarySection()
                 SettingsHistorySection()
                 SettingsPrivacySection()
@@ -660,6 +662,53 @@ private struct SettingsLyricsSection: View {
             SettingsHeader("Lyrics")
         } footer: {
             Text("When your server has no lyrics for a song, Jukebox looks them up on LRCLIB (lrclib.net), a free and open lyrics database. It sends the song's title, artist, album and length.")
+        }
+    }
+}
+
+// MARK: - Pages
+
+/// Which pages the sidebar and the tabs show (AppSettings.hiddenPages): the
+/// photographer, 15 November 2026, "kan je zelf bepalen hoe minimalistisch je
+/// alles wilt hebben". In the sidebar's order; Home has no switch. The
+/// playlists' own switch only where there is a sidebar: in the tabs it would
+/// do nothing.
+private struct SettingsPagesSection: View {
+    let hasSidebar: Bool
+
+    @Environment(AppSettings.self) private var settings
+
+    init(hasSidebar: Bool) {
+        self.hasSidebar = hasSidebar
+    }
+
+    var body: some View {
+        Section {
+            ForEach(AppSettings.Page.allCases, id: \.self) { page in
+                if page != .sidebarPlaylists || hasSidebar {
+                    Toggle(title(page), isOn: Binding(get: { settings.shows(page) },
+                                                      set: { settings.setShows(page, $0) }))
+                }
+            }
+        } header: {
+            SettingsHeader("Pages")
+        } footer: {
+            Text("Home is always there. Pages that are off stay reachable from Home and Search.")
+        }
+    }
+
+    private func title(_ page: AppSettings.Page) -> LocalizedStringKey {
+        switch page {
+        case .radio: "Radio"
+        case .albums: "Albums"
+        case .artists: "Artists"
+        case .songs: "Songs"
+        case .playlists: "Playlists"
+        case .favorites: "Favorites"
+        case .genres: "Genres"
+        case .recentlyAdded: "Recently Added"
+        case .downloaded: "Downloaded"
+        case .sidebarPlaylists: "Playlists in the Sidebar"
         }
     }
 }
