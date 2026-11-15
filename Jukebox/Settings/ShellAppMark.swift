@@ -31,7 +31,7 @@ struct ShellAppMark: View {
         // At rest from the first frame (About, or Reduce Motion): on, so
         // nothing flashes in.
         let on = !animatesIn || reduceMotion
-        // dev/brand/icon.py: the mark's 32-unit box at 22.4 units to 1024,
+        // As on the app icon: the mark's 32-unit box at 22.4 units to 1024,
         // a little below the middle.
         ArchMarkFace(size: side * 0.7, style: .flat,
                      outer: on || stage >= 1 ? 1 : 0,

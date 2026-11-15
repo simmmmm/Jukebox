@@ -66,7 +66,7 @@ enum Theme {
     /// #ECE7DF by day, #1B1918 by night.
     static let raised = Color(light: 0xECE7DF, dark: 0x1B1918)
 
-    /// The Arch's own colours (docs/BRAND.md, dev/brand/). Cabinet, Glow,
+    /// The Arch's own colours (docs/BRAND.md). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
     /// only — the station on the air, the icon — never for text.
     enum Arch {

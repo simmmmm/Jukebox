@@ -9,7 +9,6 @@
 // above them and still belong to it. The true complement (the opposite
 // hue) brings a colour the cover does not have: acid lime under a sunset,
 // cyan under red stripes. One colour only: that one. None: Glow.
-// (docs/design/accent-choice.png: the three side by side.)
 //
 // Not the cover's average either (ImagePipeline.averageColor, which a
 // turntable's label and a station's room take): an average of red stripes
@@ -41,10 +40,9 @@
 //      Glow's lightness is salmon), but never under 0.70, which keeps it at
 //      6.7:1 or more on Cabinet, where text needs 4.5.
 //
-// The steps and their numbers were tried on the test library's 19 covers
-// (docs/design/accent.png): every cover with a colour got one a person
-// would point at, and the black and white one got Glow.
-// `dev/accent.py` is the same in Python, for sketches.
+// The steps and their numbers were tried on the test library's 19 covers:
+// every cover with a colour got one a person would point at, and the
+// black and white one got Glow.
 
 import Foundation
 
@@ -258,7 +256,7 @@ public enum CoverAccent {
     }
 
     /// A percentile of sorted values, between the two nearest as NumPy
-    /// takes it, so the sketches' Python gives the same colour.
+    /// takes it: the steps' numbers were tuned in sketches that used NumPy.
     static func percentile(_ sorted: [Double], _ fraction: Double) -> Double {
         guard let first = sorted.first else { return 0 }
         let place = fraction * Double(sorted.count - 1)

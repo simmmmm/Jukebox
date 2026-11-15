@@ -9,8 +9,8 @@
 // drawn flat — Copper outside, Glow inside, a flat core, no blur, no bloom.
 // Only a station's artwork, while that station is on the air, is lit.
 //
-// The geometry is dev/brand/geom.py's, number for number (ArchCut, in
-// ArtMeasures.swift): change both together. Drawn with Path so it can tint,
+// The geometry is ArchCut's (ArtMeasures.swift), the mark's one source,
+// which Linux's Drawings.swift reads too. Drawn with Path so it can tint,
 // template and fade — the bands come on one by one on the welcome screen.
 
 import SwiftUI

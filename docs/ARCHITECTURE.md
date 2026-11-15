@@ -28,8 +28,8 @@ Mac's, is Linux's window, 1:1 (below).
 | `Package.swift` | The Linux client's package. Its `shared` list names the files of `Jukebox/` Linux compiles too (the stores, not the screens). A file that gains `import SwiftUI` leaves the list, or loses the import. |
 | `project.yml` | XcodeGen. One target for the iPhone, the iPad and the Mac: one bundle ID, so one App Store record and one purchase. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
 | `ci/` | What `.github/workflows/ci.yml` runs: the iPhone's build and the Mac's, the screenshot walk, the upload (`docs/RELEASE.md`). The workflow stays generic: the Claude session may not push workflow files. |
-| `dev/` | The test server, the made-up library, the kit tests, the icon (`make-icon.py`), the brand's drawings (`brand/`). |
-| `docs/` | This; `RADIO.md` (how the radio chooses); `BRAND.md` (the Arch, its rules and colours); `SERVERS.md` (Jellyfin and Subsonic, call by call); `OFFLINE.md` (songs kept on the phone); `LINUX.md` (the Linux client); `STATS.md` (anonymous usage counts); `RELEASE.md` (the App Store, the builds, the Mac); `brand/` (the boards); `design/` (sketch D and its rules; `tells.md`, the reference for every screen). |
+| `dev/` | The test servers and their made-up library, the kit tests, the Linux build and its screenshot walk, the fake Jellyfin and its demo library (`demo/`, recorded once from the test server), the 4-point grid check. |
+| `docs/` | This; `RADIO.md` (how the radio chooses); `BRAND.md` (the Arch, its rules and colours); `SERVERS.md` (Jellyfin and Subsonic, call by call); `OFFLINE.md` (songs kept on the phone); `LINUX.md` (the Linux client); `STATS.md` (anonymous usage counts); `RELEASE.md` (the App Store, the builds, the Mac); `brand/` (the mark and the boards); `design/tells.md` (sketch D's rules, the reference for every screen). |
 
 ## Rules for every part
 
@@ -90,7 +90,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Kit: radio | `Library/LibrarySnapshot.swift`, `Radio/*`, tests, `docs/RADIO.md` |
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
 | Kit: lyrics | `Lyrics/*` (LRCParser, LyricsQuery, LRCLIBClient, LyricsCache), tests |
-| Kit: artwork | `Artwork/CoverAccent.swift` (Now Playing's accent from its cover, BRAND.md), `Artwork/CoverWall.swift` (the still page's wall and floor from it), tests, `dev/accent.py` (the accent in Python, for sketches) |
+| Kit: artwork | `Artwork/CoverAccent.swift` (Now Playing's accent from its cover, BRAND.md), `Artwork/CoverWall.swift` (the still page's wall and floor from it), tests |
 | Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
 | Kit: offline | `Offline/*` (OfflineManifest, KeepPolicy: the automatic keep, JellyfinClient.downloadURL), tests, `docs/OFFLINE.md` except "In the app" |
 | App: library | `Jukebox/Library/*`: LibraryStore, every library screen, AddToPlaylistSheet |
@@ -145,8 +145,8 @@ put behind it through `backgroundPreferenceValue` and told by
   (JukeboxKit's `CoverWall`). Nothing moves.
 
 The arithmetic is `TurntableMeasures.swift` (the land, the sleeve's layout,
-`RecordMotion`'s numbers, the clock), checked on Linux by
-`dev/turntable-test.sh`. One timeline turns what turns, at most 20 frames a
+`RecordMotion`'s numbers, the clock), Foundation only and built on Linux
+too. One timeline turns what turns, at most 20 frames a
 second (30 once the land itself turns, sketch H), and only while the sleeve
 shows, the music plays, the app is active and the page is D2. At rest it is
 paused. `docs/BRAND.md` says why each.

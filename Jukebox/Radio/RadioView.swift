@@ -1,6 +1,6 @@
 // The Radio tab: the photographer's favourite part ("ik vind vooral de
 // radiofunctie echt belangrijk", 8 November 2026), so it is a page of its
-// own as in Music. As sketch D draws it (docs/design/radio-after.png): on
+// own as in Music. As sketch D drew it: on
 // top the station on the air — its art, the one lit thing on the page, the
 // dial, Pause and Stop — or, while nothing is on the air, Your Station with
 // the tab's one filled button, as on Home; then "Stations", the three made

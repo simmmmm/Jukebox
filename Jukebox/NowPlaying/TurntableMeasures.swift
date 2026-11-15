@@ -12,9 +12,8 @@
 // starting under the sleeve. D1, the same page on a still wall, is
 // NowPlayingGround's and CoverWall's.
 //
-// Foundation only, no SwiftUI, so that it is checked on Linux as well as
-// built on the Mac: dev/turntable-test.sh compiles it as it is, with the
-// app's settings, beside dev/turntable-test.swift. (The file keeps the
+// Foundation only, no SwiftUI, so that Linux builds it as it is (one of
+// Package.swift's `shared`) as well as the Mac. (The file keeps the
 // turntable's name: the record player it measured before D2 is gone, the
 // album's side it worked out is not.)
 
@@ -128,7 +127,7 @@ nonisolated struct LandRing: Equatable, Sendable {
 /// next song plays, the land moves on one band, so the new song's band
 /// starts where the last one's did.
 ///
-/// The numbers are sketch E's (its D2, final.py): on the iPhone 17 Pro, 402
+/// The numbers are sketch E's (its D2): on the iPhone 17 Pro, 402
 /// by 874, the record's grooves run from 1440 points from its centre to 420,
 /// its centre 300 from the left, a groove every 5.2 points; on the iPad
 /// sideways, 1180 by 820, from 1900 to 700, its centre 820 from the left,

@@ -34,20 +34,18 @@ The same day the Arch still read as someone else's:
 
 > "Kun je het design iets minder ai maken?"
 
-Sketch D answered ([design/sheet-d.png](design/sheet-d.png); the screens in
-`design/home-after.png`, `home-after-light.png`, `nowplaying-after.png`,
-`radio-after.png`): light means on air, every other arch flat, the name out
+Sketch D answered: light means on air, every other arch flat, the name out
 of the art, Numa's small grey spaced labels out of the screens. He said:
 
 > "Ja nice dit, maak dit maar dan refinen we later wel. Als batterij een
 > zorg wordt moeten we ook ff kijken wat we daar aan kunnen doen."
 
 Its rules, said as what to reach for ("niet 'minder ai' maar vooral meer
-ziel", 14 November 2026), are [design/tells.md](design/tells.md). Walk its
-checklist before a screen ships. `docs/design/` is the reference; a screen
-that differs says why. Jukebox stays Numa's sibling in restraint and care
-(Apple's controls, one filled button a screen); its shapes and labels are
-its own.
+ziel", 14 November 2026), are [design/tells.md](design/tells.md), the
+reference for every screen: walk its checklist before a screen ships, and a
+screen that differs says why. Jukebox stays Numa's sibling in restraint
+and care (Apple's controls, one filled button a screen); its shapes and
+labels are its own.
 
 ## The rules
 
@@ -112,8 +110,7 @@ Playing's ground) and font sizes are outside the grid; a line marked
 ## Colours
 
 `Jukebox/Components/Theme.swift` (`Theme.Arch`, `Theme.ground`); the
-accent pair is the asset catalog's `AccentColor`. Contrast is WCAG 2's
-(`python3 dev/brand/contrast.py`).
+accent pair is the asset catalog's `AccentColor`. Contrast is WCAG 2's.
 
 | Name | Hex | Use | Contrast |
 |---|---|---|---|
@@ -130,7 +127,7 @@ accent pair is the asset catalog's `AccentColor`. Contrast is WCAG 2's
 
 Now Playing and a station's room are always dark, so the art reads the
 same in either appearance. The icon's other oranges (tube feet, hot lines,
-core light, room glow) are `dev/brand/icon.py`'s alone.
+core light, room glow) are the icon's alone.
 
 ## Now Playing's accent: the cover's
 
@@ -139,14 +136,13 @@ complementaire kleur, kijk maar wat het beste uitkomt" (8 November 2026).
 On Now Playing, what is Glow elsewhere (progress, the station's name and
 mark, a thumb or heart given, the dial, Up Next's toggles) takes a colour
 of the cover: `JukeboxKit/…/Artwork/CoverAccent.swift`, steps in its
-comment; `dev/accent.py` is the same in Python for sketches.
+comment.
 
 - **Its second colour,** 60° of hue or more from the main one (the orange
   sun on a purple sky, the teal corner of a pink haze): it stands out from
-  the art and belongs to it. Tried against both
-  (`docs/design/accent-choice.png`): the main colour melts into the record;
-  the true complement brings a colour the cover lacks (acid lime under a
-  sunset, cyan under red stripes).
+  the art and belongs to it. Tried against both: the main colour melts
+  into the record; the true complement brings a colour the cover lacks
+  (acid lime under a sunset, cyan under red stripes).
 - One colour: that one. None (black and white, grey): Glow.
 - The hue the eye picks out (a hue histogram, vivid parts weighed most),
   not the average, which turns red stripes on cream beige.
@@ -157,8 +153,7 @@ comment; `dev/accent.py` is the same in Python for sketches.
   the accent is 4.5:1 or more on it.
 - Eased over 0.5 s on a song change; at once when Now Playing opens.
 
-Elsewhere Copper and Glow stay. `docs/design/accent.png`: the test
-library's covers with their accents.
+Elsewhere Copper and Glow stay.
 
 ## The mark
 
@@ -181,9 +176,8 @@ box: width 24, height 28, baseline 30, stroke 2.6, gaps 2.2.
   motion is a glow by other means, and beside the record it would run the
   screen at 60 fps where the record needs 30.
 
-`dev/brand/geom.py` is the geometry's one source; `ArchCut` in
-`Components/ArtMeasures.swift` carries the same numbers, for both
-platforms. Change both together.
+`ArchCut` in `Components/ArtMeasures.swift` is the geometry's one source,
+for both platforms; the SVGs above have the same numbers.
 
 ## The app icon
 
@@ -191,13 +185,14 @@ The mark lit on Cabinet, as a jukebox's tubes light their room: tubes in
 their oranges with halos and a hot line each, the core, and floor and
 window lit by them. Three appearances, single-size: default, dark (a darker
 room), tinted (a grey ramp on black for the system to tint). All opaque
-RGB, as App Store Connect wants. `python3 dev/make-icon.py` redraws them
-from `dev/brand/icon.py` (Chromium through node's playwright).
+RGB, as App Store Connect wants. The PNGs in `AppIcon.appiconset` are the
+icon's source: the script that drew them went with the cloud's other
+sketches, so a redraw starts afresh.
 
 ## Station artwork
 
-[stations.png](brand/stations.png), from `dev/brand/station.py` with the
-app's numbers (`StationArtCut` in `Components/ArtMeasures.swift`, shared with Linux).
+[stations.png](brand/stations.png), drawn with the app's numbers
+(`StationArtCut` in `Components/ArtMeasures.swift`, shared with Linux).
 
 - **Window:** the arch, filled with the music. One cover for a song's or
   album's station; four as two-by-two panes for an artist, genre, decade
@@ -218,10 +213,8 @@ app's numbers (`StationArtCut` in `Components/ArtMeasures.swift`, shared with Li
 
 The way here, 8 November 2026. "Ik vind de platenspeler ideeen leuk maar
 dan zou ik ook de plaat willen zien draaien met de album art er op het
-liefst in een soort perspectief van licht erboven." Sketch C rendered it
-([design/turntable-c.png](design/turntable-c.png)); sketch D drew it
-([design/nowplaying-after.png](design/nowplaying-after.png)): the cover as
-a picture disc on a deck tipped back. "Kun je de platenspeler iets leuker
+liefst in een soort perspectief van licht erboven." Sketch C rendered it;
+sketch D drew it: the cover as a picture disc on a deck tipped back. "Kun je de platenspeler iets leuker
 maken, de hoes er achter zetten en de naald zetten op welk nummer het is
 van het album" put the sleeve behind the deck and the arm on the song's
 place on its album. On TestFlight:
@@ -238,8 +231,8 @@ is maar de achtergrond helemaal anders"). He chose:
 
 The deck, plinth and arm went. Code: `NowPlaying/SleeveRecord.swift`
 (sleeve, record), `NowPlaying/NowPlayingGround.swift` (ground, the one
-timeline), `NowPlaying/TurntableMeasures.swift` (arithmetic, checked on
-Linux by `dev/turntable-test.sh`), JukeboxKit's `Artwork/CoverWall.swift`
+timeline), `NowPlaying/TurntableMeasures.swift` (arithmetic, Foundation
+only, built on Linux too), JukeboxKit's `Artwork/CoverWall.swift`
 (D1's colours, `CoverWallTests`).
 
 ### The sleeve
@@ -387,23 +380,23 @@ The same brand on GNOME, in GTK 4 and libadwaita's own controls
 | Station artwork | `Components/StationArtwork.swift`; cover colour in `ArtworkView.swift` (`ImagePipeline.averageColor`) |
 | Home: "Tonight", Your Station, Mixes, Played lately | `Home/HomeView.swift` (`HomeStationHero`, also on Radio while nothing plays) |
 | Radio: on air, Stations, the dial | `Radio/RadioView.swift`; `Radio/RadioOnAirCard.swift` (`RadioOnAirCard`, `RadioThumbs`, `RadioDial`, also on a station's page and Now Playing) |
-| Now Playing | `NowPlaying/SleeveRecord.swift`, `NowPlaying/NowPlayingGround.swift`, `NowPlaying/TurntableMeasures.swift` (`dev/turntable-test.sh`), `NowPlaying/NowPlayingView.swift`; JukeboxKit's `Artwork/CoverWall.swift` |
+| Now Playing | `NowPlaying/SleeveRecord.swift`, `NowPlaying/NowPlayingGround.swift`, `NowPlaying/TurntableMeasures.swift`, `NowPlaying/NowPlayingView.swift`; JukeboxKit's `Artwork/CoverWall.swift` |
 | Mini player's station (11 pt, template, accent) | `NowPlaying/MiniPlayer.swift` |
 | Welcome's mark coming on, About's | `Settings/ShellAppMark.swift`, `Settings/OnboardingView.swift`, `Settings/SettingsView.swift` |
 | Mixes: square, artists under them | `Components/Tiles.swift` (`MixCard`) |
 | Launch screen | `Assets.xcassets/LaunchBackground`, `RootView`'s launching phase |
-| Icon | `Assets.xcassets/AppIcon.appiconset`, `dev/make-icon.py`, `dev/brand/icon.py` |
-| Drawings | `dev/brand/` (`geom.py`, `icon.py`, `station.py`, `covers.py`, `render.js`); sketch D in `docs/design/` |
+| Icon | `Assets.xcassets/AppIcon.appiconset` |
+| The brand's pictures | `docs/brand/`: the mark's SVGs, the board, the four directions, the stations |
 
 ## Next
 
-- Refine sketch D ("dan refinen we later wel"); compare CI's screenshots
-  against it.
+- Refine sketch D ("dan refinen we later wel") on CI's screenshots and
+  Linux's (`dev/linux-screens.sh`), by `design/tells.md`.
 - Redraw the app icon and launch screen flat: they still glow, from the
   first round, and that is a decision of its own.
 - The library's long lists (Artists, Songs, Playlists, an album's or
   playlist's songs) still use the system's grounds, not paper.
-- `dev/brand/station.py` and the board still light every station; the app
+- `brand/stations.png` and the board still light every station; the app
   lights only the one on air.
 - The Radio tab's glyph is still SF Symbols' radio waves. The board's arch
   there needs the heavy cut as a custom SF Symbol (a `.symbolset` with its

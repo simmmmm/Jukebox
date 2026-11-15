@@ -1,5 +1,5 @@
-// A station's artwork, the Arch's way (docs/BRAND.md, dev/brand/station.py,
-// which draws the same with these same numbers): the arch's window with the
+// A station's artwork, the Arch's way (docs/BRAND.md; the numbers are
+// StationArtCut's, which Linux draws with too): the arch's window with the
 // seed's music in it — one cover for a song or an album, four as panes for
 // an artist, a genre, a decade or a playlist — two bands around it, and as
 // the room the first cover's own colour, darkened. Every station is

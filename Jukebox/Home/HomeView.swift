@@ -7,7 +7,7 @@
 // to explore today, and what is new. Explore needs no history, so Home is
 // full on day one too.
 //
-// Sketch D (docs/design/home-after.png), approved the same day — "Ja nice
+// Sketch D, approved the same day — "Ja nice
 // dit, maak dit maar dan refinen we later wel": the title in the serif, by
 // the hour ("Tonight"); Your Station as a flat arch beside its name, one
 // fact and the one Play, on the ground rather than on a card; the mixes'
