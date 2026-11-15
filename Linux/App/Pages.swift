@@ -570,6 +570,27 @@ enum LibraryPages {
         return pageColumn(column)
     }
 
+    /// Every album, the newest first, as the Mac's Recently Added: the
+    /// page's tiles, as Albums.
+    static func recentlyAdded() -> Widget {
+        let grid = ItemList<Album, Tile>(
+            grid: true,
+            make: {
+                let tile = Tile()
+                return (tile.widget, tile)
+            },
+            fill: { tile, album, _ in tile.show(album.artwork, album.name, album.artistLine) },
+            activate: { album, _, _ in Pages.open(album) })
+        let empty = emptyLine("")
+        observe(grid.widget) {
+            let albums = app.library.recentlyAddedAlbums
+            if albums != grid.items { grid.set(albums) }
+            setText(empty, "Albums added to your \(app.library.serverKind) server appear here.")
+            empty.isVisible = albums.isEmpty && !app.library.tracks.isEmpty
+        }
+        return listPage(vbox([pageTitle("Recently Added"), empty]), grid.widget, grid: true)
+    }
+
     /// Every genre in the library's tags, as the Mac's Genres (GenresView):
     /// tiles, each the covers of the genre's first four albums, the songs
     /// the library has in it under its name. A tag that joins several

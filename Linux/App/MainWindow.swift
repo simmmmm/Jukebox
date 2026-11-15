@@ -42,6 +42,7 @@ enum MainWindow {
         ("Playlists", Glyphs.name("playlists"), LibraryPages.playlists),
         ("Favorites", Glyphs.name("heart"), LibraryPages.favorites),
         ("Genres", Glyphs.name("genres"), LibraryPages.genres),
+        ("Recently Added", Glyphs.name("clock"), LibraryPages.recentlyAdded),
     ]
 
     static func present(in application: UnsafeMutablePointer<AdwApplication>) {
