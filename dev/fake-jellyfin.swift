@@ -7,6 +7,7 @@
 //     JukeboxKit/Sources/JukeboxKit/Subsonic/MD5.swift -o build/fake-jellyfin
 //   build/fake-jellyfin --port 8096 --data dev/demo
 //   build/fake-jellyfin --song-lengths    2:30–5:30 songs, for the pictures
+//   build/fake-jellyfin --slow-downloads  0.4–2 s a song downloaded, so its ring shows
 //
 // Foundation only, one file and the kit's MD5: Xcode's swiftc builds it on
 // the macOS runner, the image of dev/linux-build.sh on Linux. It was Python
@@ -647,6 +648,8 @@ final class Library {
     var clips: [String: Clip] = [:]
     /// --clips-as-recorded: every track the 8-second clip itself.
     var clipsAsRecorded = false
+    /// --slow-downloads: a song downloaded takes 0.4 to 2 s.
+    var slowDownloads = false
 
     init(folder: String, songLengths: Bool, seed: Int, password: String) throws {
         self.folder = folder
@@ -1138,6 +1141,8 @@ struct Response {
     var body: [UInt8] = []
     var contentType: String? = nil
     var headers: [(String, String)] = []
+    /// Seconds to wait before answering, outside the library's lock.
+    var delay: Double = 0
 }
 
 func jsonResponse(_ value: Any, status: Int = 200) -> Response {
@@ -1403,13 +1408,18 @@ func audio(_ request: Request, _ q: Query, _ groups: [String?]) throws -> Respon
         : Int((Double(int(track["RunTimeTicks"]) ?? 0) / Double(ticksPerSecond)).rounded(.toNearestOrEven))
     let data = try lib.clip(name).file(seconds)
     let size = data.count
+    // A download (TranscodingProtocol=http; the player's stream is HLS) as
+    // slow as a real server's, so its progress can be seen: 0.4 to 2 s a
+    // song, the same song the same each time.
+    let delay = lib.slowDownloads && q.get("TranscodingProtocol") == "http"
+        ? 0.4 + Double(Int(String(MD5.hex(id).prefix(4)), radix: 16)! % 17) / 10 : 0
     let headers = [("Accept-Ranges", "bytes"), ("ETag", "\"\(name)-\(seconds)\"")]
     guard let wanted = request.header("Range") else {
-        return Response(status: 200, body: data, contentType: "audio/mp4", headers: headers)
+        return Response(status: 200, body: data, contentType: "audio/mp4", headers: headers, delay: delay)
     }
     // One range, as AVPlayer asks: "bytes=0-1", "bytes=1000-", "bytes=-500".
     let string = wanted as NSString
-    let unsatisfiable = Response(status: 416, headers: [("Content-Range", "bytes */\(size)")])
+    let unsatisfiable = Response(status: 416, headers: [("Content-Range", "bytes */\(size)")], delay: delay)
     guard let found = rangePattern.firstMatch(in: wanted, options: .anchored, range: NSRange(location: 0, length: string.length))
     else { return unsatisfiable }
     let first = string.substring(with: found.range(at: 1)), last = string.substring(with: found.range(at: 2))
@@ -1424,7 +1434,7 @@ func audio(_ request: Request, _ q: Query, _ groups: [String?]) throws -> Respon
     }
     if start >= size || start > end { return unsatisfiable }
     return Response(status: 206, body: Array(data[start...end]), contentType: "audio/mp4",
-                    headers: headers + [("Content-Range", "bytes \(start)-\(end)/\(size)")])
+                    headers: headers + [("Content-Range", "bytes \(start)-\(end)/\(size)")], delay: delay)
 }
 
 let idPattern = "([0-9A-Fa-f-]{32,36})"
@@ -1665,6 +1675,7 @@ func serve(_ connection: Connection) {
             status = "dropped"
         } else {
             let (response, isKnown) = respond(request)
+            if response.delay > 0 { Thread.sleep(forTimeInterval: response.delay) }
             known = isKnown
             status = String(response.status)
             var lines: [(String, String)] = []
@@ -1743,7 +1754,7 @@ enum FakeJellyfin {
         // A peer that hangs up mid-answer must not end the server.
         signal(SIGPIPE, SIG_IGN)
         var host = "", port = 8096, data = "dev/demo", password = "test", seed = 1
-        var songLengths = false, clipsAsRecorded = false
+        var songLengths = false, clipsAsRecorded = false, slowDownloads = false
         var arguments = Array(CommandLine.arguments.dropFirst())
         func value(_ name: String) -> String {
             guard !arguments.isEmpty else {
@@ -1770,9 +1781,11 @@ enum FakeJellyfin {
             // if the simulator's player refuses them, this serves the clips
             // ffmpeg wrote, every track 8 s.
             case "--clips-as-recorded": clipsAsRecorded = true
+            // Each song downloaded (not streamed) takes 0.4 to 2 s, as from a real server.
+            case "--slow-downloads": slowDownloads = true
             case "-h", "--help":
                 print("fake-jellyfin [--host H] [--port 8096] [--data dev/demo] [--password test] [--seed 1]"
-                      + " [--song-lengths] [--clips-as-recorded]")
+                      + " [--song-lengths] [--clips-as-recorded] [--slow-downloads]")
                 exit(0)
             default:
                 FileHandle.standardError.write(Data("fake-jellyfin: unrecognized argument \(argument)\n".utf8))
@@ -1792,6 +1805,7 @@ enum FakeJellyfin {
             exit(1)
         }
         lib.clipsAsRecorded = clipsAsRecorded
+        lib.slowDownloads = slowDownloads
 
         var (fd, shown, failure) = listening(host, port)
         if fd < 0 && host.isEmpty && failure != EADDRINUSE {
