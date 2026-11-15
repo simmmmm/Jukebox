@@ -59,10 +59,13 @@ final class MacScreenshotTests: XCTestCase {
         walk.picture("04-now-playing")
         try walk.closeRoom()
 
-        // The room with the words: Silver Roads begins with Night Drive,
-        // whose lyrics are timed (dev/demo/lyrics.json).
-        if try walk.place("albums"), try walk.openAlbum("Silver Roads"), try walk.play("Silver Roads: Play") {
-            walk.waitForSong("Night Drive")
+        // The room with the words: Glass Hearts begins with Paper Heart,
+        // whose lyrics are timed (dev/demo/lyrics.json). Not the iPad's
+        // Silver Roads, far down the grid: thirty scrolls of the window did
+        // not bring its cover (run 43767663743); Glass Hearts is in the
+        // window as Albums opens.
+        if try walk.place("albums"), try walk.openAlbum("Glass Hearts"), try walk.play("Glass Hearts: Play") {
+            walk.waitForSong("Paper Heart")
         }
         try walk.showPanel("lyrics")
         try walk.openRoom()

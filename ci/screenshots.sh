@@ -446,6 +446,9 @@ round() {
       tail -20 "$work/mac-display-build.log"
     fi
     defaults write com.apple.dock autohide -bool true && killall Dock
+    # Scroll bars only while scrolling, as with a trackpad: a Mac with a
+    # mouse, the runner, shows them always, under every shelf.
+    defaults write -g AppleShowScrollBars -string WhenScrolling
     sleep 3
     walk mac testMac mac-dark 720
     endgroup
