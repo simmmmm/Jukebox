@@ -221,6 +221,9 @@ for kind in $devices; do
     mkdir -p "$out/mac"
     echo "$(sw_vers -productName) $(sw_vers -productVersion)" > "$out/mac/device.txt"
     echo "mac: $(cat "$out/mac/device.txt")"
+    # Set, though no simulator: macOS's bash 3.2 stops at ${!udid_var} of a
+    # variable that is not.
+    udid_mac=none
     ready="${ready:+$ready }mac"
     continue
   fi
