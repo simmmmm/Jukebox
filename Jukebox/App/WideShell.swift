@@ -331,8 +331,8 @@ private struct Places: View {
                     glyphRow(.library(.songs), "Songs", symbol: "music.note")
                     glyphRow(.library(.playlists), "Playlists", symbol: "music.note.list")
                     glyphRow(.library(.favorites), "Favorites", symbol: "heart.fill")
-                    // Not on Linux yet: without a row here these could not be
-                    // reached in the wide window at all.
+                    // Linux has these three too: "Linux erbij" (the
+                    // photographer, 15 November 2026).
                     glyphRow(.library(.genres), "Genres", symbol: "guitars")
                     glyphRow(.library(.recentlyAdded), "Recently Added", symbol: "clock")
                     glyphRow(.library(.downloaded), "Downloaded", symbol: "arrow.down.circle")

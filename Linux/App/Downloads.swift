@@ -49,7 +49,8 @@ func downloadControl(_ reason: OfflineReason, name: String, collection: @escapin
             let percent = Int((min(1, max(0.03, fraction)) * 100).rounded())
             guard percent != ring else { return }
             ring = percent
-            showRing(percent, in: image)
+            // Drawn a moment later: by then the tick may be there.
+            showRing(percent, in: image) { ring == percent }
         case .downloaded:
             ring = nil
             menu.tooltip("Downloaded")
@@ -83,7 +84,7 @@ private func removalMenu(waiting: String?, name: String, reason: OfflineReason) 
 
 /// How much is here, as the Mac's OfflineProgressRing: a thin ring in the
 /// accent on a quiet one, around a stop square, 16 as the icons beside it.
-private func showRing(_ percent: Int, in image: Widget) {
+private func showRing(_ percent: Int, in image: Widget, if wanted: @escaping () -> Bool) {
     let dark = adw_style_manager_get_dark(adw_style_manager_get_default()) != 0
     let accent: UInt32 = dark ? 0xFFB54D : 0xA84A17
     let track: UInt32 = dark ? 0xFFFFFF : 0x000000
@@ -100,7 +101,7 @@ private func showRing(_ percent: Int, in image: Widget) {
             cairo_stroke(cr)
             cairo_rectangle(cr, 6, 6, 4, 4)
             cairo_fill(cr)
-        }) else { return }
+        }), wanted() else { return }
         gtk_image_set_from_paintable(ptr(image), texture.pointer)
     }
 }
@@ -127,29 +128,40 @@ func confirmRemoval(_ heading: String, _ action: String, _ remove: @escaping @Ma
 /// their songs and size); then "Songs you play", the ones Keep Songs I Play
 /// holds. Nothing here: one plain line of what to do.
 enum DownloadedPage {
-    /// What the page shows, to make it again only when that changes (the
-    /// tiles' facts follow the downloads by themselves).
+    /// What the page's top shows, to make it again only when that changes
+    /// (the tiles' facts follow the downloads by themselves, the songs'
+    /// list its songs).
     private struct Shown: Equatable {
         var collections: [OfflineCollection]
-        var kept: [ItemID]
         var hasSongs: Bool
+        var hasKept: Bool
     }
 
     static func make() -> Widget {
         let content = vbox().css("group")
-        let column = vbox([pageTitle("Downloaded"), content])
+        // The keep's songs, a list of its own: it grows a song at a time
+        // while the keep fetches, and the page above stays as it is.
+        let songsTitle = sectionTitle("Songs you play", below: 8)
+        let songs = trackList([], context: { QueueContext(.other, title: "Downloaded") })
+        let column = vbox([pageTitle("Downloaded"), content, songsTitle, songs.widget])
+        observe(songs.widget) {
+            let kept = keptTracks()
+            if kept.map(\.id) != songs.items.map(\.id) { songs.set(kept) }
+            songsTitle.isVisible = !kept.isEmpty
+            songs.widget.isVisible = !kept.isEmpty
+        }
         var shown: Shown?
         observe(content) {
             let offline = app.offline
-            let kept = keptTracks()
-            let now = Shown(collections: offline.collections, kept: kept.map(\.id), hasSongs: offline.songCount > 0)
+            let now = Shown(collections: offline.collections, hasSongs: offline.songCount > 0,
+                            hasKept: !offline.keptTrackIDs.isEmpty)
             guard now != shown else { return }
             shown = now
             clear(content)
             defer { measure(column) }
-            if now.collections.isEmpty && kept.isEmpty { append(hint(), to: content) }
+            if now.collections.isEmpty && !now.hasKept { append(hint(), to: content) }
             if now.hasSongs {
-                let shuffle = playButton("Shuffle All") { shuffleAll(kept: kept) }
+                let shuffle = playButton("Shuffle All") { shuffleAll() }
                 gtk_widget_set_margin_top(shuffle, 24)
                 append(shuffle, to: content)
             }
@@ -163,10 +175,6 @@ enum DownloadedPage {
                 guard !group.isEmpty else { continue }
                 append(sectionTitle(title), to: content)
                 append(LibraryPages.flow(group.map(tile)), to: content)
-            }
-            if !kept.isEmpty {
-                append(sectionTitle("Songs you play", below: 8), to: content)
-                append(trackList(kept, context: { QueueContext(.other, title: "Downloaded") }).widget, to: content)
             }
         }
         return pageColumn(column)
@@ -220,10 +228,10 @@ enum DownloadedPage {
     }
 
     /// Everything here, once each, shuffled.
-    private static func shuffleAll(kept: [Track]) {
+    private static func shuffleAll() {
         var seen = Set<ItemID>()
         var tracks: [Track] = []
-        for track in app.offline.collections.flatMap(\.tracks) + kept where app.offline.has(track.id) {
+        for track in app.offline.collections.flatMap(\.tracks) + keptTracks() where app.offline.has(track.id) {
             if seen.insert(track.id).inserted { tracks.append(track) }
         }
         app.player.play(tracks, context: QueueContext(.other, title: "Downloaded"), shuffled: true)
