@@ -368,5 +368,5 @@ more; one `any MusicServer` goes where it did.
 | Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
 
 The screenshot walk signs in to the fake Jellyfin through the same screen:
-`dev/fake-jellyfin.py` answers `/rest/…` as Jellyfin 12.4 does (404, no
+`dev/fake-jellyfin.swift` answers `/rest/…` as Jellyfin 12.4 does (404, no
 body: not a Subsonic server), so it is found as Jellyfin.

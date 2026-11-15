@@ -2,7 +2,8 @@
 # The screenshot round, after the app has compiled (ci/app.sh, on every push
 # without TestFlight). Steps:
 #   - the fake Jellyfin with the demo library, on localhost:8096
-#     (dev/fake-jellyfin.py, dev/demo);
+#     (dev/fake-jellyfin.swift, dev/demo), and the contact sheet's tool
+#     (dev/contact-sheet.swift), both built here with Xcode's swiftc;
 #   - the app and its UI tests built for the simulator;
 #   - every main screen walked on an iPhone in dark, Home and Now Playing
 #     again in light, Linux's walk on a 13-inch iPad held sideways (each
@@ -84,7 +85,7 @@ sim() { bounded 60 xcrun simctl "$@"; }
 
 # --- The fake Jellyfin -------------------------------------------------------
 
-group "The fake Jellyfin on localhost:8096"
+group "The fake Jellyfin on localhost:8096, and the contact sheet's tool"
 server=
 stop_server() {
   if [[ -n $server ]]; then
@@ -94,11 +95,25 @@ stop_server() {
   server=
 }
 trap stop_server EXIT
-if [[ -f dev/fake-jellyfin.py ]]; then
-  # Unbuffered, so its log is whole when it is stopped. --song-lengths: songs
-  # of 2:30 to 5:30, as a real library has, not the test library's few
-  # seconds, so the album pages and the scrubber look like what a listener sees.
-  PYTHONUNBUFFERED=1 python3 dev/fake-jellyfin.py --port 8096 --data dev/demo --song-lengths \
+# jq reads simctl's and the results' JSON below; the runner has it.
+command -v jq > /dev/null || problem "no jq on this runner: no simulators, verdicts or pictures"
+# Built first, so a tool that does not compile shows at the top of the log,
+# before the walks. The contact sheet's tool checks itself on made-up pictures.
+if bounded "$(allow 300)" xcrun swiftc -O dev/contact-sheet.swift -o "$work/contact-sheet" \
+    > "$work/contact-sheet-build.log" 2>&1 && bounded 60 "$work/contact-sheet" >> "$work/contact-sheet-build.log" 2>&1; then
+  sheet_tool=$work/contact-sheet
+else
+  sheet_tool=
+  problem "dev/contact-sheet.swift did not build or check itself, so no contact sheets"
+  tail -20 "$work/contact-sheet-build.log"
+fi
+if bounded "$(allow 300)" xcrun swiftc -O -parse-as-library dev/fake-jellyfin.swift \
+    JukeboxKit/Sources/JukeboxKit/Subsonic/MD5.swift -o "$work/fake-jellyfin" > "$out/fake-jellyfin-build.log" 2>&1; then
+  # Its log is written a line at a time, so it is whole when it is stopped.
+  # --song-lengths: songs of 2:30 to 5:30, as a real library has, not the
+  # test library's few seconds, so the album pages and the scrubber look
+  # like what a listener sees.
+  "$work/fake-jellyfin" --port 8096 --data dev/demo --song-lengths \
     > "$out/fake-jellyfin.log" 2>&1 < /dev/null &
   server=$!
   answered=false
@@ -125,7 +140,8 @@ if [[ -f dev/fake-jellyfin.py ]]; then
     tail -40 "$out/fake-jellyfin.log"
   fi
 else
-  problem "dev/fake-jellyfin.py is missing, so the walks stop at sign-in"
+  problem "dev/fake-jellyfin.swift did not build, so the walks stop at sign-in (fake-jellyfin-build.log)"
+  tail -20 "$out/fake-jellyfin-build.log"
 fi
 endgroup
 
@@ -145,75 +161,64 @@ if ! grep -qE '^iOS (2[6-9]|[3-9][0-9])' <<< "$runtimes"; then
 fi
 grep '^iOS' <<< "$runtimes"
 
-# The simulator for a device kind, on the newest iOS 26 or later, made when
-# the runner has none: an iPhone 17 Pro, else the newest numbered iPhone (a
-# Pro first); a 13-inch iPad Pro, else a 13-inch iPad, else any iPad; an
-# 11-inch iPad Pro (834 points upright), else another 11-inch iPad.
-# Prints "udid<TAB>name<TAB>runtime".
-cat > "$work/pick.py" <<'PY'
-import json, re, subprocess, sys
-
-kind = sys.argv[1]
-data = json.load(sys.stdin)
-
-
-def version(runtime):
-    return [int(n) for n in re.findall(r"\d+", runtime.get("version", "0"))]
-
-
-runtimes = sorted((r for r in data.get("runtimes", [])
-                   if r.get("isAvailable") and "SimRuntime.iOS" in r.get("identifier", "")
-                   and version(r)[:1] >= [26]), key=version)
-if not runtimes:
-    sys.exit("no iOS 26 runtime")
-runtime = runtimes[-1]
-
-
-def rank(name):
-    """Higher is better; None when the name is not of this kind."""
-    if kind == "iphone":
-        if not name.startswith("iPhone"):
-            return None
-        if name == "iPhone 17 Pro":
-            return (3, 0)
-        m = re.fullmatch(r"iPhone (\d+)( Pro)?", name)
-        if m:
-            return (2 if m.group(2) else 1, int(m.group(1)))
-        return (0, 0)
-    if kind == "ipad11":
-        if not name.startswith("iPad") or "11-inch" not in name:
-            return None
-        return (1 if name.startswith("iPad Pro") else 0, 0)
-    if not name.startswith("iPad"):
-        return None
-    if "13-inch" in name:
-        return (2 if name.startswith("iPad Pro") else 1, 0)
-    return (0, 0)
-
-
-devices = [(rank(d["name"]), d["name"], d["udid"])
-           for d in data.get("devices", {}).get(runtime["identifier"], [])
-           if d.get("isAvailable") and rank(d["name"]) is not None]
-if devices:
-    _, name, udid = max(devices)
-else:
-    types = runtime.get("supportedDeviceTypes") or data.get("devicetypes", [])
-    candidates = [(rank(t["name"]), t["name"], t["identifier"])
-                  for t in types if rank(t.get("name", "")) is not None]
-    if not candidates:
-        sys.exit("no %s device type for %s" % (kind, runtime.get("name")))
-    _, name, type_id = max(candidates)
-    udid = subprocess.run(["xcrun", "simctl", "create", name, type_id, runtime["identifier"]],
-                          check=True, capture_output=True, text=True).stdout.strip()
-print("\t".join([udid, name, runtime.get("name", "iOS")]))
-PY
+# The simulator for a device kind, from `xcrun simctl list -j` on stdin:
+# "udid<TAB>name<TAB>runtime", or, when the runner has none of that kind,
+# "create<TAB>name<TAB>device type<TAB>runtime id<TAB>runtime" for simctl to
+# make. The newest iOS 26 or later; an iPhone 17 Pro, else the newest
+# numbered iPhone (a Pro first); a 13-inch iPad Pro, else a 13-inch iPad,
+# else any iPad; an 11-inch iPad Pro (834 points upright), else another
+# 11-inch iPad.
+pick() {
+  jq -r --arg kind "$1" '
+    def version: [(.version // "0") | scan("[0-9]+") | tonumber];
+    # Higher is better; null when the name is not of this kind.
+    def rank: . as $name
+      | if $kind == "iphone" then
+          if ($name | startswith("iPhone") | not) then null
+          elif $name == "iPhone 17 Pro" then [3, 0]
+          elif ($name | test("^iPhone [0-9]+( Pro)?$")) then
+            $name | capture("^iPhone (?<number>[0-9]+)(?<pro> Pro)?$")
+            | [(if .pro then 2 else 1 end), (.number | tonumber)]
+          else [0, 0] end
+        elif $kind == "ipad11" then
+          if ($name | startswith("iPad")) and ($name | contains("11-inch"))
+          then [(if $name | startswith("iPad Pro") then 1 else 0 end), 0] else null end
+        elif ($name | startswith("iPad") | not) then null
+        elif ($name | contains("13-inch")) then [(if $name | startswith("iPad Pro") then 2 else 1 end), 0]
+        else [0, 0] end;
+    . as $data
+    | [.runtimes[]? | select(.isAvailable and ((.identifier // "") | contains("SimRuntime.iOS"))
+        and (version[:1] >= [26]))]
+    | if length == 0 then error("no iOS 26 runtime") else sort_by(version) | last end
+    | . as $runtime
+    | [$data.devices[$runtime.identifier][]? | select(.isAvailable)
+        | {rank: (.name | rank), name, udid} | select(.rank != null)]
+    | if length > 0 then
+        max_by([.rank, .name, .udid]) | [.udid, .name, ($runtime.name // "iOS")] | @tsv
+      else
+        [(if ($runtime.supportedDeviceTypes // []) | length > 0 then $runtime.supportedDeviceTypes
+          else $data.devicetypes // [] end)[]
+          | {rank: ((.name // "") | rank), name, identifier} | select(.rank != null)]
+        | if length == 0 then error("no \($kind) device type for \($runtime.name)") else . end
+        | max_by([.rank, .name, .identifier])
+        | ["create", .name, .identifier, $runtime.identifier, ($runtime.name // "iOS")] | @tsv
+      end'
+}
 
 ready=
 bounded 120 xcrun simctl list -j > "$work/simctl.json" 2> "$work/simctl.err" \
   || problem "xcrun simctl list failed: $(tail -1 "$work/simctl.err")"
 for kind in $devices; do
-  if line=$(bounded 180 python3 "$work/pick.py" "$kind" < "$work/simctl.json" 2> "$work/pick-$kind.err"); then
-    IFS=$'\t' read -r udid name runtime <<< "$line"
+  udid=
+  if line=$(pick "$kind" < "$work/simctl.json" 2> "$work/pick-$kind.err"); then
+    if [[ $line == create$'\t'* ]]; then
+      IFS=$'\t' read -r _ name type runtime_id runtime <<< "$line"
+      udid=$(sim create "$name" "$type" "$runtime_id" 2>> "$work/pick-$kind.err") || udid=
+    else
+      IFS=$'\t' read -r udid name runtime <<< "$line"
+    fi
+  fi
+  if [[ -n $udid ]]; then
     printf -v "udid_$kind" '%s' "$udid"
     mkdir -p "$out/$kind"
     echo "$name, $runtime" > "$out/$kind/device.txt"
@@ -247,79 +252,80 @@ endgroup
 
 # --- The walks ---------------------------------------------------------------
 
-cat > "$work/verdict.py" <<'PY'
-import json, sys
+# A walk's result in a line, from xcresulttool's summary on stdin. A walk
+# whose only failures are XCTest's own complaints inside XCTExpectFailure
+# ("not hittable") is reported so; they are the missed list.
+verdict() {
+  local line
+  line=$(jq -r '((.result // "no result") | tostring) as $result
+    | (if $result == "Expected Failure"
+       then "Passed (XCTest\u0027s complaints about missed steps were expected)" else $result end)
+      + ([.testFailures[]? | .failureText // ""]
+         | if length > 0 then ": " + (join(" / ") | .[:400]) else "" end)' 2> /dev/null)
+  echo "${line:-no result}"
+}
 
-try:
-    summary = json.load(sys.stdin)
-except Exception:
-    print("no result")
-    sys.exit()
-line = str(summary.get("result", "no result"))
-# A walk whose only failures are XCTest's own complaints inside
-# XCTExpectFailure ("not hittable") is reported so; they are the missed list.
-if line == "Expected Failure":
-    line = "Passed (XCTest's complaints about missed steps were expected)"
-failures = [f.get("failureText", "") for f in summary.get("testFailures", [])]
-if failures:
-    line += ": " + " / ".join(failures)[:400]
-print(line)
-PY
+is_picture() {
+  case $1 in
+    *.[pP][nN][gG] | *.[jJ][pP][gG] | *.[jJ][pP][eE][gG]) return 0 ;;
+  esac
+  return 1
+}
 
 # The pictures of one walk, named as the test named them, into the device's
 # folder; its missed list into the folder's missed.txt. Prints how many.
 # Two sources: the files the walk wrote itself (JUKEBOX_SHOTS), there even
 # when the runner was stopped, and the result's exported attachments
 # (manifest.json), there when the files could not be written. The files win.
-cat > "$work/collect.py" <<'PY'
-import json, os, re, shutil, sys
-
-export, direct, dst, label = sys.argv[1:5]
-os.makedirs(dst, exist_ok=True)
-PICTURES = (".png", ".jpg", ".jpeg")
-# The walk's own names, "07-albums", "light-01-home" or the iPad's Linux
-# twins' "10b-now-playing": not XCTest's own screenshots and recordings,
-# which a result can hold as well.
-WALK = re.compile(r"^(?:[a-z]+-)?\d{2,}[a-z]?-")
-pictures = {}  # name -> source file
-missed = {}  # "export" or "direct" -> source file
-manifest = os.path.join(export, "manifest.json")
-try:
-    with open(manifest, encoding="utf-8") as f:
-        tests = json.load(f)
-except (OSError, ValueError):
-    tests = []
-for test in tests if isinstance(tests, list) else []:
-    for attachment in test.get("attachments", []):
-        src = os.path.join(export, attachment.get("exportedFileName") or "-")
-        if not os.path.isfile(src):
-            continue
-        # "05-home-scrolled_0_<UUID>.png": the name the test gave.
-        given = attachment.get("suggestedHumanReadableName") or ""
-        name = os.path.splitext(given)[0].split("_")[0]
-        if name.startswith("missed"):
-            missed["export"] = src
-        elif WALK.match(name) and os.path.splitext(src)[1].lower() in PICTURES:
-            pictures[name] = src
-if os.path.isdir(direct):
-    for file in sorted(os.listdir(direct)):
-        name, ext = os.path.splitext(file)
-        if name.startswith("missed") and ext == ".txt":
-            missed["direct"] = os.path.join(direct, file)
-        elif ext.lower() in PICTURES:
-            pictures[name] = os.path.join(direct, file)
-for name, src in pictures.items():
-    shutil.copy(src, os.path.join(dst, name + os.path.splitext(src)[1].lower()))
-source = missed.get("direct") or missed.get("export")
-if source:
-    with open(source, encoding="utf-8", errors="replace") as f:
-        # "Nothing missed." is the walk saying so: no line for it.
-        lines = [l.strip() for l in f if l.strip() and l.strip() != "Nothing missed."]
-    with open(os.path.join(dst, "missed.txt"), "a", encoding="utf-8") as f:
-        for line in lines:
-            f.write("%s: %s\n" % (label, line))
-print(len(pictures))
-PY
+collect() {
+  local export=$1 direct=$2 dst=$3 label=$4 found=$work/found-$4.txt
+  local file name base src missed_export= missed_direct= walk='^([a-z]+-)?[0-9]{2,}[a-z]?-'
+  mkdir -p "$dst"
+  : > "$found"
+  # "05-home-scrolled_0_<UUID>.png": the name the test gave, before the
+  # first "_". Only the walk's own names, "07-albums", "light-01-home" or
+  # the iPad's Linux twins' "10b-now-playing": not XCTest's own screenshots
+  # and recordings, which a result can hold as well.
+  if [[ -f $export/manifest.json ]]; then
+    while IFS=$'\t' read -r file name; do
+      src=$export/$file
+      [[ -f $src ]] || continue
+      name=${name%.*}
+      name=${name%%_*}
+      if [[ $name == missed* ]]; then
+        missed_export=$src
+      elif [[ $name =~ $walk ]] && is_picture "$src"; then
+        printf '%s\t%s\n' "$name" "$src" >> "$found"
+      fi
+    done < <(jq -r 'if type == "array" then .[] else empty end | .attachments[]?
+      | [(.exportedFileName // "-"), (.suggestedHumanReadableName // "")] | @tsv' \
+      "$export/manifest.json" 2> /dev/null)
+  fi
+  if [[ -d $direct ]]; then
+    for src in "$direct"/*; do
+      [[ -f $src ]] || continue
+      base=${src##*/}
+      name=${base%.*}
+      if [[ $name == missed* && $base == *.txt ]]; then
+        missed_direct=$src
+      elif is_picture "$src"; then
+        printf '%s\t%s\n' "$name" "$src" >> "$found"
+      fi
+    done
+  fi
+  # One picture a name: the last found, so the walk's own file.
+  awk -F'\t' '{ last[$1] = $2 } END { for (name in last) print name "\t" last[name] }' "$found" \
+    | while IFS=$'\t' read -r name src; do
+        cp "$src" "$dst/$name.$(printf '%s' "${src##*.}" | tr '[:upper:]' '[:lower:]')"
+      done
+  src=${missed_direct:-$missed_export}
+  if [[ -n $src ]]; then
+    # "Nothing missed." is the walk saying so: no line for it.
+    sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' "$src" | grep -v -e '^$' -e '^Nothing missed\.$' \
+      | sed "s/^/$label: /" >> "$dst/missed.txt"
+  fi
+  cut -f1 "$found" | sort -u | wc -l | tr -d ' '
+}
 
 # One walk: one test on a device's simulator, at most $4 seconds, and its
 # pictures exported. xcodebuild's own test timeout ends a stuck test with a
@@ -352,7 +358,7 @@ walk() {
   grep -E 'PICTURE|MISSED|error:|[Cc]rash|Test Case .*(passed|failed|skipped)|TEST EXECUTE' "$out/$label.log" \
     | head -100
   verdict=$(bounded 120 xcrun xcresulttool get test-results summary --path "$result" 2>/dev/null \
-    | python3 "$work/verdict.py")
+    | verdict)
   echo "$label: $verdict" >> "$out/$kind/verdict.txt"
   mkdir -p "$work/attachments/$label"
   if [[ -d $result ]]; then
@@ -362,7 +368,7 @@ walk() {
   else
     problem "$label: no result bundle ($label.log)"
   fi
-  pictures=$(python3 "$work/collect.py" "$work/attachments/$label" "$direct" "$out/$kind" "$label")
+  pictures=$(collect "$work/attachments/$label" "$direct" "$out/$kind" "$label")
   echo "$label: $verdict; $pictures pictures"
 }
 
@@ -440,43 +446,10 @@ stop_server
 # --- Contact sheets ----------------------------------------------------------
 
 group "Contact sheets"
-# Pillow: already there, else in a venv of its own (Homebrew's Python refuses
-# installs outside one), else for the user. Homebrew's python3 first, then
-# Apple's (/usr/bin/python3, Xcode's): Numa-mac's Mac once had a Homebrew
-# Python whose venv came without pip.
-# At most 150 s of the five minutes kept for the end, however the tries go.
-py=
-pillow_until=$(( SECONDS + 150 ))
-: > "$work/pillow.log"
-for base in python3 /usr/bin/python3; do
-  if "$base" -c 'import PIL' 2> /dev/null; then
-    py=$base
-    break
-  fi
-done
-if [[ -z $py ]]; then
-  n=0
-  for base in python3 /usr/bin/python3; do
-    n=$(( n + 1 ))
-    if bounded "$(( pillow_until - SECONDS ))" "$base" -m venv "$work/venv$n" >> "$work/pillow.log" 2>&1 \
-        && bounded "$(( pillow_until - SECONDS ))" "$work/venv$n/bin/python" -m pip install --quiet pillow >> "$work/pillow.log" 2>&1; then
-      py="$work/venv$n/bin/python"
-      break
-    fi
-  done
-fi
-if [[ -z $py ]]; then
-  if bounded "$(( pillow_until - SECONDS ))" python3 -m pip install --quiet --user pillow >> "$work/pillow.log" 2>&1 \
-      || bounded "$(( pillow_until - SECONDS ))" python3 -m pip install --quiet --user --break-system-packages pillow >> "$work/pillow.log" 2>&1; then
-    py=python3
-  else
-    problem "no Pillow, so no contact sheets ($(tail -1 "$work/pillow.log"))"
-  fi
-fi
 for kind in $devices; do
-  [[ -n $py ]] || break
+  [[ -n $sheet_tool ]] || break
   ls "$out/$kind"/*.png > /dev/null 2>&1 || continue
-  bounded 90 "$py" dev/contact-sheet.py "$out/$kind" "$out/$kind-sheet.png" "$out/$kind-sheet.jpg" \
+  bounded 90 "$sheet_tool" "$out/$kind" "$out/$kind-sheet.png" "$out/$kind-sheet.jpg" \
     "Jukebox · $(cat "$out/$kind/device.txt") · $short" || problem "no contact sheet for the $kind"
 done
 endgroup
@@ -504,7 +477,7 @@ readme() {
   echo "# Jukebox, as it looks"
   echo
   echo "Every main screen of the app, walked in the iOS Simulator on GitHub's Mac against a made-up"
-  echo "Jellyfin library (\`dev/fake-jellyfin.py\`), by \`ci/screenshots.sh\` after each push. This branch"
+  echo "Jellyfin library (\`dev/fake-jellyfin.swift\`), by \`ci/screenshots.sh\` after each push. This branch"
   echo "holds the latest round of mac and main at its top, and the latest of each work branch in"
   echo "\`branches/<name>/\`: each round replaces its own. The iPad's pictures are named as their twins"
   echo "in Linux's walk (\`Linux/App/Shots.swift\`, 1440x900; upright, 760x900)."
@@ -669,7 +642,7 @@ for kind in $devices; do
   jpg="$out/$kind-sheet.jpg"
   [[ -f $jpg ]] || continue
   echo "=====BEGIN SHEET $kind====="
-  python3 -c 'import base64, sys; sys.stdout.write(base64.encodebytes(open(sys.argv[1], "rb").read()).decode())' "$jpg"
+  base64 < "$jpg" | fold -w 76
   echo "=====END SHEET $kind====="
 done
 exit 0
