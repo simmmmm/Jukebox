@@ -192,7 +192,7 @@ struct TrackRow: View {
 
             if showsArtwork {
                 VStack(alignment: .leading, spacing: 0) {
-                    wideTitle(playable: playable, onPhone: onPhone)
+                    wideTitle(playable: playable)
                     if let words {
                         Text(words)
                             .desktopFont(13)
@@ -200,15 +200,16 @@ struct TrackRow: View {
                             .lineLimit(1)
                     }
                     if let reason {
+                        // Linux's faint, 40 %.
                         Text(reasonText(reason))
                             .desktopFont(13)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(Color.primary.opacity(0.4))
                             .lineLimit(1)
                     }
                 }
             } else {
                 HStack(alignment: .firstTextBaseline, spacing: Theme.Space.s) {
-                    wideTitle(playable: playable, onPhone: onPhone)
+                    wideTitle(playable: playable)
                         .layoutPriority(1)
                     if let words {
                         Text(words)
@@ -244,29 +245,14 @@ struct TrackRow: View {
         }
     }
 
-    /// The title in 15, the playing song's in the accent; Music's small
-    /// heart and arrow after it.
-    private func wideTitle(playable: Bool, onPhone: Bool) -> some View {
-        HStack(spacing: 4) {
-            Text(track.name)
-                .lineLimit(1)
-                .foregroundStyle(isCurrent ? AnyShapeStyle(Theme.accent)
-                                 : playable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-            // The iPhone's caption size, 11, not the Mac's 10.
-            if library.isFavorite(track.id) {
-                Image(systemName: "heart.fill")
-                    .desktopFont(11)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("Favorite")
-            }
-            if onPhone {
-                Image(systemName: "arrow.down.circle.fill")
-                    .desktopFont(11)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("Downloaded")
-            }
-        }
-        .desktopFont(15)
+    /// The title in 15, the playing song's in the accent. Nothing after
+    /// it, as Linux's row: no heart, no arrow (the iPhone's are Music's).
+    private func wideTitle(playable: Bool) -> some View {
+        Text(track.name)
+            .lineLimit(1)
+            .foregroundStyle(isCurrent ? AnyShapeStyle(Theme.accent)
+                             : playable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
+            .desktopFont(15)
     }
 
     private var isCurrent: Bool { player.currentTrack?.id == track.id }

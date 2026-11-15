@@ -55,11 +55,13 @@ struct RadioOnAirCard: View {
                     .desktopFont(32, design: .serif)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
-                // Linux says when it started where it knows; the song
-                // otherwise, as here.
+                // When it started, as Linux's; the song where that is not
+                // known.
                 Group {
                     if radio.isStarting {
                         Text("Choosing the first songs…")
+                    } else if let started = StationClock.shared.started(station) {
+                        Text(verbatim: started)
                     } else if let track = player.currentTrack {
                         Text(verbatim: [track.name, track.artistLine].filter { !$0.isEmpty }.joined(separator: " · "))
                     }
@@ -176,6 +178,27 @@ struct RadioOnAirCard: View {
     }
 }
 
+/// When the station on the air began, for a wide page's "Started at
+/// 11:46", as Linux's (RadioPage.started). WideShell follows the radio from
+/// the window's start.
+/// ponytail: kept in memory from the first time it is seen on air, as
+/// Linux's; one restored at launch has started at the launch.
+@Observable
+final class StationClock {
+    static let shared = StationClock()
+
+    private var start: (id: String, date: Date)?
+
+    func follow(_ id: String?) {
+        if id != start?.id { start = id.map { ($0, Date()) } }
+    }
+
+    func started(_ station: Station) -> String? {
+        guard let start, start.id == station.id else { return nil }
+        return String(localized: "Started at \(start.date.formatted(date: .omitted, time: .shortened))")
+    }
+}
+
 /// Thumbs down and up for the song on the air, as plain glyphs: a thumbs
 /// down skips it and plays less like it, a thumbs up plays more like it
 /// (RadioController). The one given is filled, the thumbs up in the accent.
@@ -239,6 +262,7 @@ struct RadioDial: View {
 
     @Environment(RadioController.self) private var radio
     @Environment(AppSettings.self) private var settings
+    @Environment(\.isWide) private var isWide
     @State private var isDragging = false
 
     init(onDragging: @escaping (Bool) -> Void = { _ in }) {
@@ -247,15 +271,16 @@ struct RadioDial: View {
 
     var body: some View {
         @Bindable var settings = settings
-        VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: { editing in
-                isDragging = editing
-                onDragging(editing)
-                if !editing {
-                    radio.adventurousnessChanged()
-                    Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
+        VStack(alignment: .leading, spacing: isWide ? Theme.Space.s : Theme.Space.xs) {
+            Group {
+                if isWide {
+                    // Linux's dial in the panel: its line, the knob always.
+                    LineSlider(value: $settings.adventurousness, range: 0...1, alwaysShowsKnob: true,
+                               onEditingChanged: edited)
+                } else {
+                    Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: edited)
                 }
-            })
+            }
             // The tint around it: Copper or Glow on the Radio tab and a
             // station's page (the app's own), the cover's colour on Now
             // Playing.
@@ -272,6 +297,15 @@ struct RadioDial: View {
         }
         .onChange(of: settings.adventurousness) { _, _ in
             if !isDragging { radio.adventurousnessChanged() }
+        }
+    }
+
+    private func edited(_ editing: Bool) {
+        isDragging = editing
+        onDragging(editing)
+        if !editing {
+            radio.adventurousnessChanged()
+            Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
         }
     }
 

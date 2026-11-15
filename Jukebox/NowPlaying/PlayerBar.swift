@@ -8,8 +8,8 @@
 //
 // The same as Linux's, zone for zone ("ik wil dat de linux app en de apple
 // app 1:1 op elkaar lijken", the photographer, 14 November 2026), with
-// Apple's own where it looks and works the same: SF Symbols, a Slider for
-// the position, the system's AirPlay picker and volume. A flat ground one
+// Apple's own where it looks and works the same: SF Symbols, the system's
+// AirPlay picker and volume. A flat ground one
 // step up from the page and a hairline on top; over Now Playing's room the
 // room's ground and dark, no hairline: the bar is its transport there.
 
@@ -186,8 +186,8 @@ struct PlayerBar: View {
             radio.dislike(track)
         } label: {
             Image(systemName: disliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
-                // Given, in the accent, as Linux's.
-                .foregroundStyle(disliked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
+                // Given, in the accent, as Linux's; else in full, as its.
+                .foregroundStyle(disliked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.primary))
                 .frame(width: 32, height: 32)
                 .contentShape(.rect)
         }
@@ -212,7 +212,7 @@ struct PlayerBar: View {
             Task { await library.toggleFavorite(.track(track.id)) }
         } label: {
             Image(systemName: favorite ? "heart.fill" : "heart")
-                .foregroundStyle(favorite ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
+                .foregroundStyle(favorite ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.primary))
                 .frame(width: 32, height: 32)
                 .contentShape(.rect)
         }
@@ -235,13 +235,13 @@ struct PlayerBar: View {
                        onStation: onStation) {
                 player.toggleShuffle()
             }
-            transportButton("backward.fill", label: "Previous", size: 32) { player.previous() }
+            transportButton("backward.end.fill", label: "Previous", size: 32) { player.previous() }
             transportButton(player.isPlaying ? "pause.fill" : "play.fill",
                             label: player.isPlaying ? "Pause" : "Play", size: 40, font: 17) {
                 player.togglePlayPause()
             }
             .background(Color.primary.opacity(0.1), in: .circle)
-            transportButton("forward.fill", label: "Next", size: 32) { player.next() }
+            transportButton("forward.end.fill", label: "Next", size: 32) { player.next() }
             modeButton(symbol: player.repeatMode == .one ? "repeat.1" : "repeat", isOn: player.repeatMode != .off,
                        label: repeatLabel, onStation: onStation) {
                 player.cycleRepeat()
@@ -307,7 +307,6 @@ struct PlayerBar: View {
             HStack(spacing: Theme.Space.s) {
                 Image(systemName: player.volume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
                     .desktopFont(13)
-                    .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
                 VolumeControl(followsAppearance: true)
                     .controlSize(.mini)
@@ -326,7 +325,7 @@ struct PlayerBar: View {
             panel.toggle(content)
         } label: {
             Image(systemName: symbol)
-                .foregroundStyle(isLit ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
+                .foregroundStyle(isLit ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.primary))
                 .frame(width: 32, height: 32)
                 .background(isLit ? Theme.accent.opacity(0.15) : Color.clear, in: .rect(cornerRadius: Theme.Space.s))
                 .contentShape(.rect)
@@ -354,22 +353,20 @@ private struct PlayerBarPosition: View {
         HStack(spacing: Theme.Space.s) {
             Text(duration > 0 ? shown.clock : "--:--")
                 .frame(width: 40, alignment: .trailing)
-            Slider(value: Binding(get: { shown }, set: { value in
+            // Linux's line, its knob only under the pointer.
+            LineSlider(value: Binding(get: { shown }, set: { value in
                 held = value
                 // A step without a hand on it (the keys, VoiceOver) seeks at once.
                 if !isEditing {
                     player.seek(to: value)
                     held = nil
                 }
-            }), in: 0...max(1, duration), onEditingChanged: { editing in
+            }), range: 0...max(1, duration), onEditingChanged: { editing in
                 isEditing = editing
                 guard !editing else { return }
                 if let held { player.seek(to: held) }
                 held = nil
             })
-            // The smallest knob there is: Linux's line is thin, and a full
-            // Mac slider's white knob was the loudest thing in the bar.
-            .controlSize(.mini)
             .disabled(duration <= 0)
             .accessibilityLabel("Position")
             .accessibilityValue(duration > 0 ? String(localized: "\(shown.clock) of \(duration.clock)") : "")

@@ -36,6 +36,7 @@ struct WideShell: View {
     @Environment(PanelState.self) private var panel
     @Environment(LibraryStore.self) private var library
     @Environment(AppSettings.self) private var settings
+    @Environment(RadioController.self) private var radio
     /// The folded places, lying over the page.
     @State private var showsPlaces = false
     /// The bar's search field has the keys: the Search place shows.
@@ -51,9 +52,10 @@ struct WideShell: View {
                 HStack(spacing: 0) {
                     ZStack {
                         HStack(spacing: 0) {
+                            // No line beside them: their ground one step
+                            // up is the edge, as on Linux.
                             if !folds && hasPlaces {
                                 Places { showsPlaces = false }
-                                Divider()
                             }
                             page(folds: folds)
                         }
@@ -74,7 +76,12 @@ struct WideShell: View {
                     // dark ground.
                     .animation(.easeInOut(duration: 0.2), value: navigator.isNowPlayingPresented)
                     if panelShown && !overlaid {
-                        Divider()
+                        // Beside the page its ground is the edge; over the
+                        // room, where it has none, Linux's faint dark line.
+                        Rectangle()
+                            .fill(navigator.isNowPlayingPresented ? Color.black.opacity(0.17) : .clear)
+                            // grid-ok: a line, as a hairline is
+                            .frame(width: 1)
                         panelPane
                             .transition(.move(edge: .trailing))
                     }
@@ -129,6 +136,10 @@ struct WideShell: View {
         .onChange(of: settings.hiddenPages) { _, _ in
             if !settings.shows(place: navigator.place) { navigator.place = .home }
             if !hasPlaces { showsPlaces = false }
+        }
+        // When the station on air began, for "Started at" (StationClock).
+        .onChange(of: radio.station?.id, initial: true) { _, id in
+            StationClock.shared.follow(id)
         }
         // Nothing plays any more: the room closes, as on Linux. The player
         // empties and fills its queue in one go, so a new album does not.

@@ -54,13 +54,20 @@ private struct PlayerVolumeSlider: View {
 
     var body: some View {
         @Bindable var player = player
-        Slider(value: $player.volume, in: 0...1) {
-            Text("Volume")
+        if followsAppearance {
+            // On the bar Linux's level: a line in the text's colour at 60 %,
+            // not the accent (the designer's spec, §2), its knob under the
+            // pointer.
+            LineSlider(value: $player.volume, range: 0...1, fill: Color.primary.opacity(0.6))
+                .accessibilityLabel("Volume")
+        } else {
+            Slider(value: $player.volume, in: 0...1) {
+                Text("Volume")
+            }
+            .labelsHidden()
+            // The filled part white, as on the iPhone.
+            .tint(.white)
         }
-        .labelsHidden()
-        // The filled part white, as on the iPhone; on the bar the text's
-        // colour at 60 %, not the accent (the designer's spec, §2).
-        .tint(followsAppearance ? Color.secondary : .white)
     }
 }
 
@@ -133,10 +140,12 @@ private struct SystemRoutePicker: UIViewRepresentable {
     func makeUIView(context: Context) -> AVRoutePickerView {
         let view = AVRoutePickerView(frame: .zero)
         // Grey like the lyrics and queue buttons beside it; full while
-        // the music plays somewhere else, as Music shows it.
+        // the music plays somewhere else, as Music shows it. On the bar
+        // in full like the glyphs beside it, as Linux's, and lit in the
+        // accent while it plays elsewhere, as a lit button there.
         if followsAppearance {
-            view.tintColor = .secondaryLabel
-            view.activeTintColor = .label
+            view.tintColor = .label
+            view.activeTintColor = UIColor(Theme.accent)
         } else {
             view.tintColor = UIColor(white: 1, alpha: 0.6)
             view.activeTintColor = .white

@@ -190,7 +190,7 @@ struct MixDetailView: View {
     private func wideHeader(page: DesktopMeasures.Page) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             PageHead(page: page, title: mix.title, lead: mix.subtitle,
-                     facts: HomeText.summary(count: mix.tracks.count, duration: mix.duration)) { side in
+                     facts: LibraryText.length(count: mix.tracks.count, duration: mix.duration)) { side in
                 CollageArtwork(artworks: mix.artwork, size: side)
             } actions: {
                 PagePlayButtons(play: { player.playMix(mix) },

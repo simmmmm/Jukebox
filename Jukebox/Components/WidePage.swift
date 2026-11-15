@@ -417,6 +417,76 @@ private struct TileHover: ViewModifier {
     }
 }
 
+/// Linux's scale (Style.swift's `.player-bar scale`, `scale.dial`) in a wide
+/// window: a track of 4 in a row of 16, filled from its start, and a knob of
+/// 16. Drawn here: the system's slider, the iPad's glass knob above all, was
+/// the loudest thing in the bar, and Linux's is a line. The knob always
+/// (the dial: it is set, not read), or only under the pointer and in the
+/// hand (the position, the level). VoiceOver and the keys get the system's
+/// slider, which reads the same value.
+struct LineSlider: View {
+    @Binding var value: Double
+    let range: ClosedRange<Double>
+    /// The part played: the accent, or the level's 60 % of the text.
+    var fill: Color = Theme.accent
+    var alwaysShowsKnob = false
+    var onEditingChanged: (Bool) -> Void = { _ in }
+
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var isHovered = false
+    @State private var isHeld = false
+
+    var body: some View {
+        let span = range.upperBound - range.lowerBound
+        let part = span > 0 ? min(max((value - range.lowerBound) / span, 0), 1) : 0
+        GeometryReader { proxy in
+            let width = proxy.size.width
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.primary.opacity(0.15))
+                Capsule()
+                    .fill(fill)
+                    .frame(width: width * part)
+            }
+            // grid-ok: Linux's track is 4, centred in its 16
+            .frame(height: 4)
+            .frame(maxHeight: .infinity)
+            .overlay(alignment: .leading) {
+                // Adwaita's knob: light grey by night, white by day.
+                Circle()
+                    .fill(colorScheme == .dark ? Color(white: 0.82) : .white)
+                    .shadow(color: .black.opacity(0.3), radius: 1, y: 0.5)
+                    .frame(width: 16, height: 16)
+                    .offset(x: width * part - 8)
+                    .opacity(isEnabled && (alwaysShowsKnob || isHovered || isHeld) ? 1 : 0)
+            }
+            .contentShape(.rect)
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { drag in
+                        guard width > 0 else { return }
+                        if !isHeld {
+                            isHeld = true
+                            onEditingChanged(true)
+                        }
+                        let at = min(max(drag.location.x / width, 0), 1)
+                        value = range.lowerBound + at * span
+                    }
+                    .onEnded { _ in
+                        isHeld = false
+                        onEditingChanged(false)
+                    }
+            )
+        }
+        .frame(height: 16)
+        .onHover { isHovered = $0 }
+        .accessibilityRepresentation {
+            Slider(value: $value, in: range, onEditingChanged: onEditingChanged)
+        }
+    }
+}
+
 /// The desktop spec's sizes (§7) on a wide surface, the one way a wide
 /// surface sets its type: Linux's pixels as points, the same on the Mac and
 /// the iPad ("ik wil dat de linux app en de apple app 1:1 op elkaar

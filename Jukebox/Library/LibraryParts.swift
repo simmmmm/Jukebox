@@ -294,6 +294,15 @@ enum LibraryText {
         return duration >= 60 && !spoken.isEmpty ? "\(songs(count)), \(spoken)" : songs(count)
     }
 
+    /// "7 songs, 27 min", "12 songs, 1 hr 5 min": a wide page's head, as
+    /// Linux's `length` says it, the minutes rounded.
+    static func length(count: Int, duration: TimeInterval) -> String {
+        let minutes = Int((duration / 60).rounded())
+        guard minutes > 0 else { return songs(count) }
+        if minutes < 60 { return String(localized: "\(songs(count)), \(minutes) min") }
+        return String(localized: "\(songs(count)), \(minutes / 60) hr \(minutes % 60) min")
+    }
+
     static func totalDuration(_ tracks: [Track]) -> TimeInterval {
         tracks.reduce(0) { $0 + $1.duration }
     }

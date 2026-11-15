@@ -627,9 +627,10 @@ private struct QueuePanelRow: View {
                     fact(words)
                     if style == .station, let reason = entry.reason {
                         // Why the radio chose it: here and nowhere else.
+                        // Linux's faint, 40 %.
                         Text(reasonText(reason))
                             .desktopFont(13)
-                            .foregroundStyle(.tertiary)
+                            .foregroundStyle(Color.primary.opacity(0.4))
                             .lineLimit(1)
                     }
                 }

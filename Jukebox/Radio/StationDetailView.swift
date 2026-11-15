@@ -187,10 +187,20 @@ struct StationDetailView: View {
     private static let controlsWidth: CGFloat = 480
 
     /// The head on a wide page, as an album's (PageHead): the arch, and at
-    /// its foot the title, what it draws from and when it last played, Play
-    /// and New Picks (or on the air Pause and Stop); the hairline under it.
+    /// its foot the title, what it draws from and what the list is, as
+    /// Linux's says it (on the air, when it last played), Play and New
+    /// Picks (or on the air Pause and Stop); the hairline under it.
     private func wideHeader(onAir: Bool, page: DesktopMeasures.Page) -> some View {
-        let facts = [station.subtitle ?? StationText.kind(station), RelativeDay.played(lastPlayed)]
+        let list: String
+        if onAir {
+            list = RelativeDay.played(lastPlayed)
+        } else if let picks {
+            list = picks.isEmpty ? String(localized: "Nothing in your library for this station yet.")
+                : String(localized: "Starts with these, then plays on.")
+        } else {
+            list = String(localized: "Choosing songs…")
+        }
+        let facts = [station.subtitle ?? "", list]
             .filter { !$0.isEmpty }
             .joined(separator: " · ")
         return VStack(alignment: .leading, spacing: 0) {

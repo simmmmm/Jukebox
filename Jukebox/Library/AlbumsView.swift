@@ -36,16 +36,33 @@ struct AlbumsView: View {
             HStack(alignment: .bottom, spacing: Theme.Space.m) {
                 PageTitle("Albums")
                 Spacer(minLength: 0)
-                // The sort at the title's end, as Linux's drop-down.
-                Picker("Sort By", selection: $sort) {
-                    Text("Title").tag(LibraryAlbumSort.title)
-                    Text("Artist").tag(LibraryAlbumSort.artist)
-                    Text("Year").tag(LibraryAlbumSort.year)
-                    Text("Recently Added").tag(LibraryAlbumSort.recentlyAdded)
+                // The sort at the title's end, as Linux's drop-down: the
+                // one chosen and a chevron, bold 15 on a faint fill.
+                Menu {
+                    Picker("Sort By", selection: $sort) {
+                        ForEach(LibraryAlbumSort.allCases) { option in
+                            Text(Self.name(of: option)).tag(option)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    HStack(spacing: Theme.Space.s) {
+                        Text(Self.name(of: sort))
+                        Image(systemName: "chevron.down")
+                            .desktopFont(11, weight: .bold)
+                    }
+                    .desktopFont(15, weight: .bold)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, Theme.Space.m)
+                    .frame(height: 32)
+                    .background(Color.primary.opacity(0.1), in: .rect(cornerRadius: Theme.Space.s))
+                    .contentShape(.rect)
                 }
-                .pickerStyle(.menu)
-                .labelsHidden()
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
                 .fixedSize()
+                .accessibilityLabel("Sort By")
                 .disabled(searching)
             }
             .padding(.horizontal, page.side)
@@ -65,6 +82,15 @@ struct AlbumsView: View {
         }
         // No find field when wide: Linux's pages have none, Search is a place.
         .refreshable { await library.refresh() }
+    }
+
+    private static func name(of sort: LibraryAlbumSort) -> LocalizedStringKey {
+        switch sort {
+        case .title: "Title"
+        case .artist: "Artist"
+        case .year: "Year"
+        case .recentlyAdded: "Recently Added"
+        }
     }
 
     private var compact: some View {
@@ -187,8 +213,10 @@ struct AlbumDetailView: View {
                                              above: disc.id == discs.first?.id ? 0 : Theme.Space.xl,
                                              below: Theme.Space.s)
                         }
+                        // Only the guests after a title ("June Hollow" on a
+                        // Willow & Pine album), Linux's rule (UpNextList's).
                         PageTrackRows(tracks: disc.tracks, numbered: true,
-                                      subtitle: { Self.subtitle(of: $0, on: shown) },
+                                      subtitle: { UpNextList.guests($0) },
                                       play: { track in
                                           let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
                                           play(tracks, from: i, album: shown, shuffled: false)
@@ -363,14 +391,14 @@ struct AlbumDetailView: View {
         }
     }
 
-    /// "1985 · Classical · 7 songs, 27 minutes": the year, the first genre
+    /// "1985 · Classical · 7 songs, 27 min": the year, the first genre
     /// (a joined tag split), the songs and how long, as Linux's head says it.
     private static func facts(_ album: Album, tracks: [Track]) -> String {
         var parts: [String] = []
         if let year = album.year { parts.append(String(year)) }
         if let genre = LibraryIndex.genreNames(album.genres).first { parts.append(genre) }
         if !tracks.isEmpty {
-            parts.append(LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks)))
+            parts.append(LibraryText.length(count: tracks.count, duration: LibraryText.totalDuration(tracks)))
         }
         return parts.joined(separator: " · ")
     }

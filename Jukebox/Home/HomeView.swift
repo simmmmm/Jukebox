@@ -332,9 +332,12 @@ struct HomeStationHero: View {
                 name(onAir.title)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
+                // Wide, when it started and 8 under the name, as Linux's.
                 Group {
                     if radio.isStarting {
                         Text("Choosing the first songs…")
+                    } else if measures.isWide, let started = StationClock.shared.started(onAir) {
+                        Text(verbatim: started)
                     } else if let track = player.currentTrack {
                         Text("\(track.name) · \(track.artistLine)")
                     }
@@ -342,6 +345,7 @@ struct HomeStationHero: View {
                 .desktopFont(13, phone: .subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
+                .padding(.top, measures.isWide ? Theme.Space.xs : 0)
             } else {
                 name(String(localized: "Your Station"))
                     .foregroundStyle(.primary)

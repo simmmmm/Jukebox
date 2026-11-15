@@ -243,6 +243,7 @@ private struct LyricsSyncedLines: View {
                 // The panel's as Linux's (600, 18 on 24), the line sung in
                 // full and the rest at 40 %.
                 .desktopFont(18, weight: .semibold, phone: .title.bold(), wide: inPanel)
+                .modifier(LinuxLyricLine(isOn: inPanel))
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .foregroundStyle(lineStyle(isCurrent: isCurrent))
@@ -275,12 +276,24 @@ private struct LyricsPlainText: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
-                Text(lines.map(\.text).joined(separator: "\n"))
-                    // The panel's as its timed lines (Linux's).
-                    .desktopFont(18, weight: .semibold, phone: .title3.weight(.semibold), wide: inPanel)
-                    .lineSpacing(6)
+                if inPanel {
+                    // The panel's as its timed lines, each apart (Linux's).
+                    VStack(alignment: .leading, spacing: Theme.Space.l + Theme.Space.xs) {
+                        ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
+                            Text(line.text.isEmpty ? "♪" : line.text)
+                                .desktopFont(18, weight: .semibold)
+                                .modifier(LinuxLyricLine(isOn: true))
+                        }
+                    }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
+                } else {
+                    Text(lines.map(\.text).joined(separator: "\n"))
+                        .font(.title3.weight(.semibold))
+                        .lineSpacing(6)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .textSelection(.enabled)
+                }
                 if let credit {
                     LyricsCredit(credit, inPanel: inPanel)
                 }
@@ -295,6 +308,21 @@ private struct LyricsPlainText: View {
         .mask {
             LyricsEdgeFade(isFlat: inPanel)
         }
+    }
+}
+
+/// A lyric line in the panel 24 tall a line, as Linux's (18 on 24): the
+/// system's 18 is 21.5, so the 2.5 left goes between its lines and around
+/// them.
+private struct LinuxLyricLine: ViewModifier {
+    let isOn: Bool
+
+    func body(content: Content) -> some View {
+        content
+            // grid-ok: what makes the system's line of 21.5 Linux's 24
+            .lineSpacing(isOn ? 2.5 : 0)
+            // grid-ok: the same, half above and half below
+            .padding(.vertical, isOn ? 1.25 : 0)
     }
 }
 

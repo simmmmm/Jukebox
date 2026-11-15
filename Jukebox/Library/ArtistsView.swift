@@ -186,8 +186,8 @@ struct ArtistDetailView: View {
             PageHead(page: page, title: shown.name, facts: facts) { size in
                 ArtworkView(shown.artwork, size: size, placeholder: "music.mic")
             } actions: {
-                PagePlayButtons(play: { playAll(shown, shuffled: false) },
-                                shuffle: { playAll(shown, shuffled: true) })
+                // Play alone, all of them shuffled, as Linux's head has it.
+                PagePlayButtons(play: { playAll(shown, shuffled: true) })
                     .disabled(songs == 0)
                 HStack(spacing: Theme.Space.s) {
                     HeartButton(item: .artist(shown.id))
