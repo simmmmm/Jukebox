@@ -25,6 +25,15 @@ enum Nav {
         let toolbar = adw_toolbar_view_new()!
         let header = adw_header_bar_new()!
         for widget in start { adw_header_bar_pack_start(ptr(header), widget) }
+        // The places' main menu, here when there are no places.
+        let menu = MainWindow.mainMenu()
+        observe(menu) {
+            let shown = !app.settings.showsAnyPage
+            menu.isVisible = shown
+            // F10's only while it shows: the places' has it otherwise.
+            gtk_menu_button_set_primary(ptr(menu), shown ? 1 : 0)
+        }
+        adw_header_bar_pack_end(ptr(header), menu)
         let search = SearchField.entry(typingIn: toolbar)
         adw_header_bar_pack_end(ptr(header), search)
         for widget in end { adw_header_bar_pack_end(ptr(header), widget) }
@@ -335,9 +344,10 @@ final class Tile {
     private let title = label("", "t15", "medium")
     private let subtitle = label("", "t13", "fact")
 
-    init(round: Bool = false) {
+    init(round: Bool = false, emptyIcon: String? = nil) {
         let size = PageMeasure.shared.tile
         art = Art(size)
+        if let emptyIcon { art.emptyIcon = emptyIcon }
         if round { art.widget.css("round") }
         widget = vbox(spacing: 0, [art.widget, title, subtitle]).size(width: size).css("grid-tile")
             .align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_START)

@@ -108,6 +108,8 @@ enum Style {
         gridview > child > .grid-tile { padding: 8px; border-radius: 14px; }
         gridview > child:hover > .grid-tile { background-color: alpha(currentColor, 0.07); }
         flowboxchild { padding: 0; }
+        /* Downloaded's line with its arrow: words on the ground. */
+        textview.hint, textview.hint > text { background: none; font-size: 15px; }
         /* Search's recent searches: plain rows of 40, their hover past the
            margin; Clear quiet beside their heading. */
         button.recent { min-height: 40px; padding: 0 8px; margin: 0 -8px; font-weight: inherit; }
@@ -190,7 +192,9 @@ enum Style {
 }
 
 /// The few glyphs Adwaita has not: the heart, Not This, the bars of the song
-/// playing, Radio's arch and the playlists' list, from the designer's kit.js.
+/// playing, Radio's arch and the playlists' list, from the designer's kit.js;
+/// Genres' guitar, Recently Added's clock, Download and Downloaded, after
+/// the Mac's SF Symbols.
 /// Symbolic icons, so GTK colours them as text; filled shapes only, as GTK
 /// 4.14 paints every path's fill in the text colour (a stroke would fill).
 /// Written where the icon theme looks, once a launch.
@@ -201,6 +205,15 @@ enum Glyphs {
         "not-this": #"<path d="M2 3h3v7.5H2zM6.5 3h5.2c.8 0 1.4.5 1.6 1.2l1.2 4.3c.2.8-.4 1.5-1.2 1.5H10l.6 2.6c.2.8-.4 1.4-1.1 1.4L6.5 10z"/>"#,
         "playing": #"<rect x="2" y="6" width="2.6" height="8" rx="1"/><rect x="6.7" y="2" width="2.6" height="12" rx="1"/><rect x="11.4" y="8.5" width="2.6" height="5.5" rx="1"/>"#,
         "playlists": #"<rect x="1.5" y="3" width="8" height="1.6" rx=".8"/><rect x="1.5" y="7.2" width="8" height="1.6" rx=".8"/><rect x="1.5" y="11.4" width="5" height="1.6" rx=".8"/><path d="M11.65 12.6V4.9l3.35-1.15v1.6l-1.85.62v6.63z"/><circle cx="10.9" cy="12.6" r="1.7"/>"#,
+        // Genres, as the Mac's `guitars`: a guitar on its side, the hole
+        // in its body, its neck to the top right.
+        "genres": #"<path fill-rule="evenodd" d="M5.4 7.1a3.5 3.5 0 1 0 0 7a3.5 3.5 0 1 0 0-7zm0 2.6a.9.9 0 1 1 0 1.8a.9.9 0 1 1 0-1.8z"/><circle cx="8" cy="8" r="2.5"/><rect x="7.4" y=".6" width="1.2" height="7.4" rx=".4" transform="rotate(45 8 8)"/><rect x="7.1" y="0" width="1.8" height="2.4" rx=".5" transform="rotate(45 8 8)"/>"#,
+        // Recently Added, as the Mac's `clock`.
+        "clock": #"<path fill-rule="evenodd" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1.4a5.6 5.6 0 1 1 0 11.2A5.6 5.6 0 0 1 8 2.4z"/><rect x="7.3" y="4" width="1.4" height="4.7" rx=".7"/><rect x="7.3" y="7.3" width="3.6" height="1.4" rx=".7"/>"#,
+        // Download and Downloaded, as the Mac's `arrow.down.circle` and
+        // `checkmark.circle`: the ring, an arrow down or a tick in it.
+        "download": #"<path fill-rule="evenodd" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1.4a5.6 5.6 0 1 1 0 11.2A5.6 5.6 0 0 1 8 2.4z"/><rect x="7.3" y="4" width="1.4" height="7.2" rx=".7"/><rect x="7.3" y="7" width="1.4" height="4.2" rx=".7" transform="rotate(45 8 10.5)"/><rect x="7.3" y="7" width="1.4" height="4.2" rx=".7" transform="rotate(-45 8 10.5)"/>"#,
+        "downloaded": #"<path fill-rule="evenodd" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1.4a5.6 5.6 0 1 1 0 11.2A5.6 5.6 0 0 1 8 2.4z"/><rect x="6.5" y="4.4" width="1.4" height="6.9" rx=".7" transform="rotate(41 7.2 10.6)"/><rect x="6.5" y="7.4" width="1.4" height="3.9" rx=".7" transform="rotate(-45 7.2 10.6)"/>"#,
         // The mark, heavy cut, as a template: its two tubes outlined, so
         // they are fills.
         "radio": #"<g transform="scale(.5)"><path d="M3 28.9V14.5A13 13 0 0 1 29 14.5V28.9A1.6 1.6 0 0 1 25.8 28.9V14.5A9.8 9.8 0 0 0 6.2 14.5V28.9A1.6 1.6 0 0 1 3 28.9Z"/><path d="M8.1 28.9V14.5A7.9 7.9 0 0 1 23.9 14.5V28.9A1.6 1.6 0 0 1 20.7 28.9V14.5A4.7 4.7 0 0 0 11.3 14.5V28.9A1.6 1.6 0 0 1 8.1 28.9Z"/><path d="M13.2 14.5A2.8 2.8 0 0 1 18.8 14.5V27.7A2.8 2.8 0 0 1 13.2 27.7Z"/></g>"#,

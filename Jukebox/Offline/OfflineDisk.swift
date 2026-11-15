@@ -160,14 +160,11 @@ nonisolated struct OfflineAccountState: Sendable {
     var downloadsAllowed: Bool
 }
 
+/// The account's folders, under `base`: Application Support/Offline on
+/// Apple's systems (OfflineStore+Apple.swift), ~/.local/share/jukebox/offline
+/// on Linux (Platform.swift). Nothing but account folders goes in `base`:
+/// `OfflineDisk.load` removes every other.
 nonisolated enum OfflinePaths {
-    /// Application Support/Offline.
-    static var base: URL {
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        return support.appendingPathComponent("Offline", isDirectory: true)
-    }
-
     /// The account's folder name: the server's id and the user's — Jellyfin's
     /// hex GUIDs, as before (a Jellyfin sign-in of the Jellyfin-only app
     /// keeps its songs), or a Subsonic server's URL and the user's name;
@@ -205,17 +202,9 @@ nonisolated enum OfflinePaths {
     }
 }
 
+/// The account's files. `prepareBase`, the folder made once a launch, is
+/// each platform's (OfflineStore+Apple.swift, Linux's Platform.swift).
 nonisolated enum OfflineDisk {
-    /// Made once a launch: the folder, kept out of backups (which a
-    /// directory's flag does for everything in it).
-    static func prepareBase() {
-        var base = OfflinePaths.base
-        try? FileManager.default.createDirectory(at: base, withIntermediateDirectories: true)
-        var values = URLResourceValues()
-        values.isExcludedFromBackup = true
-        try? base.setResourceValues(values)
-    }
-
     /// The account's state at sign-in, checked against its folder: a file
     /// that is gone is forgotten (the contract's `forget`); a file the
     /// manifest does not know is a download whose news was lost (the app
@@ -312,4 +301,43 @@ nonisolated enum OfflineDisk {
         guard let data = try? Data(contentsOf: url) else { return nil }
         return try? JSONDecoder().decode(type, from: data)
     }
+}
+
+// MARK: - The downloads' news
+// What OfflineDownloader (a background URLSession on Apple's systems, a
+// plain one on Linux) tells the store.
+
+/// Which song a download is, for whom, at what quality.
+nonisolated struct OfflineDownloadTag: Codable, Sendable, Hashable {
+    var account: String
+    var trackID: ItemID
+    var quality: DownloadQuality
+
+    init(account: String, trackID: ItemID, quality: DownloadQuality) {
+        self.account = account
+        self.trackID = trackID
+        self.quality = quality
+    }
+
+    /// From a task's description; nil for a task that is not one of ours.
+    init?(text: String?) {
+        guard let text, let data = text.data(using: .utf8),
+              let tag = try? JSONDecoder().decode(OfflineDownloadTag.self, from: data) else { return nil }
+        self = tag
+    }
+
+    var text: String {
+        guard let data = try? JSONEncoder().encode(self) else { return "" }
+        return String(decoding: data, as: UTF8.self)
+    }
+}
+
+nonisolated enum OfflineDownloadEvent: Sendable {
+    case progress(OfflineDownloadTag, written: Int64, expected: Int64)
+    /// In the account's folder now, as `fileName`.
+    case finished(OfflineDownloadTag, fileName: String, bytes: Int64)
+    /// `permanent`: the server said it has no such file, or cannot give it in
+    /// that form; asking again would not help.
+    case failed(OfflineDownloadTag, permanent: Bool)
+    case cancelled(OfflineDownloadTag)
 }

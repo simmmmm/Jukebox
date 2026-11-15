@@ -28,6 +28,7 @@ enum HomePage {
                 return
             }
             append(pageTitle(RelativeDay.partOfDay()), to: column)
+            if let notice = offlineNotice() { append(notice, to: column) }
             if let offer = app.handoff.offer { append(handoffNotice(offer), to: column) }
             append(yourStation(), to: column)
 
@@ -106,6 +107,22 @@ enum HomePage {
             adw_status_page_set_child(ptr(page), spinner)
             return page
         }
+    }
+
+    /// Offline, or the library could not be read: why first — no network at
+    /// all, or no server on it — then what still works, and Try Again (the
+    /// iPhone's HomeOfflineNotice, in the handoff's form beside it).
+    private static func offlineNotice() -> Widget? {
+        let offline = app.offline
+        let failed = if case .failed = app.library.state { true } else { false }
+        guard failed || offline.isOffline else { return nil }
+        let why = offline.hasNetwork ? "Can’t reach \(app.library.serverName ?? "your server")." : "You’re offline."
+        let still = offline.songCount > 0 ? "The songs on this \(Device.model) still play." : "Showing your library from last time."
+        let again = wordButton("Try Again") {
+            offline.checkServer()
+            Task { await app.library.refresh() }
+        }
+        return vbox(spacing: 4, [label("\(why) \(still)", lines: 0).margins(horizontal: 8), again]).margins(horizontal: 4, vertical: 8)
     }
 
     /// Music on another device, or this one's from last time, and the one
@@ -570,6 +587,63 @@ enum LibraryPages {
         return pageColumn(column)
     }
 
+    /// Every album, the newest first, as the Mac's Recently Added: the
+    /// page's tiles, as Albums.
+    static func recentlyAdded() -> Widget {
+        let grid = ItemList<Album, Tile>(
+            grid: true,
+            make: {
+                let tile = Tile()
+                return (tile.widget, tile)
+            },
+            fill: { tile, album, _ in tile.show(album.artwork, album.name, album.artistLine) },
+            activate: { album, _, _ in Pages.open(album) })
+        let empty = emptyLine("")
+        observe(grid.widget) {
+            let albums = app.library.recentlyAddedAlbums
+            if albums != grid.items { grid.set(albums) }
+            setText(empty, "Albums added to your \(app.library.serverKind) server appear here.")
+            empty.isVisible = albums.isEmpty && !app.library.tracks.isEmpty
+        }
+        return listPage(vbox([pageTitle("Recently Added"), empty]), grid.widget, grid: true)
+    }
+
+    /// Every genre in the library's tags, as the Mac's Genres (GenresView):
+    /// tiles, each the covers of the genre's first four albums, the songs
+    /// the library has in it under its name. A tag that joins several
+    /// ("Rock; Shoegaze") is each of them, as the radio counts them.
+    static func genres() -> Widget {
+        let grid = ItemList<Genre, Tile>(
+            grid: true,
+            make: {
+                let tile = Tile(emptyIcon: Glyphs.name("genres"))
+                return (tile.widget, tile)
+            },
+            fill: { tile, genre, _ in
+                tile.show(collage: genreCovers(genre), genre.name, LibraryText.songs(songCount(of: genre)))
+            },
+            activate: { genre, _, _ in Pages.open(genre) })
+        let empty = emptyLine("The genres in your music’s tags appear here.")
+        observe(grid.widget) {
+            let genres = app.library.genres
+            if genres != grid.items { grid.set(genres) }
+            empty.isVisible = genres.isEmpty && !app.library.tracks.isEmpty
+        }
+        return listPage(vbox([pageTitle("Genres"), empty]), grid.widget, grid: true)
+    }
+
+    /// The covers of a genre's first four albums: its tile's and its page's
+    /// art (the Mac's LibraryGenreArt).
+    static func genreCovers(_ genre: Genre) -> [Artwork] {
+        Array(app.library.albums(inGenre: genre).lazy.compactMap(\.artwork).prefix(4))
+    }
+
+    /// The library's own songs in the genre, else the server's count.
+    private static func songCount(of genre: Genre) -> Int {
+        let own = app.library.trackCount(inGenre: genre)
+        return own > 0 ? own : (genre.songCount ?? 0)
+    }
+
     static func artistTile(_ artist: Artist, round: Bool = false) -> Widget {
         let tile = Tile(round: round)
         tile.show(artist.artwork, artist.name, "")
@@ -711,7 +785,9 @@ enum Pages {
             }
         }
         Stats.track(.screen, ["name": "album"])
-        Nav.push(album.name, pageColumn(column))
+        // At the header's end, where the Mac's bar has it.
+        let download = downloadControl(.album(album.id), name: album.name) { OfflineCollection(album: album, tracks: tracks) }
+        Nav.push(album.name, pageColumn(column), end: [download])
     }
 
     static func open(_ artist: Artist) {
@@ -763,25 +839,76 @@ enum Pages {
         ])
         keep(art, on: raw(top), as: "art")
         let column = vbox([top, rule(), list.widget])
-        // A playlist's songs are the server's to say: it changes elsewhere too.
+        func show(_ tracks: [Track]) {
+            list.set(tracks)
+            // Without an image of its own, the covers of its first
+            // albums, as on the iPhone.
+            if playlist.artwork == nil { art.show(collage: firstCovers(tracks)) }
+            setText(fact, length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration }))
+        }
+        // A playlist's songs are the server's to say: it changes elsewhere
+        // too. Offline, or the server away, the songs it was downloaded with.
         Task {
+            let saved = app.offline.collection(for: .playlist(playlist.id))?.tracks
+            if app.offline.isOffline, let saved {
+                show(saved)
+                return
+            }
             do {
                 let tracks = try await app.library.tracks(in: playlist)
-                list.set(tracks)
-                // Without an image of its own, the covers of its first
-                // albums, as on the iPhone.
-                if playlist.artwork == nil { art.show(collage: firstCovers(tracks)) }
-                setText(fact, length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration }))
+                show(tracks)
+                // Downloaded: what came in or went out on the server follows.
+                let shown = app.library.playlists.first { $0.id == playlist.id } ?? playlist
+                app.offline.playlistLoaded(shown, tracks: tracks)
             } catch {
-                setText(fact, error.localizedDescription)
+                if let saved { show(saved) } else { setText(fact, error.localizedDescription) }
             }
         }
         Stats.track(.screen, ["name": "playlist"])
-        if let start {
-            Nav.show(Nav.page(playlist.name, pageColumn(column), start: start))
-        } else {
-            Nav.push(playlist.name, pageColumn(column))
+        let download = downloadControl(.playlist(playlist.id), name: playlist.name) {
+            OfflineCollection(playlist: app.library.playlists.first { $0.id == playlist.id } ?? playlist, tracks: list.items)
         }
+        if let start {
+            Nav.show(Nav.page(playlist.name, pageColumn(column), start: start, end: [download]))
+        } else {
+            Nav.push(playlist.name, pageColumn(column), end: [download])
+        }
+    }
+
+    /// A genre's page, as the Mac's (GenreDetailView): its collage as the
+    /// head's cover, how many songs and how long, Play, Shuffle and ⋮ with
+    /// Start Radio; then its albums in tiles. Only the library is read: a
+    /// genre the server has no item of that name for has an id of the
+    /// app's own.
+    static func open(_ genre: Genre) {
+        let tracks = app.library.tracks(inGenre: genre)
+        let albums = app.library.albums(inGenre: genre)
+        let context = QueueContext(.genre(genre.name), title: genre.name)
+        let art = cover()
+        art.emptyIcon = Glyphs.name("genres")
+        art.show(collage: LibraryPages.genreCovers(genre))
+        let seed = StationSeed.genre(key: genre.key, name: genre.name)
+        let actions = [
+            playButton { app.player.play(tracks, context: context) },
+            wordButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
+            moreButton([("Start Radio", {
+                Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
+                app.radio.start(seed)
+            })]),
+        ]
+        for action in actions where tracks.isEmpty { gtk_widget_set_sensitive(action, 0) }
+        let top = heading(art: art.widget, title: genre.name,
+                          facts: facts([tracks.isEmpty ? "No songs in the library carry this genre."
+                                                       : length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })]),
+                          actions: actions)
+        keep(art, on: raw(top), as: "art")
+        let column = vbox([top])
+        if !albums.isEmpty {
+            append(sectionTitle("Albums"), to: column)
+            append(LibraryPages.flow(albums.map { albumTile($0) }), to: column)
+        }
+        Stats.track(.screen, ["name": "genre"])
+        Nav.push(genre.name, pageColumn(column))
     }
 
     /// The covers of the first four albums among `tracks`: a playlist's
@@ -811,7 +938,7 @@ enum Pages {
         let list = trackList(mix.tracks, context: { context })
         let column = vbox([top, rule(), list.widget])
         Stats.track(.mixOpened)
-        Nav.push(mix.title, pageColumn(column))
+        Nav.push(mix.title, pageColumn(column), end: [downloadControl(.mix(mix.id), name: mix.title) { OfflineCollection(mix: mix) }])
     }
 
     /// A station's page: what it would play, before it plays. Play plays

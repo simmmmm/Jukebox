@@ -6,7 +6,8 @@ album, een afspeellijst of een mix; automatisch bewaren wat je vaak of kort
 geleden hebt gespeeld, tot een grootte die je kiest; offline speelt de app
 alleen wat op de telefoon staat, ook de radio") he answered "Alle drie".
 
-The app's half is `Jukebox/Offline/`. The kit's half is
+The app's half is `Jukebox/Offline/`, the store, the disk and the words
+shared with Linux ("On Linux", below). The kit's half is
 `JukeboxKit/Sources/JukeboxKit/Offline/`, Foundation only:
 
 - `Offline.swift`: the manifest, the keep's plan, the download URL.
@@ -398,6 +399,30 @@ not answer.
 | Plays | **Queued, not dropped.** Start and stop reports wait in `reports.json` and go to the server in order once it answers (as `played` and `stopped`, `MusicServer.report`), so the server counts them and its Last.fm scrobbles them, at the time they arrive (the reports carry no time). Progress reports made offline are dropped. At sign-out what waits is sent if the server answers, else it goes with the account. |
 | Home's notice | Why first ("You’re offline." or "Can’t reach …"), then "The songs on this iPhone still play." when there are some, else "Showing your library from last time." Back online the library is read again and the notice goes by itself. |
 
+### On Linux
+
+Since 15 November 2026 ("Linux erbij", of the Mac's Downloaded) the same
+store, disk and words: `OfflineStore.swift`, `OfflineDisk.swift` and
+`OfflineText.swift` are in Package.swift's `shared`. What only the platform
+knows is `OfflineStore+Apple.swift` on Apple's systems and
+`Linux/App/Platform.swift` on Linux; the downloader is each one's own.
+
+| | iPhone, iPad, Mac | Linux |
+|---|---|---|
+| Folder | `Application Support/Offline/<account>/`, out of backups | `$XDG_DATA_HOME/jukebox/offline/<account>/` (`~/.local/share/…`) |
+| Fetching | a background URLSession, on while the app is suspended or ended | a URLSession while Jukebox runs (`Linux/App/OfflineDownloader.swift`); what waits starts again at the next launch |
+| Order | the session's priority: chosen high, the keep low | its own turns, four at a time, what was chosen first |
+| Network | NWPathMonitor; mobile data and Low Data Mode | GLib's network monitor; a metered connection is not told apart |
+| Low Power Mode | the system's | the desktop's power saver (GLib's power-profile monitor) |
+| A song plays | AVPlayer, from its file | GStreamer, from its `file://` URI; the player's offline rules are the iPhone's |
+
+The checks on what came are the iPhone's. A song is moved into `files/` only
+once whole; from another file system it is copied beside it as
+`.<name>.part` and renamed. Download sits at the end of a page's header,
+Downloaded is a place, Preferences has Downloads (without Download over
+Cellular). `dev/fake-jellyfin.swift --slow-downloads` takes 0.4–2 s a song, so
+the walk's ring shows.
+
 ### Counted
 
 `download_chosen` (`kind`: album, playlist, mix), `offline_play_started`
@@ -406,6 +431,9 @@ not answer.
 is on the phone.
 
 ### Not done
+
+- Linux downloads only while Jukebox runs, and a metered connection does not
+  hold the keep back.
 
 - Not checked on a phone: AVPlayer playing the fragmented m4a from a file.
   AVFoundation reads movie fragments (AVAsset's `containsFragments`); if the

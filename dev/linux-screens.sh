@@ -22,7 +22,7 @@ if [[ ! -x $fake || ${sources[0]} -nt $fake || ${sources[1]} -nt $fake ]]; then
   docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/src" -w /src jukebox-linux-build \
     swiftc -O -static-stdlib -parse-as-library "${sources[@]}" -o "$fake" 2>&1 | { grep -v mktemp || true; }
 fi
-"$fake" --port $port --data dev/demo --song-lengths >"$work/fake.log" 2>&1 &
+"$fake" --port $port --data dev/demo --song-lengths --slow-downloads >"$work/fake.log" 2>&1 &
 fake_pid=$!
 trap 'kill $fake_pid 2>/dev/null; rm -rf "$work"' EXIT
 for _ in $(seq 1 40); do curl -fs "http://localhost:$port/System/Info/Public" >/dev/null && break; sleep 0.25; done
@@ -46,7 +46,7 @@ for shot in ${@:-1440x900-dark 1440x900-light 1920x1080-dark 760x900-dark 400x80
   env -u WAYLAND_DISPLAY GDK_BACKEND=x11 GSK_RENDERER=cairo ADW_DEBUG_COLOR_SCHEME=prefer-$scheme \
     JUKEBOX_AUDIO_SINK=fakesink JUKEBOX_SHOTS="$out/$shot" JUKEBOX_WINDOW="$size" \
     XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" XDG_CACHE_HOME="$work/cache" \
-    timeout 120 dbus-run-session -- xvfb-run -a -s "-screen 0 ${size}x24" .build-linux/debug/Jukebox \
+    timeout 300 dbus-run-session -- xvfb-run -a -s "-screen 0 ${size}x24" .build-linux/debug/Jukebox \
     >"$work/app-$shot.log" 2>&1 || { echo "$shot: the walk did not finish"; tail -5 "$work/app-$shot.log"; }
   echo "$shot: $(ls "$out/$shot" | wc -l) pictures"
 done

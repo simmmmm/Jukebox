@@ -4,7 +4,8 @@
 // 13 November 2026: "Maak hier ook een linux versie van, misschien toch een
 // gedeelde codebase?" — so one codebase where it is not the screen: JukeboxKit
 // whole, and `shared` below, the app's own stores (the library, the radio,
-// the mixes, the history, the settings) compiled from Jukebox/ as they are.
+// the mixes, the history, the settings, the songs kept on the machine)
+// compiled from Jukebox/ as they are.
 // Only what draws or plays is written twice, each platform's own way
 // (SwiftUI and AVFoundation there, GTK and GStreamer in Linux/App).
 //
@@ -29,6 +30,9 @@ let shared = [
     "Jukebox/NowPlaying/LyricsFinder.swift",
     "Jukebox/NowPlaying/TurntableMeasures.swift",
     "Jukebox/NowPlaying/UpNextList.swift",
+    "Jukebox/Offline/OfflineDisk.swift",
+    "Jukebox/Offline/OfflineStore.swift",
+    "Jukebox/Offline/OfflineText.swift",
     "Jukebox/Player/HandoffStore.swift",
     "Jukebox/Player/HistoryStore.swift",
     "Jukebox/Player/PlayQueue.swift",

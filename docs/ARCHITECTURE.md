@@ -98,7 +98,7 @@ Mac's, is Linux's window, 1:1 (below).
 | App: now playing | `Jukebox/NowPlaying/*`: MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume; the wide window's PlayerBar and PanelView; UpNextList (Up Next's rows, shared with Linux) |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController: MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*`: OnboardingView (sign in to any server: the address, then a password, Quick Connect or an API key), SettingsView, SearchView |
-| App: offline | `Jukebox/Offline/*`: OfflineStore (songs on the phone per account, the queue, the keep's runs, offline or not, plays heard offline), OfflineDownloader (the background URLSession, JukeboxAppDelegate), OfflineDisk (folders and files), OfflineDownloadButton, DownloadedView; `docs/OFFLINE.md`'s "In the app" |
+| App: offline | `Jukebox/Offline/*`: OfflineStore (songs on the phone per account, the queue, the keep's runs, offline or not, plays heard offline), OfflineStore+Apple (the network, Low Power Mode, the folder), OfflineDownloader (the background URLSession, JukeboxAppDelegate), OfflineDisk (folders and files), OfflineText, OfflineDownloadButton, DownloadedView; `docs/OFFLINE.md`'s "In the app". The store, the disk and the words are Linux's too (`shared`). |
 
 ## The views each part provides
 
