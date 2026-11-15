@@ -31,6 +31,8 @@ struct PlayerBar: View {
     @State private var width: CGFloat = 1024
     /// The pointer over the song: its ground lit, as Linux's tile.
     @State private var isSongHovered = false
+    /// The pointer over the artist's or the station's link.
+    @State private var isLinkHovered = false
 
     init() {}
 
@@ -119,7 +121,8 @@ struct PlayerBar: View {
                     } label: {
                         // Concentric with the cover's 6, 8 past it: 14.
                         RoundedRectangle(cornerRadius: 14)
-                            .fill(Color.primary.opacity(isSongHovered ? 0.07 : 0))
+                            // Dark over a link, as Linux's: that is its own target.
+                            .fill(Color.primary.opacity(isSongHovered && !isLinkHovered ? 0.07 : 0))
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
@@ -179,7 +182,7 @@ struct PlayerBar: View {
         } else {
             if !track.artistLine.isEmpty {
                 if let ref = track.primaryArtist, let artist = library.artist(ref) {
-                    BarLink(help: "Go to Artist") {
+                    BarLink(help: "Go to Artist", isAnyHovered: $isLinkHovered) {
                         navigator.open(.artist(artist))
                     } label: {
                         Text(track.artistLine)
@@ -195,7 +198,7 @@ struct PlayerBar: View {
                 }
             }
             if let station = player.context?.station {
-                BarLink(help: "Now Playing") {
+                BarLink(help: "Now Playing", isAnyHovered: $isLinkHovered) {
                     panel.show(.upNext)
                 } label: {
                     HStack(spacing: Theme.Space.xs) {
@@ -397,12 +400,16 @@ struct PlayerBar: View {
 /// is, as Linux's `bar-link`.
 private struct BarLink<Label: View>: View {
     let help: LocalizedStringKey
+    /// The bar's: the song's ground goes dark over a link.
+    @Binding var isAnyHovered: Bool
     let action: () -> Void
     let label: Label
     @State private var isHovered = false
 
-    init(help: LocalizedStringKey, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+    init(help: LocalizedStringKey, isAnyHovered: Binding<Bool>, action: @escaping () -> Void,
+         @ViewBuilder label: () -> Label) {
         self.help = help
+        _isAnyHovered = isAnyHovered
         self.action = action
         self.label = label()
     }
@@ -416,7 +423,10 @@ private struct BarLink<Label: View>: View {
         }
         .buttonStyle(.plain)
         .help(help)
-        .onHover { isHovered = $0 }
+        .onHover { inside in
+            isHovered = inside
+            isAnyHovered = inside
+        }
     }
 }
 

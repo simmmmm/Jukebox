@@ -1182,7 +1182,7 @@ final class Walk {
     /// for by its close (`nowPlaying.close`). True when the song was
     /// tapped: whatever came of it, the walk then tries to close it.
     func openRoom() throws -> Bool {
-        guard let song = byID("bar.song", timeout: 1) else { return false }
+        guard let song = byID("bar.song") else { return false }
         // On its cover: the song's middle is the artist's name, a button of
         // its own that opens the artist.
         song.coordinate(withNormalizedOffset: CGVector(dx: 0.1, dy: 0.5)).tap()

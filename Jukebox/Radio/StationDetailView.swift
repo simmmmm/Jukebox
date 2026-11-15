@@ -343,7 +343,7 @@ struct StationDetailView: View {
                     TrackRow(current.track, subtitle: current.track.artistLine)
                 }
                 .buttonStyle(.plain)
-                .accessibilityHint("Shows Now Playing")
+                .accessibilityHint(navigator.isWide ? Text("Shows Full Player") : Text("Shows Now Playing"))
                 .listRowBackground(Color.clear)
             }
             let upNext = player.upNext
