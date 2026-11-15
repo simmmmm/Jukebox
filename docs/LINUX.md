@@ -22,7 +22,7 @@ two are written per platform, each its own way.
 | | iPhone and iPad | Linux |
 |---|---|---|
 | Servers, library, radio, mixes, lyrics, play state | `JukeboxKit/`, the same package | the same |
-| The app's stores: `LibraryStore`, `RadioController`, `MixStore`, `HistoryStore`, `HandoffStore`, `AppSettings`, `Stats`, `HomeShelves`, `LyricsFinder`, the queue's types | `Jukebox/` | the same files, named in `Package.swift`'s `shared` |
+| The app's stores: `LibraryStore`, `RadioController`, `MixStore`, `HistoryStore`, `HandoffStore`, `AppSettings`, `Stats`, `HomeShelves`, `LyricsFinder`, the queue's types; the wide window's `PanelState`, `DesktopMeasures` and `UpNextList` | `Jukebox/` | the same files, named in `Package.swift`'s `shared` |
 | Screens | SwiftUI (`Jukebox/`) | GTK 4 and libadwaita (`Linux/App/`) |
 | Sound | AVFoundation (`Jukebox/Player/AudioPlayer.swift`) | GStreamer (`Linux/App/AudioPlayer.swift`), the same queue and rules |
 | The session's secret | the Keychain | the desktop's keyring, or a file only the user reads |
@@ -121,6 +121,15 @@ The design and its spec are in `build/design-round/2027/` (`spec.md`, `sheet.png
 - **The panel** at the right is 360 wide. It shows Up next (shuffle, repeat, the radio's reasons) or Lyrics (synced; click a line to seek). The bar's toggles open, switch and close it, and the app remembers it. It sits beside the page from 1280 wide and lies over it below.
 - **The places** at the left are 240 wide. Below 900 they fold and lie over the page; F9 brings them back.
 - **Now Playing** covers the places and the page. The bar and the panel stay.
+- **Shelves** have no scrollbar over their words. Under the pointer a round
+  ‹ and › fade in, 32 wide, while there is more that way; a click moves on
+  by what shows, less one tile. The keys go along the tiles.
+- **A tile's hover** lights the tile at its own size, 8 past its art on every
+  side, corners 14, concentric with the art's 6. A grid's cell shows nothing
+  ("hover op linux gaat nog fout, op mac niet", 14 November 2026).
+
+The iPad at regular width and the Mac draw the same window, 1:1
+(`Jukebox/App/WideShell.swift`, `docs/ARCHITECTURE.md`).
 
 ## What comes next
 

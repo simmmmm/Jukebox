@@ -94,8 +94,10 @@ its own.
 10. **The arch is the whole cabinet:** no bubble tubes, chrome, grilles or
     selector buttons, no Wurlitzer. The sleeve and record are drawn, not
     rendered.
-11. **Native first:** Apple's tab bar, lists, sheets, the system Slider
-    tinted with the accent, SF Symbols for every glyph but the mark.
+11. **Native first:** Apple's tab bar on the iPhone, lists, sheets, the
+    system Slider tinted with the accent, SF Symbols for every glyph but
+    the mark. A wide window, the iPad's and the Mac's, is Linux's window,
+    1:1 (`docs/ARCHITECTURE.md`).
 
 ## The 4-point grid
 

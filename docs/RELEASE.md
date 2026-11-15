@@ -138,11 +138,41 @@ so the notes point at Navidrome's public demo:
 Check before submitting that demo.navidrome.org is up and the demo user can
 play and download.
 
+## The Mac
+
+The Mac's Jukebox is the same app: a native macOS destination of the same
+target (project.yml), with the same bundle ID. So it ships through the same
+App Store Connect record, one purchase for the iPhone, the iPad and the Mac
+(universal purchase).
+
+- It ships once the photographer adds the platform there: Apps › Jukebox ›
+  + Add Platform › macOS. Then `mac_upload=true` in `ci/app.sh`. Until then
+  an upload sends the iPhone's build only, and the run stays green.
+- The Mac's version page needs its own screenshots — **Open**: the walk
+  runs on the iPhone and the iPad only.
+
+## Builds
+
+- **A push** builds the iPhone's app and the Mac's, unsigned. A red Mac
+  build makes the run red (`mac_gates=true`).
+- **On main** (and the `mac` branch) the screenshot walk runs after the
+  builds. An upload, when asked (README, TestFlight), archives and uploads
+  in their place.
+- **On a work branch** only the two builds run: no screenshots unless the
+  branch's name ends in "walk", and never an upload, whatever the commit
+  says.
+- **A fast loop**: the photographer's Mac, a MacBook, builds over SSH. The
+  build is signed with that Mac's Apple Development certificate from a
+  Terminal session on the Mac itself, because an SSH session cannot reach
+  the keychain. Such a debug build has no provisioning profile, so it keeps
+  the sign-in in the file-based keychain and stays signed in from one build
+  to the next (`Jukebox/App/Keychain.swift`).
+
 ## Before submitting
 
 1. The release build from main on TestFlight, played through on a phone:
    sign in to Jellyfin and to the Navidrome demo, a station, a download,
-   airplane mode.
+   airplane mode. Once the Mac uploads, the same on the Mac.
 2. `MARKETING_VERSION` 1.0 (project.yml); the build number is CI's run
    number.
 3. In App Store Connect: the listing above, the screenshots, App Privacy,

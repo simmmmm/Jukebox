@@ -1,7 +1,7 @@
 # Jukebox
 
 The music on your Jellyfin, Navidrome or other Subsonic server, on the
-iPhone, the iPad and Linux. Artists, albums, songs and playlists; playlists
+iPhone, the iPad, the Mac and Linux. Artists, albums, songs and playlists; playlists
 Jukebox makes up for you on Home; and a radio that plays on from any song,
 artist, album, genre or decade and learns from what you skip.
 
@@ -27,7 +27,15 @@ GitHub's macOS runners build and upload it, so no Mac is needed.
    `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, the same as
    Numa-mac's: an App Store Connect API key with the Admin role.
 3. Actions › CI › Run workflow, with "Upload to TestFlight" ticked, or a
-   commit whose message has `[testflight]`.
+   commit whose message has `[testflight]`. Only main (and the `mac`
+   branch) uploads; a work branch only builds.
+
+The Mac's app is the same app with the same bundle ID, so it goes to the
+same record, one purchase for all three. It uploads once the record has the
+Mac: Apps › Jukebox › + Add Platform › macOS, then `mac_upload=true` in
+`ci/app.sh`. Until then an upload sends the iPhone's build only.
+`docs/RELEASE.md` has the rest, and the quick loop on the photographer's
+Mac.
 
 ## Last.fm (optional)
 
