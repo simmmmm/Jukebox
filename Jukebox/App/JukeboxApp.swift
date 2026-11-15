@@ -5,6 +5,9 @@
 
 import JukeboxKit
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 @main
 struct JukeboxApp: App {
@@ -30,6 +33,9 @@ struct JukeboxApp: App {
             RootView()
                 .appEnvironment(app, panel: panel)
                 .task { await app.restore() }
+                #if os(macOS)
+                .task { await WalkWindow.apply() }
+                #endif
         }
         .commands { JukeboxCommands(app: app) }
         #if os(macOS)
@@ -41,6 +47,38 @@ struct JukeboxApp: App {
         #endif
     }
 }
+
+#if os(macOS)
+/// The window of the Mac's screenshot walk (JukeboxUITests/
+/// MacScreenshotTests.swift). The App Store takes a Mac's picture at 1440 by
+/// 900 exactly and the picture is the window, so the walk launches with
+/// `-windowWidth 1440 -windowHeight 900 -darkWindow YES` in the argument
+/// domain, as its other arguments. Here and not from the test: XCTest cannot
+/// give a window a size, only drag its corner, which lands a point off. The
+/// size is the frame's, title bar and all, at the screen's top left, clear of
+/// what the system shows at its right. A screen too small for it gets a
+/// smaller window, and the walk's log says how large each picture was.
+/// Without the arguments this does nothing.
+private enum WalkWindow {
+    static func apply() async {
+        let defaults = UserDefaults.standard
+        if defaults.bool(forKey: "darkWindow") {
+            NSApplication.shared.appearance = NSAppearance(named: .darkAqua)
+        }
+        let width = CGFloat(defaults.integer(forKey: "windowWidth"))
+        let height = CGFloat(defaults.integer(forKey: "windowHeight"))
+        guard width > 0, height > 0 else { return }
+        // After SwiftUI has placed the window itself: its own size, coming
+        // later, would undo this one.
+        try? await Task.sleep(for: .milliseconds(500))
+        for window in NSApplication.shared.windows where window.styleMask.contains(.titled) {
+            guard let screen = (window.screen ?? NSScreen.main)?.visibleFrame else { continue }
+            window.setFrame(NSRect(x: screen.minX, y: screen.maxY - height, width: width, height: height),
+                            display: true)
+        }
+    }
+}
+#endif
 
 private extension View {
     /// The app's stores and its tint, for each of its windows: a scene does

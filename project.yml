@@ -95,9 +95,13 @@ targets:
   # (`xcodebuild build`) and the TestFlight archive build the app as before.
   # Swift 5 mode and the project's main-actor default, as the app: the walk
   # marks what it needs @MainActor itself, so it reads the same either way.
+  # For the Mac too, as the app's target is: the Mac's own walk
+  # (MacScreenshotTests.swift) drives the Mac app's window for the App
+  # Store's pictures. Each file is one platform's, whole, by `#if os`.
   JukeboxUITests:
     type: bundle.ui-testing
-    platform: iOS
+    platform: auto
+    supportedDestinations: [iOS, macOS]
     sources:
       - path: JukeboxUITests
     dependencies:
@@ -110,6 +114,10 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
+        # XcodeGen gives a UI test bundle the iPhone's run paths on every
+        # platform; a Mac bundle keeps its frameworks one folder up, as
+        # Xcode's own Mac UI test target says.
+        "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]": ["$(inherited)", "@executable_path/../Frameworks", "@loader_path/../Frameworks"]
 schemes:
   Jukebox:
     build:

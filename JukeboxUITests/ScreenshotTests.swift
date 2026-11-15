@@ -8,8 +8,8 @@
 // the pictures and makes the contact sheets. There is no Mac here, so nobody
 // has seen the app; the photographer asked for pictures ("Als je plaatjes
 // hebt om te delen zie ik ze graag"), and the lead needs them to see what to
-// fix. The Mac itself has no walk: GitHub's runner cannot drive a Mac app's
-// window here, so the iPad's pictures stand for the wide layout.
+// fix. The Mac's own walk, for the Mac App Store's pictures, is
+// MacScreenshotTests.swift; the iPad's pictures stand for the wide layout.
 //
 // The walk is forgiving on purpose. The app is being changed while this is
 // written, and a walk that stops at the first missing button shows none of
@@ -29,6 +29,7 @@
 // change, or an identifier is not there, the step is missed (a skip, with the
 // identifier's name) and the missed list says which one.
 
+#if os(iOS)
 import UIKit
 import XCTest
 
@@ -1251,3 +1252,4 @@ final class Walk {
         return word ?? words.first ?? "a"
     }
 }
+#endif

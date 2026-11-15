@@ -28,6 +28,13 @@ mac_upload=false
 # screenshots, for working on the walk itself.
 case ${GITHUB_REF_NAME:-mac} in
   mac|main) ;;
+  # The App Store's pictures (docs/RELEASE.md, Screenshots): the Mac's
+  # window and the iPhone the store asks for, the Pro Max; the iPad last,
+  # as mac's round has its pictures already should time run short.
+  store-walk)
+    TESTFLIGHT=false
+    export SHOTS_DEVICES="mac iphone ipad" SHOTS_IPHONE="iPhone 17 Pro Max"
+    ;;
   *walk) TESTFLIGHT=false ;;
   *) TESTFLIGHT=false; SCREENSHOTS=${SCREENSHOTS:-false} ;;
 esac

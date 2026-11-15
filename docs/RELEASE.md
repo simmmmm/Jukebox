@@ -8,12 +8,9 @@ ready to paste; what is still open is marked **Open**.
 
 ## The listing
 
-**Name** (30 characters at most, unique on the App Store) — **Open**: "Jukebox"
-alone is very likely taken. Candidates that say what it is:
-
-- Jukebox — for Jellyfin
-- Jukebox Player
-- Jukebox: Jellyfin & Navidrome (29)
+**Name** (30 characters at most, unique on the App Store): Jukebox - Music
+player (22). The photographer, 15 November 2026: "Jukebox - Music player heet
+de app nu".
 
 **Subtitle** (30): Your music server, on the air
 
@@ -80,14 +77,19 @@ the repository's README works (`https://github.com/simmmmm/Jukebox`).
 
 ## Screenshots
 
-- **Sizes required**: iPhone 6.9" (1320 × 2868) and iPad 13" (2064 × 2752).
-- **Source**: the screenshot walk (`ci/screenshots.sh`), with a made-up
-  library and covers, ours to use.
-- **Screens**: Home, Now Playing (D2), a station's page, an album, Up Next
-  with the dial, Lyrics, Settings › Downloads.
-- **Devices**: the walk runs on an iPhone 17 Pro (1206 × 2622), a 13-inch
-  iPad held sideways and an 11-inch iPad held upright. For the store, one
-  run on an iPhone 17 Pro Max.
+- **Sizes**: iPhone 1320 × 2868 (the Pro Max; the Pro's 1206 × 2622 does
+  not count), iPad 13" 2752 × 2064, Mac 1440 × 900. PNG without alpha, ten
+  at most each.
+- **The round**: a push of the branch `store-walk` (`ci/app.sh`) walks the
+  Mac's own window (`MacScreenshotTests.swift`), an iPhone 17 Pro Max and
+  the 13-inch iPad, against the made-up library, covers ours to use.
+- **The set**: `dev/store-shots.sh` picks it from that round into
+  `build/appstore/{iphone,ipad,mac}/`, in the listing's order, and checks
+  each size. Home with a station on the air first, then Now Playing, a
+  station, an album, Up Next with the dial, Radio, the albums; the iPad
+  and the Mac have Lyrics too.
+- **Open**: the iPhone's Lyrics (the walk's song has none) and Settings ›
+  Downloads are not in the set.
 - **Text over the pictures**: none (tells.md).
 
 ## App Privacy (the questionnaire)
@@ -151,8 +153,8 @@ App Store Connect record, one purchase for the iPhone, the iPad and the Mac
 - It ships once the photographer adds the platform there: Apps › Jukebox ›
   + Add Platform › macOS. Then `mac_upload=true` in `ci/app.sh`. Until then
   an upload sends the iPhone's build only, and the run stays green.
-- The Mac's version page needs its own screenshots — **Open**: the walk
-  runs on the iPhone and the iPad only.
+- The Mac's version page needs its own screenshots: the store's round
+  (Screenshots, above).
 
 ## Builds
 

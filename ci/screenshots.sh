@@ -15,7 +15,9 @@
 #   - all of it on the `screenshots` branch, one commit that replaces the last:
 #     mac's and main's round at its top, a work branch's (one whose name ends
 #     in "walk", ci/app.sh) in branches/<name>/, so it never replaces mac's.
-# The Mac's own window is not walked: GitHub's runner cannot drive it here.
+# The Mac's own window is walked when asked for (SHOTS_DEVICES has "mac":
+# the store's round, a push of `store-walk`, ci/app.sh), on the runner
+# itself, for the Mac App Store's pictures (MacScreenshotTests.swift).
 #
 # Why: there is no Mac here, so nobody has seen the app. The photographer
 # asked for pictures ("Als je plaatjes hebt om te delen zie ik ze graag") and
@@ -39,6 +41,10 @@ start=$SECONDS
 budget=${SHOTS_BUDGET:-2400}
 # Walked in this order; the last is the first left out when time runs short.
 devices=${SHOTS_DEVICES:-iphone ipad ipad11}
+# The iPhone walked. The store's round asks for the Pro Max: App Store
+# Connect takes 1320 x 2868 for the iPhone, not the Pro's 1206 x 2622
+# (docs/RELEASE.md, Screenshots).
+iphone=${SHOTS_IPHONE:-iPhone 17 Pro}
 out=build/logs/screenshots
 # Result bundles, exports, the derived data and the branch: not uploaded.
 work=build/screenshots
@@ -169,13 +175,13 @@ grep '^iOS' <<< "$runtimes"
 # else any iPad; an 11-inch iPad Pro (834 points upright), else another
 # 11-inch iPad.
 pick() {
-  jq -r --arg kind "$1" '
+  jq -r --arg kind "$1" --arg iphone "$iphone" '
     def version: [(.version // "0") | scan("[0-9]+") | tonumber];
     # Higher is better; null when the name is not of this kind.
     def rank: . as $name
       | if $kind == "iphone" then
           if ($name | startswith("iPhone") | not) then null
-          elif $name == "iPhone 17 Pro" then [3, 0]
+          elif $name == $iphone then [3, 0]
           elif ($name | test("^iPhone [0-9]+( Pro)?$")) then
             $name | capture("^iPhone (?<number>[0-9]+)(?<pro> Pro)?$")
             | [(if .pro then 2 else 1 end), (.number | tonumber)]
@@ -209,6 +215,17 @@ ready=
 bounded 120 xcrun simctl list -j > "$work/simctl.json" 2> "$work/simctl.err" \
   || problem "xcrun simctl list failed: $(tail -1 "$work/simctl.err")"
 for kind in $devices; do
+  if [[ $kind == mac ]]; then
+    # The Mac's walk needs no simulator: the runner is the Mac. Its display
+    # is said here because the window must fit it at 1440 x 900, the size
+    # the Mac App Store takes.
+    mkdir -p "$out/mac"
+    echo "$(sw_vers -productName) $(sw_vers -productVersion), display $(system_profiler SPDisplaysDataType 2> /dev/null \
+      | awk -F': ' '/Resolution/ { print $2; exit }')" > "$out/mac/device.txt"
+    echo "mac: $(cat "$out/mac/device.txt")"
+    ready="${ready:+$ready }mac"
+    continue
+  fi
   udid=
   if line=$(pick "$kind" < "$work/simctl.json" 2> "$work/pick-$kind.err"); then
     if [[ $line == create$'\t'* ]]; then
@@ -234,9 +251,10 @@ endgroup
 
 group "The app and its UI tests, built for the simulator"
 built=false
-if [[ -n $ready ]]; then
-  [[ -d Jukebox.xcodeproj ]] || xcodegen generate
-  first="udid_${ready%% *}"
+[[ -d Jukebox.xcodeproj ]] || xcodegen generate
+sims=$(echo ${ready/mac/})
+if [[ -n $sims ]]; then
+  first="udid_${sims%% *}"
   # For the first simulator's architecture only; the products serve the
   # other simulator as well (the same SDK, the same Mac).
   if bounded "$(allow 1500)" xcodebuild build-for-testing -project Jukebox.xcodeproj -scheme Jukebox \
@@ -247,6 +265,21 @@ if [[ -n $ready ]]; then
     problem "the build for the simulator failed (build-for-testing.log)"
   fi
   grep -E 'error:|\*\* TEST BUILD' "$out/build-for-testing.log" | sed "s#$PWD/##g" | sort -u | head -60
+fi
+# The Mac's, in derived data of its own. Signed to run locally ("-"): macOS
+# starts a UI test's runner only when it is signed, and the app is then in
+# its sandbox, as the store's build is.
+built_mac=false
+if [[ " $ready " == *" mac "* ]]; then
+  if bounded "$(allow 1200)" xcodebuild build-for-testing -project Jukebox.xcodeproj -scheme Jukebox \
+      -configuration Debug -destination 'platform=macOS' -derivedDataPath "$work/derived-mac" \
+      CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+      > "$out/build-for-testing-mac.log" 2>&1; then
+    built_mac=true
+  else
+    problem "the build for the Mac's walk failed (build-for-testing-mac.log)"
+  fi
+  grep -E 'error:|\*\* TEST BUILD' "$out/build-for-testing-mac.log" | sed "s#$PWD/##g" | sort -u | head -60
 fi
 endgroup
 
@@ -336,6 +369,10 @@ walk() {
   local kind=$1 test=$2 label=$3 limit allowance verdict pictures
   local udid_var="udid_$1"
   local udid=${!udid_var} result="$work/$label.xcresult" direct="$PWD/$work/direct/$label"
+  local destination="id=$udid" derived="$work/derived" class=ScreenshotTests
+  if [[ $kind == mac ]]; then
+    destination='platform=macOS' derived="$work/derived-mac" class=MacScreenshotTests
+  fi
   limit=$(allow "$4")
   if (( limit < 240 )); then
     problem "$label: not walked, no time left"
@@ -349,8 +386,8 @@ walk() {
   export TEST_RUNNER_JUKEBOX_SHOTS=$direct
   echo "$label: $test on the $kind, at most $limit s"
   bounded "$limit" xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox \
-    -destination "id=$udid" -derivedDataPath "$work/derived" \
-    -only-testing:"JukeboxUITests/ScreenshotTests/$test" -resultBundlePath "$result" \
+    -destination "$destination" -derivedDataPath "$derived" \
+    -only-testing:"JukeboxUITests/$class/$test" -resultBundlePath "$result" \
     -parallel-testing-enabled NO -test-timeouts-enabled YES \
     -default-test-execution-time-allowance "$allowance" \
     -maximum-test-execution-time-allowance "$allowance" \
@@ -391,6 +428,17 @@ round() {
   local udid_var="udid_$1"
   local udid=${!udid_var}
   group "The $kind: $(cat "$out/$kind/device.txt")"
+  if [[ $kind == mac ]]; then
+    # The runner's desktop dark, and black behind the window: a window's
+    # picture is its rectangle, and what lies behind its round corners
+    # shows in them.
+    osascript -e 'tell application "System Events" to tell appearance preferences to set dark mode to true' \
+      -e 'tell application "System Events" to set picture of every desktop to "/System/Library/Desktop Pictures/Solid Colors/Black.png"' \
+      > /dev/null 2>&1 || problem "the Mac's desktop did not turn dark and black"
+    walk mac testMac mac-dark 720
+    endgroup
+    return
+  fi
   if ! bounded "$(allow 600)" xcrun simctl bootstatus "$udid" -b > "$work/boot-$kind.log" 2>&1; then
     problem "the $kind simulator did not boot ($(tail -1 "$work/boot-$kind.log"))"
     echo "not walked: the simulator did not boot" >> "$out/$kind/verdict.txt"
@@ -436,11 +484,13 @@ round() {
   endgroup
 }
 
-if $built; then
-  for kind in $ready; do
+for kind in $ready; do
+  if [[ $kind == mac ]]; then
+    if $built_mac; then round mac; fi
+  elif $built; then
     round "$kind"
-  done
-fi
+  fi
+done
 stop_server
 
 # --- Contact sheets ----------------------------------------------------------
@@ -461,6 +511,7 @@ title_of() {
     iphone) echo "iPhone" ;;
     ipad) echo "iPad" ;;
     ipad11) echo "iPad, upright" ;;
+    mac) echo "Mac" ;;
     *) echo "$1" ;;
   esac
 }
@@ -543,10 +594,12 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
   # The walks' logs and the fake server's; the simulator build's errors only
   # (its whole log is many megabytes, and in the artifact).
   for log in "$out"/*.log; do
-    [[ -f $log && $log != */build-for-testing.log ]] && cp "$log" "$part/logs/"
+    [[ -f $log && $log != */build-for-testing*.log ]] && cp "$log" "$part/logs/"
   done
   grep -E 'error:' "$out/build-for-testing.log" 2> /dev/null | sed "s#$PWD/##g" | sort -u \
     > "$part/logs/build-for-testing-errors.txt"
+  grep -E 'error:' "$out/build-for-testing-mac.log" 2> /dev/null | sed "s#$PWD/##g" | sort -u \
+    > "$part/logs/build-for-testing-mac-errors.txt"
   readme > "$part/README.md"
   remote="https://x-access-token:${GH_TOKEN}@github.com/$repo.git"
   # The branch as it is, with this round's place emptied and filled again,
