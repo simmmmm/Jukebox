@@ -118,10 +118,10 @@ The photographer: "nu kunnen we gewoon een 2027 design maken met invloeden van S
 The design and its spec are in `build/design-round/2027/` (`spec.md`, `sheet.png`).
 
 - **The bar** is 88 tall and spans the whole window. Its centre (previous, play, next, progress) takes 40% of the window, held between 304 and 640, and sits on the window's centre. The song and tools zones are equal (`ThreeZones` in PlayerBar.swift).
-- **The panel** at the right is 360 wide. It shows Up next (shuffle, repeat, the radio's reasons) or Lyrics (synced; click a line to seek). The bar's toggles open, switch and close it, and the app remembers it. It sits beside the page from 1280 wide and lies over it below.
+- **The panel**, Now playing, at the right is 360 wide. It shows the queue (shuffle, repeat, the radio's reasons) or Lyrics (synced; click a line to seek). The bar's toggles open, switch and close it, and the app remembers it. It sits beside the page from 1280 wide and lies over it below.
 - **The places** at the left are 240 wide, the Mac's 1:1: Home, Radio; Albums, Artists, Songs, Playlists, Favorites, Genres, Recently Added, Downloaded; the playlists ("Linux erbij", 15 November 2026). Below 900 they fold and lie over the page; F9 brings them back.
 - **Preferences › Pages** takes places out (`AppSettings.hiddenPages`, shared). The place shown switched off goes Home. Every one off, there is no sidebar: Home, the panel and the bar, with the main menu at the end of the page's header.
-- **Now Playing** covers the places and the page. The bar and the panel stay.
+- **Full Player** (the cover and the title in the bar open it) covers the places and the page. The bar and the panel stay. In the bar, the artist opens the artist and a station's name the panel.
 - **Shelves** have no scrollbar over their words. Under the pointer a round
   ‹ and › fade in, 32 wide, while there is more that way; a click moves on
   by what shows, less one tile. The keys go along the tiles.

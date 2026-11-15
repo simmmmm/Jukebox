@@ -47,7 +47,9 @@ enum PlayerBar {
         // the hover ended flush on the words ("ik zie een bug", the
         // photographer, 15 November 2026).
         let song = tileButton(hbox(spacing: 12, [art.widget, words])) { NowPlayingPage.open() }
-        song.tooltip("Now Playing").align(vertical: GTK_ALIGN_CENTER)
+        // The screen it opens is Full Player (the photographer, 15 November
+        // 2026), as the panel took the name Now Playing.
+        song.tooltip("Full Player").align(vertical: GTK_ALIGN_CENTER)
         // The pointer over the song, a click may follow: Now Playing's sleeve
         // drawn now, at the room's size as it is now (the window may have
         // changed since the song began; a sleeve takes 100 ms or more).
@@ -70,7 +72,7 @@ enum PlayerBar {
         let stationLinkMark = gtk_image_new_from_icon_name(Glyphs.name("radio"))!.css("accent")
         gtk_image_set_pixel_size(ptr(stationLinkMark), 12)
         let stationLinkName = label("", "bar-fact", "accent")
-        let stationLink = link(hbox(spacing: 4, [stationLinkMark, stationLinkName]), over: station, "Up Next") {
+        let stationLink = link(hbox(spacing: 4, [stationLinkMark, stationLinkName]), over: station, "Now Playing") {
             app.panel.show(.upNext)
         }
         let songWithLinks = gtk_overlay_new()!.align(vertical: GTK_ALIGN_CENTER)
@@ -151,7 +153,9 @@ enum PlayerBar {
         // The tools: the panel's two buttons (Panel.swift), then the level;
         // below 900 the level is a button with the slider in its popover.
         let lyrics = panelButton("media-view-subtitles-symbolic", "Lyrics", .lyrics)
-        let upNext = panelButton("view-list-ordered-symbolic", "Up Next", .upNext)
+        // The panel is Now Playing ("moet up next niet trouwens gewoon 'now
+        // playing' worden", the photographer, 15 November 2026).
+        let upNext = panelButton("view-list-ordered-symbolic", "Now Playing", .upNext)
         let (speaker, level) = (gtk_image_new_from_icon_name("audio-volume-high-symbolic")!, levelScale(width: 96))
         volume = hbox(spacing: 8, [speaker, level])
         gtk_widget_set_margin_start(volume, 8)
@@ -497,7 +501,7 @@ enum NowPlayingPage {
         gtk_overlay_set_child(ptr(overlay), room)
         gtk_overlay_add_overlay(ptr(overlay), content)
 
-        down = iconButton("go-down-symbolic", "Close Now Playing", "flat") { close() }
+        down = iconButton("go-down-symbolic", "Close Full Player", "flat") { close() }
         // ⋮: the song's menu, made as it opens (the song and the window's
         // width decide it), under the button.
         more = iconButton("view-more-symbolic", "More", "flat") {

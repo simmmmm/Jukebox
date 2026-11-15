@@ -32,7 +32,10 @@ enum Panel {
         gtk_stack_set_transition_duration(ptr(stack), 150)
         gtk_stack_add_named(ptr(stack), UpNext.make(), PanelState.Content.upNext.rawValue)
         gtk_stack_add_named(ptr(stack), LyricsPanel.make(), PanelState.Content.lyrics.rawValue)
-        let upNext = tab("Up next", .upNext)
+        // The panel's name, Now playing ("moet up next niet trouwens gewoon
+        // 'now playing' worden", the photographer, 15 November 2026); its
+        // list's own headings ("Up next", "Then") stay.
+        let upNext = tab("Now playing", .upNext)
         let lyrics = tab("Lyrics", .lyrics)
         // One group: pressing the pressed tab leaves it pressed.
         gtk_toggle_button_set_group(ptr(lyrics), ptr(upNext))

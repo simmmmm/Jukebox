@@ -31,7 +31,10 @@ struct PanelView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .top, spacing: 0) {
             HStack(spacing: Theme.Space.xs) {
-                tab("Up Next", .upNext)
+                // The panel's name, Now Playing ("moet up next niet
+                // trouwens gewoon 'now playing' worden", the photographer,
+                // 15 November 2026); its list's own headings stay.
+                tab("Now Playing", .upNext)
                 if offersLyrics {
                     tab("Lyrics", .lyrics)
                 }

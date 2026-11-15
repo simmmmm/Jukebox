@@ -29,6 +29,8 @@ struct PlayerBar: View {
 
     /// The bar's width, which sets its zones.
     @State private var width: CGFloat = 1024
+    /// The pointer over the song: its ground lit, as Linux's tile.
+    @State private var isSongHovered = false
 
     init() {}
 
@@ -85,34 +87,57 @@ struct PlayerBar: View {
     @ViewBuilder private var songZone: some View {
         if let track = player.currentTrack {
             HStack(spacing: Theme.Space.l) {
-                Button {
-                    navigator.isNowPlayingPresented = true
-                } label: {
-                    HStack(spacing: Theme.Space.m) {
-                        ArtworkView(track.artwork, size: 56, cornerRadius: Theme.Radius.artwork)
-                        VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                            // Linux's bar-title, 15 medium, and bar-fact, 13.
-                            Text(track.name)
-                                .desktopFont(15, weight: .medium)
-                                .lineLimit(1)
-                            secondLine(track)
-                                .desktopFont(13)
-                                .lineLimit(1)
+                // The cover and the title open Full Player: a button under
+                // them, as wide as the song, lit 8 past the cover and the
+                // words as Linux's tile is. The artist's and the station's
+                // lines are buttons of their own over it, not inside it.
+                HStack(spacing: Theme.Space.m) {
+                    ArtworkView(track.artwork, size: 56, cornerRadius: Theme.Radius.artwork)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                    // Linux's bar-title, 15 medium, 20 tall; then 4, and the
+                    // lines of 13, 16 tall: three on a station make 56, the
+                    // cover's height, and the bar stays 88.
+                    VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                        Text(track.name)
+                            .desktopFont(15, weight: .medium)
+                            .lineLimit(1)
+                            .frame(height: 20)
+                            .allowsHitTesting(false)
+                            .accessibilityHidden(true)
+                        VStack(alignment: .leading, spacing: 0) {
+                            lines(track)
                         }
+                        .desktopFont(13)
+                        .lineLimit(1)
                     }
-                    .contentShape(.rect)
                 }
-                .buttonStyle(.plain)
-                .help("Now Playing")
-                // A hand over the song may open the room: its sleeve's
-                // cover and colour fetched now, as Linux draws its sleeve
-                // on hover.
-                .onHover { inside in
-                    if inside { prefetchRoom(track) }
+                .padding(Theme.Space.s)
+                .background {
+                    Button {
+                        navigator.isNowPlayingPresented = true
+                    } label: {
+                        // Concentric with the cover's 6, 8 past it: 14.
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(Color.primary.opacity(isSongHovered ? 0.07 : 0))
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    // "Full Player" for the screen the cover opens (the
+                    // photographer, 15 November 2026).
+                    .help("Full Player")
+                    // A hand over the song may open the room: its sleeve's
+                    // cover and colour fetched now, as Linux draws its sleeve
+                    // on hover.
+                    .onHover { inside in
+                        isSongHovered = inside
+                        if inside { prefetchRoom(track) }
+                    }
+                    .accessibilityIdentifier("bar.song")
+                    .accessibilityLabel(spokenTitle(track))
+                    .accessibilityHint("Opens Full Player")
                 }
-                .accessibilityIdentifier("bar.song")
-                .accessibilityLabel(spokenTitle(track))
-                .accessibilityHint("Opens Now Playing")
+                .padding(-Theme.Space.s)
                 // Go to Album, Go to Artist, Start Radio, the heart: the
                 // song's own menu, as a right-click on Linux's bar.
                 .contextMenu {
@@ -130,30 +155,57 @@ struct PlayerBar: View {
         }
     }
 
-    /// The artist; on a station, the station after its mark in the accent
-    /// ("MC Polder  ⌂ Your Station"); the player's error while it keeps it,
-    /// as the mini player shows it, or a song that does not play reads as a
-    /// broken button.
-    @ViewBuilder private func secondLine(_ track: Track) -> some View {
+    /// Under the title, 16 each: the artist; on a station, a line of its own
+    /// with the station after its mark in the accent ("Kun je de station
+    /// naam ergens anders plaatsen?", the photographer, 15 November 2026);
+    /// the player's error while it keeps it, as the mini player shows it, or
+    /// a song that does not play reads as a broken button.
+    ///
+    /// The artist's name opens the artist ("je zou hier eigenlijk ook op
+    /// angele willen kunnen klikken", the same day), as Go to Artist does:
+    /// the song's first artist, when the library knows them; else the name
+    /// stays words of the song. The station's name shows the panel on Now
+    /// Playing, what the station plays next ("ook die oranje link hier zou
+    /// gewoon 'up next' moeten openen"), and never closes it.
+    @ViewBuilder private func lines(_ track: Track) -> some View {
         if let error = player.errorMessage {
             HStack(spacing: Theme.Space.xs) {
                 Image(systemName: "exclamationmark.triangle.fill")
                 Text(verbatim: error)
             }
             .foregroundStyle(.secondary)
+            .frame(height: 16)
+            .allowsHitTesting(false)
         } else {
-            HStack(spacing: Theme.Space.s) {
-                if !track.artistLine.isEmpty {
+            if !track.artistLine.isEmpty {
+                if let ref = track.primaryArtist, let artist = library.artist(ref) {
+                    BarLink(help: "Go to Artist") {
+                        navigator.open(.artist(artist))
+                    } label: {
+                        Text(track.artistLine)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityLabel(track.artistLine)
+                    .accessibilityHint("Opens the artist")
+                } else {
                     Text(track.artistLine)
                         .foregroundStyle(.secondary)
+                        .frame(height: 16)
+                        .allowsHitTesting(false)
                 }
-                if let station = player.context?.station {
+            }
+            if let station = player.context?.station {
+                BarLink(help: "Now Playing") {
+                    panel.show(.upNext)
+                } label: {
                     HStack(spacing: Theme.Space.xs) {
                         ArchMark(size: 12, style: .template)
                         Text(station.title)
                     }
                     .foregroundStyle(Theme.accent)
                 }
+                .accessibilityLabel(station.title)
+                .accessibilityHint("Shows Now Playing")
             }
         }
     }
@@ -300,7 +352,9 @@ struct PlayerBar: View {
             if app.can(.lyrics) || settings.findLyricsOnline {
                 panelButton(.lyrics, symbol: "quote.bubble", label: "Lyrics", id: "bar.lyrics")
             }
-            panelButton(.upNext, symbol: "list.bullet", label: "Up Next", id: "bar.upNext")
+            // The panel is Now Playing ("moet up next niet trouwens gewoon
+            // 'now playing' worden", the photographer, 15 November 2026).
+            panelButton(.upNext, symbol: "list.bullet", label: "Now Playing", id: "bar.upNext")
             RoutePicker(followsAppearance: true)
                 .frame(width: 32, height: 32)
                 .padding(.leading, Theme.Space.l)
@@ -335,6 +389,34 @@ struct PlayerBar: View {
         .accessibilityIdentifier(id)
         .accessibilityLabel(label)
         .accessibilityAddTraits(isLit ? .isSelected : [])
+    }
+}
+
+/// Words in the bar's song that go somewhere (the artist, the station): a
+/// plain button of one line of 16, underlined under the pointer as a link
+/// is, as Linux's `bar-link`.
+private struct BarLink<Label: View>: View {
+    let help: LocalizedStringKey
+    let action: () -> Void
+    let label: Label
+    @State private var isHovered = false
+
+    init(help: LocalizedStringKey, action: @escaping () -> Void, @ViewBuilder label: () -> Label) {
+        self.help = help
+        self.action = action
+        self.label = label()
+    }
+
+    var body: some View {
+        Button(action: action) {
+            label
+                .underline(isHovered)
+                .frame(height: 16)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .help(help)
+        .onHover { isHovered = $0 }
     }
 }
 

@@ -175,12 +175,12 @@ narrow, keep their tabs (`MainTabView`).
 - **The page**: a NavigationStack on `navigator.widePath`, with the window's
   bar on every page. At its trailing end sits the one search field (⌘F); a
   click in it shows the Search page. Search has no row of its own.
-- **The panel**, 360 at the right (`NowPlaying/PanelView.swift`): Up Next or
+- **The panel**, 360 at the right (`NowPlaying/PanelView.swift`), Now Playing: the queue or
   the lyrics, opened from the bar. `PanelState`, shared with Linux, keeps it
   across launches. Below 1280 it lies over the page.
 - **The bar**, 88 across the window's foot (`NowPlaying/PlayerBar.swift`),
   its three zones from `DesktopMeasures`, shared with Linux.
-- **Now Playing** is a room over the places and the page (`\.inRoom`); the
+- **Full Player** is a room over the places and the page (`\.inRoom`); the
   bar and the panel stay.
 
 Every wide page is built from `Components/WidePage.swift`: `desktopFont`
