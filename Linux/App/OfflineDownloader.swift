@@ -22,13 +22,20 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
 
     /// A progress event every quarter of a megabyte a song, as the iPhone's.
     private static let progressStep: Int64 = 262_144
+    /// Songs fetched at once, as the iPhone's session asks of a server.
+    private static let connections = 4
 
     // Guarded by `lock`: the session's queue and the main actor both reach them.
     private let lock = NSLock()
     private var sink: (@Sendable (OfflineDownloadEvent) -> Void)?
     private var waiting: [OfflineDownloadEvent] = []
-    /// The downloads under way, by the task's identifier.
-    private var tasks: [Int: (task: URLSessionDownloadTask, tag: OfflineDownloadTag)] = [:]
+    /// The downloads under way or waiting their turn, by the task's identifier.
+    private var tasks: [Int: (task: URLSessionDownloadTask, tag: OfflineDownloadTag, isChosen: Bool)] = [:]
+    /// Waiting their turn: what the listener chose before what the keep
+    /// would like, as the iPhone's session runs them by priority. Without
+    /// it an album clicked waited behind the keep's two dozen.
+    private var queued: [Int] = []
+    private var active: Set<Int> = []
     private var reported: [Int: Int64] = [:]
 
     // Set once, in init, before anything else can see it.
@@ -55,15 +62,21 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
     }
 
     /// The iPhone's call; a desktop's network is not told apart, so the
-    /// mobile-data and Low Data Mode leaves mean nothing here, nor does the
-    /// priority (the store starts what was chosen first).
+    /// mobile-data and Low Data Mode leaves mean nothing here.
     func start(_ tag: OfflineDownloadTag, from url: URL, overCellular: Bool, inLowDataMode: Bool,
                expectedBytes: Int64, isChosen: Bool) {
         let task = session.downloadTask(with: URLRequest(url: url))
+        let id = task.taskIdentifier
         lock.lock()
-        tasks[task.taskIdentifier] = (task, tag)
+        tasks[id] = (task, tag, isChosen)
+        if isChosen, let at = queued.firstIndex(where: { tasks[$0]?.isChosen == false }) {
+            queued.insert(id, at: at)
+        } else {
+            queued.append(id)
+        }
+        let next = nextTurns()
         lock.unlock()
-        task.resume()
+        for task in next { task.resume() }
     }
 
     /// Cancels every download whose tag `matches`; each says so (`.cancelled`)
@@ -71,15 +84,14 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
     func cancel(where matches: @escaping @Sendable (OfflineDownloadTag) -> Bool) {
         lock.lock()
         let found = tasks.filter { matches($0.value.tag) }
-        for id in found.keys {
-            tasks[id] = nil
-            reported[id] = nil
-        }
+        for id in found.keys { forget(id) }
+        let next = nextTurns()
         lock.unlock()
         for (_, entry) in found {
             entry.task.cancel()
             emit(.cancelled(entry.tag))
         }
+        for task in next { task.resume() }
     }
 
     /// The downloads under way. At a launch none: nothing went on while
@@ -174,13 +186,36 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
         }
     }
 
-    /// The task's song, forgotten: each task's news is told once.
+    /// The task's song, forgotten, and the next one's turn: each task's
+    /// news is told once.
     private func take(_ task: URLSessionTask) -> OfflineDownloadTag? {
         lock.lock()
-        defer { lock.unlock() }
-        let id = task.taskIdentifier
+        let tag = tasks[task.taskIdentifier]?.tag
+        forget(task.taskIdentifier)
+        let next = nextTurns()
+        lock.unlock()
+        for task in next { task.resume() }
+        return tag
+    }
+
+    /// Under `lock`.
+    private func forget(_ id: Int) {
+        tasks[id] = nil
         reported[id] = nil
-        return tasks.removeValue(forKey: id)?.tag
+        active.remove(id)
+        queued.removeAll { $0 == id }
+    }
+
+    /// Under `lock`: the tasks whose turn it is now, to resume once it is let go.
+    private func nextTurns() -> [URLSessionDownloadTask] {
+        var next: [URLSessionDownloadTask] = []
+        while active.count < Self.connections, !queued.isEmpty {
+            let id = queued.removeFirst()
+            guard let entry = tasks[id] else { continue }
+            active.insert(id)
+            next.append(entry.task)
+        }
+        return next
     }
 
     private func emit(_ event: OfflineDownloadEvent) {

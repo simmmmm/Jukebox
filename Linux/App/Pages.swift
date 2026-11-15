@@ -28,6 +28,7 @@ enum HomePage {
                 return
             }
             append(pageTitle(RelativeDay.partOfDay()), to: column)
+            if let notice = offlineNotice() { append(notice, to: column) }
             if let offer = app.handoff.offer { append(handoffNotice(offer), to: column) }
             append(yourStation(), to: column)
 
@@ -106,6 +107,22 @@ enum HomePage {
             adw_status_page_set_child(ptr(page), spinner)
             return page
         }
+    }
+
+    /// Offline, or the library could not be read: why first — no network at
+    /// all, or no server on it — then what still works, and Try Again (the
+    /// iPhone's HomeOfflineNotice, in the handoff's form beside it).
+    private static func offlineNotice() -> Widget? {
+        let offline = app.offline
+        let failed = if case .failed = app.library.state { true } else { false }
+        guard failed || offline.isOffline else { return nil }
+        let why = offline.hasNetwork ? "Can’t reach \(app.library.serverName ?? "your server")." : "You’re offline."
+        let still = offline.songCount > 0 ? "The songs on this \(Device.model) still play." : "Showing your library from last time."
+        let again = wordButton("Try Again") {
+            offline.checkServer()
+            Task { await app.library.refresh() }
+        }
+        return vbox(spacing: 4, [label("\(why) \(still)", lines: 0).margins(horizontal: 8), again]).margins(horizontal: 4, vertical: 8)
     }
 
     /// Music on another device, or this one's from last time, and the one
@@ -768,7 +785,9 @@ enum Pages {
             }
         }
         Stats.track(.screen, ["name": "album"])
-        Nav.push(album.name, pageColumn(column))
+        // At the header's end, where the Mac's bar has it.
+        let download = downloadControl(.album(album.id), name: album.name) { OfflineCollection(album: album, tracks: tracks) }
+        Nav.push(album.name, pageColumn(column), end: [download])
     }
 
     static func open(_ artist: Artist) {
@@ -820,24 +839,39 @@ enum Pages {
         ])
         keep(art, on: raw(top), as: "art")
         let column = vbox([top, rule(), list.widget])
-        // A playlist's songs are the server's to say: it changes elsewhere too.
+        func show(_ tracks: [Track]) {
+            list.set(tracks)
+            // Without an image of its own, the covers of its first
+            // albums, as on the iPhone.
+            if playlist.artwork == nil { art.show(collage: firstCovers(tracks)) }
+            setText(fact, length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration }))
+        }
+        // A playlist's songs are the server's to say: it changes elsewhere
+        // too. Offline, or the server away, the songs it was downloaded with.
         Task {
+            let saved = app.offline.collection(for: .playlist(playlist.id))?.tracks
+            if app.offline.isOffline, let saved {
+                show(saved)
+                return
+            }
             do {
                 let tracks = try await app.library.tracks(in: playlist)
-                list.set(tracks)
-                // Without an image of its own, the covers of its first
-                // albums, as on the iPhone.
-                if playlist.artwork == nil { art.show(collage: firstCovers(tracks)) }
-                setText(fact, length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration }))
+                show(tracks)
+                // Downloaded: what came in or went out on the server follows.
+                let shown = app.library.playlists.first { $0.id == playlist.id } ?? playlist
+                app.offline.playlistLoaded(shown, tracks: tracks)
             } catch {
-                setText(fact, error.localizedDescription)
+                if let saved { show(saved) } else { setText(fact, error.localizedDescription) }
             }
         }
         Stats.track(.screen, ["name": "playlist"])
+        let download = downloadControl(.playlist(playlist.id), name: playlist.name) {
+            OfflineCollection(playlist: app.library.playlists.first { $0.id == playlist.id } ?? playlist, tracks: list.items)
+        }
         if let start {
-            Nav.show(Nav.page(playlist.name, pageColumn(column), start: start))
+            Nav.show(Nav.page(playlist.name, pageColumn(column), start: start, end: [download]))
         } else {
-            Nav.push(playlist.name, pageColumn(column))
+            Nav.push(playlist.name, pageColumn(column), end: [download])
         }
     }
 
@@ -904,7 +938,7 @@ enum Pages {
         let list = trackList(mix.tracks, context: { context })
         let column = vbox([top, rule(), list.widget])
         Stats.track(.mixOpened)
-        Nav.push(mix.title, pageColumn(column))
+        Nav.push(mix.title, pageColumn(column), end: [downloadControl(.mix(mix.id), name: mix.title) { OfflineCollection(mix: mix) }])
     }
 
     /// A station's page: what it would play, before it plays. Play plays

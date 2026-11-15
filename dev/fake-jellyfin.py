@@ -373,6 +373,7 @@ class Library:
         self.clips = {}
         # --clips-as-recorded: every track the 8-second clip itself.
         self.clips_as_recorded = False
+        self.slow_downloads = False
 
     def stretch(self):
         """Song lengths a listener expects (2:30 to 5:30, by id) instead of
@@ -1135,6 +1136,11 @@ class Handler(BaseHTTPRequestHandler):
         seconds = 0 if lib.clips_as_recorded else round((lib.items[track_id].get("RunTimeTicks") or 0) / TICKS)
         data = lib.clip(name).file(seconds)
         size = len(data)
+        # A download (TranscodingProtocol=http; the player's stream is HLS)
+        # as slow as a real server's, so its progress can be seen: 0.4 to
+        # 2 s a song, the same song the same each time.
+        if lib.slow_downloads and q.get("TranscodingProtocol") == "http":
+            time.sleep(0.4 + int(hashlib.md5(track_id.encode()).hexdigest()[:4], 16) % 17 / 10)
         headers = [("Accept-Ranges", "bytes"), ("ETag", f'"{name}-{seconds}"')]
         wanted = self.headers.get("Range")
         if not wanted:
@@ -1246,10 +1252,13 @@ def main():
     # simulator's player refuses them, this serves the clips ffmpeg wrote.
     parser.add_argument("--clips-as-recorded", action="store_true",
                         help="every track the 8-second clip as it is, not looped to the track's length")
+    parser.add_argument("--slow-downloads", action="store_true",
+                        help="each song downloaded (not streamed) takes 0.4 to 2 s, as from a real server")
     args = parser.parse_args()
 
     Handler.library = Library(os.path.abspath(args.data), args.song_lengths, args.seed, args.password)
     Handler.library.clips_as_recorded = args.clips_as_recorded
+    Handler.library.slow_downloads = args.slow_downloads
     server = make_server(args.host, args.port)
     lib = Handler.library
     kinds = {}

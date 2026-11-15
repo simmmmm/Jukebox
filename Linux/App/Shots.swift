@@ -95,6 +95,7 @@ enum Shots {
                 }
                 gtk_editable_set_text(ptr(home), "")
             }
+            await library(albums)
             // Music, as the designer's drawings have it (2027/notes.md):
             // Dust Windows on Home, then the panel on Up next over another
             // album's page.
@@ -155,6 +156,7 @@ enum Shots {
             Preferences.present()
             await step("16-preferences", wait: 2)
             if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
+                await scrolledToEnd(ptr(dialog), "16b-preferences-downloads")
                 adw_dialog_force_close(dialog)
             }
             MainWindow.showSignIn()
@@ -162,6 +164,94 @@ enum Shots {
             gtk_window_close(ptr(MainWindow.window))
             exit(0)
         }
+    }
+
+    /// The Mac's three more places ("Linux erbij", 15 November 2026):
+    /// Genres, a genre, Recently Added; then an album, a playlist and a mix
+    /// downloaded from the fake Jellyfin by their pages' own buttons, and
+    /// Downloaded. What came is written to frames.txt: the songs, their
+    /// files, and the file the player plays.
+    private static func library(_ albums: [Album]) async {
+        MainWindow.select(8)
+        await step("18-genres", wait: 2)
+        if let genre = app.library.genres.max(by: { app.library.albums(inGenre: $0).count < app.library.albums(inGenre: $1).count }) {
+            Pages.open(genre)
+            await step("19-genre", wait: 2)
+        }
+        MainWindow.select(9)
+        await step("20-recently-added", wait: 2)
+        var log = ""
+        // One the keep has not fetched all of, so its ring shows on the way.
+        let whole = { (album: Album) in app.library.tracks(inAlbum: album.id).allSatisfy { app.offline.has($0.id) } }
+        if let album = albums.first(where: { !whole($0) }) ?? albums.first {
+            Pages.open(album)
+            try? await Task.sleep(for: .seconds(1))
+            await step("21a-album-download", wait: 0)
+            await download("21b-album-downloading", reason: .album(album.id), log: &log)
+            await step("21c-album-downloaded", wait: 1)
+        }
+        if let playlist = app.library.playlists.first {
+            Pages.open(playlist)
+            try? await Task.sleep(for: .seconds(2))
+            await download(nil, reason: .playlist(playlist.id), log: &log)
+        }
+        if let mix = app.mixes.mixes.first {
+            Pages.open(mix)
+            try? await Task.sleep(for: .seconds(1))
+            await download(nil, reason: .mix(mix.id), log: &log)
+        }
+        MainWindow.select(10)
+        await step("22-downloaded", wait: 3)
+        await scrolledToEnd(visiblePage(), "22b-downloaded-songs")
+        // A downloaded song plays from its file.
+        let offline = app.offline
+        if let collection = offline.collections.last, let first = collection.tracks.first(where: { offline.has($0.id) }) {
+            app.player.play([first], context: QueueContext(.other, title: "Downloaded"))
+            try? await Task.sleep(for: .seconds(1))
+            let file = app.player.currentTrack.flatMap { offline.localURL(for: $0.id) }
+            log += "playing \(first.name): from \(file?.path ?? "the server"), "
+                + "a file there: \(file.map { FileManager.default.fileExists(atPath: $0.path) } ?? false)\n"
+            app.player.stop()
+        }
+        let folder = offline.collections.first.flatMap { offline.localURL(for: $0.trackIDs[0]) }?.deletingLastPathComponent()
+        let files = folder.flatMap { try? FileManager.default.contentsOfDirectory(atPath: $0.path) } ?? []
+        log += "downloaded: \(offline.collections.count) collections, \(offline.songCount) songs, "
+            + "\(offline.chosenBytes) bytes chosen, \(offline.keptBytes) kept; \(files.count) files in \(folder?.path ?? "none")\n"
+        if let shots = Self.folder {
+            let file = "\(shots)/frames.txt"
+            try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// The page's own Download clicked, then waited on until all of it is
+    /// here (20 s at most); a picture of the ring on the way, when named.
+    private static func download(_ name: String?, reason: OfflineReason, log: inout String) async {
+        guard let button = find(visiblePage(), { widget in
+            g_type_check_instance_is_a(ptr(widget), gtk_button_get_type()) != 0
+                && gtk_button_get_icon_name(ptr(widget)).map { String(cString: $0) } == Glyphs.name("download")
+        }) else {
+            log += "\(reason): no Download on its page\n"
+            return
+        }
+        gtk_widget_activate(button)
+        // A button activated says "clicked" 250 ms later (GTK's press
+        // shown); the fake's songs then take 0.4 to 2 s each.
+        if let name { await step(name, wait: 1.2) }
+        let clock = ContinuousClock(), start = clock.now
+        for _ in 0..<80 where app.offline.state(of: reason) != .downloaded {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        let took = (clock.now - start).components
+        log += "\(reason): \(app.offline.state(of: reason)) after \(took.seconds).\(took.attoseconds / 100_000_000_000_000_000) s, "
+            + (app.offline.collection(for: reason).map { app.offline.fact(of: $0) } ?? "not chosen") + "\n"
+    }
+
+    /// `root`'s first scroller at its end, as a picture.
+    private static func scrolledToEnd(_ root: Widget?, _ name: String) async {
+        guard let scroller = find(root, { String(cString: gtk_widget_get_css_name($0)) == "scrolledwindow" }),
+              let adjustment = gtk_scrolled_window_get_vadjustment(ptr(scroller)) else { return }
+        gtk_adjustment_set_value(adjustment, gtk_adjustment_get_upper(adjustment))
+        await step(name, wait: 1)
     }
 
     /// The pointer over `widgets`, as a picture: Xvfb has no pointer, so

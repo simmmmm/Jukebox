@@ -43,6 +43,8 @@ enum MainWindow {
         ("Favorites", Glyphs.name("heart"), LibraryPages.favorites),
         ("Genres", Glyphs.name("genres"), LibraryPages.genres),
         ("Recently Added", Glyphs.name("clock"), LibraryPages.recentlyAdded),
+        // What is on this computer: what plays without a connection.
+        ("Downloaded", Glyphs.name("download"), DownloadedPage.make),
     ]
 
     static func present(in application: UnsafeMutablePointer<AdwApplication>) {
@@ -407,7 +409,7 @@ enum MainWindow {
     /// first, as GNOME asks before what cannot be taken back at a click.
     private static func confirmSignOut() {
         guard app.phase == .signedIn else { return }
-        let dialog = adw_alert_dialog_new("Sign Out?", "The library kept on this computer is removed. Your music and playlists stay on your server.")!
+        let dialog = adw_alert_dialog_new("Sign Out?", "The library and the songs downloaded to this computer are removed. Your music and playlists stay on your server.")!
         adw_alert_dialog_add_response(ptr(dialog), "cancel", "Cancel")
         adw_alert_dialog_add_response(ptr(dialog), "sign-out", "Sign Out")
         adw_alert_dialog_set_response_appearance(ptr(dialog), "sign-out", ADW_RESPONSE_DESTRUCTIVE)
