@@ -428,14 +428,24 @@ struct LineSlider: View {
     @Binding var value: Double
     let range: ClosedRange<Double>
     /// The part played: the accent, or the level's 60 % of the text.
-    var fill: Color = Theme.accent
-    var alwaysShowsKnob = false
-    var onEditingChanged: (Bool) -> Void = { _ in }
+    let fill: Color
+    let alwaysShowsKnob: Bool
+    let onEditingChanged: (Bool) -> Void
 
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.colorScheme) private var colorScheme
     @State private var isHovered = false
     @State private var isHeld = false
+
+    // Spelled out: the private state would make the memberwise one private.
+    init(value: Binding<Double>, range: ClosedRange<Double>, fill: Color = Theme.accent,
+         alwaysShowsKnob: Bool = false, onEditingChanged: @escaping (Bool) -> Void = { _ in }) {
+        _value = value
+        self.range = range
+        self.fill = fill
+        self.alwaysShowsKnob = alwaysShowsKnob
+        self.onEditingChanged = onEditingChanged
+    }
 
     var body: some View {
         let span = range.upperBound - range.lowerBound

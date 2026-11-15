@@ -258,10 +258,13 @@ private struct SearchResultsList: View {
                 }
             }
             if !results.tracks.isEmpty {
-                // TrackRow's 64, 8 under their heading.
+                // TrackRow's 64, 8 under their heading; the artist and the
+                // album under the title, as Linux's.
                 PageSectionTitle(String(localized: "Songs"), below: Theme.Space.s)
                     .padding(.horizontal, margin)
-                PageTrackRows(tracks: results.tracks, play: { track in
+                PageTrackRows(tracks: results.tracks,
+                              subtitle: { [$0.artistLine, $0.albumName ?? ""].filter { !$0.isEmpty }.joined(separator: " · ") },
+                              play: { track in
                     startStation(from: track)
                 })
                 .padding(.horizontal, margin)
