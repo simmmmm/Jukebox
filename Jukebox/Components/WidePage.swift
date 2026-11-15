@@ -435,7 +435,9 @@ struct LineSlider: View {
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.colorScheme) private var colorScheme
     @State private var isHovered = false
-    @State private var isHeld = false
+    /// In the hand: back to false when the drag ends or is taken away (a
+    /// list's scroll), so the caller always hears the end.
+    @GestureState private var isHeld = false
 
     // Spelled out: the private state would make the memberwise one private.
     init(value: Binding<Double>, range: ClosedRange<Double>, fill: Color = Theme.accent,
@@ -471,26 +473,23 @@ struct LineSlider: View {
                     .offset(x: width * part - 8)
                     .opacity(isEnabled && (alwaysShowsKnob || isHovered || isHeld) ? 1 : 0)
             }
-            .contentShape(.rect)
+            // 8 past the line above and below, for a finger.
+            .contentShape(Rectangle().inset(by: -Theme.Space.s))
             .gesture(
                 DragGesture(minimumDistance: 0)
+                    .updating($isHeld) { _, held, _ in held = true }
                     .onChanged { drag in
                         guard width > 0 else { return }
-                        if !isHeld {
-                            isHeld = true
-                            onEditingChanged(true)
-                        }
                         let at = min(max(drag.location.x / width, 0), 1)
                         value = range.lowerBound + at * span
-                    }
-                    .onEnded { _ in
-                        isHeld = false
-                        onEditingChanged(false)
                     }
             )
         }
         .frame(height: 16)
         .onHover { isHovered = $0 }
+        .onChange(of: isHeld) { _, held in
+            onEditingChanged(held)
+        }
         .accessibilityRepresentation {
             Slider(value: $value, in: range, onEditingChanged: onEditingChanged)
         }

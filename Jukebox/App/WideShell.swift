@@ -78,8 +78,10 @@ struct WideShell: View {
                     if panelShown && !overlaid {
                         // Beside the page its ground is the edge; over the
                         // room, where it has none, Linux's faint dark line.
+                        // (#0F0E0D: the room's #121110 under black at 17 %,
+                        // whatever the window's own appearance.)
                         Rectangle()
-                            .fill(navigator.isNowPlayingPresented ? Color.black.opacity(0.17) : .clear)
+                            .fill(navigator.isNowPlayingPresented ? Color(rgb: 0x0F0E0D) : .clear)
                             // grid-ok: a line, as a hairline is
                             .frame(width: 1)
                         panelPane

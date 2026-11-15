@@ -214,9 +214,9 @@ struct AlbumDetailView: View {
                                              below: Theme.Space.s)
                         }
                         // Only the guests after a title ("June Hollow" on a
-                        // Willow & Pine album), Linux's rule (UpNextList's).
+                        // Willow & Pine album), Linux's rule.
                         PageTrackRows(tracks: disc.tracks, numbered: true,
-                                      subtitle: { UpNextList.guests($0) },
+                                      subtitle: { Self.guests(of: $0, on: shown) },
                                       play: { track in
                                           let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
                                           play(tracks, from: i, album: shown, shuffled: false)
@@ -419,6 +419,16 @@ struct AlbumDetailView: View {
         let trackKeys = Set(track.artists.map(\.key))
         guard !trackKeys.isEmpty, trackKeys != Set(album.artists.map(\.key)) else { return nil }
         return track.artistLine
+    }
+
+    /// Wide, Linux's `guests(_:besides:)`: the song's artists that are not
+    /// the album's, names sharing one tag ("Blue Room Trio; MC Polder")
+    /// counted apart.
+    private static func guests(of track: Track, on album: Album) -> String {
+        let own = Set(album.artistLine.components(separatedBy: "; "))
+        return track.artists.flatMap { $0.name.components(separatedBy: "; ") }
+            .filter { !own.contains($0) }
+            .joined(separator: ", ")
     }
 
     private static func splitIntoDiscs(_ tracks: [Track]) -> [Disc] {
