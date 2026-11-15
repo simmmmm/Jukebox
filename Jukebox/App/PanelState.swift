@@ -3,7 +3,7 @@
 // for, opened and closed from the player's bar ("Als optionele
 // toevoegingen", the photographer of Feishin's panel, 14 November 2026;
 // Linux/App/Panel.swift has the rest). Foundation and Observation only, so
-// Linux's window and the iPad's and the Mac's inspector follow one state.
+// Linux's window and the iPad's and the Mac's panel follow one state.
 
 import Foundation
 import Observation

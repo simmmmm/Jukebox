@@ -58,6 +58,8 @@ alone is very likely taken. Candidates that say what it is:
 > AND
 > Favourites and playlists that stay in sync with your server. AirPlay,
 > the lock screen and Control Center, Up Next. iPhone and iPad.
+
+(**Open**: "iPhone, iPad and Mac" once the Mac ships, below.)
 >
 > Jukebox has no account, no ads and no tracking. Your music and your
 > listening stay between the app and your own server.
@@ -71,8 +73,8 @@ support.)
 **Support URL** — **Open**: a page with a way to reach the photographer;
 the repository's README works (`https://github.com/simmmmm/Jukebox`).
 
-**Privacy Policy URL** — **Open**: where `docs/privacy.md` (below) is
-published.
+**Privacy Policy URL** — **Open**: a published page that says what
+`docs/STATS.md` (The App Store) asks a policy to say. None is written yet.
 
 **Copyright**: 2026 Tijmen (or the name the photographer publishes under).
 
@@ -83,8 +85,9 @@ published.
   library and covers, ours to use.
 - **Screens**: Home, Now Playing (D2), a station's page, an album, Up Next
   with the dial, Lyrics, Settings › Downloads.
-- **Devices**: the walk runs on an iPhone 17 Pro (1206 × 2622) today. For the
-  store, one run on an iPhone 17 Pro Max and the iPad 13".
+- **Devices**: the walk runs on an iPhone 17 Pro (1206 × 2622), a 13-inch
+  iPad held sideways and an 11-inch iPad held upright. For the store, one
+  run on an iPhone 17 Pro Max.
 - **Text over the pictures**: none (tells.md).
 
 ## App Privacy (the questionnaire)

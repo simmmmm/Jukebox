@@ -1,7 +1,7 @@
 # Jukebox
 
 The photographer's music app for their own music server (Jellyfin, Navidrome
-and the other Subsonic servers): iPhone and iPad in SwiftUI, Linux in GTK 4
+and the other Subsonic servers): iPhone, iPad and Mac in SwiftUI, Linux in GTK 4
 and libadwaita, one Swift codebase under both. `docs/ARCHITECTURE.md` is how
 it is built and who owns what; read it first. `docs/RADIO.md` is how the
 radio chooses, with measurements; `docs/LINUX.md` is the Linux client.
@@ -9,8 +9,10 @@ radio chooses, with measurements; `docs/LINUX.md` is the Linux client.
 - `JukeboxKit/` is Foundation only and is tested on Linux: `dev/jellyfin-test-server.sh`
   starts a real Jellyfin with a made-up library in Docker, `dev/kit-test.sh`
   builds and tests the package against it.
-- `Jukebox/` (the iPhone's app) is compiled only by CI on GitHub's macOS
-  (`ci/app.sh`); there is no Mac here, so read Swift twice before pushing it.
+- `Jukebox/` (the app for the iPhone, the iPad and the Mac) compiles on CI,
+  GitHub's macOS (`ci/app.sh`), and on the photographer's Mac: built over
+  SSH, signed from a Terminal session there (`docs/RELEASE.md`). This
+  machine has no Xcode, so read Swift twice before pushing it.
   The files named in `Package.swift`'s `shared` are Linux's too: those do
   compile here, so build Linux after changing one.
 - `Linux/` is the Linux client, built and run here: `dev/linux-build.sh`

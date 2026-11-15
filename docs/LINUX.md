@@ -28,10 +28,9 @@ two are written per platform, each its own way.
 | The session's secret | the Keychain | the desktop's keyring, or a file only the user reads |
 | System controls | lock screen, remote commands | MPRIS (`Linux/CGlue/mpris.c`) |
 
-Measured on 14 November 2026: 12 755 lines of kit and 3 158 of the app's
-stores compile for both. Linux's own code is 3 234 lines of Swift and 329 of
-C. The C is glue only, for what Swift cannot call as it is (C functions with
-"…", macros, D-Bus by hand).
+The kit and the app's stores compile for both. Linux's own code is Swift,
+with a little C as glue only, for what Swift cannot call as it is (C
+functions with "…", macros, D-Bus by hand).
 
 A shared file stays shared by importing only Foundation, Observation and
 JukeboxKit. Linux compiles them as project.yml does for the iPhone (Swift 5

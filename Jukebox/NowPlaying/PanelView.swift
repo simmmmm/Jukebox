@@ -1,5 +1,5 @@
 // The wide layout's panel beside the page, on the iPad and the Mac: Up Next
-// or the song's words, as PanelState says, in the inspector. The
+// or the song's words, as PanelState says, in WideShell's own pane. The
 // photographer of Feishin's panel, 14 November 2026: "Als optionele
 // toevoegingen. Wat wij echter niet moeten doen is het een hele drukke app
 // maken" — so it is closed until the bar's buttons open it, and the lit
