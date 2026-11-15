@@ -22,14 +22,15 @@ two are written per platform, each its own way.
 | | iPhone and iPad | Linux |
 |---|---|---|
 | Servers, library, radio, mixes, lyrics, play state | `JukeboxKit/`, the same package | the same |
-| The app's stores: `LibraryStore`, `RadioController`, `MixStore`, `HistoryStore`, `HandoffStore`, `AppSettings`, `Stats`, `HomeShelves`, `LyricsFinder`, the queue's types | `Jukebox/` | the same files, named in `Package.swift`'s `shared` |
+| The app's stores: `LibraryStore`, `RadioController`, `MixStore`, `HistoryStore`, `HandoffStore`, `OfflineStore`, `AppSettings`, `Stats`, `HomeShelves`, `LyricsFinder`, the queue's types | `Jukebox/` | the same files, named in `Package.swift`'s `shared` |
 | Screens | SwiftUI (`Jukebox/`) | GTK 4 and libadwaita (`Linux/App/`) |
 | Sound | AVFoundation (`Jukebox/Player/AudioPlayer.swift`) | GStreamer (`Linux/App/AudioPlayer.swift`), the same queue and rules |
 | The session's secret | the Keychain | the desktop's keyring, or a file only the user reads |
+| Songs kept | Application Support, a background URLSession (`docs/OFFLINE.md`) | `$XDG_DATA_HOME/jukebox/offline`, a URLSession while Jukebox runs |
 | System controls | lock screen, remote commands | MPRIS (`Linux/CGlue/mpris.c`) |
 
-Measured on 14 November 2026: 12 755 lines of kit and 3 158 of the app's
-stores compile for both. Linux's own code is 3 234 lines of Swift and 329 of
+Measured on 15 November 2026: 13 607 lines of kit and 5 750 of the app's
+stores compile for both. Linux's own code is 7 424 lines of Swift and 594 of
 C. The C is glue only, for what Swift cannot call as it is (C functions with
 "…", macros, D-Bus by hand).
 
@@ -119,17 +120,16 @@ The design and its spec are in `build/design-round/2027/` (`spec.md`, `sheet.png
 
 - **The bar** is 88 tall and spans the whole window. Its centre (previous, play, next, progress) takes 40% of the window, held between 304 and 640, and sits on the window's centre. The song and tools zones are equal (`ThreeZones` in PlayerBar.swift).
 - **The panel** at the right is 360 wide. It shows Up next (shuffle, repeat, the radio's reasons) or Lyrics (synced; click a line to seek). The bar's toggles open, switch and close it, and the app remembers it. It sits beside the page from 1280 wide and lies over it below.
-- **The places** at the left are 240 wide. Below 900 they fold and lie over the page; F9 brings them back.
+- **The places** at the left are 240 wide, the Mac's 1:1: Home, Radio; Albums, Artists, Songs, Playlists, Favorites, Genres, Recently Added, Downloaded; the playlists ("Linux erbij", 15 November 2026). Below 900 they fold and lie over the page; F9 brings them back.
+- **Preferences › Pages** takes places out (`AppSettings.hiddenPages`, shared). The place shown switched off goes Home. Every one off, there is no sidebar: Home, the panel and the bar, with the main menu at the end of the page's header.
 - **Now Playing** covers the places and the page. The bar and the panel stay.
 
 ## What comes next
 
 The iPhone has each of these, and Linux is ready for them:
 
-- Songs kept on the machine (`OfflineStore` answers "none" on Linux today).
 - Quick Connect at sign-in (the kit has it: `QuickConnectSignIn`).
-- Making and editing playlists (they are listed and played); genres as a
-  place.
+- Making and editing playlists (they are listed and played).
 - The drawings in motion: the label turning, the land under Now Playing
   (once the photographer decides whether it turns), the mark warming up,
   the mark before a station's name in Now Playing and the player's bar.
@@ -142,7 +142,10 @@ The iPhone has each of these, and Linux is ready for them:
 On this machine under GTK's Broadway (GTK in a browser tab), against the
 test Jellyfin: signing in from the keyring and from the file, Home, Radio,
 Albums, an album, Now Playing, the radio playing on from song to song,
-MPRIS's Play, Next and metadata, the handoff both ways.
+MPRIS's Play, Next and metadata, the handoff both ways. Since 15 November
+2026 the walk (`dev/linux-screens.sh`) also downloads an album, a playlist
+and a mix from the fake Jellyfin by their pages' buttons and plays one from
+its file; `frames.txt` says what came.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
 calls are tested in the kit), KDE, XFCE and Hyprland themselves.
