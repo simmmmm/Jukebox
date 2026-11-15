@@ -216,12 +216,10 @@ bounded 120 xcrun simctl list -j > "$work/simctl.json" 2> "$work/simctl.err" \
   || problem "xcrun simctl list failed: $(tail -1 "$work/simctl.err")"
 for kind in $devices; do
   if [[ $kind == mac ]]; then
-    # The Mac's walk needs no simulator: the runner is the Mac. Its display
-    # is said here because the window must fit it at 1440 x 900, the size
-    # the Mac App Store takes.
+    # The Mac's walk needs no simulator: the runner is the Mac. (The walk
+    # itself says how large its screen is, with its first PICTURE line.)
     mkdir -p "$out/mac"
-    echo "$(sw_vers -productName) $(sw_vers -productVersion), display $(system_profiler SPDisplaysDataType 2> /dev/null \
-      | awk -F': ' '/Resolution/ { print $2; exit }')" > "$out/mac/device.txt"
+    echo "$(sw_vers -productName) $(sw_vers -productVersion)" > "$out/mac/device.txt"
     echo "mac: $(cat "$out/mac/device.txt")"
     ready="${ready:+$ready }mac"
     continue

@@ -35,6 +35,8 @@ case ${GITHUB_REF_NAME:-mac} in
     TESTFLIGHT=false
     export SHOTS_DEVICES="mac iphone ipad" SHOTS_IPHONE="iPhone 17 Pro Max"
     ;;
+  # The Mac's walk alone, to work on it: a quarter of the store's round.
+  store-mac-walk) TESTFLIGHT=false; export SHOTS_DEVICES=mac ;;
   *walk) TESTFLIGHT=false ;;
   *) TESTFLIGHT=false; SCREENSHOTS=${SCREENSHOTS:-false} ;;
 esac

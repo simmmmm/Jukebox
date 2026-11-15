@@ -238,7 +238,7 @@ final class MacWalk {
     /// goes on either way.
     func alive(_ step: String) throws {
         if app.state == .runningForeground { return }
-        if app.state == .runningBackground || app.state == .runningBackgroundSuspended {
+        if app.state == .runningBackground {
             app.activate()
             pause(2)
             if app.state != .runningForeground {
