@@ -1,7 +1,7 @@
 // Linux's root object: the session and the stores every screen reads. The
-// iPhone's AppModel (Jukebox/App/AppModel.swift) without what only a phone
-// has — the songs kept on it, SwiftUI's navigation paths — and with the
-// same stores, which are the same files (Package.swift's `shared`).
+// iPhone's AppModel (Jukebox/App/AppModel.swift) without SwiftUI's
+// navigation paths, and with the same stores, which are the same files
+// (Package.swift's `shared`), the songs kept on the machine among them.
 
 import Foundation
 import JukeboxKit
@@ -31,7 +31,7 @@ final class AppModel {
     let radio: RadioController
     let mixes: MixStore
     let handoff: HandoffStore
-    let offline = OfflineStore()
+    let offline: OfflineStore
     /// The window's right panel: open or not, Up next or the lyrics.
     let panel = PanelState()
 
@@ -41,6 +41,7 @@ final class AppModel {
         settings = AppSettings()
         library = LibraryStore()
         history = HistoryStore()
+        offline = OfflineStore(settings: settings, library: library, history: history)
         player = AudioPlayer(settings: settings, history: history)
         radio = RadioController(player: player, library: library, history: history, settings: settings)
         mixes = MixStore()
@@ -49,7 +50,12 @@ final class AppModel {
         // What moves play counts and "Played lately" when a song is heard
         // to the end.
         player.library = library
+        // Songs on the machine play from their files; offline only they play,
+        // and the radio chooses among them.
+        player.offline = offline
         radio.offline = offline
+        offline.onConnectivityChange = { [weak self] in self?.connectivityChanged() }
+        offline.onSongsChange = { [weak self] in self?.radio.offlineSongsChanged() }
     }
 
     func can(_ capability: ServerCapability) -> Bool {
@@ -86,6 +92,10 @@ final class AppModel {
         player.stop()
         radio.reset()
         let server = self.server
+        // What was heard offline goes to the server on the way out; then the
+        // account's downloads go (OfflineStore.signOut), as on the iPhone.
+        let unsent = offline.takeReports()
+        offline.signOut()
         Keychain.deleteCredentials()
         credentials = nil
         self.server = nil
@@ -96,6 +106,7 @@ final class AppModel {
         library.reset()
         mixes.reset()
         phase = .signedOut
+        if let server, !unsent.isEmpty { await OfflineReports.send(unsent, with: server) }
         await server?.signOut()
     }
 
@@ -106,6 +117,9 @@ final class AppModel {
         player.server = server
         radio.server = server
         phase = .signedIn
+        // The songs on the machine first: they play before the library from
+        // the server has come, or without it.
+        await offline.open(server: server)
         await library.open(server: server)
         // What another device plays, or this one played last: once the
         // library is in, since an offer is of a song in it.
@@ -132,7 +146,19 @@ final class AppModel {
             player.server = opened
             radio.server = opened
             library.use(opened)
+            offline.use(opened)
             handoff.server = opened
+        }
+    }
+
+    /// The network went, or came back (OfflineStore): the player and the
+    /// radio play what can play now, and back online the library is read
+    /// again (the iPhone's AppModel.connectivityChanged).
+    private func connectivityChanged() {
+        player.connectivityChanged()
+        radio.connectivityChanged()
+        if !offline.isOffline, case .failed = library.state {
+            Task { await library.refresh() }
         }
     }
 

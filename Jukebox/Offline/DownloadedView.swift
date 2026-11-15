@@ -246,22 +246,3 @@ private struct DownloadedCover: View {
         }
     }
 }
-
-extension OfflineStore {
-    /// A download's one fact: how far it is, what it waits for, or how
-    /// many songs and how large.
-    fileprivate func fact(of collection: OfflineCollection) -> String {
-        switch state(of: collection.reason) {
-        case let .downloading(fraction: fraction, waiting: waiting):
-            if let waiting { return OfflineText.waiting(waiting) }
-            return String(localized: "Downloading, \(OfflineText.percent(fraction))")
-        case .downloaded, .notDownloaded:
-            let total = Set(collection.trackIDs).count
-            let here = songsOnPhone(of: collection)
-            let size = bytes(of: collection).formatted(.byteCount(style: .file))
-            // Some songs the server would not give: how many came.
-            if here < total { return String(localized: "\(here) of \(total) songs, \(size)") }
-            return "\(LibraryText.songs(total)), \(size)"
-        }
-    }
-}

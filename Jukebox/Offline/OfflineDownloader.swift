@@ -18,41 +18,6 @@ import JukeboxKit
 import UIKit
 #endif
 
-/// Which song a download is, for whom, at what quality.
-nonisolated struct OfflineDownloadTag: Codable, Sendable, Hashable {
-    var account: String
-    var trackID: ItemID
-    var quality: DownloadQuality
-
-    init(account: String, trackID: ItemID, quality: DownloadQuality) {
-        self.account = account
-        self.trackID = trackID
-        self.quality = quality
-    }
-
-    /// From a task's description; nil for a task that is not one of ours.
-    init?(text: String?) {
-        guard let text, let data = text.data(using: .utf8),
-              let tag = try? JSONDecoder().decode(OfflineDownloadTag.self, from: data) else { return nil }
-        self = tag
-    }
-
-    var text: String {
-        guard let data = try? JSONEncoder().encode(self) else { return "" }
-        return String(decoding: data, as: UTF8.self)
-    }
-}
-
-nonisolated enum OfflineDownloadEvent: Sendable {
-    case progress(OfflineDownloadTag, written: Int64, expected: Int64)
-    /// In the account's folder now, as `fileName`.
-    case finished(OfflineDownloadTag, fileName: String, bytes: Int64)
-    /// `permanent`: the server said it has no such file, or cannot give it in
-    /// that form; asking again would not help.
-    case failed(OfflineDownloadTag, permanent: Bool)
-    case cancelled(OfflineDownloadTag)
-}
-
 nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     static let identifier = "com.tijmen.Jukebox.downloads"
     /// One session for the app's life: a background session's identifier
