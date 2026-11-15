@@ -153,6 +153,7 @@ enum Shots {
             await step("14-radio-up-next", wait: 2)
             NowPlayingPage.open()
             await step("15-now-playing-station", wait: 3)
+            await parity(albums)
             Preferences.present()
             await step("16-preferences", wait: 2)
             if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
@@ -248,6 +249,145 @@ enum Shots {
             + (app.offline.collection(for: reason).map { app.offline.fact(of: $0) } ?? "not chosen") + "\n"
     }
 
+    /// What the Mac and the iPad had and Linux has now too ("Linux erbij",
+    /// 15 November 2026), each by its own button and dialog (a menu is a
+    /// surface of its own, not in the window's picture; its items are run by
+    /// their actions): Start a Station from Radio's +; a station's ⋮, Save as
+    /// Playlist… and Add to Playlist…; a playlist made with New Playlist…,
+    /// filled with Add Songs and deleted from its ⋮; an album's joined genre
+    /// tag split; a song found in Search starting its station. With the panel
+    /// closed, then as it was. What it makes on the fake server it deletes
+    /// again, so the next size finds the library as it was.
+    private static func parity(_ albums: [Album]) async {
+        var log = ""
+        let wasOpen = app.panel.isOpen
+        app.panel.isOpen = false
+        let playlistsBefore = Set(app.library.playlists.map(\.id))
+
+        // Start a Station: the suggestions, "blue" found, the first artist's
+        // station's page (the list's first line is its heading).
+        MainWindow.select(1)
+        try? await Task.sleep(for: .seconds(1))
+        if let start = find(visiblePage(), { icon(of: $0) == "list-add-symbolic" }) { gtk_widget_activate(start) }
+        await step("02b-start-station", wait: 1.5)
+        if let field = find(dialog(), { isA($0, gtk_search_entry_get_type()) }) { gtk_editable_set_text(ptr(field), "blue") }
+        await step("02c-start-station-found", wait: 1.5)
+        if let picks = find(dialog(), { gtk_widget_has_css_class($0, "picks") != 0 }) {
+            gtk_widget_activate_action_variant(picks, "list.activate-item", g_variant_new_uint32(1))
+        }
+        await step("02d-start-station-page", wait: 2.5)
+
+        // Its ⋮: Save as Playlist… under the name it suggests, then saved;
+        // Add to Playlist….
+        if let more = find(visiblePage(), { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "More" }),
+           let menu = gtk_menu_button_get_popover(ptr(more)) {
+            let items: Widget = ptr(menu)
+            gtk_widget_activate_action_variant(items, "menu.item0", nil)
+            await step("03b-station-save", wait: 1)
+            enterInDialog()
+            await step("03c-station-saved", wait: 2)
+            gtk_widget_activate_action_variant(items, "menu.item1", nil)
+            await step("03d-station-add-to-playlist", wait: 1.5)
+            closeDialog()
+        } else {
+            log += "the station's page: no ⋮\n"
+        }
+
+        // An album tagged "Electronic; Techno": its head says Electronic.
+        if let album = albums.first(where: { $0.genres.contains { $0.contains(";") } }) {
+            Pages.open(album)
+            await step("05b-album-genre", wait: 2)
+            log += "05b-album-genre: \(album.name), tagged \(album.genres), its head says \(LibraryIndex.genreNames(album.genres).first ?? "nothing")\n"
+        }
+
+        // New Playlist…, named; its page, empty; Add Songs, two added; the
+        // page again, with them; Delete Playlist from its ⋮, asked first.
+        MainWindow.select(6)
+        try? await Task.sleep(for: .seconds(1))
+        if let new = find(visiblePage(), { icon(of: $0) == "list-add-symbolic" }) { gtk_widget_activate(new) }
+        try? await Task.sleep(for: .seconds(0.5))
+        if let name = find(dialog(), { isA($0, gtk_entry_get_type()) }) { gtk_editable_set_text(ptr(name), "Rainy Afternoon") }
+        await step("08f-playlist-new", wait: 1)
+        enterInDialog()
+        await step("08g-playlist-empty", wait: 2)
+        if let add = find(visiblePage(), { icon(of: $0) == "list-add-symbolic" }) { gtk_widget_activate(add) }
+        await step("08h-add-songs", wait: 1.5)
+        if let picks = find(dialog(), { gtk_widget_has_css_class($0, "picks") != 0 }) {
+            for row in [0, 2] { gtk_widget_activate_action_variant(picks, "list.activate-item", g_variant_new_uint32(UInt32(row))) }
+        }
+        await step("08i-add-songs-added", wait: 1.5)
+        closeDialog()
+        await step("08j-playlist-filled", wait: 2)
+        let made = app.library.playlists.first { $0.name == "Rainy Afternoon" }
+        log += "New Playlist…: \(made.map { "“\($0.name)”, \($0.trackCount ?? 0) songs" } ?? "not made")\n"
+        if let more = find(visiblePage(), { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "More" }),
+           let menu = gtk_menu_button_get_popover(ptr(more)) {
+            // Start Radio, Play Next, Add to Queue, Delete Playlist.
+            gtk_widget_activate_action_variant(ptr(menu), "menu.item3", nil)
+            await step("08k-playlist-delete", wait: 1)
+            if let delete = find(dialog(), { isA($0, gtk_button_get_type()) && label(of: $0) == "Delete Playlist" }) {
+                gtk_widget_activate(delete)
+            }
+            await step("08l-playlist-deleted", wait: 2)
+        }
+        log += "Delete Playlist: \(app.library.playlists.contains { $0.name == "Rainy Afternoon" } ? "still there" : "gone")\n"
+
+        // A song found in Search: its station, not the songs found.
+        gtk_widget_activate_action_variant(MainWindow.window, "app.search", nil)
+        SearchField.shared.text = "night drive"
+        try? await Task.sleep(for: .seconds(1.5))
+        if let songs = find(visiblePage(), { gtk_widget_has_css_class($0, "rows") != 0 }) {
+            gtk_widget_activate_action_variant(songs, "list.activate-item", g_variant_new_uint32(0))
+        }
+        await step("08m-search-song", wait: 2.5)
+        log += "a song in Search: \(app.player.currentTrack?.name ?? "nothing") plays, on \(app.radio.station?.title ?? "no station"), "
+            + "then \(app.player.upNext.prefix(3).map(\.track.name))\n"
+        MainWindow.select(1)
+        await step("08n-search-song-station", wait: 2)
+        SearchField.shared.text = ""
+
+        // What the walk made, gone again.
+        for playlist in app.library.playlists where !playlistsBefore.contains(playlist.id) {
+            try? await app.library.delete(playlist)
+        }
+        app.panel.isOpen = wasOpen
+        if let shots = Self.folder {
+            let file = "\(shots)/frames.txt"
+            try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// The dialog over the window, if one is up.
+    private static func dialog() -> Widget? {
+        adw_application_window_get_visible_dialog(ptr(MainWindow.window)).map { ptr($0) }
+    }
+
+    private static func closeDialog() {
+        if let dialog = dialog() { adw_dialog_close(ptr(dialog)) }
+    }
+
+    /// Enter in the dialog's name field, as the key sends it.
+    private static func enterInDialog() {
+        if let entry = find(dialog(), { isA($0, gtk_entry_get_type()) }) { enter(entry, type: gtk_entry_get_type()) }
+    }
+
+    private static func isA(_ widget: Widget, _ type: GType) -> Bool {
+        g_type_check_instance_is_a(ptr(widget), type) != 0
+    }
+
+    private static func icon(of widget: Widget) -> String? {
+        guard isA(widget, gtk_button_get_type()) else { return nil }
+        return gtk_button_get_icon_name(ptr(widget)).map { String(cString: $0) }
+    }
+
+    private static func label(of widget: Widget) -> String? {
+        gtk_button_get_label(ptr(widget)).map { String(cString: $0) }
+    }
+
+    private static func tooltip(of widget: Widget) -> String? {
+        gtk_widget_get_tooltip_text(widget).map { String(cString: $0) }
+    }
+
     /// `root`'s first scroller `fraction` of the way down, as a picture.
     private static func scrolled(_ root: Widget?, to fraction: Double, _ name: String) async {
         guard let scroller = find(root, { String(cString: gtk_widget_get_css_name($0)) == "scrolledwindow" }),
@@ -286,12 +426,13 @@ enum Shots {
         for widget in lit { gtk_widget_unset_state_flags(widget, GTK_STATE_FLAG_PRELIGHT) }
     }
 
-    /// Enter in a search field: its "activate", as the key sends it.
-    private static func enter(_ field: Widget) {
+    /// Enter in a search field (or another `type` of field): its
+    /// "activate", as the key sends it.
+    private static func enter(_ field: Widget, type: GType = gtk_search_entry_get_type()) {
         var instance = GValue()
-        g_value_init(&instance, gtk_search_entry_get_type())
+        g_value_init(&instance, type)
         g_value_set_object(&instance, raw(field))
-        g_signal_emitv(&instance, g_signal_lookup("activate", gtk_search_entry_get_type()), 0, nil)
+        g_signal_emitv(&instance, g_signal_lookup("activate", type), 0, nil)
         g_value_unset(&instance)
     }
 

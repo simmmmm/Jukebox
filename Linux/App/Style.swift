@@ -119,6 +119,10 @@ enum Style {
         listview.rows > row { padding: 0 8px; }
         .track-row { min-height: 48px; }
         .track-row.covered { min-height: 64px; }
+        /* A chooser's rows (Choosers.swift): 56 with their picture 40,
+           their hover in the dialog's 8 of margin. */
+        listview.picks { padding: 0 8px 16px; }
+        listview.picks > row { padding: 8px; }
         /* The page's buttons, 40 tall: Play filled, the rest words. */
         button.page-button { min-height: 40px; padding: 0 24px; font-size: 15px; }
         button.word { min-height: 40px; padding: 0 8px; font-size: 15px; }

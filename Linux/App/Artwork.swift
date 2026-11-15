@@ -104,16 +104,24 @@ func coverPixels(_ points: Double) -> Int {
 final class Art {
     let widget: Widget
     private let image: Widget
-    /// The cover's address, or the collage's drawing.
-    private var wanted: String?
+    /// The cover's address, or the collage's drawing. Not nil at first, so
+    /// a first `show(nil)` puts up what stands in for none, not nothing.
+    private var wanted: String? = ""
     private var size: Int32
     /// The collage shown, drawn again at a new size.
     private var collage: [Artwork]?
     /// The image has gone (its page was rebuilt) while a cover was on its
     /// way: nothing is left to show it in.
     private var isGone = false
-    /// What stands in for no cover: a note, or a genre's guitar.
-    var emptyIcon = "folder-music-symbolic"
+    /// What stands in for no cover: a note, or a genre's guitar. Changed
+    /// while it stands in (a chooser's row reused for another kind), at once.
+    var emptyIcon = "folder-music-symbolic" {
+        didSet {
+            if emptyIcon != oldValue, gtk_widget_has_css_class(image, "artwork-empty") != 0 {
+                gtk_image_set_from_icon_name(ptr(image), emptyIcon)
+            }
+        }
+    }
 
     init(_ size: Int32) {
         self.size = size

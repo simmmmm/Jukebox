@@ -447,9 +447,24 @@ enum SearchPage {
             }
             if !found.tracks.isEmpty {
                 append(sectionTitle("Songs", below: 8), to: content)
-                let list = trackList(Array(found.tracks.prefix(20)), context: { QueueContext(.search, title: "Search") },
-                                     subtitle: { [$0.artistLine, $0.albumName ?? ""].filter { !$0.isEmpty }.joined(separator: " · ") })
-                on(list.widget, "activate") { SearchField.shared.remember() }
+                // A song found plays and goes on as its station, as on the
+                // Mac and the iPhone: search is how one asks for a song, and
+                // the radio keeps the music going after it.
+                let list = ItemList<Track, TrackRow>(
+                    make: {
+                        let row = TrackRow()
+                        return (row.widget, row)
+                    },
+                    fill: { row, track, _ in
+                        row.show(track, subtitle: [track.artistLine, track.albumName ?? ""].filter { !$0.isEmpty }.joined(separator: " · "))
+                    },
+                    activate: { track, _, _ in
+                        SearchField.shared.remember()
+                        Stats.track(.stationStarted, ["seed": "track", "from": "search"])
+                        app.radio.start(.track(track.id))
+                    })
+                list.widget.css("rows")
+                list.set(Array(found.tracks.prefix(20)))
                 append(list.widget, to: content)
             }
         }
@@ -549,9 +564,16 @@ enum LibraryPages {
             defer { measure(column) }
             let playlists = app.library.playlists
             if playlists.isEmpty {
-                append(emptyLine("Make a playlist on your \(app.library.serverKind) server and it appears here."), to: tiles)
+                append(emptyLine("Make one with New Playlist…, or add songs to one from any song’s menu."), to: tiles)
             } else {
-                let flow = flow(playlists.map(playlistTile))
+                // Delete in an own one's menu, as on the Mac.
+                let flow = flow(playlists.map { playlist in
+                    let tile = playlistTile(playlist)
+                    if !playlist.isReadOnly {
+                        contextMenu(on: tile) { [("Delete Playlist", { Playlists.delete(playlist) })] }
+                    }
+                    return tile
+                })
                 gtk_widget_set_margin_top(flow, 24)
                 append(flow, to: tiles)
             }
@@ -655,7 +677,7 @@ enum LibraryPages {
     }
 
     static func playlistTile(_ playlist: Playlist) -> Widget {
-        let tile = Tile()
+        let tile = Tile(emptyIcon: Glyphs.name("playlists"))
         tile.show(playlist.artwork, playlist.name, playlist.trackCount.map { $0 == 1 ? "1 song" : "\($0) songs" } ?? "")
         return tileButton(tile.widget) { Pages.open(playlist) }
     }
@@ -762,10 +784,13 @@ enum Pages {
         let artist = album.primaryArtist.flatMap { app.library.artist($0) }
         var more: [(String, () -> Void)] = [("Start a Station", { app.radio.start(.album(album.id)) }),
                                              ("Play Next", { app.player.playNext(tracks) }),
-                                             ("Add to Queue", { app.player.addToQueue(tracks) })]
+                                             ("Add to Queue", { app.player.addToQueue(tracks) }),
+                                             ("Add to Playlist…", { Playlists.add(tracks) })]
         if let artist { more.append(("Go to Artist", { open(artist) })) }
+        // The first genre of a joined tag ("Folk; Acoustic" is Folk), as
+        // Genres lists them and the Mac's head says it.
         let top = heading(art: art.widget, title: album.name, lead: album.artistLine,
-                          facts: facts([album.year.map(String.init), album.genres.first,
+                          facts: facts([album.year.map(String.init), LibraryIndex.genreNames(album.genres).first,
                                         length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })]),
                           actions: [
             playButton { app.player.play(tracks, context: context) },
@@ -826,52 +851,84 @@ enum Pages {
     }
 
     /// A playlist, pushed; or as a place of its own, chosen in the sidebar,
-    /// with the sidebar's button at its start.
+    /// with the sidebar's button at its start. The listener's own (not
+    /// someone else's, shared on a Subsonic server) has Add Songs at the
+    /// header's end and Delete Playlist in its ⋮, as on the Mac.
     static func open(_ playlist: Playlist, place start: [Widget]? = nil) {
         let context = QueueContext(.playlist(playlist.id), title: playlist.name)
+        let own = !playlist.isReadOnly
         let art = cover()
+        art.emptyIcon = Glyphs.name("playlists")
         art.show(playlist.artwork)
         let fact = facts([])
         let list = trackList([], context: { context })
+        // Gone from the server: back where the page was opened from, or a
+        // place of its own, Home.
+        let gone = { if start != nil { MainWindow.select(0) } else { adw_navigation_view_pop(ptr(Nav.view)) } }
+        var more: [(String, () -> Void)] = [
+            ("Start Radio", {
+                Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
+                app.radio.start(.collection(id: playlist.id, name: playlist.name, trackIDs: list.items.map(\.id)))
+            }),
+            ("Play Next", { app.player.playNext(list.items) }),
+            ("Add to Queue", { app.player.addToQueue(list.items) }),
+        ]
+        if own { more.append(("Delete Playlist", { Playlists.delete(playlist, then: gone) })) }
         let top = heading(art: art.widget, title: playlist.name, facts: fact, actions: [
             playButton { app.player.play(list.items, context: context) },
             wordButton("Shuffle") { app.player.play(list.items, context: context, shuffled: true) },
+            moreButton(more),
         ])
         keep(art, on: raw(top), as: "art")
-        let column = vbox([top, rule(), list.widget])
+        // Empty, what to do about it, as the Mac's page says it.
+        let empty = vbox()
+        empty.isVisible = false
+        let column = vbox([top, rule(), list.widget, empty])
         func show(_ tracks: [Track]) {
             list.set(tracks)
             // Without an image of its own, the covers of its first
             // albums, as on the iPhone.
             if playlist.artwork == nil { art.show(collage: firstCovers(tracks)) }
             setText(fact, length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration }))
+            empty.isVisible = tracks.isEmpty
         }
         // A playlist's songs are the server's to say: it changes elsewhere
         // too. Offline, or the server away, the songs it was downloaded with.
-        Task {
-            let saved = app.offline.collection(for: .playlist(playlist.id))?.tracks
-            if app.offline.isOffline, let saved {
-                show(saved)
-                return
-            }
-            do {
-                let tracks = try await app.library.tracks(in: playlist)
-                show(tracks)
-                // Downloaded: what came in or went out on the server follows.
-                let shown = app.library.playlists.first { $0.id == playlist.id } ?? playlist
-                app.offline.playlistLoaded(shown, tracks: tracks)
-            } catch {
-                if let saved { show(saved) } else { setText(fact, error.localizedDescription) }
+        func load() {
+            Task {
+                let saved = app.offline.collection(for: .playlist(playlist.id))?.tracks
+                if app.offline.isOffline, let saved {
+                    show(saved)
+                    return
+                }
+                do {
+                    let tracks = try await app.library.tracks(in: playlist)
+                    show(tracks)
+                    // Downloaded: what came in or went out on the server follows.
+                    let shown = app.library.playlists.first { $0.id == playlist.id } ?? playlist
+                    app.offline.playlistLoaded(shown, tracks: tracks)
+                } catch {
+                    if let saved { show(saved) } else { setText(fact, error.localizedDescription) }
+                }
             }
         }
+        // Read again when Add Songs closes, with what it added.
+        func addSongs() { Playlists.addSongs(to: playlist, has: Set(list.items.map(\.id))) { load() } }
+        let line = label(own ? "Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu." : "No songs yet.",
+                         "fact", lines: 0)
+        append(line, to: empty)
+        if own { append(wordButton("Add Songs") { addSongs() }, to: empty) }
+        load()
         Stats.track(.screen, ["name": "playlist"])
         let download = downloadControl(.playlist(playlist.id), name: playlist.name) {
             OfflineCollection(playlist: app.library.playlists.first { $0.id == playlist.id } ?? playlist, tracks: list.items)
         }
+        var end = [download]
+        if own { end.append(iconButton("list-add-symbolic", "Add Songs", "flat") { addSongs() }.align(vertical: GTK_ALIGN_CENTER)) }
         if let start {
-            Nav.show(Nav.page(playlist.name, pageColumn(column), start: start, end: [download]))
+            Nav.show(Nav.page(playlist.name, pageColumn(column), start: start, end: end))
         } else {
-            Nav.push(playlist.name, pageColumn(column), end: [download])
+            Nav.push(playlist.name, pageColumn(column), end: end)
         }
     }
 
@@ -932,7 +989,8 @@ enum Pages {
                 app.player.play(mix.tracks, context: context)
             },
             wordButton("Shuffle") { app.player.play(mix.tracks, context: context, shuffled: true) },
-            moreButton([("Start a Station", { app.radio.start(mix.stationSeed) })]),
+            moreButton([("Start a Station", { app.radio.start(mix.stationSeed) }),
+                        ("Add to Playlist…", { Playlists.add(mix.tracks) })]),
         ])
         keep(art, on: raw(top), as: "art")
         let list = trackList(mix.tracks, context: { context })
@@ -979,6 +1037,40 @@ enum Pages {
             choose(app.radio.pageSeed(for: station))
         }
         Stats.track(.stationPage, ["seed": Stats.seed(station.seed)])
-        Nav.push(station.title, pageColumn(column))
+        // Its ⋮ at the header's end, where the Mac's bar has it: the songs
+        // shown kept as a playlist, after the station has moved on.
+        let more = moreButton([("Save as Playlist…", { saveAsPlaylist(station, songs(of: station, picks: picks)) }),
+                               ("Add to Playlist…", { Playlists.add(songs(of: station, picks: picks)) })])
+        Nav.push(station.title, pageColumn(column), end: [more])
+    }
+
+    /// The songs on a station's page: the list, or on the air the song
+    /// playing and what is queued. Each once, and none with a thumbs down.
+    private static func songs(of station: Station, picks: [RadioPick]) -> [Track] {
+        let onAir = app.radio.stationOnAir(player: app.player)?.id == station.id
+        let tracks = onAir ? ([app.player.current].compactMap { $0 } + app.player.upNext).map(\.track) : picks.map(\.track)
+        var seen: Set<ItemID> = []
+        return tracks.filter { !app.radio.disliked.contains($0.id) && seen.insert($0.id).inserted }
+    }
+
+    /// Save as Playlist…: "Radiohead Radio, Nov 15, 2026", the station as it
+    /// was that day, a name to change if the listener likes; then where it
+    /// is, as GNOME tells such news.
+    private static func saveAsPlaylist(_ station: Station, _ songs: [Track]) {
+        guard !songs.isEmpty else { return }
+        let suggested = "\(station.title), \(Date().formatted(date: .abbreviated, time: .omitted))"
+        askName("Save as Playlist",
+                "A playlist with these \(songs.count) songs, on your \(app.library.serverKind) server, to keep after the station has moved on.",
+                placeholder: "Playlist Name", text: suggested, action: "Save") { typed in
+            Task {
+                do {
+                    let saved = try await app.library.createPlaylist(named: typed.isEmpty ? suggested : typed, with: songs)
+                    Stats.track(.playlistCreated, ["from": "station"])
+                    MainWindow.toast("“\(saved.name)” is in your playlists now.", button: "Show Playlist") { open(saved) }
+                } catch {
+                    MainWindow.toast(error.localizedDescription)
+                }
+            }
+        }
     }
 }

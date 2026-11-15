@@ -142,6 +142,14 @@ enum MainWindow {
         adw_toast_overlay_add_toast(ptr(toasts), adw_toast_new(message))
     }
 
+    /// The same with the one thing to do about it (Show Playlist).
+    static func toast(_ message: String, button: String, _ action: @escaping @MainActor () -> Void) {
+        let toast = adw_toast_new(message)!
+        adw_toast_set_button_label(toast, button)
+        on(toast, "button-clicked", action)
+        adw_toast_overlay_add_toast(ptr(toasts), toast)
+    }
+
     /// Signed out: the pages made for that account go.
     static func forgetPages() {
         for page in pages.values + [searchPage].compactMap({ $0 }) { g_object_unref(raw(page)) }
@@ -189,12 +197,12 @@ enum MainWindow {
             if adw_overlay_split_view_get_collapsed(ptr(split)) != 0 { adw_overlay_split_view_set_show_sidebar(ptr(split), 0) }
             return
         }
-        guard sections.indices.contains(index), let (title, _, _, make) = sections[index] else { return }
+        guard sections.indices.contains(index), let (title, _, kind, make) = sections[index] else { return }
         current = index
         // A place is made when first chosen and kept: going back to Albums
         // finds it where it was left.
         if pages[index] == nil {
-            let page = Nav.page(title, make(), start: [sidebarButton()])
+            let page = Nav.page(title, make(), start: [sidebarButton()], end: ends(of: kind))
             g_object_ref_sink(raw(page))
             pages[index] = page
         }
@@ -240,6 +248,7 @@ enum MainWindow {
             playlistRows.append(gapRow())
             for playlist in listed {
                 let art = Art(32)
+                art.emptyIcon = Glyphs.name("playlists")
                 art.show(playlist.artwork)
                 if playlist.artwork == nil {
                     Task { if let tracks = try? await app.library.tracks(in: playlist) { art.show(collage: Pages.firstCovers(tracks)) } }
@@ -359,6 +368,21 @@ enum MainWindow {
             }
             guard let current, !shows(current, settings) else { return }
             select(0)
+        }
+    }
+
+    /// A place's own button beside the search field, where the Mac's bar
+    /// has it: Radio's Start a Station, Playlists' New Playlist….
+    private static func ends(of page: AppSettings.Page?) -> [Widget] {
+        switch page {
+        case .radio?:
+            let start = iconButton("list-add-symbolic", "Start a Station", "flat") { StationPicker.present() }
+            observe(start) { start.isSensitive = !app.library.tracks.isEmpty }
+            return [start.align(vertical: GTK_ALIGN_CENTER)]
+        case .playlists?:
+            return [iconButton("list-add-symbolic", "New Playlist…", "flat") { Playlists.create() }.align(vertical: GTK_ALIGN_CENTER)]
+        default:
+            return []
         }
     }
 
