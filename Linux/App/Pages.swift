@@ -884,7 +884,11 @@ enum Pages {
         let empty = vbox()
         empty.isVisible = false
         let column = vbox([top, rule(), list.widget, empty])
+        // Add Songs waits for the songs it has, to tick them: a song added
+        // twice stays twice on Jellyfin.
+        var isLoaded = false
         func show(_ tracks: [Track]) {
+            isLoaded = true
             list.set(tracks)
             // Without an image of its own, the covers of its first
             // albums, as on the iPhone.
@@ -913,7 +917,10 @@ enum Pages {
             }
         }
         // Read again when Add Songs closes, with what it added.
-        func addSongs() { Playlists.addSongs(to: playlist, has: Set(list.items.map(\.id))) { load() } }
+        func addSongs() {
+            guard isLoaded else { return }
+            Playlists.addSongs(to: playlist, has: Set(list.items.map(\.id))) { load() }
+        }
         let line = label(own ? "Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu." : "No songs yet.",
                          "fact", lines: 0)
         append(line, to: empty)

@@ -262,14 +262,15 @@ enum Playlists {
     static func add(_ tracks: [Track]) {
         guard !tracks.isEmpty else { return }
         let chooser = Chooser("Add to Playlist")
-        let dialog = chooser.dialog
-        var picks = [Pick(title: "New Playlist…", look: .glyph("list-add-symbolic"), run: {
+        // Weak: closed while the server answers, the dialog is gone, and its
+        // chooser with it.
+        var picks = [Pick(title: "New Playlist…", look: .glyph("list-add-symbolic"), run: { [weak chooser] in
             askName("New Playlist", "It starts with \(LibraryText.songs(tracks.count)).", action: "Create") { typed in
                 Task {
                     do {
                         let playlist = try await app.library.createPlaylist(named: typed.isEmpty ? "New Playlist" : typed, with: tracks)
                         Stats.track(.playlistCreated, ["from": "add_to_playlist"])
-                        adw_dialog_close(ptr(dialog))
+                        chooser?.close()
                         MainWindow.toast("Added to “\(playlist.name)”")
                     } catch {
                         MainWindow.toast(error.localizedDescription)
@@ -282,12 +283,12 @@ enum Playlists {
             picks.append(.heading("Playlists"))
             picks += own.map { playlist in
                 Pick(title: playlist.name, subtitle: playlist.trackCount.map(LibraryText.songs) ?? "",
-                     look: .cover(playlist.artwork, empty: Glyphs.name("playlists")), run: {
+                     look: .cover(playlist.artwork, empty: Glyphs.name("playlists")), run: { [weak chooser] in
                     Task {
                         do {
                             try await app.library.add(tracks, to: playlist)
                             Stats.track(.playlistSongsAdded, ["from": "add_to_playlist"])
-                            adw_dialog_close(ptr(dialog))
+                            chooser?.close()
                             MainWindow.toast("Added to “\(playlist.name)”")
                         } catch {
                             MainWindow.toast(error.localizedDescription)
