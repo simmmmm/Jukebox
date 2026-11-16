@@ -171,7 +171,7 @@ public struct LastFMClient: Sendable {
         request.httpMethod = "GET"
         request.timeoutInterval = 20
         // Last.fm asks clients to say who they are.
-        request.setValue("Jukebox/1.0 (Jellyfin music player for iOS)", forHTTPHeaderField: "User-Agent")
+        request.setValue("Jukebox/1.1 (Jellyfin music player for iOS)", forHTTPHeaderField: "User-Agent")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         return request
     }
