@@ -47,7 +47,7 @@ struct RadioOnAirCard: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel(Text(station.title))
-            .accessibilityHint("Shows Now Playing")
+            .accessibilityHint("Shows Full Player")
 
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Eyebrow("On air")
@@ -107,7 +107,7 @@ struct RadioOnAirCard: View {
             }
             .buttonStyle(.plain)
             .accessibilityElement(children: .combine)
-            .accessibilityHint("Shows Now Playing")
+            .accessibilityHint(navigator.isWide ? Text("Shows Full Player") : Text("Shows Now Playing"))
 
             RadioDial()
                 .padding(.top, Theme.Space.s)

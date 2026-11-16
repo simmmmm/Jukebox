@@ -557,7 +557,8 @@ enum Shortcuts {
             + group("Playing", [shortcut("Play or Pause", "&lt;Control&gt;space"),
                                 shortcut("Next Song", "&lt;Control&gt;Right"),
                                 shortcut("Previous Song", "&lt;Control&gt;Left")])
-            + group("Places", [shortcut("Now Playing", "&lt;Control&gt;&lt;Shift&gt;n"),
+            // The screen is Full Player (the photographer, 15 November 2026).
+            + group("Places", [shortcut("Full Player", "&lt;Control&gt;&lt;Shift&gt;n"),
                                shortcut("Show Sidebar", "F9")])
             + group("General", [shortcut("Search", "&lt;Control&gt;f"),
                                 shortcut("Preferences", "&lt;Control&gt;comma"),

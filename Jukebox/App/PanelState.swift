@@ -54,6 +54,16 @@ final class PanelState {
         }
     }
 
+    /// Shows `choice`, opening the panel if it must; never closes it. The
+    /// bar's station name, which leads to what the station plays next
+    /// ("ook die oranje link hier zou gewoon 'up next' moeten openen", the
+    /// photographer, 15 November 2026).
+    func show(_ choice: Content) {
+        content = choice
+        isOpen = true
+        isOpenedHere = true
+    }
+
     private func remember() {
         guard remembers else { return }
         UserDefaults.standard.set(isOpen, forKey: "panelOpen")

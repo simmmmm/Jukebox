@@ -1,93 +1,32 @@
 // CONTRACT — signatures fixed; bodies the player agent's (docs/ARCHITECTURE.md).
 //
-// The one player: a queue of tracks streamed from the server through
-// AVQueuePlayer (the next track preloaded, so albums play without a gap),
-// in the background and on the lock screen (MPNowPlayingInfoCenter,
+// The one player: the shared queue (PlayQueue.swift: what plays next,
+// shuffle and repeat, the radio's feed, Up Next's edits, what the server
+// and the history are told) with AVQueuePlayer for its engine, streaming
+// from the server with the next track preloaded, so albums play without a
+// gap. In the background and on the lock screen (MPNowPlayingInfoCenter,
 // MPRemoteCommandCenter, thumbs up and down there too while a station
 // plays), AirPlay, interruptions and headphones handled as Music does.
-// It tells the server what plays (so play counts are right on every client),
-// writes each play to the history, and asks the radio for more when a
-// station's queue runs low.
+// Linux's player (Linux/App/AudioPlayer.swift) is the same queue with
+// GStreamer.
 //
-// How it is built: the queue (`queue`, `currentIndex`) is the truth; the
-// engine (AVQueuePlayer) only ever holds the current entry's item and the
-// next one's, rebuilt whenever the next entry changes (an edit, shuffle,
-// repeat, the radio choosing again). When the engine moves on by itself —
-// the gapless case — its new current item is the preloaded one, and the
-// queue follows. Every entry that stops being current is "finished" once:
-// the server is told it stopped, the history gets how long it was heard
-// (time while playing, so a seek does not count), the radio its feedback.
+// How it is built: the engine only ever holds the current entry's item and
+// the next one's, rebuilt whenever the queue's next entry changes
+// (`enginePreload`). When the engine moves on by itself — the gapless case —
+// its new current item is the preloaded one, and the queue follows
+// (`engineCurrentItemChanged`).
 //
-// Songs on the phone (OfflineStore) always play from their file: no data,
-// and they start at once. Offline — no network, or a server that does not
-// answer — only those can play: a list starts at its first song on the
-// phone, the others are passed over in the queue, a song that streamed is
-// left once what it had loaded runs out, and a tap on one that is not on
-// the phone says so. The reports the server would have had wait in the
-// store until it answers again.
-//
-// The server is a MusicServer, Jellyfin or Subsonic, told the moments of a
-// play by PlaybackEvent (docs/SERVERS.md, "Playback reports"): `nowPlaying`
-// when the entry starts to play, `played` once it is not a skip (where every
-// server counts the play: one rule, the app's, on all of them), `progress`
-// and `stopped` after that only. Jellyfin hears nothing at `nowPlaying` (its
-// start report counts a play); a Subsonic server shows the song as playing.
+// Offline, a song that streamed is left once what it had loaded runs out
+// (`watchOfflineStall`); the rest of offline is the queue's.
 
 import AVFoundation
 import Foundation
 import JukeboxKit
 import MediaPlayer
-import Observation
 
-// RepeatMode, QueueContext and QueueEntry are in PlayQueue.swift: Linux's
-// player (Linux/App/AudioPlayer.swift) has the same queue.
+// RepeatMode, QueueContext and QueueEntry are in PlayQueue.swift too.
 
-@Observable
-final class AudioPlayer {
-    /// Everything, played and to come, in play order.
-    private(set) var queue: [QueueEntry] = []
-    /// Into `queue`; nil when nothing is loaded.
-    private(set) var currentIndex: Int?
-    private(set) var context: QueueContext?
-    private(set) var isPlaying = false
-    /// Waiting for the network.
-    private(set) var isBuffering = false
-    /// Seconds into the current track.
-    private(set) var elapsed: TimeInterval = 0
-    /// The current track's length, seconds.
-    private(set) var duration: TimeInterval = 0
-    private(set) var isShuffled = false
-    var repeatMode: RepeatMode = .off {
-        // Repeat One keeps nothing preloaded; Repeat All preloads the first
-        // entry after the last.
-        didSet { preloadNext() }
-    }
-    /// The last error, for a moment in Now Playing ("Could not play …").
-    private(set) var errorMessage: String?
-    /// The listener's level, 0...1, kept across launches, as on Linux. The
-    /// Mac's slider sets it (VolumeControl); the iPhone's volume is the
-    /// phone's own, so there it stays 1. It multiplies the song's loudness
-    /// (`level(for:)`), so normalising never undoes it.
-    var volume: Double = UserDefaults.standard.object(forKey: "volume") as? Double ?? 1 {
-        didSet {
-            volume = min(1, max(0, volume))
-            UserDefaults.standard.set(volume, forKey: "volume")
-            // At once, not at the clock's next tick: a slider is being moved.
-            if let playing { engine.volume = level(for: playing.entry.track) }
-        }
-    }
-
-    var server: (any MusicServer)?
-    /// Set by AppModel; the radio this player asks for more.
-    @ObservationIgnored weak var radio: RadioController?
-    /// Set by AppModel; told when a track was heard to the end, so play
-    /// counts and "Recently Played" move without asking the server.
-    @ObservationIgnored var library: LibraryStore?
-    /// Set by AppModel: what is on the phone, and whether only that can play.
-    @ObservationIgnored weak var offline: OfflineStore?
-
-    // MARK: Inside
-
+final class AudioPlayer: PlayQueue {
     /// An entry's item in the engine, with the play session it streams as.
     private struct Loaded {
         let entryID: UUID
@@ -96,81 +35,31 @@ final class AudioPlayer {
         let statusObservation: NSKeyValueObservation
     }
 
-    /// The current entry's play: what the server and the history are told.
-    private struct Playing {
-        let entry: QueueEntry
-        let loaded: Loaded
-        /// The station it began on, kept: the context can change before it
-        /// ends. Changed only by `continueAsRadio`, whose station the song
-        /// then belongs to.
-        var stationID: String?
-        /// Seconds actually heard: the clock runs only while the engine plays.
-        var heard: TimeInterval = 0
-        var playingSince: Date?
-        /// It played at all; one never started (loaded, then replaced) is
-        /// neither a play nor a skip.
-        var didPlay = false
-        /// `nowPlaying` went: the server shows it as playing (Subsonic).
-        var nowPlayingReported = false
-        /// `played` went: the server counted the play.
-        var startReported = false
-        var lastProgress = Date.distantPast
-
-        mutating func startClock(_ now: Date) {
-            if playingSince == nil { playingSince = now }
-            didPlay = true
-        }
-
-        mutating func stopClock(_ now: Date) {
-            guard let since = playingSince else { return }
-            heard += max(0, now.timeIntervalSince(since))
-            playingSince = nil
-        }
-    }
-
-    /// An entry that stopped being current, for the history and the radio.
-    private struct Finished {
-        let track: Track
-        let listened: TimeInterval
-        let stationID: String?
-    }
-
-    private let settings: AppSettings
-    private let history: HistoryStore
     private let engine = AVQueuePlayer()
     private let network: NetworkCost
     private let nowPlaying: NowPlayingInfo
-    @ObservationIgnored private var remote: RemoteCommands?
+    private var remote: RemoteCommands?
 
-    @ObservationIgnored private var playing: Playing?
-    @ObservationIgnored private var preloaded: Loaded?
-    /// Every entry's id in the order before shuffling, to go back to.
-    @ObservationIgnored private var originalOrder: [UUID]?
-    /// What the listener asked for, whatever the engine is doing (it pauses
-    /// itself for a call): what an interruption's end goes back to.
-    @ObservationIgnored private var wantsToPlay = false
-    @ObservationIgnored private var resumeAfterInterruption = false
-    @ObservationIgnored private var isSeeking = false
+    /// The current entry's item: set before the queue begins it, so while
+    /// an entry finishes (`stoppedPosition`) it is still that entry's.
+    private var playingLoaded: Loaded?
+    private var preloaded: Loaded?
+    private var resumeAfterInterruption = false
+    private var isSeeking = false
     /// Where to go once the current item can seek: a queue taken over from
     /// another device starts part-way, and is asked to before it is ready.
-    @ObservationIgnored private var pendingSeek: TimeInterval?
-    @ObservationIgnored private var seekGeneration = 0
-    @ObservationIgnored private var consecutiveFailures = 0
-    @ObservationIgnored private var isAskingRadio = false
-    /// Set while the listener goes back to an earlier entry (`goBack`).
-    @ObservationIgnored private var isGoingBack = false
-    @ObservationIgnored private var errorGeneration = 0
-    @ObservationIgnored private var observations: [NSKeyValueObservation] = []
-    @ObservationIgnored private var notificationTokens: [any NSObjectProtocol] = []
-    @ObservationIgnored private var timeObserver: Any?
+    private var pendingSeek: TimeInterval?
+    private var seekGeneration = 0
+    private var observations: [NSKeyValueObservation] = []
+    private var notificationTokens: [any NSObjectProtocol] = []
+    private var timeObserver: Any?
     /// Offline, waiting on a song that streamed: left after a moment.
-    @ObservationIgnored private var stallTask: Task<Void, Never>?
+    private var stallTask: Task<Void, Never>?
 
-    init(settings: AppSettings, history: HistoryStore) {
-        self.settings = settings
-        self.history = history
+    override init(settings: AppSettings, history: HistoryStore) {
         network = NetworkCost()
         nowPlaying = NowPlayingInfo()
+        super.init(settings: settings, history: history)
         engine.actionAtItemEnd = .advance
         // Music's own session: playback, long-form (AirPlay routes it as
         // music, not as a sound effect), on its own when the phone is silent.
@@ -183,249 +72,93 @@ final class AudioPlayer {
         remote = RemoteCommands(player: self)
     }
 
-    var current: QueueEntry? { currentIndex.flatMap { queue.indices.contains($0) ? queue[$0] : nil } }
-    var currentTrack: Track? { current?.track }
-    /// After the current one, in order.
-    var upNext: [QueueEntry] {
-        guard let currentIndex else { return queue }
-        return Array(queue[(currentIndex + 1)...])
-    }
-    /// Before the current one, oldest first.
-    var played: [QueueEntry] {
-        guard let currentIndex else { return [] }
-        return Array(queue[..<currentIndex])
-    }
-    var hasTrack: Bool { current != nil }
-
-    // MARK: Starting
-
-    /// Replace the queue with `tracks` and play from `index`; shuffled
-    /// starts at a random track unless `index` is given explicitly as
-    /// anything but 0. `paused`: loaded, waiting for Play (HandoffStore's
-    /// music from last time, at launch).
-    func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false,
-              paused: Bool = false) {
-        guard !tracks.isEmpty else { return }
-        var tracks = tracks
-        var index = index
-        if let offline, offline.isOffline {
-            // Made ready unasked: offline, nothing, rather than another song
-            // or an error no one asked for (Home's notice still offers it).
-            guard !paused else { return }
-            // Offline, the songs on the phone, in their order. Play (from
-            // the top) starts at the first of them; a song tapped further
-            // down that is not on the phone says why, and nothing changes.
-            let start = min(max(index, 0), tracks.count - 1)
-            let onPhone = tracks.filter { offline.canPlay($0.id) }
-            guard !onPhone.isEmpty else {
-                showError(tracks.count == 1 ? OfflineText.notOnPhone(tracks[0]) : OfflineText.noneOnPhone)
-                return
-            }
-            if offline.canPlay(tracks[start].id) {
-                index = tracks[..<start].filter { offline.canPlay($0.id) }.count
-            } else if start == 0 {
-                index = 0
-            } else {
-                showError(OfflineText.notOnPhone(tracks[start]))
-                return
-            }
-            tracks = onPhone
-            // That music is played offline, and from what kind of thing (Stats).
-            Stats.track(.offlinePlayStarted, ["from": Stats.source(context.kind)])
-        }
-        // What music is started from, by its kind (Stats); never the album.
-        // Music only made ready has not started.
-        if !paused { Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled]) }
-        // Anything but a station ends the station that played.
-        if !context.isRadio { radio?.stop() }
-        let entries = tracks.map { QueueEntry(track: $0) }
-        let start = min(max(index, 0), entries.count - 1)
-        // The index first, then the queue: `upNext` is never out of range.
-        currentIndex = nil
-        self.context = context
-        if shuffled {
-            var rest = entries
-            let first = rest.remove(at: index == 0 ? Int.random(in: entries.indices) : start)
-            rest.shuffle()
-            queue = [first] + rest
-            originalOrder = entries.map(\.id)
-            isShuffled = true
-            load(0, play: !paused)
-        } else {
-            queue = entries
-            originalOrder = nil
-            isShuffled = false
-            load(start, play: !paused)
-        }
+    /// The playing entry's item; none while nothing plays.
+    private var playingItem: AVPlayerItem? {
+        playing == nil ? nil : playingLoaded?.item
     }
 
-    /// The radio's picks as a new queue (RadioController calls this).
-    func playRadio(_ picks: [RadioPick], station: Station) {
-        guard !picks.isEmpty else { return }
-        Stats.track(.playStarted, ["from": "station", "shuffled": false])
-        if offline?.isOffline == true { Stats.track(.offlinePlayStarted, ["from": "station"]) }
-        currentIndex = nil
-        context = QueueContext(.radio(station), title: station.title)
-        queue = picks.map { QueueEntry(track: $0.track, reason: $0.reason) }
-        originalOrder = nil
-        isShuffled = false
-        // The radio chooses the order: a Repeat One left on from an album
-        // would play its first song for ever, and Up Next has no repeat
-        // button while a station plays to turn it off again.
-        repeatMode = .off
-        load(0, play: true)
-    }
-
-    /// "Start Radio" on the song that plays (RadioController calls this):
-    /// the song goes on from where it is, as the station's first, and the
-    /// picks replace what came after it. Through `playRadio` it started
-    /// again from 0:00, and the part already heard went to the history as
-    /// a skip (or a half listen) of the very song the station was asked for.
-    func continueAsRadio(_ picks: [RadioPick], station: Station) {
-        guard let currentIndex, queue.indices.contains(currentIndex) else {
-            playRadio(picks, station: station)
-            return
-        }
-        context = QueueContext(.radio(station), title: station.title)
-        // What was played before it stays, as Up Next's history; nothing is
-        // shuffled on a station.
-        queue = Array(queue[...currentIndex]) + picks.map { QueueEntry(track: $0.track, reason: $0.reason) }
-        originalOrder = nil
-        isShuffled = false
-        // As in playRadio: the radio chooses the order.
-        repeatMode = .off
-        // Its end, heard or skipped, is the station's feedback now (deliver).
-        playing?.stationID = station.id
-        queueChanged()
+    override func stop() {
+        super.stop()
+        isSeeking = false
+        nowPlaying.clear()
         refreshRemoteFeedback()
-        // Starting a station plays, as playRadio does: from where it is
-        // when paused, or loaded again when the engine has nothing.
-        resume()
+        #if os(iOS)
+        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        #endif
     }
 
-    /// The radio's further picks at the end of the queue.
-    func appendRadio(_ picks: [RadioPick]) {
-        if !picks.isEmpty {
-            let entries = picks.map { QueueEntry(track: $0.track, reason: $0.reason) }
-            queue.append(contentsOf: entries)
-            if isShuffled { originalOrder?.append(contentsOf: entries.map(\.id)) }
-            trimLongRadioHistory()
-        }
-        preloadNext()
-        publishNowPlaying()
+    /// The lock screen's thumbs: on while a station plays, filled for a
+    /// track liked or disliked. The radio calls this after the listener's
+    /// thumbs; the queue whenever the track or the queue changes.
+    override func refreshRemoteFeedback() {
+        let id = currentTrack?.id
+        let station = context?.isRadio == true && id != nil
+        let liked = id.map { radio?.liked.contains($0) == true } ?? false
+        let disliked = id.map { radio?.disliked.contains($0) == true } ?? false
+        remote?.update(hasTrack: id != nil, stationPlays: station, liked: liked, disliked: disliked)
     }
 
-    /// Drop everything after the current track that the radio chose, so it
-    /// can choose again after feedback; returns those tracks' ids.
-    @discardableResult
-    func removeUpcomingRadioPicks() -> [ItemID] {
-        removeUpcomingRadioPicks(keepingNext: false)
+    #if os(macOS)
+    /// The engine, for the Mac's AirPlay picker, which routes one player's
+    /// sound rather than the system's (RoutePicker).
+    var routedPlayer: AVPlayer { engine }
+    #endif
+
+    // MARK: The engine, for the queue
+
+    override func engineReplace(with url: URL, entry: QueueEntry, playSessionID: String, play: Bool) {
+        if !play { engine.pause() }
+        engine.removeAllItems()
+        preloaded = nil
+        let loaded = makeLoaded(url, entryID: entry.id, playSessionID: playSessionID)
+        engine.insert(loaded.item, after: nil)
+        playingLoaded = loaded
     }
 
-    /// The same, but with `keepingNext` the entry right after the current
-    /// one stays when it is already loaded in the engine: what the radio
-    /// uses when new sources arrive, so a track about to start is not
-    /// swapped for no reason the listener gave.
-    @discardableResult
-    func removeUpcomingRadioPicks(keepingNext: Bool) -> [ItemID] {
-        guard let currentIndex else { return [] }
-        var start = currentIndex + 1
-        if keepingNext, let preloaded, start < queue.count, queue[start].id == preloaded.entryID {
-            start += 1
-        }
-        guard start < queue.count else { return [] }
-        let upcoming = queue[start...]
-        let removed = upcoming.filter { $0.reason != nil }
-        guard !removed.isEmpty else { return [] }
-        queue = Array(queue[..<start]) + upcoming.filter { $0.reason == nil }
-        preloadNext()
-        return removed.map(\.track.id)
-    }
-
-    func playNext(_ tracks: [Track]) {
-        guard let tracks = playableNow(tracks) else { return }
-        guard let currentIndex, hasTrack else {
-            play(tracks, context: QueueContext(.other, title: "Up Next"))
-            return
-        }
-        let entries = tracks.map { QueueEntry(track: $0) }
-        queue.insert(contentsOf: entries, at: currentIndex + 1)
-        if isShuffled, var order = originalOrder {
-            let at = order.firstIndex(of: queue[currentIndex].id).map { $0 + 1 } ?? order.count
-            order.insert(contentsOf: entries.map(\.id), at: at)
-            originalOrder = order
-        }
-        queueChanged()
-    }
-
-    func addToQueue(_ tracks: [Track]) {
-        guard let tracks = playableNow(tracks) else { return }
-        guard hasTrack else {
-            play(tracks, context: QueueContext(.other, title: "Up Next"))
-            return
-        }
-        let entries = tracks.map { QueueEntry(track: $0) }
-        queue.append(contentsOf: entries)
-        if isShuffled { originalOrder?.append(contentsOf: entries.map(\.id)) }
-        queueChanged()
-    }
-
-    // MARK: Transport
-
-    func togglePlayPause() {
-        if isPlaying { pause() } else { resume() }
-    }
-
-    func resume() {
-        guard let currentIndex else { return }
-        // Nothing in the engine (the queue ended, or an error stopped it):
-        // load the current entry again.
-        if playing == nil || engine.currentItem == nil {
-            load(currentIndex, play: true)
-            return
-        }
-        wantsToPlay = true
+    override func engineStart(_ play: Bool) {
+        guard play else { return }
         activateAudioSession()
         engine.play()
     }
 
-    func pause() {
-        wantsToPlay = false
+    /// The engine holds the current item and the next entry's: rebuilt
+    /// only when the next entry changed.
+    override func enginePreload(_ wanted: QueueEntry?) {
+        if let preloaded, preloaded.entryID == wanted?.id,
+           engine.items().contains(where: { $0 === preloaded.item }) {
+            return
+        }
+        if let preloaded { engine.remove(preloaded.item) }
+        preloaded = nil
+        let playSessionID = UUID().uuidString
+        guard let wanted, let current = playingItem,
+              engine.items().contains(where: { $0 === current }),
+              let url = address(of: wanted, playSessionID: playSessionID) else { return }
+        let loaded = makeLoaded(url, entryID: wanted.id, playSessionID: playSessionID)
+        guard engine.canInsert(loaded.item, after: current) else { return }
+        engine.insert(loaded.item, after: current)
+        preloaded = loaded
+    }
+
+    override var engineHeldNext: UUID? { preloaded?.entryID }
+
+    override var engineHasItem: Bool { engine.currentItem != nil }
+
+    override func engineResume() {
+        activateAudioSession()
+        engine.play()
+    }
+
+    override func enginePause() {
         engine.pause()
     }
 
-    func next() {
-        guard let currentIndex else { return }
-        // Repeat One repeats a track that ends, not one that is skipped.
-        if let next = indexAfter(currentIndex, wrapping: repeatMode == .all) {
-            load(next, play: true)
-        } else {
-            queueEnded()
-        }
-    }
-
-    /// Back to the start of the track after 3 s, else the track before.
-    func previous() {
-        guard let currentIndex else { return }
-        if elapsed > 3 || (currentIndex == 0 && repeatMode != .all) {
-            if playing == nil { load(currentIndex, play: true) } else { seek(to: 0) }
-        } else if currentIndex > 0 {
-            goBack(to: currentIndex - 1)
-        } else {
-            goBack(to: queue.count - 1)
-        }
-    }
-
-    func seek(to seconds: TimeInterval) {
-        guard let playing else { return }
-        let upper = duration > 0 ? duration : max(seconds, 0)
-        let target = max(0, min(seconds, upper))
-        elapsed = target
+    override func engineSeek(to target: TimeInterval) {
         isSeeking = true
         // An item just loaded cannot seek yet (HandoffStore loads and seeks
         // in one go, playing or paused), and AVPlayer is not to be asked
         // before it is ready (Apple's QA1820): itemStatusChanged asks then.
-        guard playing.loaded.item.status == .readyToPlay else {
+        guard let item = playingItem, item.status == .readyToPlay else {
             pendingSeek = target
             return
         }
@@ -437,387 +170,57 @@ final class AudioPlayer {
         }
     }
 
-    func skip(to entry: QueueEntry) {
-        guard let index = queue.firstIndex(where: { $0.id == entry.id }) else { return }
-        if let offline, !offline.canPlay(entry.track.id) {
-            showError(OfflineText.notOnPhone(entry.track))
-            return
-        }
-        if let currentIndex, index < currentIndex {
-            goBack(to: index)
-        } else {
-            load(index, play: true)
-        }
-    }
-
-    func toggleShuffle() {
-        guard let currentIndex, queue.indices.contains(currentIndex) else { return }
-        let head = Array(queue[...currentIndex])
-        var upcoming = Array(queue[(currentIndex + 1)...])
-        if isShuffled {
-            // Back to the order it had: what is still to come, in album or
-            // playlist order again.
-            if let order = originalOrder {
-                var rank: [UUID: Int] = [:]
-                for (position, id) in order.enumerated() { rank[id] = position }
-                upcoming = upcoming.enumerated()
-                    .sorted { a, b in
-                        let ra = rank[a.element.id] ?? Int.max
-                        let rb = rank[b.element.id] ?? Int.max
-                        return ra != rb ? ra < rb : a.offset < b.offset
-                    }
-                    .map { $0.element }
-            }
-            originalOrder = nil
-            isShuffled = false
-        } else {
-            originalOrder = queue.map(\.id)
-            upcoming.shuffle()
-            isShuffled = true
-        }
-        queue = head + upcoming
-        queueChanged()
-    }
-
-    /// off → all → one → off.
-    func cycleRepeat() {
-        switch repeatMode {
-        case .off: repeatMode = .all
-        case .all: repeatMode = .one
-        case .one: repeatMode = .off
-        }
-    }
-
-    func stop() {
-        let finished = finishCurrent()
-        wantsToPlay = false
+    override func engineHalt() {
         engine.pause()
         engine.removeAllItems()
         preloaded = nil
-        currentIndex = nil
-        queue = []
-        context = nil
-        elapsed = 0
-        duration = 0
-        isShuffled = false
-        originalOrder = nil
-        isSeeking = false
-        nowPlaying.clear()
-        refreshRemoteFeedback()
-        deliver(finished)
-        #if os(iOS)
-        try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
-        #endif
     }
 
-    // MARK: Editing Up Next
-
-    /// Offsets into `upNext`.
-    func removeUpcoming(atOffsets offsets: IndexSet) {
-        let base = (currentIndex ?? -1) + 1
-        let indices = offsets.map { base + $0 }.filter { queue.indices.contains($0) }.sorted(by: >)
-        guard !indices.isEmpty else { return }
-        for index in indices { queue.remove(at: index) }
-        queueChanged()
+    override func engineVolume(_ level: Double) {
+        engine.volume = Float(level)
     }
 
-    /// Offsets into `upNext`, as List's onMove gives them.
-    func moveUpcoming(fromOffsets source: IndexSet, toOffset destination: Int) {
-        let base = (currentIndex ?? -1) + 1
-        guard base <= queue.count else { return }
-        var upcoming = Array(queue[base...])
-        let moving: [Int] = source.filter { upcoming.indices.contains($0) }
-        guard !moving.isEmpty else { return }
-        let entries = moving.map { upcoming[$0] }
-        let target = destination - moving.filter { $0 < destination }.count
-        for index in moving.sorted(by: >) { upcoming.remove(at: index) }
-        upcoming.insert(contentsOf: entries, at: max(0, min(target, upcoming.count)))
-        queue = Array(queue[..<base]) + upcoming
-        queueChanged()
-    }
-
-    func clearUpcoming() {
-        guard let currentIndex else {
-            queue = []
-            return
+    /// The engine may be running already (a skip while it plays): the
+    /// clock starts with the entry, and so may its reports.
+    override func engineBegan() {
+        if engine.timeControlStatus == .playing {
+            playing?.startClock(Date())
+            reportStartIfNeeded()
         }
-        guard currentIndex + 1 < queue.count else { return }
-        queue.removeSubrange((currentIndex + 1)...)
-        queueChanged()
-    }
-
-    // MARK: For the radio and Now Playing
-
-    /// An error to show for a moment ("Could not play …").
-    func showError(_ message: String) {
-        errorMessage = message
-        errorGeneration += 1
-        let generation = errorGeneration
-        Task { [weak self] in
-            try? await Task.sleep(for: .seconds(5))
-            guard let self, self.errorGeneration == generation else { return }
-            self.errorMessage = nil
-        }
-    }
-
-    /// The lock screen's thumbs: on while a station plays, filled for a
-    /// track liked or disliked. The radio calls this after the listener's
-    /// thumbs; the player itself whenever the track or the queue changes.
-    func refreshRemoteFeedback() {
-        let id = currentTrack?.id
-        let station = context?.isRadio == true && id != nil
-        let liked = id.map { radio?.liked.contains($0) == true } ?? false
-        let disliked = id.map { radio?.disliked.contains($0) == true } ?? false
-        remote?.update(hasTrack: id != nil, stationPlays: station, liked: liked, disliked: disliked)
-    }
-
-    // MARK: Loading
-
-    /// Make `index` the current entry, from its start, in a fresh engine.
-    private func load(_ index: Int, play: Bool) {
-        guard queue.indices.contains(index) else { return }
-        // Offline, a song not on the phone cannot play: the next one that
-        // is, in its place; none, and the music stops here.
-        guard let start = playableIndex(from: index) else {
-            noMoreOnPhone()
-            return
-        }
-        let entry = queue[start]
-        guard let loaded = makeLoaded(entry) else {
-            showError("Not signed in to a server.")
-            return
-        }
-        let finished = finishCurrent()
-        if !play { engine.pause() }
-        engine.removeAllItems()
-        preloaded = nil
-        engine.insert(loaded.item, after: nil)
-        wantsToPlay = play
-        begin(entry, at: start, loaded: loaded)
-        if play {
-            activateAudioSession()
-            engine.play()
-        }
-        deliver(finished)
-        checkRadioSupply()
-    }
-
-    /// Back to an entry before the current one. Going back is not "not
-    /// this": the station is not told the track left was skipped, which
-    /// would drop it from Up Next and count against its artist.
-    private func goBack(to index: Int) {
-        // Offline, back to the nearest song before it that is on the phone;
-        // none, and the song playing starts again.
-        guard let target = playableIndex(atOrBefore: index) else {
-            if playing != nil {
-                seek(to: 0)
-            } else if let currentIndex {
-                load(currentIndex, play: true)
-            }
-            return
-        }
-        isGoingBack = true
-        load(target, play: true)
-        isGoingBack = false
-    }
-
-    /// `entry` is current now, with `loaded` already in the engine.
-    private func begin(_ entry: QueueEntry, at index: Int, loaded: Loaded) {
-        currentIndex = index
-        var playing = Playing(entry: entry, loaded: loaded, stationID: context?.station?.id)
-        let isRunning = engine.timeControlStatus == .playing
-        if isRunning { playing.startClock(Date()) }
-        self.playing = playing
-        if isRunning { reportStartIfNeeded() }
-        elapsed = 0
-        duration = entry.track.duration
         isSeeking = false
         pendingSeek = nil
-        engine.volume = level(for: entry.track)
-        preloadNext()
-        publishNowPlaying()
-        refreshRemoteFeedback()
     }
 
-    /// The entry the engine should hold after the current one, by the
-    /// queue and the repeat mode.
-    private func entryToPreload() -> QueueEntry? {
-        guard repeatMode != .one, let currentIndex,
-              let next = indexAfter(currentIndex, wrapping: repeatMode == .all) else { return nil }
-        return queue[next]
+    /// Where the current track is, as exactly as the engine knows.
+    override var position: TimeInterval {
+        if isSeeking { return elapsed }
+        return Self.seconds(engine.currentTime()).map { max(0, $0) } ?? elapsed
     }
 
-    /// The engine holds the current item and the next entry's: rebuilt
-    /// only when the next entry changed.
-    private func preloadNext() {
-        let wanted = entryToPreload()
-        if let preloaded, preloaded.entryID == wanted?.id,
-           engine.items().contains(where: { $0 === preloaded.item }) {
-            return
-        }
-        if let preloaded { engine.remove(preloaded.item) }
-        preloaded = nil
-        guard let wanted, let current = playing?.loaded.item,
-              engine.items().contains(where: { $0 === current }),
-              let loaded = makeLoaded(wanted),
-              engine.canInsert(loaded.item, after: current) else { return }
-        engine.insert(loaded.item, after: current)
-        preloaded = loaded
+    /// The finishing entry's own item: in the gapless move the engine's
+    /// current time is already the next song's.
+    override var stoppedPosition: TimeInterval {
+        playingLoaded.flatMap { Self.seconds($0.item.currentTime()) } ?? elapsed
     }
 
-    private func makeLoaded(_ entry: QueueEntry) -> Loaded? {
-        let playSessionID = UUID().uuidString
-        let url: URL
-        if let file = offline?.localURL(for: entry.track.id) {
-            // On the phone: always its file, online too. No data, and it
-            // starts at once.
-            url = file
-        } else {
-            guard let server else { return nil }
-            let quality = network.isExpensive ? settings.cellularQuality : settings.wifiQuality
-            url = server.streamURL(for: entry.track, quality: quality, playSessionID: playSessionID)
-        }
+    override var playingLength: TimeInterval {
+        playingLoaded.flatMap { Self.seconds($0.item.duration) } ?? 0
+    }
+
+    override var engineIsPaused: Bool { engine.timeControlStatus == .paused }
+
+    /// Settings' Mobile quality where the network costs something.
+    override var streamQuality: StreamQuality {
+        network.isExpensive ? settings.cellularQuality : settings.wifiQuality
+    }
+
+    private func makeLoaded(_ url: URL, entryID: UUID, playSessionID: String) -> Loaded {
         let item = AVPlayerItem(url: url)
         let itemID = ObjectIdentifier(item)
         let observation = PlayerSignals.observeStatus(of: item) { [weak self] in
             Task { @MainActor in self?.itemStatusChanged(itemID) }
         }
-        return Loaded(entryID: entry.id, item: item, playSessionID: playSessionID, statusObservation: observation)
-    }
-
-    private func indexAfter(_ index: Int, wrapping: Bool) -> Int? {
-        guard let offline, offline.isOffline else {
-            if index + 1 < queue.count { return index + 1 }
-            if wrapping, !queue.isEmpty { return 0 }
-            return nil
-        }
-        // Offline, the next song that is on the phone: once round the queue at most.
-        var at = index
-        for _ in 0..<queue.count {
-            if at + 1 < queue.count {
-                at += 1
-            } else if wrapping {
-                at = 0
-            } else {
-                return nil
-            }
-            if offline.canPlay(queue[at].track.id) { return at }
-        }
-        return nil
-    }
-
-    /// The engine's one volume: the listener's level times the server's
-    /// loudness for the song (Jellyfin's NormalizationGain, a Subsonic
-    /// server's ReplayGain), which is only ever softer, since the engine
-    /// cannot go above 1.
-    private func level(for track: Track) -> Float {
-        let listener = Float(volume)
-        guard settings.normalizeVolume, let gain = track.normalizationGain else { return listener }
-        return listener * Float(min(1, pow(10, gain / 20)))
-    }
-
-    #if os(macOS)
-    /// The engine, for the Mac's AirPlay picker, which routes one player's
-    /// sound rather than the system's (RoutePicker).
-    var routedPlayer: AVPlayer { engine }
-    #endif
-
-    private func queueChanged() {
-        preloadNext()
-        publishNowPlaying()
-        checkRadioSupply()
-    }
-
-    /// A station's queue keeps a few tracks ahead: at two or fewer, the
-    /// radio is asked for more.
-    private func checkRadioSupply() {
-        guard context?.isRadio == true, !isAskingRadio, let currentIndex,
-              queue.count - currentIndex - 1 <= 2 else { return }
-        isAskingRadio = true
-        radio?.playerNeedsMore()
-        isAskingRadio = false
-    }
-
-    /// A station plays for hours; the played part of its queue is kept to
-    /// the last hundred or so.
-    private func trimLongRadioHistory() {
-        guard context?.isRadio == true, let currentIndex, currentIndex > 200 else { return }
-        let drop = currentIndex - 100
-        // The index first: it is never past the end of the queue.
-        self.currentIndex = currentIndex - drop
-        queue.removeFirst(drop)
-    }
-
-    // MARK: Ending
-
-    /// The current entry stops being current: the server is told, and what
-    /// was heard is returned for `deliver` (called once the next entry is
-    /// set up, so the radio sees the queue as it now is).
-    private func finishCurrent() -> Finished? {
-        guard var playing else { return nil }
-        self.playing = nil
-        playing.stopClock(Date())
-        if playing.startReported, let server {
-            let position = Self.seconds(playing.loaded.item.currentTime()) ?? elapsed
-            let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
-                                        playSessionID: playing.loaded.playSessionID)
-            if let offline, offline.holdsReports(of: report.playSessionID) {
-                // Told to the server, after its start, once it answers.
-                offline.holdStop(report)
-            } else {
-                Task { await server.report(.stopped, report) }
-            }
-        }
-        guard playing.didPlay else { return nil }
-        var track = playing.entry.track
-        if track.duration <= 0, let known = Self.seconds(playing.loaded.item.duration), known > 0 {
-            track.duration = known
-        }
-        return Finished(track: track, listened: playing.heard, stationID: playing.stationID)
-    }
-
-    private func deliver(_ finished: Finished?) {
-        guard let finished else { return }
-        let now = Date()
-        let outcome = PlayOutcome.of(listened: finished.listened, duration: finished.track.duration)
-        // Heard to the end, partly, or skipped, and whether on a station (Stats).
-        Stats.track(.trackEnded, ["outcome": outcome.rawValue, "station": finished.stationID != nil])
-        history.record(PlayEvent(track: finished.track, date: now, listened: finished.listened,
-                                 outcome: outcome, stationID: finished.stationID))
-        if outcome == .completed {
-            library?.notePlayed(finished.track.id, at: now)
-        }
-        // Only to the station it played on: a track of the station before
-        // says nothing about this one. Nor a skip made by going back.
-        if let stationID = finished.stationID, let radio, radio.station?.id == stationID,
-           !(isGoingBack && outcome == .skipped) {
-            radio.trackEnded(finished.track, listened: finished.listened)
-        }
-    }
-
-    /// Nothing after the current entry.
-    private func queueEnded() {
-        if context?.isRadio == true {
-            // The radio is a few tracks ahead; if it is not, ask once more.
-            radio?.playerNeedsMore()
-            if let currentIndex, currentIndex + 1 < queue.count {
-                load(currentIndex + 1, play: true)
-                return
-            }
-        } else if repeatMode == .off, settings.autoplay, let radio, let last = currentTrack {
-            // Music's Autoplay: an album or a playlist plays on as a station
-            // from its last track.
-            let finished = finishCurrent()
-            wantsToPlay = false
-            engine.pause()
-            engine.removeAllItems()
-            preloaded = nil
-            deliver(finished)
-            radio.autoplay(after: last)
-            return
-        }
-        // The end: the last track stays, paused at its start, as Music leaves it.
-        if let currentIndex { load(currentIndex, play: false) }
+        return Loaded(entryID: entryID, item: item, playSessionID: playSessionID, statusObservation: observation)
     }
 
     // MARK: What the engine says
@@ -844,57 +247,39 @@ final class AudioPlayer {
               let index = queue.firstIndex(where: { $0.id == next.entryID }) else { return }
         let finished = finishCurrent()
         preloaded = nil
-        begin(queue[index], at: index, loaded: next)
+        playingLoaded = next
+        begin(queue[index], at: index, playSessionID: next.playSessionID)
         deliver(finished)
         checkRadioSupply()
     }
 
     private func engineStatusChanged() {
         let status = engine.timeControlStatus
-        let now = Date()
-        var justStarted = false
-        if status == .playing {
-            consecutiveFailures = 0
-            playing?.startClock(now)
-            justStarted = reportStartIfNeeded()
-        } else {
-            playing?.stopClock(now)
-        }
+        let justStarted = engineRuns(status == .playing)
         let buffering = status == .waitingToPlayAtSpecifiedRate
         if isBuffering != buffering { isBuffering = buffering }
         if buffering { watchOfflineStall() }
         // Playing while waiting for the network too: the button shows Pause.
-        let playingNow = status != .paused
-        if isPlaying != playingNow {
-            isPlaying = playingNow
-            // Paused or resumed, so the server's dashboard shows it.
-            if !justStarted { reportProgress() }
-        }
+        showPlaying(status != .paused, justStarted: justStarted)
         publishPlayback()
     }
 
     private func tick() {
-        guard let playing, engine.currentItem === playing.loaded.item else { return }
+        guard let playing, let item = playingItem, engine.currentItem === item else { return }
         if !isSeeking, let time = Self.seconds(engine.currentTime()) {
             let value = max(0, time)
             if abs(value - elapsed) > 0.01 { elapsed = value }
         }
-        let known = Self.seconds(playing.loaded.item.duration) ?? 0
+        let known = Self.seconds(item.duration) ?? 0
         let length = known > 0 ? known : playing.entry.track.duration
         if abs(length - duration) > 0.5 {
             duration = length
             publishPlayback()
         }
         // Normalisation turned on or off in Settings takes effect at once.
-        let wanted = level(for: playing.entry.track)
+        let wanted = Float(level(for: playing.entry.track))
         if engine.volume != wanted { engine.volume = wanted }
-        if engine.timeControlStatus == .playing {
-            if !playing.startReported {
-                reportStartIfNeeded()
-            } else if Date().timeIntervalSince(playing.lastProgress) >= 10 {
-                reportProgress()
-            }
-        }
+        if engine.timeControlStatus == .playing { reportWhilePlaying() }
     }
 
     private func seekFinished(_ generation: Int) {
@@ -906,10 +291,10 @@ final class AudioPlayer {
     }
 
     private func itemStatusChanged(_ id: ObjectIdentifier) {
-        let items = [playing?.loaded.item, preloaded?.item].compactMap { $0 }
+        let items = [playingItem, preloaded?.item].compactMap { $0 }
         guard let item = items.first(where: { ObjectIdentifier($0) == id }) else { return }
         // Ready, and a place to start from was waiting for that (seek).
-        if item.status == .readyToPlay, let target = pendingSeek, item === playing?.loaded.item {
+        if item.status == .readyToPlay, let target = pendingSeek, item === playingItem {
             seek(to: target)
             return
         }
@@ -918,43 +303,17 @@ final class AudioPlayer {
     }
 
     private func itemDidEnd(_ id: ObjectIdentifier) {
-        guard let playing, ObjectIdentifier(playing.loaded.item) == id, let currentIndex else { return }
-        if repeatMode == .one {
-            load(currentIndex, play: true)
-            return
-        }
+        guard let item = playingItem, ObjectIdentifier(item) == id else { return }
         // Preloaded: the engine moves on by itself, and
-        // engineCurrentItemChanged follows it.
-        if let preloaded, engine.items().contains(where: { $0 === preloaded.item }) { return }
-        if let next = indexAfter(currentIndex, wrapping: repeatMode == .all) {
-            load(next, play: true)
-        } else {
-            queueEnded()
-        }
+        // engineCurrentItemChanged follows it. (Repeat One preloads nothing.)
+        if repeatMode != .one, let preloaded, engine.items().contains(where: { $0 === preloaded.item }) { return }
+        entryEnded()
     }
 
     private func itemFailed(_ id: ObjectIdentifier) {
-        if let playing, ObjectIdentifier(playing.loaded.item) == id {
+        if let item = playingItem, ObjectIdentifier(item) == id {
             // Why, by kind (Stats); never the song or the error's words.
-            let reason = Stats.playbackFailure(playing.loaded.item.error)
-            Stats.track(.playbackError, ["reason": reason])
-            // The network: is the server still there? If not, offline, and
-            // the next song is one on the phone.
-            if reason == "network" { offline?.checkServer() }
-            showError("Could not play “\(playing.entry.track.name)”.")
-            consecutiveFailures += 1
-            // Five in a row is the server or the network, not a file: stop
-            // there rather than run through the whole queue.
-            guard consecutiveFailures < 5, let currentIndex,
-                  let next = indexAfter(currentIndex, wrapping: repeatMode == .all), next != currentIndex else {
-                let finished = finishCurrent()
-                wantsToPlay = false
-                engine.pause()
-                deliver(finished)
-                return
-            }
-            // Paused (music waiting at launch, HandoffStore), the next waits too.
-            load(next, play: wantsToPlay)
+            entryFailed(reason: Stats.playbackFailure(item.error))
         } else if let preloaded, ObjectIdentifier(preloaded.item) == id {
             // Tried again, fresh, when its turn comes (itemDidEnd loads it).
             engine.remove(preloaded.item)
@@ -1039,80 +398,11 @@ final class AudioPlayer {
         #endif
     }
 
-    // MARK: Telling the server and the lock screen
-
-    /// The play counted (`played`), once the entry has played long enough
-    /// not to be a skip by PlayOutcome's rule. Jellyfin counts the play at
-    /// its start report (measured on 12.4, JellyfinClient.reportStart), a
-    /// Subsonic server at `scrobble submission=true`: sent at once, every
-    /// skip would gain a play count, and the next library load would cancel
-    /// that skip in the radio's taste. tick() asks again while it plays.
-    /// Called only while the engine plays, so the first call is also the
-    /// moment the entry began: `nowPlaying` goes then.
-    @discardableResult
-    private func reportStartIfNeeded() -> Bool {
-        reportNowPlayingIfNeeded()
-        guard var playing, !playing.startReported else { return false }
-        let now = Date()
-        var heard = playing.heard
-        if let since = playing.playingSince { heard += max(0, now.timeIntervalSince(since)) }
-        // The length deliver() judges the play by.
-        var length = playing.entry.track.duration
-        if length <= 0 { length = Self.seconds(playing.loaded.item.duration) ?? 0 }
-        guard PlayOutcome.of(listened: heard, duration: length) != .skipped else { return false }
-        playing.startReported = true
-        playing.lastProgress = now
-        self.playing = playing
-        guard let server else { return true }
-        let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
-                                    playSessionID: playing.loaded.playSessionID)
-        if let offline, offline.holdsReports(of: report.playSessionID) {
-            // Offline: kept, and sent when the server answers, so the play
-            // is counted (and scrobbled) all the same.
-            offline.holdStart(report)
-        } else {
-            Task { await server.report(.played, report) }
-        }
-        return true
-    }
-
-    /// The server's "now playing" as the entry begins to play, before it
-    /// counts: a Subsonic server lists it as playing (Jellyfin is told
-    /// nothing here). Once an entry; not offline, where nothing would hear
-    /// it, and not kept for later, when it would be over.
-    private func reportNowPlayingIfNeeded() {
-        guard var playing, !playing.nowPlayingReported else { return }
-        playing.nowPlayingReported = true
-        self.playing = playing
-        guard let server else { return }
-        if let offline, offline.holdsReports(of: playing.loaded.playSessionID) { return }
-        let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
-                                    playSessionID: playing.loaded.playSessionID)
-        Task { await server.report(.nowPlaying, report) }
-    }
-
-    private func reportProgress() {
-        guard let playing, playing.startReported else { return }
-        self.playing?.lastProgress = Date()
-        guard let server else { return }
-        // Offline the server hears of the play when it is back; how far it
-        // got on the way is not kept.
-        if let offline, offline.holdsReports(of: playing.loaded.playSessionID) { return }
-        let report = PlaybackReport(trackID: playing.entry.track.id, position: position,
-                                    isPaused: engine.timeControlStatus == .paused,
-                                    playSessionID: playing.loaded.playSessionID)
-        Task { await server.report(.progress, report) }
-    }
-
-    /// Where the current track is, as exactly as the engine knows.
-    private var position: TimeInterval {
-        if isSeeking { return elapsed }
-        return Self.seconds(engine.currentTime()).map { max(0, $0) } ?? elapsed
-    }
+    // MARK: The lock screen
 
     private var rate: Double { engine.timeControlStatus == .playing ? 1 : 0 }
 
-    private func publishNowPlaying() {
+    override func publishNowPlaying() {
         guard let playing, let currentIndex else {
             nowPlaying.clear()
             return
@@ -1134,44 +424,6 @@ final class AudioPlayer {
     func connectivityChanged() {
         preloadNext()
         if isBuffering { watchOfflineStall() }
-    }
-
-    /// `tracks` as far as they can play now: offline, those on the phone;
-    /// nil, and why, briefly, when none of them can.
-    private func playableNow(_ tracks: [Track]) -> [Track]? {
-        guard !tracks.isEmpty else { return nil }
-        guard let offline, offline.isOffline else { return tracks }
-        let onPhone = tracks.filter { offline.canPlay($0.id) }
-        guard !onPhone.isEmpty else {
-            showError(tracks.count == 1 ? OfflineText.notOnPhone(tracks[0]) : OfflineText.noneOnPhone)
-            return nil
-        }
-        return onPhone
-    }
-
-    /// `index`, or offline the first entry from it on that is on the phone.
-    private func playableIndex(from index: Int) -> Int? {
-        guard let offline, offline.isOffline else { return index }
-        return (index..<queue.count).first { offline.canPlay(queue[$0].track.id) }
-    }
-
-    /// `index`, or offline the last entry up to it that is on the phone.
-    private func playableIndex(atOrBefore index: Int) -> Int? {
-        guard let offline, offline.isOffline else { return index }
-        guard queue.indices.contains(index) else { return nil }
-        return stride(from: index, through: 0, by: -1).first { offline.canPlay(queue[$0].track.id) }
-    }
-
-    /// Offline, nothing from here on is on the phone: the music stops where
-    /// it is, and says why.
-    private func noMoreOnPhone() {
-        let finished = finishCurrent()
-        wantsToPlay = false
-        engine.pause()
-        engine.removeAllItems()
-        preloaded = nil
-        deliver(finished)
-        showError(OfflineText.nothingFurther)
     }
 
     /// Offline, a song that streams stops when what it had loaded runs out,

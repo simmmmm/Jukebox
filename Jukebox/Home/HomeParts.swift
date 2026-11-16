@@ -270,7 +270,10 @@ struct StationMenu: View {
     var body: some View {
         Section {
             if radio.stationOnAir(player: player)?.seed == station.seed {
-                Button("Show Now Playing", systemImage: "play.circle") {
+                // Full Player in the wide window, where the panel is Now
+                // Playing (the photographer, 15 November 2026); the iPhone's
+                // screen keeps its name.
+                Button(navigator.isWide ? String(localized: "Show Full Player") : String(localized: "Show Now Playing"), systemImage: "play.circle") {
                     navigator.isNowPlayingPresented = true
                 }
             } else {

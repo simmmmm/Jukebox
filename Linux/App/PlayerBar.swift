@@ -30,23 +30,57 @@ enum PlayerBar {
         let art = Art(56)
         let title = label("", "bar-title")
         let artist = label("", "fact", "bar-fact")
-        // On a station: "MC Polder  ⌂ Your Station", the template mark 12
-        // and the name in the accent.
+        // On a station, a line of its own under the artist ("Kun je de
+        // station naam ergens anders plaatsen?", the photographer, 15
+        // November 2026): the template mark 12 and the name in the accent.
+        // Each line ends in "…" by itself. Title 20, 4, then the artist and
+        // the station 16 each: 56, the cover's height, so the bar stays 88.
         let stationMark = gtk_image_new_from_icon_name(Glyphs.name("radio"))!.css("accent")
         gtk_image_set_pixel_size(ptr(stationMark), 12)
         let stationName = label("", "bar-fact", "accent")
-        let station = hbox(spacing: 4, [stationMark, stationName])
-        let second = hbox(spacing: 8, [artist, station])
-        let words = vbox(spacing: 4, [title, second]).align(vertical: GTK_ALIGN_CENTER)
+        // As wide as their words, so the links laid over them (below) are too.
+        let station = hbox(spacing: 4, [stationMark, stationName]).css("covered").align(horizontal: GTK_ALIGN_START)
+        artist.align(horizontal: GTK_ALIGN_START)
+        let words = vbox(spacing: 4, [title, vbox([artist, station])]).align(vertical: GTK_ALIGN_CENTER)
+        // The tile's own hover, 8 past the cover and the words on every
+        // side (Style's button.tile): the bar had taken its padding away, so
+        // the hover ended flush on the words ("ik zie een bug", the
+        // photographer, 15 November 2026).
         let song = tileButton(hbox(spacing: 12, [art.widget, words])) { NowPlayingPage.open() }
-        song.tooltip("Now Playing").align(vertical: GTK_ALIGN_CENTER)
+        // The screen it opens is Full Player (the photographer, 15 November
+        // 2026), as the panel took the name Now Playing.
+        song.tooltip("Full Player").align(vertical: GTK_ALIGN_CENTER)
         // The pointer over the song, a click may follow: Now Playing's sleeve
         // drawn now, at the room's size as it is now (the window may have
         // changed since the song began; a sleeve takes 100 ms or more).
         let hover = gtk_event_controller_motion_new()!
         on(raw(hover), "enter") { NowPlayingPage.prepare() }
         gtk_widget_add_controller(song, hover)
-        contextMenu(on: song) { songMenu(narrow: !songActions.isVisible) }
+        // The artist's name opens the artist ("je zou hier eigenlijk ook op
+        // angele willen kunnen klikken", the photographer, 15 November 2026),
+        // as Go to Artist does: the song's first artist, when the library
+        // knows them; else the name stays words of the song. On a station
+        // its name shows the panel on Up Next, what the station plays next
+        // ("ook die oranje link hier zou gewoon 'up next' moeten openen",
+        // the same day), and never closes it. Each is a button of its own
+        // laid over its words in the song, not one inside the other: the
+        // song's button stays the cover and the title.
+        let artistLinkName = label("", "fact", "bar-fact")
+        let artistLink = link(artistLinkName, over: artist, "Go to Artist") {
+            if let ref = app.player.currentTrack?.primaryArtist, let found = app.library.artist(ref) { Pages.open(found) }
+        }
+        let stationLinkMark = gtk_image_new_from_icon_name(Glyphs.name("radio"))!.css("accent")
+        gtk_image_set_pixel_size(ptr(stationLinkMark), 12)
+        let stationLinkName = label("", "bar-fact", "accent")
+        let stationLink = link(hbox(spacing: 4, [stationLinkMark, stationLinkName]), over: station, "Now Playing") {
+            app.panel.show(.upNext)
+        }
+        let songWithLinks = gtk_overlay_new()!.align(vertical: GTK_ALIGN_CENTER)
+        gtk_overlay_set_child(ptr(songWithLinks), song)
+        gtk_overlay_add_overlay(ptr(songWithLinks), artistLink)
+        gtk_overlay_add_overlay(ptr(songWithLinks), stationLink)
+        g_signal_connect_data(raw(songWithLinks), "get-child-position", unsafeBitCast(placeLink, to: GCallback.self), nil, nil, GConnectFlags(0))
+        contextMenu(on: songWithLinks) { songMenu(narrow: !songActions.isVisible) }
         // Not This on a station, then the heart (32 each, 4 apart).
         let notThis = iconButton(Glyphs.name("not-this"), "Not This", "flat") {
             if let track = app.player.currentTrack { app.radio.dislike(track) }
@@ -55,7 +89,7 @@ enum PlayerBar {
         songActions = hbox(spacing: 4, [notThis, heart]).align(vertical: GTK_ALIGN_CENTER)
         // Its own width, down to its zone's: then the title ends in "…"
         // rather than push the middle aside.
-        let songZone = hbox(spacing: 16, [song, songActions]).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
+        let songZone = hbox(spacing: 16, [songWithLinks, songActions]).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
         songZone.margins(horizontal: 16)
 
         // The transport, over where it is in the song. Play keeps
@@ -119,7 +153,9 @@ enum PlayerBar {
         // The tools: the panel's two buttons (Panel.swift), then the level;
         // below 900 the level is a button with the slider in its popover.
         let lyrics = panelButton("media-view-subtitles-symbolic", "Lyrics", .lyrics)
-        let upNext = panelButton("view-list-ordered-symbolic", "Up Next", .upNext)
+        // The panel is Now Playing ("moet up next niet trouwens gewoon 'now
+        // playing' worden", the photographer, 15 November 2026).
+        let upNext = panelButton("view-list-ordered-symbolic", "Now Playing", .upNext)
         let (speaker, level) = (gtk_image_new_from_icon_name("audio-volume-high-symbolic")!, levelScale(width: 96))
         volume = hbox(spacing: 8, [speaker, level])
         gtk_widget_set_margin_start(volume, 8)
@@ -142,10 +178,17 @@ enum PlayerBar {
             bar.isVisible = track != nil
             art.show(track?.artwork)
             setText(title, track?.name ?? "")
-            setText(artist, track?.artistLine ?? "")
+            let line = track?.artistLine ?? ""
+            setText(artist, line)
+            setText(artistLinkName, line)
+            let opensArtist = !line.isEmpty && track?.primaryArtist.flatMap { app.library.artist($0) } != nil
+            artistLink.isVisible = opensArtist
+            if opensArtist { gtk_widget_add_css_class(artist, "covered") } else { gtk_widget_remove_css_class(artist, "covered") }
             let onStation = player.context?.station
             station.isVisible = onStation != nil
+            stationLink.isVisible = onStation != nil
             setText(stationName, onStation?.title ?? "")
+            setText(stationLinkName, onStation?.title ?? "")
             notThis.isVisible = onStation != nil
             let disliked = track.map { app.radio.disliked.contains($0.id) } ?? false
             if disliked { gtk_widget_add_css_class(notThis, "given") } else { gtk_widget_remove_css_class(notThis, "given") }
@@ -169,6 +212,32 @@ enum PlayerBar {
             setText(elapsed, clock(player.elapsed))
         }
         return bar
+    }
+
+    /// A button of words laid over `words` in the song (placeLink), at
+    /// their place and size: the same words, so they line up and end in
+    /// "…" where those do. The words under it are not drawn while it shows
+    /// (Style's `covered`).
+    private static func link(_ content: Widget, over words: Widget, _ name: String,
+                             action: @escaping @MainActor () -> Void) -> Widget {
+        let button = gtk_button_new()!.css("bar-link").tooltip(name)
+        gtk_button_set_child(ptr(button), content)
+        g_object_set_data(ptr(raw(button)), "jukebox-over", raw(words))
+        on(button, "clicked", action)
+        return button
+    }
+
+    /// The song's overlay places each link where its words are, once the
+    /// song's button is laid out (the overlay lays out its child first).
+    private static let placeLink: @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer?,
+                                                  UnsafeMutablePointer<GdkRectangle>?, UnsafeMutableRawPointer?) -> gboolean = { overlay, link, place, _ in
+        guard let overlay, let link, let place,
+              let words = g_object_get_data(ptr(link), "jukebox-over") else { return 0 }
+        var bounds = graphene_rect_t()
+        guard gtk_widget_compute_bounds(ptr(words), ptr(overlay), &bounds) != 0 else { return 0 }
+        place.pointee = GdkRectangle(x: Int32(bounds.origin.x.rounded()), y: Int32(bounds.origin.y.rounded()),
+                                     width: Int32(bounds.size.width.rounded()), height: Int32(bounds.size.height.rounded()))
+        return 1
     }
 
     /// The song's menu, the bar's right-click and Now Playing's ⋮: where it
@@ -432,7 +501,7 @@ enum NowPlayingPage {
         gtk_overlay_set_child(ptr(overlay), room)
         gtk_overlay_add_overlay(ptr(overlay), content)
 
-        down = iconButton("go-down-symbolic", "Close Now Playing", "flat") { close() }
+        down = iconButton("go-down-symbolic", "Close Full Player", "flat") { close() }
         // ⋮: the song's menu, made as it opens (the song and the window's
         // width decide it), under the button.
         more = iconButton("view-more-symbolic", "More", "flat") {

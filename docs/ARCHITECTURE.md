@@ -94,7 +94,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
 | Kit: offline | `Offline/*` (OfflineManifest, KeepPolicy: the automatic keep, JellyfinClient.downloadURL), tests, `docs/OFFLINE.md` except "In the app" |
 | App: library | `Jukebox/Library/*`: LibraryStore, every library screen, AddToPlaylistSheet |
-| App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift`: AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, playback reports, the radio's feeding |
+| App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift`: AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, the radio's feeding. `PlayQueue` is the queue and its rules on both platforms (play, next and previous, shuffle, repeat, Up Next's edits and "Then", the radio's feed and trim, the playback reports); each AudioPlayer is that class with its engine (AVQueuePlayer; `Linux/App/AudioPlayer.swift`'s GStreamer), and `Linux/App/QueueCheck.swift` checks the rules after every Linux build |
 | App: now playing | `Jukebox/NowPlaying/*`: MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume; the wide window's PlayerBar and PanelView; UpNextList (Up Next's rows, shared with Linux) |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController: MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*`: OnboardingView (sign in to any server: the address, then a password, Quick Connect or an API key), SettingsView, SearchView |
@@ -175,12 +175,12 @@ narrow, keep their tabs (`MainTabView`).
 - **The page**: a NavigationStack on `navigator.widePath`, with the window's
   bar on every page. At its trailing end sits the one search field (⌘F); a
   click in it shows the Search page. Search has no row of its own.
-- **The panel**, 360 at the right (`NowPlaying/PanelView.swift`): Up Next or
+- **The panel**, 360 at the right (`NowPlaying/PanelView.swift`), Now Playing: the queue or
   the lyrics, opened from the bar. `PanelState`, shared with Linux, keeps it
   across launches. Below 1280 it lies over the page.
 - **The bar**, 88 across the window's foot (`NowPlaying/PlayerBar.swift`),
   its three zones from `DesktopMeasures`, shared with Linux.
-- **Now Playing** is a room over the places and the page (`\.inRoom`); the
+- **Full Player** is a room over the places and the page (`\.inRoom`); the
   bar and the panel stay.
 
 Every wide page is built from `Components/WidePage.swift`: `desktopFont`

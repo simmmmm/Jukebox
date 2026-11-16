@@ -3,9 +3,8 @@
 // station), then the song playing and the ones to come, in the order they
 // play. Songs queued from elsewhere come after "Then"; the foot counts what
 // is left. Foundation only: Linux's panel (Linux/App/Panel.swift) and the
-// iPad's and the Mac's draw these rows, each in its own controls. Values in,
-// not a player: each platform's AudioPlayer is its own until they share a
-// queue.
+// iPad's and the Mac's draw these rows, each in its own controls, from the
+// one queue both players are (PlayQueue). Values in, not a player.
 
 import Foundation
 import JukeboxKit
