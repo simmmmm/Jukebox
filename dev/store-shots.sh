@@ -8,7 +8,7 @@
 #
 # A platform the folder lacks comes from the branch's top (mac's round).
 # The round to pick from is a push of the branch `store-walk` (ci/app.sh):
-# the Mac's window, the iPhone 17 Pro Max, the 13-inch iPad.
+# the Mac's window, the iPhone 17 Pro, the 13-inch iPad.
 # No words over the pictures (docs/RELEASE.md, docs/design/tells.md).
 # Needs ImageMagick.
 set -euo pipefail
@@ -42,7 +42,9 @@ pick() {
 bad=0
 # Home with a station on the air first: the store shows the first three
 # before anyone taps.
-pick iphone '1320x2868|1290x2796|1260x2736' \
+# The Pro's size is the one App Store Connect requires; a Pro Max round
+# (SHOTS_IPHONE, ci/app.sh) gives the optional large set.
+pick iphone '1206x2622|1179x2556|1320x2868|1290x2796|1260x2736' \
   18-home-playing 19-now-playing 24-station-on-air 13-album 21-queue 23-radio-on-air 12-albums
 pick ipad '2752x2064|2732x2048' \
   09-home-playing 10b-now-playing 14-radio-up-next 10-album-up-next 12-now-playing-lyrics 04-albums 03-station

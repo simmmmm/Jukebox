@@ -41,8 +41,8 @@ start=$SECONDS
 budget=${SHOTS_BUDGET:-2400}
 # Walked in this order; the last is the first left out when time runs short.
 devices=${SHOTS_DEVICES:-iphone ipad ipad11}
-# The iPhone walked. The store's round asks for the Pro Max: App Store
-# Connect takes 1320 x 2868 for the iPhone, not the Pro's 1206 x 2622
+# The iPhone walked. The Pro's 1206 x 2622 is what App Store Connect
+# requires; "iPhone 17 Pro Max" gives the optional large set, 1320 x 2868
 # (docs/RELEASE.md, Screenshots).
 iphone=${SHOTS_IPHONE:-iPhone 17 Pro}
 out=build/logs/screenshots

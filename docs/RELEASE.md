@@ -67,22 +67,46 @@ de app nu".
 (Leave "plex" out if Review objects to naming a product the app does not
 support.)
 
-**Support URL** — **Open**: a page with a way to reach the photographer;
-the repository's README works (`https://github.com/simmmmm/Jukebox`).
+**Support URL**: `https://github.com/simmmmm/Jukebox`.
 
-**Privacy Policy URL** — **Open**: a published page that says what
-`docs/STATS.md` (The App Store) asks a policy to say. None is written yet.
+**Privacy Policy URL**:
+`https://github.com/simmmmm/Jukebox/blob/main/docs/PRIVACY.md`
+([PRIVACY.md](PRIVACY.md); it answers once that file is on main).
 
-**Copyright**: 2026 Tijmen (or the name the photographer publishes under).
+**Copyright**: 2026 Tijmen Steenvoorden.
+
+**The Mac's description** differs in two paragraphs: Now Playing is "The
+album's sleeve with its record half out, and Up Next or the lyrics beside
+it. Synced lyrics, from your server or from LRCLIB.", and the last line of
+AND is "AirPlay, Up Next. iPhone, iPad and Mac."
+
+## In App Store Connect (16 November 2026)
+
+Filled in and saved for the iPhone's and the Mac's version 1.0: the texts
+above, the screenshots, the review notes, "Manually release this version",
+subtitle and category, the age rating (4+), App Privacy's answers, the
+price (free) and all 175 countries.
+
+Still the photographer's to do there:
+
+- App Review's password (`demo`) and contact (name, phone, email), on both
+  versions.
+- The build, on both versions.
+- Content Rights and the Digital Services Act's trader status (App
+  Information): declarations only the account's holder can make.
+- App Privacy › Publish. Before it: the server reads a rough place from the
+  address (`docs/STATS.md`), which Apple may count as Coarse Location; the
+  answers say Product Interaction only.
+- Add for Review.
 
 ## Screenshots
 
-- **Sizes**: iPhone 1320 × 2868 (the Pro Max; the Pro's 1206 × 2622 does
-  not count), iPad 13" 2752 × 2064, Mac 1440 × 900. PNG without alpha, ten
-  at most each.
+- **Sizes**: iPhone 1206 × 2622 (the 17 Pro, the set App Store Connect
+  requires; the Pro Max's 1320 × 2868 is an optional second set), iPad 13"
+  2752 × 2064, Mac 1440 × 900. PNG without alpha, ten at most each.
 - **The round**: a push of the branch `store-walk` (`ci/app.sh`) walks the
-  Mac's own window (`MacScreenshotTests.swift`), an iPhone 17 Pro Max and
-  the 13-inch iPad, against the made-up library, covers ours to use.
+  Mac's own window (`MacScreenshotTests.swift`), an iPhone 17 Pro and the
+  13-inch iPad, against the made-up library, covers ours to use.
 - **The set**: `dev/store-shots.sh` picks it from that round into
   `build/appstore/{iphone,ipad,mac}/`, in the listing's order, and checks
   each size. Home with a station on the air first, then Now Playing, a
