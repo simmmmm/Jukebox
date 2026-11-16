@@ -94,11 +94,14 @@ Also set, as the photographer chose (16 November 2026): Content Rights
 "No, it does not contain, show, or access third-party content"; the
 Digital Services Act "not a trader"; App Privacy published.
 
-Still the photographer's to do there:
+The iPhone's version 1.0, build 163, was submitted for review on 16
+November 2026 ("goed genoeg om iig het er uit te krijgen", the
+photographer). Release is manual: approved, it waits for him.
 
-- The build, on both versions, once it is on TestFlight and played through
-  (Before submitting, below).
-- Add for Review.
+Still to do there:
+
+- The Mac's version: its build 163 is uploaded (the first Mac upload, the
+  same run); choose it, play it through on a Mac, Add for Review.
 
 ## Screenshots
 
