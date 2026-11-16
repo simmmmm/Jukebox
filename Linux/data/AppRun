@@ -18,4 +18,19 @@ loaders="$here/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.in"
 export GDK_PIXBUF_MODULE_FILE="$cache/gdk-pixbuf-loaders.cache"
 sed "s|@APPDIR@|$here|g" "$loaders" > "$GDK_PIXBUF_MODULE_FILE"
 
+# The libraries the graphics drivers share with GTK (X11, Wayland, libdrm):
+# the computer's own, which its drivers need; ours only where it has none.
+lent="$cache/libs"
+rm -rf "$lent"; mkdir -p "$lent"
+for lib in "$here"/usr/lib/fallback/*; do
+  name=${lib##*/} found=
+  for dir in /usr/lib64 /usr/lib/x86_64-linux-gnu /lib64 /lib/x86_64-linux-gnu /usr/lib; do
+    [ -e "$dir/$name" ] && found=1 && break
+  done
+  [ -n "$found" ] || ln -s "$lib" "$lent/$name"
+done
+# Lent through links, they look for their own needs beside the link, so
+# the image's library folder comes along.
+[ -z "$(ls -A "$lent")" ] || export LD_LIBRARY_PATH="$lent:$here/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
 exec "$here/usr/bin/jukebox" "$@"

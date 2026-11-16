@@ -66,22 +66,29 @@ libadwaita, GStreamer with the plugins the player uses (MP3, FLAC, AAC,
 ALAC through libav, HLS, PulseAudio, which PipeWire serves too), libsoup
 and GLib's TLS, the Adwaita icons, the settings schemas, the MIME
 database. `Linux/data/AppRun` points each at its own copy, and every
-library finds the others beside it (an rpath, not LD_LIBRARY_PATH).
+library finds the others beside it (an rpath, not LD_LIBRARY_PATH). The
+few the graphics drivers share (X11, Wayland, libdrm, zlib) are the
+computer's own where it has them, so Mesa finds the versions it was built
+with; the file lends its copies only to a system without them.
 appimagetool 1.9.1 and the type2 runtime 20251108 come from their GitHub
-releases, checked by sha256. It is 126 MB, most of it libav.
+releases, checked by sha256. It is 126 MB, most of it the binary, ICU's
+data and libav.
 
-It needs glibc 2.38 and libstdc++ from GCC 13 or newer (Ubuntu 24.04,
-Debian 13, Fedora 39 and up, Arch), plus what every desktop has: fonts,
-and the graphics drivers' OpenGL. Those three are the computer's own, not
-in the file. Its libav is Ubuntu's, built as GPL: a release that carries
-the AppImage carries GPL code beside Jukebox's MIT.
+The computer brings glibc 2.38 and GCC 13's libstdc++ or newer (Ubuntu
+24.04, Debian 13, Fedora 39 and up, Arch), and what every desktop has:
+fonts, the graphics drivers, and a sound server (PulseAudio, or PipeWire's
+Pulse; without one Jukebox plays in silence). Its libav is Ubuntu's,
+built as GPL: a release that carries the AppImage carries GPL code beside
+Jukebox's MIT.
 
-Tried, 16 November 2026: on this machine under Xvfb, and in a bare
-Fedora 44 container (no GTK, no GStreamer; this machine's fonts lent to
+Tried, 16 November 2026: on this machine under Xvfb and under mutter,
+headless, on Wayland (drawn with OpenGL), and in a bare Fedora
+44 container (no GTK, no GStreamer, no X11; this machine's fonts lent to
 it), it signs in to the fake Jellyfin, walks every screen and plays song
-after song, through PulseAudio in the container. HTTPS to the Navidrome
-demo verifies on Fedora and Arch with their own certificates. Not yet
-tried: a Wayland session, a real GPU.
+after song; in the container through a PulseAudio server beside it.
+HTTPS verifies on Fedora and Arch with their own certificates (curl and
+GStreamer on the file's libraries). Not yet tried: HLS from a real
+Jellyfin, a real desktop session with sound.
 
 `JUKEBOX_AUDIO_SINK=fakesink` plays to nowhere, in time, for trying things
 without sound.

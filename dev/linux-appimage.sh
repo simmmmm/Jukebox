@@ -9,7 +9,8 @@
 #   dev/linux-appimage.sh           build  -> build/appimage/Jukebox-<version>-x86_64.AppImage
 #
 # Put together in Docker from Ubuntu 24.04's own packages, the system the
-# binary is built on: its glibc (2.39) is the floor. Tools from their
+# binary is built on; it asks for glibc 2.38 and GCC 13's libstdc++, the
+# floor (docs/LINUX.md). Tools from their
 # projects' GitHub releases, pinned by sha256, kept in .build-linux.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -103,6 +104,13 @@ for f in $(elves); do ldd $f 2>/dev/null; done | awk "/=> \// {print \$3}" | sor
   name=${lib##*/}
   [[ $name =~ $skip || -e $L/$name ]] || cp -L $lib $L/$name
 done
+# The ones the graphics drivers share with GTK: the computer'"'"'s own where
+# it has them, as its drivers were built against its versions (with ours,
+# Mesa'"'"'s Vulkan and EGL fail on a symbol and GTK draws without the GPU).
+# AppRun lends these only to a computer without them.
+shared="^(libdrm[_a-z]*|libelf|libexpat|libffi|libwayland-[a-z]+|libX11(-xcb)?|libXau|libXdmcp|libXext|libXfixes|libXxf86vm|libxshmfence|libxcb(-[a-z0-9]+)?|libz|libzstd|libudev)\.so"
+mkdir -p $L/fallback
+for f in $L/*.so*; do if [[ ${f##*/} =~ $shared ]]; then mv $f $L/fallback/; fi; done
 # Each finds its own beside it, not the host'"'"'s (LD_LIBRARY_PATH would
 # hand them to the drivers and to every program Jukebox opens too).
 for f in $(elves); do
