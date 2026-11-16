@@ -1,0 +1,21 @@
+#!/bin/sh
+# The AppImage's door (dev/linux-appimage.sh): Jukebox with the libraries,
+# plugins, icons and settings it carries, never the computer's own of
+# another version.
+here=$(dirname "$(readlink -f "$0")")
+cache=${XDG_CACHE_HOME:-$HOME/.cache}/jukebox
+mkdir -p "$cache"
+
+export GST_PLUGIN_SYSTEM_PATH_1_0="$here/usr/lib/gstreamer-1.0"
+export GST_PLUGIN_SCANNER_1_0="$here/usr/libexec/gst-plugin-scanner"
+export GST_REGISTRY_1_0="$cache/gstreamer-appimage.bin"
+unset GST_PLUGIN_PATH GST_PLUGIN_PATH_1_0
+export GIO_MODULE_DIR="$here/usr/lib/gio/modules"
+export GSETTINGS_SCHEMA_DIR="$here/usr/share/glib-2.0/schemas"
+export GTK_PATH="$here/usr/lib/gtk-4.0"
+export XDG_DATA_DIRS="$here/usr/share:${XDG_DATA_DIRS:-/usr/local/share:/usr/share}"
+loaders="$here/usr/lib/gdk-pixbuf-2.0/2.10.0/loaders.cache.in"
+export GDK_PIXBUF_MODULE_FILE="$cache/gdk-pixbuf-loaders.cache"
+sed "s|@APPDIR@|$here|g" "$loaders" > "$GDK_PIXBUF_MODULE_FILE"
+
+exec "$here/usr/bin/jukebox" "$@"
