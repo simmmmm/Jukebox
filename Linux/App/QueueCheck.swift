@@ -104,6 +104,17 @@ enum QueueCheck {
         expect(q.currentIndex == 100 && q.current?.id == playing && q.queue.last?.track.id == "z",
                "a long station keeps the last hundred played")
 
+        // The volume, clamped to 0...1 (it crashed the app once its own
+        // didSet set it again under @Observable, 16 November 2026).
+        let volume = q.volume
+        q.volume = 0.5
+        expect(q.volume == 0.5, "Volume 0.5")
+        q.volume = 2
+        expect(q.volume == 1, "Volume above 1: 1")
+        q.volume = -1
+        expect(q.volume == 0, "Volume below 0: 0")
+        q.volume = volume
+
         q.stop()
         expect(q.queue.isEmpty && !q.hasTrack && q.context == nil, "Stop")
 
