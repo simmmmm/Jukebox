@@ -753,6 +753,15 @@ final class Walk {
         }
         pause(1.5)
         try alive(step)
+        // A tap lost while the simulator stalled leaves the page where it was
+        // (run 43763579467: the picked station's page stayed, and the walk
+        // after it went astray). Its back button to `previous` still there,
+        // once more; `previous` itself has none of that name.
+        let stayed = app.navigationBars.buttons.matching(NSPredicate(format: "label == %@", previous)).firstMatch
+        if stayed.exists, !stayed.waitForNonExistence(timeout: 10) {
+            note("\(step): the page stayed, back once more")
+            if try tap(stayed, step, timeout: 1) { pause(1.5) }
+        }
     }
 
     /// The first album of a grid of covers: the first cover-shaped button on

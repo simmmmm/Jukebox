@@ -65,10 +65,12 @@ report() {
 # of its own, so that the watchdog (macOS has no `timeout`) can stop all of it
 # at once, xcodebuild and the fake server included, if a simulator hangs: the
 # job has 75 minutes, and its budget is what the build left of them, less ten
-# minutes for the steps around this script, and at most 45.
+# minutes for the steps around this script, and at most 55. At 45 the
+# 11-inch iPad, last, had no time left on main (run 184: the build, the
+# iPhone and the 13-inch took them all).
 screenshots() {
   local budget=$(( ${JOB_MINUTES:-75} * 60 - 600 - SECONDS )) pid dog
-  if (( budget > 2700 )); then budget=2700; fi
+  if (( budget > 3300 )); then budget=3300; fi
   if (( budget < 600 )); then
     echo "::warning::No screenshots: the build left $budget s of the job."
     return 0
