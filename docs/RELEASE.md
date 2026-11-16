@@ -194,28 +194,24 @@ App Store Connect record, one purchase for the iPhone, the iPad and the Mac
 ## CarPlay
 
 The iPhone's app has a CarPlay scene (`Jukebox/CarPlay/CarPlayScene.swift`)
-and asks for `com.apple.developer.carplay-audio`
-(`Jukebox/Jukebox-iOS.entitlements`). Apple grants that entitlement on
-request; until it has, the `carplay` branch stays off main.
+with `com.apple.developer.carplay-audio` (`Jukebox/Jukebox-iOS.entitlements`).
+Apple granted it on 16 November 2026; the App ID `com.tijmen.Jukebox` has
+CarPlay Audio on (Certificates, Identifiers & Profiles › Identifiers ›
+Additional Capabilities), and cloud signing puts it in the store's profile.
 
-1. Ask for it: developer.apple.com › CarPlay › request the CarPlay
-   entitlement, as an audio app, for `com.tijmen.Jukebox`. Apple answers by
-   mail, often after days or weeks.
-2. Once granted: Certificates, Identifiers & Profiles › Identifiers ›
-   `com.tijmen.Jukebox` › Additional Capabilities › CarPlay Audio, on, and
-   save. Cloud signing makes the new profile itself on the next upload.
-3. The iPhone's archive is made unsigned (`ci/app.sh`), and an unsigned
-   archive carries no entitlements: the upload would go through without
-   CarPlay. Archive it signed ad hoc, as the Mac's is
-   (`CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-"`), so the entitlement is
-   in the archive and the export asks for it. Before the grant that export
-   fails: the profile has no CarPlay.
-4. Then merge, upload, and try it in a car or in Xcode's CarPlay simulator
-   (I/O › External Displays › CarPlay).
+- The export takes the entitlements from the archived app's signature, so
+  `ci/app.sh` archives the iPhone's app signed ad hoc, as the Mac's
+  (`ios_adhoc`); an unsigned archive would upload without CarPlay.
+- `carplay_signed` reads the signature: of every push's iPhone build, of the
+  archive, and of an ipa exported first. Without the entitlement the job
+  stops before the upload.
+- Try it in a car or in Xcode's CarPlay simulator (I/O › External Displays ›
+  CarPlay).
 
 ## Builds
 
-- **A push** builds the iPhone's app and the Mac's, unsigned. A red Mac
+- **A push** builds the iPhone's app, signed ad hoc (CarPlay, above), and the
+  Mac's, unsigned. A red Mac
   build makes the run red (`mac_gates=true`).
 - **On main** the screenshot walk runs after the
   builds. An upload, when asked (README, TestFlight), archives and uploads
@@ -235,7 +231,7 @@ request; until it has, the `carplay` branch stays off main.
 1. The release build from main on TestFlight, played through on a phone:
    sign in to Jellyfin and to the Navidrome demo, a station, a download,
    airplane mode. Once the Mac uploads, the same on the Mac.
-2. `MARKETING_VERSION` 1.0 (project.yml); the build number is CI's run
+2. `MARKETING_VERSION` (project.yml, 1.1 now); the build number is CI's run
    number.
 3. In App Store Connect: the listing above, the screenshots, App Privacy,
    age rating, the review notes; "Manually release this version" so the

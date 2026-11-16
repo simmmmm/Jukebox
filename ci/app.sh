@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # CI's app job (.github/workflows/ci.yml, on GitHub's macOS): the Xcode
 # project from project.yml, then either
-#   - the app compiled without signing (every push) for the iPhone, then
-#     for the Mac, then, when the iPhone's compiled, the pictures of its
+#   - the app compiled (every push) for the iPhone, signed ad hoc and its
+#     signature checked for CarPlay, then for the Mac without signing, then, when the iPhone's compiled, the pictures of its
 #     screens (ci/screenshots.sh), or
 #   - with TESTFLIGHT=true: archived, signed by Xcode itself with the App
 #     Store Connect API key (role Admin: it makes the certificate and the
@@ -97,13 +97,40 @@ screenshots() {
   return 0
 }
 
+# The iPhone's app signed ad hoc, as the Mac's archive is: no certificate,
+# no profile, but the signature carries the entitlements of
+# Jukebox/Jukebox-iOS.entitlements, CarPlay audio. The export reads the
+# entitlements from the archived app's signature and asks the store's profile
+# for them; an app built with CODE_SIGNING_ALLOWED=NO has no signature, and
+# its upload went without CarPlay. iOS allows ad hoc signing only when asked
+# (AD_HOC_CODE_SIGNING_ALLOWED; the Mac's default).
+ios_adhoc=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES
+           PROVISIONING_PROFILE_SPECIFIER="")
+
+# Whether the app's signature has CarPlay audio, true: the archive's, the
+# exported ipa's, and on every push the build's, signed as the archive is.
+carplay_signed() {
+  local app=$1 entitlements=build/logs/entitlements-$2.plist
+  codesign -d --entitlements - --xml "$app" > "$entitlements" 2> /dev/null || true
+  if [[ $(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.carplay-audio' "$entitlements" 2> /dev/null) == true ]]; then
+    echo "CarPlay audio is in the signature ($2)."
+    return 0
+  fi
+  echo "::error::No com.apple.developer.carplay-audio in the signature of the $2 (docs/RELEASE.md, CarPlay)."
+  codesign -d --entitlements - "$app" 2>&1 | head -40 || true
+  return 1
+}
+
 if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
-    -destination 'generic/platform=iOS' \
-    CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+    -destination 'generic/platform=iOS' -derivedDataPath build/derived "${ios_adhoc[@]}" \
     > build/logs/build.log 2>&1
   status=$?
+  if [[ $status == 0 ]]; then
+    carplay_signed build/derived/Build/Products/Debug-iphoneos/Jukebox.app build
+    status=$?
+  fi
   set -e
   { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/errors.txt
   head -200 build/logs/errors.txt
@@ -155,16 +182,17 @@ auth=(-allowProvisioningUpdates
       -authenticationKeyID "$ASC_KEY_ID"
       -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 
-# Archived unsigned; signed only at export, by Apple's cloud signing with the
-# API key, so the runner needs no certificate of its own. Signing the archive
-# made a new Apple Development certificate on every run (each runner starts
-# with an empty keychain), until the account had as many as Apple allows:
-# "Your account has reached the maximum number of certificates" (run 28).
+# Archived signed ad hoc (ios_adhoc, above), so the entitlements are in the
+# archive; signed for the store only at export, by Apple's cloud signing with
+# the API key, so the runner needs no certificate of its own. Signing the
+# archive with a development identity made a new Apple Development
+# certificate on every run (each runner starts with an empty keychain), until
+# the account had as many as Apple allows: "Your account has reached the
+# maximum number of certificates" (run 28). Ad hoc needs no certificate.
 set +e
 xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
   -destination 'generic/platform=iOS' -archivePath build/Jukebox.xcarchive \
-  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" \
-  CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" "${ios_adhoc[@]}" \
   > build/logs/archive.log 2>&1
 status=$?
 set -e
@@ -172,18 +200,44 @@ set -e
 head -200 build/logs/archive-errors.txt
 report build/logs/archive.log "Archive errors"
 [[ $status == 0 ]] || exit $status
+carplay_signed build/Jukebox.xcarchive/Products/Applications/Jukebox.app archive
 
-cat > build/ExportOptions.plist <<PLIST
+# destination export leaves the ipa on the runner; upload sends it.
+export_options() {
+  cat <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
   <key>method</key><string>app-store-connect</string>
-  <key>destination</key><string>upload</string>
+  <key>destination</key><string>$1</string>
   <key>teamID</key><string>$APPLE_TEAM_ID</string>
   <key>signingStyle</key><string>automatic</string>
   <key>manageAppVersionAndBuildNumber</key><false/>
 </dict></plist>
 PLIST
+}
+export_options upload > build/ExportOptions.plist
+export_options export > build/ExportOptions-ipa.plist
+
+# First the ipa, signed for the store as the upload will be, and read: an
+# export to the store sends what it signs and leaves no ipa to look at
+# first, so this export is checked, and only then does the second upload.
+# A build whose store signature lacks CarPlay is never uploaded.
+set +e
+xcodebuild -exportArchive -archivePath build/Jukebox.xcarchive \
+  -exportOptionsPlist build/ExportOptions-ipa.plist -exportPath build/export-ipa "${auth[@]}" \
+  > build/logs/export-ipa.log 2>&1
+status=$?
+set -e
+if [[ $status != 0 ]]; then
+  tail -40 build/logs/export-ipa.log
+  report build/logs/export-ipa.log "Export errors"
+  exit $status
+fi
+ipa=$(ls build/export-ipa/*.ipa | head -1)
+rm -rf build/ipa && mkdir -p build/ipa && unzip -q "$ipa" -d build/ipa
+carplay_signed build/ipa/Payload/Jukebox.app ipa
+
 set +e
 xcodebuild -exportArchive -archivePath build/Jukebox.xcarchive \
   -exportOptionsPlist build/ExportOptions.plist -exportPath build/export "${auth[@]}" \

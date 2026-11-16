@@ -237,7 +237,7 @@ enum Stats {
 
     #if os(Linux)
     // Linux has no Info.plist: project.yml's MARKETING_VERSION, by hand.
-    private static let version = "1.0"
+    private static let version = "1.1"
     private static let build = "1"
     #else
     private static let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""

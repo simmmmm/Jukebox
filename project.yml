@@ -14,7 +14,7 @@ options:
   createIntermediateGroups: true
 settings:
   base:
-    MARKETING_VERSION: "1.0"
+    MARKETING_VERSION: "1.1"
     # ci/app.sh sets the run number for TestFlight (BUILD_NUMBER).
     CURRENT_PROJECT_VERSION: "1"
     # Swift 5 mode with the main actor as the default: UI code reads as it
@@ -59,8 +59,11 @@ targets:
         UILaunchScreen:
           UIColorName: LaunchBackground
         UIBackgroundModes: [audio]
+        # More than one scene: the phone's window and the car's screen at
+        # once. Apple's key: "If you set the value to false, UIKit never
+        # creates more than one scene for your app."
         UIApplicationSceneManifest:
-          UIApplicationSupportsMultipleScenes: false
+          UIApplicationSupportsMultipleScenes: true
           # CarPlay's scene (CarPlay/CarPlayScene.swift). The phone's window
           # is not listed: SwiftUI's App gives that role its own scene, as
           # before; only the car's role is named here.
@@ -68,6 +71,11 @@ targets:
             CPTemplateApplicationSceneSessionRoleApplication:
               - UISceneConfigurationName: CarPlay
                 UISceneDelegateClassName: CarPlaySceneDelegate
+        # The iPad has no CarPlay, and stays one window as before: its own
+        # manifest, read in place of the one above on an iPad (a device's
+        # key, as UISupportedInterfaceOrientations~ipad below).
+        UIApplicationSceneManifest~ipad:
+          UIApplicationSupportsMultipleScenes: false
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UISupportedInterfaceOrientations~ipad:
@@ -94,8 +102,9 @@ targets:
         # iPhone's is built in), and the hardened runtime is Xcode's default
         # for a Mac app.
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Jukebox/Jukebox-macOS.entitlements
-        # The iPhone's: CarPlay audio. Apple grants it to the App ID on
-        # request; until then a signed build cannot carry it (docs/RELEASE.md).
+        # The iPhone's: CarPlay audio, granted to the App ID on 16 November
+        # 2026. ci/app.sh signs the archive ad hoc so the upload carries it,
+        # and stops an upload without it (docs/RELEASE.md, CarPlay).
         "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": Jukebox/Jukebox-iOS.entitlements
         "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Jukebox/Jukebox-iOS.entitlements
         "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES

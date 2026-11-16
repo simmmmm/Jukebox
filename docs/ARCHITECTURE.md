@@ -345,7 +345,9 @@ belangrijks in de ios app, carplay!"
   its window, so the scene calls `restore()` too. Lists follow the stores
   through `withObservationTracking`.
 - The scene manifest in project.yml names only the car's role; SwiftUI's
-  App keeps the phone's window. No lyrics and no other phone-only notice
+  App keeps the phone's window. Multiple scenes on, so the window and the
+  car run at once; the iPad's own manifest (`~ipad`) keeps it one window.
+  No lyrics and no other phone-only notice
   in the car (Apple's CarPlay addendum). Entitlement: `docs/RELEASE.md`.
 
 ## Usage counts
