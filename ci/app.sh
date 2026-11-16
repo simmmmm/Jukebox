@@ -22,14 +22,14 @@ mac_gates=true
 # iPhone's build only.
 mac_upload=true
 
-# Uploads and screenshots belong to mac and main. On a work branch a commit
+# Uploads and screenshots belong to main. On a work branch a commit
 # that happens to name the upload's token uploads nothing, and the job is the
 # two builds only, quick to iterate on; a branch ending in "walk" keeps the
 # screenshots, for working on the walk itself.
-case ${GITHUB_REF_NAME:-mac} in
-  mac|main) ;;
+case ${GITHUB_REF_NAME:-main} in
+  main) ;;
   # The App Store's pictures (docs/RELEASE.md, Screenshots): the Mac's
-  # window, the iPhone and the iPad; the iPad last, as mac's round has its
+  # window, the iPhone and the iPad; the iPad last, as main's round has its
   # pictures already should time run short. The iPhone is the walk's own,
   # the 17 Pro: its 1206 x 2622 is the size App Store Connect requires.
   # SHOTS_IPHONE="iPhone 17 Pro Max" here walks the large display instead,

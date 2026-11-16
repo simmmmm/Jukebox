@@ -6,7 +6,7 @@
 #
 #   dev/store-shots.sh [folder on the branch, default branches/store-walk]
 #
-# A platform the folder lacks comes from the branch's top (mac's round).
+# A platform the folder lacks comes from the branch's top (main's round).
 # The round to pick from is a push of the branch `store-walk` (ci/app.sh):
 # the Mac's window, the iPhone 17 Pro, the 13-inch iPad.
 # No words over the pictures (docs/RELEASE.md, docs/design/tells.md).

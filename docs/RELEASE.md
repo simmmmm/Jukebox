@@ -195,7 +195,7 @@ App Store Connect record, one purchase for the iPhone, the iPad and the Mac
 
 - **A push** builds the iPhone's app and the Mac's, unsigned. A red Mac
   build makes the run red (`mac_gates=true`).
-- **On main** (and the `mac` branch) the screenshot walk runs after the
+- **On main** the screenshot walk runs after the
   builds. An upload, when asked (README, TestFlight), archives and uploads
   in their place.
 - **On a work branch** only the two builds run: no screenshots unless the

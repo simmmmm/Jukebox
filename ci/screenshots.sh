@@ -13,8 +13,8 @@
 #     workflow uploads with build/logs;
 #   - one contact sheet per device;
 #   - all of it on the `screenshots` branch, one commit that replaces the last:
-#     mac's and main's round at its top, a work branch's (one whose name ends
-#     in "walk", ci/app.sh) in branches/<name>/, so it never replaces mac's.
+#     main's round at its top, a work branch's (one whose name ends in
+#     "walk", ci/app.sh) in branches/<name>/, so it never replaces main's.
 # The Mac's own window is walked when asked for (SHOTS_DEVICES has "mac":
 # the store's round, a push of `store-walk`, ci/app.sh), on the runner
 # itself, for the Mac App Store's pictures (MacScreenshotTests.swift).
@@ -544,7 +544,7 @@ readme() {
   echo
   echo "Every main screen of the app, walked in the iOS Simulator on GitHub's Mac against a made-up"
   echo "Jellyfin library (\`dev/fake-jellyfin.swift\`), by \`ci/screenshots.sh\` after each push. This branch"
-  echo "holds the latest round of mac and main at its top, and the latest of each work branch in"
+  echo "holds the latest round of main at its top, and the latest of each work branch in"
   echo "\`branches/<name>/\`: each round replaces its own. The iPad's pictures are named as their twins"
   echo "in Linux's walk (\`Linux/App/Shots.swift\`, 1440x900; upright, 760x900)."
   echo
@@ -581,11 +581,11 @@ readme() {
   fi
 }
 
-# Where on the screenshots branch: mac's and main's round at its top, where
+# Where on the screenshots branch: main's round at its top, where
 # the README's links and the photographer's bookmarks point; a work branch's
-# in a folder of its own, so that its round never replaces mac's pictures.
+# in a folder of its own, so that its round never replaces main's pictures.
 case $ref in
-  mac|main) place= ;;
+  main) place= ;;
   *) place="branches/${ref//\//-}/" ;;
 esac
 pushed=false
@@ -619,7 +619,7 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
   remote="https://x-access-token:${GH_TOKEN}@github.com/$repo.git"
   # The branch as it is, with this round's place emptied and filled again,
   # as one new commit without a parent, so the branch stays one commit. The
-  # lease refuses the push when another round pushed since the clone (mac's
+  # lease refuses the push when another round pushed since the clone (main's
   # and a work branch's runs can end together): then once more, from the
   # newer branch. No branch at all yet: the lease expects none.
   for try in 1 2; do
@@ -635,7 +635,7 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
       fi
       cd "$branch" || exit 1
       if [[ -z $place ]]; then
-        # mac's and main's: all but the work branches' folders.
+        # main's: all but the work branches' folders.
         find . -mindepth 1 -maxdepth 1 ! -name .git ! -name branches -exec rm -rf {} +
       else
         rm -rf "./$place"

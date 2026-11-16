@@ -31,8 +31,8 @@ GitHub's macOS runners build and upload it, so no Mac is needed.
    `APPLE_TEAM_ID`, `ASC_KEY_ID`, `ASC_ISSUER_ID`, `ASC_KEY_P8`, the same as
    Numa-mac's: an App Store Connect API key with the Admin role.
 3. Actions › CI › Run workflow, with "Upload to TestFlight" ticked, or a
-   commit whose message has `[testflight]`. Only main (and the `mac`
-   branch) uploads; a work branch only builds.
+   commit whose message has `[testflight]`. Only main uploads; a work
+   branch only builds.
 
 The Mac's app is the same app with the same bundle ID, so it goes to the
 same record, one purchase for all three. A `[testflight]` run uploads it
