@@ -44,6 +44,7 @@ CI's Mac sees it.
     .build-linux/debug/Jukebox
     dev/linux-install.sh          # release build into ~/.local, with icon and desktop entry
     dev/linux-flatpak.sh          # the release build as a Flatpak -> build/flatpak/
+    dev/linux-appimage.sh         # and as an AppImage -> build/appimage/
 
 The image (`dev/linux/Dockerfile`) is Swift 6.2 on Ubuntu 24.04 with GTK
 4.14, libadwaita 1.5 and GStreamer; those versions are the floor. Swift's
@@ -57,6 +58,37 @@ flatpak in de releases" (the photographer, 15 November 2026). It is not
 built again there: Flathub's Swift is 6.3, and one toolchain means a release
 is what was run here. `dev/linux-flatpak.sh install` installs it,
 `release` attaches it to GitHub's release (`docs/RELEASE.md`).
+
+The AppImage is the second file on a release, for people without Flatpak
+("Ook een AppImage", 16 November 2026). `dev/linux-appimage.sh` puts the
+same binary together in Docker with Ubuntu 24.04's own libraries: GTK,
+libadwaita, GStreamer with the plugins the player uses (MP3, FLAC, AAC,
+ALAC through libav, HLS, PulseAudio, which PipeWire serves too), libsoup
+and GLib's TLS, the Adwaita icons, the settings schemas, the MIME
+database. `Linux/data/AppRun` points each at its own copy, and every
+library finds the others beside it (an rpath, not LD_LIBRARY_PATH). The
+few the graphics drivers share (X11, Wayland, libdrm, zlib) are the
+computer's own where it has them, so Mesa finds the versions it was built
+with; the file lends its copies only to a system without them.
+appimagetool 1.9.1 and the type2 runtime 20251108 come from their GitHub
+releases, checked by sha256. It is 126 MB, most of it the binary, ICU's
+data and libav.
+
+The computer brings glibc 2.38 and GCC 13's libstdc++ or newer (Ubuntu
+24.04, Debian 13, Fedora 39 and up, Arch), and what every desktop has:
+fonts, the graphics drivers, and a sound server (PulseAudio, or PipeWire's
+Pulse; without one Jukebox plays in silence). Its libav is Ubuntu's,
+built as GPL: a release that carries the AppImage carries GPL code beside
+Jukebox's MIT.
+
+Tried, 16 November 2026: on this machine under Xvfb and under mutter,
+headless, on Wayland (drawn with OpenGL), and in a bare Fedora
+44 container (no GTK, no GStreamer, no X11; this machine's fonts lent to
+it), it signs in to the fake Jellyfin, walks every screen and plays song
+after song; in the container through a PulseAudio server beside it.
+HTTPS verifies on Fedora and Arch with their own certificates (curl and
+GStreamer on the file's libraries). Not yet tried: HLS from a real
+Jellyfin, a real desktop session with sound.
 
 `JUKEBOX_AUDIO_SINK=fakesink` plays to nowhere, in time, for trying things
 without sound.
@@ -153,8 +185,8 @@ The iPhone has each of these, and Linux is ready for them:
   (once the photographer decides whether it turns), the mark warming up,
   the mark before a station's name in Now Playing and the player's bar.
 - The Flatpak's page in GNOME Software (a metainfo file): it names a
-  licence, and the photographer has not chosen one. Flathub wants that too,
-  and a build from source.
+  licence, and that is MIT, chosen on 16 November 2026 (`LICENSE`).
+  Flathub wants a build from source too.
 - CI. The workflow file calls `ci/*.sh`, and the session's token may not
   push workflow files, so Linux is built here, not yet on GitHub.
 

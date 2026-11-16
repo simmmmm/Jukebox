@@ -20,6 +20,10 @@ Or the Flatpak, from [Releases](https://github.com/simmmmm/Jukebox/releases):
 
     flatpak install --user Jukebox-1.0-x86_64.flatpak
 
+Without Flatpak, the AppImage from the same page runs as it is:
+
+    chmod +x Jukebox-1.0-x86_64.AppImage && ./Jukebox-1.0-x86_64.AppImage
+
 ## TestFlight
 
 GitHub's macOS runners build and upload it, so no Mac is needed.
@@ -52,3 +56,7 @@ song titles are sent to Last.fm.
 See `docs/ARCHITECTURE.md`. `dev/jellyfin-test-server.sh` and
 `dev/kit-test.sh` test JukeboxKit on Linux against a real Jellyfin in
 Docker.
+
+## Licence
+
+MIT: see `LICENSE`.
