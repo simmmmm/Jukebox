@@ -120,6 +120,70 @@ void jb_popover_point_to(GtkWidget *popover, double x, double y) {
     gtk_popover_set_pointing_to(GTK_POPOVER(popover), &at);
 }
 
+// A row dragged onto another, as libadwaita's own lists reorder (its demo,
+// GNOME Settings): a GtkDragSource and a GtkDropTarget on each row, the
+// row's place as the drag's value, and the row itself as what is dragged.
+// The prepare and drop signals take doubles and give a value back, which a
+// Swift closure connected as a signal cannot.
+typedef struct {
+    JbRowPlace place;
+    JbRowMoved moved;
+    gpointer data;
+    GDestroyNotify destroy;
+    double x, y;           // where the drag took hold of the row
+} RowClosure;
+
+static void row_free(gpointer user) {
+    RowClosure *closure = user;
+    if (closure->destroy) closure->destroy(closure->data);
+    g_free(closure);
+}
+
+static GdkContentProvider *row_prepare(GtkDragSource *source, double x, double y, gpointer user) {
+    RowClosure *closure = user;
+    closure->x = x;
+    closure->y = y;
+    GValue place = G_VALUE_INIT;
+    g_value_init(&place, G_TYPE_INT);
+    g_value_set_int(&place, closure->place(closure->data));
+    GdkContentProvider *content = gdk_content_provider_new_for_value(&place);
+    g_value_unset(&place);
+    return content;
+}
+
+static void row_begin(GtkDragSource *source, GdkDrag *drag, gpointer user) {
+    RowClosure *closure = user;
+    GtkWidget *row = gtk_event_controller_get_widget(GTK_EVENT_CONTROLLER(source));
+    GdkPaintable *icon = gtk_widget_paintable_new(row);
+    gtk_drag_source_set_icon(source, icon, (int)closure->x, (int)closure->y);
+    g_object_unref(icon);
+}
+
+static gboolean row_drop(GtkDropTarget *target, const GValue *value, double x, double y, gpointer user) {
+    RowClosure *closure = user;
+    if (!G_VALUE_HOLDS_INT(value)) return FALSE;
+    closure->moved(g_value_get_int(value), closure->place(closure->data), closure->data);
+    return TRUE;
+}
+
+void jb_reorderable_row(GtkWidget *row, JbRowPlace place, JbRowMoved moved, gpointer data, GDestroyNotify destroy) {
+    RowClosure *closure = g_new0(RowClosure, 1);
+    closure->place = place;
+    closure->moved = moved;
+    closure->data = data;
+    closure->destroy = destroy;
+    // Freed with the row, after both controllers.
+    g_object_set_data_full(G_OBJECT(row), "jb-reorderable", closure, row_free);
+    GtkDragSource *source = gtk_drag_source_new();
+    gtk_drag_source_set_actions(source, GDK_ACTION_MOVE);
+    g_signal_connect(source, "prepare", G_CALLBACK(row_prepare), closure);
+    g_signal_connect(source, "drag-begin", G_CALLBACK(row_begin), closure);
+    gtk_widget_add_controller(row, GTK_EVENT_CONTROLLER(source));
+    GtkDropTarget *target = gtk_drop_target_new(G_TYPE_INT, GDK_ACTION_MOVE);
+    g_signal_connect(target, "drop", G_CALLBACK(row_drop), closure);
+    gtk_widget_add_controller(row, GTK_EVENT_CONTROLLER(target));
+}
+
 // Drag to scroll a shelf, as the photographer asked: "kan je bij die
 // scrollable dingen ervoor zorgen dat ik met de muis kan slepen".
 // Below 8 px of movement nothing is claimed, so a press on a tile stays a

@@ -48,6 +48,12 @@ void jb_on_secondary_click(GtkWidget *widget, JbPointHandler handler, gpointer d
 void jb_drag_to_scroll(GtkWidget *scrolled);
 // A popover's arrow at a point of its parent.
 void jb_popover_point_to(GtkWidget *popover, double x, double y);
+// A list's row that can be dragged onto another row of its list: `moved`
+// gets the dragged row's place and the place of the row it was dropped on,
+// each as `place` says it at that moment (a list reuses its rows).
+typedef int (*JbRowPlace)(gpointer data);
+typedef void (*JbRowMoved)(int from, int to, gpointer data);
+void jb_reorderable_row(GtkWidget *row, JbRowPlace place, JbRowMoved moved, gpointer data, GDestroyNotify destroy);
 
 // The brand's drawings (drawing.c). A Gaussian blur of `sigma` pixels over
 // an ARGB32 image surface's bytes, in place.

@@ -861,7 +861,15 @@ enum Pages {
         art.emptyIcon = Glyphs.name("playlists")
         art.show(playlist.artwork)
         let fact = facts([])
-        let list = trackList([], context: { context })
+        // Edited in place, as on the Mac: a song's menu removes it, and
+        // moves it where the server can reorder
+        // (ServerCapability.playlistReorder), as does dragging it.
+        // Set once the page's own functions are there, below.
+        var removeSong: (Int) -> Void = { _ in }
+        var moveSong: (Int, Int) -> Void = { _, _ in }
+        let list = trackList([], context: { context },
+                             remove: own ? { removeSong($0) } : nil,
+                             move: own && app.library.can(.playlistReorder) ? { moveSong($0, $1) } : nil)
         // Gone from the server: back where the page was opened from, or a
         // place of its own, Home.
         let gone = { if start != nil { MainWindow.select(0) } else { adw_navigation_view_pop(ptr(Nav.view)) } }
@@ -913,6 +921,49 @@ enum Pages {
                     app.offline.playlistLoaded(shown, tracks: tracks)
                 } catch {
                     if let saved { show(saved) } else { setText(fact, error.localizedDescription) }
+                }
+            }
+        }
+        // Gone or moved at once; read again from the server if it said no.
+        // The focus stays where the song was, or goes with it: a key
+        // pressed again acts on the next song, or moves it on.
+        func refocus(_ list: ItemList<Track, TrackRow>, at: Int) {
+            guard !list.items.isEmpty else { return }
+            gtk_list_view_scroll_to(ptr(list.widget), guint(min(at, list.items.count - 1)), GTK_LIST_SCROLL_FOCUS, nil)
+        }
+        removeSong = { [weak list] at in
+            guard let list, list.items.indices.contains(at) else { return }
+            var tracks = list.items
+            let gone = tracks.remove(at: at)
+            show(tracks)
+            refocus(list, at: at)
+            // Jellyfin 12.4 removes every place of a song that is in the
+            // playlist twice (its entry id is the song's own): then the
+            // page shows what the server kept.
+            let wasTwice = tracks.contains { $0.id == gone.id }
+            Task {
+                do {
+                    try await app.library.remove([gone], from: playlist)
+                    if wasTwice { load() }
+                } catch {
+                    MainWindow.toast(error.localizedDescription)
+                    load()
+                }
+            }
+        }
+        moveSong = { [weak list] from, to in
+            guard let list, list.items.indices.contains(from), list.items.indices.contains(to) else { return }
+            var tracks = list.items
+            let moved = tracks.remove(at: from)
+            tracks.insert(moved, at: to)
+            show(tracks)
+            refocus(list, at: to)
+            Task {
+                do {
+                    try await app.library.move(moved, in: playlist, to: to)
+                } catch {
+                    MainWindow.toast(error.localizedDescription)
+                    load()
                 }
             }
         }
