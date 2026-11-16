@@ -8,6 +8,14 @@ artist, album, genre or decade and learns from what you skip.
 What plays on one device shows on the other: leave the computer, and the
 phone goes on where it was.
 
+<p align="center">
+  <img src="docs/screenshots/linux-album.png" width="100%" alt="Jukebox on Linux, dark: an album open, the Now Playing panel with what plays next beside it, and the bar below with the song and its artist">
+</p>
+<p align="center">
+  <img src="docs/screenshots/linux-radio.png" width="74%" alt="Jukebox on Linux: Radio, with Your Station on air under its arch and the other stations below">
+  <img src="docs/screenshots/iphone-now-playing.jpg" width="21%" alt="Jukebox on the iPhone: Now Playing, the sleeve with its record half out, playing from Your Station">
+</p>
+
 ## Linux
 
     dev/linux-install.sh
