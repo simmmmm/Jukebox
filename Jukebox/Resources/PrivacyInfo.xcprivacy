@@ -8,6 +8,10 @@
     photographer's own OpenPanel server (Jukebox/App/Stats.swift), on unless
     turned off in Settings › Privacy. Not linked to the listener (no account,
     no id on the device), not used for tracking, for Analytics.
+  - Collected: Coarse Location, the country and city the server reads from
+    the address of each count (docs/STATS.md, rule 1). Declared so the label
+    says no less than what happens ("Coarse Location erbij", the
+    photographer, 16 November 2026). Not linked, not tracking, Analytics.
   - User defaults: the listener's settings, the device id Jellyfin lists
     this phone by, the recent stations and searches, the sign-in's address
     and user name, all read only by this app (CA92.1).
@@ -23,6 +27,18 @@
 		<dict>
 			<key>NSPrivacyCollectedDataType</key>
 			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeCoarseLocation</string>
 			<key>NSPrivacyCollectedDataTypeLinked</key>
 			<false/>
 			<key>NSPrivacyCollectedDataTypeTracking</key>

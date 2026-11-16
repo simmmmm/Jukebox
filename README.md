@@ -35,9 +35,8 @@ GitHub's macOS runners build and upload it, so no Mac is needed.
    branch) uploads; a work branch only builds.
 
 The Mac's app is the same app with the same bundle ID, so it goes to the
-same record, one purchase for all three. It uploads once the record has the
-Mac: Apps › Jukebox › + Add Platform › macOS, then `mac_upload=true` in
-`ci/app.sh`. Until then an upload sends the iPhone's build only.
+same record, one purchase for all three. A `[testflight]` run uploads it
+after the iPhone's (`mac_upload=true` in `ci/app.sh`).
 `docs/RELEASE.md` has the rest, and the quick loop on the photographer's
 Mac.
 

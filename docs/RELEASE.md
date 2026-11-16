@@ -90,16 +90,14 @@ above, the screenshots, the review notes, "Manually release this version",
 subtitle and category, the age rating (4+), App Privacy's answers, the
 price (free) and all 175 countries.
 
+Also set, as the photographer chose (16 November 2026): Content Rights
+"No, it does not contain, show, or access third-party content"; the
+Digital Services Act "not a trader"; App Privacy published.
+
 Still the photographer's to do there:
 
-- App Review's password (`demo`) and contact (name, phone, email), on both
-  versions.
-- The build, on both versions.
-- Content Rights and the Digital Services Act's trader status (App
-  Information): declarations only the account's holder can make.
-- App Privacy › Publish. Before it: the server reads a rough place from the
-  address (`docs/STATS.md`), which Apple may count as Coarse Location; the
-  answers say Product Interaction only.
+- The build, on both versions, once it is on TestFlight and played through
+  (Before submitting, below).
 - Add for Review.
 
 ## Screenshots
@@ -121,8 +119,12 @@ Still the photographer's to do there:
 
 ## App Privacy (the questionnaire)
 
+Published 16 November 2026.
+
 - Do you or your third-party partners collect data from this app? **Yes.**
-- Data type: **Usage Data → Product Interaction.** Only this.
+- Data types: **Usage Data → Product Interaction** and **Location → Coarse
+  Location** (the server reads a country and a city from the address of
+  each count). For both:
   - Linked to the user's identity? **No.** (No account, no device id, no
     address kept: docs/STATS.md.)
   - Used for tracking? **No.**

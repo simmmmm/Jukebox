@@ -154,9 +154,10 @@ No crash or error reports.
 
 ## The App Store
 
-App Store Connect › App Privacy: **Usage Data › Product Interaction**, not
-linked to the user, not used for tracking, purpose **Analytics**. Nothing else
-is collected.
+App Store Connect › App Privacy: **Usage Data › Product Interaction** and
+**Location › Coarse Location** (the place the server reads from the
+address), both not linked to the user, not used for tracking, purpose
+**Analytics**. Nothing else is collected. Published 16 November 2026.
 
 `Jukebox/Resources/PrivacyInfo.xcprivacy` declares the same, with
 UserDefaults' reason CA92.1 (the app's own settings). XcodeGen puts the
