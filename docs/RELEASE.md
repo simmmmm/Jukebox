@@ -177,9 +177,9 @@ target (project.yml), with the same bundle ID. So it ships through the same
 App Store Connect record, one purchase for the iPhone, the iPad and the Mac
 (universal purchase).
 
-- It ships once the photographer adds the platform there: Apps › Jukebox ›
-  + Add Platform › macOS. Then `mac_upload=true` in `ci/app.sh`. Until then
-  an upload sends the iPhone's build only, and the run stays green.
+- The platform is there (Apps › Jukebox › macOS App, 16 November 2026), and
+  `mac_upload=true` in `ci/app.sh`: a [testflight] run uploads the Mac's
+  build after the iPhone's.
 - The Mac's version page needs its own screenshots: the store's round
   (Screenshots, above).
 

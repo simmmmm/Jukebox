@@ -17,10 +17,10 @@ mkdir -p build/logs
 # The Mac compiles (run 43621164893, 14 November 2026): its build is part of
 # the job's verdict. False again makes a red Mac build only a warning.
 mac_gates=true
-# A [testflight] run uploads the Mac too once App Store Connect's Jukebox
-# has the macOS platform (Apps › Jukebox › + Add Platform › macOS); until
-# then it uploads the iPhone's build only.
-mac_upload=false
+# A [testflight] run uploads the Mac too: App Store Connect's Jukebox has
+# the macOS platform since 16 November 2026. False again uploads the
+# iPhone's build only.
+mac_upload=true
 
 # Uploads and screenshots belong to mac and main. On a work branch a commit
 # that happens to name the upload's token uploads nothing, and the job is the
