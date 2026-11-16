@@ -5,7 +5,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 // MARK: - Scrubber
 
@@ -35,7 +34,7 @@ struct NowPlayingScrubber: View {
         let position = fraction * duration
         let spokenPosition: String = canSeek ? String(localized: "\(position.clock) of \(duration.clock)") : ""
 
-        VStack(spacing: 6) {
+        VStack(spacing: Theme.Space.s) {
             GeometryReader { proxy in
                 let width = max(1, proxy.size.width)
                 ZStack(alignment: .leading) {
@@ -160,6 +159,7 @@ struct NowPlayingMarquee: View {
 
     /// Between the line and its copy: wide enough to see where it ends.
     private static let gap: CGFloat = 48
+    // grid-ok: a speed, not a measure.
     private static let pointsPerSecond: CGFloat = 30
     private static let restSeconds: Double = 3
     /// The fade at the trailing edge while the line overflows, in points.

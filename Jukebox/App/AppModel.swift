@@ -17,7 +17,6 @@ import JukeboxKit
 import Observation
 // NavigationPath, for clearing the Navigator's stacks at sign-out.
 import SwiftUI
-import UIKit
 
 @Observable
 final class AppModel {
@@ -43,12 +42,15 @@ final class AppModel {
     let radio: RadioController
     let mixes: MixStore
     let offline: OfflineStore
+    /// What plays here, kept for the listener's other devices, and what
+    /// plays there, offered here (HandoffStore).
+    let handoff: HandoffStore
 
     init() {
         identity = ClientIdentity(
             clientName: "Jukebox",
             clientVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0",
-            deviceName: UIDevice.current.name,
+            deviceName: Device.name,
             deviceID: Self.deviceID()
         )
         settings = AppSettings()
@@ -59,6 +61,7 @@ final class AppModel {
         radio = RadioController(player: player, library: library, history: history, settings: settings)
         mixes = MixStore()
         offline = OfflineStore(settings: settings, library: library, history: history)
+        handoff = HandoffStore(player: player, radio: radio, library: library, settings: settings, identity: identity)
         player.radio = radio
         // What moves play counts and "Recently Played" when a song is heard
         // to the end (AudioPlayer calls library.notePlayed).
@@ -137,6 +140,8 @@ final class AppModel {
         // Nothing streams, reports or asks the old server from here on.
         player.server = nil
         radio.server = nil
+        handoff.server = nil
+        handoff.reset()
         library.reset()
         mixes.reset()
         phase = .signedOut
@@ -167,6 +172,10 @@ final class AppModel {
         // the server has come, or without it.
         await offline.open(server: server)
         await library.open(server: server)
+        // What another device plays, or this one played last: once the
+        // library is in, since what is offered is a song in it.
+        handoff.server = server
+        handoff.start()
         // The radio first: its graph is made in the background and needs
         // nothing from the mixes, so it does not wait for them to be made.
         radio.prepare()
@@ -204,6 +213,7 @@ final class AppModel {
         radio.server = server
         library.use(server)
         offline.use(server)
+        handoff.server = server
     }
 
     /// The network went, or came back (OfflineStore): the player and the

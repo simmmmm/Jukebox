@@ -1,4 +1,5 @@
-// The pieces Home and Radio share: which station is on the air, what a tab
+// The pieces Home and Radio share (which station is on the air is
+// RadioController.stationOnAir, shared with Linux): what a tab
 // shows while the library loads or when it has nothing, a station's tile
 // that opens its page and its long-press menu, a station's kind in words,
 // the grey placeholders a shelf shows while the mixes are being made, and a
@@ -8,20 +9,9 @@
 import JukeboxKit
 import SwiftUI
 
-extension RadioController {
-    /// The station on the air: one is starting, or the player is playing
-    /// its queue. `station` alone can outlive the music (the player was
-    /// stopped from the lock screen), so the player's context decides.
-    func stationOnAir(player: AudioPlayer) -> Station? {
-        guard let station else { return nil }
-        if isStarting || player.context?.station?.id == station.id { return station }
-        return nil
-    }
-}
-
 extension AudioPlayer {
     /// A mix from `index`, named after the mix in Now Playing ("Playing
-    /// from Daily Mix 1").
+    /// from 1990s Rock").
     func playMix(_ mix: Mix, from index: Int = 0, shuffled: Bool = false) {
         // Which kind of mix is played (Stats): its kind, never its title.
         Stats.track(.mixPlayed, ["kind": mix.kind.rawValue])
@@ -39,6 +29,95 @@ enum HomeText {
     static func summary(count: Int, duration: TimeInterval) -> String {
         let spoken = duration.spoken
         return duration >= 60 && !spoken.isEmpty ? "\(songs(count)), \(spoken)" : songs(count)
+    }
+}
+
+// MARK: - A wide page's measures
+
+/// How Home, Radio and a mix's or a station's page lay out: the iPhone by
+/// its own numbers, as before; a wide page (the iPad, the Mac) by the
+/// designer's table, by the page's own width (DesktopMeasures.page, spec
+/// §5), so the panel opened beside it leaves the page its proportions. The
+/// wide page's parts themselves are WidePage.swift's, every page's.
+struct HomeMeasures {
+    /// The table's row; nil on the iPhone.
+    let page: DesktopMeasures.Page?
+
+    init(page: DesktopMeasures.Page?) {
+        self.page = page
+    }
+
+    init(isWide: Bool, width: CGFloat) {
+        page = isWide ? DesktopMeasures.page(width: Int(width)) : nil
+    }
+
+    var isWide: Bool { page != nil }
+    var margin: CGFloat { page?.side ?? Theme.margin }
+    var tile: CGFloat { page.map { CGFloat($0.tile) } ?? HomeLayout.tileWidth }
+    /// Played lately's columns.
+    var columns: Int { page?.columns ?? 1 }
+    /// From a section's heading to what it heads.
+    var belowHeading: CGFloat { isWide ? Theme.Space.l : Theme.Space.m }
+    /// From one section to the next: 40 on a wide page (spec §5).
+    var betweenSections: CGFloat { isWide ? Theme.Space.xxl + Theme.Space.s : Theme.Space.xl }
+
+    /// A page's head in its List: none of its own on a wide page, where
+    /// PageHead keeps its own measures; as the iPhone's has it otherwise.
+    var headInsets: EdgeInsets {
+        isWide
+            ? EdgeInsets()
+            : EdgeInsets(top: Theme.Space.l, leading: Theme.margin, bottom: Theme.Space.l, trailing: Theme.margin)
+    }
+}
+
+extension View {
+    /// The iPhone's large title, as before. A wide page's title is its own
+    /// (WidePage), in the serif in the content.
+    func homeTitle(_ title: String) -> some View {
+        modifier(HomeTitled(title: title))
+    }
+}
+
+private struct HomeTitled: ViewModifier {
+    let title: String
+
+    @Environment(\.isWide) private var isWide
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if isWide {
+            content
+        } else {
+            content
+                .navigationTitle(title)
+                .largeTitle()
+        }
+    }
+}
+
+/// A section's heading: on a wide page Linux's (PageSectionTitle), at the
+/// page's margin, the space around it the page's own; on the iPhone
+/// SectionHeader, as before.
+struct HomeSectionTitle: View {
+    let title: String
+    var fact: String?
+    var route: Route?
+    let measures: HomeMeasures
+
+    init(_ title: String, fact: String? = nil, route: Route? = nil, measures: HomeMeasures) {
+        self.title = title
+        self.fact = fact
+        self.route = route
+        self.measures = measures
+    }
+
+    var body: some View {
+        if measures.isWide {
+            PageSectionTitle(title, fact: fact, above: 0, below: 0)
+                .padding(.horizontal, measures.margin)
+        } else {
+            SectionHeader(title, fact: fact, route: route)
+        }
     }
 }
 
@@ -94,9 +173,9 @@ struct HomeLoadingView: View {
             ArchMark(size: 48)
             VStack(spacing: Theme.Space.xs) {
                 Text("Loading your library…")
-                    .font(.headline)
+                    .desktopFont(17, weight: .semibold, phone: .headline)
                 Text("The first time takes a moment. After that, Jukebox opens at once.")
-                    .font(.subheadline)
+                    .desktopFont(15, phone: .subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -105,7 +184,7 @@ struct HomeLoadingView: View {
                     ProgressView(value: progress)
                         .frame(maxWidth: 240)
                     Text(progress, format: .percent.precision(.fractionLength(0)))
-                        .font(.footnote)
+                        .desktopFont(13, phone: .footnote)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }
@@ -147,18 +226,23 @@ enum StationText {
 /// which then shows what plays and what comes next; its art is the one lit.
 struct StationTileLink: View {
     let station: Station
+    /// A fact under its name ("Played Thursday"): Radio's Stations on a
+    /// wide page, as Linux's tiles have it.
+    let fact: String?
 
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
 
-    init(station: Station) {
+    init(station: Station, fact: String? = nil) {
         self.station = station
+        self.fact = fact
     }
 
     var body: some View {
         let onAir = radio.stationOnAir(player: player)?.seed == station.seed
         NavigationLink(value: Route.station(station)) {
-            StationCard(station: station)
+            // The fact under the name in the tile itself, as Linux's.
+            StationCard(station: station, fact: fact)
         }
         .buttonStyle(.plain)
         .contextMenu {
@@ -218,17 +302,18 @@ struct HomePlaceholderShelf: View {
 
     let kind: Kind
     var width: CGFloat = 160
+    var margin: CGFloat = Theme.margin
 
     var body: some View {
-        Shelf(items: Self.items, width: width) { _ in
+        Shelf(items: Self.items, width: width, margin: margin) { _ in
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 RoundedRectangle(cornerRadius: Theme.Radius.artwork)
                     .fill(.quaternary)
                     .aspectRatio(1, contentMode: .fit)
-                Text("Daily Mix 1")
-                    .font(.subheadline.weight(.medium))
+                Text("1990s Rock")
+                    .desktopFont(15, weight: .medium, phone: .subheadline.weight(.medium))
                 Text("Artists you love and more")
-                    .font(.subheadline)
+                    .desktopFont(13, phone: .subheadline)
             }
             .redacted(reason: .placeholder)
         }

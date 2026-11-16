@@ -13,7 +13,9 @@
 // system's controls, one filled button a screen.
 
 import SwiftUI
+#if os(iOS)
 import UIKit
+#endif
 
 enum Theme {
     enum Space {
@@ -29,6 +31,7 @@ enum Theme {
         /// The one radius (tells.md, 6): artwork of every size, and the one
         /// filled button. Nothing else Jukebox draws is rounded; the
         /// system's own controls keep theirs.
+        // grid-ok: the brand's one radius (docs/BRAND.md), not a distance.
         static let artwork: CGFloat = 6
     }
 
@@ -45,26 +48,25 @@ enum Theme {
     /// Aptabase package (run 22's screenshots) `Color.accentColor` drew the
     /// system's blue, though the catalog and its build setting were as
     /// before. JukeboxApp tints the whole app with this too.
-    static let accent = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0xFFB54D) : UIColor(rgb: 0xA84A17)
-    })
+    static let accent = Color(light: 0xA84A17, dark: 0xFFB54D)
 
     /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
     /// (9.9:1). Glow is a light colour: white on it would all but vanish.
-    static let onAccent = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0x2A1505) : .white
-    })
+    static let onAccent = Color(light: 0xFFFFFF, dark: 0x2A1505)
 
     /// The ground the main screens stand on, flat (tells.md, 2): warm paper,
     /// #F6F3EE, by day, as a sleeve's card stock; #121110 by night, a black
     /// with a little warmth in it. No vignette, no gradient. Lists the
     /// system draws (Settings, the library's long lists) keep the system's
     /// own grounds.
-    static let ground = Color(uiColor: UIColor { traits in
-        traits.userInterfaceStyle == .dark ? UIColor(rgb: 0x121110) : UIColor(rgb: 0xF6F3EE)
-    })
+    static let ground = Color(light: 0xF6F3EE, dark: 0x121110)
 
-    /// The Arch's own colours (docs/BRAND.md, dev/brand/). Cabinet, Glow,
+    /// One step up from the ground, for the wide window's sidebar, panel
+    /// and bar (the designer's spec, §1; Linux's Style.swift `raised`):
+    /// #ECE7DF by day, #1B1918 by night.
+    static let raised = Color(light: 0xECE7DF, dark: 0x1B1918)
+
+    /// The Arch's own colours (docs/BRAND.md). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
     /// only — the station on the air, the icon — never for text.
     enum Arch {
@@ -82,9 +84,7 @@ enum Theme {
         static let ink = Color(rgb: 0x2A1505)
         /// The mark's core: amber (#F7A136) on light grounds, where a warm
         /// white would vanish; a warm white (#FFF1D6) on dark ones.
-        static let markCore = Color(uiColor: UIColor { traits in
-            traits.userInterfaceStyle == .dark ? UIColor(rgb: 0xFFF1D6) : UIColor(rgb: 0xF7A136)
-        })
+        static let markCore = Color(light: 0xF7A136, dark: 0xFFF1D6)
 
         // Art only: the station on the air, which alone is lit.
 
@@ -104,11 +104,17 @@ enum Theme {
     /// (JukeboxApp), through UIKit's appearance proxy: SwiftUI has no
     /// modifier for the bar's own title font. The sizes follow the
     /// reader's text size (UIFontMetrics), as the system's own titles do.
+    /// A Mac window has no navigation bar to style: there the pages' own
+    /// titles are the serif ones.
     static func styleNavigationBars() {
+        #if os(iOS)
         let bar = UINavigationBar.appearance()
         bar.largeTitleTextAttributes = [.font: serifUIFont(.largeTitle)]
         bar.titleTextAttributes = [.font: serifUIFont(.body)]
+        #endif
     }
+
+    #if os(iOS)
 
     /// The system font's serif design (New York) for `style`, at the size
     /// the default text size gives it, scaled for the reader's.
@@ -118,6 +124,7 @@ enum Theme {
         let serif = base.withDesign(.serif) ?? base
         return UIFontMetrics(forTextStyle: style).scaledFont(for: UIFont(descriptor: serif, size: 0))
     }
+    #endif
 }
 
 extension Font {
@@ -141,7 +148,8 @@ struct Eyebrow: View {
 
     var body: some View {
         Text(text)
-            .font(Theme.label)
+            // Wide, Linux's: 13 in the accent.
+            .desktopFont(13, phone: Theme.label)
             .foregroundStyle(Theme.accent)
             .accessibilityAddTraits(.isHeader)
     }
@@ -194,6 +202,7 @@ extension SectionHeader where Destination == Route {
 
 /// A heading inside a List (a section's, a group of rows'): the serif, in
 /// sentence case, as SectionHeader is on a page. The list gives its margins.
+/// Wide, 20, as Linux's panel's head.
 struct ListHeading: View {
     let title: String
 
@@ -203,7 +212,7 @@ struct ListHeading: View {
 
     var body: some View {
         Text(title)
-            .font(.serif(.title3))
+            .desktopFont(20, design: .serif, phone: .serif(.title3))
             .foregroundStyle(.primary)
             .textCase(nil)
             .accessibilityAddTraits(.isHeader)
@@ -227,7 +236,8 @@ struct Hairline: View {
         // a vertical line down the list (the photographer's phone, Played
         // lately: "Er zit een streep doorheen"). One pixel high, always.
         Rectangle()
-            .fill(Color(uiColor: .separator))
+            .fill(Color.separatorLine)
+            // grid-ok: a hairline is one pixel.
             .frame(height: 1 / displayScale)
             .frame(maxWidth: .infinity)
             .padding(.leading, inset)
@@ -238,15 +248,16 @@ struct Hairline: View {
 /// The one filled button of a screen (Play, Sign In): a plain rectangle in
 /// the accent, 6 pt corners, its own ink on it. No glow, no shadow, and no
 /// icon unless the word needs one. Callers that want it compact give it
-/// `.fixedSize()`.
+/// `.fixedSize()`. Wide, Linux's page-button: 40 tall, 15 bold.
 struct ProminentButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isWide) private var isWide
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body.weight(.semibold))
+            .desktopFont(15, weight: .bold, phone: .body.weight(.semibold))
             .foregroundStyle(Theme.onAccent)
-            .frame(maxWidth: .infinity, minHeight: 44)
+            .frame(maxWidth: .infinity, minHeight: isWide ? 40 : 44)
             .padding(.horizontal, Theme.Space.xl)
             .background(Theme.accent, in: .rect(cornerRadius: Theme.Radius.artwork))
             .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
@@ -255,15 +266,19 @@ struct ProminentButtonStyle: ButtonStyle {
 }
 
 /// Every other action (Shuffle, Stop, New Picks): a word in the accent, no
-/// ground under it — a text button, as the system's own are.
+/// ground under it — a text button, as the system's own are. Wide, Linux's
+/// word: 40 tall, 15 bold, 8 either side of the word, so beside Play it
+/// stands 24 from it.
 struct SecondaryButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isWide) private var isWide
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .font(.body)
+            .desktopFont(15, weight: .bold, phone: .body)
             .foregroundStyle(Theme.accent)
-            .frame(minHeight: 44)
+            .padding(.horizontal, isWide ? Theme.Space.s : 0)
+            .frame(minHeight: isWide ? 40 : 44)
             .opacity(isEnabled ? (configuration.isPressed ? 0.5 : 1) : 0.4)
             .contentShape(.rect)
     }
@@ -308,8 +323,9 @@ extension View {
     }
 }
 
-// `nonisolated`: UIKit may ask a dynamic colour's provider for its colour
-// off the main actor, and the app's own code is on the main actor by default.
+// `nonisolated`: the system may ask a dynamic colour's provider for its
+// colour off the main actor (Color(light:dark:), Platform.swift), and the
+// app's own code is on the main actor by default.
 extension Color {
     /// An sRGB colour by its hex, as the brand board names it: 0xA84A17.
     nonisolated init(rgb: UInt32) {
@@ -318,16 +334,6 @@ extension Color {
                   green: Double((rgb >> 8) & 0xFF) / 255,
                   blue: Double(rgb & 0xFF) / 255,
                   opacity: 1)
-    }
-}
-
-extension UIColor {
-    /// UIKit's, for colours that change with the appearance.
-    nonisolated convenience init(rgb: UInt32) {
-        self.init(red: CGFloat((rgb >> 16) & 0xFF) / 255,
-                  green: CGFloat((rgb >> 8) & 0xFF) / 255,
-                  blue: CGFloat(rgb & 0xFF) / 255,
-                  alpha: 1)
     }
 }
 

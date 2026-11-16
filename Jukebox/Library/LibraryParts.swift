@@ -47,7 +47,7 @@ struct LibraryStatusView: View {
                         ProgressView(value: progress)
                             .frame(maxWidth: 240)
                         Text(progress, format: .percent.precision(.fractionLength(0)))
-                            .font(.footnote)
+                            .desktopFont(13, phone: .footnote)
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -94,18 +94,27 @@ struct LibraryEmptyState: View {
 }
 
 /// Albums as Music's grid: as many columns of at least 150 points as fit.
+/// On a wide page (`page`), the page's tiles (TileGrid).
 struct LibraryAlbumGrid: View {
     let albums: [Album]
     var showsArtist = true
+    var page: DesktopMeasures.Page?
+    var width: CGFloat = 0
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.Space.l, alignment: .top)],
-                  alignment: .leading, spacing: Theme.Space.xl) {
-            ForEach(albums) { album in
+        if let page {
+            TileGrid(items: albums, page: page, width: width) { album in
                 LibraryAlbumLink(album: album, showsArtist: showsArtist)
             }
+        } else {
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 150), spacing: Theme.Space.l, alignment: .top)],
+                      alignment: .leading, spacing: Theme.Space.xl) {
+                ForEach(albums) { album in
+                    LibraryAlbumLink(album: album, showsArtist: showsArtist)
+                }
+            }
+            .padding(.horizontal, Theme.margin)
         }
-        .padding(.horizontal, Theme.margin)
     }
 }
 
@@ -232,7 +241,7 @@ struct LibraryPlaylistRow: View {
         HStack(spacing: Theme.Space.m) {
             ArtworkView(playlist.artwork, size: 56, cornerRadius: Theme.Radius.artwork,
                         placeholder: "music.note.list")
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(playlist.name)
                     .lineLimit(1)
                 if let count = playlist.trackCount {
@@ -258,7 +267,7 @@ struct LibraryScrolledTitle: ViewModifier {
         let limit = threshold
         return content
             .navigationTitle(isShown ? title : "")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
             .onScrollGeometryChange(for: Bool.self) { geometry in
                 geometry.contentOffset.y + geometry.contentInsets.top > limit
             } action: { _, isPast in
@@ -283,6 +292,15 @@ enum LibraryText {
     static func summary(count: Int, duration: TimeInterval) -> String {
         let spoken = duration.spoken
         return duration >= 60 && !spoken.isEmpty ? "\(songs(count)), \(spoken)" : songs(count)
+    }
+
+    /// "7 songs, 27 min", "12 songs, 1 hr 5 min": a wide page's head, as
+    /// Linux's `length` says it, the minutes rounded.
+    static func length(count: Int, duration: TimeInterval) -> String {
+        let minutes = Int((duration / 60).rounded())
+        guard minutes > 0 else { return songs(count) }
+        if minutes < 60 { return String(localized: "\(songs(count)), \(minutes) min") }
+        return String(localized: "\(songs(count)), \(minutes / 60) hr \(minutes % 60) min")
     }
 
     static func totalDuration(_ tracks: [Track]) -> TimeInterval {

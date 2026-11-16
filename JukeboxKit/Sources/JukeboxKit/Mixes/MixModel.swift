@@ -416,11 +416,12 @@ final class MixModel: Sendable {
     /// "Radiohead, Portishead and more": the mix's leading artists, those in
     /// `lead` first (in that order), then those with the most tracks in it
     /// (liked ones counting more), then the one that comes first in it.
-    func artistLine(_ tracks: [Int], lead: [Int] = []) -> String {
+    /// Not `skipping`, whom the title already names ("Around Radiohead").
+    func artistLine(_ tracks: [Int], lead: [Int] = [], skipping: Int? = nil) -> String {
         var count: [Int: Int] = [:]
         var first: [Int: Int] = [:]
         for (position, t) in tracks.enumerated() {
-            guard let a = primaryArtist(t) else { continue }
+            guard let a = primaryArtist(t), a != skipping else { continue }
             count[a, default: 0] += 1
             if first[a] == nil { first[a] = position }
         }

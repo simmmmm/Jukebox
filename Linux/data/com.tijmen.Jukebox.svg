@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Jukebox's icon for GNOME: the Arch mark (docs/brand/mark-dark.svg, its regular cut, three times its size) on Cabinet, as on the iPhone's icon. -->
+<svg viewBox="0 0 128 128" width="128" height="128" xmlns="http://www.w3.org/2000/svg">
+  <rect x="8" y="8" width="112" height="112" rx="24" fill="#1E0A07"/>
+  <g transform="translate(16 18) scale(3)">
+    <g fill="none" stroke-linecap="round" stroke-width="2.6">
+      <path d="M5.30 28.70V14.00A10.70 10.70 0 0 1 26.70 14.00V28.70" stroke="#F07E36"/>
+      <path d="M10.10 28.70V14.00A5.90 5.90 0 0 1 21.90 14.00V28.70" stroke="#FFB44C"/>
+    </g>
+    <path d="M13.60 14.00A2.40 2.40 0 0 1 18.40 14.00V27.60A2.40 2.40 0 0 1 13.60 27.60Z" fill="#FFF1D6"/>
+  </g>
+</svg>

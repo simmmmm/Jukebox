@@ -1,8 +1,9 @@
 // The few words offline says, short enough for the mini player's one line,
 // and a list's question before a tapped song plays: is it on the phone?
+// Shared with Linux (Package.swift), where the device is "computer".
 
+import Foundation
 import JukeboxKit
-import UIKit
 
 extension AudioPlayer {
     /// A song tapped in a list: offline, one that is not on the phone says
@@ -19,7 +20,7 @@ extension AudioPlayer {
 /// What offline says. First why ("You’re offline."), so the mini player's
 /// one line says it even when the rest is cut off.
 enum OfflineText {
-    static var device: String { UIDevice.current.model }
+    static var device: String { Device.model }
 
     static func notOnPhone(_ track: Track) -> String {
         String(localized: "You’re offline. “\(track.name)” isn’t on this \(device).")
@@ -47,5 +48,25 @@ enum OfflineText {
 
     static func percent(_ fraction: Double) -> String {
         fraction.formatted(.percent.precision(.fractionLength(0)))
+    }
+}
+
+extension OfflineStore {
+    /// A download's one fact: how far it is, what it waits for, or how
+    /// many songs and how large (Downloaded's tiles and rows, on every
+    /// platform).
+    func fact(of collection: OfflineCollection) -> String {
+        switch state(of: collection.reason) {
+        case let .downloading(fraction: fraction, waiting: waiting):
+            if let waiting { return OfflineText.waiting(waiting) }
+            return String(localized: "Downloading, \(OfflineText.percent(fraction))")
+        case .downloaded, .notDownloaded:
+            let total = Set(collection.trackIDs).count
+            let here = songsOnPhone(of: collection)
+            let size = bytes(of: collection).formatted(.byteCount(style: .file))
+            // Some songs the server would not give: how many came.
+            if here < total { return String(localized: "\(here) of \(total) songs, \(size)") }
+            return "\(LibraryText.songs(total)), \(size)"
+        }
     }
 }

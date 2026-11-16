@@ -4,6 +4,13 @@
 // for a song, and the radio's way keeps the music going after it, as Music's
 // Autoplay does. With nothing typed: the last searches, and the genres to
 // browse.
+//
+// In a wide window (the iPad, the Mac) the field is the window bar's, on
+// every page ("ik wil die searchbar gewoon bovenin de vensterbar hebben",
+// the photographer, 14 November 2026), and this is the page it searches on,
+// the same as Linux's: its title; with nothing typed the recent searches;
+// with something, shelves of artists, albums and playlists, then the songs,
+// at the page's margin and tile (DesktopMeasures, by the page's own width).
 
 import JukeboxKit
 import SwiftUI
@@ -11,39 +18,115 @@ import SwiftUI
 struct SearchView: View {
     @Environment(AppModel.self) private var app
     @Environment(Navigator.self) private var navigator
+    @Environment(\.isWide) private var isWide
 
+    /// The iPhone's field. Wide, the bar's: `navigator.searchQuery`.
     @State private var query = ""
     @State private var recents: [String] = []
 
     init() {}
 
     var body: some View {
-        let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         Group {
-            if term.isEmpty {
-                SearchBrowse(recents: recents,
-                             pick: { picked in query = picked },
-                             remove: { removed in forget(removed) },
-                             clear: { clearRecents() })
+            if isWide {
+                widePage
             } else {
-                SearchResultsList(term: term, remember: { remember() })
+                compact
+                    .navigationTitle("Search")
             }
-        }
-        .navigationTitle("Search")
-        .searchable(text: $query, prompt: "Artists, albums, songs")
-        .onSubmit(of: .search) { remember() }
-        // A result opened (an artist, an album, a genre…): the search was
-        // worth keeping. NavigationLinks say nothing when tapped; the
-        // search tab's path growing is that tap.
-        .onChange(of: navigator.searchPath.count) { oldCount, newCount in
-            if newCount > oldCount { remember() }
         }
         .task(id: app.credentials?.userID) {
             recents = SearchRecents.load(for: app.credentials?.userID)
         }
     }
 
-    private func remember() {
+    private var term: String {
+        query.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    @ViewBuilder private var content: some View {
+        if term.isEmpty {
+            SearchBrowse(recents: recents,
+                         pick: { picked in query = picked },
+                         remove: { removed in forget(removed) },
+                         clear: { clearRecents() })
+        } else {
+            SearchResultsList(term: term, remember: { remember(query) })
+        }
+    }
+
+    private var compact: some View {
+        content
+            .searchable(text: $query, prompt: "Artists, albums, songs")
+            .onSubmit(of: .search) { remember(query) }
+            // A result opened (an artist, an album, a genre…): the search
+            // was worth keeping. NavigationLinks say nothing when tapped;
+            // the search tab's path growing is that tap.
+            .onChange(of: navigator.searchPath.count) { oldCount, newCount in
+                if newCount > oldCount { remember(query) }
+            }
+    }
+
+    /// The page the bar's field searches on, one spec with Linux's (the
+    /// photographer, 14 November 2026). A search is kept as a recent one
+    /// when Return is pressed in the field or a result is opened.
+    private var widePage: some View {
+        let typed = navigator.searchQuery.trimmingCharacters(in: .whitespacesAndNewlines)
+        return WidePage(title: "Search") { page, _ in
+            PageTitle("Search")
+                .padding(.horizontal, page.side)
+            if typed.isEmpty {
+                recentRows(page)
+            } else {
+                SearchResultsList(term: typed, page: page, remember: { remember(navigator.searchQuery) })
+            }
+        }
+        .onChange(of: navigator.searchSubmits) { _, _ in
+            remember(navigator.searchQuery)
+        }
+    }
+
+    /// The last eight searches, newest first, as plain rows: one fills the
+    /// bar's field with it, and so searches. None yet: what the field is for.
+    @ViewBuilder private func recentRows(_ page: DesktopMeasures.Page) -> some View {
+        if recents.isEmpty {
+            PagePlainLine("Search your artists, albums, songs and playlists.")
+                .padding(.horizontal, page.side)
+        } else {
+            HStack(alignment: .firstTextBaseline) {
+                PageSectionTitle(String(localized: "Recent searches"), below: Theme.Space.s)
+                Spacer(minLength: Theme.Space.m)
+                Button("Clear") { clearRecents() }
+                    .buttonStyle(.plain)
+                    .desktopFont(15)
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("Clear Recent Searches")
+            }
+            .padding(.horizontal, page.side)
+            ForEach(recents.prefix(8), id: \.self) { term in
+                Button {
+                    navigator.searchQuery = term
+                } label: {
+                    Text(verbatim: term)
+                        .desktopFont(15)
+                        .foregroundStyle(.primary)
+                        .lineLimit(1)
+                        // 40 a row, as Linux's.
+                        .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
+                        .contentShape(.rect)
+                }
+                .buttonStyle(.plain)
+                .contextMenu {
+                    Button("Remove", systemImage: "xmark", role: .destructive) {
+                        forget(term)
+                    }
+                }
+                .padding(.horizontal, page.side)
+            }
+        }
+    }
+
+    private func remember(_ query: String) {
         let updated = SearchRecents.adding(query, to: recents)
         guard updated != recents else { return }
         recents = updated
@@ -65,23 +148,138 @@ struct SearchView: View {
 
 private struct SearchResultsList: View {
     let term: String
+    /// The wide page's measures: its sections, in the page's scroll. Nil:
+    /// the iPhone's list.
+    let page: DesktopMeasures.Page?
     let remember: () -> Void
 
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
+    @Environment(Navigator.self) private var navigator
     /// This search has been counted (Stats): once, when the typing first
     /// rests, not at every letter. These results go when the field is
     /// emptied, and with them this; the next search counts again.
     @State private var isCounted = false
 
-    init(term: String, remember: @escaping () -> Void) {
+    init(term: String, page: DesktopMeasures.Page? = nil, remember: @escaping () -> Void) {
         self.term = term
+        self.page = page
         self.remember = remember
     }
 
     var body: some View {
-        let results = library.search(term)
+        // Wide, 20 of each, as Linux's; the iPhone's list as it was.
+        let results = page == nil ? library.search(term) : library.search(term, limit: 20)
+        Group {
+            if let page {
+                sections(results, page)
+            } else {
+                list(results)
+                    .overlay {
+                        if results.isEmpty {
+                            if isFirstLoad {
+                                // Nothing found because nothing is here yet, not
+                                // because the library lacks it.
+                                ContentUnavailableView("Loading Your Library", systemImage: "square.stack",
+                                                       description: Text("Search finds your music once it has loaded."))
+                            } else {
+                                ContentUnavailableView.search(text: term)
+                            }
+                        }
+                    }
+            }
+        }
+        // How much a search finds, in buckets; never what was typed.
+        .task(id: term) {
+            guard !isCounted else { return }
+            try? await Task.sleep(for: .seconds(1.5))
+            guard !Task.isCancelled else { return }
+            isCounted = true
+            Stats.track(.searchUsed, ["results": Stats.resultCount(results.artists.count + results.albums.count + results.tracks.count + results.playlists.count)])
+        }
+    }
+
+    // MARK: Wide
+
+    /// The wide page's: each kind only when it has matches, at most 20 of
+    /// each, Artists, Albums and Playlists as shelves at the page's tile,
+    /// then the songs as every wide page's rows, all at the page's margin
+    /// (one spec with Linux's). A result opens through the navigator, which
+    /// keeps the search as it goes.
+    private func sections(_ results: SearchResults, _ page: DesktopMeasures.Page) -> some View {
+        let margin = page.side
+        let tile = CGFloat(page.tile)
+        return VStack(alignment: .leading, spacing: 0) {
+            if results.isEmpty {
+                // While the library still loads, its status.
+                PageEmptyLine("Nothing found for “\(term)”.")
+                    .padding(.horizontal, margin)
+            }
+            if !results.artists.isEmpty {
+                PageSectionTitle(String(localized: "Artists"))
+                    .padding(.horizontal, margin)
+                Shelf(items: results.artists, width: tile, margin: margin) { artist in
+                    Button {
+                        open(.artist(artist))
+                    } label: {
+                        // Round, and the name alone, as Linux's Search.
+                        WideTile(name: artist.name) {
+                            ArtistAvatar(artist: artist)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu { artistMenu(artist) }
+                }
+            }
+            if !results.albums.isEmpty {
+                PageSectionTitle(String(localized: "Albums"))
+                    .padding(.horizontal, margin)
+                Shelf(items: results.albums, width: tile, margin: margin) { album in
+                    Button {
+                        open(.album(album))
+                    } label: {
+                        AlbumTile(album: album)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu { albumMenu(album) }
+                }
+            }
+            if !results.playlists.isEmpty {
+                PageSectionTitle(String(localized: "Playlists"))
+                    .padding(.horizontal, margin)
+                Shelf(items: results.playlists, width: tile, margin: margin) { playlist in
+                    Button {
+                        open(.playlist(playlist))
+                    } label: {
+                        PlaylistTile(playlist: playlist)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            if !results.tracks.isEmpty {
+                // TrackRow's 64, 8 under their heading; the artist and the
+                // album under the title, as Linux's.
+                PageSectionTitle(String(localized: "Songs"), below: Theme.Space.s)
+                    .padding(.horizontal, margin)
+                PageTrackRows(tracks: results.tracks,
+                              subtitle: { [$0.artistLine, $0.albumName ?? ""].filter { !$0.isEmpty }.joined(separator: " · ") },
+                              play: { track in
+                    startStation(from: track)
+                })
+                .padding(.horizontal, margin)
+            }
+        }
+    }
+
+    private func open(_ route: Route) {
+        remember()
+        navigator.open(route)
+    }
+
+    // MARK: Compact
+
+    private func list(_ results: SearchResults) -> some View {
         List {
             if !results.artists.isEmpty {
                 Section {
@@ -94,11 +292,7 @@ private struct SearchResultsList: View {
                             }
                         }
                         .contextMenu {
-                            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                                remember()
-                                Stats.track(.stationStarted, ["seed": "artist", "from": "search"])
-                                radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
-                            }
+                            artistMenu(artist)
                         }
                     }
                 } header: {
@@ -125,14 +319,7 @@ private struct SearchResultsList: View {
                 Section {
                     ForEach(results.tracks) { track in
                         Button {
-                            // Offline, a song not on the phone says why: its
-                            // station would not open with it.
-                            guard !player.refusesOffline(track) else { return }
-                            remember()
-                            // The song first, then what sounds like it: the
-                            // station of a song opens with that song.
-                            Stats.track(.stationStarted, ["seed": "track", "from": "search"])
-                            radio.start(.track(track.id))
+                            startStation(from: track)
                         } label: {
                             TrackRow.standard(track)
                         }
@@ -157,25 +344,26 @@ private struct SearchResultsList: View {
         }
         .listStyle(.plain)
         .scrollDismissesKeyboard(.immediately)
-        .overlay {
-            if results.isEmpty {
-                if isFirstLoad {
-                    // Nothing found because nothing is here yet, not because
-                    // the library lacks it.
-                    ContentUnavailableView("Loading Your Library", systemImage: "square.stack",
-                                           description: Text("Search finds your music once it has loaded."))
-                } else {
-                    ContentUnavailableView.search(text: term)
-                }
-            }
-        }
-        // How much a search finds, in buckets; never what was typed.
-        .task(id: term) {
-            guard !isCounted else { return }
-            try? await Task.sleep(for: .seconds(1.5))
-            guard !Task.isCancelled else { return }
-            isCounted = true
-            Stats.track(.searchUsed, ["results": Stats.resultCount(results.artists.count + results.albums.count + results.tracks.count + results.playlists.count)])
+    }
+
+    // MARK: Both
+
+    private func startStation(from track: Track) {
+        // Offline, a song not on the phone says why: its station would not
+        // open with it.
+        guard !player.refusesOffline(track) else { return }
+        remember()
+        // The song first, then what sounds like it: the station of a song
+        // opens with that song.
+        Stats.track(.stationStarted, ["seed": "track", "from": "search"])
+        radio.start(.track(track.id))
+    }
+
+    private func artistMenu(_ artist: Artist) -> some View {
+        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+            remember()
+            Stats.track(.stationStarted, ["seed": "artist", "from": "search"])
+            radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
         }
     }
 
@@ -207,7 +395,7 @@ private struct SearchAlbumRow: View {
     var body: some View {
         HStack(spacing: Theme.Space.m) {
             ArtworkView(album.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(album.name)
                     .lineLimit(1)
                 Text(verbatim: subtitle)
@@ -235,7 +423,7 @@ private struct SearchPlaylistRow: View {
         HStack(spacing: Theme.Space.m) {
             ArtworkView(playlist.artwork, size: 48, cornerRadius: Theme.Radius.artwork,
                         placeholder: "music.note.list")
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(playlist.name)
                     .lineLimit(1)
                 if let count = playlist.trackCount {
@@ -259,7 +447,6 @@ private struct SearchBrowse: View {
 
     @Environment(LibraryStore.self) private var library
     @Environment(RadioController.self) private var radio
-    @Environment(\.horizontalSizeClass) private var sizeClass
 
     init(recents: [String], pick: @escaping (String) -> Void, remove: @escaping (String) -> Void,
          clear: @escaping () -> Void) {
@@ -299,13 +486,14 @@ private struct SearchBrowse: View {
             HStack(alignment: .firstTextBaseline) {
                 // SectionHeader's look, with Clear where See All would be.
                 Text("Recent searches")
-                    .font(.serif(.title2))
+                    .desktopFont(24, design: .serif, phone: .serif(.title2))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button("Clear") { clear() }
+                    .desktopFont(15, phone: nil)
                     .accessibilityLabel("Clear Recent Searches")
             }
-            .padding(.horizontal, Theme.margin)
+            .padding(.horizontal, margin)
 
             VStack(spacing: 0) {
                 ForEach(recents, id: \.self) { term in
@@ -321,6 +509,7 @@ private struct SearchBrowse: View {
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
+                        .desktopFont(15, phone: nil)
                         .padding(.vertical, Theme.Space.m)
                         .contentShape(.rect)
                     }
@@ -333,14 +522,16 @@ private struct SearchBrowse: View {
                     Divider()
                 }
             }
-            .padding(.leading, Theme.margin)
+            .padding(.leading, margin)
         }
     }
 
     private var genreSection: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             SectionHeader("Genres", route: .genres)
-            LazyVGrid(columns: genreColumns, spacing: 0) {
+            // Two across, as Music's categories.
+            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Theme.Space.m), count: 2),
+                      spacing: 0) {
                 ForEach(library.genres) { genre in
                     NavigationLink(value: Route.genre(genre)) {
                         SearchGenreTile(name: genre.name)
@@ -354,15 +545,11 @@ private struct SearchBrowse: View {
                     }
                 }
             }
-            .padding(.horizontal, Theme.margin)
+            .padding(.horizontal, margin)
         }
     }
 
-    /// Two across on the iPhone, as Music's categories; four on the iPad.
-    private var genreColumns: [GridItem] {
-        let count = sizeClass == .regular ? 4 : 2
-        return Array(repeating: GridItem(.flexible(), spacing: Theme.Space.m), count: count)
-    }
+    private var margin: CGFloat { Theme.margin }
 }
 
 /// A genre to browse: its name on the ground over a hairline, no tile
@@ -374,6 +561,7 @@ private struct SearchGenreTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(verbatim: name)
+                .desktopFont(15, phone: nil)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
                 .lineLimit(2)

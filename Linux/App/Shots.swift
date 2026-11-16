@@ -1,0 +1,543 @@
+// The screenshot walk, Linux's own (the iPhone's is JukeboxUITests): with
+// JUKEBOX_SHOTS=<folder> the app walks its main screens by itself, saves a
+// picture of each at the window's true size, and quits. dev/linux-screens.sh
+// runs it without a desktop (Xvfb) against the demo library.
+//
+// It is here because of a player's bar nobody had seen at its real width:
+// "ook klopt er geen fuck van deze verhoudingen" (the photographer, 14
+// November 2026). A screen is judged from its picture, not from its code.
+
+import CAdw
+import Foundation
+import JukeboxKit
+
+enum Shots {
+    static var folder: String? { ProcessInfo.processInfo.environment["JUKEBOX_SHOTS"] }
+
+    /// "1440x900" in JUKEBOX_WINDOW: the window's size for the walk.
+    static var windowSize: (Int32, Int32)? {
+        guard let text = ProcessInfo.processInfo.environment["JUKEBOX_WINDOW"] else { return nil }
+        let parts = text.split(separator: "x").compactMap { Int32($0) }
+        return parts.count == 2 ? (parts[0], parts[1]) : nil
+    }
+
+    static func walk() {
+        guard let folder else { return }
+        // The walk opens and closes the panel: the listener's choice stays
+        // the listener's. Before the first step, which closes it.
+        app.panel.remembers = false
+        try? FileManager.default.createDirectory(atPath: folder, withIntermediateDirectories: true)
+        Task {
+            // The panel as a listener first finds it: closed.
+            app.panel.isOpen = false
+            // The library, the mixes and the first covers.
+            for _ in 0..<80 where app.library.tracks.isEmpty || app.mixes.mixes.isEmpty {
+                try? await Task.sleep(for: .milliseconds(250))
+            }
+            await step("01-home", wait: 3)
+            // The pointer over Mixes: its first tile lit, › at its right
+            // edge; then moved on once, ‹ at its left too.
+            if let mixes = find(visiblePage(), { gtk_widget_has_css_class($0, "shelf") != 0 }) {
+                let tile = find(mixes, { gtk_widget_has_css_class($0, "tile") != 0 })
+                await hovering([mixes, tile], "01b-home-shelf-hover")
+                if let next = find(mixes, { gtk_widget_has_css_class($0, "shelf-arrow") != 0 && gtk_widget_get_halign($0) == GTK_ALIGN_END }) {
+                    gtk_widget_activate(next)
+                    try? await Task.sleep(for: .seconds(0.5))
+                    await hovering([mixes], "01c-home-shelf-moved")
+                }
+            }
+            MainWindow.select(1)
+            await step("02-radio", wait: 2)
+            Pages.open(app.radio.station(for: .personal))
+            await step("03-station", wait: 2)
+            MainWindow.select(3)
+            await step("04-albums", wait: 3)
+            await hovering([gridCell()], "04b-albums-hover")
+            let albums = app.library.albums(sortedBy: .artist)
+            if let album = albums.first {
+                Pages.open(album)
+                await step("05-album", wait: 2)
+            }
+            if let artist = app.library.artistsByName.first {
+                MainWindow.select(4)
+                try? await Task.sleep(for: .seconds(2))
+                await hovering([gridCell()], "06a-artists-hover")
+                Pages.open(artist)
+                await step("06-artist", wait: 2)
+            }
+            MainWindow.select(5)
+            await step("07-songs", wait: 2)
+            MainWindow.select(6)
+            await step("08-playlists", wait: 2)
+            await hovering([find(visiblePage(), { gtk_widget_has_css_class($0, "tile") != 0 })], "08a-playlists-hover")
+            // Search, through the header's fields themselves: Ctrl+F with
+            // nothing searched yet; typed in Playlists' field, which goes to
+            // the Search page; Enter twice; emptied, the searches kept; a
+            // kept one chosen.
+            SearchField.shared.clearRecents()
+            gtk_widget_activate_action_variant(MainWindow.window, "app.search", nil)
+            await step("08b-search-empty", wait: 2)
+            MainWindow.select(6)
+            try? await Task.sleep(for: .seconds(1))
+            if let page = adw_navigation_view_get_visible_page(ptr(Nav.view)), let field = Nav.searchField(of: page) {
+                gtk_editable_set_text(ptr(field), "blue")
+            }
+            await step("08c-search-query", wait: 2)
+            if let home = SearchField.shared.home {
+                enter(home)
+                gtk_editable_set_text(ptr(home), "night")
+                enter(home)
+                gtk_editable_set_text(ptr(home), "")
+                await step("08d-search-recents", wait: 2)
+                if let kept = find(visiblePage(), { gtk_widget_has_css_class($0, "recent") != 0 }) {
+                    gtk_widget_activate(kept)
+                    await step("08e-search-again", wait: 2)
+                }
+                gtk_editable_set_text(ptr(home), "")
+            }
+            await library(albums)
+            // Music, as the designer's drawings have it (2027/notes.md):
+            // Dust Windows on Home, then the panel on Up next over another
+            // album's page.
+            if let album = albums.first(where: { $0.name == "Dust Windows" }) ?? albums.dropFirst(3).first {
+                let tracks = app.library.tracks(inAlbum: album.id)
+                app.player.play(tracks, startingAt: 1, context: QueueContext(.album(album.id), title: album.name))
+                MainWindow.select(0)
+                await step("09-home-playing", wait: 4)
+                // Narrow, the places folded away come over the page.
+                if MainWindow.showPlaces() {
+                    await step("09-places-over", wait: 1)
+                    MainWindow.select(0)
+                }
+                // Two songs queued from elsewhere, as the drawing's "Then".
+                let queued = ["Velvet Sky", "Night Drive"].compactMap { name in app.library.tracks.first { $0.name == name } }
+                app.player.addToQueue(queued)
+                app.panel.toggle(.upNext)
+                // Albums made before the panel opened: its tiles follow the
+                // narrower page (160 at a margin of 32 at 1440).
+                MainWindow.select(3)
+                await step("10a-albums-panel", wait: 2)
+                Pages.open(albums.first { $0.name == "Quiet Rooms" } ?? album)
+                await step("10-album-up-next", wait: 2)
+                // Now Playing as the designer drew it: Up next beside it;
+                // first as it opens, the first time, from the bar's song.
+                await frames("10b-opening") { NowPlayingPage.open() }
+                await step("10b-now-playing", wait: 3)
+                gtk_widget_activate(NowPlayingPage.more)
+                await step("10c-now-playing-menu", wait: 1)
+            }
+            // The panel on the lyrics: Night Drive's are timed, and a few
+            // lines in. dev/demo/lyrics.json's times are ticks (100 ns), so
+            // its lines come 0.9 s apart: the fourth starts at 2.7 s.
+            if let song = app.library.tracks.first(where: { $0.name == "Night Drive" }),
+               let albumID = song.albumID, let album = app.library.album(id: albumID) {
+                let tracks = app.library.tracks(inAlbum: albumID)
+                app.player.play(tracks, startingAt: tracks.firstIndex { $0.id == song.id } ?? 0,
+                                context: QueueContext(.album(albumID), title: album.name))
+                app.panel.toggle(.lyrics)
+                MainWindow.select(3)
+                Pages.open(album)
+                try? await Task.sleep(for: .seconds(2))
+                app.player.seek(to: 1.5)
+                await step("11-album-lyrics", wait: 1.5)
+                NowPlayingPage.open()
+                await step("12-now-playing-lyrics", wait: 3)
+                await frames("12b-closing") { NowPlayingPage.close() }
+            }
+            // Your Station on the air; then the panel with the radio's reasons.
+            app.panel.isOpen = false
+            app.radio.start(.personal)
+            MainWindow.select(1)
+            await step("13-radio-on-air", wait: 4)
+            app.panel.toggle(.upNext)
+            await step("14-radio-up-next", wait: 2)
+            NowPlayingPage.open()
+            await step("15-now-playing-station", wait: 3)
+            await parity(albums)
+            Preferences.present()
+            await step("16-preferences", wait: 2)
+            if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
+                await scrolled(ptr(dialog), to: 0.4, "16c-preferences-pages")
+                await scrolled(ptr(dialog), to: 1, "16b-preferences-downloads")
+                adw_dialog_force_close(dialog)
+            }
+            await pages()
+            await stationClicks()
+            MainWindow.showSignIn()
+            await step("17-sign-in", wait: 2)
+            gtk_window_close(ptr(MainWindow.window))
+            exit(0)
+        }
+    }
+
+    /// The Mac's three more places ("Linux erbij", 15 November 2026):
+    /// Genres, a genre, Recently Added; then an album, a playlist and a mix
+    /// downloaded from the fake Jellyfin by their pages' own buttons, and
+    /// Downloaded. What came is written to frames.txt: the songs, their
+    /// files, and the file the player plays.
+    private static func library(_ albums: [Album]) async {
+        MainWindow.select(8)
+        await step("18-genres", wait: 2)
+        if let genre = app.library.genres.max(by: { app.library.albums(inGenre: $0).count < app.library.albums(inGenre: $1).count }) {
+            Pages.open(genre)
+            await step("19-genre", wait: 2)
+        }
+        MainWindow.select(9)
+        await step("20-recently-added", wait: 2)
+        var log = ""
+        // One the keep has not fetched all of, so its ring shows on the way.
+        let whole = { (album: Album) in app.library.tracks(inAlbum: album.id).allSatisfy { app.offline.has($0.id) } }
+        if let album = albums.first(where: { !whole($0) }) ?? albums.first {
+            Pages.open(album)
+            try? await Task.sleep(for: .seconds(1))
+            await step("21a-album-download", wait: 0)
+            await download("21b-album-downloading", reason: .album(album.id), log: &log)
+            await step("21c-album-downloaded", wait: 1)
+        }
+        if let playlist = app.library.playlists.first {
+            Pages.open(playlist)
+            try? await Task.sleep(for: .seconds(2))
+            await download(nil, reason: .playlist(playlist.id), log: &log)
+        }
+        if let mix = app.mixes.mixes.first {
+            Pages.open(mix)
+            try? await Task.sleep(for: .seconds(1))
+            await download(nil, reason: .mix(mix.id), log: &log)
+        }
+        MainWindow.select(10)
+        await step("22-downloaded", wait: 3)
+        await scrolled(visiblePage(), to: 1, "22b-downloaded-songs")
+        // A downloaded song plays from its file.
+        let offline = app.offline
+        if let collection = offline.collections.last, let first = collection.tracks.first(where: { offline.has($0.id) }) {
+            app.player.play([first], context: QueueContext(.other, title: "Downloaded"))
+            try? await Task.sleep(for: .seconds(1))
+            let file = app.player.currentTrack.flatMap { offline.localURL(for: $0.id) }
+            log += "playing \(first.name): from \(file?.path ?? "the server"), "
+                + "a file there: \(file.map { FileManager.default.fileExists(atPath: $0.path) } ?? false)\n"
+            app.player.stop()
+        }
+        let folder = offline.collections.first.flatMap { offline.localURL(for: $0.trackIDs[0]) }?.deletingLastPathComponent()
+        let files = folder.flatMap { try? FileManager.default.contentsOfDirectory(atPath: $0.path) } ?? []
+        log += "downloaded: \(offline.collections.count) collections, \(offline.songCount) songs, "
+            + "\(offline.chosenBytes) bytes chosen, \(offline.keptBytes) kept; \(files.count) files in \(folder?.path ?? "none")\n"
+        if let shots = Self.folder {
+            let file = "\(shots)/frames.txt"
+            try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// The page's own Download clicked, then waited on until all of it is
+    /// here (20 s at most); a picture of the ring on the way, when named.
+    private static func download(_ name: String?, reason: OfflineReason, log: inout String) async {
+        guard let button = find(visiblePage(), { widget in
+            g_type_check_instance_is_a(ptr(widget), gtk_button_get_type()) != 0
+                && gtk_button_get_icon_name(ptr(widget)).map { String(cString: $0) } == Glyphs.name("download")
+        }) else {
+            log += "\(reason): no Download on its page\n"
+            return
+        }
+        gtk_widget_activate(button)
+        // A button activated says "clicked" 250 ms later (GTK's press
+        // shown); the fake's songs then take 0.4 to 2 s each.
+        if let name { await step(name, wait: 1.2) }
+        let clock = ContinuousClock(), start = clock.now
+        for _ in 0..<80 where app.offline.state(of: reason) != .downloaded {
+            try? await Task.sleep(for: .milliseconds(250))
+        }
+        let took = (clock.now - start).components
+        log += "\(reason): \(app.offline.state(of: reason)) after \(took.seconds).\(took.attoseconds / 100_000_000_000_000_000) s, "
+            + (app.offline.collection(for: reason).map { app.offline.fact(of: $0) } ?? "not chosen") + "\n"
+    }
+
+    /// What the Mac and the iPad had and Linux has now too ("Linux erbij",
+    /// 15 November 2026), each by its own button and dialog (a menu is a
+    /// surface of its own, not in the window's picture; its items are run by
+    /// their actions): Start a Station from Radio's +; a station's ⋮, Save as
+    /// Playlist… and Add to Playlist…; a playlist made with New Playlist…,
+    /// filled with Add Songs and deleted from its ⋮; an album's joined genre
+    /// tag split; a song found in Search starting its station. With the panel
+    /// closed, then as it was. What it makes on the fake server it deletes
+    /// again, so the next size finds the library as it was.
+    private static func parity(_ albums: [Album]) async {
+        var log = ""
+        let wasOpen = app.panel.isOpen
+        app.panel.isOpen = false
+        let playlistsBefore = Set(app.library.playlists.map(\.id))
+
+        // Start a Station: the suggestions, "blue" found, the first artist's
+        // station's page (the list's first line is its heading).
+        MainWindow.select(1)
+        try? await Task.sleep(for: .seconds(1))
+        if let start = find(visiblePage(), { icon(of: $0) == "list-add-symbolic" }) { gtk_widget_activate(start) }
+        await step("02b-start-station", wait: 1.5)
+        if let field = find(dialog(), { isA($0, gtk_search_entry_get_type()) }) { gtk_editable_set_text(ptr(field), "blue") }
+        await step("02c-start-station-found", wait: 1.5)
+        if let picks = find(dialog(), { gtk_widget_has_css_class($0, "picks") != 0 }) {
+            gtk_widget_activate_action_variant(picks, "list.activate-item", g_variant_new_uint32(1))
+        }
+        await step("02d-start-station-page", wait: 2.5)
+
+        // Its ⋮: Save as Playlist… under the name it suggests, then saved;
+        // Add to Playlist….
+        if let more = find(visiblePage(), { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "More" }),
+           let menu = gtk_menu_button_get_popover(ptr(more)) {
+            let items: Widget = ptr(menu)
+            gtk_widget_activate_action_variant(items, "menu.item0", nil)
+            await step("03b-station-save", wait: 1)
+            enterInDialog()
+            await step("03c-station-saved", wait: 2)
+            gtk_widget_activate_action_variant(items, "menu.item1", nil)
+            await step("03d-station-add-to-playlist", wait: 1.5)
+            closeDialog()
+        } else {
+            log += "the station's page: no ⋮\n"
+        }
+
+        // An album tagged "Electronic; Techno": its head says Electronic.
+        if let album = albums.first(where: { $0.genres.contains { $0.contains(";") } }) {
+            Pages.open(album)
+            await step("05b-album-genre", wait: 2)
+            log += "05b-album-genre: \(album.name), tagged \(album.genres), its head says \(LibraryIndex.genreNames(album.genres).first ?? "nothing")\n"
+        }
+
+        // New Playlist…, named; its page, empty; Add Songs, two added; the
+        // page again, with them; Delete Playlist from its ⋮, asked first.
+        MainWindow.select(6)
+        try? await Task.sleep(for: .seconds(1))
+        if let new = find(visiblePage(), { icon(of: $0) == "list-add-symbolic" }) { gtk_widget_activate(new) }
+        try? await Task.sleep(for: .seconds(0.5))
+        if let name = find(dialog(), { isA($0, gtk_entry_get_type()) }) { gtk_editable_set_text(ptr(name), "Rainy Afternoon") }
+        await step("08f-playlist-new", wait: 1)
+        enterInDialog()
+        await step("08g-playlist-empty", wait: 2)
+        if let add = find(visiblePage(), { icon(of: $0) == "list-add-symbolic" }) { gtk_widget_activate(add) }
+        await step("08h-add-songs", wait: 1.5)
+        if let picks = find(dialog(), { gtk_widget_has_css_class($0, "picks") != 0 }) {
+            for row in [0, 2] { gtk_widget_activate_action_variant(picks, "list.activate-item", g_variant_new_uint32(UInt32(row))) }
+        }
+        await step("08i-add-songs-added", wait: 1.5)
+        closeDialog()
+        await step("08j-playlist-filled", wait: 2)
+        let made = app.library.playlists.first { $0.name == "Rainy Afternoon" }
+        log += "New Playlist…: \(made.map { "“\($0.name)”, \($0.trackCount ?? 0) songs" } ?? "not made")\n"
+        if let more = find(visiblePage(), { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "More" }),
+           let menu = gtk_menu_button_get_popover(ptr(more)) {
+            // Start Radio, Play Next, Add to Queue, Delete Playlist.
+            gtk_widget_activate_action_variant(ptr(menu), "menu.item3", nil)
+            await step("08k-playlist-delete", wait: 1)
+            if let delete = find(dialog(), { isA($0, gtk_button_get_type()) && label(of: $0) == "Delete Playlist" }) {
+                gtk_widget_activate(delete)
+            }
+            await step("08l-playlist-deleted", wait: 2)
+        }
+        log += "Delete Playlist: \(app.library.playlists.contains { $0.name == "Rainy Afternoon" } ? "still there" : "gone")\n"
+
+        // A song found in Search: its station, not the songs found.
+        gtk_widget_activate_action_variant(MainWindow.window, "app.search", nil)
+        SearchField.shared.text = "night drive"
+        try? await Task.sleep(for: .seconds(1.5))
+        if let songs = find(visiblePage(), { gtk_widget_has_css_class($0, "rows") != 0 }) {
+            gtk_widget_activate_action_variant(songs, "list.activate-item", g_variant_new_uint32(0))
+        }
+        await step("08m-search-song", wait: 2.5)
+        log += "a song in Search: \(app.player.currentTrack?.name ?? "nothing") plays, on \(app.radio.station?.title ?? "no station"), "
+            + "then \(app.player.upNext.prefix(3).map(\.track.name))\n"
+        MainWindow.select(1)
+        await step("08n-search-song-station", wait: 2)
+        SearchField.shared.text = ""
+
+        // What the walk made, gone again.
+        for playlist in app.library.playlists where !playlistsBefore.contains(playlist.id) {
+            try? await app.library.delete(playlist)
+        }
+        app.panel.isOpen = wasOpen
+        if let shots = Self.folder {
+            let file = "\(shots)/frames.txt"
+            try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+        }
+    }
+
+    /// A song on a station's page plays when it is clicked, and the list
+    /// after it — also once the list has started its station, and at the
+    /// second click of two: such a click once started the station anew
+    /// with other songs ("speelt er elke keer een heel ander nummer af",
+    /// the photographer, 16 November 2026). In frames.txt, no picture.
+    private static func stationClicks() async {
+        let station = app.radio.station(for: .personal)
+        // The page's own list: the same draw from the same library.
+        let picks = await app.radio.preview(station, randomSeed: app.radio.pageSeed(for: station)).map(\.track.name)
+        Pages.open(station)
+        try? await Task.sleep(for: .seconds(2))
+        guard picks.count > 5, let songs = find(visiblePage(), { gtk_widget_has_css_class($0, "rows") != 0 }) else { return }
+        var log = ""
+        for (row, clicks) in [(2, 1), (4, 2)] {
+            for _ in 0..<clicks { gtk_widget_activate_action_variant(songs, "list.activate-item", g_variant_new_uint32(UInt32(row))) }
+            try? await Task.sleep(for: .seconds(1.5))
+            let plays = [app.player.currentTrack?.name ?? "nothing", app.player.upNext.first?.track.name ?? "nothing"]
+            log += "a station's row \(row) clicked \(clicks)x: \(picks[row...(row + 1)]) asked, \(plays) plays: "
+                + "\(plays == Array(picks[row...(row + 1)]) ? "ok" : "WRONG")\n"
+        }
+        guard let shots = folder else { return }
+        let file = "\(shots)/frames.txt"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+    }
+
+    /// The dialog over the window, if one is up.
+    private static func dialog() -> Widget? {
+        adw_application_window_get_visible_dialog(ptr(MainWindow.window)).map { ptr($0) }
+    }
+
+    private static func closeDialog() {
+        if let dialog = dialog() { adw_dialog_close(ptr(dialog)) }
+    }
+
+    /// Enter in the dialog's name field, as the key sends it.
+    private static func enterInDialog() {
+        if let entry = find(dialog(), { isA($0, gtk_entry_get_type()) }) { enter(entry, type: gtk_entry_get_type()) }
+    }
+
+    private static func isA(_ widget: Widget, _ type: GType) -> Bool {
+        g_type_check_instance_is_a(ptr(widget), type) != 0
+    }
+
+    private static func icon(of widget: Widget) -> String? {
+        guard isA(widget, gtk_button_get_type()) else { return nil }
+        return gtk_button_get_icon_name(ptr(widget)).map { String(cString: $0) }
+    }
+
+    private static func label(of widget: Widget) -> String? {
+        gtk_button_get_label(ptr(widget)).map { String(cString: $0) }
+    }
+
+    private static func tooltip(of widget: Widget) -> String? {
+        gtk_widget_get_tooltip_text(widget).map { String(cString: $0) }
+    }
+
+    /// `root`'s first scroller `fraction` of the way down, as a picture.
+    private static func scrolled(_ root: Widget?, to fraction: Double, _ name: String) async {
+        guard let scroller = find(root, { String(cString: gtk_widget_get_css_name($0)) == "scrolledwindow" }),
+              let adjustment = gtk_scrolled_window_get_vadjustment(ptr(scroller)) else { return }
+        gtk_adjustment_set_value(adjustment, (gtk_adjustment_get_upper(adjustment) - gtk_adjustment_get_page_size(adjustment)) * fraction)
+        await step(name, wait: 1)
+    }
+
+    /// Preferences › Pages: a sidebar with fewer places, on Albums; then
+    /// every page off, from Albums, which goes Home: no sidebar at all,
+    /// Home, the panel and the bar. The listener's choice put back after.
+    private static func pages() async {
+        let settings = app.settings
+        let before = settings.hiddenPages
+        settings.hiddenPages = [.radio, .songs, .favorites, .genres, .recentlyAdded, .sidebarPlaylists]
+        MainWindow.select(3)
+        await step("23-pages-trimmed", wait: 2)
+        settings.hiddenPages = Set(AppSettings.Page.allCases)
+        await step("24-pages-none", wait: 2)
+        settings.hiddenPages = before
+        // Remove All Downloads, as Preferences does it: Downloaded with
+        // nothing, its one line. The keep (turned off with it) on again
+        // for the next size.
+        app.offline.removeAll()
+        MainWindow.select(10)
+        await step("25-downloaded-empty", wait: 2)
+        settings.keepSongs = true
+    }
+
+    /// The pointer over `widgets`, as a picture: Xvfb has no pointer, so
+    /// they are told they are under it, then told again they are not.
+    private static func hovering(_ widgets: [Widget?], _ name: String) async {
+        let lit = widgets.compactMap { $0 }
+        for widget in lit { gtk_widget_set_state_flags(widget, GTK_STATE_FLAG_PRELIGHT, 0) }
+        await step(name, wait: 0.5)
+        for widget in lit { gtk_widget_unset_state_flags(widget, GTK_STATE_FLAG_PRELIGHT) }
+    }
+
+    /// Enter in a search field (or another `type` of field): its
+    /// "activate", as the key sends it.
+    private static func enter(_ field: Widget, type: GType = gtk_search_entry_get_type()) {
+        var instance = GValue()
+        g_value_init(&instance, type)
+        g_value_set_object(&instance, raw(field))
+        g_signal_emitv(&instance, g_signal_lookup("activate", type), 0, nil)
+        g_value_unset(&instance)
+    }
+
+    private static func visiblePage() -> Widget? {
+        adw_navigation_view_get_visible_page(ptr(Nav.view)).map { ptr($0) }
+    }
+
+    /// The first widget under `root`, in the order drawn, that `test` picks.
+    private static func find(_ root: Widget?, _ test: (Widget) -> Bool) -> Widget? {
+        guard let root else { return nil }
+        if test(root) { return root }
+        var child = gtk_widget_get_first_child(root)
+        while let widget = child {
+            if let found = find(widget, test) { return found }
+            child = gtk_widget_get_next_sibling(widget)
+        }
+        return nil
+    }
+
+    /// A grid's second cell (the first has the page's edge beside it).
+    private static func gridCell() -> Widget? {
+        guard let grid = find(visiblePage(), { String(cString: gtk_widget_get_css_name($0)) == "gridview" }),
+              let first = gtk_widget_get_first_child(grid) else { return nil }
+        return gtk_widget_get_next_sibling(first) ?? first
+    }
+
+    private static func step(_ name: String, wait seconds: Double) async {
+        try? await Task.sleep(for: .seconds(seconds))
+        guard let folder, let node = picture(MainWindow.window) else { return }
+        write(node, to: "\(folder)/\(name).png")
+    }
+
+    /// A change in motion (Now Playing opening, closing) as pictures: the
+    /// window as the click finds it, then 60, 120 and 200 ms after it,
+    /// with when each was taken and whether the sleeve was drawn in
+    /// frames.txt. A transition is judged from its frames ("de transitie op
+    /// linux iig is niet heel nice nu", 14 November 2026).
+    private static func frames(_ name: String, _ change: () -> Void) async {
+        guard let folder, let before = picture(MainWindow.window) else { return }
+        var taken = [(0, before)]
+        var log = ""
+        let clock = ContinuousClock(), start = clock.now
+        change()
+        for planned in [60, 120, 200] {
+            try? await Task.sleep(until: start + .milliseconds(planned), clock: clock)
+            let at = (clock.now - start).components
+            guard let node = picture(MainWindow.window) else { continue }
+            taken.append((planned, node))
+            log += "\(name) \(planned) ms: taken at \(at.seconds * 1000 + at.attoseconds / 1_000_000_000_000_000) ms, "
+                + "sleeve drawn: \(NowPlayingPage.isSleeveDrawn)\n"
+        }
+        // Written after the last, so writing holds none of them up.
+        for (planned, node) in taken {
+            write(node, to: "\(folder)/\(name)-\(String(format: "%03d", planned))ms.png")
+        }
+        let file = "\(folder)/frames.txt"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+    }
+
+    /// The window as it is drawn now: its render node, quick to take.
+    private static func picture(_ window: Widget) -> OpaquePointer? {
+        let width = gtk_widget_get_width(window), height = gtk_widget_get_height(window)
+        guard width > 0, height > 0, let paintable = gtk_widget_paintable_new(window),
+              let snapshot = gtk_snapshot_new() else { return nil }
+        // At the screen's own scale (GDK_SCALE=2 under Xvfb): the drawings
+        // are made for it, and a 1x picture of them would hide that.
+        let scale = Screen.shared.scale
+        gtk_snapshot_scale(snapshot, Float(scale), Float(scale))
+        gdk_paintable_snapshot(paintable, ptr(snapshot), Double(width), Double(height))
+        g_object_unref(raw(paintable))
+        return gtk_snapshot_free_to_node(snapshot)
+    }
+
+    /// A picture to a PNG, rendered as the window's own are.
+    private static func write(_ node: OpaquePointer, to path: String) {
+        defer { gsk_render_node_unref(node) }
+        guard let native = gtk_widget_get_native(MainWindow.window), let renderer = gtk_native_get_renderer(native),
+              let texture = gsk_renderer_render_texture(renderer, node, nil) else { return }
+        gdk_texture_save_to_png(texture, path)
+        g_object_unref(raw(texture))
+    }
+}

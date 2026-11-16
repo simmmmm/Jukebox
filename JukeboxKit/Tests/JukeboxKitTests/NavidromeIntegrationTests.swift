@@ -77,7 +77,7 @@ enum NavidromeTestServer {
     }
 }
 
-@Suite("Navidrome: the real server", .serialized, .enabled(if: NavidromeTestServer.url != nil))
+@Suite("Navidrome: the real server", .serialized, .timeLimit(.minutes(1)), .enabled(if: NavidromeTestServer.url != nil))
 struct NavidromeIntegrationTests {
     let clock = ContinuousClock()
 

@@ -531,6 +531,16 @@ public protocol MusicServer: Sendable {
     /// Never throws and never waits on the music: a missed report is lost.
     func report(_ event: PlaybackEvent, _ report: PlaybackReport) async
 
+    // MARK: From one device to another (PlayState.swift)
+
+    /// What this device plays, for the listener's other devices: saved when
+    /// the song changes, on pause and resume, and every half minute while
+    /// it plays. Jellyfin: the user's DisplayPreferences for Jukebox;
+    /// Subsonic: savePlayQueue.
+    func savePlayState(_ state: PlayState) async throws
+    /// What was saved last, by any device; nil when nothing was.
+    func playState() async throws -> PlayState?
+
     // MARK: Offline (docs/OFFLINE.md)
 
     /// A song's file to save on the phone, at a quality: a plain file

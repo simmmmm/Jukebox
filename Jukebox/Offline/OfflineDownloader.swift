@@ -14,42 +14,9 @@
 
 import Foundation
 import JukeboxKit
+#if os(iOS)
 import UIKit
-
-/// Which song a download is, for whom, at what quality.
-nonisolated struct OfflineDownloadTag: Codable, Sendable, Hashable {
-    var account: String
-    var trackID: ItemID
-    var quality: DownloadQuality
-
-    init(account: String, trackID: ItemID, quality: DownloadQuality) {
-        self.account = account
-        self.trackID = trackID
-        self.quality = quality
-    }
-
-    /// From a task's description; nil for a task that is not one of ours.
-    init?(text: String?) {
-        guard let text, let data = text.data(using: .utf8),
-              let tag = try? JSONDecoder().decode(OfflineDownloadTag.self, from: data) else { return nil }
-        self = tag
-    }
-
-    var text: String {
-        guard let data = try? JSONEncoder().encode(self) else { return "" }
-        return String(decoding: data, as: UTF8.self)
-    }
-}
-
-nonisolated enum OfflineDownloadEvent: Sendable {
-    case progress(OfflineDownloadTag, written: Int64, expected: Int64)
-    /// In the account's folder now, as `fileName`.
-    case finished(OfflineDownloadTag, fileName: String, bytes: Int64)
-    /// `permanent`: the server said it has no such file, or cannot give it in
-    /// that form; asking again would not help.
-    case failed(OfflineDownloadTag, permanent: Bool)
-    case cancelled(OfflineDownloadTag)
-}
+#endif
 
 nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate, @unchecked Sendable {
     static let identifier = "com.tijmen.Jukebox.downloads"
@@ -253,8 +220,10 @@ enum OfflineBackgroundEvents {
     }
 }
 
+#if os(iOS)
 /// UIKit's delegate, for the one thing SwiftUI has no place for: the
-/// downloads' news while the app was in the background or not running.
+/// downloads' news while the app was in the background or not running. A
+/// Mac app is not woken for them; its session hands them over as it runs.
 final class JukeboxAppDelegate: NSObject, UIApplicationDelegate {
     func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String,
                      completionHandler: @escaping () -> Void) {
@@ -268,3 +237,4 @@ final class JukeboxAppDelegate: NSObject, UIApplicationDelegate {
         _ = OfflineDownloader.shared
     }
 }
+#endif

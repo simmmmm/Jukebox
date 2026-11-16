@@ -26,7 +26,7 @@ enum Keychain {
             // tracks with the phone locked.
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
         ]
-        SecItemAdd(query as CFDictionary, nil)
+        SecItemAdd(sent(query), nil)
     }
 
     static func loadCredentials() -> ServerCredentials? {
@@ -38,7 +38,7 @@ enum Keychain {
             kSecMatchLimit as String: kSecMatchLimitOne,
         ]
         var result: AnyObject?
-        guard SecItemCopyMatching(query as CFDictionary, &result) == errSecSuccess,
+        guard SecItemCopyMatching(sent(query), &result) == errSecSuccess,
               let data = result as? Data else { return nil }
         return try? JSONDecoder().decode(ServerCredentials.self, from: data)
     }
@@ -49,6 +49,22 @@ enum Keychain {
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
         ]
-        SecItemDelete(query as CFDictionary)
+        SecItemDelete(sent(query))
+    }
+
+    /// The query as the keychain gets it. On the Mac, in the iPhone's kind
+    /// of keychain, the data protection one, as Apple advises for new code
+    /// (TN3137): the file-based one is the Mac's legacy. It needs the app's
+    /// signed identity, which TestFlight's builds have. A debug build made
+    /// on the photographer's Mac has no provisioning profile, so it keeps
+    /// the sign-in in the file-based one, which knows the build by its
+    /// developer certificate: it stays signed in from one build to the next.
+    /// The iPhone's query goes as it always did.
+    private static func sent(_ query: [String: Any]) -> CFDictionary {
+        var query = query
+        #if os(macOS) && !DEBUG
+        query[kSecUseDataProtectionKeychain as String] = true
+        #endif
+        return query as CFDictionary
     }
 }

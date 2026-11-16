@@ -154,6 +154,17 @@ public struct SubsonicClient: MusicServer {
         for i in tracks.indices where tracks[i].albumArtist == nil {
             if let albumID = tracks[i].albumID { tracks[i].albumArtist = albumArtists[albumID] }
         }
+        // An opera's acts are the album's, not the song's (OpenSubsonic).
+        let discTitles = Dictionary(albums.compactMap { album in
+            album.id.flatMap { id in album.discTitles.isEmpty ? nil : (id, album.discTitles) }
+        }, uniquingKeysWith: { first, _ in first })
+        if !discTitles.isEmpty {
+            for i in tracks.indices {
+                if let albumID = tracks[i].albumID, let titles = discTitles[albumID] {
+                    tracks[i].discTitle = titles[tracks[i].discNumber ?? 1]
+                }
+            }
+        }
         return tracks
     }
 
@@ -260,6 +271,7 @@ public struct SubsonicClient: MusicServer {
         let tracks = album.song.compactMap { song -> Track? in
             guard var track = song.asTrack() else { return nil }
             if track.albumArtist == nil { track.albumArtist = albumArtist }
+            track.discTitle = album.discTitles[track.discNumber ?? 1]
             return track
         }
         return tracks.enumerated().sorted { a, b in

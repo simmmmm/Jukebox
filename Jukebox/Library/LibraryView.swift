@@ -1,7 +1,9 @@
 // The Library tab, as Music's: the kinds of things in it (Playlists,
 // Artists, Albums, Songs, Genres, Favorites, Downloaded), then what was added lately
 // as a grid of covers. On the first launch, while the server is read, the
-// grid's place shows how far it is.
+// grid's place shows how far it is. A kind Settings › Pages has off has no
+// row, Recently Added no grid; its page is still reached from Home and
+// Search.
 //
 // A ScrollView rather than a List: the grid's covers are each a link, and
 // links inside one List row share the row's tap.
@@ -11,28 +13,28 @@ import SwiftUI
 
 struct LibraryView: View {
     @Environment(LibraryStore.self) private var library
-    @Environment(\.horizontalSizeClass) private var sizeClass
+    @Environment(AppSettings.self) private var settings
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
-        let recent = Array(library.recentlyAddedAlbums.prefix(sizeClass == .regular ? 16 : 12))
+        let recent = Array(library.recentlyAddedAlbums.prefix(isWide ? 16 : 12))
+        let kinds = Self.kinds.filter { settings.shows($0.page) }
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
-                VStack(spacing: 0) {
-                    LibraryLinkRow(title: "Playlists", symbol: "music.note.list", route: .playlists)
-                    LibraryLinkRow(title: "Artists", symbol: "music.mic", route: .artists)
-                    LibraryLinkRow(title: "Albums", symbol: "square.stack", route: .albums)
-                    LibraryLinkRow(title: "Songs", symbol: "music.note", route: .songs)
-                    LibraryLinkRow(title: "Genres", symbol: "guitars", route: .genres)
-                    LibraryLinkRow(title: "Favorites", symbol: "heart", route: .favorites)
-                    // What is on the phone: what plays without a connection.
-                    LibraryLinkRow(title: "Downloaded", symbol: "arrow.down.circle", route: .downloaded, isLast: true)
+                if !kinds.isEmpty {
+                    VStack(spacing: 0) {
+                        ForEach(kinds, id: \.route) { kind in
+                            LibraryLinkRow(title: kind.title, symbol: kind.symbol, route: kind.route,
+                                           isLast: kind.route == kinds.last?.route)
+                        }
+                    }
+                    .padding(.bottom, Theme.Space.xl)
                 }
-                .padding(.bottom, Theme.Space.xl)
 
                 if recent.isEmpty {
                     LibraryStatusView()
                         .padding(.top, Theme.Space.xl)
-                } else {
+                } else if settings.shows(.recentlyAdded) {
                     SectionHeader("Recently added", route: .recentlyAdded)
                         .padding(.bottom, Theme.Space.m)
                     LazyVGrid(columns: columns, alignment: .leading, spacing: Theme.Space.xl) {
@@ -50,11 +52,30 @@ struct LibraryView: View {
         .refreshable { await library.refresh() }
     }
 
+    /// The rows, in Music's order, each with its switch in Settings › Pages.
+    private static let kinds: [LibraryKind] = [
+        LibraryKind(title: "Playlists", symbol: "music.note.list", route: .playlists, page: .playlists),
+        LibraryKind(title: "Artists", symbol: "music.mic", route: .artists, page: .artists),
+        LibraryKind(title: "Albums", symbol: "square.stack", route: .albums, page: .albums),
+        LibraryKind(title: "Songs", symbol: "music.note", route: .songs, page: .songs),
+        LibraryKind(title: "Genres", symbol: "guitars", route: .genres, page: .genres),
+        LibraryKind(title: "Favorites", symbol: "heart", route: .favorites, page: .favorites),
+        // What is on the phone: what plays without a connection.
+        LibraryKind(title: "Downloaded", symbol: "arrow.down.circle", route: .downloaded, page: .downloaded),
+    ]
+
     /// Two columns on the iPhone, as Music has it; four where there is room.
     private var columns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: Theme.Space.l, alignment: .top),
-              count: sizeClass == .regular ? 4 : 2)
+              count: isWide ? 4 : 2)
     }
+}
+
+private struct LibraryKind {
+    let title: LocalizedStringKey
+    let symbol: String
+    let route: Route
+    let page: AppSettings.Page
 }
 
 /// One of the Library's kinds: the accent symbol, the name, the chevron,
@@ -105,13 +126,38 @@ private struct LibraryRowButtonStyle: ButtonStyle {
     }
 }
 
-/// Every album, the newest first.
+/// Every album, the newest first. Wide, as Albums: the page's tiles.
 struct RecentlyAddedView: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    private var wide: some View {
         let albums = library.recentlyAddedAlbums
-        ScrollView {
+        return WidePage(title: "Recently Added") { page, width in
+            PageTitle("Recently Added")
+                .padding(.horizontal, page.side)
+            if albums.isEmpty {
+                PageEmptyLine("Albums added to your \(library.serverKind) server appear here.")
+                    .padding(.horizontal, page.side)
+            } else {
+                LibraryAlbumGrid(albums: albums, page: page, width: width)
+                    .padding(.top, Theme.Space.xl)
+            }
+        }
+        .refreshable { await library.refresh() }
+    }
+
+    private var compact: some View {
+        let albums = library.recentlyAddedAlbums
+        return ScrollView {
             LibraryAlbumGrid(albums: albums)
                 .padding(.vertical, Theme.Space.l)
         }

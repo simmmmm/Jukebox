@@ -5,10 +5,9 @@
   collected, and why each "required reason" API is used. docs/STATS.md.
 
   - Collected: Product Interaction, the anonymous usage counts on the
-    photographer's own Aptabase server (Jukebox/App/Stats.swift), on unless
+    photographer's own OpenPanel server (Jukebox/App/Stats.swift), on unless
     turned off in Settings › Privacy. Not linked to the listener (no account,
-    no device id, no address is kept), not used for tracking, for Analytics.
-    Aptabase's own package declares the same in its manifest.
+    no id on the device), not used for tracking, for Analytics.
   - User defaults: the listener's settings, the device id Jellyfin lists
     this phone by, the recent stations and searches, the sign-in's address
     and user name, all read only by this app (CA92.1).

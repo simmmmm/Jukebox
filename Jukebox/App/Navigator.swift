@@ -4,7 +4,8 @@
 // it is in. Every screen that can be pushed is a Route; `routeDestinations()`
 // is the one place that turns a Route into its view, and so where a pushed
 // page is counted (Stats, `screen`), by its kind alone: "album", never the
-// album. The tabs are counted where they are drawn (MainTabView).
+// album. The tabs are counted where they are drawn (MainTabView), the wide
+// window's places likewise (WideShell).
 
 import JukeboxKit
 import SwiftUI
@@ -14,6 +15,19 @@ enum AppTab: Hashable {
     case radio
     case library
     case search
+}
+
+/// A place in the wide window's sidebar (WideShell), as Linux's sidebar has
+/// them: what the page shows before anything is pushed on it.
+enum Place: Hashable {
+    case home
+    case radio
+    case search
+    /// One of the library's kinds (`.albums`, `.favorites`, …): its page.
+    case library(Route)
+    /// A playlist under the places, by its id: renamed or grown, it is
+    /// still the place chosen.
+    case playlist(Playlist.ID)
 }
 
 enum Route: Hashable {
@@ -48,14 +62,51 @@ final class Navigator {
     var radioPath = NavigationPath()
     var libraryPath = NavigationPath()
     var searchPath = NavigationPath()
-    /// Now Playing, full screen over everything.
+    /// The wide window's place and what is pushed on its page (WideShell).
+    /// Kept beside the tabs' paths: an iPad resized between the two finds
+    /// each shell where it left it, nothing translated between them.
+    var place: Place = .home {
+        // Another place starts at its own page.
+        didSet { widePath = NavigationPath() }
+    }
+    var widePath = NavigationPath()
+    /// The wide window shows (RootView says so): `open` pushes on its page.
+    var isWide = false
+    /// Now Playing, full screen over everything (the room, in the wide
+    /// window).
     var isNowPlayingPresented = false
     /// "Add to Playlist…" from any menu: the sheet MainTabView shows.
     var addToPlaylist: AddToPlaylistRequest?
+    /// Settings over the wide window on an iPad (the sidebar's menu, ⌘,).
+    /// The Mac has its Settings window.
+    var isSettingsPresented = false
+    /// What is typed in the wide window's one search field, in its bar
+    /// (WideShell): the Search place shows what it finds (SearchView). It
+    /// keeps its text, on any place, until it is cleared.
+    var searchQuery = ""
+    /// Return in that field: the search is kept as a recent one (SearchView).
+    var searchSubmits = 0
+    /// ⌘F: the field asked for the keys (JukeboxCommands, WideShell).
+    var searchRequests = 0
 
-    /// Push `route` on the tab the listener is in, closing Now Playing first.
+    /// The Search place's own page, over Now Playing: the bar's field was
+    /// clicked into or typed in. The Search place has no row in the
+    /// sidebar; the field is its way in ("de search pagina mag uit het
+    /// menu", the photographer, 14 November 2026).
+    func showSearch() {
+        if isNowPlayingPresented { isNowPlayingPresented = false }
+        // A result opened from it: back to what was found.
+        if place != .search || !widePath.isEmpty { place = .search }
+    }
+
+    /// Push `route` on the page the listener is on (the wide window's, else
+    /// the tab's), closing Now Playing first.
     func open(_ route: Route) {
         isNowPlayingPresented = false
+        if isWide {
+            widePath.append(route)
+            return
+        }
         switch tab {
         case .home: homePath.append(route)
         case .radio: radioPath.append(route)
@@ -88,30 +139,46 @@ final class Navigator {
 }
 
 extension View {
-    /// Every Route's screen, for a tab's NavigationStack.
+    /// Every Route's screen, for a tab's NavigationStack and the wide
+    /// window's page.
     func routeDestinations() -> some View {
+        routeDestinations(each: EmptyModifier())
+    }
+
+    /// The same, each pushed page in `modifier` too: the wide window's bar
+    /// (WideShell's PageBar).
+    func routeDestinations(each modifier: some ViewModifier) -> some View {
         navigationDestination(for: Route.self) { route in
-            Group {
-                switch route {
-                case let .album(album): AlbumDetailView(album: album)
-                case let .artist(artist): ArtistDetailView(artist: artist)
-                case let .playlist(playlist): PlaylistDetailView(playlist: playlist)
-                case let .genre(genre): GenreDetailView(genre: genre)
-                case let .mix(mix): MixDetailView(mix: mix)
-                case let .station(station): StationDetailView(station: station)
-                case .artists: ArtistsView()
-                case .albums: AlbumsView()
-                case .songs: SongsView()
-                case .playlists: PlaylistsView()
-                case .genres: GenresView()
-                case .favorites: FavoritesView()
-                case .recentlyAdded: RecentlyAddedView()
-                case .downloaded: DownloadedView()
-                }
-            }
-            // Once a push, whether by a link or by `open`: not again when
-            // the listener comes Back to it.
-            .countsScreen(route.statsName)
+            RoutePage(route: route)
+                // Once a push, whether by a link or by `open`: not again when
+                // the listener comes Back to it.
+                .countsScreen(route.statsName)
+                .modifier(modifier)
+        }
+    }
+}
+
+/// The screen a Route shows: pushed, or a library place's own page in the
+/// wide window's sidebar.
+struct RoutePage: View {
+    let route: Route
+
+    var body: some View {
+        switch route {
+        case let .album(album): AlbumDetailView(album: album)
+        case let .artist(artist): ArtistDetailView(artist: artist)
+        case let .playlist(playlist): PlaylistDetailView(playlist: playlist)
+        case let .genre(genre): GenreDetailView(genre: genre)
+        case let .mix(mix): MixDetailView(mix: mix)
+        case let .station(station): StationDetailView(station: station)
+        case .artists: ArtistsView()
+        case .albums: AlbumsView()
+        case .songs: SongsView()
+        case .playlists: PlaylistsView()
+        case .genres: GenresView()
+        case .favorites: FavoritesView()
+        case .recentlyAdded: RecentlyAddedView()
+        case .downloaded: DownloadedView()
         }
     }
 }
@@ -124,6 +191,20 @@ extension AppTab {
         case .radio: return "radio"
         case .library: return "library"
         case .search: return "search"
+        }
+    }
+}
+
+extension Place {
+    /// The place in the usage counts (Stats, `screen`) and in its row's
+    /// accessibility id (`place.albums`): its kind, never the playlist.
+    var statsName: String {
+        switch self {
+        case .home: return "home"
+        case .radio: return "radio"
+        case .search: return "search"
+        case let .library(route): return route.statsName
+        case .playlist: return "playlist"
         }
     }
 }

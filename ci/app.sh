@@ -1,16 +1,45 @@
 #!/usr/bin/env bash
 # CI's app job (.github/workflows/ci.yml, on GitHub's macOS): the Xcode
 # project from project.yml, then either
-#   - the app compiled for the iPhone without signing (every push), then,
-#     when it compiled, the pictures of its screens (ci/screenshots.sh), or
+#   - the app compiled without signing (every push) for the iPhone, then
+#     for the Mac, then, when the iPhone's compiled, the pictures of its
+#     screens (ci/screenshots.sh), or
 #   - with TESTFLIGHT=true: archived, signed by Xcode itself with the App
 #     Store Connect API key (role Admin: it makes the certificate and the
-#     profile, no Mac of the photographer's needed) and uploaded.
+#     profile, no Mac of the photographer's needed) and uploaded, the
+#     iPhone's and then the Mac's, to the same App Store Connect record.
 # The compiler's errors go to the run's summary page, so a failed build
 # reads without opening the log.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 mkdir -p build/logs
+
+# The Mac compiles (run 43621164893, 14 November 2026): its build is part of
+# the job's verdict. False again makes a red Mac build only a warning.
+mac_gates=true
+# A [testflight] run uploads the Mac too once App Store Connect's Jukebox
+# has the macOS platform (Apps › Jukebox › + Add Platform › macOS); until
+# then it uploads the iPhone's build only.
+mac_upload=false
+
+# Uploads and screenshots belong to mac and main. On a work branch a commit
+# that happens to name the upload's token uploads nothing, and the job is the
+# two builds only, quick to iterate on; a branch ending in "walk" keeps the
+# screenshots, for working on the walk itself.
+case ${GITHUB_REF_NAME:-mac} in
+  mac|main) ;;
+  # The App Store's pictures (docs/RELEASE.md, Screenshots): the Mac's
+  # window, the iPhone and the iPad; the iPad last, as mac's round has its
+  # pictures already should time run short. The iPhone is the walk's own,
+  # the 17 Pro: its 1206 x 2622 is the size App Store Connect requires.
+  # SHOTS_IPHONE="iPhone 17 Pro Max" here walks the large display instead,
+  # for the optional set (1320 x 2868).
+  store-walk) TESTFLIGHT=false; export SHOTS_DEVICES="mac iphone ipad" ;;
+  # The Mac's walk alone, to work on it: a quarter of the store's round.
+  store-mac-walk) TESTFLIGHT=false; export SHOTS_DEVICES=mac ;;
+  *walk) TESTFLIGHT=false ;;
+  *) TESTFLIGHT=false; SCREENSHOTS=${SCREENSHOTS:-false} ;;
+esac
 
 # The newest released Xcode 26 the runner has.
 xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
@@ -85,9 +114,28 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   head -80 build/logs/warnings.txt
   echo "$(wc -l < build/logs/warnings.txt | tr -d ' ') distinct Swift warnings"
   report build/logs/build.log "Compile errors"
+
+  # The Mac: the same target, built for macOS. After the iPhone's, so a
+  # Mac-only error never hides the iPhone's.
+  set +e
+  xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
+    -destination 'generic/platform=macOS' \
+    CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+    > build/logs/build-mac.log 2>&1
+  mac_status=$?
+  set -e
+  { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build-mac.log || true; } \
+    | sed "s#$PWD/##g" | sort -u > build/logs/errors-mac.txt
+  head -200 build/logs/errors-mac.txt
+  report build/logs/build-mac.log "Compile errors, Mac"
+
   # Only of an app that compiled; SCREENSHOTS=false leaves them out.
   if [[ $status == 0 && ${SCREENSHOTS:-true} != false ]]; then
     screenshots
+  fi
+  if [[ $mac_status != 0 ]]; then
+    echo "::warning::The Mac build failed (build/logs/errors-mac.txt)."
+    if [[ $mac_gates == true && $status == 0 ]]; then status=$mac_status; fi
   fi
   exit $status
 fi
@@ -145,4 +193,33 @@ report build/logs/export.log "Upload errors"
 if [[ $status != 0 ]] && grep -q -i "No suitable application records\|app record" build/logs/export.log; then
   echo "::error::App Store Connect has no app with bundle ID com.tijmen.Jukebox yet: Apps › + › New App (README, TestFlight)."
 fi
-exit $status
+
+# Until mac_upload, a [testflight] run uploads the iPhone's build only and
+# stays green.
+mac_status=0
+if [[ $mac_upload != true ]]; then
+  echo "::notice::The Mac is not uploaded until mac_upload is true."
+else
+  # The Mac's build of the same app, to the same App Store Connect record.
+  # Signed ad hoc when archived, so its sandbox entitlements are inside the
+  # archive; the export signs it for the store with the same API key.
+  set +e
+  xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
+    -destination 'generic/platform=macOS' -archivePath build/Jukebox-mac.xcarchive \
+    DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" \
+    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" \
+    > build/logs/archive-mac.log 2>&1 \
+  && xcodebuild -exportArchive -archivePath build/Jukebox-mac.xcarchive \
+    -exportOptionsPlist build/ExportOptions.plist -exportPath build/export-mac "${auth[@]}" \
+    > build/logs/export-mac.log 2>&1
+  mac_status=$?
+  set -e
+  report build/logs/archive-mac.log "Mac archive errors"
+  # No export log when the archive failed.
+  if [[ -f build/logs/export-mac.log ]]; then
+    tail -40 build/logs/export-mac.log
+    report build/logs/export-mac.log "Mac upload errors"
+  fi
+fi
+# The iPhone's upload stands on its own; the job is red if either failed.
+exit $(( status != 0 ? status : mac_status ))

@@ -10,11 +10,15 @@
 // Playing shows it as a banner, but most of the time Now Playing is closed,
 // and a song that silently does not play, or a station that silently does
 // not start, reads as a broken button.
+//
+// The tabs' alone (the iPhone, a narrow iPad window). The wide window, the
+// iPad's and the Mac's, has the player's bar across its foot instead, as
+// Linux's (PlayerBar), so this is never there.
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
+#if os(iOS)
 struct MiniPlayer: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
@@ -64,7 +68,7 @@ struct MiniPlayer: View {
             // Shown on this line silently; VoiceOver is told. Not while Now
             // Playing is open: it tells VoiceOver itself, and once is enough.
             if let message, !navigator.isNowPlayingPresented {
-                UIAccessibility.post(notification: .announcement, argument: message)
+                AccessibilityNotification.Announcement(message).post()
             }
         }
     }
@@ -250,3 +254,4 @@ struct MiniPlayer: View {
         navigator.isNowPlayingPresented = true
     }
 }
+#endif

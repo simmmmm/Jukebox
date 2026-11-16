@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Jukebox
+GenericName=Music Player
+Comment=Music from your Jellyfin, Navidrome or other Subsonic server
+Exec=jukebox
+Icon=com.tijmen.Jukebox
+Terminal=false
+Categories=GNOME;GTK;AudioVideo;Audio;Player;
+Keywords=music;radio;jellyfin;navidrome;subsonic;
+StartupNotify=true

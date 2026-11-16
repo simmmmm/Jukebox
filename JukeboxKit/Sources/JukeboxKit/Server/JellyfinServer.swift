@@ -76,8 +76,32 @@ public struct JellyfinServer: MusicServer {
 
     // MARK: The library
 
+    /// Every track; for the albums that look classical (Classical.
+    /// classicalAlbumIDs) also their composers, which Jellyfin keeps only in
+    /// People. Asking People for every track costs: on the 358-track test
+    /// server the page of 2000 took 133–140 ms with it against 36 without
+    /// (medians of 7, 512 kB against 440; about 0.28 ms a track), and its
+    /// 358 have no composer (People there is only Artist and AlbumArtist).
+    /// Its 37 tracks in a classical genre, asked by id afterwards: 20–25 ms.
+    /// A pop library asks nothing more; finding that it has no classical
+    /// albums took 42 ms for 20 000 tracks (a debug build, ClassicalTests).
+    /// An all-classical library pays about what People on the page would:
+    /// 108 ms for all 358 by id, three requests at once. A failure costs
+    /// the composers, not the library.
     public func allTracks(progress: (@Sendable (Int, Int) -> Void)?) async throws -> [Track] {
-        try await mapped { try await client.allTracks(progress: progress) }
+        var tracks = try await mapped { try await client.allTracks(progress: progress) }
+        let classical = Classical.classicalAlbumIDs(in: tracks)
+        guard !classical.isEmpty else { return tracks }
+        let ids = tracks.compactMap { track in track.albumID.flatMap { classical.contains($0) ? track.id : nil } }
+        do {
+            let credits = try await client.credits(of: ids)
+            for i in tracks.indices {
+                if let found = credits[tracks[i].id] { tracks[i].credits = found }
+            }
+        } catch {
+            try Task.checkCancellation()
+        }
+        return tracks
     }
 
     /// 1000 a page, as LibraryStore asked for them.

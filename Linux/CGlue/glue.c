@@ -1,0 +1,215 @@
+#include "glue.h"
+#include <math.h>
+#include <libsecret/secret.h>
+
+// One item, as the iPhone's keychain has one: the signed-in session.
+static const SecretSchema *schema(void) {
+    static const SecretSchema s = {
+        "com.tijmen.Jukebox", SECRET_SCHEMA_NONE,
+        {{"account", SECRET_SCHEMA_ATTRIBUTE_STRING}, {NULL, 0}},
+    };
+    return &s;
+}
+
+gboolean jb_secret_available(void) {
+    static int known = -1;
+    if (known >= 0) return known;
+    known = 0;
+    GDBusConnection *bus = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (!bus) return FALSE;
+    // Running, or started when asked for.
+    const char *lists[] = {"ListNames", "ListActivatableNames"};
+    for (int i = 0; i < 2 && !known; i++) {
+        GVariant *reply = g_dbus_connection_call_sync(bus, "org.freedesktop.DBus", "/org/freedesktop/DBus",
+            "org.freedesktop.DBus", lists[i], NULL, G_VARIANT_TYPE("(as)"), G_DBUS_CALL_FLAGS_NONE, 2000, NULL, NULL);
+        if (!reply) continue;
+        GVariantIter *names;
+        const char *name;
+        g_variant_get(reply, "(as)", &names);
+        while (g_variant_iter_next(names, "&s", &name))
+            if (!g_strcmp0(name, "org.freedesktop.secrets")) known = 1;
+        g_variant_iter_free(names);
+        g_variant_unref(reply);
+    }
+    g_object_unref(bus);
+    return known;
+}
+
+gboolean jb_secret_store(const char *json) {
+    return secret_password_store_sync(schema(), SECRET_COLLECTION_DEFAULT, "Jukebox",
+                                      json, NULL, NULL, "account", "credentials", NULL);
+}
+
+char *jb_secret_load(void) {
+    char *found = secret_password_lookup_sync(schema(), NULL, NULL, "account", "credentials", NULL);
+    if (!found) return NULL;
+    char *copy = g_strdup(found);
+    secret_password_free(found);
+    return copy;
+}
+
+void jb_secret_clear(void) {
+    secret_password_clear_sync(schema(), NULL, NULL, "account", "credentials", NULL);
+}
+
+void jb_set_string(gpointer object, const char *name, const char *value) { g_object_set(object, name, value, NULL); }
+void jb_set_double(gpointer object, const char *name, double value) { g_object_set(object, name, value, NULL); }
+void jb_set_int(gpointer object, const char *name, int value) { g_object_set(object, name, value, NULL); }
+void jb_set_bool(gpointer object, const char *name, gboolean value) { g_object_set(object, name, value, NULL); }
+void jb_set_object(gpointer object, const char *name, gpointer value) { g_object_set(object, name, value, NULL); }
+
+GstMessageType jb_message_type(GstMessage *message) { return GST_MESSAGE_TYPE(message); }
+gboolean jb_message_is_from(GstMessage *message, gpointer object) { return GST_MESSAGE_SRC(message) == GST_OBJECT_CAST(object); }
+
+char *jb_message_error(GstMessage *message) {
+    GError *error = NULL;
+    gst_message_parse_error(message, &error, NULL);
+    char *text = g_strdup(error ? error->message : "");
+    g_clear_error(&error);
+    return text;
+}
+
+gint64 jb_seconds(double seconds) { return (gint64)(seconds * GST_SECOND); }
+double jb_from_nanoseconds(gint64 nanoseconds) { return (double)nanoseconds / GST_SECOND; }
+
+AdwBreakpoint *jb_breakpoint(GtkWidget *window, const char *condition) {
+    AdwBreakpoint *breakpoint = adw_breakpoint_new(adw_breakpoint_condition_parse(condition));
+    adw_application_window_add_breakpoint(ADW_APPLICATION_WINDOW(window), breakpoint);
+    return breakpoint;
+}
+
+void jb_breakpoint_set(AdwBreakpoint *breakpoint, gpointer object, const char *property, gboolean value) {
+    GValue setting = G_VALUE_INIT;
+    g_value_init(&setting, G_TYPE_BOOLEAN);
+    g_value_set_boolean(&setting, value);
+    adw_breakpoint_add_setter(breakpoint, G_OBJECT(object), property, &setting);
+    g_value_unset(&setting);
+}
+
+typedef struct {
+    JbPointHandler handler;
+    gpointer data;
+    GDestroyNotify destroy;
+} PointClosure;
+
+static void point_pressed(GtkGestureClick *gesture, int presses, double x, double y, gpointer user) {
+    PointClosure *closure = user;
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+    closure->handler(x, y, closure->data);
+}
+
+static void point_free(gpointer user, GClosure *unused) {
+    PointClosure *closure = user;
+    if (closure->destroy) closure->destroy(closure->data);
+    g_free(closure);
+}
+
+void jb_on_secondary_click(GtkWidget *widget, JbPointHandler handler, gpointer data, GDestroyNotify destroy) {
+    PointClosure *closure = g_new0(PointClosure, 1);
+    closure->handler = handler;
+    closure->data = data;
+    closure->destroy = destroy;
+    GtkGesture *click = gtk_gesture_click_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click), GDK_BUTTON_SECONDARY);
+    g_signal_connect_data(click, "pressed", G_CALLBACK(point_pressed), closure, point_free, 0);
+    gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click));
+}
+
+void jb_popover_point_to(GtkWidget *popover, double x, double y) {
+    GdkRectangle at = {(int)x, (int)y, 1, 1};
+    gtk_popover_set_pointing_to(GTK_POPOVER(popover), &at);
+}
+
+// Drag to scroll a shelf, as the photographer asked: "kan je bij die
+// scrollable dingen ervoor zorgen dat ik met de muis kan slepen".
+// Below 8 px of movement nothing is claimed, so a press on a tile stays a
+// click; past it the gesture claims the press, and the tile under the
+// pointer never sees a click.
+typedef struct {
+    GtkAdjustment *adjustment;
+    double start;          // the adjustment's value when the press began
+    double last_x;         // the pointer's offset at the last update
+    gint64 last_time;      // and when, in microseconds
+    double velocity;       // px per second, for the throw
+    gboolean dragging;
+    guint tick;            // the throw's tick callback, 0 when none
+    GtkWidget *widget;
+} Drag;
+
+static void drag_stop_throw(Drag *d) {
+    if (d->tick) {
+        gtk_widget_remove_tick_callback(d->widget, d->tick);
+        d->tick = 0;
+    }
+}
+
+static gboolean drag_throw(GtkWidget *widget, GdkFrameClock *clock, gpointer user) {
+    Drag *d = user;
+    gint64 now = gdk_frame_clock_get_frame_time(clock);
+    double dt = (now - d->last_time) / 1e6;
+    d->last_time = now;
+    if (dt <= 0 || dt > 0.1) dt = 1.0 / 60;
+    gtk_adjustment_set_value(d->adjustment, gtk_adjustment_get_value(d->adjustment) - d->velocity * dt);
+    // Friction: the throw loses most of its speed in about half a second.
+    d->velocity *= pow(0.004, dt);
+    if (fabs(d->velocity) < 20) {
+        d->tick = 0;
+        return G_SOURCE_REMOVE;
+    }
+    return G_SOURCE_CONTINUE;
+}
+
+static void drag_begin(GtkGestureDrag *gesture, double x, double y, gpointer user) {
+    Drag *d = user;
+    drag_stop_throw(d);
+    d->start = gtk_adjustment_get_value(d->adjustment);
+    d->last_x = 0;
+    d->last_time = g_get_monotonic_time();
+    d->velocity = 0;
+    d->dragging = FALSE;
+}
+
+static void drag_update(GtkGestureDrag *gesture, double x, double y, gpointer user) {
+    Drag *d = user;
+    if (!d->dragging) {
+        if (fabs(x) < 8 || fabs(y) > fabs(x)) return;
+        d->dragging = TRUE;
+        gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+        gtk_widget_set_cursor_from_name(d->widget, "grabbing");
+    }
+    gint64 now = g_get_monotonic_time();
+    double dt = (now - d->last_time) / 1e6;
+    if (dt > 0) d->velocity = 0.7 * d->velocity + 0.3 * ((x - d->last_x) / dt);
+    d->last_x = x;
+    d->last_time = now;
+    gtk_adjustment_set_value(d->adjustment, d->start - x);
+}
+
+static void drag_end(GtkGestureDrag *gesture, double x, double y, gpointer user) {
+    Drag *d = user;
+    if (!d->dragging) return;
+    d->dragging = FALSE;
+    gtk_widget_set_cursor(d->widget, NULL);
+    // Let go after a pause: no throw.
+    if (g_get_monotonic_time() - d->last_time > 80000) d->velocity = 0;
+    if (fabs(d->velocity) > 200) {
+        d->last_time = 0;
+        d->tick = gtk_widget_add_tick_callback(d->widget, drag_throw, d, NULL);
+    }
+}
+
+void jb_drag_to_scroll(GtkWidget *scrolled) {
+    Drag *d = g_new0(Drag, 1);
+    d->adjustment = gtk_scrolled_window_get_hadjustment(GTK_SCROLLED_WINDOW(scrolled));
+    d->widget = scrolled;
+    GtkGesture *drag = gtk_gesture_drag_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(drag), GDK_BUTTON_PRIMARY);
+    // Mouse only: touch and touchpads already scroll the shelf themselves.
+    gtk_gesture_single_set_exclusive(GTK_GESTURE_SINGLE(drag), FALSE);
+    gtk_event_controller_set_propagation_phase(GTK_EVENT_CONTROLLER(drag), GTK_PHASE_CAPTURE);
+    g_signal_connect(drag, "drag-begin", G_CALLBACK(drag_begin), d);
+    g_signal_connect(drag, "drag-update", G_CALLBACK(drag_update), d);
+    g_signal_connect(drag, "drag-end", G_CALLBACK(drag_end), d);
+    gtk_widget_add_controller(scrolled, GTK_EVENT_CONTROLLER(drag));
+    g_object_set_data_full(G_OBJECT(scrolled), "jb-drag", d, g_free);
+}

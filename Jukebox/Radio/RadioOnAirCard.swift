@@ -1,5 +1,5 @@
-// The station on the air, at the top of the Radio tab, as sketch D draws it
-// (docs/design/radio-after.png): the screen's one small label, "On air";
+// The station on the air, at the top of the Radio tab, as sketch D drew it:
+// the screen's one small label, "On air";
 // the station's art, the one lit thing on the page; its name in the serif;
 // the song; the dial from Familiar to Adventurous; Pause and Stop as words;
 // the thumbs as plain glyphs. On the ground, no card: "a card in a card,
@@ -11,21 +11,93 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct RadioOnAirCard: View {
     let station: Station
+    let measures: HomeMeasures
 
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
     @Environment(Navigator.self) private var navigator
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    init(station: Station) {
+    init(station: Station, measures: HomeMeasures) {
         self.station = station
+        self.measures = measures
     }
 
     var body: some View {
+        if measures.isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    /// As Linux's (spec §5): the art 176, lit; beside it, in the middle of
+    /// its height, "On air", the name in the serif at 32, the song, and 16
+    /// under them Pause, the page's one filled button, and Stop. The dial is
+    /// in Up next and the thumbs are the bar's: "de muziek gaat voor".
+    private var wide: some View {
+        HStack(alignment: .center, spacing: Theme.Space.xl) {
+            Button {
+                navigator.isNowPlayingPresented = true
+            } label: {
+                StationArtwork(station: station, size: Self.wideArt)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(Text(station.title))
+            .accessibilityHint("Shows Now Playing")
+
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                Eyebrow("On air")
+                Text(station.title)
+                    .desktopFont(32, design: .serif)
+                    .foregroundStyle(.primary)
+                    .lineLimit(2)
+                // When it started, as Linux's; the song where that is not
+                // known.
+                Group {
+                    if radio.isStarting {
+                        Text("Choosing the first songs…")
+                    } else if let started = StationClock.shared.started(station) {
+                        Text(verbatim: started)
+                    } else if let track = player.currentTrack {
+                        Text(verbatim: [track.name, track.artistLine].filter { !$0.isEmpty }.joined(separator: " · "))
+                    }
+                }
+                .desktopFont(13)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                HStack(spacing: Theme.Space.l) {
+                    Button {
+                        player.togglePlayPause()
+                    } label: {
+                        Text(player.isPlaying ? "Pause" : "Play")
+                    }
+                    .buttonStyle(.prominent)
+                    .fixedSize()
+                    .disabled(radio.isStarting)
+                    Button {
+                        // The station first, so the song that stops is not
+                        // taken as a skip; then the music.
+                        radio.stop()
+                        player.stop()
+                    } label: {
+                        Text("Stop")
+                    }
+                    .buttonStyle(.secondary)
+                }
+                .padding(.top, Theme.Space.m)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// The station on air's art on a wide page (spec §8).
+    private static let wideArt: CGFloat = 176
+
+    private var compact: some View {
         VStack(alignment: .leading, spacing: Theme.Space.l) {
             Button {
                 navigator.isNowPlayingPresented = true
@@ -106,6 +178,27 @@ struct RadioOnAirCard: View {
     }
 }
 
+/// When the station on the air began, for a wide page's "Started at
+/// 11:46", as Linux's (RadioPage.started). WideShell follows the radio from
+/// the window's start.
+/// ponytail: kept in memory from the first time it is seen on air, as
+/// Linux's; one restored at launch has started at the launch.
+@Observable
+final class StationClock {
+    static let shared = StationClock()
+
+    private var start: (id: String, date: Date)?
+
+    func follow(_ id: String?) {
+        if id != start?.id { start = id.map { ($0, Date()) } }
+    }
+
+    func started(_ station: Station) -> String? {
+        guard let start, start.id == station.id else { return nil }
+        return String(localized: "Started at \(start.date.formatted(date: .omitted, time: .shortened))")
+    }
+}
+
 /// Thumbs down and up for the song on the air, as plain glyphs: a thumbs
 /// down skips it and plays less like it, a thumbs up plays more like it
 /// (RadioController). The one given is filled, the thumbs up in the accent.
@@ -169,6 +262,7 @@ struct RadioDial: View {
 
     @Environment(RadioController.self) private var radio
     @Environment(AppSettings.self) private var settings
+    @Environment(\.isWide) private var isWide
     @State private var isDragging = false
 
     init(onDragging: @escaping (Bool) -> Void = { _ in }) {
@@ -177,15 +271,16 @@ struct RadioDial: View {
 
     var body: some View {
         @Bindable var settings = settings
-        VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: { editing in
-                isDragging = editing
-                onDragging(editing)
-                if !editing {
-                    radio.adventurousnessChanged()
-                    Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
+        VStack(alignment: .leading, spacing: isWide ? Theme.Space.s : Theme.Space.xs) {
+            Group {
+                if isWide {
+                    // Linux's dial in the panel: its line, the knob always.
+                    LineSlider(value: $settings.adventurousness, range: 0...1, alwaysShowsKnob: true,
+                               onEditingChanged: edited)
+                } else {
+                    Slider(value: $settings.adventurousness, in: 0...1, onEditingChanged: edited)
                 }
-            })
+            }
             // The tint around it: Copper or Glow on the Radio tab and a
             // station's page (the app's own), the cover's colour on Now
             // Playing.
@@ -196,12 +291,21 @@ struct RadioDial: View {
                 Spacer()
                 Text("Adventurous")
             }
-            .font(.subheadline)
+            .desktopFont(13, phone: .subheadline)
             .foregroundStyle(.secondary)
             .accessibilityHidden(true)
         }
         .onChange(of: settings.adventurousness) { _, _ in
             if !isDragging { radio.adventurousnessChanged() }
+        }
+    }
+
+    private func edited(_ editing: Bool) {
+        isDragging = editing
+        onDragging(editing)
+        if !editing {
+            radio.adventurousnessChanged()
+            Stats.track(.dialChanged, ["value": Stats.dial(settings.adventurousness)])
         }
     }
 

@@ -9,61 +9,16 @@
 // drawn flat — Copper outside, Glow inside, a flat core, no blur, no bloom.
 // Only a station's artwork, while that station is on the air, is lit.
 //
-// The geometry is dev/brand/geom.py's, number for number: change both
-// together. Drawn with Path so it can tint, template and fade — the bands
-// come on one by one on the welcome screen.
+// The geometry is ArchCut's (ArtMeasures.swift), the mark's one source,
+// which Linux's Drawings.swift reads too. Drawn with Path so it can tint,
+// template and fade — the bands come on one by one on the welcome screen.
 
 import SwiftUI
 
 // MARK: - Geometry
 
-/// The mark's measures in its 32-unit box (dev/brand/geom.py's `Cut`).
-/// `nonisolated`, as the shapes that read it are: SwiftUI may ask a shape
-/// for its path away from the main actor.
-nonisolated struct ArchCut: Equatable, Sendable {
-    /// A tube's stroke.
-    var stroke: CGFloat
-    /// The gap between the outer tube, the inner tube and the core.
-    var gap: CGFloat
-    /// Half the mark's width, to a tube's outer edge.
-    var half: CGFloat
-    /// Where the arcs spring from: every part is concentric about (16, spring).
-    var spring: CGFloat
-    /// The baseline the tubes' round caps and the core reach.
-    var base: CGFloat
-
-    var outerRadius: CGFloat { half - stroke / 2 }
-    var innerRadius: CGFloat { outerRadius - stroke - gap }
-    var coreRadius: CGFloat { innerRadius - stroke / 2 - gap }
-    /// Where a tube's centre line ends, so that its cap reaches the base.
-    var leg: CGFloat { base - stroke / 2 }
-
-    /// Above 20 pt: width 24, height 28, a core 4.8 wide.
-    static let regular = ArchCut(stroke: 2.6, gap: 2.2, half: 12, spring: 14, base: 30)
-    /// 20 pt and below, as SF Symbols have optical sizes: heavier tubes, a
-    /// wider core, tighter gaps and a little more of the box, so that at 16
-    /// and 11 points the three parts stay three instead of running together.
-    static let heavy = ArchCut(stroke: 3.2, gap: 1.9, half: 13, spring: 14.5, base: 30.5)
-
-    static func forSize(_ size: CGFloat) -> ArchCut {
-        size <= 20 ? .heavy : .regular
-    }
-}
-
-/// A square of `box` units, the largest the rect holds, centred in it.
-nonisolated struct ArchSquare: Sendable {
-    let origin: CGPoint
-    let unit: CGFloat
-
-    init(_ rect: CGRect, box: CGFloat) {
-        unit = min(rect.width, rect.height) / box
-        origin = CGPoint(x: rect.midX - box / 2 * unit, y: rect.midY - box / 2 * unit)
-    }
-
-    func point(_ x: CGFloat, _ y: CGFloat) -> CGPoint {
-        CGPoint(x: origin.x + x * unit, y: origin.y + y * unit)
-    }
-}
+// ArchCut and ArchSquare, the numbers, are in ArtMeasures.swift: Linux
+// draws the mark from them too.
 
 /// An arch's centre line, as a tube is drawn: from the foot of the left leg
 /// up to where the arc springs, over the top in a half circle, down to the

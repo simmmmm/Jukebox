@@ -7,7 +7,7 @@
 // to explore today, and what is new. Explore needs no history, so Home is
 // full on day one too.
 //
-// Sketch D (docs/design/home-after.png), approved the same day — "Ja nice
+// Sketch D, approved the same day — "Ja nice
 // dit, maak dit maar dan refinen we later wel": the title in the serif, by
 // the hour ("Tonight"); Your Station as a flat arch beside its name, one
 // fact and the one Play, on the ground rather than on a card; the mixes'
@@ -16,7 +16,6 @@
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct HomeView: View {
     @Environment(LibraryStore.self) private var library
@@ -24,6 +23,7 @@ struct HomeView: View {
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.isWide) private var isWide
 
     @State private var isShowingSettings = false
 
@@ -42,15 +42,20 @@ struct HomeView: View {
         }
         .background(Theme.ground)
         // What part of the day it is, in the serif (Theme.styleNavigationBars):
-        // sketch D's "Tonight" in the evening. The tab is still Home.
-        .navigationTitle(RelativeDay.partOfDay())
-        .navigationBarTitleDisplayMode(.large)
+        // sketch D's "Tonight" in the evening. The tab is still Home. On a
+        // wide page the title is the page's own (WidePage), and the bar's
+        // once that has scrolled away.
+        .homeTitle(RelativeDay.partOfDay())
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    isShowingSettings = true
-                } label: {
-                    Label("Settings", systemImage: "person.crop.circle")
+            // A wide window's Settings are in the sidebar's menu, as on
+            // Linux, and the Mac's behind ⌘,.
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Button {
+                        isShowingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "person.crop.circle")
+                    }
                 }
             }
         }
@@ -77,26 +82,51 @@ private struct HomeFeed: View {
     @Environment(HistoryStore.self) private var history
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
+    @Environment(\.isWide) private var isWide
+
+    init() {}
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Space.xl) {
-                HomeOfflineNotice()
-                HomeStationHero()
-                    .padding(.horizontal, Theme.margin)
-                Hairline()
-                HomeMixesSection()
-                HomePlayedLatelySection()
-                HomeMostPlayedSection()
-                HomeExploreSection()
-                HomeRecentlyAddedSection()
+        Group {
+            if isWide {
+                // As Linux's: the part of the day 24 under the bar, as every
+                // wide page's title, and Your Station 32 under it, not a
+                // section's 40 (spec §5).
+                WidePage(title: RelativeDay.partOfDay()) { page, _ in
+                    PageTitle(RelativeDay.partOfDay())
+                        .padding(.horizontal, page.side)
+                    sections(HomeMeasures(page: page))
+                        .padding(.top, Theme.Space.xxl)
+                }
+            } else {
+                ScrollView {
+                    sections(HomeMeasures(page: nil))
+                        .padding(.top, Theme.Space.s)
+                        .padding(.bottom, Theme.Space.xxl)
+                }
             }
-            .padding(.top, Theme.Space.s)
-            .padding(.bottom, Theme.Space.xxl)
         }
         .refreshable {
             await library.refresh()
             await mixes.rebuild(library: library, history: history, settings: settings)
+        }
+    }
+
+    private func sections(_ measures: HomeMeasures) -> some View {
+        VStack(alignment: .leading, spacing: measures.betweenSections) {
+            HomeOfflineNotice(margin: measures.margin)
+            HomeHandoffNotice(margin: measures.margin)
+            HomeStationHero(measures: measures)
+                .padding(.horizontal, measures.margin)
+            // On a wide page the space alone parts them, as on Linux.
+            if !measures.isWide {
+                Hairline()
+            }
+            HomeMixesSection(measures: measures)
+            HomePlayedLatelySection(measures: measures)
+            HomeMostPlayedSection(measures: measures)
+            HomeExploreSection(measures: measures)
+            HomeRecentlyAddedSection(measures: measures)
         }
     }
 }
@@ -120,9 +150,50 @@ enum HomeLayout {
 /// With songs on the phone it says those still play (OfflineStore): offline,
 /// only they do. Only when there is a library on screen; without one
 /// HomeLibraryStatus says it full size.
+/// Music on another device, or this one's from last time, and the one
+/// thing to do about it: go on with it here (HandoffStore). The
+/// photographer, 13 November 2026: "zodat ik verder kan waar ik gebleven was
+/// als ik wegga van mijn pc". Words on the ground, as the notice above it.
+private struct HomeHandoffNotice: View {
+    let margin: CGFloat
+
+    @Environment(HandoffStore.self) private var handoff
+
+    init(margin: CGFloat) {
+        self.margin = margin
+    }
+
+    var body: some View {
+        if let offer = handoff.offer {
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                // Wide, Linux's: both lines 15, the first at 60%.
+                Text(offer.heading)
+                    .desktopFont(15, phone: .subheadline)
+                    .foregroundStyle(.secondary)
+                Text("\(offer.track.name) · \(offer.track.artistLine)")
+                    .desktopFont(15, phone: nil)
+                    .lineLimit(2)
+                Button(offer.isOwn ? String(localized: "Continue") : String(localized: "Continue Here")) {
+                    handoff.continueHere()
+                }
+                .buttonStyle(.secondary)
+            }
+            .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+            .accessibilityElement(children: .contain)
+            .padding(.horizontal, margin)
+        }
+    }
+}
+
 private struct HomeOfflineNotice: View {
+    let margin: CGFloat
+
     @Environment(LibraryStore.self) private var library
     @Environment(OfflineStore.self) private var offline
+
+    init(margin: CGFloat) {
+        self.margin = margin
+    }
 
     var body: some View {
         if isFailed || offline.isOffline {
@@ -135,7 +206,7 @@ private struct HomeOfflineNotice: View {
                     Image(systemName: offline.hasNetwork ? "wifi.exclamationmark" : "wifi.slash")
                         .foregroundStyle(.secondary)
                 }
-                .font(.subheadline)
+                .desktopFont(15, phone: .subheadline)
                 Button("Try Again") {
                     offline.checkServer()
                     Task { await library.refresh() }
@@ -144,7 +215,7 @@ private struct HomeOfflineNotice: View {
             }
             .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
             .accessibilityElement(children: .contain)
-            .padding(.horizontal, Theme.margin)
+            .padding(.horizontal, margin)
         }
     }
 
@@ -163,7 +234,7 @@ private struct HomeOfflineNotice: View {
             ? String(localized: "Can’t reach \(serverName).")
             : String(localized: "You’re offline.")
         let still = offline.songCount > 0
-            ? String(localized: "The songs on this \(UIDevice.current.model) still play.")
+            ? String(localized: "The songs on this \(Device.model) still play.")
             : String(localized: "Showing your library from last time.")
         return "\(why) \(still)"
     }
@@ -182,8 +253,12 @@ private struct HomeOfflineNotice: View {
 /// play first, as every station's tile does. While a station plays it shows
 /// that station instead, lit, under the one small label, "On air", with
 /// the song; a tap then opens Now Playing. The Radio tab shows it too, while
-/// nothing is on the air.
+/// nothing is on the air. On a wide page as Linux has it (spec §5): the art
+/// 120, 24, and beside it the name in the serif, the fact and Play, 16
+/// under it, the words in the middle of the art's height.
 struct HomeStationHero: View {
+    let measures: HomeMeasures
+
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
     @Environment(MixStore.self) private var mixes
@@ -192,21 +267,29 @@ struct HomeStationHero: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init() {}
+    init(measures: HomeMeasures) {
+        self.measures = measures
+    }
 
     var body: some View {
-        let onAir = radio.stationOnAir(player: player)
+        // On a wide page always Your Station, lit while it is the one on
+        // the air, as Linux's Home: another station on air is Radio's.
+        let onAir = radio.stationOnAir(player: player).flatMap { station in
+            !measures.isWide || station.seed == .personal ? station : nil
+        }
         let shown = onAir ?? yourStation
+        let isWide = measures.isWide
+        let gap = isWide ? Theme.Space.xl : Theme.Space.l
         // Side by side; the art above the words at the largest text sizes,
         // where side by side leaves the words no room.
         let isStacked = dynamicTypeSize.isAccessibilitySize
         let layout = isStacked
-            ? AnyLayout(VStackLayout(alignment: .leading, spacing: Theme.Space.l))
-            : AnyLayout(HStackLayout(alignment: .top, spacing: Theme.Space.l))
+            ? AnyLayout(VStackLayout(alignment: .leading, spacing: gap))
+            : AnyLayout(HStackLayout(alignment: isWide ? .center : .top, spacing: gap))
         layout {
-            StationArtwork(station: shown, size: HomeLayout.heroArt)
+            StationArtwork(station: shown, size: isWide ? Self.wideArt : HomeLayout.heroArt)
             words(onAir)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isWide ? .leading : .topLeading)
         }
         // As tall as the art, so the name starts at its top and Play ends
         // at its foot; taller when the words need it.
@@ -228,6 +311,9 @@ struct HomeStationHero: View {
         .accessibilityElement(children: .contain)
     }
 
+    /// The art on a wide page (spec §8).
+    private static let wideArt: CGFloat = 120
+
     /// Your Station as the mixes built it, with the listener's covers.
     private var personal: Station? {
         mixes.stations.first { $0.seed == .personal }
@@ -243,31 +329,52 @@ struct HomeStationHero: View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             if let onAir {
                 Eyebrow("On air")
-                Text(onAir.title)
-                    .font(.serif(.title2))
+                name(onAir.title)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
+                // Wide, when it started and 8 under the name, as Linux's.
                 Group {
                     if radio.isStarting {
                         Text("Choosing the first songs…")
+                    } else if measures.isWide, let started = StationClock.shared.started(onAir) {
+                        Text(verbatim: started)
                     } else if let track = player.currentTrack {
                         Text("\(track.name) · \(track.artistLine)")
                     }
                 }
-                .font(.subheadline)
+                .desktopFont(13, phone: .subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
+                .padding(.top, measures.isWide ? Theme.Space.xs : 0)
             } else {
-                Text("Your Station")
-                    .font(.serif(.title2))
+                name(String(localized: "Your Station"))
                     .foregroundStyle(.primary)
                 // A fact, not a slogan: when it last played on this device.
+                // Wide, 8 under the name, as Linux's.
                 Text(RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
-                    .font(.subheadline)
+                    .desktopFont(13, phone: .subheadline)
                     .foregroundStyle(.secondary)
+                    .padding(.top, measures.isWide ? Theme.Space.xs : 0)
             }
-            Spacer(minLength: Theme.Space.m)
+            // Play at the art's foot; on a wide page 16 under the words,
+            // which stand in the middle of the art.
+            if measures.isWide {
+                Color.clear.frame(height: Theme.Space.s)
+            } else {
+                Spacer(minLength: Theme.Space.m)
+            }
             playButton(onAir)
+        }
+    }
+
+    /// The station's name in the serif: the title style's on the iPhone,
+    /// a section's 24 on a wide page.
+    @ViewBuilder
+    private func name(_ title: String) -> some View {
+        if measures.isWide {
+            Text(title).desktopFont(24, design: .serif)
+        } else {
+            Text(title).font(.serif(.title2))
         }
     }
 
@@ -294,7 +401,8 @@ struct HomeStationHero: View {
                     Text("Play")
                 }
             }
-            .frame(minWidth: 64)
+            // Wide, as wide as its word, as Linux's.
+            .frame(minWidth: measures.isWide ? nil : 64)
         }
         .buttonStyle(.prominent)
         .fixedSize()
@@ -311,20 +419,28 @@ struct HomeStationHero: View {
 // MARK: - Mixes
 
 private struct HomeMixesSection: View {
+    let measures: HomeMeasures
+
     @Environment(MixStore.self) private var mixes
 
+    init(measures: HomeMeasures) {
+        self.measures = measures
+    }
+
     var body: some View {
+        // Each under its own name, as the kit names the moods after their
+        // songs: never "Daily Mix 1" to 6 (MixesRuleTests).
         if !mixes.mixes.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Mixes", fact: madeAt)
-                Shelf(items: mixes.mixes, width: HomeLayout.tileWidth) { mix in
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle("Mixes", fact: madeAt, measures: measures)
+                Shelf(items: mixes.mixes, width: measures.tile, margin: measures.margin) { mix in
                     HomeMixLink(mix: mix)
                 }
             }
         } else if isMaking {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Mixes")
-                HomePlaceholderShelf(kind: .mix, width: HomeLayout.tileWidth)
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle("Mixes", measures: measures)
+                HomePlaceholderShelf(kind: .mix, width: measures.tile, margin: measures.margin)
             }
         }
     }
@@ -363,22 +479,41 @@ private struct HomePlayedItem: Identifiable {
 
 /// What the listener played lately, newest first, each with when: the
 /// albums they chose (HomeShelves.recentlyPlayedDated: not a station's
-/// songs) and the stations they listened to, as one list on hairlines.
+/// songs) and the stations they listened to, as one list on hairlines. On
+/// a wide page in the page's columns, 24 apart, as Linux has it.
 private struct HomePlayedLatelySection: View {
+    let measures: HomeMeasures
+
     @Environment(LibraryStore.self) private var library
     @Environment(HistoryStore.self) private var history
     @Environment(RadioController.self) private var radio
 
-    private static let limit = 6
+    init(measures: HomeMeasures) {
+        self.measures = measures
+    }
+
+    /// Six on the iPhone; on a wide page twelve, as Linux shows, in two or
+    /// three columns.
+    private var limit: Int { measures.isWide ? 12 : 6 }
 
     var body: some View {
         let items = played
         if !items.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                SectionHeader("Played lately")
-                VStack(spacing: 0) {
-                    ForEach(items) { item in
-                        HomePlayedRow(item: item)
+            VStack(alignment: .leading, spacing: measures.isWide ? Theme.Space.s : Theme.Space.xs) {
+                HomeSectionTitle("Played lately", measures: measures)
+                if measures.isWide {
+                    let column = GridItem(.flexible(), spacing: Theme.Space.xl, alignment: .top)
+                    LazyVGrid(columns: Array(repeating: column, count: measures.columns), spacing: 0) {
+                        ForEach(items) { item in
+                            HomePlayedRow(item: item, isWide: true)
+                        }
+                    }
+                    .padding(.horizontal, measures.margin)
+                } else {
+                    VStack(spacing: 0) {
+                        ForEach(items) { item in
+                            HomePlayedRow(item: item)
+                        }
                     }
                 }
             }
@@ -391,8 +526,11 @@ private struct HomePlayedLatelySection: View {
                                                      albums: library.albums,
                                                      track: { library.track(id: $0) },
                                                      album: { library.album(id: $0) },
-                                                     limit: Self.limit)
+                                                     limit: limit)
         var items = albums.map { HomePlayedItem(kind: .album($0.album), date: $0.date) }
+        // The albums alone on a wide page, as Linux's; the stations are
+        // Radio's tiles there.
+        if measures.isWide { return items }
         // A station is in the list once it has played a song here (the
         // history knows its songs by the station's id).
         let dates = HomeShelves.stationDates(events: events)
@@ -402,7 +540,7 @@ private struct HomePlayedLatelySection: View {
             }
         }
         items.sort { $0.date > $1.date }
-        return Array(items.prefix(Self.limit))
+        return Array(items.prefix(limit))
     }
 }
 
@@ -411,6 +549,9 @@ private struct HomePlayedLatelySection: View {
 /// It opens the album or the station's page; a long press plays it.
 private struct HomePlayedRow: View {
     let item: HomePlayedItem
+    /// In a wide page's column: when it played after what it is ("Artist ·
+    /// Today"), the hairline the column's width; the grid gives the margin.
+    var isWide = false
 
     var body: some View {
         switch item.kind {
@@ -440,30 +581,35 @@ private struct HomePlayedRow: View {
     private static let artSide: CGFloat = 48
 
     private func row<Art: View>(title: String, detail: String, @ViewBuilder art: () -> Art) -> some View {
-        HStack(spacing: Theme.Space.m) {
+        let when = RelativeDay.standalone(item.date)
+        let line = isWide ? [detail, when].filter { !$0.isEmpty }.joined(separator: " · ") : detail
+        return HStack(spacing: isWide ? Theme.Space.l : Theme.Space.m) {
             art()
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: isWide ? 0 : Theme.Space.xs) {
                 Text(title)
+                    .desktopFont(15, phone: nil, wide: isWide)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
-                if !detail.isEmpty {
-                    Text(detail)
-                        .font(.subheadline)
+                if !line.isEmpty {
+                    Text(line)
+                        .desktopFont(13, phone: .subheadline, wide: isWide)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: Theme.Space.s)
-            Text(RelativeDay.standalone(item.date))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if !isWide {
+                Text(when)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
         }
         .padding(.vertical, Theme.Space.s)
-        .padding(.trailing, Theme.margin)
+        .padding(.trailing, isWide ? 0 : Theme.margin)
         .overlay(alignment: .bottom) {
-            Hairline(inset: Self.artSide + Theme.Space.m)
+            Hairline(inset: isWide ? 0 : Self.artSide + Theme.Space.m)
         }
-        .padding(.leading, Theme.margin)
+        .padding(.leading, isWide ? 0 : Theme.margin)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
     }
@@ -473,14 +619,20 @@ private struct HomePlayedRow: View {
 
 /// The albums played most, by the plays of their songs on every device.
 private struct HomeMostPlayedSection: View {
+    let measures: HomeMeasures
+
     @Environment(LibraryStore.self) private var library
+
+    init(measures: HomeMeasures) {
+        self.measures = measures
+    }
 
     var body: some View {
         let albums = HomeShelves.mostPlayed(tracks: library.tracks, album: { library.album(id: $0) })
         if !albums.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Most played")
-                Shelf(items: albums, width: HomeLayout.tileWidth) { album in
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle("Most played", measures: measures)
+                Shelf(items: albums, width: measures.tile, margin: measures.margin) { album in
                     HomeAlbumLink(album: album)
                 }
             }
@@ -491,8 +643,14 @@ private struct HomeMostPlayedSection: View {
 /// Twenty albums from anywhere in the library, in an order that holds for
 /// the day, as Feishin's "Explore from your library".
 private struct HomeExploreSection: View {
+    let measures: HomeMeasures
+
     @Environment(LibraryStore.self) private var library
     @Environment(MixStore.self) private var mixes
+
+    init(measures: HomeMeasures) {
+        self.measures = measures
+    }
 
     var body: some View {
         // The mixes' day, so the shelf turns over with them the next morning
@@ -501,9 +659,9 @@ private struct HomeExploreSection: View {
         let day = HomeShelves.dayNumber(of: mixes.builtAt ?? Date())
         let albums = HomeShelves.explore(albums: library.albums, day: day)
         if !albums.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Explore")
-                Shelf(items: albums, width: HomeLayout.tileWidth) { album in
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle("Explore", measures: measures)
+                Shelf(items: albums, width: measures.tile, margin: measures.margin) { album in
                     HomeAlbumLink(album: album)
                 }
             }
@@ -512,14 +670,20 @@ private struct HomeExploreSection: View {
 }
 
 private struct HomeRecentlyAddedSection: View {
+    let measures: HomeMeasures
+
     @Environment(LibraryStore.self) private var library
+
+    init(measures: HomeMeasures) {
+        self.measures = measures
+    }
 
     var body: some View {
         let albums = Array(library.recentlyAddedAlbums.prefix(20))
         if !albums.isEmpty {
-            VStack(alignment: .leading, spacing: Theme.Space.m) {
-                SectionHeader("Recently added", route: .recentlyAdded)
-                Shelf(items: albums, width: HomeLayout.tileWidth) { album in
+            VStack(alignment: .leading, spacing: measures.belowHeading) {
+                HomeSectionTitle("Recently added", route: .recentlyAdded, measures: measures)
+                Shelf(items: albums, width: measures.tile, margin: measures.margin) { album in
                     HomeAlbumLink(album: album)
                 }
             }

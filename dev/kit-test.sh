@@ -47,7 +47,10 @@ fi
 if [[ ${1:-} == build ]]; then
   cmd=(swift build)
 else
-  cmd=(swift test "$@")
+  # Each line out as it is written: into a pipe (CI's log) the tests' output
+  # went in 4 kB blocks, so after a hang the log's last test started was not
+  # the one that hung (14 November 2026).
+  cmd=(stdbuf -oL swift test "$@")
 fi
 
 # .build in a volume of its own: the host's checkout stays clean, and a

@@ -1,0 +1,4 @@
+module CGst [system] {
+    header "gst.h"
+    export *
+}

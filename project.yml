@@ -7,6 +7,9 @@ options:
   bundleIdPrefix: com.tijmen
   deploymentTarget:
     iOS: "26.0"
+    # The Mac's year matches the iPhone's, so shared views need no
+    # `if #available`.
+    macOS: "26.0"
   developmentLanguage: en
   createIntermediateGroups: true
 settings:
@@ -27,27 +30,23 @@ settings:
 packages:
   JukeboxKit:
     path: JukeboxKit
-  # The anonymous usage counts' client (Jukebox/App/Stats.swift,
-  # docs/STATS.md), as Numa has it.
-  Aptabase:
-    url: https://github.com/aptabase/aptabase-swift.git
-    from: 0.4.0
 targets:
+  # One target for the iPhone, the iPad and the Mac (a native macOS
+  # destination, not Catalyst): one bundle ID, so one App Store record and one
+  # purchase.
   Jukebox:
     type: application
-    platform: iOS
+    platform: auto
+    supportedDestinations: [iOS, macOS]
     sources:
       # The Swift files, and as resources the asset catalog and
       # Resources/PrivacyInfo.xcprivacy: XcodeGen gives a file of a type it
       # has no rule for the Copy Bundle Resources phase (2.40.1 and later).
       - path: Jukebox
+    # Swift links the system frameworks it imports itself.
     dependencies:
       - package: JukeboxKit
-      # The usage counts: the app only, not the screenshot walk.
-      - package: Aptabase
-      - sdk: AVFoundation.framework
-      - sdk: MediaPlayer.framework
-      - sdk: AVKit.framework
+    # One Info.plist for both: the Mac ignores the UI* keys.
     info:
       path: Jukebox/Info.plist
       properties:
@@ -84,6 +83,11 @@ targets:
         ENABLE_PREVIEWS: YES
         SUPPORTS_MACCATALYST: NO
         SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+        # The Mac's alone: the Mac App Store asks for the sandbox (the
+        # iPhone's is built in), and the hardened runtime is Xcode's default
+        # for a Mac app.
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Jukebox/Jukebox-macOS.entitlements
+        "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES
 
   # The screenshot walk (JukeboxUITests/ScreenshotTests.swift), run in the
   # simulator by ci/screenshots.sh. Built only by build-for-testing: the
@@ -91,9 +95,13 @@ targets:
   # (`xcodebuild build`) and the TestFlight archive build the app as before.
   # Swift 5 mode and the project's main-actor default, as the app: the walk
   # marks what it needs @MainActor itself, so it reads the same either way.
+  # For the Mac too, as the app's target is: the Mac's own walk
+  # (MacScreenshotTests.swift) drives the Mac app's window for the App
+  # Store's pictures. Each file is one platform's, whole, by `#if os`.
   JukeboxUITests:
     type: bundle.ui-testing
-    platform: iOS
+    platform: auto
+    supportedDestinations: [iOS, macOS]
     sources:
       - path: JukeboxUITests
     dependencies:
@@ -106,6 +114,10 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
+        # XcodeGen gives a UI test bundle the iPhone's run paths on every
+        # platform; a Mac bundle keeps its frameworks one folder up, as
+        # Xcode's own Mac UI test target says.
+        "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]": ["$(inherited)", "@executable_path/../Frameworks", "@loader_path/../Frameworks"]
 schemes:
   Jukebox:
     build:

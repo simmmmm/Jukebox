@@ -6,26 +6,104 @@
 // artist at the end. Download in the bar puts it on the phone
 // (OfflineDownloadButton); offline, a downloaded album the library has not
 // indexed shows the songs it was downloaded with.
+//
+// In a wide window, as Linux's (04-albums, 05-album): the grid of the
+// page's tiles under the title, the sort at its end; an album's cover 224
+// at the left with its title at the foot, its songs numbered under a
+// hairline, More by the artist in tiles.
 
 import JukeboxKit
 import SwiftUI
 
 struct AlbumsView: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(\.isWide) private var isWide
     @AppStorage("library.albumSort") private var sort: LibraryAlbumSort = .title
     @State private var query = ""
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    private var wide: some View {
         let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let albums = searching ? library.matchingAlbums(query) : library.albums(sortedBy: sort)
-        ScrollView {
+        return WidePage(title: "Albums") { page, width in
+            HStack(alignment: .bottom, spacing: Theme.Space.m) {
+                PageTitle("Albums")
+                Spacer(minLength: 0)
+                // The sort at the title's end, as Linux's drop-down: the
+                // one chosen and a chevron, bold 15 on a faint fill.
+                Menu {
+                    Picker("Sort By", selection: $sort) {
+                        ForEach(LibraryAlbumSort.allCases) { option in
+                            Text(Self.name(of: option)).tag(option)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    HStack(spacing: Theme.Space.s) {
+                        Text(Self.name(of: sort))
+                        Image(systemName: "chevron.down")
+                            .desktopFont(11, weight: .bold)
+                    }
+                    .desktopFont(15, weight: .bold)
+                    .foregroundStyle(.primary)
+                    .padding(.horizontal, Theme.Space.m)
+                    .frame(height: 32)
+                    .background(Color.primary.opacity(0.1), in: .rect(cornerRadius: Theme.Space.s))
+                    .contentShape(.rect)
+                }
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
+                .accessibilityLabel("Sort By")
+                .disabled(searching)
+            }
+            .padding(.horizontal, page.side)
+            if albums.isEmpty {
+                Group {
+                    if searching {
+                        PagePlainLine("Nothing in Albums matches “\(query)”.")
+                    } else {
+                        PageEmptyLine("Albums on your \(library.serverKind) server appear here.")
+                    }
+                }
+                .padding(.horizontal, page.side)
+            } else {
+                LibraryAlbumGrid(albums: albums, page: page, width: width)
+                    .padding(.top, Theme.Space.xl)
+            }
+        }
+        // No find field when wide: Linux's pages have none, Search is a place.
+        .refreshable { await library.refresh() }
+    }
+
+    private static func name(of sort: LibraryAlbumSort) -> LocalizedStringKey {
+        switch sort {
+        case .title: "Title"
+        case .artist: "Artist"
+        case .year: "Year"
+        case .recentlyAdded: "Recently Added"
+        }
+    }
+
+    private var compact: some View {
+        let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let albums = searching ? library.matchingAlbums(query) : library.albums(sortedBy: sort)
+        return ScrollView {
             LibraryAlbumGrid(albums: albums)
                 .padding(.vertical, Theme.Space.l)
         }
         .navigationTitle("Albums")
         .searchable(text: $query, prompt: "Find in Albums")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .barTrailing) {
                 Menu {
                     Picker("Sort By", selection: $sort) {
                         Text("Title").tag(LibraryAlbumSort.title)
@@ -59,6 +137,7 @@ struct AlbumDetailView: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(Navigator.self) private var navigator
     @Environment(OfflineStore.self) private var offline
+    @Environment(\.isWide) private var isWide
     /// The album's songs from the server, for an album the library has not
     /// indexed (found by search before the library has loaded).
     @State private var fetched: [Track]?
@@ -72,6 +151,94 @@ struct AlbumDetailView: View {
         let discs = Self.splitIntoDiscs(tracks)
         let moreBy = isLoading ? nil : moreByArtist(shown)
 
+        Group {
+            if isWide {
+                wide(shown, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
+            } else {
+                compact(shown, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
+            }
+        }
+        .toolbar {
+            // Not when the server does not let this account download,
+            // unless the album is on the phone already, to remove it.
+            if offline.offersDownload(for: .album(album.id)) {
+                ToolbarItem(placement: .barTrailing) {
+                    OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: tracks),
+                                          isConfirmingRemoval: $isConfirmingRemoval)
+                }
+            }
+            // Wide, the head has its own "…".
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Menu {
+                        LibraryAlbumMenu(album: shown, tracks: tracks)
+                    } label: {
+                        Label("More", systemImage: "ellipsis")
+                    }
+                }
+            }
+        }
+        .offlineRemovalDialog($isConfirmingRemoval, for: .album(album.id), name: shown.name)
+        .task(id: album.id) { await fetchIfNeeded() }
+    }
+
+    /// Linux's album page (05-album): the head, a hairline, the songs
+    /// numbered (a guest artist after the title), then More by the artist
+    /// in tiles. "Disc 2" over a second disc's songs.
+    private func wide(_ shown: Album, tracks: [Track], discs: [Disc], isLoading: Bool, moreBy: Artist?) -> some View {
+        WidePage(title: shown.name, hasHead: true) { page, _ in
+            PageHead(page: page, title: shown.name, lead: shown.artistLine,
+                     leadAction: { goToArtist(shown) }, facts: Self.facts(shown, tracks: tracks)) { size in
+                ArtworkView(shown.artwork, size: size)
+            } actions: {
+                PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
+                                shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
+                    .disabled(tracks.isEmpty)
+                HStack(spacing: Theme.Space.s) {
+                    HeartButton(item: .album(shown.id))
+                    MoreMenu {
+                        LibraryAlbumMenu(album: shown, tracks: tracks)
+                    }
+                }
+            }
+            PageRule(page: page)
+            Group {
+                if isLoading {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                } else {
+                    ForEach(discs) { disc in
+                        if discs.count > 1 {
+                            PageSectionTitle("Disc \(disc.number)",
+                                             above: disc.id == discs.first?.id ? 0 : Theme.Space.xl,
+                                             below: Theme.Space.s)
+                        }
+                        // Only the guests after a title ("June Hollow" on a
+                        // Willow & Pine album), Linux's rule.
+                        PageTrackRows(tracks: disc.tracks, numbered: true,
+                                      subtitle: { Self.guests(of: $0, on: shown) },
+                                      play: { track in
+                                          let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
+                                          play(tracks, from: i, album: shown, shuffled: false)
+                                      })
+                    }
+                }
+            }
+            .padding(.horizontal, page.side)
+            if let artist = moreBy {
+                let others = library.albums(by: artist).filter { $0.id != shown.id }
+                if !others.isEmpty {
+                    PageSectionTitle("More by \(artist.name)")
+                        .padding(.horizontal, page.side)
+                    Shelf(items: others, width: CGFloat(page.tile), margin: page.side) { other in
+                        LibraryAlbumLink(album: other, showsArtist: false)
+                    }
+                }
+            }
+        }
+    }
+
+    private func compact(_ shown: Album, tracks: [Track], discs: [Disc], isLoading: Bool, moreBy: Artist?) -> some View {
         List {
             header(shown, tracks: tracks)
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
@@ -117,25 +284,6 @@ struct AlbumDetailView: View {
         }
         .listStyle(.plain)
         .libraryScrolledTitle(shown.name)
-        .toolbar {
-            // Not when the server does not let this account download,
-            // unless the album is on the phone already, to remove it.
-            if offline.offersDownload(for: .album(album.id)) {
-                ToolbarItem(placement: .topBarTrailing) {
-                    OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: tracks),
-                                          isConfirmingRemoval: $isConfirmingRemoval)
-                }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    LibraryAlbumMenu(album: shown, tracks: tracks)
-                } label: {
-                    Label("More", systemImage: "ellipsis")
-                }
-            }
-        }
-        .offlineRemovalDialog($isConfirmingRemoval, for: .album(album.id), name: shown.name)
-        .task(id: album.id) { await fetchIfNeeded() }
     }
 
     private func header(_ shown: Album, tracks: [Track]) -> some View {
@@ -186,7 +334,7 @@ struct AlbumDetailView: View {
     }
 
     private func footer(_ shown: Album, tracks: [Track]) -> some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: Theme.Space.xs) {
             if let year = shown.year {
                 Text(String(year))
             }
@@ -243,6 +391,18 @@ struct AlbumDetailView: View {
         }
     }
 
+    /// "1985 · Classical · 7 songs, 27 min": the year, the first genre
+    /// (a joined tag split), the songs and how long, as Linux's head says it.
+    private static func facts(_ album: Album, tracks: [Track]) -> String {
+        var parts: [String] = []
+        if let year = album.year { parts.append(String(year)) }
+        if let genre = LibraryIndex.genreNames(album.genres).first { parts.append(genre) }
+        if !tracks.isEmpty {
+            parts.append(LibraryText.length(count: tracks.count, duration: LibraryText.totalDuration(tracks)))
+        }
+        return parts.joined(separator: " · ")
+    }
+
     /// "Rock, Shoegaze · 1997": the album's genres, a joined tag split as
     /// Genres lists them (two at most), and its year, when known.
     private static func detailLine(_ album: Album) -> String? {
@@ -259,6 +419,16 @@ struct AlbumDetailView: View {
         let trackKeys = Set(track.artists.map(\.key))
         guard !trackKeys.isEmpty, trackKeys != Set(album.artists.map(\.key)) else { return nil }
         return track.artistLine
+    }
+
+    /// Wide, Linux's `guests(_:besides:)`: the song's artists that are not
+    /// the album's, names sharing one tag ("Blue Room Trio; MC Polder")
+    /// counted apart.
+    private static func guests(of track: Track, on album: Album) -> String {
+        let own = Set(album.artistLine.components(separatedBy: "; "))
+        return track.artists.flatMap { $0.name.components(separatedBy: "; ") }
+            .filter { !own.contains($0) }
+            .joined(separator: ", ")
     }
 
     private static func splitIntoDiscs(_ tracks: [Track]) -> [Disc] {

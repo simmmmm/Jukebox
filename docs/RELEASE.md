@@ -8,14 +8,14 @@ ready to paste; what is still open is marked **Open**.
 
 ## The listing
 
-**Name** (30 characters at most, unique on the App Store) — **Open**: "Jukebox"
-alone is very likely taken. Candidates that say what it is:
-
-- Jukebox — for Jellyfin
-- Jukebox Player
-- Jukebox: Jellyfin & Navidrome (29)
+**Name** (30 characters at most, unique on the App Store): Jukebox - Music
+player (22). The photographer, 15 November 2026: "Jukebox - Music player heet
+de app nu".
 
 **Subtitle** (30): Your music server, on the air
+
+No em dashes in the store's texts: "ik wil geen em dashes in text" (the
+photographer, 16 November 2026).
 
 **Category**: Music. Secondary: none.
 
@@ -23,7 +23,7 @@ alone is very likely taken. Candidates that say what it is:
 
 **Promotional text** (170, can change without review):
 
-> Play your own music from Jellyfin, Navidrome or any Subsonic server — with a
+> Play your own music from Jellyfin, Navidrome or any Subsonic server, with a
 > radio that learns what you skip, mixes made from your listening, and your
 > music offline.
 
@@ -40,9 +40,10 @@ alone is very likely taken. Candidates that say what it is:
 > Familiar to Adventurous. Thumbs down, and you hear less like it.
 >
 > MIXES
-> Home has playlists Jukebox makes for you from what you play: Daily Mixes,
-> On Repeat, Rediscover, Deep Cuts, New Arrivals, Loved Tracks, and a mix
-> for each genre and decade of your library.
+> Home has playlists Jukebox makes for you from what you play: moods named
+> after their songs ("Rock & Shoegaze", "1990s Jazz"), On Repeat,
+> Rediscover, Deep Cuts, New Arrivals, Loved Tracks, and a mix for each
+> genre and decade of your library.
 >
 > NOW PLAYING
 > The album's sleeve with its record half out, on a page that is the record
@@ -52,11 +53,13 @@ alone is very likely taken. Candidates that say what it is:
 > OFFLINE
 > Download an album, a playlist or a mix. Jukebox also keeps what you play
 > most, up to a size you choose, so your favourite music plays without a
-> network — the radio too.
+> network, the radio too.
 >
 > AND
 > Favourites and playlists that stay in sync with your server. AirPlay,
 > the lock screen and Control Center, Up Next. iPhone and iPad.
+
+(**Open**: "iPhone, iPad and Mac" once the Mac ships, below.)
 >
 > Jukebox has no account, no ads and no tracking. Your music and your
 > listening stay between the app and your own server.
@@ -67,22 +70,54 @@ alone is very likely taken. Candidates that say what it is:
 (Leave "plex" out if Review objects to naming a product the app does not
 support.)
 
-**Support URL** — **Open**: a page with a way to reach the photographer;
-the repository's README works (`https://github.com/simmmmm/Jukebox`).
+**Support URL**: `https://github.com/simmmmm/Jukebox`.
 
-**Privacy Policy URL** — **Open**: where `docs/privacy.md` (below) is
-published.
+**Privacy Policy URL**:
+`https://github.com/simmmmm/Jukebox/blob/main/docs/PRIVACY.md`
+([PRIVACY.md](PRIVACY.md); it answers once that file is on main).
 
-**Copyright**: 2026 Tijmen (or the name the photographer publishes under).
+**Copyright**: 2026 Tijmen Steenvoorden.
+
+**The Mac's description** differs in two paragraphs: Now Playing is "The
+album's sleeve with its record half out, and Up Next or the lyrics beside
+it. Synced lyrics, from your server or from LRCLIB.", and the last line of
+AND is "AirPlay, Up Next. iPhone, iPad and Mac."
+
+## In App Store Connect (16 November 2026)
+
+Filled in and saved for the iPhone's and the Mac's version 1.0: the texts
+above, the screenshots, the review notes, "Manually release this version",
+subtitle and category, the age rating (4+), App Privacy's answers, the
+price (free) and all 175 countries.
+
+Still the photographer's to do there:
+
+- App Review's password (`demo`) and contact (name, phone, email), on both
+  versions.
+- The build, on both versions.
+- Content Rights and the Digital Services Act's trader status (App
+  Information): declarations only the account's holder can make.
+- App Privacy › Publish. Before it: the server reads a rough place from the
+  address (`docs/STATS.md`), which Apple may count as Coarse Location; the
+  answers say Product Interaction only.
+- Add for Review.
 
 ## Screenshots
 
-Required: iPhone 6.9" (1320 × 2868) and iPad 13" (2064 × 2752). From the
-screenshot walk (`ci/screenshots.sh`, made-up library and covers, ours to
-use): Home, Now Playing (D2), a station's page, an album, Up Next with the
-dial, Lyrics, Settings › Downloads. The walk runs on an iPhone 17 Pro
-(1206 × 2622) today; for the store, one run on an iPhone 17 Pro Max and the
-iPad 13". Text over the pictures: none (tells.md).
+- **Sizes**: iPhone 1206 × 2622 (the 17 Pro, the set App Store Connect
+  requires; the Pro Max's 1320 × 2868 is an optional second set), iPad 13"
+  2752 × 2064, Mac 1440 × 900. PNG without alpha, ten at most each.
+- **The round**: a push of the branch `store-walk` (`ci/app.sh`) walks the
+  Mac's own window (`MacScreenshotTests.swift`), an iPhone 17 Pro and the
+  13-inch iPad, against the made-up library, covers ours to use.
+- **The set**: `dev/store-shots.sh` picks it from that round into
+  `build/appstore/{iphone,ipad,mac}/`, in the listing's order, and checks
+  each size. Home with a station on the air first, then Now Playing, a
+  station, an album, Up Next with the dial, Radio, the albums; the iPad
+  and the Mac have Lyrics too.
+- **Open**: the iPhone's Lyrics (the walk's song has none) and Settings ›
+  Downloads are not in the set.
+- **Text over the pictures**: none (tells.md).
 
 ## App Privacy (the questionnaire)
 
@@ -135,13 +170,50 @@ so the notes point at Navidrome's public demo:
 Check before submitting that demo.navidrome.org is up and the demo user can
 play and download.
 
+## The Mac
+
+The Mac's Jukebox is the same app: a native macOS destination of the same
+target (project.yml), with the same bundle ID. So it ships through the same
+App Store Connect record, one purchase for the iPhone, the iPad and the Mac
+(universal purchase).
+
+- It ships once the photographer adds the platform there: Apps › Jukebox ›
+  + Add Platform › macOS. Then `mac_upload=true` in `ci/app.sh`. Until then
+  an upload sends the iPhone's build only, and the run stays green.
+- The Mac's version page needs its own screenshots: the store's round
+  (Screenshots, above).
+
+## Builds
+
+- **A push** builds the iPhone's app and the Mac's, unsigned. A red Mac
+  build makes the run red (`mac_gates=true`).
+- **On main** (and the `mac` branch) the screenshot walk runs after the
+  builds. An upload, when asked (README, TestFlight), archives and uploads
+  in their place.
+- **On a work branch** only the two builds run: no screenshots unless the
+  branch's name ends in "walk", and never an upload, whatever the commit
+  says.
+- **A fast loop**: the photographer's Mac, a MacBook, builds over SSH. The
+  build is signed with that Mac's Apple Development certificate from a
+  Terminal session on the Mac itself, because an SSH session cannot reach
+  the keychain. Such a debug build has no provisioning profile, so it keeps
+  the sign-in in the file-based keychain and stays signed in from one build
+  to the next (`Jukebox/App/Keychain.swift`).
+
 ## Before submitting
 
 1. The release build from main on TestFlight, played through on a phone:
    sign in to Jellyfin and to the Navidrome demo, a station, a download,
-   airplane mode.
+   airplane mode. Once the Mac uploads, the same on the Mac.
 2. `MARKETING_VERSION` 1.0 (project.yml); the build number is CI's run
    number.
 3. In App Store Connect: the listing above, the screenshots, App Privacy,
    age rating, the review notes; "Manually release this version" so the
    photographer chooses the day.
+
+## Linux
+
+`dev/linux-flatpak.sh release` builds the Flatpak (`docs/LINUX.md`) from a
+pushed commit and attaches it to GitHub's release `v<MARKETING_VERSION>`. A
+new release starts as a draft: the photographer publishes it, and chooses
+the day. A version is released once; the next file needs the next number.

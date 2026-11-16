@@ -43,10 +43,14 @@
 // The page lays out the sleeve's room and the title as it always has, and
 // tells the ground where they are (NowPlayingAnchorsKey); the ground is
 // drawn behind the page, under the status bar and to the screen's edges.
+//
+// The room in a wide window (`inRoom`) is Linux's, 1:1 — the photographer,
+// 14 November 2026: "ik wil dat de linux app en de apple app 1:1 op elkaar
+// lijken": flat Night, the sleeve and its record still, their shadows
+// black. Neither land nor wall is drawn there, and nothing turns.
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 // MARK: - Where things are
 
@@ -154,6 +158,8 @@ struct NowPlayingGround: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.scenePhase) private var scenePhase
+    /// The room in a wide window: Linux's flat ground, still.
+    @Environment(\.inRoom) private var inRoom
 
     /// On the screen: Now Playing is open.
     @State private var isOnScreen = false
@@ -194,7 +200,7 @@ struct NowPlayingGround: View {
     /// Everything but the music playing: when only that changes (a pause)
     /// the record coasts to a stop; otherwise it stops where it is.
     private var mayTurn: Bool {
-        isOnScreen && sleeveRoom != nil && scenePhase == .active && !still
+        isOnScreen && sleeveRoom != nil && scenePhase == .active && !still && !inRoom
     }
 
     var body: some View {
@@ -207,7 +213,9 @@ struct NowPlayingGround: View {
         .clipped()
         .animation(.easeInOut(duration: 0.4), value: still)
         .accessibilityHidden(true)
-        .allowsHitTesting(false)
+        // The room lies over the places and the page: its ground takes a
+        // click on it, so nothing under the room answers one.
+        .allowsHitTesting(inRoom)
         .onAppear { isOnScreen = true }
         .onDisappear { isOnScreen = false }
         .onChange(of: turns, initial: true) { _, turning in
@@ -253,7 +261,9 @@ struct NowPlayingGround: View {
         let placed = placement
         ZStack(alignment: .topLeading) {
             // From one to the other (Low Power Mode comes on, say), a fade.
-            if still {
+            if inRoom {
+                Self.roomGround
+            } else if still {
                 wallAndFloor(sleeve: placed?.sleeve)
                     .transition(.opacity)
             } else {
@@ -335,7 +345,7 @@ struct NowPlayingGround: View {
 
     /// The land's bitmap for this side on this screen; nil in D1.
     private var landKey: LandKey? {
-        guard !still, size.width > 0, size.height > 0 else { return nil }
+        guard !still, !inRoom, size.width > 0, size.height > 0 else { return nil }
         return LandKey(bands: side.bands, geometry: LandGeometry(screen: size, wide: wide))
     }
 
@@ -356,8 +366,9 @@ struct NowPlayingGround: View {
     private func sleeveAndRecord(_ placed: SleevePlacement, at date: Date) -> some View {
         let diameter = placed.recordDiameter
         let center = placed.recordCenter
-        // Black on the land; on a wall, the wall's own dark, softer.
-        let wall = still ? walls?.wall(wide: wide) : nil
+        // Black on the land and in the room; on a wall, the wall's own
+        // dark, softer.
+        let wall = still && !inRoom ? walls?.wall(wide: wide) : nil
         let shadow = wall.map { Self.color($0.shadow) } ?? Color.black
         let strength = wall == nil ? 1.5 : 0.95
         // Taken out here, before the record: each frame then hands it the
@@ -429,6 +440,10 @@ struct NowPlayingGround: View {
     /// D2's ground: a warm near-black, sketch E's #131010 (Night, the
     /// brand's dark ground, is #121110).
     static let night = Color(rgb: 0x131010)
+
+    /// The room's ground: Night, #121110, Linux's window by night, which
+    /// its room is always (spec §6).
+    static let roomGround = Color(rgb: 0x121110)
 
     static func color(_ color: AccentColor) -> Color {
         Color(red: color.red, green: color.green, blue: color.blue)

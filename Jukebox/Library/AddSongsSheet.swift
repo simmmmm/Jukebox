@@ -22,6 +22,7 @@ struct LibraryAddSongsSheet: View {
 
     @Environment(LibraryStore.self) private var library
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.isWide) private var isWide
     @State private var query = ""
     /// Added while the sheet is open.
     @State private var added: Set<ItemID> = []
@@ -42,9 +43,9 @@ struct LibraryAddSongsSheet: View {
             }
             .listStyle(.plain)
             .navigationTitle("Add Songs")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
             // Always showing: finding the song is what the sheet is for.
-            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
+            .searchable(text: $query, placement: .alwaysShown,
                         prompt: "Find in Songs")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -60,6 +61,8 @@ struct LibraryAddSongsSheet: View {
             .sensoryFeedback(.success, trigger: added)
             .libraryErrorAlert("Could Not Add to the Playlist", message: $errorMessage)
         }
+        // A Mac's sheet is only as big as its list asks: room for the list.
+        .frame(minWidth: isWide ? 480 : nil, minHeight: isWide ? 560 : nil)
     }
 
     private func state(of track: Track) -> LibraryAddSongState {
@@ -104,13 +107,14 @@ private struct LibraryAddSongRow: View {
         Button(action: add) {
             HStack(spacing: Theme.Space.m) {
                 ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(track.name)
+                        .desktopFont(15, phone: nil)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     if !track.artistLine.isEmpty {
                         Text(track.artistLine)
-                            .font(.subheadline)
+                            .desktopFont(13, phone: .subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -128,14 +132,14 @@ private struct LibraryAddSongRow: View {
         switch state {
         case .add:
             Image(systemName: "plus.circle")
-                .font(.title2)
+                .desktopFont(20, phone: .title2)
                 .foregroundStyle(Theme.accent)
                 .accessibilityLabel("Add")
         case .adding:
             ProgressView()
         case .added:
             Image(systemName: "checkmark.circle.fill")
-                .font(.title2)
+                .desktopFont(20, phone: .title2)
                 .foregroundStyle(Theme.accent)
                 .accessibilityLabel("Added")
         }

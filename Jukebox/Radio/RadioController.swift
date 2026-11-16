@@ -142,6 +142,13 @@ final class RadioController {
         }
     }
 
+    /// A station that was on the air on another device, taken over with
+    /// its queue (HandoffStore): the song that plays goes on where it is,
+    /// and the station chooses what comes after it, as it would have there.
+    func continueStation(_ station: Station) {
+        begin(station, excluding: player.currentTrack?.id, continuing: true)
+    }
+
     /// Music's Autoplay, from the player when an album or a playlist ends:
     /// a station from its last track that does not play that track again.
     /// That track is still the player's current one, but it has ended: the
@@ -154,7 +161,10 @@ final class RadioController {
     /// - Parameter continuing: the station is the song that plays, which
     ///   goes on (`excluded` is its id); else the station's first pick
     ///   replaces it.
-    private func begin(_ station: Station, excluding excluded: ItemID?, continuing: Bool) {
+    /// - Parameter shown: a station's page's songs from the one tapped on,
+    ///   when its list is no longer the kept one: they play first, and the
+    ///   station chooses what comes after them.
+    private func begin(_ station: Station, excluding excluded: ItemID?, continuing: Bool, shown: [RadioPick] = []) {
         generation += 1
         let generation = self.generation
         cancelSources()
@@ -162,12 +172,12 @@ final class RadioController {
         self.station = station
         session = nil
         isStarting = true
-        keepsShownPicks = false
+        keepsShownPicks = !shown.isEmpty
 
         // The song playing reaches the history only when it ends: until
         // then an artist or album station could open with it, the song
         // that was just interrupted for the station.
-        let inputs = startInputs(playingNow: continuing ? nil : player.currentTrack?.id)
+        let inputs = startInputs(playingNow: continuing ? nil : player.currentTrack?.id, shown: shown.map(\.id))
         let randomSeed = UInt64.random(in: 0...UInt64.max)
 
         Task { [weak self] in
@@ -185,7 +195,7 @@ final class RadioController {
             }.value
             guard let self, self.generation == generation else { return }
             self.isStarting = false
-            guard !picks.isEmpty else {
+            guard !picks.isEmpty || !shown.isEmpty else {
                 // Nothing fits (an empty or still-loading library): whatever
                 // played goes on as it was.
                 self.station = previous.station
@@ -208,13 +218,13 @@ final class RadioController {
             self.isHandlingFeedback = true
             if continuing, self.player.currentTrack?.id == excluded {
                 // The song goes on where it is; the picks come after it.
-                self.player.continueAsRadio(picks, station: station)
+                self.player.continueAsRadio(shown.dropFirst() + picks, station: station)
             } else {
                 // The track that was playing ends here; it belongs to
                 // whatever played before, not to this station. So too the
                 // song "Start Radio" was asked on, if it ended or was
                 // skipped while the first picks were chosen.
-                self.player.playRadio(picks, station: station)
+                self.player.playRadio(shown + picks, station: station)
             }
             self.isHandlingFeedback = false
             self.gatherSources(for: station, in: index, generation: generation)
@@ -413,22 +423,34 @@ final class RadioController {
 
     /// The station from its page: `picks` from `index` on, as the page
     /// showed them, when they are its kept preview and it is not stale (the
-    /// library, the graph and the dial as they were). Else the station
-    /// starts as any other, with songs chosen now: the page then shows what
-    /// plays, as it does whenever its station is on the air.
+    /// library, the graph and the dial as they were). Else they play all
+    /// the same, with a session made now to choose what comes after them:
+    /// "als ik nu dubbelklik op identikit om het af te spelen speelt er
+    /// elke keer een heel ander nummer af" (the photographer, 16 November
+    /// 2026) — a list that had started its station once was no longer the
+    /// kept one, and every click on it after that started the station anew
+    /// with other songs.
     func start(_ station: Station, preview picks: [RadioPick], from index: Int = 0) {
-        guard picks.indices.contains(index), let found = keptPreview(of: station, matching: picks) else {
+        guard picks.indices.contains(index) else {
             start(station)
+            return
+        }
+        let tapped = picks[index]
+        let current = player.currentTrack?.id
+        // The song is this station's, and playing: a second click on it.
+        if tapped.id == current, !isStarting, stationOnAir(player: player)?.id == station.id {
+            player.resume()
+            return
+        }
+        // The song playing was left out when these were chosen. Another
+        // playing now, further down the list, would come round twice.
+        let comesRoundTwice = current.map { id in picks[(index + 1)...].contains { $0.id == id } } ?? false
+        guard !comesRoundTwice, let found = keptPreview(of: station, matching: picks) else {
+            let shown = picks[index...].filter { $0.id != current || $0.id == tapped.id }
+            begin(station, excluding: tapped.id, continuing: tapped.id == current, shown: shown)
             return
         }
         let kept = found.kept
-        // The song playing was left out when these were chosen. Another
-        // playing now, further down the list, would come round twice.
-        let current = player.currentTrack?.id
-        if let current, picks[(index + 1)...].contains(where: { $0.id == current }) {
-            start(station)
-            return
-        }
         previews[found.slot] = nil
         generation += 1
         let generation = self.generation
@@ -447,7 +469,7 @@ final class RadioController {
         keepsShownPicks = true
         remember(station)
         isHandlingFeedback = true
-        if picks[index].id == current {
+        if tapped.id == current {
             // A song station's own song, playing already: it goes on where
             // it is, as "Start Radio" on it does.
             player.continueAsRadio(Array(picks[(index + 1)...]), station: station)
@@ -508,7 +530,7 @@ final class RadioController {
 
     /// What a station's first songs are chosen from, now: offline, the
     /// songs on the phone alone.
-    private func startInputs(playingNow: ItemID?) -> RadioStartInputs {
+    private func startInputs(playingNow: ItemID?, shown: [ItemID] = []) -> RadioStartInputs {
         let phone = offline?.isOffline == true ? onPhoneSnapshot() : nil
         let snapshot = phone ?? library.snapshot
         return RadioStartInputs(snapshot: snapshot,
@@ -521,7 +543,7 @@ final class RadioController {
                                 graph: graph,
                                 settings: RadioSettings(adventurousness: settings.adventurousness),
                                 now: Date(),
-                                playingNow: playingNow)
+                                playingNow: [playingNow].compactMap { $0 } + shown)
     }
 
     // MARK: Recent stations
@@ -796,6 +818,19 @@ final class RadioController {
     }
 }
 
+// Moved from Home/HomeParts.swift, so Linux lights the same station at the
+// same moments as the iPhone (build/design-round/drawings/spec.md).
+extension RadioController {
+    /// The station on the air: one is starting, or the player is playing
+    /// its queue. `station` alone can outlive the music (the player was
+    /// stopped from the lock screen), so the player's context decides.
+    func stationOnAir(player: AudioPlayer) -> Station? {
+        guard let station else { return nil }
+        if isStarting || player.context?.station?.id == station.id { return station }
+        return nil
+    }
+}
+
 /// Everything a station's first songs are chosen from, taken on the main
 /// actor as values, so the choosing runs off it while the screen stays
 /// responsive. `begin` and a page's preview both choose from one of these,
@@ -808,15 +843,16 @@ nonisolated private struct RadioStartInputs: Sendable {
     let graph: SimilarityGraph
     let settings: RadioSettings
     let now: Date
-    /// The song playing: it reaches the history only when it ends.
-    let playingNow: ItemID?
+    /// The song playing, and a page's songs about to: they reach the
+    /// history only when they end.
+    let playingNow: [ItemID]
 
     func session(for station: Station, randomSeed: UInt64) -> (session: RadioSession, index: LibrarySnapshot) {
         let index = snapshot.isEmpty && !fallback.isEmpty ? LibrarySnapshot(tracks: fallback) : snapshot
         let taste = TasteProfile(snapshot: index, history: history, now: now)
         // Heard anywhere in the last hours: it waits (RadioSettings).
         var recent = history.trackIDs(since: now.addingTimeInterval(-settings.noRepeatHours * 3600))
-        if let playingNow { recent.insert(playingNow) }
+        recent.formUnion(playingNow)
         let session = RadioSession(station: station, snapshot: index, taste: taste, graph: graph,
                                    settings: settings, recentlyPlayed: recent, randomSeed: randomSeed)
         return (session, index)

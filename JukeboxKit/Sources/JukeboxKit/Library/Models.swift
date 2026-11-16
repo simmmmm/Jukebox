@@ -77,13 +77,37 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// decides). Nil when unknown.
     public var container: String?
 
+    // What classical listeners need apart (the classical research, 14
+    // November 2026): "iets wat ik ook graag zou willen supporten is klassieke
+    // muziek hoe veel fanaten het wél zouden willen zien" (14 November
+    // 2026). All optional, so a library kept on disk before them still
+    // opens (LibraryCache), and nil where the server does not say: Jellyfin
+    // 12.4 passes only the composer, Navidrome all of these.
+
+    /// Composer, conductor, soloists with their instrument, lyricist,
+    /// arranger: Navidrome's `contributors`, Jellyfin's People (composers
+    /// only, and only for classical albums: JellyfinServer.allTracks).
+    public var credits: [Credit]?
+    /// The work this track is part of, as tagged (WORK, TIT1, ©wrk).
+    /// Picard writes the movement's own work ("…, Op. 67: I. Allegro con
+    /// brio"); `Classical.work(of:)` cuts it.
+    public var work: String?
+    /// The movement as tagged (MOVEMENTNAME, MVNM, ©mvn).
+    public var movement: Movement?
+    /// GROUPING as tagged; what it means varies by tagger.
+    public var grouping: String?
+    /// The disc's title (DISCSUBTITLE, TSST): an opera's act. Navidrome
+    /// sends it with the album, so it is set only where the album came too.
+    public var discTitle: String?
+
     public init(id: ItemID, name: String, albumID: ItemID? = nil, albumName: String? = nil,
                 artists: [ArtistRef] = [], albumArtist: ArtistRef? = nil, genres: [String] = [],
                 year: Int? = nil, trackNumber: Int? = nil, discNumber: Int? = nil,
                 duration: TimeInterval = 0, imageTag: String? = nil, albumImageTag: String? = nil,
                 isFavorite: Bool = false, playCount: Int = 0, lastPlayed: Date? = nil,
                 dateAdded: Date? = nil, normalizationGain: Double? = nil, playlistEntryID: String? = nil,
-                container: String? = nil) {
+                container: String? = nil, credits: [Credit]? = nil, work: String? = nil,
+                movement: Movement? = nil, grouping: String? = nil, discTitle: String? = nil) {
         self.id = id
         self.name = name
         self.albumID = albumID
@@ -104,6 +128,16 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
         self.normalizationGain = normalizationGain
         self.playlistEntryID = playlistEntryID
         self.container = container
+        self.credits = credits
+        self.work = work
+        self.movement = movement
+        self.grouping = grouping
+        self.discTitle = discTitle
+    }
+
+    /// Who is credited in `role`, in the server's order.
+    public func credited(_ role: Credit.Role) -> [ArtistRef] {
+        (credits ?? []).filter { $0.role == role }.map(\.artist)
     }
 
     /// The one artist a track is by, for keeping artists apart and for
@@ -130,6 +164,43 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
         var keys = Set(artists.map(\.key))
         if let albumArtist { keys.insert(albumArtist.key) }
         return keys
+    }
+}
+
+/// Someone credited on a recording besides its artists. In classical four
+/// or five people make one recording, and each matters (the classical
+/// research's need 5).
+public struct Credit: Hashable, Codable, Sendable {
+    /// The roles both servers name alike (Navidrome's contributor roles,
+    /// Jellyfin's person types, lower-cased); others are left out.
+    public enum Role: String, Hashable, Codable, Sendable, CaseIterable {
+        case composer, conductor, performer, lyricist, arranger
+    }
+
+    public var role: Role
+    public var artist: ArtistRef
+    /// A performer's instrument or voice as the server names it ("Violin",
+    /// "Soprano", "Orchestra", "Choir Vocals": Navidrome's subRole).
+    public var instrument: String?
+
+    public init(role: Role, artist: ArtistRef, instrument: String? = nil) {
+        self.role = role
+        self.artist = artist
+        self.instrument = instrument
+    }
+}
+
+/// A movement as tagged. Navidrome loses the number from an MP3's MVIN
+/// ("1/4": the name came, the number did not; measured on 0.64.2).
+public struct Movement: Hashable, Codable, Sendable {
+    public var name: String
+    public var number: Int?
+    public var count: Int?
+
+    public init(name: String, number: Int? = nil, count: Int? = nil) {
+        self.name = name
+        self.number = number
+        self.count = count
     }
 }
 

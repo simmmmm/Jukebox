@@ -22,6 +22,10 @@
 //   ping — when the network changes, when a load or a song fails, and every
 //   30 s while it does not answer). The player and the radio read
 //   `isOffline` and `canPlay`, and are told when it changes.
+// - Linux compiles this file too (Package.swift's `shared`): what only the
+//   platform knows — the network, Low Power Mode, where the folder is — is
+//   OfflineStore+Apple.swift here and Platform.swift there, and the
+//   downloader is each platform's own (OfflineDownloader.swift).
 // - The server's admin can turn downloads off for a user (Jellyfin's "Allow
 //   media downloading", a Subsonic server's download role;
 //   MusicServer.downloadsAllowed, asked at sign-in and when the server
@@ -35,7 +39,6 @@
 
 import Foundation
 import JukeboxKit
-import Network
 import Observation
 
 /// What an album's, a playlist's or a mix's download is doing.
@@ -76,7 +79,7 @@ final class OfflineStore {
     /// The mobile network, a hotspot, or Low Data Mode.
     private(set) var isExpensiveNetwork = false
     private(set) var isServerUnreachable = false
-    private(set) var isLowPower = ProcessInfo.processInfo.isLowPowerModeEnabled
+    private(set) var isLowPower = OfflineStore.isLowPowerNow
     /// Whether the server lets this user download, as it said last.
     private(set) var downloadsAllowed = true
 
@@ -92,7 +95,10 @@ final class OfflineStore {
     private let settings: AppSettings
     private let library: LibraryStore
     private let history: HistoryStore
-    private let monitor = NWPathMonitor()
+    /// The platform's watch of the network and of Low Power Mode
+    /// (`watchSystem`: OfflineStore+Apple.swift, Linux's Platform.swift),
+    /// kept as long as the store.
+    @ObservationIgnored private var system: AnyObject?
     /// One writer, in order: a slow write never lands after a newer one.
     private let writer = DispatchQueue(label: "Jukebox.offline", qos: .utility)
 
@@ -122,7 +128,6 @@ final class OfflineStore {
     @ObservationIgnored private var keepTask: Task<Void, Never>?
     @ObservationIgnored private var pumpTask: Task<Void, Never>?
     @ObservationIgnored private var flushTask: Task<Void, Never>?
-    @ObservationIgnored private var powerToken: (any NSObjectProtocol)?
 
     /// The choices that change what the keep holds or how songs are fetched.
     private struct SeenSettings: Equatable {
@@ -153,17 +158,7 @@ final class OfflineStore {
         OfflineDownloader.shared.attach { [weak self] event in
             Task { @MainActor in self?.handle(event) }
         }
-        monitor.pathUpdateHandler = Self.pathHandler { [weak self] path in
-            Task { @MainActor in self?.pathChanged(path) }
-        }
-        monitor.start(queue: DispatchQueue(label: "Jukebox.offline-network", qos: .utility))
-        powerToken = NotificationCenter.default.addObserver(forName: .NSProcessInfoPowerStateDidChange,
-                                                            object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated {
-                guard let self else { return }
-                self.powerChanged()
-            }
-        }
+        system = watchSystem()
         observeSettings()
         observeHistory()
         observeLibrary()
@@ -506,17 +501,6 @@ final class OfflineStore {
 // MARK: - Inside
 
 private extension OfflineStore {
-    /// Made outside the main actor: the monitor calls it on its own queue.
-    /// Low Data Mode (`isConstrained`) counts as expensive, as NetworkCost
-    /// has it.
-    nonisolated static func pathHandler(_ update: @escaping @Sendable (OfflinePathState) -> Void)
-        -> @Sendable (NWPath) -> Void {
-        { path in
-            update(OfflinePathState(isSatisfied: path.status == .satisfied,
-                                    isExpensive: path.isExpensive || path.isConstrained))
-        }
-    }
-
     func songsChanged() {
         revision += 1
         onSongsChange?()
@@ -918,46 +902,6 @@ private extension OfflineStore {
         }
     }
 
-    func powerChanged() {
-        let low = ProcessInfo.processInfo.isLowPowerModeEnabled
-        guard low != isLowPower else { return }
-        isLowPower = low
-        if low {
-            // The keep waits; what the listener chose goes on.
-            let keepOnly = Set(wanted.filter { !$0.isChosen }.map(\.trackID)).intersection(inFlight)
-            cancelDownloads(keepOnly)
-        } else {
-            scheduleKeep(after: 5)
-            pump()
-        }
-    }
-
-    func pathChanged(_ path: OfflinePathState) {
-        let wasOffline = isOffline
-        let hadNetwork = hasNetwork
-        let wasWiFi = hasNetwork && !isExpensiveNetwork
-        if hasNetwork != path.isSatisfied { hasNetwork = path.isSatisfied }
-        if isExpensiveNetwork != path.isExpensive { isExpensiveNetwork = path.isExpensive }
-        if path.isSatisfied {
-            // Back after none: offline until the server has answered, as a
-            // server at home is not there from the mobile network.
-            if !hadNetwork && !isServerUnreachable { isServerUnreachable = true }
-            // A new network, or the same one changed: is the server on it?
-            stopProbe()
-            checkServer(after: hadNetwork ? 0 : 1)
-        } else {
-            stopProbe()
-            recheckTask?.cancel()
-            recheckTask = nil
-        }
-        if isOffline != wasOffline { connectivityChanged() }
-        if path.isSatisfied && !path.isExpensive && !wasWiFi {
-            // Wi-Fi again: the keep, and whatever waited for it.
-            scheduleKeep(after: 5)
-            pump()
-        }
-    }
-
     func stopProbe() {
         probeTask?.cancel()
         probeTask = nil
@@ -1048,7 +992,53 @@ private extension OfflineStore {
     }
 }
 
-/// What NWPathMonitor said, as values that cross to the main actor.
+// MARK: - The system's news
+
+/// Told by the platform's watch (`watchSystem`): Low Power Mode, and the
+/// network as it changes.
+extension OfflineStore {
+    func powerChanged(isLowPower low: Bool) {
+        guard low != isLowPower else { return }
+        isLowPower = low
+        if low {
+            // The keep waits; what the listener chose goes on.
+            let keepOnly = Set(wanted.filter { !$0.isChosen }.map(\.trackID)).intersection(inFlight)
+            cancelDownloads(keepOnly)
+        } else {
+            scheduleKeep(after: 5)
+            pump()
+        }
+    }
+
+    func pathChanged(_ path: OfflinePathState) {
+        let wasOffline = isOffline
+        let hadNetwork = hasNetwork
+        let wasWiFi = hasNetwork && !isExpensiveNetwork
+        if hasNetwork != path.isSatisfied { hasNetwork = path.isSatisfied }
+        if isExpensiveNetwork != path.isExpensive { isExpensiveNetwork = path.isExpensive }
+        if path.isSatisfied {
+            // Back after none: offline until the server has answered, as a
+            // server at home is not there from the mobile network.
+            if !hadNetwork && !isServerUnreachable { isServerUnreachable = true }
+            // A new network, or the same one changed: is the server on it?
+            stopProbe()
+            checkServer(after: hadNetwork ? 0 : 1)
+        } else {
+            stopProbe()
+            recheckTask?.cancel()
+            recheckTask = nil
+        }
+        if isOffline != wasOffline { connectivityChanged() }
+        if path.isSatisfied && !path.isExpensive && !wasWiFi {
+            // Wi-Fi again: the keep, and whatever waited for it.
+            scheduleKeep(after: 5)
+            pump()
+        }
+    }
+}
+
+/// What the network's watch said (NWPathMonitor on Apple's systems, GLib's
+/// network monitor on Linux), as values that cross to the main actor.
 nonisolated struct OfflinePathState: Sendable {
     let isSatisfied: Bool
     let isExpensive: Bool

@@ -1,6 +1,9 @@
 // Songs: every track by title, Shuffle All at the top, and a filter that
 // ranks what it finds as search does. A tap plays the list as it is shown,
 // from that song on.
+//
+// In a wide window, as Linux's (07-songs): the title, how many, Shuffle as a
+// word, then the rows with their covers and lengths.
 
 import JukeboxKit
 import SwiftUI
@@ -8,12 +11,50 @@ import SwiftUI
 struct SongsView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(AudioPlayer.self) private var player
+    @Environment(\.isWide) private var isWide
     @State private var query = ""
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    private var wide: some View {
         let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let shown = searching ? library.matchingTracks(query) : library.songsByTitle
-        List {
+        return WidePage(title: "Songs") { page, _ in
+            Group {
+                PageTitle("Songs", fact: shown.isEmpty ? nil : LibraryText.songs(shown.count))
+                if shown.isEmpty {
+                    if searching {
+                        PagePlainLine("Nothing in Songs matches “\(query)”.")
+                    } else {
+                        PageEmptyLine("Songs on your \(library.serverKind) server appear here.")
+                    }
+                } else {
+                    WordButton(searching ? "Shuffle These" : "Shuffle") {
+                        player.play(shown, context: context(searching: searching), shuffled: true)
+                    }
+                    PageTrackRows(tracks: shown, play: { track in
+                        let i = shown.firstIndex(where: { $0.id == track.id }) ?? 0
+                        player.play(shown, startingAt: i, context: context(searching: searching))
+                    })
+                    .padding(.top, Theme.Space.xl)
+                }
+            }
+            .padding(.horizontal, page.side)
+        }
+        // No find field when wide: Linux's pages have none, Search is a place.
+        .refreshable { await library.refresh() }
+    }
+
+    private var compact: some View {
+        let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let shown = searching ? library.matchingTracks(query) : library.songsByTitle
+        return List {
             if !shown.isEmpty {
                 Button {
                     player.play(shown, context: context(searching: searching), shuffled: true)

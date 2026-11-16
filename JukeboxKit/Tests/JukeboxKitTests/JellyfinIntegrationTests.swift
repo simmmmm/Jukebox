@@ -70,7 +70,7 @@ extension HTTPResponse {
     }
 }
 
-@Suite("Jellyfin: the real server", .serialized, .enabled(if: JellyfinTestServer.url != nil))
+@Suite("Jellyfin: the real server", .serialized, .timeLimit(.minutes(1)), .enabled(if: JellyfinTestServer.url != nil))
 struct JellyfinIntegrationTests {
     let clock = ContinuousClock()
 

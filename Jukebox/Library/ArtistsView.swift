@@ -5,20 +5,70 @@
 // Top Songs is called Songs until one of them has been played or is a
 // favorite: before that the order is only the newest album's, and "Top"
 // would claim a ranking there is not.
+//
+// In a wide window, as Linux's: the artists as a grid of the page's tiles;
+// an artist's page as an album's (06-artist), the photo 224 at the left
+// with the name at its foot, then the songs in rows and the albums in tiles.
 
 import JukeboxKit
 import SwiftUI
 
 struct ArtistsView: View {
     @Environment(LibraryStore.self) private var library
+    @Environment(RadioController.self) private var radio
+    @Environment(\.isWide) private var isWide
     @State private var query = ""
 
     var body: some View {
+        if isWide {
+            wide
+        } else {
+            compact
+        }
+    }
+
+    /// Linux's Artists: a grid of tiles by name, no letters.
+    private var wide: some View {
+        let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let artists = searching ? library.matchingArtists(query) : library.artistsByName
+        return WidePage(title: "Artists") { page, width in
+            PageTitle("Artists")
+                .padding(.horizontal, page.side)
+            if artists.isEmpty {
+                Group {
+                    if searching {
+                        PagePlainLine("Nothing in Artists matches “\(query)”.")
+                    } else {
+                        PageEmptyLine("Artists on your \(library.serverKind) server appear here.")
+                    }
+                }
+                .padding(.horizontal, page.side)
+            } else {
+                TileGrid(items: artists, page: page, width: width) { artist in
+                    NavigationLink(value: Route.artist(artist)) {
+                        ArtistTile(artist: artist)
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                            Stats.track(.stationStarted, ["seed": "artist", "from": "menu"])
+                            radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
+                        }
+                    }
+                }
+                .padding(.top, Theme.Space.xl)
+            }
+        }
+        // No find field when wide: Linux's pages have none, Search is a place.
+        .refreshable { await library.refresh() }
+    }
+
+    private var compact: some View {
         let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let found = searching ? library.matchingArtists(query) : []
         let sections = searching ? [] : Self.makeSections(library.artistsByName)
         let showsEmptyState = searching ? found.isEmpty : sections.isEmpty
-        List {
+        return List {
             if searching {
                 ForEach(found) { artist in
                     link(artist)
@@ -88,9 +138,124 @@ struct ArtistDetailView: View {
     /// radio's graph knows nobody near this artist yet.
     @State private var serverSimilar: [Artist] = []
     @State private var showsWholeOverview = false
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
         let shown = library.artist(id: artist.id) ?? artist
+        Group {
+            if isWide {
+                wide(shown)
+            } else {
+                compact(shown)
+            }
+        }
+        .toolbar {
+            // Wide, the head has its own "…".
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Menu {
+                        menu(shown)
+                    } label: {
+                        Label("More", systemImage: "ellipsis")
+                    }
+                }
+            }
+        }
+        .task(id: artist.id) { await loadServerSimilar() }
+    }
+
+    /// Linux's artist page (06-artist): the head (the photo, the name, how
+    /// many albums and songs, Play, the heart, "…"), the top songs in rows,
+    /// then the albums, the ones they are a guest on and who sounds like
+    /// them in tiles, and what the server knows of them.
+    private func wide(_ shown: Artist) -> some View {
+        let albums = library.albums(by: shown)
+        let appearances = library.appearances(of: shown)
+        let topQueue = library.topTracks(by: shown, limit: 25)
+        let top = Array(topQueue.prefix(5))
+        let similar = similarArtists(to: shown)
+        let isRanked = library.hasPlaysOrFavorites(by: shown)
+        let songs = library.tracks(by: shown).count
+        // "3 albums · 22 songs".
+        var counts: [String] = []
+        if albums.count == 1 { counts.append(String(localized: "1 album")) }
+        if albums.count > 1 { counts.append(String(localized: "\(albums.count) albums")) }
+        if songs > 0 { counts.append(LibraryText.songs(songs)) }
+        let facts = counts.joined(separator: " · ")
+        return WidePage(title: shown.name, hasHead: true) { page, _ in
+            PageHead(page: page, title: shown.name, facts: facts) { size in
+                ArtworkView(shown.artwork, size: size, placeholder: "music.mic")
+            } actions: {
+                // Play alone, all of them shuffled, as Linux's head has it.
+                PagePlayButtons(play: { playAll(shown, shuffled: true) })
+                    .disabled(songs == 0)
+                HStack(spacing: Theme.Space.s) {
+                    HeartButton(item: .artist(shown.id))
+                    MoreMenu {
+                        menu(shown)
+                    }
+                }
+            }
+
+            if !top.isEmpty {
+                Group {
+                    PageSectionTitle(isRanked ? String(localized: "Top songs") : String(localized: "Songs"),
+                                     below: Theme.Space.s)
+                    PageTrackRows(tracks: top, subtitle: { $0.albumName }, play: { track in
+                        let i = topQueue.firstIndex(where: { $0.id == track.id }) ?? 0
+                        player.play(topQueue, startingAt: i,
+                                    context: QueueContext(.artist(shown.id), title: shown.name))
+                    })
+                }
+                .padding(.horizontal, page.side)
+            }
+
+            if !albums.isEmpty {
+                wideShelf(String(localized: "Albums"), albums: albums, showsArtist: false, page: page)
+            }
+            if !appearances.isEmpty {
+                wideShelf(String(localized: "Appears on"), albums: appearances, showsArtist: true, page: page)
+            }
+            if !similar.isEmpty {
+                PageSectionTitle(String(localized: "Similar artists"))
+                    .padding(.horizontal, page.side)
+                Shelf(items: similar, width: CGFloat(page.tile), margin: page.side) { other in
+                    NavigationLink(value: Route.artist(other)) {
+                        ArtistTile(artist: other)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if let overview = shown.overview?.trimmingCharacters(in: .whitespacesAndNewlines), !overview.isEmpty {
+                VStack(alignment: .leading, spacing: Theme.Space.s) {
+                    PageSectionTitle(String(localized: "About"), below: 0)
+                    Text(overview)
+                        .desktopFont(15)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(showsWholeOverview ? nil : 4)
+                        .frame(maxWidth: 640, alignment: .leading)
+                    WordButton(showsWholeOverview ? "Less" : "More") {
+                        showsWholeOverview.toggle()
+                    }
+                }
+                .padding(.horizontal, page.side)
+            }
+        }
+    }
+
+    private func wideShelf(_ title: String, albums: [Album], showsArtist: Bool,
+                           page: DesktopMeasures.Page) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            PageSectionTitle(title)
+                .padding(.horizontal, page.side)
+            Shelf(items: albums, width: CGFloat(page.tile), margin: page.side) { album in
+                LibraryAlbumLink(album: album, showsArtist: showsArtist)
+            }
+        }
+    }
+
+    private func compact(_ shown: Artist) -> some View {
         let albums = library.albums(by: shown)
         let appearances = library.appearances(of: shown)
         let topQueue = library.topTracks(by: shown, limit: 25)
@@ -99,7 +264,7 @@ struct ArtistDetailView: View {
         let hasTracks = !topQueue.isEmpty
         let isRanked = library.hasPlaysOrFavorites(by: shown)
 
-        ScrollView {
+        return ScrollView {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 header(shown)
 
@@ -173,16 +338,6 @@ struct ArtistDetailView: View {
             .padding(.bottom, Theme.Space.xxl)
         }
         .libraryScrolledTitle(shown.name, after: 240)
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                Menu {
-                    menu(shown)
-                } label: {
-                    Label("More", systemImage: "ellipsis")
-                }
-            }
-        }
-        .task(id: artist.id) { await loadServerSimilar() }
     }
 
     private func header(_ shown: Artist) -> some View {

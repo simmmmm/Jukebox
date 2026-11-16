@@ -39,57 +39,8 @@ import JukeboxKit
 import MediaPlayer
 import Observation
 
-enum RepeatMode: String, CaseIterable, Sendable {
-    case off
-    case all
-    case one
-}
-
-/// What the queue was started from: its name in Now Playing ("Playing from
-/// Kid A") and whether a station plays.
-struct QueueContext: Hashable, Sendable {
-    enum Kind: Hashable, Sendable {
-        case album(ItemID)
-        case artist(ItemID)
-        case playlist(ItemID)
-        case mix(String)
-        case genre(String)
-        case songs
-        case favorites
-        case search
-        case radio(Station)
-        case other
-    }
-
-    var kind: Kind
-    var title: String
-
-    init(_ kind: Kind, title: String) {
-        self.kind = kind
-        self.title = title
-    }
-
-    var station: Station? {
-        if case let .radio(station) = kind { return station }
-        return nil
-    }
-
-    var isRadio: Bool { station != nil }
-}
-
-/// One place in the queue: the same track can be in it twice.
-struct QueueEntry: Identifiable, Hashable, Sendable {
-    let id: UUID
-    let track: Track
-    /// Why the radio chose it, shown under it in Up Next.
-    let reason: PickReason?
-
-    init(track: Track, reason: PickReason? = nil) {
-        id = UUID()
-        self.track = track
-        self.reason = reason
-    }
-}
+// RepeatMode, QueueContext and QueueEntry are in PlayQueue.swift: Linux's
+// player (Linux/App/AudioPlayer.swift) has the same queue.
 
 @Observable
 final class AudioPlayer {
@@ -113,6 +64,18 @@ final class AudioPlayer {
     }
     /// The last error, for a moment in Now Playing ("Could not play …").
     private(set) var errorMessage: String?
+    /// The listener's level, 0...1, kept across launches, as on Linux. The
+    /// Mac's slider sets it (VolumeControl); the iPhone's volume is the
+    /// phone's own, so there it stays 1. It multiplies the song's loudness
+    /// (`level(for:)`), so normalising never undoes it.
+    var volume: Double = UserDefaults.standard.object(forKey: "volume") as? Double ?? 1 {
+        didSet {
+            volume = min(1, max(0, volume))
+            UserDefaults.standard.set(volume, forKey: "volume")
+            // At once, not at the clock's next tick: a slider is being moved.
+            if let playing { engine.volume = level(for: playing.entry.track) }
+        }
+    }
 
     var server: (any MusicServer)?
     /// Set by AppModel; the radio this player asks for more.
@@ -188,6 +151,9 @@ final class AudioPlayer {
     @ObservationIgnored private var wantsToPlay = false
     @ObservationIgnored private var resumeAfterInterruption = false
     @ObservationIgnored private var isSeeking = false
+    /// Where to go once the current item can seek: a queue taken over from
+    /// another device starts part-way, and is asked to before it is ready.
+    @ObservationIgnored private var pendingSeek: TimeInterval?
     @ObservationIgnored private var seekGeneration = 0
     @ObservationIgnored private var consecutiveFailures = 0
     @ObservationIgnored private var isAskingRadio = false
@@ -208,7 +174,10 @@ final class AudioPlayer {
         engine.actionAtItemEnd = .advance
         // Music's own session: playback, long-form (AirPlay routes it as
         // music, not as a sound effect), on its own when the phone is silent.
+        // A Mac has no audio session: its apps simply play.
+        #if os(iOS)
         try? AVAudioSession.sharedInstance().setCategory(.playback, mode: .default, policy: .longFormAudio, options: [])
+        #endif
         observeEngine()
         observeNotifications()
         remote = RemoteCommands(player: self)
@@ -232,12 +201,17 @@ final class AudioPlayer {
 
     /// Replace the queue with `tracks` and play from `index`; shuffled
     /// starts at a random track unless `index` is given explicitly as
-    /// anything but 0.
-    func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false) {
+    /// anything but 0. `paused`: loaded, waiting for Play (HandoffStore's
+    /// music from last time, at launch).
+    func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false,
+              paused: Bool = false) {
         guard !tracks.isEmpty else { return }
         var tracks = tracks
         var index = index
         if let offline, offline.isOffline {
+            // Made ready unasked: offline, nothing, rather than another song
+            // or an error no one asked for (Home's notice still offers it).
+            guard !paused else { return }
             // Offline, the songs on the phone, in their order. Play (from
             // the top) starts at the first of them; a song tapped further
             // down that is not on the phone says why, and nothing changes.
@@ -260,7 +234,8 @@ final class AudioPlayer {
             Stats.track(.offlinePlayStarted, ["from": Stats.source(context.kind)])
         }
         // What music is started from, by its kind (Stats); never the album.
-        Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled])
+        // Music only made ready has not started.
+        if !paused { Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled]) }
         // Anything but a station ends the station that played.
         if !context.isRadio { radio?.stop() }
         let entries = tracks.map { QueueEntry(track: $0) }
@@ -275,12 +250,12 @@ final class AudioPlayer {
             queue = [first] + rest
             originalOrder = entries.map(\.id)
             isShuffled = true
-            load(0, play: true)
+            load(0, play: !paused)
         } else {
             queue = entries
             originalOrder = nil
             isShuffled = false
-            load(start, play: true)
+            load(start, play: !paused)
         }
     }
 
@@ -442,11 +417,19 @@ final class AudioPlayer {
     }
 
     func seek(to seconds: TimeInterval) {
-        guard playing != nil else { return }
+        guard let playing else { return }
         let upper = duration > 0 ? duration : max(seconds, 0)
         let target = max(0, min(seconds, upper))
         elapsed = target
         isSeeking = true
+        // An item just loaded cannot seek yet (HandoffStore loads and seeks
+        // in one go, playing or paused), and AVPlayer is not to be asked
+        // before it is ready (Apple's QA1820): itemStatusChanged asks then.
+        guard playing.loaded.item.status == .readyToPlay else {
+            pendingSeek = target
+            return
+        }
+        pendingSeek = nil
         seekGeneration += 1
         let generation = seekGeneration
         PlayerSignals.seek(engine, to: target) { [weak self] in
@@ -522,7 +505,9 @@ final class AudioPlayer {
         nowPlaying.clear()
         refreshRemoteFeedback()
         deliver(finished)
+        #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+        #endif
     }
 
     // MARK: Editing Up Next
@@ -647,7 +632,8 @@ final class AudioPlayer {
         elapsed = 0
         duration = entry.track.duration
         isSeeking = false
-        engine.volume = volume(for: entry.track)
+        pendingSeek = nil
+        engine.volume = level(for: entry.track)
         preloadNext()
         publishNowPlaying()
         refreshRemoteFeedback()
@@ -720,13 +706,21 @@ final class AudioPlayer {
         return nil
     }
 
-    /// The server's loudness for the song (Jellyfin's NormalizationGain, a
-    /// Subsonic server's ReplayGain), as a volume: only ever softer, since
-    /// the engine cannot go above 1.
-    private func volume(for track: Track) -> Float {
-        guard settings.normalizeVolume, let gain = track.normalizationGain else { return 1 }
-        return Float(min(1, pow(10, gain / 20)))
+    /// The engine's one volume: the listener's level times the server's
+    /// loudness for the song (Jellyfin's NormalizationGain, a Subsonic
+    /// server's ReplayGain), which is only ever softer, since the engine
+    /// cannot go above 1.
+    private func level(for track: Track) -> Float {
+        let listener = Float(volume)
+        guard settings.normalizeVolume, let gain = track.normalizationGain else { return listener }
+        return listener * Float(min(1, pow(10, gain / 20)))
     }
+
+    #if os(macOS)
+    /// The engine, for the Mac's AirPlay picker, which routes one player's
+    /// sound rather than the system's (RoutePicker).
+    var routedPlayer: AVPlayer { engine }
+    #endif
 
     private func queueChanged() {
         preloadNext()
@@ -892,8 +886,8 @@ final class AudioPlayer {
             publishPlayback()
         }
         // Normalisation turned on or off in Settings takes effect at once.
-        let level = volume(for: playing.entry.track)
-        if engine.volume != level { engine.volume = level }
+        let wanted = level(for: playing.entry.track)
+        if engine.volume != wanted { engine.volume = wanted }
         if engine.timeControlStatus == .playing {
             if !playing.startReported {
                 reportStartIfNeeded()
@@ -913,7 +907,13 @@ final class AudioPlayer {
 
     private func itemStatusChanged(_ id: ObjectIdentifier) {
         let items = [playing?.loaded.item, preloaded?.item].compactMap { $0 }
-        guard let item = items.first(where: { ObjectIdentifier($0) == id }), item.status == .failed else { return }
+        guard let item = items.first(where: { ObjectIdentifier($0) == id }) else { return }
+        // Ready, and a place to start from was waiting for that (seek).
+        if item.status == .readyToPlay, let target = pendingSeek, item === playing?.loaded.item {
+            seek(to: target)
+            return
+        }
+        guard item.status == .failed else { return }
         itemFailed(id)
     }
 
@@ -953,7 +953,8 @@ final class AudioPlayer {
                 deliver(finished)
                 return
             }
-            load(next, play: true)
+            // Paused (music waiting at launch, HandoffStore), the next waits too.
+            load(next, play: wantsToPlay)
         } else if let preloaded, ObjectIdentifier(preloaded.item) == id {
             // Tried again, fresh, when its turn comes (itemDidEnd loads it).
             engine.remove(preloaded.item)
@@ -983,6 +984,7 @@ final class AudioPlayer {
                 self.itemFailed(id)
             }
         })
+        #if os(iOS)
         notificationTokens.append(center.addObserver(forName: AVAudioSession.interruptionNotification,
                                                      object: nil, queue: .main) { [weak self] note in
             let type = note.userInfo?[AVAudioSessionInterruptionTypeKey] as? UInt
@@ -1000,8 +1002,10 @@ final class AudioPlayer {
                 self.routeChanged(reason: reason)
             }
         })
+        #endif
     }
 
+    #if os(iOS)
     /// A call, an alarm, Siri: paused by the system; resumed when it says
     /// so and the music was playing before.
     private func interruption(type rawType: UInt?, options rawOptions: UInt?) {
@@ -1027,9 +1031,12 @@ final class AudioPlayer {
         }
         pause()
     }
+    #endif
 
     private func activateAudioSession() {
+        #if os(iOS)
         try? AVAudioSession.sharedInstance().setActive(true)
+        #endif
     }
 
     // MARK: Telling the server and the lock screen

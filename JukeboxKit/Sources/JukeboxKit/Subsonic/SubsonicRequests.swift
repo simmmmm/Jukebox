@@ -42,6 +42,13 @@ struct SubsonicConnection: Sendable {
                            clientName: clientName, transport: transport)
     }
 
+    /// The same connection asking under another name: the play queue is
+    /// saved in the device's own (PlayState.swift).
+    func with(clientName: String) -> SubsonicConnection {
+        SubsonicConnection(baseURL: baseURL, auth: auth, serverAPIVersion: apiVersion,
+                           clientName: clientName, transport: transport)
+    }
+
     // MARK: Credentials
 
     /// What goes in every query for a secret. A Jellyfin token is nothing

@@ -22,19 +22,30 @@
 // fade: the first thing anyone sees of Jukebox is its mark (ShellAppMark).
 // The address and the user name are remembered for the next sign-in (after a
 // sign-out); the password never is — the keychain's AutoFill offers it.
+//
+// In a wide window (the iPad, the Mac) it is Linux's sign-in, 1:1
+// (17-sign-in.png; "ik wil dat de linux app en de apple app 1:1 op elkaar
+// lijken", the photographer, 14 November 2026): a column of 420 centred in
+// the window, its words starting at its left edge, "Jukebox" at a page
+// title's size, and one page, not two steps: the address, the user name
+// and the password in one group of rows, Sign In centred under them, as
+// wide as its word (OnboardingWideForm).
 
 import JukeboxKit
 import SwiftUI
-import UIKit
 
 struct OnboardingView: View {
     @Environment(AppModel.self) private var app
+    @Environment(\.isWide) private var isWide
 
     @State private var step: OnboardingStep = .server
     @State private var address = OnboardingMemory.serverAddress
     @State private var isConnecting = false
     @State private var serverError: String?
     @FocusState private var isAddressFocused: Bool
+    /// Wide: the second step was asked for by Quick Connect on the one
+    /// page, so it starts there and its Cancel comes back to the page.
+    @State private var startsQuickConnect = false
 
     init() {}
 
@@ -42,26 +53,37 @@ struct OnboardingView: View {
         NavigationStack {
             GeometryReader { proxy in
                 ScrollView {
-                    VStack(spacing: Theme.Space.xxl) {
+                    // Linux's column: 24 between each of its parts.
+                    VStack(spacing: isWide ? Theme.Space.xl : Theme.Space.xxl) {
                         OnboardingWelcome()
                         // One on top of the other while they cross-fade, so
                         // the page does not grow by both for a moment.
                         ZStack(alignment: .top) {
                             switch step {
                             case .server:
-                                serverForm
-                                    .transition(.opacity)
+                                Group {
+                                    if isWide {
+                                        OnboardingWideForm(quickConnect: { server in quickConnect(on: server) })
+                                    } else {
+                                        serverForm
+                                    }
+                                }
+                                .transition(.opacity)
                             case let .account(server):
                                 OnboardingAccountForm(server: server, serverSignIn: app.signIn(to: server),
-                                                      changeServer: { changeServer() })
+                                                      changeServer: { changeServer() },
+                                                      startsQuickConnect: startsQuickConnect)
                                     .transition(.opacity)
                             }
                         }
                     }
                     // A phone's width on the iPad too: a sign-in form
-                    // stretched across 1000 points reads as nothing.
-                    .frame(maxWidth: 440)
-                    .padding(.horizontal, Theme.margin)
+                    // stretched across 1000 points reads as nothing. Wide,
+                    // Linux's: 420 with its margins of 24.
+                    .frame(maxWidth: isWide ? 372 : 440)
+                    // Wide, the fields and their words in Linux's 15.
+                    .desktopFont(15, phone: nil)
+                    .padding(.horizontal, isWide ? Theme.Space.xl : Theme.margin)
                     .padding(.vertical, Theme.Space.xl)
                     // Centred in the screen while it fits, scrolling when the
                     // keyboard leaves less room.
@@ -70,7 +92,13 @@ struct OnboardingView: View {
                 .scrollDismissesKeyboard(.interactively)
             }
             .background(Theme.ground.ignoresSafeArea())
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineTitle()
+            #if os(macOS)
+            // Every Mac window has a name (the Window menu, Mission
+            // Control); the page says it again in the serif, as Linux's
+            // header does over its sign-in.
+            .navigationTitle("Jukebox")
+            #endif
         }
     }
 
@@ -80,9 +108,7 @@ struct OnboardingView: View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             OnboardingFields {
                 TextField("Server Address", text: $address, prompt: Text(verbatim: "music.example.com"))
-                    .keyboardType(.URL)
-                    .textContentType(.URL)
-                    .textInputAutocapitalization(.never)
+                    .urlEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.go)
                     .focused($isAddressFocused)
@@ -90,7 +116,7 @@ struct OnboardingView: View {
                     .frame(minHeight: 52)
             }
             Text("The address you open your Jellyfin or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
-                .font(.footnote)
+                .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let serverError {
                 OnboardingErrorText(message: serverError)
@@ -150,18 +176,26 @@ struct OnboardingView: View {
     }
 
     private func changeServer() {
+        startsQuickConnect = false
         withAnimation(.easeInOut(duration: 0.25)) {
             step = .server
+        }
+    }
+
+    private func quickConnect(on server: DetectedServer) {
+        startsQuickConnect = true
+        withAnimation(.easeInOut(duration: 0.25)) {
+            step = .account(server)
         }
     }
 
     private func show(_ message: String) {
         serverError = message
         // Inline text appears silently; VoiceOver is told.
-        UIAccessibility.post(notification: .announcement, argument: message)
+        AccessibilityNotification.Announcement(message).post()
     }
 
-    private static func message(for error: Error, at url: URL) -> String {
+    fileprivate static func message(for error: Error, at url: URL) -> String {
         switch error as? MusicServerError {
         case .invalidServerAddress?:
             return String(localized: "There is no Jellyfin, Navidrome or other Subsonic server at this address.")
@@ -194,8 +228,12 @@ private struct OnboardingAccountForm: View {
     /// lacks is not a button at all.
     let serverSignIn: any ServerSignIn
     let changeServer: () -> Void
+    /// Opened by Quick Connect on the wide page: the code at once, and
+    /// Cancel goes back to that page.
+    let startsQuickConnect: Bool
 
     @Environment(AppModel.self) private var app
+    @Environment(\.isWide) private var isWide
     /// The code is read off this screen and typed elsewhere: as large as
     /// the screen allows, and larger still with a larger text size.
     @ScaledMetric(relativeTo: .largeTitle) private var codeSize: CGFloat = 56
@@ -223,10 +261,12 @@ private struct OnboardingAccountForm: View {
         case apiKey
     }
 
-    init(server: DetectedServer, serverSignIn: any ServerSignIn, changeServer: @escaping () -> Void) {
+    init(server: DetectedServer, serverSignIn: any ServerSignIn, changeServer: @escaping () -> Void,
+         startsQuickConnect: Bool = false) {
         self.server = server
         self.serverSignIn = serverSignIn
         self.changeServer = changeServer
+        self.startsQuickConnect = startsQuickConnect
     }
 
     var body: some View {
@@ -241,7 +281,7 @@ private struct OnboardingAccountForm: View {
             }
         }
         .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
+            ToolbarItem(placement: .barLeading) {
                 Button {
                     cancelQuickConnect()
                     changeServer()
@@ -254,6 +294,9 @@ private struct OnboardingAccountForm: View {
         }
         .onDisappear {
             quickConnectTask?.cancel()
+        }
+        .onAppear {
+            if startsQuickConnect { startQuickConnect() }
         }
     }
 
@@ -275,15 +318,15 @@ private struct OnboardingAccountForm: View {
     }
 
     private var header: some View {
-        VStack(spacing: 2) {
+        VStack(alignment: isWide ? .leading : .center, spacing: Theme.Space.xs) {
             Text("Signing in to \(server.name)")
-                .font(.headline)
+                .desktopFont(15, weight: .bold, phone: .headline)
             Text(verbatim: serverDetail)
-                .font(.subheadline)
+                .desktopFont(13, phone: .subheadline)
                 .foregroundStyle(.secondary)
         }
-        .multilineTextAlignment(.center)
-        .frame(maxWidth: .infinity)
+        .multilineTextAlignment(isWide ? .leading : .center)
+        .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
         .padding(.bottom, Theme.Space.s)
         .accessibilityElement(children: .combine)
     }
@@ -314,7 +357,7 @@ private struct OnboardingAccountForm: View {
             OnboardingFields {
                 TextField("User Name", text: $username)
                     .textContentType(.username)
-                    .textInputAutocapitalization(.never)
+                    .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.next)
                     .focused($focus, equals: .username)
@@ -337,6 +380,7 @@ private struct OnboardingAccountForm: View {
                 OnboardingButtonLabel(title: "Sign In", isWorking: isSigningIn)
             }
             .buttonStyle(.prominent)
+            .fixedSize(horizontal: isWide, vertical: false)
             // A Jellyfin user may have no password: only the name is needed.
             .disabled(trimmedUsername.isEmpty)
             .accessibilityLabel(isSigningIn ? Text("Signing In") : Text("Sign In"))
@@ -351,7 +395,7 @@ private struct OnboardingAccountForm: View {
                 .buttonStyle(.secondary)
                 .disabled(isSigningIn)
                 Text("Sign in from another Jellyfin app that is already signed in, without typing your password here.")
-                    .font(.footnote)
+                    .desktopFont(13, phone: .footnote)
                     .foregroundStyle(.secondary)
             }
             if apiKeySignIn != nil {
@@ -406,7 +450,7 @@ private struct OnboardingAccountForm: View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             OnboardingFields {
                 SecureField("API Key", text: $apiKey)
-                    .textInputAutocapitalization(.never)
+                    .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.go)
                     .focused($focus, equals: .apiKey)
@@ -414,7 +458,7 @@ private struct OnboardingAccountForm: View {
                     .frame(minHeight: 52)
             }
             Text("A key made in the server’s own settings, for Jukebox alone: it can be taken back there without changing your password.")
-                .font(.footnote)
+                .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let errorMessage {
                 OnboardingErrorText(message: errorMessage)
@@ -425,6 +469,7 @@ private struct OnboardingAccountForm: View {
                 OnboardingButtonLabel(title: "Sign In", isWorking: isSigningIn)
             }
             .buttonStyle(.prominent)
+            .fixedSize(horizontal: isWide, vertical: false)
             .disabled(trimmedAPIKey.isEmpty)
             .accessibilityLabel(isSigningIn ? Text("Signing In") : Text("Sign In"))
             .padding(.top, Theme.Space.s)
@@ -495,20 +540,20 @@ private struct OnboardingAccountForm: View {
                         // Read digit by digit, as it is typed.
                         .accessibilityLabel(Text(verbatim: code.map { String($0) }.joined(separator: " ")))
                     Text("Enter this code in another Jellyfin app: Settings › Quick Connect")
-                        .font(.subheadline)
+                        .desktopFont(13, phone: .subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     HStack(spacing: Theme.Space.s) {
                         ProgressView()
                         Text("Waiting…")
                     }
-                    .font(.footnote)
+                    .desktopFont(13, phone: .footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityElement(children: .combine)
                 } else {
                     ProgressView()
                     Text("Asking \(server.name) for a code…")
-                        .font(.subheadline)
+                        .desktopFont(13, phone: .subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -520,6 +565,8 @@ private struct OnboardingAccountForm: View {
 
             Button {
                 cancelQuickConnect()
+                // Back to the one page it was asked for from.
+                if startsQuickConnect { changeServer() }
             } label: {
                 Text("Cancel")
             }
@@ -572,10 +619,10 @@ private struct OnboardingAccountForm: View {
 
     private func show(_ message: String) {
         errorMessage = message
-        UIAccessibility.post(notification: .announcement, argument: message)
+        AccessibilityNotification.Announcement(message).post()
     }
 
-    private static func signInMessage(for error: Error) -> String {
+    fileprivate static func signInMessage(for error: Error) -> String {
         switch error as? MusicServerError {
         case .unauthorized?:
             return String(localized: "That user name and password did not work on this server.")
@@ -591,7 +638,7 @@ private struct OnboardingAccountForm: View {
         }
     }
 
-    private static func apiKeyMessage(for error: Error) -> String {
+    fileprivate static func apiKeyMessage(for error: Error) -> String {
         switch error as? MusicServerError {
         case .unauthorized?:
             return String(localized: "That API key did not work on this server.")
@@ -615,46 +662,332 @@ private struct OnboardingAccountForm: View {
     }
 }
 
+// MARK: - Wide: one page, as Linux's
+
+/// Linux's sign-in for a wide window (17-sign-in.png): the address, the user
+/// name and the password in one group of rows, and Sign In, which finds the
+/// server and signs in to it. The address is asked as soon as it is left,
+/// so what that server offers (Quick Connect, an API key) shows under Sign
+/// In; a server that signs in with a key turns the password's row into the
+/// key's, as on Linux.
+private struct OnboardingWideForm: View {
+    let quickConnect: (DetectedServer) -> Void
+
+    @Environment(AppModel.self) private var app
+    @Environment(\.openURL) private var openURL
+
+    @State private var address = OnboardingMemory.serverAddress
+    @State private var username = OnboardingMemory.userName
+    @State private var secret = ""
+    /// What answered at `detectedAt`, and the kit's way in to it.
+    @State private var server: DetectedServer?
+    @State private var serverSignIn: (any ServerSignIn)?
+    @State private var detectedAt = ""
+    /// The key's row instead of the password's: chosen, or because the
+    /// server takes no tokens made from a password.
+    @State private var usesAPIKey = false
+    /// Where the server says to make a key (OpenSubsonic's `helpUrl`).
+    @State private var apiKeyHelp: URL?
+    @State private var isWorking = false
+    @State private var errorMessage: String?
+    @FocusState private var focus: Field?
+
+    private enum Field: Hashable {
+        case address
+        case username
+        case secret
+    }
+
+    init(quickConnect: @escaping (DetectedServer) -> Void) {
+        self.quickConnect = quickConnect
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.xl) {
+            OnboardingFields {
+                // Named for the screenshot walk: here the first text field
+                // is the address, not the user name as on the second step.
+                TextField("Server Address", text: $address)
+                    .urlEntry()
+                    .autocorrectionDisabled()
+                    .submitLabel(.next)
+                    .focused($focus, equals: .address)
+                    .onSubmit { focus = usesAPIKey ? .secret : .username }
+                    .frame(minHeight: 52)
+                    .accessibilityIdentifier("signIn.address")
+                if !usesAPIKey {
+                    Divider()
+                    TextField("User Name", text: $username)
+                        .textContentType(.username)
+                        .plainTextEntry()
+                        .autocorrectionDisabled()
+                        .submitLabel(.next)
+                        .focused($focus, equals: .username)
+                        .onSubmit { focus = .secret }
+                        .frame(minHeight: 52)
+                        .accessibilityIdentifier("signIn.user")
+                }
+                Divider()
+                Group {
+                    if usesAPIKey {
+                        SecureField("API Key", text: $secret)
+                            .plainTextEntry()
+                    } else {
+                        SecureField("Password", text: $secret)
+                            .textContentType(.password)
+                    }
+                }
+                .autocorrectionDisabled()
+                .submitLabel(.go)
+                .focused($focus, equals: .secret)
+                .onSubmit { signIn() }
+                .frame(minHeight: 52)
+                .accessibilityIdentifier("signIn.password")
+            }
+            if let errorMessage {
+                OnboardingErrorText(message: errorMessage)
+            }
+            // Centred under the rows, as Linux has it; what the server
+            // offers besides a password under it, once it has answered.
+            VStack(spacing: Theme.Space.s) {
+                Button {
+                    signIn()
+                } label: {
+                    OnboardingButtonLabel(title: "Sign In", isWorking: isWorking)
+                }
+                .buttonStyle(.prominent)
+                .fixedSize()
+                .disabled(!canSignIn)
+                .accessibilityLabel(isWorking ? Text("Signing In") : Text("Sign In"))
+                if let server, server.capabilities.contains(.quickConnect),
+                   (serverSignIn as? any QuickConnectSignIn) != nil, !usesAPIKey {
+                    Button {
+                        quickConnect(server)
+                    } label: {
+                        Text("Use Quick Connect")
+                    }
+                    .buttonStyle(.secondary)
+                    .disabled(isWorking)
+                }
+                if (serverSignIn as? any APIKeySignIn) != nil {
+                    Button {
+                        usesAPIKey.toggle()
+                        secret = ""
+                        errorMessage = nil
+                        focus = .secret
+                    } label: {
+                        usesAPIKey ? Text("Use a Password Instead") : Text("Use an API Key")
+                    }
+                    .buttonStyle(.secondary)
+                    .disabled(isWorking)
+                }
+                if usesAPIKey, let apiKeyHelp {
+                    Button {
+                        openURL(apiKeyHelp)
+                    } label: {
+                        Text("How to Make a Key")
+                    }
+                    .buttonStyle(.secondary)
+                }
+            }
+            .frame(maxWidth: .infinity)
+        }
+        .onAppear {
+            // The first row still to fill has the keys, as on Linux.
+            if trimmed(address).isEmpty {
+                focus = .address
+            } else {
+                focus = trimmed(username).isEmpty ? .username : .secret
+                detectQuietly()
+            }
+        }
+        // The address left: asked now, so the options it has show.
+        .onChange(of: focus) { old, _ in
+            if old == .address { detectQuietly() }
+        }
+        // Another address: what the last one offered no longer holds.
+        .onChange(of: address) { _, _ in
+            guard !detectedAt.isEmpty, trimmed(address) != detectedAt else { return }
+            server = nil
+            serverSignIn = nil
+            detectedAt = ""
+            usesAPIKey = false
+        }
+    }
+
+    private var canSignIn: Bool {
+        guard !trimmed(address).isEmpty else { return false }
+        // A Jellyfin user may have no password: only the name is needed.
+        return usesAPIKey ? !trimmed(secret).isEmpty : !trimmed(username).isEmpty
+    }
+
+    private func trimmed(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func signIn() {
+        guard !isWorking, canSignIn else { return }
+        let typed = trimmed(address)
+        guard let first = MusicServers.candidateAddresses(for: typed).first else {
+            show(String(localized: "That is not a server address. Try one like music.example.com."))
+            return
+        }
+        let name = trimmed(username)
+        let typedSecret = secret
+        let withKey = usesAPIKey
+        errorMessage = nil
+        isWorking = true
+        focus = nil
+        // Not tied to this view: once signed in the app swaps this screen
+        // for the library while `signIn` is still loading it.
+        Task {
+            guard let way = await signInWay(at: typed, first: first) else {
+                isWorking = false
+                return
+            }
+            do {
+                if withKey, let keySignIn = way as? any APIKeySignIn {
+                    let credentials = try await keySignIn.signIn(apiKey: trimmed(typedSecret))
+                    Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "api_key"])
+                    await app.signIn(credentials)
+                } else {
+                    let credentials = try await way.signIn(username: name, password: typedSecret)
+                    OnboardingMemory.userName = name
+                    Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "password"])
+                    await app.signIn(credentials)
+                }
+            } catch MusicServerError.needsAPIKey(let help) {
+                // As on the iPhone: a key is asked for rather than the
+                // password itself, which would go with every request.
+                isWorking = false
+                Stats.track(.signInFailed, ["reason": "needs_api_key"])
+                if let help { apiKeyHelp = help }
+                usesAPIKey = true
+                secret = ""
+                focus = .secret
+                show(String(localized: "This server signs in with an API key rather than a password. Make one in its settings, then paste it here."))
+            } catch {
+                isWorking = false
+                Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
+                show(withKey ? OnboardingAccountForm.apiKeyMessage(for: error)
+                             : OnboardingAccountForm.signInMessage(for: error))
+            }
+        }
+    }
+
+    /// The way in to the server at `typed`, asked once an address; nil
+    /// when nothing answered there, said why.
+    private func signInWay(at typed: String, first: URL) async -> (any ServerSignIn)? {
+        if detectedAt == typed, let serverSignIn { return serverSignIn }
+        do {
+            let found = try await app.detectServer(at: typed)
+            return keep(found, at: typed, first: first)
+        } catch {
+            // The address as typed's error, as the iPhone's first step says.
+            Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
+            show(OnboardingView.message(for: error, at: first))
+            return nil
+        }
+    }
+
+    /// Asks the address without a word when it fails: Sign In says why.
+    private func detectQuietly() {
+        let typed = trimmed(address)
+        guard !isWorking, !typed.isEmpty, typed != detectedAt,
+              let first = MusicServers.candidateAddresses(for: typed).first else { return }
+        Task {
+            guard let found = try? await app.detectServer(at: typed), trimmed(address) == typed else { return }
+            keep(found, at: typed, first: first)
+        }
+    }
+
+    /// The server that answered and the way in to it, kept for this
+    /// address; the way returned.
+    @discardableResult
+    private func keep(_ found: DetectedServer, at typed: String, first: URL) -> any ServerSignIn {
+        let way = app.signIn(to: found)
+        server = found
+        serverSignIn = way
+        detectedAt = typed
+        // What answered, for the next sign-in: the port written out when it
+        // took a fallback, so the next one goes straight there.
+        OnboardingMemory.serverAddress = found.url == first ? typed : found.url.absoluteString
+        return way
+    }
+
+    private func show(_ message: String) {
+        errorMessage = message
+        // Inline text appears silently; VoiceOver is told.
+        AccessibilityNotification.Announcement(message).post()
+    }
+}
+
 // MARK: - Parts
 
 /// The mark coming on, the name in the serif, and what Jukebox is for: a
 /// fact, not a slogan.
 private struct OnboardingWelcome: View {
+    @Environment(\.isWide) private var isWide
+
     var body: some View {
-        VStack(spacing: Theme.Space.l) {
+        // Wide, Linux's column: 24 between the mark, the name and the fact.
+        VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.l) {
             ShellAppMark(side: 112, animatesIn: true)
-            VStack(spacing: Theme.Space.s) {
+            VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.s) {
+                // Wide, a page title's 40, as Linux's sign-in sets "Jukebox".
                 Text("Jukebox")
-                    .font(.serif(.largeTitle))
+                    .desktopFont(40, design: .serif, phone: .serif(.largeTitle))
                     .accessibilityAddTraits(.isHeader)
                 Text("Music from your Jellyfin, Navidrome or other Subsonic server.")
-                    .font(.body)
+                    .desktopFont(15, phone: .body)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                    .multilineTextAlignment(isWide ? .leading : .center)
                     // Two lines rather than cut short where the page is
                     // tight (the first two steps cut it at "other…").
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
     }
 }
 
 /// Fields on the page's ground, a hairline above and below them, as a
-/// form's rows without its card.
+/// form's rows without its card. Wide, Linux's group of rows instead
+/// (17-sign-in.png): libadwaita's boxed list, its card one step up from
+/// the ground (white by day; white at 8 % by night, #252423 on Night).
 private struct OnboardingFields<Content: View>: View {
     let content: Content
+
+    @Environment(\.isWide) private var isWide
+
+    /// Computed: a generic type has no stored statics.
+    private static var card: Color { Color(light: 0xFFFFFF, dark: 0x252423) }
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-            content
-            Divider()
+        Group {
+            if isWide {
+                VStack(spacing: 0) {
+                    content
+                }
+                .padding(.horizontal, Theme.Space.m)
+                // grid-ok: libadwaita's own radius for a boxed list.
+                .background(Self.card, in: .rect(cornerRadius: 12))
+            } else {
+                VStack(spacing: 0) {
+                    Divider()
+                    content
+                    Divider()
+                }
+            }
         }
+        #if os(macOS)
+        // The rows are the fields' edges: no Mac bezel inside them as well.
+        .textFieldStyle(.plain)
+        #endif
     }
 }
 
@@ -688,7 +1021,7 @@ private struct OnboardingErrorText: View {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(.red)
         }
-        .font(.footnote)
+        .desktopFont(13, phone: .footnote)
         .foregroundStyle(.secondary)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
