@@ -125,7 +125,11 @@ without sound.
   GtkGridView, so Songs is as quick with 20 000 songs as with 20.
 - **Gapless** (`AudioPlayer`). GStreamer asks for the next address a moment
   before a song ends; the queue follows when the new stream starts, as it
-  follows AVQueuePlayer on the iPhone.
+  follows AVQueuePlayer on the iPhone. A short song over a quick network
+  is fetched whole at once, and GStreamer asks as it starts, before its
+  own start reaches the main loop: the first start after a song is loaded
+  is always that song's (until 16 November 2026 the queue took it for the
+  next one's, and ran one song ahead).
 
 ## At home on GNOME
 
