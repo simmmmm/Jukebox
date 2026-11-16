@@ -89,6 +89,39 @@ bounded() {
 
 sim() { bounded 60 xcrun simctl "$@"; }
 
+# A simulator turned dark or light, and asked afterwards what it is. Just
+# after a boot `simctl ui … appearance dark` can hang until its minute is up
+# and leave the simulator light (run 43718236975: the iPhone's "dark"
+# pictures came out light). So: tried again, and once more after the
+# simulator is booted afresh. False when it never says $2: its walk is then
+# not walked, rather than light pictures saved as dark ones.
+appearance() {
+  local udid=$1 mode=$2 try now=
+  for try in 1 2 3 4 5; do
+    if (( try == 4 )); then
+      bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1
+      bounded "$(allow 300)" xcrun simctl bootstatus "$udid" -b > /dev/null 2>&1
+    fi
+    bounded 45 xcrun simctl ui "$udid" appearance "$mode" > /dev/null 2>&1
+    now=$(bounded 30 xcrun simctl ui "$udid" appearance 2> /dev/null)
+    if [[ $now == "$mode" ]]; then
+      (( try == 1 )) || echo "The simulator turned $mode at try $try."
+      return 0
+    fi
+    echo "The simulator is ${now:-silent}, not $mode (try $try)."
+    sleep 5
+  done
+  return 1
+}
+
+# Apple's own 9:41 and full bars, not the runner's time. Again after each
+# turn of the appearance: a boot afresh (appearance) forgets it.
+status_bar() {
+  sim status_bar "$1" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 \
+    --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100 \
+    || problem "the $2 simulator's status bar kept the runner's time"
+}
+
 # --- The fake Jellyfin -------------------------------------------------------
 
 group "The fake Jellyfin on localhost:8096, and the contact sheet's tool"
@@ -460,11 +493,12 @@ round() {
     endgroup
     return
   fi
-  sim ui "$udid" appearance dark || problem "the $kind simulator did not turn dark"
-  # Apple's own 9:41 and full bars, not the runner's time.
-  sim status_bar "$udid" override --time 9:41 --dataNetwork wifi --wifiMode active --wifiBars 3 \
-    --cellularMode active --cellularBars 4 --batteryState charged --batteryLevel 100 \
-    || problem "the $kind simulator's status bar kept the runner's time"
+  local dark=true
+  if ! appearance "$udid" dark; then
+    dark=false
+    problem "the $kind simulator did not turn dark, so its dark walks are not walked"
+  fi
+  status_bar "$udid" "$kind"
   # A fresh simulator explains slide-to-type over the keyboard the first time
   # it shows; that would lie over the sign-in.
   sim spawn "$udid" defaults write com.apple.keyboard.preferences DidShowContinuousPathIntroduction -bool true \
@@ -477,11 +511,26 @@ round() {
   # at the welcome.
   sim uninstall "$udid" com.tijmen.Jukebox > /dev/null 2>&1 || true
   sim keychain "$udid" reset || problem "the $kind simulator's keychain was not reset"
+  if ! $dark && [[ $kind != iphone ]]; then
+    echo "$kind-dark: not walked: the simulator stayed light" >> "$out/$kind/verdict.txt"
+    bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1 || true
+    endgroup
+    return
+  fi
   case $kind in
     iphone)
-      walk iphone testPhone iphone-dark 1200
-      sim ui "$udid" appearance light || problem "the iPhone simulator did not turn light"
-      walk iphone testPhoneLight iphone-light 480
+      if $dark; then
+        walk iphone testPhone iphone-dark 1200
+      else
+        echo "iphone-dark: not walked: the simulator stayed light" >> "$out/$kind/verdict.txt"
+      fi
+      if appearance "$udid" light; then
+        status_bar "$udid" "$kind"
+        walk iphone testPhoneLight iphone-light 480
+      else
+        problem "the iPhone simulator did not turn light, so its light walk is not walked"
+        echo "iphone-light: not walked: the simulator did not turn light" >> "$out/$kind/verdict.txt"
+      fi
       ;;
     # Linux's walk, some twenty pictures: 450 s with every wide step a skip
     # (run of da76341), and once music plays each step waits 10 to 40 s for

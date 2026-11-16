@@ -753,6 +753,14 @@ final class Walk {
         }
         pause(1.5)
         try alive(step)
+        // A tap lost while the simulator stalled leaves the page where it was
+        // (run 43763579467: the picked station's page stayed, and the walk
+        // after it went astray). Not at `previous` (its navigation bar, as
+        // push checks) and a back button still there: once more.
+        if !app.navigationBars[previous].firstMatch.waitForExistence(timeout: 10), named.exists {
+            note("\(step): the page stayed, back once more")
+            if try tap(named, step, timeout: 1) { pause(1.5) }
+        }
     }
 
     /// The first album of a grid of covers: the first cover-shaped button on
