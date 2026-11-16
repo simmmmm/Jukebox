@@ -52,3 +52,7 @@ song titles are sent to Last.fm.
 See `docs/ARCHITECTURE.md`. `dev/jellyfin-test-server.sh` and
 `dev/kit-test.sh` test JukeboxKit on Linux against a real Jellyfin in
 Docker.
+
+## Licence
+
+MIT: see `LICENSE`.

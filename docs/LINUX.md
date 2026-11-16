@@ -152,8 +152,8 @@ The iPhone has each of these, and Linux is ready for them:
   (once the photographer decides whether it turns), the mark warming up,
   the mark before a station's name in Now Playing and the player's bar.
 - The Flatpak's page in GNOME Software (a metainfo file): it names a
-  licence, and the photographer has not chosen one. Flathub wants that too,
-  and a build from source.
+  licence, and that is MIT, chosen on 16 November 2026 (`LICENSE`).
+  Flathub wants a build from source too.
 - CI. The workflow file calls `ci/*.sh`, and the session's token may not
   push workflow files, so Linux is built here, not yet on GitHub.
 
