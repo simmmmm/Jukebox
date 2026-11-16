@@ -23,9 +23,9 @@ photographer, 16 November 2026).
 
 **Promotional text** (170, can change without review):
 
-> Play your own music from Jellyfin, Navidrome or any Subsonic server, with a
-> radio that learns what you skip, mixes made from your listening, and your
-> music offline.
+> Play your own music from Jellyfin, Navidrome or any Subsonic server - with
+> a radio that learns what you skip, mixes made from your listening, and
+> your music offline.
 
 **Description** (4000):
 
