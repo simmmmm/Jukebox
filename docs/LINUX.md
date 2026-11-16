@@ -77,9 +77,25 @@ data and libav.
 The computer brings glibc 2.38 and GCC 13's libstdc++ or newer (Ubuntu
 24.04, Debian 13, Fedora 39 and up, Arch), and what every desktop has:
 fonts, the graphics drivers, and a sound server (PulseAudio, or PipeWire's
-Pulse; without one Jukebox plays in silence). Its libav is Ubuntu's,
-built as GPL: a release that carries the AppImage carries GPL code beside
-Jukebox's MIT.
+Pulse; without one Jukebox plays in silence).
+
+What in the AppImage is not MIT ("Met GPL-vermelding", 16 November 2026).
+Jukebox's own code is MIT (`LICENSE`). Beside it, the file carries:
+
+- GPL-2.0-or-later: FFmpeg's libraries (libav), Ubuntu's build with x264,
+  x265 and libpostproc; the shared-mime-info database.
+- LGPL: GTK, GLib, GStreamer and its plugins, libsoup, libadwaita.
+- LGPL-3.0 or CC-BY-SA-3.0: the Adwaita icons.
+- Apache-2.0 with the Runtime Library Exception: Swift's runtime and
+  Foundation, in the binary; with them ICU, under the Unicode licence.
+- The other libraries under their own licences, as Ubuntu ships them.
+
+They are Ubuntu 24.04's (noble) packages, unchanged. Each one's name and
+version, and its source package, are in the file at
+`usr/share/doc/jukebox/PACKAGES` (`--appimage-extract` shows it). The
+corresponding source comes from Ubuntu: `apt-get source <source>=<version>`
+on noble, or launchpad.net/ubuntu/+source/<source>. Swift's is at
+github.com/swiftlang.
 
 Tried, 16 November 2026: on this machine under Xvfb and under mutter,
 headless, on Wayland (drawn with OpenGL), and in a bare Fedora

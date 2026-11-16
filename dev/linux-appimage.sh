@@ -120,6 +120,18 @@ missing=$(for f in $(elves); do ldd $f 2>/dev/null | grep "not found" || true; d
 [[ -z $missing ]] || { echo "not found: $missing" >&2; exit 1; }
 cp /src/Linux/data/AppRun $A/AppRun
 
+# Which of Ubuntu'"'"'s packages are inside, at which version, and their
+# source packages: where the corresponding source is (docs/LINUX.md).
+doc=$A/usr/share/doc/jukebox
+mkdir -p $doc
+cp /src/LICENSE $doc/
+{ echo "# Ubuntu 24.04 (noble) packages in this AppImage: package version source source-version"
+  { for f in $(elves); do [[ $f == $A/usr/bin/jukebox ]] || echo "*/${f##*/}"; done
+    echo /usr/share/icons/Adwaita/index.theme /usr/share/mime/packages/freedesktop.org.xml
+    ls /usr/share/glib-2.0/schemas/*.xml; } | xargs dpkg -S 2>/dev/null | cut -d: -f1 | tr , "\n" \
+    | sed "s/ //g" | sort -u | xargs dpkg-query -W -f "\${Package} \${Version} \${source:Package} \${source:Version}\n"
+} > $doc/PACKAGES
+
 # The oldest glibc and libstdc++ it runs on: the newest any part asks for.
 floor() { elves | xargs objdump -T 2>/dev/null | grep -o "$1_[0-9.]*" | sort -uV | tail -1; }
 echo "floor: $(floor GLIBC) $(floor GLIBCXX)"
