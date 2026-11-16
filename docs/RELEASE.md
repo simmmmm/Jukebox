@@ -14,13 +14,16 @@ de app nu".
 
 **Subtitle** (30): Your music server, on the air
 
+No em dashes in the store's texts: "ik wil geen em dashes in text" (the
+photographer, 16 November 2026).
+
 **Category**: Music. Secondary: none.
 
 **Price**: Free. All countries.
 
 **Promotional text** (170, can change without review):
 
-> Play your own music from Jellyfin, Navidrome or any Subsonic server — with a
+> Play your own music from Jellyfin, Navidrome or any Subsonic server, with a
 > radio that learns what you skip, mixes made from your listening, and your
 > music offline.
 
@@ -50,7 +53,7 @@ de app nu".
 > OFFLINE
 > Download an album, a playlist or a mix. Jukebox also keeps what you play
 > most, up to a size you choose, so your favourite music plays without a
-> network — the radio too.
+> network, the radio too.
 >
 > AND
 > Favourites and playlists that stay in sync with your server. AirPlay,
