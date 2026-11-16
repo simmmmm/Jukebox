@@ -60,7 +60,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         watchPlayer()
         // Launched by the car alone, the phone's window never asked for the
         // session; restore does nothing when the window already has.
-        Task { await app.restore() }
+        // Then, as the phone's window does when it comes to the front: is
+        // the server there. A car is often far from the home network, and
+        // offline only the songs on the phone play.
+        Task {
+            await app.restore()
+            if app.phase == .signedIn { app.offline.appBecameActive() }
+        }
     }
 
     func templateApplicationScene(_ templateApplicationScene: CPTemplateApplicationScene,
