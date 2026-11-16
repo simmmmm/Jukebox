@@ -350,6 +350,36 @@ belangrijks in de ios app, carplay!"
   No lyrics and no other phone-only notice
   in the car (Apple's CarPlay addendum). Entitlement: `docs/RELEASE.md`.
 
+## Siri and Shortcuts
+
+`Jukebox/Intents/`. Asked for with the other players' features ("maak ze
+allemaal maar", 17 November 2026); in the car, without a voice, every song
+is a tap while driving.
+
+- **"Play … in Jukebox"**, any name in the library, on the iPhone, the iPad and in the car:
+  SiriKit's `INPlayMediaIntent`, handled in the app (`SiriMedia.swift`,
+  through `JukeboxAppDelegate`), no extension. Siri hears the name and what
+  it is; `Voice.find` looks in the library. No name: Your Station. A
+  station's name ("Radiohead radio"): its station.
+- **Why not App Intents alone**: an App Shortcut's phrase matches only the
+  names suggested beforehand, and App Intents' audio schema (MediaIntents'
+  `AudioSearch`) is iOS 27.
+- **App Intents** (`MusicIntents.swift`), on the iPhone, the iPad and the
+  Mac, in Siri and the Shortcuts app with nothing set up: Play, Start a
+  Station, Play Your Station, Shuffle (the library or the favourites), Like
+  This Song. `MusicEntity` is an album, artist, playlist, song, genre or Your
+  Station; its query searches the library in memory. Pause, Next and the
+  rest are the system's (RemoteCommands).
+- **One way of playing**: `Voice` calls `player.play`, `radio.start`,
+  `radio.like` as the screens do. It waits for `AppModel.shared` to restore
+  the session, as CarPlay does from a cold start; signed out it says to sign
+  in. Counts: `from` `siri` (`docs/STATS.md`).
+- **On the device**: entities stay in the app; nothing is donated, given
+  as vocabulary or put in Spotlight. The playlists, the albums played lately
+  and the favourites are the phrases' suggestions.
+- Siri's permission is asked once, when the window has a library. The
+  entitlement: `docs/RELEASE.md`, Siri.
+
 ## Usage counts
 
 Anonymous counts of which screens and features are used go to the

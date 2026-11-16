@@ -208,6 +208,16 @@ Additional Capabilities), and cloud signing puts it in the store's profile.
 - Try it in a car or in Xcode's CarPlay simulator (I/O › External Displays ›
   CarPlay).
 
+## Siri
+
+`com.apple.developer.siri` is in `Jukebox/Jukebox-iOS.entitlements` since
+17 November 2026, for SiriKit's media intent ("Play … in Jukebox",
+`Jukebox/Intents/SiriMedia.swift`). The App ID needs it too: Certificates,
+Identifiers & Profiles › Identifiers › com.tijmen.Jukebox › Capabilities ›
+SiriKit › Save. Cloud signing then puts it in the store's profile.
+`carplay_signed` checks it beside CarPlay's, so an upload without it stops.
+The Mac's app has no Siri entitlement: it has App Intents only.
+
 ## Builds
 
 - **A push** builds the iPhone's app, signed ad hoc (CarPlay, above), and the

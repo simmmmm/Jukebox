@@ -221,6 +221,9 @@ class PlayQueue {
     /// music from last time, at launch).
     func play(_ tracks: [Track], startingAt index: Int = 0, context: QueueContext, shuffled: Bool = false,
               paused: Bool = false) {
+        // Siri's start, or the page's kind (Stats); taken at once, so a play
+        // that does not start leaves nothing for the next.
+        let from = Stats.takeFrom(context.kind)
         guard !tracks.isEmpty else { return }
         var tracks = tracks
         var index = index
@@ -247,11 +250,11 @@ class PlayQueue {
             }
             tracks = here
             // That music is played offline, and from what kind of thing (Stats).
-            Stats.track(.offlinePlayStarted, ["from": Stats.source(context.kind)])
+            Stats.track(.offlinePlayStarted, ["from": from])
         }
         // What music is started from, by its kind (Stats); never the album.
         // Music only made ready has not started.
-        if !paused { Stats.track(.playStarted, ["from": Stats.source(context.kind), "shuffled": shuffled]) }
+        if !paused { Stats.track(.playStarted, ["from": from, "shuffled": shuffled]) }
         // Anything but a station ends the station that played.
         if !context.isRadio { radio?.stop() }
         let entries = tracks.map { QueueEntry(track: $0) }

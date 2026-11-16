@@ -107,18 +107,24 @@ screenshots() {
 ios_adhoc=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES
            PROVISIONING_PROFILE_SPECIFIER="")
 
-# Whether the app's signature has CarPlay audio, true: the archive's, the
+# Whether the app's signature has CarPlay audio and Siri, true: the archive's, the
 # exported ipa's, and on every push the build's, signed as the archive is.
 carplay_signed() {
   local app=$1 entitlements=build/logs/entitlements-$2.plist
   codesign -d --entitlements - --xml "$app" > "$entitlements" 2> /dev/null || true
-  if [[ $(/usr/libexec/PlistBuddy -c 'Print :com.apple.developer.carplay-audio' "$entitlements" 2> /dev/null) == true ]]; then
-    echo "CarPlay audio is in the signature ($2)."
-    return 0
-  fi
-  echo "::error::No com.apple.developer.carplay-audio in the signature of the $2 (docs/RELEASE.md, CarPlay)."
-  codesign -d --entitlements - "$app" 2>&1 | head -40 || true
-  return 1
+  # Siri too: without it "Play … in Jukebox" never reaches the app, in the
+  # car least of all (docs/RELEASE.md, Siri).
+  local key missing=0
+  for key in com.apple.developer.carplay-audio com.apple.developer.siri; do
+    if [[ $(/usr/libexec/PlistBuddy -c "Print :$key" "$entitlements" 2> /dev/null) == true ]]; then
+      echo "$key is in the signature ($2)."
+    else
+      echo "::error::No $key in the signature of the $2 (docs/RELEASE.md, CarPlay and Siri)."
+      missing=1
+    fi
+  done
+  if (( missing )); then codesign -d --entitlements - "$app" 2>&1 | head -40 || true; fi
+  return $missing
 }
 
 if [[ ${TESTFLIGHT:-false} != true ]]; then

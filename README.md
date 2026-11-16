@@ -9,7 +9,9 @@ What plays on one device shows on the other: leave the computer, and the
 phone goes on where it was.
 
 In the car it plays through CarPlay: Home, Radio and the Library on the car's
-screen, and Now Playing with the station's thumbs.
+screen, and Now Playing with the station's thumbs. Siri plays any album,
+artist, playlist or station by name ("Play Blue in Jukebox"), and the same
+actions are in Shortcuts on the iPhone, the iPad and the Mac.
 
 <p align="center">
   <img src="docs/screenshots/linux-album.png" width="100%" alt="Jukebox on Linux, dark: an album open, the Now Playing panel with what plays next beside it, and the bar below with the song and its artist">

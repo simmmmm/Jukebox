@@ -33,6 +33,8 @@ struct JukeboxApp: App {
             RootView()
                 .appEnvironment(app, panel: panel)
                 .task { await app.restore() }
+                // Siri's phrases follow the library (Intents/Voice.swift).
+                .task(id: app.library.lastLoaded) { await Voice.libraryShown(app) }
                 #if os(macOS)
                 .task { await WalkWindow.apply() }
                 #endif
