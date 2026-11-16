@@ -71,6 +71,24 @@ struct QueueContext: Hashable, Sendable {
     var isRadio: Bool { station != nil }
 }
 
+/// What the sleep timer waits for before the music stops.
+enum SleepChoice: Hashable, Sendable {
+    case minutes(Int)
+    case endOfSong
+    /// The album's, the playlist's or the queue's last song; not on a
+    /// station, which has no end.
+    case endOfQueue
+
+    /// Its `sleep_timer_set` value (docs/STATS.md).
+    var statsValue: String {
+        switch self {
+        case let .minutes(minutes): "\(minutes)"
+        case .endOfSong: "end_of_song"
+        case .endOfQueue: "end_of_queue"
+        }
+    }
+}
+
 /// One place in the queue: the same track can be in it twice.
 struct QueueEntry: Identifiable, Hashable, Sendable {
     let id: UUID
@@ -126,6 +144,17 @@ class PlayQueue {
             if let playing { engineVolume(level(for: playing.entry.track)) }
         }
     }
+
+    /// The sleep timer set, nil off (`setSleepTimer`).
+    private(set) var sleepChoice: SleepChoice?
+    /// When a timer of minutes stops the music: a date, not a Timer, as
+    /// iOS may suspend a Timer while the app plays in the background. The
+    /// player's own ticks look at it (`checkSleep`).
+    private(set) var sleepDeadline: Date?
+    /// The seconds left on a timer of minutes, whole, for Linux's label;
+    /// set on the ticks, only when it changes. SwiftUI counts down from
+    /// `sleepDeadline` itself, paused too, when the iPhone's ticks rest.
+    private(set) var sleepLeft: TimeInterval?
 
     var server: (any MusicServer)?
     /// Set by AppModel; the radio this player asks for more.
@@ -193,6 +222,10 @@ class PlayQueue {
     /// Set while the listener goes back to an earlier entry (`goBack`).
     @ObservationIgnored private var isGoingBack = false
     @ObservationIgnored private var errorGeneration = 0
+    /// The sleep timer's fade, 1 to 0 over its last `sleepFade` seconds;
+    /// in `level(for:)`, so the listener's own volume is never touched.
+    @ObservationIgnored private var sleepFadeLevel: Double = 1
+    static let sleepFade: TimeInterval = 8
 
     init(settings: AppSettings, history: HistoryStore) {
         self.settings = settings
@@ -291,6 +324,8 @@ class PlayQueue {
         // would play its first song for ever, and Up Next has no repeat
         // button while a station plays to turn it off again.
         repeatMode = .off
+        // A station has no end to wait for.
+        if sleepChoice == .endOfQueue { endSleep() }
         load(0, play: true)
     }
 
@@ -312,6 +347,7 @@ class PlayQueue {
         isShuffled = false
         // As in playRadio: the radio chooses the order.
         repeatMode = .off
+        if sleepChoice == .endOfQueue { endSleep() }
         // Its end, heard or skipped, is the station's feedback now (deliver).
         playing?.stationID = station.id
         queueChanged()
@@ -398,6 +434,9 @@ class PlayQueue {
 
     func resume() {
         guard let currentIndex else { return }
+        // A deadline that passed while paused (the iPhone's ticks rest
+        // then): the timer is over, not a reason to stop again at once.
+        if let sleepDeadline, sleepDeadline <= Date() { endSleep() }
         // Nothing in the engine (the queue ended, or an error stopped it):
         // load the current entry again.
         if playing == nil || !engineHasItem {
@@ -416,7 +455,7 @@ class PlayQueue {
     func next() {
         guard let currentIndex else { return }
         // Repeat One repeats a track that ends, not one that is skipped.
-        if let next = indexAfter(currentIndex, wrapping: repeatMode == .all) {
+        if let next = indexAfter(currentIndex, wrapping: wraps) {
             load(next, play: true)
         } else {
             queueEnded()
@@ -507,6 +546,7 @@ class PlayQueue {
         duration = 0
         isShuffled = false
         originalOrder = nil
+        endSleep()
         deliver(finished)
     }
 
@@ -632,10 +672,15 @@ class PlayQueue {
     /// The entry the engine should hold after the current one, by the
     /// queue and the repeat mode.
     private var entryToPreload: QueueEntry? {
-        guard repeatMode != .one, let currentIndex, playing != nil,
-              let next = indexAfter(currentIndex, wrapping: repeatMode == .all) else { return nil }
+        // End of Song: nothing held, so the song ends by itself and
+        // `entryEnded` stops there.
+        guard repeatMode != .one, sleepChoice != .endOfSong, let currentIndex, playing != nil,
+              let next = indexAfter(currentIndex, wrapping: wraps) else { return nil }
         return queue[next]
     }
+
+    /// Repeat All goes round, unless the sleep timer waits for the end.
+    private var wraps: Bool { repeatMode == .all && sleepChoice != .endOfQueue }
 
     /// The engine is told the next entry whenever it may have changed (an
     /// edit, shuffle, repeat, the radio choosing again).
@@ -713,6 +758,7 @@ class PlayQueue {
     /// server's ReplayGain), which is only ever softer, since an engine
     /// cannot go above 1.
     func level(for track: Track) -> Double {
+        let volume = volume * sleepFadeLevel
         guard settings.normalizeVolume, let gain = track.normalizationGain else { return volume }
         return volume * min(1, pow(10, gain / 20))
     }
@@ -800,7 +846,7 @@ class PlayQueue {
                 load(currentIndex + 1, play: true)
                 return
             }
-        } else if repeatMode == .off, settings.autoplay, let radio, let last = currentTrack {
+        } else if repeatMode == .off, sleepChoice != .endOfQueue, settings.autoplay, let radio, let last = currentTrack {
             // Music's Autoplay: an album or a playlist plays on as a station
             // from its last track.
             let finished = finishCurrent()
@@ -811,6 +857,7 @@ class PlayQueue {
             return
         }
         // The end: the last track stays, paused at its start, as Music leaves it.
+        if sleepChoice == .endOfQueue { endSleep() }
         if let currentIndex { load(currentIndex, play: false) }
     }
 
@@ -842,9 +889,14 @@ class PlayQueue {
     /// engine: the next by the repeat mode.
     func entryEnded() {
         guard let currentIndex else { return }
-        if repeatMode == .one {
+        if sleepChoice == .endOfSong {
+            // The song ended by itself, its own fade: the next waits, paused
+            // at its start, for the morning.
+            endSleep()
+            load(indexAfter(currentIndex, wrapping: wraps) ?? currentIndex, play: false)
+        } else if repeatMode == .one {
             load(currentIndex, play: true)
-        } else if let next = indexAfter(currentIndex, wrapping: repeatMode == .all) {
+        } else if let next = indexAfter(currentIndex, wrapping: wraps) {
             load(next, play: true)
         } else {
             queueEnded()
@@ -873,6 +925,78 @@ class PlayQueue {
         }
         // Paused (music waiting at launch, HandoffStore), the next waits too.
         load(next, play: wantsToPlay)
+    }
+
+    // MARK: The sleep timer
+
+    /// What the timer offers now: End of Queue not on a station.
+    var sleepChoices: [SleepChoice] {
+        var choices: [SleepChoice] = [15, 30, 45, 60].map { .minutes($0) }
+        if hasTrack { choices.append(.endOfSong) }
+        if hasTrack, context?.isRadio != true { choices.append(.endOfQueue) }
+        return choices
+    }
+
+    /// "30 Minutes", "End of Album".
+    func sleepTitle(_ choice: SleepChoice) -> String {
+        switch choice {
+        case .minutes(60): return "1 Hour"
+        case let .minutes(minutes): return "\(minutes) Minutes"
+        case .endOfSong: return "End of Song"
+        case .endOfQueue:
+            switch context?.kind {
+            case .album: return "End of Album"
+            case .playlist: return "End of Playlist"
+            default: return "End of Queue"
+            }
+        }
+    }
+
+    /// The listener sets the timer, or turns it off (nil).
+    func setSleepTimer(_ choice: SleepChoice?, now: Date = Date()) {
+        // What was chosen, coarsely (Stats); a timer ending by itself is
+        // not counted.
+        Stats.track(.sleepTimerSet, ["value": choice?.statsValue ?? "off"])
+        endSleep()
+        sleepChoice = choice
+        if case let .minutes(minutes) = choice {
+            sleepDeadline = now.addingTimeInterval(TimeInterval(minutes * 60))
+            sleepLeft = TimeInterval(minutes * 60)
+        }
+        preloadNext()
+    }
+
+    /// On the player's ticks: the volume fades over the timer's last
+    /// seconds, and at its deadline the music pauses and the volume is the
+    /// listener's again.
+    func checkSleep(now: Date = Date()) {
+        guard let sleepDeadline else { return }
+        let left = sleepDeadline.timeIntervalSince(now)
+        let shown = max(0, left.rounded(.up))
+        if sleepLeft != shown { sleepLeft = shown }
+        guard left <= Self.sleepFade else { return }
+        if left > 0 {
+            // Paused in the fade, it waits where it was.
+            guard isPlaying else { return }
+            sleepFadeLevel = left / Self.sleepFade
+            if let playing { engineVolume(level(for: playing.entry.track)) }
+            return
+        }
+        // Paused first, then the volume back, so nothing is heard loud.
+        if isPlaying { pause() }
+        endSleep()
+    }
+
+    /// The timer off, without a word to Stats; the volume whole again.
+    private func endSleep() {
+        guard sleepChoice != nil || sleepDeadline != nil else { return }
+        let wasEndOfSong = sleepChoice == .endOfSong
+        sleepChoice = nil
+        sleepDeadline = nil
+        sleepLeft = nil
+        sleepFadeLevel = 1
+        if let playing { engineVolume(level(for: playing.entry.track)) }
+        if wasEndOfSong { preloadNext() }
     }
 
     // MARK: Telling the server

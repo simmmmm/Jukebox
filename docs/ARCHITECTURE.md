@@ -325,6 +325,19 @@ is in.
 `LRCLIBLiveTests` asks the real LRCLIB where it answers within 3 s (GitHub's
 runners) or with `LRCLIB_LIVE=1`, and skips itself elsewhere.
 
+## The sleep timer
+
+Asked for with what other players have ("maak ze allemaal maar").
+One timer in `PlayQueue`, so every client keeps the same:
+15, 30 or 45 minutes, an hour, End of Song, End of Album (or Playlist, or
+Queue; not on a station). A timer of minutes is a deadline the player's own
+ticks look at, not a Timer iOS may suspend in the background; its last 8 s
+fade the music through `level(for:)`, then it pauses and the volume is the
+listener's again. End of Song holds nothing after the song, so it ends by
+itself and the next waits, paused; End of Album goes round no Repeat All and
+starts no Autoplay. A moon beside Now Playing's ⋮ (`SleepTimerMenu`), with
+the time left; on the Mac also Controls › Sleep Timer. Not in the car.
+
 ## CarPlay
 
 The car's screen, Apple's templates (`Jukebox/CarPlay/CarPlayScene.swift`,
