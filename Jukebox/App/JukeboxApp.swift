@@ -17,7 +17,7 @@ struct JukeboxApp: App {
     #if os(iOS)
     @UIApplicationDelegateAdaptor(JukeboxAppDelegate.self) private var appDelegate
     #endif
-    @State private var app = AppModel()
+    @State private var app = AppModel.shared
     /// The wide window's panel, open or closed and on what: one for the app.
     @State private var panel = PanelState()
 

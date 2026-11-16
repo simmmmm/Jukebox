@@ -325,6 +325,29 @@ is in.
 `LRCLIBLiveTests` asks the real LRCLIB where it answers within 3 s (GitHub's
 runners) or with `LRCLIB_LIVE=1`, and skips itself elsewhere.
 
+## CarPlay
+
+The car's screen, Apple's templates (`Jukebox/CarPlay/CarPlayScene.swift`,
+the lead's). Asked for on 16 November 2026: "we missen iets echt extreem
+belangrijks in de ios app, carplay!"
+
+- Tabs Home (Your Station, mixes, played lately, recently added), Radio
+  (the Radio tab's stations, the one on air marked) and Library (playlists,
+  albums, artists, favourites, downloaded), as Settings › Pages shows them.
+  An album, a playlist or an artist pushes its songs, Play and Shuffle on
+  top. Five deep at most with Now Playing and Up Next.
+- Now Playing is `CPNowPlayingTemplate`, fed by NowPlayingInfo and
+  RemoteCommands. Its buttons: a station's thumbs, otherwise shuffle and
+  repeat. Up Next lists the queue.
+- Every tap plays through the phone's own calls (`player.play`, `playMix`,
+  `radio.start`): the same queue, offline rules and counts.
+- `AppModel.shared` is the one model: CarPlay can launch the app without
+  its window, so the scene calls `restore()` too. Lists follow the stores
+  through `withObservationTracking`.
+- The scene manifest in project.yml names only the car's role; SwiftUI's
+  App keeps the phone's window. No lyrics and no other phone-only notice
+  in the car (Apple's CarPlay addendum). Entitlement: `docs/RELEASE.md`.
+
 ## Usage counts
 
 Anonymous counts of which screens and features are used go to the

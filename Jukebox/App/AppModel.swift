@@ -20,6 +20,11 @@ import SwiftUI
 
 @Observable
 final class AppModel {
+    /// The one model, for the phone's window and the car's screen
+    /// (CarPlay/CarPlayScene.swift) alike: CarPlay can launch the app
+    /// without its window, and both play the same queue.
+    static let shared = AppModel()
+
     enum Phase: Equatable {
         /// Reading the keychain; a blank screen for a moment.
         case launching

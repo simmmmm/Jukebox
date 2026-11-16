@@ -8,6 +8,9 @@ artist, album, genre or decade and learns from what you skip.
 What plays on one device shows on the other: leave the computer, and the
 phone goes on where it was.
 
+In the car it plays through CarPlay: Home, Radio and the Library on the car's
+screen, and Now Playing with the station's thumbs.
+
 <p align="center">
   <img src="docs/screenshots/linux-album.png" width="100%" alt="Jukebox on Linux, dark: an album open, the Now Playing panel with what plays next beside it, and the bar below with the song and its artist">
 </p>

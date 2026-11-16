@@ -61,6 +61,13 @@ targets:
         UIBackgroundModes: [audio]
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
+          # CarPlay's scene (CarPlay/CarPlayScene.swift). The phone's window
+          # is not listed: SwiftUI's App gives that role its own scene, as
+          # before; only the car's role is named here.
+          UISceneConfigurations:
+            CPTemplateApplicationSceneSessionRoleApplication:
+              - UISceneConfigurationName: CarPlay
+                UISceneDelegateClassName: CarPlaySceneDelegate
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
         UISupportedInterfaceOrientations~ipad:
@@ -87,6 +94,10 @@ targets:
         # iPhone's is built in), and the hardened runtime is Xcode's default
         # for a Mac app.
         "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": Jukebox/Jukebox-macOS.entitlements
+        # The iPhone's: CarPlay audio. Apple grants it to the App ID on
+        # request; until then a signed build cannot carry it (docs/RELEASE.md).
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": Jukebox/Jukebox-iOS.entitlements
+        "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Jukebox/Jukebox-iOS.entitlements
         "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES
 
   # The screenshot walk (JukeboxUITests/ScreenshotTests.swift), run in the
