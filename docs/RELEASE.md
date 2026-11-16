@@ -61,8 +61,14 @@ alone is very likely taken. Candidates that say what it is:
 
 (**Open**: "iPhone, iPad and Mac" once the Mac ships, below.)
 >
-> Jukebox has no account, no ads and no tracking. Your music and your
-> listening stay between the app and your own server.
+> Jukebox has no account and no ads. What you play is never sent to us:
+> Jukebox counts, anonymously, which features are used and on what kind of
+> device, and the server that receives the counts reads a rough location
+> (country and city) from the connection. Share Anonymous Usage in Settings
+> turns that off. Lyrics your server does not have are looked up at LRCLIB
+> by the song's title, artist, album and length; Find Lyrics Online in
+> Settings turns that off too. Last.fm is asked only with your own key, by
+> artist names and song titles.
 
 **Keywords** (100, comma-separated, no spaces needed):
 `jellyfin,navidrome,subsonic,music server,self-hosted,radio,flac,offline,library,player,nas,plex`
@@ -101,7 +107,8 @@ the repository's README works (`https://github.com/simmmmm/Jukebox`).
 - Everything else: **not collected.** The music, the server's address, the
   user name and the password go only to the listener's own server and stay
   in the keychain; lyrics are looked up at LRCLIB with title, artist, album
-  and length, which is not data about the person.
+  and length, and with the listener's own Last.fm key the radio asks Last.fm
+  by artist names and song titles: neither is data about the person.
 
 This matches `Jukebox/Resources/PrivacyInfo.xcprivacy`.
 
