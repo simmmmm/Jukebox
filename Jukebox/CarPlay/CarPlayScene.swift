@@ -85,8 +85,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         guard interface != nil else { return }
         withObservationTracking {
             refreshLists()
-        } onChange: { [weak self] in
-            Task { @MainActor in self?.watchLists() }
+        } onChange: {
+            Task { @MainActor [weak self] in self?.watchLists() }
         }
     }
 
@@ -356,8 +356,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         guard interface != nil else { return }
         withObservationTracking {
             updateNowPlayingButtons()
-        } onChange: { [weak self] in
-            Task { @MainActor in self?.watchPlayer() }
+        } onChange: {
+            Task { @MainActor [weak self] in self?.watchPlayer() }
         }
     }
 
