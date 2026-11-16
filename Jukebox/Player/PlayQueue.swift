@@ -117,7 +117,10 @@ class PlayQueue {
     /// (`level(for:)`), so normalising never undoes it.
     var volume: Double = UserDefaults.standard.object(forKey: "volume") as? Double ?? 1 {
         didSet {
-            volume = min(1, max(0, volume))
+            // @Observable keeps this didSet on its own storage, so setting
+            // `volume` here runs it again: the clamp sets it once, and only
+            // when out of range, else it never stops (Linux's slider crashed).
+            guard (0...1).contains(volume) else { volume = min(1, max(0, volume)); return }
             UserDefaults.standard.set(volume, forKey: "volume")
             // At once, not at the clock's next tick: a slider is being moved.
             if let playing { engineVolume(level(for: playing.entry.track)) }
