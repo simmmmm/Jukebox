@@ -56,7 +56,7 @@ enum Voice {
         guard app.phase == .signedIn, app.library.lastLoaded != nil else { return }
         JukeboxShortcuts.updateAppShortcutParameters()
         #if os(iOS)
-        await SiriMedia.askOnce()
+        SiriMedia.askOnce()
         #endif
     }
 

@@ -144,9 +144,11 @@ nonisolated final class SiriMedia: NSObject, INPlayMediaIntentHandling {
     /// Siri's permission, asked once (Apple: "Request authorization from
     /// your iOS app, whether you're handling intents in an app extension or
     /// in your app").
-    @MainActor static func askOnce() async {
+    /// Not the main actor's (the class is nonisolated), so the answer, which
+    /// comes on another queue, lands in a closure that belongs to none.
+    static func askOnce() {
         guard INPreferences.siriAuthorizationStatus() == .notDetermined else { return }
-        _ = await INPreferences.requestSiriAuthorization()
+        INPreferences.requestSiriAuthorization { _ in }
     }
 }
 #endif
