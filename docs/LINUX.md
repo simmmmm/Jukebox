@@ -92,7 +92,8 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
 - toasts for a moment's news, a dialog before signing out;
 - header capitals on buttons and rows.
 
-Keys: Ctrl+Space plays and pauses, Ctrl+Right and Ctrl+Left skip, Ctrl+F
+Keys: Space plays and pauses wherever the focus is, except in a field
+typed in (Ctrl+Space everywhere), Ctrl+Right and Ctrl+Left skip, Ctrl+F
 goes to the search field, Ctrl+, opens Preferences, Ctrl+? shows them all.
 
 GNOME's media controls (the clock's menu, the lock screen, the keyboard's

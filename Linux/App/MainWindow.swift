@@ -113,6 +113,15 @@ enum MainWindow {
             adw_overlay_split_view_set_show_sidebar(ptr(split), adw_overlay_split_view_get_show_sidebar(ptr(split)) == 0 ? 1 : 0)
         }
         action(application, "sign-out", nil) { confirmSignOut() }
+        // Space plays and pauses wherever the focus is ("op de desktop
+        // varianten zou spatie altijd play/pause moeten zijn", 16 November
+        // 2026): seen first, in the capture phase, so the button, tile or
+        // row with the focus is not pressed by it.
+        let space = gtk_shortcut_controller_new()!
+        gtk_event_controller_set_propagation_phase(ptr(space), GTK_PHASE_CAPTURE)
+        gtk_shortcut_controller_add_shortcut(ptr(space), gtk_shortcut_new(gtk_shortcut_trigger_parse_string("space"),
+                                                                      gtk_callback_action_new(spacePlays, nil, nil)))
+        gtk_widget_add_controller(window, ptr(space))
         // The window of keys (Ctrl+?), which GTK opens for the window's
         // "show-help-overlay" once it has one.
         gtk_application_window_set_help_overlay(ptr(window), ptr(Shortcuts.window()))
@@ -541,6 +550,16 @@ enum MainWindow {
     }
 }
 
+/// Space's play or pause. A field typed in (Search, the sign-in's, a
+/// playlist's name, a dialog's) keeps its space: unhandled, the key goes on
+/// to it.
+private let spacePlays: GtkShortcutFunc = { window, _, _ in
+    if let window, let focus = gtk_root_get_focus(ptr(window)),
+       g_type_check_instance_is_a(ptr(focus), gtk_editable_get_type()) != 0 { return 0 }
+    MainActor.assumeIsolated { app.player.togglePlayPause() }
+    return 1
+}
+
 /// The keys, as GNOME shows an app's (Main Menu › Keyboard Shortcuts, Ctrl+?).
 enum Shortcuts {
     static func window() -> Widget {
@@ -554,7 +573,7 @@ enum Shortcuts {
         }
         let xml = "<interface><object class='GtkShortcutsWindow' id='shortcuts'><property name='modal'>1</property>"
             + "<child><object class='GtkShortcutsSection'><property name='section-name'>shortcuts</property>"
-            + group("Playing", [shortcut("Play or Pause", "&lt;Control&gt;space"),
+            + group("Playing", [shortcut("Play or Pause", "space &lt;Control&gt;space"),
                                 shortcut("Next Song", "&lt;Control&gt;Right"),
                                 shortcut("Previous Song", "&lt;Control&gt;Left")])
             // The screen is Full Player (the photographer, 15 November 2026).
