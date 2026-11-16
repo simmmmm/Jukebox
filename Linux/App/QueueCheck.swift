@@ -118,6 +118,16 @@ enum QueueCheck {
         q.stop()
         expect(q.queue.isEmpty && !q.hasTrack && q.context == nil, "Stop")
 
+        // Linux's gapless handover (AudioPlayer.swift): GStreamer took the
+        // next address before the loaded song's own start was heard (a
+        // short song, all fetched at once). That start is still the loaded
+        // song's; only the one after it is the next's.
+        let handover = Handover()
+        handover.loaded()
+        handover.offer("next")
+        _ = handover.take()
+        expect(!handover.started() && handover.started(), "a short song's own start is not the next one's")
+
         for what in failed { print("queue check failed: \(what)") }
         print("queue rules: \(checks - failed.count) of \(checks) checks pass")
         return failed.isEmpty ? 0 : 1

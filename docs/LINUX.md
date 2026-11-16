@@ -125,7 +125,11 @@ without sound.
   GtkGridView, so Songs is as quick with 20 000 songs as with 20.
 - **Gapless** (`AudioPlayer`). GStreamer asks for the next address a moment
   before a song ends; the queue follows when the new stream starts, as it
-  follows AVQueuePlayer on the iPhone.
+  follows AVQueuePlayer on the iPhone. A short song over a quick network
+  is fetched whole at once, and GStreamer asks as it starts, before its
+  own start reaches the main loop: the first start after a song is loaded
+  is always that song's (until 16 November 2026 the queue took it for the
+  next one's, and ran one song ahead).
 
 ## At home on GNOME
 
@@ -138,11 +142,18 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
 - the primary menu (F10) with Preferences, Keyboard Shortcuts and About;
 - GNOME's own context menus;
 - toasts for a moment's news, a dialog before signing out;
-- header capitals on buttons and rows.
+- header capitals on buttons and rows;
+- a playlist of the listener's own edited in place, as on the Mac (since
+  16 November 2026): a song's menu has Move Up, Move Down and, last,
+  Remove from Playlist; a song dragged onto another takes its place; the
+  same calls as the Mac's (`LibraryStore.remove`, `move`). Moving only
+  where the server can reorder, none of it on someone else's playlist.
 
 Keys: Space plays and pauses wherever the focus is, except in a field
 typed in (Ctrl+Space everywhere), Ctrl+Right and Ctrl+Left skip, Ctrl+F
 goes to the search field, Ctrl+, opens Preferences, Ctrl+? shows them all.
+In a list of songs Shift+F10 or the Menu key opens the song's menu, and
+in a playlist of one's own Delete removes the song.
 
 GNOME's media controls (the clock's menu, the lock screen, the keyboard's
 keys) see Jukebox through MPRIS, with the cover. The Play key with nothing
@@ -194,9 +205,6 @@ The iPad at regular width and the Mac draw the same window, 1:1
 The iPhone has each of these, and Linux is ready for them:
 
 - Quick Connect at sign-in (the kit has it: `QuickConnectSignIn`).
-- Editing a playlist's songs: removing one, moving one. Making, filling
-  (Add Songs, Add to Playlist…, a station's Save as Playlist…) and
-  deleting them is here since 15 November 2026 (`Choosers.swift`).
 - The drawings in motion: the label turning, the land under Now Playing
   (once the photographer decides whether it turns), the mark warming up,
   the mark before a station's name in Now Playing and the player's bar.
@@ -217,6 +225,12 @@ and a mix from the fake Jellyfin by their pages' buttons and plays one from
 its file; it starts a station from Radio's +, saves one as a playlist, makes
 a playlist, fills it with Add Songs and deletes it, and starts a song's
 station from Search. `frames.txt` says what came.
+
+Editing a playlist, 16 November 2026, under Xvfb against the test
+Jellyfin, by mouse and keys: Move Down and Move Up from the menu (Up by
+Shift+F10 and Enter), a song dragged up and one dragged down, Delete, and
+Remove from Playlist; after each, the server's order was the page's. Not
+yet tried: a Subsonic server, a playlist someone else shared.
 
 The Flatpak, 16 November 2026: in its sandbox under Broadway it signs in to
 the fake Jellyfin from the file, loads the library and its covers. Not yet

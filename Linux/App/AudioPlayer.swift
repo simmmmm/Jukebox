@@ -19,15 +19,41 @@ import Foundation
 import JukeboxKit
 
 /// The next song's address, for GStreamer's thread to take when it asks.
-private nonisolated final class Handover: @unchecked Sendable {
+nonisolated final class Handover: @unchecked Sendable {
     private let lock = NSLock()
     private var uri: String?
     private var taken = false
+    /// The loaded address's own stream start, not yet heard. GStreamer can
+    /// ask for the next address before it: a short song over a quick
+    /// network is all fetched at once, and "about-to-finish" comes as it
+    /// starts, while its own start still waits on the main loop. Taken for
+    /// the next song's, that start moved the queue on one song early.
+    private var ownStartDue = false
+
+    /// An address loaded by hand: nothing offered yet, and the next stream
+    /// start is its own.
+    func loaded() {
+        lock.lock(); defer { lock.unlock() }
+        uri = nil
+        taken = false
+        ownStartDue = true
+    }
 
     func offer(_ uri: String?) {
         lock.lock(); defer { lock.unlock() }
         self.uri = uri
         taken = false
+    }
+
+    /// A stream started: whether it is the taken address's (gapless), not
+    /// the loaded one's own start.
+    func started() -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        if ownStartDue {
+            ownStartDue = false
+            return false
+        }
+        return taken
     }
 
     /// GStreamer's: the address, once.
@@ -90,8 +116,9 @@ final class AudioPlayer: PlayQueue {
     // MARK: The engine, for the queue
 
     override func engineReplace(with url: URL, entry: QueueEntry, playSessionID: String, play: Bool) {
+        // NULL drops what the bus still held of the stream before.
         gst_element_set_state(engine, GST_STATE_NULL)
-        handover.offer(nil)
+        handover.loaded()
         offered = nil
         jb_set_string(engine, "uri", url.absoluteString)
         pendingSeek = nil
@@ -221,9 +248,12 @@ final class AudioPlayer: PlayQueue {
 
     /// A stream began. The one `load` asked for, or — GStreamer having
     /// taken the next address by itself — the next entry's: gapless, and
-    /// the queue follows.
+    /// the queue follows. GStreamer may ask what follows a short song
+    /// before that song's start is heard here, with nothing offered yet:
+    /// then the song ends, and the next loads by hand (`entryEnded`), a
+    /// moment's gap in the right order.
     private func streamStarted() {
-        guard handover.wasTaken(), let offered,
+        guard handover.started(), let offered,
               let index = queue.firstIndex(where: { $0.id == offered.entryID }) else { return }
         let finished = finishCurrent()
         self.offered = nil

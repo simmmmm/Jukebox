@@ -258,8 +258,13 @@ final class TrackRow {
     private let time = label("", "t13", "fact", "times")
     private var track: Track?
     private var menuTracks: [Track] = []
-    /// What a list adds before the song's own menu.
-    var extraItems: [(String, () -> Void)] = []
+    /// The row's place in its list, as the list last filled it (a list
+    /// reuses its rows).
+    var position = 0
+    /// What a list adds to the song's own menu: before it (Move Up, Move
+    /// Down), and after it (Remove from Playlist, last, as on the Mac).
+    var firstItems: [(String, () -> Void)] = []
+    var lastItems: [(String, () -> Void)] = []
 
     init(numbered: Bool = false) {
         gtk_label_set_xalign(ptr(number), 1)
@@ -280,12 +285,14 @@ final class TrackRow {
             widget = hbox(spacing: 12, [art.widget, words, time]).css("track-row", "covered")
         }
         let widget = self.widget
-        contextMenu(on: widget) { [weak self] in (self?.extraItems ?? []) + trackMenu(self?.menuTracks ?? []) }
+        contextMenu(on: widget) { [weak self] in self?.menu() ?? [] }
         observe(widget) { [weak self] in
             let playing = app.player.currentTrack?.id
             self?.mark(playing)
         }
     }
+
+    func menu() -> [(String, () -> Void)] { firstItems + trackMenu(menuTracks) + lastItems }
 
     private func mark(_ playing: ItemID?) {
         let isPlaying = track != nil && playing == track?.id
@@ -316,20 +323,100 @@ func guests(_ track: Track, besides albumArtist: String? = nil) -> String {
 }
 
 /// Songs as a list that plays from the song clicked, as `context`.
+/// Shift+F10 or the Menu key opens the focused song's menu, as a click with
+/// the secondary button does.
+///
+/// A playlist of the listener's own passes what edits it, by the song's
+/// place: `remove` puts Remove from Playlist in a song's menu and on the
+/// Delete key, GNOME's key for removing the item with the focus; `move`
+/// puts Move Up and Move Down in it, for the keyboard, and lets a song be
+/// dragged onto another to take its place.
 func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () -> QueueContext,
-               subtitle: ((Track) -> String)? = nil) -> ItemList<Track, TrackRow> {
+               subtitle: ((Track) -> String)? = nil,
+               remove: ((Int) -> Void)? = nil, move: ((Int, Int) -> Void)? = nil) -> ItemList<Track, TrackRow> {
+    weak var made: ItemList<Track, TrackRow>?
     let list = ItemList<Track, TrackRow>(
         make: {
             let row = TrackRow(numbered: numbered)
+            if let move { reorderable(row, move) }
             return (row.widget, row)
         },
-        fill: { row, track, _ in row.show(track, subtitle: subtitle?(track)) },
+        fill: { row, track, index in
+            row.position = index
+            row.show(track, subtitle: subtitle?(track))
+            row.firstItems = []
+            if let move {
+                if index > 0 { row.firstItems.append(("Move Up", { move(index, index - 1) })) }
+                if index < (made?.items.count ?? 0) - 1 { row.firstItems.append(("Move Down", { move(index, index + 1) })) }
+            }
+            row.lastItems = remove.map { remove in [("Remove from Playlist", { remove(index) })] } ?? []
+        },
         activate: { _, index, items in
             app.player.play(items, startingAt: index, context: context())
         })
+    made = list
     list.widget.css("rows")
+    onFocusedRow(of: list.widget, "<Shift>F10|Menu") { row in
+        showMenu(at: row.widget, x: 0, y: Double(gtk_widget_get_height(row.widget)), row.menu())
+    }
+    if let remove { onFocusedRow(of: list.widget, "Delete|KP_Delete") { remove($0.position) } }
     list.set(tracks)
     return list
+}
+
+/// What a key runs on the row with the focus, kept by the list's widget.
+private nonisolated final class RowKey {
+    let run: @MainActor (TrackRow) -> Void
+    init(_ run: @escaping @MainActor (TrackRow) -> Void) { self.run = run }
+}
+
+/// `keys` (a GTK trigger, "<Shift>F10|Menu") pressed in `list` run `body`
+/// on the row with the focus: GTK focuses the list's own item, whose child
+/// is the row.
+private func onFocusedRow(of list: Widget, _ keys: String, _ body: @escaping (TrackRow) -> Void) {
+    let controller = gtk_shortcut_controller_new()!
+    let action = gtk_callback_action_new({ list, _, data in
+        guard let list, let data, let item = gtk_widget_get_focus_child(list),
+              let child = gtk_widget_get_first_child(item),
+              let row: TrackRow = kept(on: raw(child)) else { return 0 }
+        let key = Unmanaged<RowKey>.fromOpaque(data).takeUnretainedValue()
+        MainActor.assumeIsolated { key.run(row) }
+        return 1
+    }, Unmanaged.passRetained(RowKey(body)).toOpaque(), { data in
+        guard let data else { return }
+        Unmanaged<RowKey>.fromOpaque(data).release()
+    })
+    gtk_shortcut_controller_add_shortcut(ptr(controller), gtk_shortcut_new(gtk_shortcut_trigger_parse_string(keys), action))
+    gtk_widget_add_controller(list, ptr(controller))
+}
+
+/// A dragged row's place and the drop on another, kept by the row's widget.
+private nonisolated final class RowMoves {
+    let place: @MainActor () -> Int
+    let moved: @MainActor (Int, Int) -> Void
+    init(place: @escaping @MainActor () -> Int, moved: @escaping @MainActor (Int, Int) -> Void) {
+        self.place = place
+        self.moved = moved
+    }
+}
+
+/// A row dragged onto another row of its list takes that row's place
+/// (CGlue's jb_reorderable_row).
+private func reorderable(_ row: TrackRow, _ move: @escaping (Int, Int) -> Void) {
+    let moves = RowMoves(place: { [weak row] in row?.position ?? 0 },
+                         moved: { from, to in if from != to { move(from, to) } })
+    jb_reorderable_row(row.widget, { data in
+        guard let data else { return 0 }
+        let moves = Unmanaged<RowMoves>.fromOpaque(data).takeUnretainedValue()
+        return MainActor.assumeIsolated { Int32(moves.place()) }
+    }, { from, to, data in
+        guard let data else { return }
+        let moves = Unmanaged<RowMoves>.fromOpaque(data).takeUnretainedValue()
+        MainActor.assumeIsolated { moves.moved(Int(from), Int(to)) }
+    }, Unmanaged.passRetained(moves).toOpaque(), { data in
+        guard let data else { return }
+        Unmanaged<RowMoves>.fromOpaque(data).release()
+    })
 }
 
 // MARK: Covers
