@@ -691,7 +691,7 @@ enum About {
         adw_about_dialog_set_version(ptr(dialog), "1.1")
         adw_about_dialog_set_application_icon(ptr(dialog), "com.tijmen.Jukebox")
         adw_about_dialog_set_developer_name(ptr(dialog), "Tijmen")
-        adw_about_dialog_set_comments(ptr(dialog), "Music from your Jellyfin, Navidrome or other Subsonic server, with a radio that plays on from anything.")
+        adw_about_dialog_set_comments(ptr(dialog), "Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server, with a radio that plays on from anything.")
         adw_dialog_present(ptr(dialog), MainWindow.window)
     }
 }

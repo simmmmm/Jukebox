@@ -168,7 +168,7 @@ enum PlayerBar {
         // Lyrics shows only where there are lyrics to be had (the server's,
         // or LRCLIB's when Preferences allow it), as on the iPhone.
         observe(lyrics) { lyrics.isVisible = lyricsToBeHad() }
-        let tools = hbox(spacing: 8, [lyrics, upNext, volume, volumeButton]).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER)
+        let tools = hbox(spacing: 8, [lyrics, upNext, playOnButton(), volume, volumeButton]).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER)
         tools.margins(horizontal: 16)
 
         let bar = ThreeZones.make(songZone, middle, tools).css("player-bar")
@@ -264,6 +264,9 @@ enum PlayerBar {
             items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
                           { Task { await app.library.setFavorite(!favorite, item: .track(track.id)) } }))
         }
+        // Always, as the Mac's bar menu has it: a menu's entry, not a
+        // button on the bar.
+        items += ratingItems(.track(track.id))
         return items
     }
 
@@ -273,17 +276,67 @@ enum PlayerBar {
         gtk_scale_set_draw_value(ptr(level), 0)
         level.size(width: width).tooltip("Volume")
         var isSetting = false
+        // Playing elsewhere, the device's own level (PlayOn.swift).
         on(level, "value-changed") {
             guard !isSetting else { return }
-            app.player.volume = gtk_range_get_value(ptr(level))
+            let value = gtk_range_get_value(ptr(level))
+            if app.player.playsOn != nil { app.player.setRemoteVolume(value) } else { app.player.volume = value }
         }
         observe(level) {
-            let value = app.player.volume
+            let value = app.player.playsOn != nil ? app.player.remoteVolume ?? 1 : app.player.volume
             isSetting = true
             gtk_range_set_value(ptr(level), value)
             isSetting = false
         }
         return level
+    }
+
+    /// Where the music plays (PlayOn.swift): this computer, a Chromecast, the
+    /// user's other Jellyfin clients, the server's jukebox. Where the Mac's
+    /// bar has AirPlay, 1:1, and the only such control: no button more
+    /// ("ik wil alleen er voor waken dat we niet 10000 knopen krijgen", the
+    /// photographer, 17 November 2026). The list looks only while it is
+    /// open; the glyph is in the accent while the music plays elsewhere.
+    private static func playOnButton() -> Widget {
+        let rows = vbox(spacing: 0)
+        let popover = gtk_popover_new()!
+        gtk_popover_set_child(ptr(popover), vbox(spacing: 8, [label("Play On", "heading").align(horizontal: GTK_ALIGN_START).margins(horizontal: 8), rows]).margins(8))
+        let button = gtk_menu_button_new()!.css("flat").tooltip("Play On")
+        gtk_menu_button_set_icon_name(ptr(button), Glyphs.name("play-on"))
+        gtk_menu_button_set_popover(ptr(button), popover)
+        on(raw(popover), "show") { app.player.playOn.look() }
+        on(raw(popover), "closed") { app.player.playOn.stopLooking() }
+        // The rows change in the open popover, which stays open: a menu made
+        // again would close under the pointer (the sleep timer's).
+        observe(rows) {
+            clear(rows)
+            let player = app.player
+            var devices = player.playOn.devices
+            if let elsewhere = player.playsOn, !devices.contains(elsewhere) { devices.insert(elsewhere, at: 0) }
+            let choices: [(PlayOnDevice?, String, String?)] = [(nil, "This Computer", nil)] + devices.map { ($0, $0.name, $0.detail) }
+            for (device, name, detail) in choices {
+                let check = gtk_image_new_from_icon_name("object-select-symbolic")!
+                gtk_widget_set_opacity(check, device?.id == player.playsOn?.id ? 1 : 0)
+                var lines = [label(name, "body").align(horizontal: GTK_ALIGN_START)]
+                if let detail { lines.append(label(detail, "dim-label", "caption").align(horizontal: GTK_ALIGN_START)) }
+                let row = gtk_button_new()!.css("flat")
+                gtk_button_set_child(ptr(row), hbox(spacing: 12, [vbox(lines).expand(horizontal: true), check]))
+                // After the popover has closed: the choice remakes these rows,
+                // this one among them.
+                on(row, "clicked") {
+                    gtk_popover_popdown(ptr(popover))
+                    Task { app.player.playOn.choose(device) }
+                }
+                append(row, to: rows)
+            }
+            if player.playOn.devices.isEmpty {
+                append(label("Looking for devices on this network", "dim-label", "caption").align(horizontal: GTK_ALIGN_START).margins(horizontal: 8, vertical: 4), to: rows)
+            }
+        }
+        observe(button) {
+            if app.player.playsOn != nil { gtk_widget_add_css_class(button, "accent") } else { gtk_widget_remove_css_class(button, "accent") }
+        }
+        return button
     }
 
     /// One of the panel's buttons: lit (pressed, the glyph in the accent)
@@ -502,11 +555,19 @@ enum NowPlayingPage {
         let sleeve = sleeve!
         let title = label("", "serif", "page-title", lines: 2)
         let artist = label("", "t17", "fact", lines: 2)
+        // Where it plays, when not here: one quiet line (PlayOn.swift).
+        let elsewhere = label("", "t15", "dim-label")
+        gtk_widget_set_margin_top(elsewhere, 8)
+        observe(elsewhere) {
+            let device = app.player.playsOn
+            setText(elsewhere, device.map { "Playing on \($0.name)" } ?? "")
+            elsewhere.isVisible = device != nil
+        }
         // As wide as the sleeve and its record, not wider: the words start
         // at the sleeve's left edge.
-        for words in [title, artist] { gtk_label_set_max_width_chars(ptr(words), 1) }
+        for words in [title, artist, elsewhere] { gtk_label_set_max_width_chars(ptr(words), 1) }
         gtk_widget_set_margin_top(title, 32)
-        let content = vbox([sleeve.widget, title, artist]).align(horizontal: GTK_ALIGN_CENTER, vertical: GTK_ALIGN_CENTER)
+        let content = vbox([sleeve.widget, title, artist, elsewhere]).align(horizontal: GTK_ALIGN_CENTER, vertical: GTK_ALIGN_CENTER)
 
         // The room itself, flat (the land under it is not built: whether it
         // turns is the photographer's to say); its size sets the sleeve's.

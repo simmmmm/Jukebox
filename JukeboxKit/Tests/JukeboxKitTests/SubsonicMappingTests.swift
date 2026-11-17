@@ -54,6 +54,12 @@ struct SubsonicMappingTests {
         #expect(track.normalizationGain == nil)
         #expect(track.playlistEntryID == nil)
         #expect(track.container == "m4a")
+        #expect(track.rating == nil)
+        // Stars as sent, 1 to 5; 0 and anything else unrated.
+        for (sent, stars) in [("3", 3 as Int?), ("5", 5), ("0", nil), ("6", nil), (#""2""#, 2)] {
+            let json = #"{"id":"s","title":"T","userRating":"# + sent + "}"
+            #expect(try Self.decode(SubsonicChild.self, json).asTrack()?.rating == stars)
+        }
 
         let other = try #require(try Self.decode(SubsonicChild.self, F.blueParadeSignalLines).asTrack())
         #expect(other.artists.map(\.name) == ["Amsterdam Strings", "Clara Venn"])
@@ -121,6 +127,9 @@ struct SubsonicMappingTests {
         #expect(!album.isFavorite && album.playCount == 1)
         #expect(album.lastPlayed == Self.date("2026-11-09T17:54:32Z"))
         #expect(album.dateAdded != nil)
+        // Navidrome's unrated album says 0.
+        #expect(album.rating == nil)
+        #expect(try Self.decode(SubsonicAlbum.self, #"{"id":"1","name":"A","userRating":4}"#).asAlbum()?.rating == 4)
         // getAlbumList (not ID3) calls the name `title`.
         #expect(try Self.decode(SubsonicAlbum.self, #"{"id":"1","title":"Old Style","artist":"A"}"#).asAlbum()?.name == "Old Style")
 

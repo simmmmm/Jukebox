@@ -10,6 +10,21 @@
 import Foundation
 import JukeboxKit
 
+/// A device elsewhere that takes everything and says nothing.
+private final class SilentRemote: RemotePlayer {
+    let device = PlayOnDevice(id: "check", name: "Check", kind: .chromecast, address: "")
+    var reportsItself: Bool { false }
+    var capacity: Int { 1 }
+    func load(_ entries: [RemoteEntry], at position: TimeInterval, play: Bool) async throws {}
+    func append(_ entries: [RemoteEntry]) async throws {}
+    func resume() async throws {}
+    func pause() async throws {}
+    func seek(to position: TimeInterval) async throws {}
+    func setVolume(_ level: Double) async throws {}
+    func stop() async {}
+    func status() async throws -> RemoteStatus { RemoteStatus() }
+}
+
 /// The queue with no engine: every song has an address, none plays.
 private final class Bench: PlayQueue {
     /// What the engine was told to hold next.
@@ -163,6 +178,49 @@ enum QueueCheck {
         q.playRadio(picks(tracks), station: station)
         expect(!q.sleepChoices.contains(.endOfQueue), "a station has no end to wait for")
         q.isPlaying = false
+
+        // Crossfade (4 s: 2 out, 2 in), through `level(for:)` as the sleep
+        // timer's fade: never between songs that follow each other on
+        // their album; across albums the tail fades and the next, come on
+        // by itself, fades in; a move by hand cuts.
+        let saved = q.settings.crossfade
+        q.settings.crossfade = 4
+        func song(_ id: String, album: String, _ number: Int) -> Track {
+            var track = Track(id: id, name: id, duration: 200)
+            track.albumID = album
+            track.trackNumber = number
+            return track
+        }
+        let mixed = [song("a1", album: "A", 1), song("a2", album: "A", 2), song("b1", album: "B", 1)]
+        q.play(mixed, context: QueueContext(.songs, title: "Songs"))
+        q.elapsed = 198.5
+        expect(q.level(for: mixed[0]) == whole, "Crossfade: the next on its album, no fade")
+        q.entryEnded()
+        q.elapsed = 198.5
+        expect(abs(q.level(for: mixed[1]) - whole / 2) < 0.001, "across albums: half as loud halfway through its fade")
+        q.entryEnded()
+        q.elapsed = 1
+        expect(q.currentIndex == 2 && abs(q.level(for: mixed[2]) - whole / 2) < 0.001, "and the next fades in")
+        q.play(mixed, startingAt: 1, context: QueueContext(.songs, title: "Songs"))
+        q.elapsed = 198.5
+        q.next()
+        q.elapsed = 0
+        expect(q.level(for: mixed[2]) == whole, "a skip by hand cuts")
+        q.play(mixed, startingAt: 1, context: QueueContext(.songs, title: "Songs"))
+        q.isPlaying = true
+        q.setSleepTimer(.minutes(15), now: start)
+        q.elapsed = 198.5
+        q.checkSleep(now: start.addingTimeInterval(15 * 60 - PlayQueue.sleepFade / 2))
+        expect(abs(q.level(for: mixed[1]) - whole / 4) < 0.001, "the sleep timer's fade and the crossfade together")
+        q.setSleepTimer(nil)
+        q.isPlaying = false
+        // Playing on another device, the device has the volume: no fade.
+        q.play(mixed, startingAt: 1, context: QueueContext(.songs, title: "Songs"))
+        q.playingElsewhere = SilentRemote()
+        q.elapsed = 198.5
+        expect(q.level(for: mixed[1]) == whole, "Crossfade: none while it plays elsewhere")
+        q.playingElsewhere = nil
+        q.settings.crossfade = saved
 
         q.stop()
         expect(q.queue.isEmpty && !q.hasTrack && q.context == nil, "Stop")

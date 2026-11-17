@@ -59,6 +59,7 @@ enum Stats {
         case playlistCreated = "playlist_created"
         case playlistSongsAdded = "playlist_songs_added"
         case favoriteSet = "favorite_set"
+        case ratingSet = "rating_set"
         case searchUsed = "search_used"
         case settingChanged = "setting_changed"
         case lastFMKey = "lastfm_key"
@@ -66,6 +67,7 @@ enum Stats {
         case downloadChosen = "download_chosen"
         case offlinePlayStarted = "offline_play_started"
         case sleepTimerSet = "sleep_timer_set"
+        case playOn = "play_on"
     }
 
     /// On unless turned off. Read with `bool(forKey:)` once the key is
@@ -83,7 +85,8 @@ enum Stats {
     static let clientSecret = "sec_f5fef333b75ba30ea16c"
 
     /// Where the next `play()` was asked from when that is not the queue's
-    /// kind: `siri` (Intents/Voice.swift). Taken by that play, set or not, so
+    /// kind: `siri` (Intents/Voice.swift), `widget` (Intents/WidgetIntents.swift).
+    /// Taken by that play, set or not, so
     /// it never counts a later one.
     static var nextFrom: String?
 
@@ -203,15 +206,17 @@ enum Stats {
         }
     }
 
-    /// The kind of server, coarsely: `jellyfin`, `navidrome`, or `subsonic`
-    /// for every other Subsonic server (Gonic, Airsonic, …, and one that
-    /// names itself: never its own word); `none` signed out. Never which
-    /// server, nor its version.
+    /// The kind of server, coarsely: `jellyfin`, `emby`, `navidrome`, `plex`, or
+    /// `subsonic` for every other Subsonic server (Gonic, Airsonic, …, and
+    /// one that names itself: never its own word); `none` signed out. Never
+    /// which server, nor its version.
     static func server(_ kind: ServerKind?) -> String {
         switch kind {
         case .jellyfin?: return "jellyfin"
+        case .emby?: return "emby"
         case .subsonic(.navidrome)?: return "navidrome"
         case .subsonic?: return "subsonic"
+        case .plex?: return "plex"
         case nil: return "none"
         }
     }

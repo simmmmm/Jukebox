@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # JukeboxKit's build and tests on Linux, in Swift's own Docker image, beside
-# the Jellyfin of dev/jellyfin-test-server.sh and the Navidrome of
-# dev/navidrome-test-server.sh when they run (each server's integration
-# tests skip themselves without it). The same as CI's kit job.
+# the Jellyfin of dev/jellyfin-test-server.sh, the Navidrome of
+# dev/navidrome-test-server.sh and the Emby of dev/emby-test-server.sh when
+# they run (each server's integration tests skip themselves without it).
+# The same as CI's kit job, which has no Emby.
 #
 #   dev/kit-test.sh                 build and every test
 #   dev/kit-test.sh build           build only
@@ -44,6 +45,17 @@ elif docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$navidrome"; then
   env+=(-e "NAVIDROME_URL=http://$navidrome_host:4533" -e NAVIDROME_USER=test -e NAVIDROME_PASSWORD=test)
 fi
 
+# The Emby of dev/emby-test-server.sh: EMBY_URL=http://other-emby:8096 dev/kit-test.sh
+emby=${JUKEBOX_EMBY_CONTAINER:-jukebox-emby}
+emby_host=emby; [[ $emby == jukebox-emby ]] || emby_host=$emby
+if [[ -n ${EMBY_URL:-} ]]; then
+  net=(--network jukebox)
+  env+=(-e EMBY_URL="$EMBY_URL" -e EMBY_USER="${EMBY_USER:-test}" -e EMBY_PASSWORD="${EMBY_PASSWORD:-test}")
+elif docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$emby"; then
+  net=(--network jukebox)
+  env+=(-e "EMBY_URL=http://$emby_host:8096" -e EMBY_USER=test -e EMBY_PASSWORD=test)
+fi
+
 if [[ ${1:-} == build ]]; then
   cmd=(swift build)
 else
@@ -57,3 +69,15 @@ fi
 # second run does not compile everything again.
 docker run --rm "${net[@]}" "${env[@]}" -v "$PWD:/kit" -v "$volume:/kit/.build" -w /kit \
   "$IMAGE" "${cmd[@]}"
+
+# The Plex of dev/plex-test-server.sh, after the rest, from inside its own
+# network namespace (127.0.0.1): unclaimed, it answers without a token from
+# itself and from its network's gateway only, and refused another container
+# on that network with 401 whatever ALLOWED_NETWORKS said (measured, 17
+# November 2026). Only when every test ran, or the filter names Plex.
+plex=${JUKEBOX_PLEX_CONTAINER:-jukebox-plex}
+if [[ ${1:-} != build ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$plex" \
+  && { [[ " $* " != *" --filter "* ]] || [[ "$*" == *Plex* ]]; }; then
+  docker run --rm --network "container:$plex" -e PLEX_URL=http://127.0.0.1:32400 \
+    -v "$PWD:/kit" -v "$volume:/kit/.build" -w /kit "$IMAGE" stdbuf -oL swift test --filter PlexIntegration
+fi

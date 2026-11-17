@@ -5,7 +5,7 @@ songs, playlists, playlists the app makes up itself on Home, and a radio
 that plays on from anything. iPhone, iPad and the Mac (one SwiftUI target);
 Linux since 14 November 2026 (the same Swift under GTK and libadwaita,
 `docs/LINUX.md`). Jellyfin; since 9 November 2026 also Navidrome and other
-Subsonic servers.
+Subsonic servers; since 17 November 2026 Plex.
 
 Asked for on 8 November 2026: "op de homepage wil ik dat de app zelf leuke
 playlists verzint en of een goede radio functie heeft — ik vind vooral de
@@ -24,6 +24,7 @@ Mac's, is Linux's window, 1:1 (below).
 |---|---|
 | `JukeboxKit/` | Swift package, Foundation only, Swift 6 strict. Jellyfin, Subsonic, Last.fm and LRCLIB clients, the library index, the radio, the mixes, the LRC parser. Built and tested on Linux (`dev/kit-test.sh`) against a real Jellyfin (`dev/jellyfin-test-server.sh`). |
 | `Jukebox/` | The SwiftUI app for the iPhone, the iPad and the Mac: iOS 26 and macOS 26, Swift 5 mode, MainActor default isolation (project.yml). The Mac is a native macOS destination of the same target, not Catalyst; `Components/Platform.swift` holds the few things the two spell differently (the image type, the device's name, the bar's placements, `\.isWide`). Compiled on GitHub's macOS (`ci/app.sh`) and, for a quick try, on the photographer's Mac (`docs/RELEASE.md`); not on the Linux machine, so read its Swift twice before pushing. |
+| `JukeboxWidget/` | The iPhone's and the iPad's widget, an app extension (The widget, below). |
 | `Linux/` | The Linux client: `App/` (Swift on GTK 4, libadwaita, GStreamer), `CGlue/` (the C Swift cannot call as it is, and MPRIS), `data/` (icon, desktop entry). Built and run here: `dev/linux-build.sh`. `docs/LINUX.md`. |
 | `Package.swift` | The Linux client's package. Its `shared` list names the files of `Jukebox/` Linux compiles too (the stores, not the screens). A file that gains `import SwiftUI` leaves the list, or loses the import. |
 | `project.yml` | XcodeGen. One target for the iPhone, the iPad and the Mac: one bundle ID, so one App Store record and one purchase. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
@@ -91,7 +92,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
 | Kit: lyrics | `Lyrics/*` (LRCParser, LyricsQuery, LRCLIBClient, LyricsCache), tests |
 | Kit: artwork | `Artwork/CoverAccent.swift` (Now Playing's accent from its cover, BRAND.md), `Artwork/CoverWall.swift` (the still page's wall and floor from it), tests |
-| Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
+| Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Plex/*` (PlexServer, PlexSignIn), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
 | Kit: offline | `Offline/*` (OfflineManifest, KeepPolicy: the automatic keep, JellyfinClient.downloadURL), tests, `docs/OFFLINE.md` except "In the app" |
 | App: library | `Jukebox/Library/*`: LibraryStore, every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift`: AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, the radio's feeding. `PlayQueue` is the queue and its rules on both platforms (play, next and previous, shuffle, repeat, Up Next's edits and "Then", the radio's feed and trim, the playback reports); each AudioPlayer is that class with its engine (AVQueuePlayer; `Linux/App/AudioPlayer.swift`'s GStreamer), and `Linux/App/QueueCheck.swift` checks the rules after every Linux build |
@@ -247,6 +248,11 @@ tracks in MP3, FLAC and M4A, genres in clusters. Requests carry
 `Authorization: MediaBrowser Client="Jukebox", Device="…", DeviceId="…", Version="…", Token="…"`.
 Times are ticks (10 000 000 a second); dates have seven fractional digits.
 
+Emby (17 November 2026, "emby en plex kunnen beide toch") is Jellyfin's
+ancestor and goes through the same `JellyfinClient` and `JellyfinServer`,
+with `isEmby` where the two parted (`docs/SERVERS.md`, "Emby";
+`dev/emby-test-server.sh`, Emby 4.10 on the same library, port 8097).
+
 ## From one device to another
 
 The photographer, 13 November 2026: "ik wil ook dat de ios app en de linux
@@ -334,6 +340,47 @@ Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
   test Jellyfin's two users, test and second); Linux's `AccountCheck`
   after every build (`dev/linux-errors.sh`).
 
+## Playing on other devices
+
+Play On, on every client: "van mij mag chromecast er ook in hoor ik wil
+alleen er voor waken dat we niet 10000 knopen krijgen" (17 November 2026).
+So no new button: the AirPlay glyph where it always was (Now Playing, the
+wide bar) opens one list, and Linux has the same glyph in the same place of
+its bar. The list: this device, AirPlay (Apple: the system's own picker as
+a row), the Chromecasts on the network, the user's other Jellyfin or Emby
+clients that take remote control, a Subsonic server's jukebox where the
+user has it. On Plex, Chromecasts only (docs/SERVERS.md). It looks only while it is open: no local network prompt at launch.
+
+- **The queue stays the truth** (`Jukebox/Player/PlayOn.swift`, shared).
+  A `RemotePlayer` is an engine elsewhere: it takes the current song and,
+  where it holds more (`capacity`), the ones after it. Once a second the
+  queue reads where it is and follows, as it follows a gapless engine; an
+  end goes on by the queue's rules. Play, pause, next, seek and the volume
+  slider (the device's own level then) drive it; Now Playing says "Playing
+  on …" in a quiet line.
+- **Jellyfin clients** get up to 100 songs (`PlayNow`, then `PlayLast` for
+  the radio's picks) and report their plays themselves, so the queue does
+  not (measured under Xvfb: one count a song). The song handed over
+  mid-play counts twice when it had counted here already. **A jukebox** gets the list too (`jukeboxControl`). **A Chromecast**
+  (the Default Media Receiver) plays one song, a plain file from
+  `castURL(for:)`, and the queue reports the play.
+- **Chromecasts, without Google's SDK** ("Doe zonder", 17 November 2026):
+  every client speaks castv2 itself, JukeboxKit's `CastSession`. Linux over
+  GIO's TLS, found by Avahi (`Linux/App/Cast.swift`); the iPhone, the iPad
+  and the Mac over Network's TLS, found by Bonjour
+  (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
+  privacy answers stay as they are (`docs/STATS.md`).
+- **What it cannot do**: a server at localhost is refused at once (the TV
+  fetches the songs itself); a TV that cannot play from an https server it
+  does not trust says so. A moment's silence between songs on a Chromecast.
+  On the iPhone, with the app suspended in the background, the TV ends with
+  its song: the next is the queue's to give. CarPlay plays on the phone.
+- **Checked**: the kit's `PlayOnTests` and `JellyfinSessionsIntegrationTests`
+  (a second client on the test Jellyfin over its websocket receives Play,
+  Playstate and SetVolume), `CastProtocolTests`; Linux's `JUKEBOX_CHECK=cast`
+  against a fake TLS receiver; Linux under Xvfb (`docs/LINUX.md`). No real
+  Chromecast yet.
+
 ## Scrobbling
 
 The server scrobbles, not Jukebox: Jellyfin with its Last.fm plugin,
@@ -341,7 +388,9 @@ Navidrome with its own Last.fm link, from the playback reports the app
 already sends (Jellyfin's start/progress/stopped; Subsonic's scrobble). The
 photographer, 8 November 2026: "Laat scrobblen lekker via de server lopen."
 One place for every client, and no song twice on Last.fm. The Last.fm key in
-Settings is only for the radio's similar artists and songs.
+Settings is only for the radio's similar artists and songs. Every client
+keeps it only once Last.fm accepted it (`LastFMClient.validateKey`), then
+shows it as dots with Change and Remove.
 
 ## Lyrics
 
@@ -387,6 +436,18 @@ itself and the next waits, paused; End of Album goes round no Repeat All and
 starts no Autoplay. In Now Playing's ⋮ (`SleepTimerMenu.swift`), saying
 when it stops, a small moon before ⋮ while set; on the Mac also Controls ›
 Sleep Timer. Not in the car.
+
+## Crossfade
+
+Settings › Playback (Preferences' Playing on Linux): Off, as it starts, or
+2 to 12 s. `PlayQueue.crossfadeLevel`, in `level(for:)` beside normalisation
+and the sleep timer's fade, on the players' own ticks: a song's last half of
+the length fades out and the next one's first half fades in, so no
+AudioPlayer changed and the one engine plays one song at a time (no
+overlap). Never between songs that follow each other on their album
+(`PlayQueue.crossfades`), so albums stay gapless; a move by hand cuts.
+No equalizer: AVPlayer applies an audio tap only to progressive streams,
+not to Jellyfin's HLS transcodes, so it could not sound the same everywhere.
 
 ## CarPlay
 
@@ -443,6 +504,37 @@ is a tap while driving.
 - Siri's permission is asked once, when the window has a library. The
   entitlement: `docs/RELEASE.md`, Siri.
 
+## The widget
+
+`JukeboxWidget/`, the iPhone's and the iPad's. Asked for with the other
+players' features ("maak ze allemaal maar"), and: "ik wil alleen er voor
+waken dat we niet 10000 knopen krijgen" (17 November 2026). So it adds no
+screen to the app, and it is no second Now Playing (the lock screen and
+Control Center have one): it is doors into the music.
+
+- **Small**: Your Station. The mark, flat, and Play; while it plays the
+  mark is lit and says "On air". **Medium**: the same, and Home's first
+  three mixes, each a Play. **The lock screen** (circular): the mark,
+  Your Station's Play. A tap anywhere else opens the app.
+- **The buttons** are `Intents/WidgetIntents.swift`'s, hidden from
+  Shortcuts, compiled into both targets and performed by the app (an audio
+  intent runs in the app's process, launched in the background as for
+  Siri): `Voice.start` and `player.playMix`, counted `from` `widget`.
+- **What it knows**: `App/WidgetSnapshot.swift`, written by
+  `App/WidgetDoors.swift` into the App Group `group.com.tijmen.Jukebox`
+  (signed in, Your Station on the air, the mixes' ids and titles, their
+  covers as 120-pixel JPEGs) when any of it changes, then
+  `WidgetCenter.reloadAllTimelines`. An account switch writes the next
+  account's (the covers are named by the account's folder too); the last
+  account's sign-out empties it. The widget never asks the server and
+  holds no credentials. Signed out it says "Sign in in Jukebox".
+- **The mark** is drawn from `Components/ArchShapes.swift` and
+  `ArtMeasures.swift`, which the widget compiles too.
+- **Not on the Mac**: its widget would need a sandboxed extension, the App
+  Group in the Mac's entitlements and a second export, all untried until
+  an upload. The code would compile there as it is.
+- Portal steps and CI's check: `docs/RELEASE.md`, The widget.
+
 ## Usage counts
 
 Anonymous counts of which screens and features are used go to the
@@ -481,10 +573,41 @@ more; one `any MusicServer` goes where it did.
 | `LyricsFinder` | `lyrics(for: track)` where `.lyrics`; an `unsupported` or `notFound` answer counts as none, so LRCLIB is asked. |
 | `OfflineStore` | `downloadURL(for:quality:)`, `downloadsAllowed()`. Whether the server answers is `currentCapabilities()` (Jellyfin's public info, a Subsonic ping); a server that refuses the session (`unauthorized`) still answered. Plays heard offline go as `.played` and `.stopped`. |
 | Artwork | `artworkURL(_:maxPixelSize:)` in `ArtworkView`, `StationArtwork`, Now Playing's accent and ground, the lock screen. A Subsonic URL carries the session's one token and salt, so a cover is always one URL and the cache holds. |
-| Screens | `can(_:)` hides Lyrics (without `.lyrics` and LRCLIB), similar artists' request (`.similarArtists`), move handles (`.playlistReorder`), Normalize Volume (`.replayGain`; off, with why). `Playlist.isReadOnly` (someone else's): no Delete, Add Songs or Edit, and not among Add to Playlist's. Up Next says "From Navidrome's mix" (JukeboxKit's `PickReason.instantMix.text` still says Jellyfin's). |
+| Screens | `can(_:)` hides Lyrics (without `.lyrics` and LRCLIB), similar artists' request (`.similarArtists`), move handles (`.playlistReorder`), Normalize Volume (`.replayGain`; off, with why), Rating (`.rating`: a Subsonic server's one to five stars, a submenu beside Favorite in a song's and an album's menu only, `RatingMenu`; `LibraryStore.setRating`, the stars read back as `userRating`; none on Jellyfin, docs/SERVERS.md). `Playlist.isReadOnly` (someone else's): no Delete, Add Songs or Edit, and not among Add to Playlist's. Up Next says "From Navidrome's mix" (JukeboxKit's `PickReason.instantMix.text` still says Jellyfin's). |
 | Settings | Server: the name, and under it the kind and version ("Navidrome 0.64.2", without Navidrome's build in brackets). The quality footers say AAC for Jellyfin, MP3 for a Subsonic server. |
-| Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
+| Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, `plex`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
 
 The screenshot walk signs in to the fake Jellyfin through the same screen:
 `dev/fake-jellyfin.swift` answers `/rest/…` as Jellyfin 12.4 does (404, no
 body: not a Subsonic server), so it is found as Jellyfin.
+
+## Plex
+
+Asked for on 17 November 2026: "emby en plex kunnen beide toch".
+`JukeboxKit/Sources/JukeboxKit/Plex/`: `PlexServer` (the `MusicServer`,
+`.plex`, Plex Media Server's own API) and `PlexSignIn` (finding one at an
+address, a token as an API key, and `PlexAccount`: plex.tv's sign-in in the
+browser). docs/SERVERS.md ("Plex") has the map and the measurements.
+
+- **Sign-in, no new screens.** Plex's people sign in at plex.tv, in the
+  browser, and seldom know their server's address. "Sign In with Plex" sits
+  where Quick Connect does: on the iPhone under Continue, and as the account
+  step's one button when the address typed is a Plex server; in the wide
+  window and on Linux under Sign In. Apple: `WebAuthenticationSession`
+  (`PlexSignInButton` in OnboardingView), with the kit asking plex.tv every
+  2 s; Linux: the default browser (`gtk_uri_launcher`), the button turning
+  into Cancel. More than one server: a confirmation dialog (Apple), an
+  `AdwAlertDialog` (Linux). A Plex address with a user name and password
+  turns the password's field into a token's, as an API key's does.
+- **Kept** like any account: the server's address, its token for this
+  account (`ServerSecret.plexToken`), plex.tv's user id, in the keychain or
+  the keyring; and every address plex.tv gave (`addresses`: local, remote,
+  relay), so the session speaks to whichever answers where it opens
+  (`PlexReach`), at home or away.
+- **Plays** the file as it is (`Track.fileKey`, Plex's `Part.key`), or a
+  progressive MP3 from Plex's transcoder; never HLS.
+- **Off** on Plex: the handoff (Plex keeps no state for another device to
+  read), the radio's server mixes, similar artists, top songs, Normalize
+  Volume, ratings (its one rating is the favourite), Play On to Plex's own
+  players (Chromecasts only).
+- **Stats**: `server` `plex`, `method` `plex_pin` (docs/STATS.md).

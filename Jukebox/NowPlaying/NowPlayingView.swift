@@ -590,6 +590,14 @@ struct NowPlayingView: View {
                     artistLine(.title3)
                     source
                         .padding(.top, Theme.Space.s)
+                    // Where it plays, when not here: one quiet line
+                    // (PlayOn.swift), as Linux's Full Player has it.
+                    if let device = player.playsOn {
+                        Text("Playing on \(device.name)")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 trackButtons

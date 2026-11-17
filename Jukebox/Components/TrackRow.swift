@@ -278,6 +278,32 @@ private struct TrackPreview: View {
     }
 }
 
+/// Rating › None and one to five stars, the given one ticked: beside
+/// Favorite in a song's and an album's menu, and only there, on a server
+/// that keeps ratings. The photographer: "ik wil alleen er voor waken dat
+/// we niet 10000 knopen krijgen" (17 November 2026), so no stars in rows
+/// or bars.
+struct RatingMenu: View {
+    let item: ItemRef
+
+    @Environment(LibraryStore.self) private var library
+
+    var body: some View {
+        Menu("Rating", systemImage: "star") {
+            Picker("Rating", selection: Binding(get: { library.rating(item) ?? 0 },
+                                                set: { stars in Task { await library.setRating(stars, item: item) } })) {
+                Text("None").tag(0)
+                ForEach(1...5, id: \.self) { stars in
+                    Text(verbatim: String(repeating: "★", count: stars))
+                        .accessibilityLabel(Text("\(stars) stars"))
+                        .tag(stars)
+                }
+            }
+            .pickerStyle(.inline)
+        }
+    }
+}
+
 /// What can be done with a track, as Music orders it.
 struct TrackMenu: View {
     let track: Track
@@ -309,6 +335,9 @@ struct TrackMenu: View {
             let favorite = library.isFavorite(track.id)
             Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
                 Task { await library.toggleFavorite(.track(track.id)) }
+            }
+            if library.can(.rating) {
+                RatingMenu(item: .track(track.id))
             }
         }
         Section {

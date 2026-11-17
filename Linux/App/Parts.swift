@@ -185,6 +185,20 @@ func submenuChoice(_ submenu: String, _ title: String, checked: Bool) -> String 
     [submenu, title, checked ? "checked" : ""].joined(separator: String(submenuMark))
 }
 
+/// Rating › None and one to five stars, the given one ticked: beside the
+/// favourite in a song's and an album's menu, on a server that keeps
+/// ratings, as the Mac's RatingMenu. Nothing elsewhere ("ik wil alleen er
+/// voor waken dat we niet 10000 knopen krijgen", 17 November 2026).
+func ratingItems(_ item: ItemRef) -> [(String, () -> Void)] {
+    guard app.library.can(.rating) else { return [] }
+    let given = app.library.rating(item) ?? 0
+    return (0...5).map { stars -> (String, () -> Void) in
+        let title = stars == 0 ? "None" : String(repeating: "★", count: stars)
+        return (submenuChoice("Rating", title, checked: stars == given),
+                { Task { await app.library.setRating(stars, item: item) } })
+    }
+}
+
 /// A menu of `items` as a popover; `prefix` names its actions apart from
 /// another menu's on the same widget.
 func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
@@ -259,6 +273,7 @@ func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
         let favorite = app.library.isFavorite(first.id)
         items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
                       { Task { await app.library.setFavorite(!favorite, item: .track(first.id)) } }))
+        items += ratingItems(.track(first.id))
         if let albumID = first.albumID, let album = app.library.album(id: albumID) {
             items.append(("Go to Album", { Pages.open(album) }))
         }
@@ -512,6 +527,7 @@ func albumMenu(_ album: Album) -> [(String, () -> Void)] {
             ("Add to Queue", { app.player.addToQueue(tracks) }),
             ("Add to Playlist…", { Playlists.add(tracks) }),
             ("Start a Station", { app.radio.start(.album(album.id)) })]
+        + ratingItems(.album(album.id))
 }
 
 /// A station's tile: the arch at the page's tile size, its name and a fact.

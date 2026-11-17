@@ -1,4 +1,4 @@
-# Servers: Jellyfin, Navidrome and the other Subsonic servers
+# Servers: Jellyfin, Emby, Plex, Navidrome and the other Subsonic servers
 
 The photographer, 8 November 2026: "Moet eigenlijk ook voor navidrome en die
 ander". Jukebox, made for their Jellyfin server, also plays from Navidrome and
@@ -127,14 +127,15 @@ typed, normalized as `JellyfinAddress` does, with these rules:
   Navidrome's 4533, Gonic's 4747, Airsonic's 4040 and LMS's 5082 (their
   documented defaults; Navidrome's measured).
 - When no port and no "https://" were typed, the same host over http on 8096,
-  4533, 4747, 4040 and 5082 follows the address as typed (Jellyfin's rule,
+  4533, 4747, 4040, 5082 and Plex's 32400 follows the address as typed (Jellyfin's rule,
   extended: a fresh install listens on its own port only).
 
 **Asking** (`MusicServers.detect`): every candidate at once, both ways at
 once, 15 s each.
 1. `GET {base}/System/Info/Public`. JSON with a non-empty `Id` is Jellyfin
    (`ServerName`, `Version`, `Id`; measured: `"ProductName":"Jellyfin
-   Server","Version":"12.4.0"`). Then `GET /QuickConnect/Enabled`.
+   Server","Version":"12.4.0"`), or Emby ("Emby", below). Then `GET
+   /QuickConnect/Enabled`.
 2. `GET {base}/rest/ping.view?v=1.16.1&c=Jukebox&f=json`, no credentials. A
    `subsonic-response` object with `status` and `version` is a Subsonic
    server, whatever the status. Unauthenticated, Navidrome answers (HTTP 200):
@@ -316,6 +317,7 @@ app does where a Subsonic server lacks it.
 | Member | Jellyfin | Subsonic |
 |---|---|---|
 | `setFavorite(_:item:)` | POST/DELETE /UserFavoriteItems/{id} | `star` / `unstar` with `id=` (a song), `albumId=` or `artistId=` by `ItemRef`. Navidrome took all three, and `id=` for an album or an artist too; an unknown id is ok (logged "Cannot star/unstar unknown id"). The item's `starred` date is the favourite (`getStarred2` lists them; not needed, the items say it). |
+| `setRating(_:item:)` | none (`unsupported`; "Ratings" below) | `setRating?id=&rating=` 1 to 5, 0 takes it away, `id=` for a song and an album alike (Navidrome 0.64.2 answers error 10 to `albumId=`, 70 to an unknown id; it takes an artist's id too, not used). Read back as `userRating` on songs (absent when unrated) and albums (0 when unrated), measured on getSong, search3, getAlbum, getAlbumList2. |
 | `playlistTracks(playlistID:)` | GET /Playlists/{id}/Items, `PlaylistItemId` | `getPlaylist?id=` → `playlist.entry[]` (Child) in order, duplicates kept; entry ids made as below |
 | `createPlaylist(name:trackIDs:)` | POST /Playlists (ids in the body) | `createPlaylist?name=&songId=…` → `playlist.id` (API 1.14.0+ answers with the playlist, measured; before, the newest playlist of that name). More than 100: one form POST with `formPost`, else the first 100 and then `updatePlaylist` 100 at a time. No songs: `name` alone (measured ok, `songCount` 0). An unknown song id is dropped silently (measured: ok, `songCount` 0). |
 | `addToPlaylist(playlistID:trackIDs:)` | POST /Playlists/{id}/Items?ids= | `updatePlaylist?playlistId=&songIdToAdd=…`, at the end, in order, duplicates kept (measured A B C A + D A → A B C A D A) |
@@ -505,6 +507,44 @@ measurements):
   ms, saved as `c` = "Jukebox (device)") and `getPlayQueue`. The server keeps
   the songs, the current one, the position and who saved it.
 
+## Playing on other devices
+
+Play On sends the music to another player. Measured on Jellyfin 12.4, 17
+November 2026; `PlayOnTests` and `JellyfinSessionsIntegrationTests`.
+
+- **Jellyfin's other clients** (`Jellyfin/JellyfinSessions.swift`):
+  `GET /Sessions?controllableByUserId=`, keeping sessions with
+  SupportsRemoteControl and Audio, never this device's. Jellyfin passes
+  commands over the client's websocket: a session that only posted
+  `/Sessions/Capabilities/Full` stayed SupportsRemoteControl false, and was
+  listed once its `/socket?ApiKey=` was open (`api_key` there: 403). Then
+  `POST /Sessions/{id}/Playing?playCommand=PlayNow&itemIds=&startIndex=&startPositionTicks=`
+  arrives as a `Play` message, `PlayLast` adds, `/Playing/{Pause, Unpause,
+  Stop, NextTrack, PreviousTrack, Seek}` as `Playstate`, and
+  `/Sessions/{id}/Command` with `SetVolume` (0 to 100, a string) as
+  `GeneralCommand`. What it plays is the session's NowPlayingItem and
+  PlayState. The far client reports its own plays.
+- **A Subsonic server's jukebox** (`Subsonic/SubsonicJukebox.swift`):
+  `jukeboxControl` with `action` status, set, add, skip (index, offset in
+  whole seconds), start, stop, setGain (0 to 1); each answers
+  `jukeboxStatus`, currentIndex -1 for none. Offered only when getUser says
+  `jukeboxRole` and a status answers: Navidrome keeps its jukebox off unless
+  `Jukebox.Enabled`. Not measured on a server with it on.
+- **A cast device** fetches the file itself: `castURL(for:)`, a plain file
+  with the credentials in the query and the type the LOAD names. Jellyfin:
+  `/Audio/{id}/universal` with TranscodingProtocol http and
+  TranscodingContainer mp3. With `Container=mp3` an M4A came as audio/mpeg
+  (97 831 bytes), a FLAC as audio/mpeg (129 508), an MP3 as itself (113 059);
+  with `mp3,aac,m4a|aac,mp4|aac,flac` the FLAC came as itself, audio/flac.
+  A Jellyfin track says its container but not an M4A's codec (it may be
+  ALAC), so a FLAC goes as it is and everything else but MP3 as Jellyfin's
+  MP3 at 320. Subsonic: `stream?format=raw` for mp3, flac and aac,
+  `format=mp3&maxBitRate=320` for the rest. Emby: Jellyfin's, the token as
+  `api_key`. Plex: the file with `X-Plex-Token` for mp3 and flac, the
+  transcoder's MP3 at 320 for the rest.
+- **Emby's other clients** as Jellyfin's ("Emby"). **Plex**: Chromecasts
+  only; its own players are not offered.
+
 ## Playlist entries
 
 Subsonic's `getPlaylist` lists songs, not entries, and `updatePlaylist`
@@ -621,6 +661,17 @@ with Subsonic's field beside Jellyfin's.
 | `playbackTimeline` | always | `playbackReport` listed | listed | `scrobble` only |
 | `lastPlayed` | always | OpenSubsonic (`played`) | yes | taste at 0.6, Recently Played from this device |
 | `transcodeOffset` | never (HLS seeks) | `transcodeOffset` listed | listed | (player round) |
+| `rating` | never | API 1.6.0+ (`setRating`) | yes, songs and albums | no Rating in the menus |
+
+Ratings (17 November 2026). Jellyfin 12.4 keeps a per-user
+`UserData.Rating`, a number without a scale: POST /UserItems/{id}/UserData
+with `Rating` 8 kept 8 and set `Likes` true; `Rating` null did not clear it,
+DELETE /UserItems/{id}/Rating did (measured). /UserItems/{id}/Rating itself
+takes only `likes`. No sort by it (`ItemSortBy` has none), and none of
+Jellyfin's own clients shows it: jellyfin-web's rating button
+(`src/elements/emby-ratingbutton/emby-ratingbutton.js`) is the heart, which
+reads `Likes` and sets the favourite. Stars only Jukebox could see are not
+offered there.
 
 Navidrome 0.64.2's `getOpenSubsonicExtensions`, without credentials:
 `transcodeOffset` 1, `formPost` 1, `songLyrics` 1 2, `indexBasedQueue` 1,
@@ -634,6 +685,169 @@ The rest of the library works the same on every server. Where a Subsonic
 server lacks a call the protocol has no capability for, the kit works around
 it: the albums are walked (`allTracks`), 100 ids go in a request (no
 `formPost`), and a server that is not OpenSubsonic has no extensions.
+
+## Emby (17 November 2026)
+
+The photographer: "emby en plex kunnen beide toch". Emby is Jellyfin's
+ancestor, so it is no third client: `JellyfinClient` with `isEmby`, inside
+`JellyfinServer`, `ServerKind.emby`. Measured on Emby 4.10.2
+(`dev/emby-test-server.sh`, `emby/embyserver:latest`, the made-up library),
+without Emby Premiere: nothing Jukebox uses asks for it, transcoding
+included.
+
+| | Jellyfin 12.4 | Emby 4.10 | So |
+|---|---|---|---|
+| Found | `ProductName` "Jellyfin Server" in /System/Info/Public | no `ProductName`; `/System/Ping` says "Emby Server" | the ping is asked only without a `ProductName` |
+| Header | `Authorization: MediaBrowser …` | the same works (`X-Emby-Authorization` not needed); Client is not percent-decoded, Device is | unchanged |
+| Token in a URL | `ApiKey` (`api_key` 401) | `api_key` (`ApiKey` 401) | `tokenKey` |
+| Path | `/` | `/`; `/emby/System/Info/Public` answers too | unchanged (an address typed with `/emby`: not tried further) |
+| Ids | GUIDs | numbers as strings ("378"); GenreItems' ids are JSON numbers (not read) | unchanged |
+| One item | `/Items?Ids=` | nothing without `Recursive=true` and the type; an unreadable id is ignored and the whole library comes | both sent to both; Emby takes only the id asked for |
+| Lists | play count, last played and year by default | only with `Fields=UserDataPlayCount,UserDataLastPlayedDate,ProductionYear` | `fields(_:)` |
+| `/Users/Me` | the user | 500 ("Me" read as an id) | `/Users/{id}` on Emby |
+| Favourites | `/UserFavoriteItems/{id}` | 404; `/Users/{id}/FavoriteItems/{id}` | the 10.8 fallback, as it was |
+| New playlist | JSON body | body not read (500); query | query on Emby, 100 ids, the rest added |
+| Playlist entries | the song's id | one per place ("1", "2", …): a song twice needs no `#n` | unchanged |
+| A gone playlist | 404 | 500 | `.notFound` on Emby |
+| Mix | `limit` | `limit` + 1; a playlist's mix is empty | cut to `limit`; the radio's own picks carry a playlist |
+| Lyrics | `/Audio/{id}/Lyrics` | subtitle streams; that route is read as a stream (500) | none: no `.lyrics` |
+| Loudness | NormalizationGain | none | no `.replayGain` |
+| Artist counts | `AlbumCount`, `SongCount` | none (`ChildCount` is songs) | nil: no "3 albums" on a tile |
+| Covers | `fillWidth`/`fillHeight` | ignored (600 px came for 300); `maxWidth`/`maxHeight` | on Emby; covers beside the files are not read, the test script uploads them |
+| Genres | as tagged ("Folk; Indie") | split ("Folk", "Indie") | unchanged |
+| Stream, download | `/Audio/{id}/universal` | the same answers: files as they are, HLS (AAC) when capped, m4a over http for a download | unchanged |
+| Plays | counted at the start report | the same (twice for two starts; a stop alone counts nothing) | unchanged |
+| Quick Connect | /QuickConnect/Enabled | 404 | no button |
+| Play state | `/DisplayPreferences/jukebox` | the same | unchanged |
+| Sign-out | /Sessions/Logout | the same (401 after) | unchanged |
+
+Emby's capabilities: `ServerCapability.emby`, Jellyfin's without `lyrics`,
+`syncedLyrics` and `replayGain`.
+
+Play On: Jellyfin's Sessions API as it is, measured on 4.10.2 by
+`JellyfinSessionsIntegrationTests` (a second client with its socket open is
+listed and receives Play, Playstate and SetVolume). The socket is
+`/embywebsocket?api_key=&deviceId=` where Jellyfin's is `/socket?ApiKey=`
+(`sessionSocketPath`); a cast URL carries the token as `api_key`
+(`tokenKey`). Emby sends a Play message's `ItemIds` as JSON numbers
+([378, 89, 279]), Jellyfin as strings: the far client's to read.
+
+Not measured: lyrics on Emby (the test files have none), Emby before 4.10,
+an Emby with its first-run wizard finished (the test script stops before
+its last step: the API works without it).
+
+## Plex (17 November 2026)
+
+The owner: "emby en plex kunnen beide toch". `Plex/PlexServer.swift` (the
+`MusicServer`) and `Plex/PlexSignIn.swift` (finding one, plex.tv's sign-in,
+a token). Plex Media Server's own HTTP API with `Accept: application/json`.
+Measured on 1.43.5 (`dev/plex-test-server.sh`: unclaimed, on an internal
+Docker network with no way out, the made-up library read by the
+"Personal Media Artists" agent).
+
+**Found** at an address like any other: `GET /identity`, which every Plex
+server answers without a token, `machineIdentifier` and `version`. Its name
+is the root's `friendlyName` where it shows it, else the host. 32400 is one
+of the fallback ports, and plain http when typed.
+
+**Signing in.** A Plex server has no user names or passwords of its own.
+- **Sign In with Plex**, Plex's PIN flow: `POST https://plex.tv/api/v2/pins`
+  with `strong=true`; the person signs in at
+  `https://app.plex.tv/auth#?clientID=…&code=…&context[device][product]=Jukebox`
+  in the browser (Apple's web sign-in on the iPhone, iPad and Mac, with
+  `forwardUrl=jukebox://plex` so the sheet can close; the default browser
+  through GTK on Linux), while the app asks `GET /api/v2/pins/{id}` every
+  2 s for `authToken`. Then `GET /api/v2/resources?includeHttps=1&includeRelay=1`:
+  the servers (`provides` has "server"), one's own first; with an address
+  typed, only that server; several, the person chooses. The address: every
+  one at once, `GET /identity` with the token, 5 s; the first in order that
+  answers wins, the typed one first, then local, remote, relay. Kept: the
+  server's `accessToken` for this account (`ServerSecret.plexToken`); the
+  user is plex.tv's `GET /api/v2/user` `id`, so a sign-in again is the same
+  account. `X-Plex-Client-Identifier` is the installation's own
+  (`ClientIdentity.deviceID`).
+- **A token** (X-Plex-Token), for a server reached without plex.tv: where an
+  API key goes (`PlexSignIn` is an `APIKeySignIn`; a password asked of it
+  throws `needsAPIKey` with Plex's page on finding a token). Tried on
+  `/library/sections`; the user is named by the server's `/myplex/account`
+  (its owner) and kept apart by the token (`token-` and its MD5), since the
+  server does not say whose a token is. The same person by plex.tv is
+  another account.
+- Untested end to end: no plex.tv account was used. The PIN, resources and
+  user answers' shapes are Plex's documentation's (`PlexSignInTests`).
+- Every address is kept with the account in that order
+  (`ServerCredentials.addresses`), so one signed in at home plays away from
+  it: the session's first request asks them all as the sign-in does (at
+  once, 5 s, the first in order that answers; `PlexReach`), and a request
+  the chosen one no longer answers asks again. The account itself is not
+  rewritten. A token pasted for one address has only that one.
+
+**The map.**
+
+| Member | Plex |
+|---|---|
+| `allTracks`, `allAlbums`, `allArtists` | every music section's (`/library/sections`, type "artist"), `/library/sections/{id}/all?type=10/9/8`, 1000 a page. Tracks carry no genres: the album's. |
+| `playlists` | `/playlists?playlistType=audio`; a smart one is read-only |
+| `genres` | the albums' genres, counted |
+| one item, `albumTracks`, `search` | `/library/metadata/{id}`, `…/children`, `/hubs/search` |
+| `setFavorite` | `PUT /:/rate?rating=10` (five stars), `-1` clears it (measured both) |
+| playlists' changes | `POST /playlists?type=audio&uri=server://{machine}/com.plexapp.plugins.library/library/metadata/{ids}`, `PUT …/items?uri=`, `DELETE …/items/{playlistItemID}`, `PUT …/items/{id}/move?after={id}` (none: first) |
+| `lyrics` | the file's stream of `streamType` 4 (an .lrc or Plex Pass's), its `key` as text |
+| `streamURL`, `downloadURL` | below |
+| `artworkURL` | `/photo/:/transcode?width=&height=&url=<thumb>` and the token |
+| `report` | below |
+| play state, mixes, similar artists, top songs, loudness | none: off |
+
+**Measured on 1.43.5**:
+- A playlist holds a song once: 150, 151, 150 made two items; adding 150
+  again added nothing (`leafCountAdded` 0). `playlistItemID` names each
+  place.
+- Moves: A B C D, the first to 2 gave B C A D, as on Jellyfin.
+- An unclaimed server answers its own network's gateway and itself without
+  a token; another container on its network got 401 whatever
+  `ALLOWED_NETWORKS` said, so `dev/kit-test.sh` runs the Plex tests in its
+  network namespace.
+
+**Streaming.** The file as it is: `Part.key`
+(`/library/parts/123/…/file.mp3`, `Track.fileKey`) and the token: 200 with
+Content-Length, 206 for a range (measured). That is what Jukebox's gapless
+and normalisation want, as on every server. Capped, or a file the player
+cannot play (Ogg, Opus, …, as Subsonic's rule): the universal music
+transcoder as one progressive MP3, never HLS:
+`/music/:/transcode/universal/start.mp3?path=/library/metadata/{id}&protocol=http&directPlay=0&directStream=1&maxAudioBitrate=`.
+Plex's Generic profile has no music target (400), so the request adds one
+(`X-Plex-Client-Profile-Extra`, MP3 over http). An MP3 under the cap is
+copied (200 audio/mpeg, no Content-Length, `Accept-Ranges: none`,
+measured). A FLAC or AAC converted is not measured: the server fetches its
+converters from plex.tv, which the test server cannot reach. Downloads:
+the file (`?download=1`) at Original, MP3 256 or 128 at High and Normal.
+`downloadsAllowed` is true: Plex's `allowSync` is its own (Plex Pass's)
+downloads, false on a server without it.
+
+**Reports.** `.nowPlaying` and `.progress` are `/:/timeline` (`state`
+playing or paused, `time` in ms); `.played` is `/:/scrobble`, the one play;
+`.stopped` the timeline at 0 s. A timeline with `duration` that reaches the
+end counts a play of its own (measured: twice with the scrobble), so none is
+sent; without it neither a timeline at the end nor a stop there counted.
+The test plays a song to its end: one play.
+
+**Capabilities**: `lyrics`, `syncedLyrics`, `playlistReorder`,
+`playbackTimeline`, `lastPlayed` (`lastViewedAt`). Off: `instantMix` (Plex's
+sonic mixes need Plex Pass and an analysed library), `similarArtists` (names
+from its online agent, not items), `topSongs`, `replayGain` (loudness is in
+the file's streams, not the listing), `transcodeOffset`, `rating` (its one
+rating is the favourite here), and the handoff (Plex keeps no state of a
+client's for another to read).
+
+**Play On**: Chromecasts only. `castURL` is the file with the token for an
+MP3 or a FLAC, else the transcoder's MP3 at 320. Plex's own players
+(Plex Companion) are not offered: not built.
+
+**Tests**: `PlexSignInTests` (no server: detection, the token, the PIN,
+the resources and the choice of address, the mapping, the URLs, the
+reports, lyrics, the keychain) and `PlexIntegrationTests` (the real server:
+358 songs, 54 albums, 23 artists; the file, a range, the copied MP3, a
+cover; a favourite; a playlist's every change; one play counted).
 
 ## Classical music (14 November 2026)
 

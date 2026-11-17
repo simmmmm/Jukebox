@@ -1,5 +1,5 @@
 // The listener's choices, kept in UserDefaults: streaming quality on Wi-Fi
-// and on the mobile network, loudness normalisation, the Last.fm key, how
+// and on the mobile network, loudness normalisation, crossfade, the Last.fm key, how
 // adventurous the radio is, whether lyrics are looked up online, whether Now
 // Playing's record spins, whether the music last played waits in the player
 // at launch, whether the anonymous usage counts are sent, how songs are
@@ -53,6 +53,21 @@ final class AppSettings {
             if autoplay != oldValue { Stats.track(.settingChanged, ["name": "autoplay", "value": Stats.onOff(autoplay)]) }
         }
     }
+
+    /// Crossfade, in seconds, one of `crossfades`; 0 off, as it starts.
+    /// The photographer, of crossfade and the rest: "maak ze allemaal maar",
+    /// and "ik wil alleen er voor waken dat we niet 10000 knopen krijgen":
+    /// one choice in Settings › Playback, nothing in Now Playing. The queue
+    /// fades (PlayQueue.crossfadeLevel), never within an album.
+    var crossfade: Int {
+        didSet {
+            defaults.set(crossfade, forKey: Keys.crossfade)
+            if crossfade != oldValue { Stats.track(.settingChanged, ["name": "crossfade", "value": crossfade == 0 ? "off" : "\(crossfade)"]) }
+        }
+    }
+
+    /// Settings' lengths for Crossfade, in seconds; 0 is Off.
+    static let crossfades = [0, 2, 4, 6, 8, 12]
 
     /// The radio's dial, 0 familiar … 1 adventurous.
     var adventurousness: Double {
@@ -206,6 +221,8 @@ final class AppSettings {
         lastFMAPIKey = defaults.string(forKey: Keys.lastFMAPIKey) ?? ""
         autoplay = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
         adventurousness = defaults.object(forKey: Keys.adventurousness) as? Double ?? 0.35
+        let crossfade = defaults.integer(forKey: Keys.crossfade)
+        self.crossfade = Self.crossfades.contains(crossfade) ? crossfade : 0
         findLyricsOnline = defaults.object(forKey: Keys.findLyricsOnline) as? Bool ?? true
         spinRecord = defaults.object(forKey: Keys.spinRecord) as? Bool ?? true
         resumeOnLaunch = defaults.object(forKey: Keys.resumeOnLaunch) as? Bool ?? true
@@ -229,6 +246,7 @@ final class AppSettings {
         static let lastFMAPIKey = "lastFMAPIKey"
         static let adventurousness = "adventurousness"
         static let autoplay = "autoplay"
+        static let crossfade = "crossfade"
         static let findLyricsOnline = "findLyricsOnline"
         static let spinRecord = "spinRecord"
         static let resumeOnLaunch = "resumeOnLaunch"

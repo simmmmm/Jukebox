@@ -318,6 +318,14 @@ public struct SubsonicClient: MusicServer {
         _ = try await call(isFavorite ? "star" : "unstar", [URLQueryItem(name: name, value: item.id)])
     }
 
+    /// setRating takes `id` for a song and an album alike (the spec's one
+    /// parameter; Navidrome 0.64.2 answers error 10 to `albumId`, measured).
+    /// 0 removes the rating.
+    public func setRating(_ stars: Int, item: ItemRef) async throws {
+        _ = try await call("setRating", [URLQueryItem(name: "id", value: item.id),
+                                         URLQueryItem(name: "rating", value: String(min(5, max(0, stars))))])
+    }
+
     /// getPlaylist's songs in order, duplicates kept, each with an entry id
     /// made here: "<songID>#<n>", n counting that song's earlier places
     /// from 0 (docs/SERVERS.md, "Playlist entries").
@@ -603,6 +611,19 @@ public struct SubsonicClient: MusicServer {
             query.append(URLQueryItem(name: "format", value: "raw"))
         }
         return connection.url("stream", query)
+    }
+
+    /// What a cast device fetches itself (MusicServer.castURL): MP3, FLAC
+    /// and AAC as they are (`format=raw`, the file's own type); everything
+    /// else, M4A among them (its codec may be ALAC), MP3 at 320.
+    public func castURL(for track: Track) -> CastStream {
+        let id = URLQueryItem(name: "id", value: track.id)
+        let types = ["mp3": "audio/mpeg", "flac": "audio/flac", "aac": "audio/aac"]
+        if let suffix = track.container, let type = types[suffix] {
+            return CastStream(url: connection.url("stream", [id, URLQueryItem(name: "format", value: "raw")]),
+                              contentType: type)
+        }
+        return CastStream(url: connection.url("stream", [id] + Self.mp3(kbps: 320)), contentType: "audio/mpeg")
     }
 
     /// A song's file to save on the phone (docs/OFFLINE.md), a plain file

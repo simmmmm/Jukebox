@@ -69,13 +69,21 @@ public enum SubsonicFlavour: Hashable, Sendable, Codable {
 
 public enum ServerKind: Hashable, Sendable, Codable {
     case jellyfin
+    /// Jellyfin's ancestor, spoken to by JellyfinClient with `isEmby`
+    /// (docs/SERVERS.md, "Emby"). The photographer, 17 November 2026:
+    /// "emby en plex kunnen beide toch".
+    case emby
     case subsonic(flavour: SubsonicFlavour)
+    /// Plex Media Server (Plex/PlexServer.swift).
+    case plex
 
     /// "Jellyfin", "Navidrome", …: "Signing in to Tijmen's Music · Navidrome 0.64.2".
     public var displayName: String {
         switch self {
         case .jellyfin: "Jellyfin"
+        case .emby: "Emby"
         case let .subsonic(flavour): flavour.displayName
+        case .plex: "Plex"
         }
     }
 
@@ -125,6 +133,11 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// A converted stream can start part-way (OpenSubsonic's
     /// `transcodeOffset`), for seeking in it.
     case transcodeOffset
+    /// One to five stars per user on songs and albums: Subsonic's setRating
+    /// (API 1.6.0) and `userRating`. Jellyfin has none to offer: its
+    /// UserData.Rating is a number without a scale that none of its own
+    /// clients shows or sorts by (docs/SERVERS.md, "Ratings").
+    case rating
 
     /// What every Jellyfin 10.9+ server has once signed in. Quick Connect
     /// is a question for the sign-in screen, not the session.
@@ -132,6 +145,11 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
         .instantMix, .similarArtists, .lyrics, .syncedLyrics, .playlistReorder,
         .replayGain, .playbackTimeline, .lastPlayed,
     ]
+
+    /// Emby 4.10 (measured): Jellyfin's without lyrics (it keeps them as
+    /// subtitle streams; /Audio/{id}/Lyrics is read as a stream and answers
+    /// 500) and without a loudness gain (no NormalizationGain).
+    public static let emby: Set<ServerCapability> = jellyfin.subtracting([.lyrics, .syncedLyrics, .replayGain])
 }
 
 /// What answered at an address, before anyone has signed in: what the
@@ -187,6 +205,10 @@ public enum ServerSecret: Hashable, Sendable, Codable {
     /// refuses tokens (error 41) and offers no API key, and only over https
     /// or on the home network.
     case subsonicPassword(String)
+    /// Plex's access token to this server: from plex.tv's sign-in in the
+    /// browser (the server's own token, for a server shared with the user),
+    /// or pasted as an API key.
+    case plexToken(String)
 }
 
 /// A signed-in session, as the keychain keeps it: everything the app needs
@@ -216,6 +238,12 @@ public struct ServerCredentials: Hashable, Sendable {
     /// once by SavedAccounts, kept with the session. Nil for every other
     /// account, so no folder an install already has is ever renamed.
     public var folderName: String?
+    /// Every address of the server, in the order they are tried when the
+    /// account opens: a Plex server's from plex.tv (the one typed, then
+    /// local, remote, relay), so an account signed in at home plays away
+    /// from it too (PlexServer). Empty for every other account: its one
+    /// address is `serverURL`.
+    public var addresses: [URL] = []
 
     public init(kind: ServerKind, serverURL: URL, serverID: String, serverName: String,
                 serverVersion: String = "", apiVersion: String? = nil, userID: String,
@@ -232,10 +260,10 @@ public struct ServerCredentials: Hashable, Sendable {
         self.capabilities = capabilities
     }
 
-    /// A Jellyfin sign-in as JellyfinClient gives it.
-    public init(jellyfin credentials: Credentials, serverVersion: String = "",
+    /// A Jellyfin (or Emby) sign-in as JellyfinClient gives it.
+    public init(jellyfin credentials: Credentials, kind: ServerKind = .jellyfin, serverVersion: String = "",
                 capabilities: Set<ServerCapability> = ServerCapability.jellyfin) {
-        self.init(kind: .jellyfin, serverURL: credentials.serverURL, serverID: credentials.serverID,
+        self.init(kind: kind, serverURL: credentials.serverURL, serverID: credentials.serverID,
                   serverName: credentials.serverName, serverVersion: serverVersion,
                   userID: credentials.userID, userName: credentials.userName,
                   secret: .jellyfinToken(credentials.accessToken), capabilities: capabilities)
@@ -243,7 +271,7 @@ public struct ServerCredentials: Hashable, Sendable {
 
     /// The same session as JellyfinClient takes it; nil for a Subsonic one.
     public var jellyfin: Credentials? {
-        guard kind == .jellyfin, case let .jellyfinToken(token) = secret else { return nil }
+        guard kind == .jellyfin || kind == .emby, case let .jellyfinToken(token) = secret else { return nil }
         return Credentials(serverURL: serverURL, serverID: serverID, serverName: serverName,
                            userID: userID, userName: userName, accessToken: token)
     }
@@ -252,7 +280,7 @@ public struct ServerCredentials: Hashable, Sendable {
 extension ServerCredentials: Codable {
     enum CodingKeys: String, CodingKey {
         case kind, serverURL, serverID, serverName, serverVersion, apiVersion
-        case userID, userName, secret, capabilities, folderName
+        case userID, userName, secret, capabilities, folderName, addresses
         /// The Jellyfin-only Credentials' token (read, never written).
         case accessToken
     }
@@ -275,8 +303,9 @@ extension ServerCredentials: Codable {
             kind = .jellyfin
         }
         capabilities = try c.decodeIfPresent(Set<ServerCapability>.self, forKey: .capabilities)
-            ?? (kind == .jellyfin ? ServerCapability.jellyfin : [])
+            ?? (kind == .jellyfin ? ServerCapability.jellyfin : kind == .emby ? ServerCapability.emby : [])
         folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
+        addresses = try c.decodeIfPresent([URL].self, forKey: .addresses) ?? []
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -292,6 +321,7 @@ extension ServerCredentials: Codable {
         try c.encode(secret, forKey: .secret)
         try c.encode(capabilities, forKey: .capabilities)
         try c.encodeIfPresent(folderName, forKey: .folderName)
+        if !addresses.isEmpty { try c.encode(addresses, forKey: .addresses) }
     }
 }
 
@@ -395,7 +425,7 @@ public enum MusicServerError: Error, Sendable, Equatable, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .invalidServerAddress: "There is no Jellyfin or Subsonic server at this address."
+        case .invalidServerAddress: "There is no Jellyfin, Emby or Subsonic server at this address."
         case .notSignedIn: "Not signed in."
         case .unauthorized: "The server did not accept the user name or password."
         case .needsAPIKey: "This server signs in with an API key rather than a password."
@@ -439,6 +469,18 @@ public protocol QuickConnectSignIn: ServerSignIn {
 }
 
 // MARK: - A signed-in server
+
+/// What a cast device is sent to fetch for itself (`MusicServer.castURL`).
+public struct CastStream: Sendable, Hashable {
+    public var url: URL
+    /// The LOAD message's contentType.
+    public var contentType: String
+
+    public init(url: URL, contentType: String) {
+        self.url = url
+        self.contentType = contentType
+    }
+}
 
 /// One signed-in session with a server, Jellyfin or Subsonic: what
 /// AppModel, LibraryStore, AudioPlayer, RadioController and the screens use
@@ -491,6 +533,9 @@ public protocol MusicServer: Sendable {
     // MARK: Changes
 
     func setFavorite(_ isFavorite: Bool, item: ItemRef) async throws
+    /// 1 to 5 stars on a track or an album; 0 takes the rating away
+    /// (`.rating`; `unsupported` without it).
+    func setRating(_ stars: Int, item: ItemRef) async throws
 
     /// A playlist's tracks in order, each with its `playlistEntryID`: what
     /// removing or moving that place needs. Jellyfin: its PlaylistItemId.
@@ -531,6 +576,11 @@ public protocol MusicServer: Sendable {
     /// something AVPlayer plays (Jellyfin: AAC over HLS; Subsonic: MP3,
     /// since Navidrome's own choice is Ogg Opus, measured).
     func streamURL(for track: Track, quality: StreamQuality, playSessionID: String) -> URL
+    /// A URL a Chromecast's Default Media Receiver fetches and plays itself:
+    /// a plain file (never HLS), credentials in the query, and the type it
+    /// is told it gets. MP3 and FLAC as they are, anything else MP3 at 320
+    /// by the server's own conversion.
+    func castURL(for track: Track) -> CastStream
     /// Square, `maxPixelSize` on its longer side. The same artwork and size
     /// give the same URL, always: the image cache is keyed by it.
     /// `artwork.tag` is the server's key to the image: Jellyfin's ImageTag
@@ -571,8 +621,8 @@ public enum MusicServers {
     /// the address as typed (normalized as JellyfinClient.normalize does,
     /// with Navidrome's "/app" cut off like Jellyfin's "/web"); then, when
     /// no port and no "https://" were typed, the same host over http on
-    /// Jellyfin's 8096, Navidrome's 4533, Gonic's 4747, Airsonic's 4040
-    /// and LMS's 5082.
+    /// Jellyfin's 8096, Navidrome's 4533, Gonic's 4747, Airsonic's 4040,
+    /// LMS's 5082 and Plex's 32400.
     public static func candidateAddresses(for typed: String) -> [URL] {
         ServerAddress.candidates(typed)
     }
@@ -592,7 +642,7 @@ public enum MusicServers {
     public static func signIn(to server: DetectedServer, identity: ClientIdentity,
                               transport: any HTTPTransport = URLSessionTransport()) -> any ServerSignIn {
         switch server.kind {
-        case .jellyfin:
+        case .jellyfin, .emby:
             if server.capabilities.contains(.quickConnect) {
                 return JellyfinQuickConnectSignIn(server: server, identity: identity, transport: transport)
             }
@@ -602,6 +652,8 @@ public enum MusicServers {
                 return SubsonicAPIKeySignIn(server: server, identity: identity, transport: transport)
             }
             return SubsonicSignIn(server: server, identity: identity, transport: transport)
+        case .plex:
+            return PlexSignIn(server: server, identity: identity, transport: transport)
         }
     }
 
@@ -609,8 +661,9 @@ public enum MusicServers {
     public static func open(_ credentials: ServerCredentials, identity: ClientIdentity,
                             transport: any HTTPTransport = URLSessionTransport()) -> any MusicServer {
         switch credentials.kind {
-        case .jellyfin: JellyfinServer(credentials: credentials, identity: identity, transport: transport)
+        case .jellyfin, .emby: JellyfinServer(credentials: credentials, identity: identity, transport: transport)
         case .subsonic: SubsonicClient(credentials: credentials, identity: identity, transport: transport)
+        case .plex: PlexServer(credentials: credentials, identity: identity, transport: transport)
         }
     }
 }

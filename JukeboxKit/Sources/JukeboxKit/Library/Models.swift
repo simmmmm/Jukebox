@@ -71,11 +71,16 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// "<songID>#<n>" (SubsonicClient.playlistTracks).
     public var playlistEntryID: String?
     /// The file's format as the server names it ("mp3", "flac", "opus"):
-    /// Subsonic's `suffix`. Only Subsonic sets it, because only there does
-    /// the app have to ask for a file AVPlayer cannot play to be converted
-    /// (Jellyfin's universal URL lists what the player plays and Jellyfin
-    /// decides). Nil when unknown.
+    /// Subsonic's `suffix`, Jellyfin's `Container` ("mov,mp4,m4a,…" for an
+    /// M4A). Subsonic's decides which files are converted for AVPlayer;
+    /// on both it says what a cast device is told it gets (`castURL`). Nil
+    /// when unknown (a library cached before 17 November 2026, on Jellyfin).
     public var container: String?
+    /// Plex's `Part.key`, the file's own path on the server
+    /// ("/library/parts/123/1794611181/file.mp3"): what its stream and its
+    /// download are, as the file is. Plex's part id is not the track's
+    /// id, and the URL is made without asking the server. Nil elsewhere.
+    public var fileKey: String?
 
     // What classical listeners need apart (the classical research, 14
     // November 2026): "iets wat ik ook graag zou willen supporten is klassieke
@@ -99,6 +104,9 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// The disc's title (DISCSUBTITLE, TSST): an opera's act. Navidrome
     /// sends it with the album, so it is set only where the album came too.
     public var discTitle: String?
+    /// The listener's stars, 1 to 5; nil when unrated or the server keeps
+    /// none (`ServerCapability.rating`: Subsonic's `userRating`).
+    public var rating: Int?
 
     public init(id: ItemID, name: String, albumID: ItemID? = nil, albumName: String? = nil,
                 artists: [ArtistRef] = [], albumArtist: ArtistRef? = nil, genres: [String] = [],
@@ -107,7 +115,8 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
                 isFavorite: Bool = false, playCount: Int = 0, lastPlayed: Date? = nil,
                 dateAdded: Date? = nil, normalizationGain: Double? = nil, playlistEntryID: String? = nil,
                 container: String? = nil, credits: [Credit]? = nil, work: String? = nil,
-                movement: Movement? = nil, grouping: String? = nil, discTitle: String? = nil) {
+                movement: Movement? = nil, grouping: String? = nil, discTitle: String? = nil,
+                rating: Int? = nil) {
         self.id = id
         self.name = name
         self.albumID = albumID
@@ -133,6 +142,7 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
         self.movement = movement
         self.grouping = grouping
         self.discTitle = discTitle
+        self.rating = rating
     }
 
     /// Who is credited in `role`, in the server's order.
@@ -218,11 +228,13 @@ public struct Album: Identifiable, Hashable, Codable, Sendable {
     public var dateAdded: Date?
     public var playCount: Int
     public var lastPlayed: Date?
+    /// The listener's stars, 1 to 5, as on `Track`.
+    public var rating: Int?
 
     public init(id: ItemID, name: String, artists: [ArtistRef] = [], year: Int? = nil,
                 genres: [String] = [], imageTag: String? = nil, trackCount: Int? = nil,
                 duration: TimeInterval? = nil, isFavorite: Bool = false, dateAdded: Date? = nil,
-                playCount: Int = 0, lastPlayed: Date? = nil) {
+                playCount: Int = 0, lastPlayed: Date? = nil, rating: Int? = nil) {
         self.id = id
         self.name = name
         self.artists = artists
@@ -235,6 +247,7 @@ public struct Album: Identifiable, Hashable, Codable, Sendable {
         self.dateAdded = dateAdded
         self.playCount = playCount
         self.lastPlayed = lastPlayed
+        self.rating = rating
     }
 
     public var artistLine: String { artists.map(\.name).joined(separator: ", ") }

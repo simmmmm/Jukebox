@@ -46,6 +46,9 @@ targets:
     # Swift links the system frameworks it imports itself.
     dependencies:
       - package: JukeboxKit
+      # The widget, in PlugIns/: the iPhone's and the iPad's only.
+      - target: JukeboxWidget
+        destinationFilters: [iOS]
     # One Info.plist for both: the Mac ignores the UI* keys.
     info:
       path: Jukebox/Info.plist
@@ -87,7 +90,10 @@ targets:
         # certificate the phone does not know: Jukebox goes where it is told.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
-        NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin, Navidrome or other music server on this network.
+        NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin, Navidrome or other music server on this network, and on the speakers and TVs you choose in Play On.
+        # Chromecasts, looked for by Bonjour only while Play On's list is open
+        # (Player/CastNetwork.swift).
+        NSBonjourServices: [_googlecast._tcp]
         # "Play <album> in Jukebox" by voice, in the car above all: SiriKit's
         # media intent, handled in the app (Intents/SiriMedia.swift). The Mac
         # has no media intents and ignores these.
@@ -114,6 +120,43 @@ targets:
         "CODE_SIGN_ENTITLEMENTS[sdk=iphoneos*]": Jukebox/Jukebox-iOS.entitlements
         "CODE_SIGN_ENTITLEMENTS[sdk=iphonesimulator*]": Jukebox/Jukebox-iOS.entitlements
         "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES
+
+  # The widget (JukeboxWidget/JukeboxWidget.swift, docs/ARCHITECTURE.md):
+  # Your Station and Home's mixes, read from what the app writes into the
+  # App Group. The iPhone's and the iPad's: a Mac widget would need a
+  # sandboxed extension and its own export (docs/ARCHITECTURE.md).
+  JukeboxWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - path: JukeboxWidget
+      # The app's files the widget needs too, each Foundation or SwiftUI
+      # alone: the snapshot it reads, its buttons' intents, the mark.
+      - path: Jukebox/App/WidgetSnapshot.swift
+      - path: Jukebox/Intents/WidgetIntents.swift
+      - path: Jukebox/Components/ArchShapes.swift
+      - path: Jukebox/Components/ArtMeasures.swift
+    # ArtMeasures.swift's Station.
+    dependencies:
+      - package: JukeboxKit
+    info:
+      path: JukeboxWidget/Info.plist
+      properties:
+        CFBundleDisplayName: Jukebox
+        # The store refuses an extension whose version is not its app's.
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tijmen.Jukebox.Widget
+        TARGETED_DEVICE_FAMILY: "1,2"
+        CODE_SIGN_STYLE: Automatic
+        # The App Group it reads from, as the app's iOS entitlements have it.
+        CODE_SIGN_ENTITLEMENTS: JukeboxWidget/JukeboxWidget.entitlements
+        # WidgetIntents.swift leaves the app's world out of the widget.
+        SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION
 
   # The screenshot walk (JukeboxUITests/ScreenshotTests.swift), run in the
   # simulator by ci/screenshots.sh. Built only by build-for-testing: the

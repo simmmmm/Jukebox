@@ -139,8 +139,15 @@ Published 16 November 2026.
   in the keychain; lyrics are looked up at LRCLIB with title, artist, album
   and length, and with the listener's own Last.fm key the radio asks Last.fm
   by artist names and song titles: neither is data about the person.
+  Sign In with Plex (17 November 2026) asks plex.tv, the listener's own
+  Plex account, for their servers; nothing of it reaches the developer, so
+  the label is unchanged (docs/STATS.md, "The App Store").
 
 This matches `Jukebox/Resources/PrivacyInfo.xcprivacy`.
+
+Sign In with Plex uses Apple's web sign-in (`WebAuthenticationSession`,
+ASWebAuthenticationSession under it): no Info.plist key, entitlement or
+registered URL scheme. Its callback scheme, `jukebox`, is the session's own.
 
 ## Age rating
 
@@ -217,6 +224,41 @@ Identifiers & Profiles › Identifiers › com.tijmen.Jukebox › Capabilities �
 SiriKit › Save. Cloud signing then puts it in the store's profile.
 `carplay_signed` checks it beside CarPlay's, so an upload without it stops.
 The Mac's app has no Siri entitlement: it has App Intents only.
+
+## The widget
+
+The iPhone's app embeds a widget extension, `com.tijmen.Jukebox.Widget`
+(`JukeboxWidget/`, docs/ARCHITECTURE.md). The app writes what it shows
+into the App Group `group.com.tijmen.Jukebox`, which both entitlements
+name (`Jukebox/Jukebox-iOS.entitlements`,
+`JukeboxWidget/JukeboxWidget.entitlements`). **Open**: before the first
+upload with it, in Certificates, Identifiers & Profiles:
+
+1. Identifiers › + › App Groups: `group.com.tijmen.Jukebox`, described
+   "Jukebox".
+2. Identifiers › com.tijmen.Jukebox › Capabilities › App Groups on ›
+   Configure › `group.com.tijmen.Jukebox` › Save (the profile is made again;
+   CarPlay and SiriKit stay on).
+3. Identifiers › + › App IDs › App: `com.tijmen.Jukebox.Widget`, described
+   "Jukebox Widget", with App Groups on and `group.com.tijmen.Jukebox`
+   chosen.
+
+Cloud signing then makes both store profiles. `widget_signed` in
+`ci/app.sh` checks every push's build, the archive and the exported ipa:
+the widget in `PlugIns/`, and the App Group in the app's signature and the
+widget's. An upload without them stops.
+
+## Play On
+
+Chromecasts on the iPhone, the iPad and the Mac are spoken to by the app
+itself (castv2 over Network's TLS, `Jukebox/Player/CastNetwork.swift`); no
+Google Cast SDK ("Doe zonder", the photographer, 17 November 2026). So
+nothing to fetch, no other licence, and App Privacy unchanged: Play On sends
+nothing to anyone but the listener's own server and devices.
+
+- Info.plist (project.yml): `NSBonjourServices` `_googlecast._tcp`;
+  `NSLocalNetworkUsageDescription` names the speakers and TVs. The prompt
+  comes when Play On's list first opens, not at launch. No entitlement.
 
 ## Builds
 

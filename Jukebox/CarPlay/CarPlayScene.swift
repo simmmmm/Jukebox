@@ -47,6 +47,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         interface = interfaceController
         // Is CarPlay used (Stats, `screen`): once a connection.
         Stats.track(.screen, ["name": "carplay"])
+        // The car plays from the phone: music left on a TV or another
+        // client at home comes here, where it was (PlayOn.swift).
+        if app.player.playsOn != nil { app.player.playHere() }
         home.tabTitle = String(localized: "Home")
         home.tabImage = UIImage(systemName: "house.fill")
         radio.tabTitle = String(localized: "Radio")

@@ -82,16 +82,16 @@ Buckets:
 
 | Event | Properties | The question it answers | Where |
 |---|---|---|---|
-| `app_open` | `server` (`jellyfin`, `navidrome`, `subsonic`, `none`) | How many starts, on which system, version, language and device; which kinds of server are used | `AppModel.restore`, once a launch, when the keychain has said |
-| `signed_in` | `server` (`jellyfin`, `navidrome`, `subsonic`), `method` (`password`, `quick_connect`, `api_key`) | How people sign in, and to what; is Quick Connect worth it | OnboardingView |
+| `app_open` | `server` (`jellyfin`, `emby`, `navidrome`, `plex`, `subsonic`, `none`) | How many starts, on which system, version, language and device; which kinds of server are used | `AppModel.restore`, once a launch, when the keychain has said |
+| `signed_in` | `server` (`jellyfin`, `emby`, `navidrome`, `plex`, `subsonic`), `method` (`password`, `quick_connect`, `api_key`, `plex_pin`: Sign In with Plex; a Plex token is `api_key`) | How people sign in, and to what; is Quick Connect worth it; is Sign In with Plex | OnboardingView |
 | `sign_in_failed` | `reason` (`unreachable`, `not_a_server`, `wrong_password`, `needs_api_key`, `needs_https`, `other`) | Where people stop before the music | OnboardingView |
 | `signed_out` | none | Do people leave, or move servers | `AppModel.signOut`, of any saved account |
-| `account_added` | `server` (`jellyfin`, `navidrome`, `subsonic`), `count` (the accounts kept now: `1`, `2`, `3+`) | Do people keep more than one account, and of which kinds | `AppModel.signIn`, when the account is new on the device (the first included; not a sign-in again, not the migration) |
+| `account_added` | `server` (`jellyfin`, `emby`, `navidrome`, `plex`, `subsonic`), `count` (the accounts kept now: `1`, `2`, `3+`) | Do people keep more than one account, and of which kinds | `AppModel.signIn`, when the account is new on the device (the first included; not a sign-in again, not the migration) |
 | `account_switched` | none | Is the switch between accounts used | `AppModel.switchAccount`, once the server answered (or offline, with songs on the device) |
 | `library_loaded` | `tracks` (bucket), `from` (`cache`, `server`), `seconds` (bucket) | How large libraries are; how long a launch and a load take | LibraryStore |
 | `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a place in the wide window (`home`, `radio`, `search`, `playlist`, or a library kind: `albums`, `artists`, `songs`, `playlists`, `favorites`, `genres`, `recently_added`, `downloaded`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings`; `carplay` once each time the car connects. The wide window never sends `library`: its kinds are places there | Which screens are used, which never; is CarPlay used | MainTabView (tabs), CarPlaySceneDelegate (`carplay`), WideShell (the wide window's places, and Search from its field), `routeDestinations()` (pushes), the cover, panels and sheet |
-| `play_started` | `from` (`album`, `playlist`, `mix`, `songs`, `favorites`, `search`, `artist`, `genre`, `station`, `other`, `siri`), `shuffled` (bool) | Where music is started from; is Shuffle used; is Siri | `AudioPlayer.play`, `playRadio`; `siri` for what Siri or Shortcuts played (`Stats.nextFrom`); a station they start counts `station` here and `siri` in `station_started` |
-| `station_started` | `seed` (`track`, `artist`, `album`, `genre`, `decade`, `collection`, `personal`, `discovery`, `favorites`), `from` (`page`, `tile_menu`, `hero`, `menu`, `autoplay`, `search`, `carplay`, `siri`; `picker` is reserved) | Which stations people play, and from where | each Start Radio, Play Station, Your Station's Play, a station's page, Autoplay |
+| `play_started` | `from` (`album`, `playlist`, `mix`, `songs`, `favorites`, `search`, `artist`, `genre`, `station`, `other`, `siri`, `widget`), `shuffled` (bool) | Where music is started from; is Shuffle used; is Siri; is the widget | `AudioPlayer.play`, `playRadio`; `siri` for what Siri or Shortcuts played, `widget` for a mix the widget played (`Stats.nextFrom`); a station they start counts `station` here and `siri` or `widget` in `station_started` |
+| `station_started` | `seed` (`track`, `artist`, `album`, `genre`, `decade`, `collection`, `personal`, `discovery`, `favorites`), `from` (`page`, `tile_menu`, `hero`, `menu`, `autoplay`, `search`, `carplay`, `siri`, `widget`; `picker` is reserved) | Which stations people play, and from where | each Start Radio, Play Station, Your Station's Play, a station's page, Autoplay |
 | `station_page` | `action` (`opened`, `new_picks`, `row`, `play`) | Is the page looked at before playing; is New Picks used | StationDetailView |
 | `radio_feedback` | `kind` (`skip`, `like`, `dislike`, `undo`) | Does the radio get told what is liked | RadioController |
 | `dial_changed` | `value` (bucket) | Where people set the dial | the three dials, when let go |
@@ -102,20 +102,28 @@ Buckets:
 | `playlist_created` | `from` (`library`, `mix`, `station`, `queue`, `add_to_playlist`) | Where playlists are made; is Save as Playlist used | PlaylistsView, MixDetailView, StationDetailView, QueueView, AddToPlaylistSheet |
 | `playlist_songs_added` | `from` (`add_songs`, `add_to_playlist`) | How playlists are filled | AddSongsSheet, AddToPlaylistSheet |
 | `favorite_set` | `item` (`track`, `album`, `artist`), `on` (bool) | Are favourites used, and for what | `LibraryStore.setFavorite`, once the server took it |
+| `rating_set` | `item` (`track`, `album`), `stars` (`0` to `5`; `0` is None) | Are ratings used, on the servers that keep them, and how | `LibraryStore.setRating`, once the server took it |
 | `search_used` | `results` (bucket) | Is search used; how often it finds nothing | SearchView, once a search, when the typing first rests (1.5 s) |
-| `setting_changed` | `name` (`wifi_quality`, `cellular_quality`, `normalize`, `autoplay`, `find_lyrics_online`, `spin_record`, `resume_on_launch`, `share_usage`, `keep_songs`; `page_` and a page's name for Settings › Pages: `page_radio`, `page_albums`, `page_artists`, `page_songs`, `page_playlists`, `page_favorites`, `page_genres`, `page_recently_added`, `page_downloaded`, `page_sidebar_playlists`), `value` (`original`, `high`, `normal`, `low`; `on`, `off`; `share_usage` only `off`) | Which settings are changed, to what; is Keep Songs I Play turned off; which pages are switched off | AppSettings, whoever changes it (Settings, the queue's Autoplay, Remove All Downloads for `keep_songs`) |
-| `lastfm_key` | `state` (`added`, `removed`) | Do people add a Last.fm key | Settings, once Last.fm accepted it, or when emptied |
+| `setting_changed` | `name` (`wifi_quality`, `cellular_quality`, `normalize`, `autoplay`, `crossfade`, `find_lyrics_online`, `spin_record`, `resume_on_launch`, `share_usage`, `keep_songs`; `page_` and a page's name for Settings › Pages: `page_radio`, `page_albums`, `page_artists`, `page_songs`, `page_playlists`, `page_favorites`, `page_genres`, `page_recently_added`, `page_downloaded`, `page_sidebar_playlists`), `value` (`original`, `high`, `normal`, `low`; `on`, `off`; `crossfade` `off` or its seconds, `2`, `4`, `6`, `8`, `12`; `share_usage` only `off`) | Which settings are changed, to what; is Keep Songs I Play turned off; which pages are switched off | AppSettings, whoever changes it (Settings, the queue's Autoplay, Remove All Downloads for `keep_songs`) |
+| `lastfm_key` | `state` (`added`, `removed`) | Do people add a Last.fm key | Settings (Preferences on Linux), once Last.fm accepted it, or Remove |
 | `playback_error` | `reason` (`network`, `server`, `unsupported`, `other`) | How often a song does not play, and why | `AudioPlayer.itemFailed` |
 | `download_chosen` | `kind` (`album`, `playlist`, `mix`) | Are downloads used, and for what | `OfflineStore.download`, each Download on a page |
 | `offline_play_started` | `from` (as `play_started`'s) | Is music played offline, and from what | `AudioPlayer.play`, `playRadio`, while offline (with `play_started`) |
+| `play_on` | `target` (`this_device`, `airplay`, `chromecast`, `jellyfin` (a Jellyfin or Emby client), `subsonic_jukebox`) | Is Play On used, and to where | `PlayOn.choose`, each choice in Play On's list; `airplay` when the system's AirPlay list is opened from it (which speaker is chosen there is the system's) |
 | `sleep_timer_set` | `value` (`15`, `30`, `45`, `60`, `end_of_song`, `end_of_queue`, `off`) | Is the sleep timer used, and for how long | `PlayQueue.setSleepTimer`, each choice in a sleep timer's menu; not when it ends by itself |
+
+The widget counts nothing itself: it runs in a process of its own and only
+reads what the app wrote. What its buttons start, the app plays and counts,
+`from` `widget`.
 
 ### `server`
 
 The kind of server, coarsely (`Stats.server`):
 
 - `jellyfin`
+- `emby` (since 17 November 2026)
 - `navidrome`
+- `plex` (since 17 November 2026)
 - `subsonic` for every other Subsonic server: Gonic, Airsonic, Ampache, LMS,
   the original, and one that names itself in its own word (that word is never
   sent)
@@ -138,6 +146,7 @@ always `jellyfin`, and `not_a_server` was `not_jellyfin`.
 | `search` | A Start Radio or a song in Search |
 | `carplay` | A station on CarPlay's Home or Radio |
 | `siri` | Siri or Shortcuts: Your Station, Start a Station, a genre, "Play … radio" |
+| `widget` | The widget's Play of Your Station |
 | `picker` | Reserved. Start a Station (the picker) opens the station's page since 8 November 2026, so what it starts counts as `page`; `picker` stays for a picker that would play at once. |
 
 ### Downloads
@@ -164,6 +173,9 @@ App Store Connect › App Privacy: **Usage Data › Product Interaction** and
 **Location › Coarse Location** (the place the server reads from the
 address), both not linked to the user, not used for tracking, purpose
 **Analytics**. Nothing else is collected. Published 16 November 2026.
+Play On (17 November 2026) changes none of it: Chromecasts are spoken to by
+the app itself, with no SDK of Google's, and the other devices are the
+listener's own; only its `play_on` count is new, under Product Interaction.
 
 `Jukebox/Resources/PrivacyInfo.xcprivacy` declares the same, with
 UserDefaults' reason CA92.1 (the app's own settings). XcodeGen puts the
@@ -175,3 +187,9 @@ A privacy policy for the App Store's listing should say the same in words:
 anonymous counts of features used, on the developer's own server, no cookies,
 no id kept on the device, a rough place read from the address, off in
 Settings › Privacy.
+
+Sign In with Plex (17 November 2026) makes Jukebox talk to plex.tv while
+someone signs in: the PIN, the list of their servers, their account's id
+and name. That is the listener's own service, asked for them, as their
+server is; Jukebox collects none of it, so the published App Privacy label
+stays as it is.

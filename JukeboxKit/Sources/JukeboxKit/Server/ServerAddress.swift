@@ -19,7 +19,9 @@ enum ServerAddress {
     /// JellyfinAddress knows): Navidrome's 4533 (measured), Gonic's 4747,
     /// Airsonic's 4040 and LMS's 5082 (their documentation).
     static let subsonicPorts = [4533, 4747, 4040, 5082]
-    static let fallbackPorts = [JellyfinAddress.defaultPort] + subsonicPorts
+    /// Plex Media Server's own, plain http too.
+    static let plexPort = 32400
+    static let fallbackPorts = [JellyfinAddress.defaultPort] + subsonicPorts + [plexPort]
 
     // MARK: The addresses to try
 
@@ -27,12 +29,12 @@ enum ServerAddress {
     /// the web apps' own paths cut off (Jellyfin's "/web…" there, and here
     /// Navidrome's last segment "/app" and Gonic's "/admin…"); then, when
     /// no port and no "https://" were typed, the same host over http on
-    /// 8096, 4533, 4747, 4040 and 5082: a fresh install listens on its own
+    /// 8096, 4533, 4747, 4040, 5082 and 32400: a fresh install listens on its own
     /// port only. Empty when it cannot be an address.
     static func candidates(_ typed: String) -> [URL] {
         guard var parts = JellyfinAddress.parse(typed) else { return [] }
         parts.path = serverPath(parts.path)
-        if parts.typedScheme == nil, let port = parts.port, subsonicPorts.contains(port) { parts.scheme = "http" }
+        if parts.typedScheme == nil, let port = parts.port, subsonicPorts.contains(port) || port == plexPort { parts.scheme = "http" }
         guard let first = parts.url(scheme: parts.scheme, port: parts.port) else { return [] }
         var list = [first]
         // Not after a typed "https://": TLS was asked for, and plain http
@@ -130,28 +132,37 @@ enum ServerAddress {
                       transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
         async let jellyfin = probeJellyfin(url, identity: identity, transport: transport)
         async let subsonic = probeSubsonic(url, identity: identity, transport: transport)
+        async let plex = PlexSignIn.probe(url, identity: identity, transport: transport)
         let j = await jellyfin
         if case .success = j { return j }
+        let p = await plex
+        if case .success = p { return p }
         let s = await subsonic
         if case .success = s { return s }
         // A Subsonic server that proved itself and cannot be used (it
         // speaks XML only) says so; else whether anything answered.
         if case .failure(.server(status: 30, _)) = s { return s }
-        for result in [j, s] {
+        for result in [j, s, p] {
             if case let .failure(error) = result, !error.isTransport { return .failure(.invalidServerAddress) }
         }
         return j
     }
 
     /// /System/Info/Public with a non-empty Id, then /QuickConnect/Enabled.
+    /// Emby answers the same question: Jellyfin names itself in ProductName
+    /// ("Jellyfin Server"), Emby 4.10 names nothing there (measured), so
+    /// without a ProductName /System/Ping decides ("Emby Server"). Emby has
+    /// no Quick Connect (404).
     static func probeJellyfin(_ url: URL, identity: ClientIdentity,
                               transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
         let client = JellyfinClient(serverURL: url, identity: identity, transport: transport)
         do {
             let info = try await client.publicInfo()
-            var capabilities = JellyfinServer.capabilities(version: info.version)
+            let isEmby = if let product = info.productName { product.contains("Emby") } else { await client.pingSaysEmby() }
+            let kind: ServerKind = isEmby ? .emby : .jellyfin
+            var capabilities = JellyfinServer.capabilities(kind: kind, version: info.version)
             if await client.quickConnectEnabled() { capabilities.insert(.quickConnect) }
-            return .success(DetectedServer(kind: .jellyfin, url: url, id: info.id, name: info.name,
+            return .success(DetectedServer(kind: kind, url: url, id: info.id, name: info.name,
                                            version: info.version, capabilities: capabilities))
         } catch let error as JellyfinError {
             return .failure(MusicServerError(error))

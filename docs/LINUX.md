@@ -140,7 +140,10 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   header's end, the same on every page: a click in it (or Ctrl+F) shows
   the Search page, which is not in the sidebar;
 - the primary menu (F10) with Preferences, Keyboard Shortcuts and About;
-- GNOME's own context menus;
+- GNOME's own context menus; on a server with ratings a song's and an
+  album's menu (the album page's ⋮ too) have Rating, a submenu of None
+  and one to five stars with GNOME's check mark (`ratingItems`, as the
+  Mac's `RatingMenu`);
 - toasts for a moment's news, a dialog before signing out;
 - more than one account (17 November 2026, `Jukebox/App/Accounts.swift`):
   with two or more, the primary menu lists them as radio items, the one
@@ -148,6 +151,18 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   over the window with Cancel. Preferences › Accounts lists them as GNOME's
   Online Accounts does, each with its own Sign Out…; the dialog names the
   account and, for the one signed in, the account Jukebox goes on with;
+- Sign In with Plex under Sign In (17 November 2026, `SignInPage.swift`):
+  plex.tv's page in the default browser (`gtk_uri_launcher`), the button
+  Cancel while it waits, an alert to choose when the account has more than
+  one server; a Plex address with a password asks for its token instead;
+- Play On (17 November 2026, `docs/ARCHITECTURE.md`): the bar's glyph
+  where the Mac has AirPlay opens a popover of this computer, the
+  Chromecasts Avahi finds and the user's other Jellyfin clients; while the
+  music plays elsewhere the glyph is in the accent, the level is the
+  device's and Full Player says where it plays. The Flatpak may talk to
+  Avahi on the system bus for it (`--system-talk-name=org.freedesktop.Avahi`).
+  `JUKEBOX_CAST_DEVICE="Name@host:port"` lists one Chromecast by hand
+  instead, for trying it against a fake one;
 - header capitals on buttons and rows;
 - a playlist of the listener's own edited in place, as on the Mac (since
   16 November 2026): a song's menu has Move Up, Move Down and, last,
@@ -162,6 +177,10 @@ entry saying when it stops or what it waits for, and a small moon before
 knows nothing of it. One limit of gapless: set in a song's last seconds,
 when GStreamer has already taken the next address, End of Song stops after
 that next one.
+
+Crossfade is in Preferences' Playing, as the queue's (`PlayQueue`,
+`docs/ARCHITECTURE.md`): playbin's own volume, on the player's ticks, so the
+handover and gapless albums are as they were.
 
 Keys: Space plays and pauses wherever the focus is, except in a field
 typed in (Ctrl+Space everywhere), Ctrl+Right and Ctrl+Left skip, Ctrl+F
@@ -264,6 +283,17 @@ switched and played them; signing out of another account and of the one
 signed in each took that account's files alone. `dev/linux-errors.sh` runs
 AccountCheck after every build. Not yet tried: adding and switching with
 the keyring (the switches ran on the files), and a real GNOME session.
+
+Play On, 17 November 2026, under Xvfb against the test Jellyfin (by its
+address on docker0, not localhost), a fake Jellyfin client holding the
+server's websocket and a fake Chromecast (TLS, castv2) on 127.0.0.1: a
+station handed to the client, followed as it moved on by itself and given
+the radio's next picks, paused, played, skipped, sought and its volume set
+from the bar; then handed to the fake TV song by song, back to this
+computer where it was, and the TV switched off under it (back here, paused,
+"Lost the connection to Fake TV."). `JUKEBOX_CHECK=cast` runs the castv2
+conversation against that receiver. Not yet tried: a real Chromecast,
+Avahi on a real network, a Subsonic jukebox.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
 calls are tested in the kit), KDE, XFCE and Hyprland themselves; offline on

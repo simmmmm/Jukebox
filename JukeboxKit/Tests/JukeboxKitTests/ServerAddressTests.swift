@@ -63,7 +63,7 @@ struct ServerAddressTests {
                                          deviceID: "test-device")
 
     static func ports(_ base: String, path: String = "") -> [String] {
-        [8096, 4533, 4747, 4040, 5082].map { "http://\(base):\($0)\(path)" }
+        [8096, 4533, 4747, 4040, 5082, 32400].map { "http://\(base):\($0)\(path)" }
     }
 
     @Test("The addresses to try, for what people type", arguments: [
@@ -154,7 +154,7 @@ struct ServerAddressTests {
         let server = try await MusicServers.detect("http://192.168.1.4:4040", identity: Self.identity, transport: old)
         #expect(server.kind == .subsonic(flavour: .subsonic))
         #expect(server.version == "1.15.0" && server.apiVersion == "1.15.0")
-        #expect(server.capabilities == [.lyrics, .playlistReorder, .instantMix, .similarArtists, .topSongs])
+        #expect(server.capabilities == [.lyrics, .playlistReorder, .rating, .instantMix, .similarArtists, .topSongs])
         #expect(!old.requests.contains { $0.path.contains("getOpenSubsonicExtensions") })
 
         let gonic = AddressFake { url in

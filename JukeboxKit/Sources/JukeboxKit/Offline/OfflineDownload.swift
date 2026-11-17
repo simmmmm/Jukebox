@@ -70,10 +70,11 @@ extension JellyfinClient {
     /// when it is off — measured on 12.4: /Items/{id}/Download 403, the
     /// universal URL 200 for the same user — so it is the app that keeps to
     /// what the admin said. True when the answer does not say, as a new
-    /// user's policy is on 12.4.
+    /// user's policy is on 12.4. Emby 4.10 has no /Users/Me (500: "Me" is
+    /// read as a user id) and the same Policy at /Users/{id} (measured).
     public func downloadsAllowed() async throws -> Bool {
-        _ = try requireUser()
-        let answer = try await get(JellyfinUserPolicyAnswer.self, "/Users/Me")
+        let user = try requireUser()
+        let answer = try await get(JellyfinUserPolicyAnswer.self, isEmby ? "/Users/\(Self.segment(user))" : "/Users/Me")
         return answer.policy?.enableContentDownloading ?? true
     }
 }

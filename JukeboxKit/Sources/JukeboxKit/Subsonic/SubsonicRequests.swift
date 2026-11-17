@@ -67,7 +67,7 @@ struct SubsonicConnection: Sendable {
             // sees the URL either way: why this is https or home only).
             [URLQueryItem(name: "u", value: user),
              URLQueryItem(name: "p", value: "enc:" + hex(Array(password.utf8)))]
-        case .jellyfinToken:
+        case .jellyfinToken, .plexToken:
             []
         }
     }
@@ -261,6 +261,7 @@ struct SubsonicConnection: Sendable {
         if atLeast(apiVersion, "1.13.0") { set.insert(.topSongs) }
         // A move is updatePlaylist's removals and additions (API 1.8.0).
         if atLeast(apiVersion, "1.8.0") { set.insert(.playlistReorder) }
+        if atLeast(apiVersion, "1.6.0") { set.insert(.rating) }
         if extensions.contains("songLyrics") { set.insert(.syncedLyrics) }
         if openSubsonic { set.formUnion([.replayGain, .lastPlayed]) }
         if extensions.contains("playbackReport") { set.insert(.playbackTimeline) }

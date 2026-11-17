@@ -787,11 +787,18 @@ enum Pages {
         let art = cover()
         art.show(album.artwork)
         let artist = album.primaryArtist.flatMap { app.library.artist($0) }
-        var more: [(String, () -> Void)] = [("Start a Station", { app.radio.start(.album(album.id)) }),
+        let more: [(String, () -> Void)] = [("Start a Station", { app.radio.start(.album(album.id)) }),
                                              ("Play Next", { app.player.playNext(tracks) }),
                                              ("Add to Queue", { app.player.addToQueue(tracks) }),
                                              ("Add to Playlist…", { Playlists.add(tracks) })]
-        if let artist { more.append(("Go to Artist", { open(artist) })) }
+        let menuButton = moreButton([])
+        // Made again as the album's rating changes, so its tick is the
+        // server's.
+        observe(menuButton) {
+            let items = more + ratingItems(.album(album.id))
+                + (artist.map { artist in [("Go to Artist", { open(artist) })] } ?? [])
+            gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(items))
+        }
         // The first genre of a joined tag ("Folk; Acoustic" is Folk), as
         // Genres lists them and the Mac's head says it.
         let top = heading(art: art.widget, title: album.name, lead: album.artistLine,
@@ -800,7 +807,7 @@ enum Pages {
                           actions: [
             playButton { app.player.play(tracks, context: context) },
             quietButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
-            hbox(spacing: 8, [heartButton { .album(album.id) }, moreButton(more)]),
+            hbox(spacing: 8, [heartButton { .album(album.id) }, menuButton]),
         ])
         keep(art, on: raw(top), as: "art")
         // On an album every song is the album artist's unless it says so.
