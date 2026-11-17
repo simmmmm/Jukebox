@@ -127,6 +127,13 @@ struct RootView: View {
                 // picked up, not a quarter of a minute later.
                 Task { await app.handoff.refresh() }
             }
+            #if os(macOS)
+            // A Mac's window stays .active while another app is in front, so
+            // coming back from the Finder with new music is AppKit's news.
+            .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                if !app.offline.isOffline { Task { await app.library.refreshIfStale() } }
+            }
+            #endif
             // Which page `open` pushes on: the wide window's or the tab's.
             .onChange(of: isWide, initial: true) { _, wide in
                 app.navigator.isWide = wide
