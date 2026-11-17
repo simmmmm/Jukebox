@@ -465,6 +465,12 @@ belangrijks in de ios app, carplay!"
 - Now Playing is `CPNowPlayingTemplate`, fed by NowPlayingInfo and
   RemoteCommands. Its buttons: a station's thumbs, otherwise shuffle and
   repeat. Up Next lists the queue.
+- The look, the sketch approved on 17 November 2026 ("Ja, bouwen"): Your
+  Station first on Home and Radio with its arch (lit on the air), the mixes
+  as one row of covers (`CPListImageRowItem`), then albums. A row's glyphs
+  and placeholders are drawn for the car's traits in both looks
+  (`carImage`): CarPlay tints only the tab bar's and Now Playing's, and a
+  phone-drawn glyph was dark on the dark car.
 - Every tap plays through the phone's own calls (`player.play`, `playMix`,
   `radio.start`): the same queue, offline rules and counts.
 - `AppModel.shared` is the one model: CarPlay can launch the app without

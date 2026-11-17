@@ -14,11 +14,21 @@
 //
 // No lyrics in the car, and no screen that asks for the phone but the one
 // that says to sign in there: Apple's CarPlay addendum for audio apps.
+//
+// The look: in his car (build 243) "carplay werkte trouwens, zag er niet
+// heel best uit nog met donker icoon en lichtere tekst". The rows' glyphs
+// were SF Symbols as templates, which CarPlay tints in a tab bar and Now
+// Playing but not in a list row: there they came out in the default dark
+// ink beside the car's light text. Every image a row shows is now drawn
+// for the car's own traits, in both its looks (`carImage`). Home as the
+// sketch he approved ("Ja, bouwen", 17 November 2026): Your Station first
+// with its arch, the mixes as one row of covers, then the albums.
 
 #if os(iOS)
 import CarPlay
 import JukeboxKit
 import Observation
+import SwiftUI
 import UIKit
 
 /// Named in project.yml's scene manifest (CPTemplateApplicationSceneSessionRoleApplication)
@@ -141,22 +151,79 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private func homeSections() -> [CPListSection] {
         let lib = app.library
         guard !lib.tracks.isEmpty else { return [] }
-        let station = row(String(localized: "Your Station"), detail: String(localized: "Made from what you play"),
-                          symbol: "dot.radiowaves.left.and.right") { [weak self] in
-            guard let self else { return }
-            self.startStation(self.app.radio.station(for: .personal))
-        }
-        station.isPlaying = app.radio.stationOnAir(player: app.player)?.seed == .personal
-        let mixes = app.mixes.mixes.map { mix in
-            row(mix.title, detail: mix.subtitle, artwork: mix.artwork.first) { [weak self] in
-                self?.app.player.playMix(mix)
-                self?.showNowPlaying()
-            }
-        }
+        let station = yourStationRow(ownStation(.personal))
+        var mixes: [CPListTemplateItem] = []
+        if let row = mixesRow(app.mixes.mixes) { mixes.append(row) }
         let played = lib.recentlyPlayedAlbums.prefix(12).map(albumRow)
         let added = lib.recentlyAddedAlbums.prefix(20).map(albumRow)
         return fit([(nil, [station]), (String(localized: "Mixes"), mixes),
                     (String(localized: "Played lately"), played), (String(localized: "Recently added"), added)])
+    }
+
+    /// Your Station, first on Home and on Radio: its arch, lit while it is
+    /// on the air, and the one fact the phone's Home gives, the song on the
+    /// air or when it last played. At its end Play in the accent; on the
+    /// air CarPlay's own playing bars in its place.
+    private func yourStationRow(_ station: Station) -> CPListItem {
+        let player = app.player
+        let onAir = app.radio.stationOnAir(player: player)?.seed == .personal
+        let fact: String? = onAir
+            ? player.currentTrack.map { "\($0.name) · \($0.artistLine)" }
+            : RelativeDay.lastPlayed(HomeShelves.stationDates(events: app.history.history.events)[station.id])
+        let item = CPListItem(text: String(localized: "Your Station"), detailText: fact,
+                              image: stationMark(onAir: onAir),
+                              accessoryImage: onAir ? nil : glyph("play.fill", color: accent),
+                              accessoryType: .none)
+        item.isPlaying = onAir
+        item.playingIndicatorLocation = .trailing
+        item.handler = { [weak self] _, done in
+            self?.startStation(station)
+            done()
+        }
+        return item
+    }
+
+    /// The mixes as one row of covers side by side, as many as the car
+    /// takes; a cover plays its mix, the row's words open them all as a
+    /// list.
+    private func mixesRow(_ mixes: [Mix]) -> CPListImageRowItem? {
+        guard !mixes.isEmpty else { return nil }
+        let shown = Array(mixes.prefix(Int(CPMaximumNumberOfGridImages)))
+        let side = CPListImageRowItem.maximumImageSize
+        let pixels = Int(max(side.width, side.height) * carScale)
+        let urls = shown.map { mix in mix.artwork.first.flatMap { art in app.server?.artworkURL(art, maxPixelSize: pixels) } }
+        let blank = coverPlaceholder(side) ?? UIImage()
+        let item = CPListImageRowItem(text: shown.map(\.title).joined(separator: " · "),
+                                      images: urls.map { url in url.flatMap { ImagePipeline.shared.cached($0) } ?? blank })
+        item.listImageRowHandler = { [weak self] _, index, done in
+            if shown.indices.contains(index) { self?.playMix(shown[index]) }
+            done()
+        }
+        item.handler = { [weak self] _, done in
+            guard let self else { return done() }
+            let rows = mixes.map { mix in
+                self.row(mix.title, detail: mix.subtitle, artwork: mix.artwork.first) { [weak self] in self?.playMix(mix) }
+            }
+            let list = CPListTemplate(title: String(localized: "Mixes"), sections: self.fit([(nil, rows)]))
+            self.interface?.pushTemplate(list, animated: true, completion: nil)
+            done()
+        }
+        for (index, url) in urls.enumerated() {
+            guard let url, ImagePipeline.shared.cached(url) == nil else { continue }
+            Task { @MainActor in
+                guard let image = await ImagePipeline.shared.image(for: url) else { return }
+                var images = item.gridImages
+                guard images.indices.contains(index) else { return }
+                images[index] = image
+                item.update(images)
+            }
+        }
+        return item
+    }
+
+    private func playMix(_ mix: Mix) {
+        app.player.playMix(mix)
+        showNowPlaying()
     }
 
     // MARK: Radio
@@ -167,7 +234,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     private func radioSections() -> [CPListSection] {
         guard !app.library.tracks.isEmpty else { return [] }
         let built = app.mixes.stations
-        func own(_ seed: StationSeed) -> Station { built.first { $0.seed == seed } ?? app.radio.station(for: seed) }
+        let own = ownStation
         var mine = [own(.personal), own(.discovery)]
         if let loved = built.first(where: { $0.seed == .favorites }) {
             mine.append(loved)
@@ -180,6 +247,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         let onAir = app.radio.stationOnAir(player: app.player)?.id
         func rows(_ stations: [Station]) -> [CPListItem] {
             stations.map { station in
+                if station.seed == .personal { return yourStationRow(station) }
                 let item = row(station.title, detail: station.subtitle, artwork: station.artwork.first) { [weak self] in
                     self?.startStation(station)
                 }
@@ -189,6 +257,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             }
         }
         return fit([(String(localized: "Stations"), rows(mine)), (String(localized: "Suggested"), rows(suggested))])
+    }
+
+    /// A station of the listener's own taste as the mixes built it, with
+    /// their covers; else as the radio makes it.
+    private func ownStation(_ seed: StationSeed) -> Station {
+        app.mixes.stations.first { $0.seed == seed } ?? app.radio.station(for: seed)
     }
 
     private func startStation(_ station: Station) {
@@ -241,12 +315,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func albumRow(_ album: Album) -> CPListItem {
-        row(album.name, detail: album.artistLine, artwork: album.artwork) { [weak self] in
+        let item = row(album.name, detail: album.artistLine, artwork: album.artwork) { [weak self] in
             guard let self else { return }
             let tracks = self.app.library.tracks(inAlbum: album.id)
             self.interface?.pushTemplate(self.songs(album.name, tracks, context: QueueContext(.album(album.id), title: album.name)),
                                          animated: true, completion: nil)
         }
+        // It opens its songs, as the sketch's chevrons say.
+        item.accessoryType = .disclosureIndicator
+        return item
     }
 
     private func artistRow(_ artist: Artist) -> CPListItem {
@@ -428,7 +505,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     private func row(_ text: String, detail: String? = nil, artwork: Artwork? = nil, symbol: String? = nil,
                      action: @escaping () -> Void) -> CPListItem {
-        let item = CPListItem(text: text, detailText: detail, image: symbol.flatMap { UIImage(systemName: $0) })
+        let item = CPListItem(text: text, detailText: detail, image: symbol.flatMap { glyph($0) })
         // Its cover, loaded by `fit` once the row is one the car shows.
         item.userInfo = artwork
         item.handler = { _, done in
@@ -456,6 +533,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             item.setImage(image)
             return
         }
+        // Until it comes, a quiet square in the car's own fill.
+        item.setImage(rowPlaceholder)
         Task { @MainActor in
             if let image = await ImagePipeline.shared.image(for: url) { item.setImage(image) }
         }
@@ -464,7 +543,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     /// Within what the car allows: so many sections, so many rows in all.
     /// Rows past the limit are left off, the first ones kept. Empty
     /// sections go.
-    private func fit(_ sections: [(String?, [CPListItem])]) -> [CPListSection] {
+    private func fit(_ sections: [(String?, [CPListTemplateItem])]) -> [CPListSection] {
         var left = Int(CPListTemplate.maximumItemCount)
         var covers = 60
         var result: [CPListSection] = []
@@ -475,13 +554,116 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             // ponytail: covers for the first 60 rows of a list only, so
             // Albums does not fetch hundreds at once; scrolling further
             // shows rows without one. Load on scroll if that is missed.
-            for item in kept.prefix(max(0, covers)) {
+            for case let item as CPListItem in kept.prefix(max(0, covers)) {
                 setArtwork(item.userInfo as? Artwork, on: item)
             }
             covers -= kept.count
             result.append(CPListSection(items: kept, header: header, sectionIndexTitle: nil))
         }
         return result
+    }
+
+    // MARK: Images for the car
+
+    /// The car's traits: its scale, light or dark as the car is now.
+    private var carTraits: UITraitCollection {
+        interface?.carTraitCollection ?? UITraitCollection.current
+    }
+
+    private var carScale: CGFloat {
+        carTraits.displayScale > 0 ? carTraits.displayScale : 2
+    }
+
+    /// The accent, Glow on a dark car and Copper on a light one: the
+    /// asset catalog's pair (Theme.accent). Not the lit tube's orange,
+    /// which is for art only (docs/BRAND.md).
+    private var accent: UIColor {
+        UIColor(named: "AccentColor") ?? .tintColor
+    }
+
+    /// An image drawn once for each of the car's looks and kept together,
+    /// so the car takes the one for its light or dark, also when it turns
+    /// at dusk: CarPlay shows a row's image as it is, and an image drawn
+    /// for the phone's look was the dark glyph on the dark car.
+    private func carImage(_ draw: (UITraitCollection) -> UIImage?) -> UIImage? {
+        let asset = UIImageAsset()
+        for style in [UIUserInterfaceStyle.light, .dark] {
+            let traits = carTraits.modifyingTraits { $0.userInterfaceStyle = style }
+            if let image = draw(traits) { asset.register(image, with: traits) }
+        }
+        return asset.image(with: carTraits) ?? draw(carTraits)
+    }
+
+    /// A row's glyph in the car's own ink (light on a dark car), or in
+    /// the accent.
+    private func glyph(_ name: String, color: UIColor = .label) -> UIImage? {
+        carImage { traits in
+            UIImage(systemName: name, compatibleWith: traits)?
+                .withTintColor(color.resolvedColor(with: traits), renderingMode: .alwaysOriginal)
+        }
+    }
+
+    /// Where a cover comes: the car's secondary fill, never a fixed dark
+    /// on the dark car.
+    private func coverPlaceholder(_ size: CGSize) -> UIImage? {
+        carImage { traits in
+            UIGraphicsImageRenderer(size: size, format: UIGraphicsImageRendererFormat(for: traits)).image { _ in
+                UIColor.secondarySystemFill.resolvedColor(with: traits).setFill()
+                UIBezierPath(roundedRect: CGRect(origin: .zero, size: size), cornerRadius: Theme.Radius.artwork).fill()
+            }
+        }
+    }
+
+    /// Drawn once a connection, at the first row that waits for its cover.
+    private lazy var rowPlaceholder = coverPlaceholder(CPListItem.maximumImageSize)
+
+    /// Your Station's arch at the size a row shows, for the car's scale.
+    private func stationMark(onAir: Bool) -> UIImage? {
+        let size = CPListItem.maximumImageSize
+        let renderer = ImageRenderer(content: CarStationMark(side: min(size.width, size.height), onAir: onAir))
+        renderer.scale = carScale
+        return renderer.uiImage
+    }
+}
+
+/// Your Station's image in the car: the mark on Cabinet, as on the icon.
+/// Light means on air (docs/design/tells.md, 1): the tubes in their own
+/// oranges with their one soft glow only while it plays; otherwise flat,
+/// Copper outside and Glow inside. Cabinet in either look of the car, so
+/// the mark always has its room.
+private struct CarStationMark: View {
+    let side: CGFloat
+    let onAir: Bool
+
+    var body: some View {
+        let mark = side * 0.72
+        let cut = ArchCut.forSize(mark)
+        let line = StrokeStyle(lineWidth: cut.stroke * mark / 32, lineCap: .round)
+        ZStack {
+            Theme.Arch.cabinet
+            if onAir {
+                tubes(cut: cut, line: StrokeStyle(lineWidth: line.lineWidth * 2.2, lineCap: .round))
+                    .frame(width: mark, height: mark)
+                    .blur(radius: side * 0.03)
+                    .opacity(0.42)
+            }
+            ZStack {
+                tubes(cut: cut, line: line)
+                ArchCore(cut: cut).fill(Theme.Arch.markCore)
+            }
+            .frame(width: mark, height: mark)
+        }
+        .frame(width: side, height: side)
+        .clipShape(.rect(cornerRadius: Theme.Radius.artwork))
+        // The core's warm white: the dark of the Cabinet behind it.
+        .environment(\.colorScheme, .dark)
+    }
+
+    private func tubes(cut: ArchCut, line: StrokeStyle) -> some View {
+        ZStack {
+            ArchLine(tube: 0, cut: cut).stroke(onAir ? Theme.Arch.outerTube : Theme.Arch.copper, style: line)
+            ArchLine(tube: 1, cut: cut).stroke(onAir ? Theme.Arch.innerTube : Theme.Arch.glow, style: line)
+        }
     }
 }
 #endif
