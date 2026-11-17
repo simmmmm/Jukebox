@@ -784,7 +784,10 @@ class PlayQueue {
         var level = 1.0
         if playing.fadesIn { level = elapsed / half }
         if let next = entryToPreload, Self.crossfades(from: playing.entry.track, to: next.track) {
-            level = min(level, (duration - elapsed) / half)
+            // Silent a tick (half a second, both players) before the end:
+            // the last tick's level would otherwise carry into the next
+            // song's first moment, before `begin` turns it down.
+            level = min(level, (duration - elapsed - 0.5) / half)
         }
         return max(0, min(1, level))
     }
