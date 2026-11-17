@@ -71,10 +71,10 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// "<songID>#<n>" (SubsonicClient.playlistTracks).
     public var playlistEntryID: String?
     /// The file's format as the server names it ("mp3", "flac", "opus"):
-    /// Subsonic's `suffix`. Only Subsonic sets it, because only there does
-    /// the app have to ask for a file AVPlayer cannot play to be converted
-    /// (Jellyfin's universal URL lists what the player plays and Jellyfin
-    /// decides). Nil when unknown.
+    /// Subsonic's `suffix`, Jellyfin's `Container` ("mov,mp4,m4a,…" for an
+    /// M4A). Subsonic's decides which files are converted for AVPlayer;
+    /// on both it says what a cast device is told it gets (`castURL`). Nil
+    /// when unknown (a library cached before 17 November 2026, on Jellyfin).
     public var container: String?
 
     // What classical listeners need apart (the classical research, 14

@@ -505,6 +505,40 @@ measurements):
   ms, saved as `c` = "Jukebox (device)") and `getPlayQueue`. The server keeps
   the songs, the current one, the position and who saved it.
 
+## Playing on other devices
+
+Play On sends the music to another player. Measured on Jellyfin 12.4, 17
+November 2026; `PlayOnTests` and `JellyfinSessionsIntegrationTests`.
+
+- **Jellyfin's other clients** (`Jellyfin/JellyfinSessions.swift`):
+  `GET /Sessions?controllableByUserId=`, keeping sessions with
+  SupportsRemoteControl and Audio, never this device's. Jellyfin passes
+  commands over the client's websocket: a session that only posted
+  `/Sessions/Capabilities/Full` stayed SupportsRemoteControl false, and was
+  listed once its `/socket?ApiKey=` was open (`api_key` there: 403). Then
+  `POST /Sessions/{id}/Playing?playCommand=PlayNow&itemIds=&startIndex=&startPositionTicks=`
+  arrives as a `Play` message, `PlayLast` adds, `/Playing/{Pause, Unpause,
+  Stop, NextTrack, PreviousTrack, Seek}` as `Playstate`, and
+  `/Sessions/{id}/Command` with `SetVolume` (0 to 100, a string) as
+  `GeneralCommand`. What it plays is the session's NowPlayingItem and
+  PlayState. The far client reports its own plays.
+- **A Subsonic server's jukebox** (`Subsonic/SubsonicJukebox.swift`):
+  `jukeboxControl` with `action` status, set, add, skip (index, offset in
+  whole seconds), start, stop, setGain (0 to 1); each answers
+  `jukeboxStatus`, currentIndex -1 for none. Offered only when getUser says
+  `jukeboxRole` and a status answers: Navidrome keeps its jukebox off unless
+  `Jukebox.Enabled`. Not measured on a server with it on.
+- **A cast device** fetches the file itself: `castURL(for:)`, a plain file
+  with the credentials in the query and the type the LOAD names. Jellyfin:
+  `/Audio/{id}/universal` with TranscodingProtocol http and
+  TranscodingContainer mp3. With `Container=mp3` an M4A came as audio/mpeg
+  (97 831 bytes), a FLAC as audio/mpeg (129 508), an MP3 as itself (113 059);
+  with `mp3,aac,m4a|aac,mp4|aac,flac` the FLAC came as itself, audio/flac.
+  A Jellyfin track says its container but not an M4A's codec (it may be
+  ALAC), so a FLAC goes as it is and everything else but MP3 as Jellyfin's
+  MP3 at 320. Subsonic: `stream?format=raw` for mp3, flac and aac,
+  `format=mp3&maxBitRate=320` for the rest.
+
 ## Playlist entries
 
 Subsonic's `getPlaylist` lists songs, not entries, and `updatePlaylist`

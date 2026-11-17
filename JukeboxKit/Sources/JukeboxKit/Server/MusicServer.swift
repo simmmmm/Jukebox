@@ -440,6 +440,18 @@ public protocol QuickConnectSignIn: ServerSignIn {
 
 // MARK: - A signed-in server
 
+/// What a cast device is sent to fetch for itself (`MusicServer.castURL`).
+public struct CastStream: Sendable, Hashable {
+    public var url: URL
+    /// The LOAD message's contentType.
+    public var contentType: String
+
+    public init(url: URL, contentType: String) {
+        self.url = url
+        self.contentType = contentType
+    }
+}
+
 /// One signed-in session with a server, Jellyfin or Subsonic: what
 /// AppModel, LibraryStore, AudioPlayer, RadioController and the screens use
 /// instead of JellyfinClient. Immutable and Sendable, like JellyfinClient.
@@ -531,6 +543,11 @@ public protocol MusicServer: Sendable {
     /// something AVPlayer plays (Jellyfin: AAC over HLS; Subsonic: MP3,
     /// since Navidrome's own choice is Ogg Opus, measured).
     func streamURL(for track: Track, quality: StreamQuality, playSessionID: String) -> URL
+    /// A URL a Chromecast's Default Media Receiver fetches and plays itself:
+    /// a plain file (never HLS), credentials in the query, and the type it
+    /// is told it gets. MP3 and FLAC as they are, anything else MP3 at 320
+    /// by the server's own conversion.
+    func castURL(for track: Track) -> CastStream
     /// Square, `maxPixelSize` on its longer side. The same artwork and size
     /// give the same URL, always: the image cache is keyed by it.
     /// `artwork.tag` is the server's key to the image: Jellyfin's ImageTag
