@@ -131,15 +131,38 @@ enum HomePage {
     /// melding echt niet over de controls hebben" (the photographer, 14
     /// November 2026, of a banner over the player's bar).
     private static func handoffNotice(_ offer: HandoffStore.Offer) -> Widget {
-        let go = quietButton(offer.isOwn ? "Continue" : "Continue Here") { app.handoff.continueHere() }
+        let go = cardLink(offer.isOwn ? "Continue" : "Continue Here", icon: "go-next-symbolic", trailing: true)
         gtk_widget_set_margin_top(go, 8)
-        // On its own ground, as Your Station under it (Style's home-card).
         let words = vbox(spacing: 4, [
-            label(offer.heading, "fact"),
-            label("\(offer.track.name) · \(offer.track.artistLine)"),
+            label(offer.heading, "fact").align(horizontal: GTK_ALIGN_START),
+            label("\(offer.track.name) · \(offer.track.artistLine)").align(horizontal: GTK_ALIGN_START),
             go,
-        ]).css("home-card").align(horizontal: GTK_ALIGN_START)
-        return words.margins(vertical: 8)
+        ])
+        // The whole card goes on with it, as Your Station's under it.
+        let card = cardButton(words) { app.handoff.continueHere() }
+        return card.margins(vertical: 8)
+    }
+
+    /// A card of Home's (Style's home-card) that is one button: a click,
+    /// Enter or Space anywhere on it does what the word at its foot says.
+    /// The photographer, 18 November 2026: "ik denk dat je die button weg
+    /// moet halen en de spacing van eerder moet laten staan, en dan er een
+    /// soort link button van maken en het hele ding gewoon klikbaar maken".
+    private static func cardButton(_ content: Widget, action: @escaping @MainActor () -> Void) -> Widget {
+        let card = gtk_button_new()!.css("home-card")
+        gtk_button_set_child(ptr(card), content)
+        on(card, "clicked", action)
+        return card.align(horizontal: GTK_ALIGN_START)
+    }
+
+    /// The word at a card's foot: in the accent, with a small glyph, no
+    /// ground of its own (the iPhone's HomeCardLink).
+    private static func cardLink(_ title: String, icon: String, trailing: Bool = false) -> Widget {
+        let glyph = gtk_image_new_from_icon_name(icon)!
+        gtk_image_set_pixel_size(ptr(glyph), 12)
+        let word = label(title, "t15")
+        let link = hbox(spacing: 4, trailing ? [word, glyph] : [glyph, word]).css("accent", "card-link")
+        return link.align(horizontal: GTK_ALIGN_START)
     }
 
     /// Your Station: its arch 120, 24, the name in the serif, one fact, the
@@ -151,27 +174,51 @@ enum HomePage {
         let onAir = app.radio.station?.id == station.id
         let dates = HomeShelves.stationDates(events: app.history.history.events)
         let fact = onAir ? RadioPage.started(station) ?? "" : RelativeDay.lastPlayed(dates[station.id])
-        let name = button("Your Station", "flat", "plain") { Pages.open(station) }.align(horizontal: GTK_ALIGN_START)
-        gtk_widget_add_css_class(gtk_button_get_child(ptr(name)), "serif")
-        gtk_widget_add_css_class(gtk_button_get_child(ptr(name)), "section-title")
+        let name = label("Your Station", "serif", "section-title").align(horizontal: GTK_ALIGN_START)
         let words = vbox()
         if onAir { append(label("On air", "t13", "accent"), to: words) }
         append(name, to: words)
         let line = label(fact, "t13", "fact")
         gtk_widget_set_margin_top(line, 8)
         append(line, to: words)
-        let play = playButton(onAir && app.player.isPlaying ? "Pause" : "Play") {
+        let playing = onAir && app.player.isPlaying
+        let link = cardLink(playing ? "Pause" : "Play", icon: playing ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
+        gtk_widget_set_margin_top(link, 12)
+        append(link, to: words)
+        // The art with a record peeking from behind it, as Now Playing's
+        // from its sleeve: "met misschien een kleine 'plaat' graphic" (the
+        // photographer, 18 November 2026).
+        let withRecord = gtk_overlay_new()!
+        gtk_overlay_set_child(ptr(withRecord), cardRecord(120))
+        gtk_overlay_add_overlay(ptr(withRecord), art.widget)
+        // On its own ground, one button (cardButton): Play, or on the air
+        // Pause and Play, as its filled button did; the station's page on
+        // the secondary button, as a station's tile has it.
+        let row = hbox(spacing: 24, [withRecord, words.align(vertical: GTK_ALIGN_CENTER)])
+        let card = cardButton(row) {
             if app.radio.station?.id == station.id { app.player.togglePlayPause() } else { app.radio.start(station) }
         }
-        gtk_widget_set_margin_top(play, 12)
-        append(play, to: words)
-        // On its own ground (Style's home-card): "beide staan zo in het
-        // niets met deze opmaak" (the photographer, 18 November 2026).
-        let row = hbox(spacing: 24, [art.widget, words.align(vertical: GTK_ALIGN_CENTER)])
-            .css("home-card").align(horizontal: GTK_ALIGN_START)
-        gtk_widget_set_margin_top(row, 32)
-        keep(art, on: raw(row), as: "art")
-        return row
+        contextMenu(on: card) { [("Go to Station", { Pages.open(station) })] }
+        gtk_widget_set_margin_top(card, 32)
+        keep(art, on: raw(card), as: "art")
+        return card
+    }
+
+    /// The record behind a card's art (Draw.cardRecord), as wide as the art
+    /// and the part of the record beside it.
+    private static func cardRecord(_ side: Int32) -> Widget {
+        let width = Int32((Double(side) * (1 + Draw.cardRecordPeek)).rounded())
+        let image = gtk_picture_new()!.size(width: width, height: side)
+        observe(image) {
+            let scale = Screen.shared.scale
+            Task {
+                guard let texture = await drawn("card record \(side)", width: Double(width), height: Double(side), scale: scale, { cr, _ in
+                    Draw.cardRecord(cr, side: Double(side))
+                }) else { return }
+                gtk_picture_set_paintable(ptr(image), texture.pointer)
+            }
+        }
+        return image
     }
 
     private static func mixTile(_ mix: Mix) -> Widget {

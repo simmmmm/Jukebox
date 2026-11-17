@@ -476,6 +476,24 @@ nonisolated enum Draw {
         cairo_restore(cr)
     }
 
+    /// How much of the card's record shows beside its art, of the art's side.
+    static let cardRecordPeek = 0.14
+
+    /// The record peeking from behind a card of Home's art (the iPhone's
+    /// HomeCardRecord): Now Playing's, small and still, 0.92 of the art,
+    /// its label Copper; drawn from the art's left edge, the art over it.
+    static func cardRecord(_ cr: OpaquePointer, side: Double) {
+        let d = side * 0.92, R = d / 2
+        cairo_save(cr)
+        cairo_translate(cr, side * (1 + cardRecordPeek) - d, (side - d) / 2)
+        recordBody(cr, diameter: d, bands: [])
+        let lr = R * 0.33
+        cairo_translate(cr, R - lr, R - lr)
+        recordLabel(cr, radius: lr, label: nil, tone: AverageColor(red: 0xA8 / 255, green: 0x4A / 255, blue: 0x17 / 255),
+                    hole: max(1.6, R * 0.016))
+        cairo_restore(cr)
+    }
+
     /// VinylShadow, VinylDisc (its label still), VinylSheen.
     private static func record(_ cr: OpaquePointer, scale: Double, center: (Double, Double), diameter d: Double,
                                bands: [Double], label: RecordLabel?, tone: AverageColor?, strength: Double) {

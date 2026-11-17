@@ -128,6 +128,73 @@ private struct HomeFeed: View {
     }
 }
 
+/// What a card of Home's does, at its foot: a word in the accent with a
+/// small glyph, no ground of its own, for the whole card is the button.
+/// The photographer, 18 November 2026: "ik denk dat je die button weg moet
+/// halen en de spacing van eerder moet laten staan, en dan er een soort
+/// link button van maken en het hele ding gewoon klikbaar maken".
+struct HomeCardLink: View {
+    let title: String
+    let systemImage: String
+    var isTrailing = false
+    var isWorking = false
+
+    var body: some View {
+        HStack(spacing: Theme.Space.xs) {
+            if !isTrailing { glyph }
+            Text(title)
+            if isTrailing { glyph }
+        }
+        .desktopFont(15, phone: .subheadline)
+        .foregroundStyle(Theme.accent)
+    }
+
+    @ViewBuilder
+    private var glyph: some View {
+        if isWorking {
+            ProgressView()
+                .controlSize(.mini)
+                .tint(Theme.accent)
+        } else {
+            Image(systemName: systemImage)
+                .imageScale(.small)
+        }
+    }
+}
+
+/// A card of Home's pressed: the whole of it dims a little.
+struct HomeCardButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(.rect)
+            .opacity(configuration.isPressed ? 0.7 : 1)
+    }
+}
+
+/// A record peeking out from behind a card's art, as Now Playing's slides
+/// out of its sleeve: the same drawing (VinylDisc), small and still, its
+/// label Copper. "met misschien een kleine 'plaat' graphic" (the
+/// photographer, 18 November 2026). Linux's Draw.cardRecord.
+struct HomeCardRecord<Art: View>: View {
+    let side: CGFloat
+    @ViewBuilder let art: Art
+
+    /// How much of the record shows beside the art, of its side.
+    static var peek: CGFloat { 0.14 }
+
+    var body: some View {
+        ZStack(alignment: .leading) {
+            VinylDisc(diameter: side * 0.92, bands: [], label: nil,
+                      tone: AverageColor(red: 0xA8 / 255, green: 0x4A / 255, blue: 0x17 / 255))
+                .drawingGroup()
+                .offset(x: side * (1 + Self.peek - 0.92))
+                .accessibilityHidden(true)
+            art
+        }
+        .frame(width: side * (1 + Self.peek), height: side, alignment: .leading)
+    }
+}
+
 extension View {
     /// Your Station and the music to go on with, each on a ground one step
     /// up from the page (Theme.raised), flat, with no line or shadow, its
@@ -163,8 +230,9 @@ enum HomeLayout {
 /// Music on another device, or this one's from last time, and the one
 /// thing to do about it: go on with it here (HandoffStore). The
 /// photographer, 13 November 2026: "zodat ik verder kan waar ik gebleven was
-/// als ik wegga van mijn pc". On its own ground, as Your Station under it
-/// (homeCard), and Continue compact, as its Play.
+/// als ik wegga van mijn pc". A card as Your Station under it (homeCard,
+/// HomeCardButtonStyle): the whole card goes on with it, Continue a word
+/// at its foot.
 private struct HomeHandoffNotice: View {
     let margin: CGFloat
 
@@ -177,25 +245,30 @@ private struct HomeHandoffNotice: View {
 
     var body: some View {
         if let offer = handoff.offer {
-            VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                // Wide, Linux's: both lines 15, the first at 60%.
-                Text(offer.heading)
-                    .desktopFont(15, phone: .subheadline)
-                    .foregroundStyle(.secondary)
-                Text("\(offer.track.name) · \(offer.track.artistLine)")
-                    .desktopFont(15, phone: nil)
-                    .lineLimit(2)
-                Button(offer.isOwn ? String(localized: "Continue") : String(localized: "Continue Here")) {
-                    handoff.continueHere()
+            let action = offer.isOwn ? String(localized: "Continue") : String(localized: "Continue Here")
+            let line = "\(offer.track.name) · \(offer.track.artistLine)"
+            Button {
+                handoff.continueHere()
+            } label: {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                    // Wide, Linux's: both lines 15, the first at 60%.
+                    Text(offer.heading)
+                        .desktopFont(15, phone: .subheadline)
+                        .foregroundStyle(.secondary)
+                    Text(line)
+                        .desktopFont(15, phone: nil)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    HomeCardLink(title: action, systemImage: "chevron.forward", isTrailing: true)
+                        .padding(.top, Theme.Space.s)
                 }
-                .buttonStyle(.compactQuietAction)
-                .padding(.top, isWide ? Theme.Space.s : Theme.Space.xs)
+                .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+                // Wide, as wide as its words, as Linux's.
+                .fixedSize(horizontal: isWide, vertical: false)
+                .homeCard()
             }
-            .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
-            // Wide, as wide as its words, as Linux's.
-            .fixedSize(horizontal: isWide, vertical: false)
-            .homeCard()
-            .accessibilityElement(children: .contain)
+            .buttonStyle(HomeCardButtonStyle())
+            .accessibilityLabel(Text(verbatim: "\(offer.heading), \(line), \(action)"))
             .padding(.horizontal, margin)
         }
     }
@@ -301,33 +374,40 @@ struct HomeStationHero: View {
         let isStacked = dynamicTypeSize.isAccessibilitySize
         let layout = isStacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: gap))
-            : AnyLayout(HStackLayout(alignment: .center, spacing: gap))
-        layout {
-            StationArtwork(station: shown, size: isWide ? Self.wideArt : HomeLayout.heroArt)
-            // The name, its fact and Play as one group in the middle of the
-            // art's height, not Play pushed to its foot: "qua UI
-            // verhoudingen vind ik dit heel lomp" (18 November 2026).
-            words(onAir)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
-        // Wide, as wide as the art and its words, as Linux's.
-        .fixedSize(horizontal: isWide, vertical: false)
-        .homeCard()
-        .contentShape(.rect)
-        .onTapGesture {
-            if onAir != nil {
-                navigator.isNowPlayingPresented = true
-            } else {
-                navigator.open(.station(yourStation))
+            : AnyLayout(HStackLayout(alignment: isWide ? .center : .top, spacing: gap))
+        let side = isWide ? Self.wideArt : HomeLayout.heroArt
+        // The whole card is the button: Play, or on the air Pause and
+        // Play, as its filled button did.
+        Button {
+            act(onAir)
+        } label: {
+            layout {
+                HomeCardRecord(side: side) {
+                    StationArtwork(station: shown, size: side)
+                }
+                words(onAir)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isWide ? .leading : .topLeading)
             }
+            // As tall as the art, so the name starts at its top and the
+            // word ends at its foot; taller when the words need it.
+            .fixedSize(horizontal: false, vertical: true)
+            .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+            // Wide, as wide as the art and its words, as Linux's.
+            .fixedSize(horizontal: isWide, vertical: false)
+            .homeCard()
         }
+        .buttonStyle(HomeCardButtonStyle())
         // Play now, or its page: on a long press as on every station's tile.
         .contextMenu {
             StationMenu(station: shown)
         }
         .animation(reduceMotion ? nil : .default, value: onAir?.id)
-        .accessibilityElement(children: .contain)
+        .accessibilityLabel(Text(verbatim: "\(shown.title), \(actionWord(onAir))"))
+        .accessibilityHint(onAir == nil ? Text("Starts Your Station") : Text(verbatim: ""))
+        // Its page, as the long press offers it.
+        .accessibilityAction(named: Text("Show Station")) {
+            navigator.open(.station(onAir ?? yourStation))
+        }
     }
 
     /// The art on a wide page (spec §8).
@@ -375,10 +455,16 @@ struct HomeStationHero: View {
                     .foregroundStyle(.secondary)
                     .padding(.top, measures.isWide ? Theme.Space.xs : 0)
             }
-            // 12 under the words (the iPhone's undrawn 6 of the 44 to
-            // touch makes its look 14).
-            playButton(onAir)
-                .padding(.top, measures.isWide ? Theme.Space.s : Theme.Space.xs)
+            // At the art's foot; on a wide page 12 under the words, which
+            // stand in the middle of the art.
+            if measures.isWide {
+                Color.clear.frame(height: Theme.Space.s)
+            } else {
+                Spacer(minLength: Theme.Space.m)
+            }
+            HomeCardLink(title: actionWord(onAir),
+                         systemImage: onAir != nil && player.isPlaying ? "pause.fill" : "play.fill",
+                         isWorking: radio.isStarting)
         }
     }
 
@@ -393,38 +479,21 @@ struct HomeStationHero: View {
         }
     }
 
-    private func playButton(_ onAir: Station?) -> some View {
-        Button {
-            // The first songs are being chosen; a second tap would only
-            // start choosing again.
-            guard !radio.isStarting else { return }
-            if onAir != nil {
-                player.togglePlayPause()
-            } else {
-                Stats.track(.stationStarted, ["seed": "personal", "from": "hero"])
-                radio.start(.personal)
-            }
-        } label: {
-            Group {
-                if radio.isStarting {
-                    ProgressView()
-                        .tint(Theme.onAccent)
-                        .accessibilityLabel("Starting")
-                } else if onAir != nil && player.isPlaying {
-                    Text("Pause")
-                } else {
-                    Text("Play")
-                }
-            }
-        }
-        // Compact: it belongs to the words above it.
-        .buttonStyle(.compactAction)
-        .accessibilityHint(onAir == nil ? Text("Starts Your Station") : Text(verbatim: ""))
-        // The words around it open the station's page on a tap (while
-        // nothing plays) or a long press; VoiceOver gives a container
-        // neither, so the page is offered here, as the long press offers it.
-        .accessibilityAction(named: Text("Show Station")) {
-            navigator.open(.station(onAir ?? yourStation))
+    /// What the card does: Play, or Pause while it plays on the air.
+    private func actionWord(_ onAir: Station?) -> String {
+        if radio.isStarting { return String(localized: "Starting") }
+        return onAir != nil && player.isPlaying ? String(localized: "Pause") : String(localized: "Play")
+    }
+
+    private func act(_ onAir: Station?) {
+        // The first songs are being chosen; a second tap would only start
+        // choosing again.
+        guard !radio.isStarting else { return }
+        if onAir != nil {
+            player.togglePlayPause()
+        } else {
+            Stats.track(.stationStarted, ["seed": "personal", "from": "hero"])
+            radio.start(.personal)
         }
     }
 }
