@@ -138,16 +138,22 @@ final class LibraryStore {
 
     /// Signed out: forget everything.
     func reset() {
-        generation += 1
-        loadTask?.cancel()
-        loadTask = nil
-        snapshotTask?.cancel()
-        snapshotTask = nil
         // "Forget everything": the cached library goes too.
         if let credentials {
             let url = Self.cacheURL(for: credentials)
             Task.detached(priority: .utility) { _ = try? FileManager.default.removeItem(at: url) }
         }
+        close()
+    }
+
+    /// Another account switched to: nothing of this one shows, and its
+    /// cache stays for when it is back.
+    func close() {
+        generation += 1
+        loadTask?.cancel()
+        loadTask = nil
+        snapshotTask?.cancel()
+        snapshotTask = nil
         credentials = nil
         server = nil
         clearLibrary()
@@ -363,6 +369,21 @@ final class LibraryStore {
 // MARK: - Beyond the contract, for the library's screens
 
 extension LibraryStore {
+    /// By server and user, as before: a Jellyfin sign-in of the
+    /// Jellyfin-only app keeps its cache. A Subsonic server's id is its URL
+    /// (DetectedServer.id), which LibraryCache folds to letters and digits.
+    /// One an account, so each saved account keeps its own (Accounts.swift).
+    static func cacheURL(for credentials: ServerCredentials) -> URL {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? FileManager.default.temporaryDirectory
+        let folder = caches.appendingPathComponent("Jukebox", isDirectory: true)
+        // An account whose name another saved one had (SavedAccounts).
+        if let name = credentials.folderName {
+            return folder.appendingPathComponent("library-\(name).json", isDirectory: false)
+        }
+        return LibraryCache.url(in: folder, serverID: credentials.serverID, userID: credentials.userID)
+    }
+
     /// Songs: every track by title.
     var songsByTitle: [Track] { items(index.tracksByTitle, in: tracks) }
 
@@ -510,16 +531,6 @@ private extension LibraryStore {
         let library = CachedLibrary(savedAt: lastLoaded ?? Date(), tracks: tracks, albums: albums,
                                     artists: artists, playlists: playlists, genres: genres)
         Task.detached(priority: .utility) { _ = try? LibraryCache.save(library, to: url) }
-    }
-
-    /// By server and user, as before: a Jellyfin sign-in of the
-    /// Jellyfin-only app keeps its cache. A Subsonic server's id is its URL
-    /// (DetectedServer.id), which LibraryCache folds to letters and digits.
-    static func cacheURL(for credentials: ServerCredentials) -> URL {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
-            ?? FileManager.default.temporaryDirectory
-        return LibraryCache.url(in: caches.appendingPathComponent("Jukebox", isDirectory: true),
-                                serverID: credentials.serverID, userID: credentials.userID)
     }
 
     // MARK: Small changes

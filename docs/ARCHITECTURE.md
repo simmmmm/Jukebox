@@ -203,7 +203,8 @@ requirement" (14 November 2026).
 
 - `AppModel.server` is the signed-in server, `any MusicServer` (Jellyfin or
   Subsonic); `AppModel.credentials` its `ServerCredentials`;
-  `LibraryStore.server` the same one.
+  `LibraryStore.server` the same one. `AppModel.accounts` every account
+  kept (below, Accounts).
 - What a server lacks is not offered: `app.can(.lyrics)`,
   `library.can(.playlistReorder)` (`ServerCapability`).
 - Words name the server by its kind: `library.serverKind` ("your Navidrome
@@ -285,6 +286,54 @@ minute while music plays. It reads every 15 s and before every save.
   once for each taking (`PlayState.takenAt`): Play there again later is its
   own music. A Subsonic server keeps no word of who took it, so there it plays on until
   it is paused.
+
+## Accounts
+
+More than one account kept, one signed in: a home server and a shared one,
+or two people on one server. Asked for with the other players' features
+Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
+
+- **Who owns the list**: `Accounts` (`Jukebox/App/Accounts.swift`, shared
+  with Linux), on JukeboxKit's `SavedAccounts` (tested in the kit). The
+  keychain keeps two items: `credentials`, the session signed in, as it
+  always did (a build from before the list reads it alone), and `accounts`,
+  the list. Linux's keyring the same, or two files.
+- **The migration**: an install with a session and no list makes the
+  session the list's only entry; its `history.json`, `recentStations` and
+  Last.fm answers are renamed to that account's (`AccountFiles.adoptLegacy`,
+  only what is not there yet, so a second run moves nothing). Nobody signs in
+  again. A list that could not be read (a locked keychain, a keyring that did
+  not answer) is never written over.
+- **Per account**, named by its server's id and its user's
+  (`OfflinePaths.account`): the session, the library cache, the songs on the
+  device (a folder each; no folder is swept any more), the listening history
+  (the radio's learning, what the mixes are made from), the recent stations,
+  the Last.fm answers about its library (they name its songs by id). Home's
+  mixes are made again from those.
+- **Shared**: `AppSettings` (qualities, pages, downloads' limit, the
+  switches) and the Last.fm API key, a key to Last.fm's catalogue rather
+  than anyone's Last.fm account (the servers scrobble).
+- **A switch** (`AppModel.switchAccount`): the new account's server is asked
+  first, with its own session (`AccountStores.reach`, 10 s at most); silent,
+  the account signed in stays and the words say so, unless the new one has
+  songs on the device (offline, they play). Then `AccountStores.close`: the
+  handoff lets go, the player stops (clearing the queue and the sleep timer,
+  its last song told to its own server and history), every store writes its
+  account's files; `open` reads the next one's, and the window goes Home.
+  CarPlay's lists follow and pop to their root; Siri waits for the switch.
+- **Signing out** of an account forgets its library cache, songs, recent
+  stations and Last.fm answers; its history stays, for a sign-in again. Of
+  the one signed in: the next account opens, or the sign-in screen when none
+  is left. Add Account is the sign-in screen, in a sheet (Linux: over the
+  window, with Cancel).
+- **Where**: Settings' account section (rows, the one signed in checked, a
+  tap switches, a swipe or a long press signs out of another; Add Account;
+  Sign Out); the iPad's ≡ menu and the Mac's Account menu
+  (`Settings/AccountMenu.swift`); Linux's primary menu and Preferences ›
+  Accounts.
+- **Checked**: JukeboxKit's `SavedAccountsTests` (the migration, and the
+  test Jellyfin's two users, test and second); Linux's `AccountCheck`
+  after every build (`dev/linux-errors.sh`).
 
 ## Scrobbling
 

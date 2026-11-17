@@ -212,6 +212,19 @@ final class OfflineStore {
     /// to the server are taken first (`takeReports`).
     func signOut() {
         let account = self.account
+        close()
+        if let account {
+            // After close's own write of it, on the same queue.
+            writer.async { OfflineDisk.removeAccount(account) }
+        }
+    }
+
+    /// Another account switched to: this one's songs, choices, queue and
+    /// plays heard offline are written to its folder first and stay there,
+    /// for when it is back. Its downloads stop; what they were fetching is
+    /// still in its queue, and goes on then.
+    func close() {
+        saveNow()
         OfflineDownloader.shared.cancel { _ in true }
         self.account = nil
         server = nil
@@ -239,9 +252,26 @@ final class OfflineStore {
         probeCount += 1
         if isServerUnreachable { isServerUnreachable = false }
         songsChanged()
-        if let account {
-            writer.async { OfflineDisk.removeAccount(account) }
+    }
+
+    /// Another saved account, signed out of while this one plays: its
+    /// folder goes, once any write of it still under way is done; its plays
+    /// not yet told to its server are handed over.
+    func forget(_ credentials: ServerCredentials) -> [PendingPlay] {
+        let account = OfflinePaths.account(for: credentials)
+        guard account != self.account else { return [] }
+        return writer.sync {
+            let reports = OfflineDisk.reports(of: account)
+            OfflineDisk.removeAccount(account)
+            return reports
         }
+    }
+
+    /// Whether an account not open has songs on the phone: offline, a switch
+    /// to it still plays them.
+    func hasSongs(of credentials: ServerCredentials) -> Bool {
+        let account = OfflinePaths.account(for: credentials)
+        return writer.sync { OfflineDisk.hasSongs(account) }
     }
 
     /// The plays not yet told to the server, handed over (and forgotten here).

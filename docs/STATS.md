@@ -75,6 +75,7 @@ Buckets:
 | A library's songs | `<100`, `100-999`, `1k-9k`, `10k+` |
 | Seconds | `<1`, `1-5`, `5-30`, `30+` |
 | Search results | `0`, `1-9`, `10+` |
+| Accounts kept | `1`, `2`, `3+` |
 | The radio's dial | `0-0.2`, `0.2-0.4`, `0.4-0.6`, `0.6-0.8`, `0.8-1` |
 
 ## Events
@@ -84,7 +85,9 @@ Buckets:
 | `app_open` | `server` (`jellyfin`, `navidrome`, `subsonic`, `none`) | How many starts, on which system, version, language and device; which kinds of server are used | `AppModel.restore`, once a launch, when the keychain has said |
 | `signed_in` | `server` (`jellyfin`, `navidrome`, `subsonic`), `method` (`password`, `quick_connect`, `api_key`) | How people sign in, and to what; is Quick Connect worth it | OnboardingView |
 | `sign_in_failed` | `reason` (`unreachable`, `not_a_server`, `wrong_password`, `needs_api_key`, `needs_https`, `other`) | Where people stop before the music | OnboardingView |
-| `signed_out` | none | Do people leave, or move servers | `AppModel.signOut` |
+| `signed_out` | none | Do people leave, or move servers | `AppModel.signOut`, of any saved account |
+| `account_added` | `server` (`jellyfin`, `navidrome`, `subsonic`), `count` (the accounts kept now: `1`, `2`, `3+`) | Do people keep more than one account, and of which kinds | `AppModel.signIn`, when the account is new on the device (the first included; not a sign-in again, not the migration) |
+| `account_switched` | none | Is the switch between accounts used | `AppModel.switchAccount`, once the server answered (or offline, with songs on the device) |
 | `library_loaded` | `tracks` (bucket), `from` (`cache`, `server`), `seconds` (bucket) | How large libraries are; how long a launch and a load take | LibraryStore |
 | `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a place in the wide window (`home`, `radio`, `search`, `playlist`, or a library kind: `albums`, `artists`, `songs`, `playlists`, `favorites`, `genres`, `recently_added`, `downloaded`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings`; `carplay` once each time the car connects. The wide window never sends `library`: its kinds are places there | Which screens are used, which never; is CarPlay used | MainTabView (tabs), CarPlaySceneDelegate (`carplay`), WideShell (the wide window's places, and Search from its field), `routeDestinations()` (pushes), the cover, panels and sheet |
 | `play_started` | `from` (`album`, `playlist`, `mix`, `songs`, `favorites`, `search`, `artist`, `genre`, `station`, `other`, `siri`, `widget`), `shuffled` (bool) | Where music is started from; is Shuffle used; is Siri; is the widget | `AudioPlayer.play`, `playRadio`; `siri` for what Siri or Shortcuts played, `widget` for a mix the widget played (`Stats.nextFrom`); a station they start counts `station` here and `siri` or `widget` in `station_started` |

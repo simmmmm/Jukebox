@@ -49,8 +49,8 @@ final class RadioController {
     private(set) var liked: Set<ItemID> = []
     private(set) var disliked: Set<ItemID> = []
     /// Stations started, newest first, each once, at most 20; kept in
-    /// UserDefaults ("recentStations", JSON), so they are there after a
-    /// relaunch.
+    /// UserDefaults by account ("recentStations.<account>", JSON,
+    /// AccountFiles), so they are there after a relaunch and a switch back.
     private(set) var recentStations: [Station] = []
     /// Moves whenever what a station's preview is chosen from changes (the
     /// library's snapshot, the graph): a station's page then chooses its
@@ -68,6 +68,10 @@ final class RadioController {
 
     @ObservationIgnored private var session: RadioSession?
     @ObservationIgnored private var service: SimilarityService?
+    /// The account's: where its recent stations are kept, and what Last.fm
+    /// said of its library (its answers name the library's songs by id).
+    @ObservationIgnored private var recentStationsKey: String?
+    @ObservationIgnored private var similarityDirectory: URL?
     /// Bumped by every start and stop: work for an older station, still
     /// arriving, is dropped.
     @ObservationIgnored private var generation = 0
@@ -115,7 +119,15 @@ final class RadioController {
         self.library = library
         self.history = history
         self.settings = settings
-        recentStations = Self.loadRecentStations()
+    }
+
+    /// Signed in, or switched to: the account's recent stations, and its
+    /// own Last.fm answers for the graph `prepare` makes.
+    func open(_ account: ServerCredentials) {
+        close()
+        recentStationsKey = AccountFiles.recentStationsKey(account)
+        similarityDirectory = AccountFiles.similarity(account)
+        recentStations = Self.loadRecentStations(recentStationsKey)
     }
 
     /// After sign-in: the graph from the library, then Last.fm in the
@@ -243,17 +255,34 @@ final class RadioController {
     }
 
     /// At sign-out (AppModel): nothing of this account's radio stays — the
-    /// station, the thumbs, the stations started. The next account may be
-    /// on another server, where those tracks and stations mean nothing.
+    /// station, the thumbs, the stations started, Last.fm's answers. The
+    /// next account may be on another server, where those tracks and
+    /// stations mean nothing.
     func reset() {
+        if let recentStationsKey { UserDefaults.standard.removeObject(forKey: recentStationsKey) }
+        if let similarityDirectory { try? FileManager.default.removeItem(at: similarityDirectory) }
+        close()
+    }
+
+    /// Another account switched to (AppModel): this one's radio is put
+    /// away, its recent stations kept for when it is back.
+    func close() {
         stop()
+        graphTask?.cancel()
+        enrichTask?.cancel()
+        graphTask = nil
+        enrichTask = nil
+        service = nil
+        graph = SimilarityGraph()
+        onPhone = nil
         liked = []
         disliked = []
         recentStations = []
         previews = [:]
         latestPreview = [:]
         pageSeeds = [:]
-        UserDefaults.standard.removeObject(forKey: Self.recentStationsKey)
+        recentStationsKey = nil
+        similarityDirectory = nil
         player.refreshRemoteFeedback()
     }
 
@@ -549,7 +578,6 @@ final class RadioController {
     // MARK: Recent stations
 
     private static let recentStationLimit = 20
-    private static let recentStationsKey = "recentStations"
 
     /// A station that started goes first, once: started again, it moves up
     /// rather than show twice. Autoplay's stations too, since they played.
@@ -560,15 +588,15 @@ final class RadioController {
             stations.removeLast(stations.count - Self.recentStationLimit)
         }
         recentStations = stations
-        if let data = try? JSONEncoder().encode(stations) {
-            UserDefaults.standard.set(data, forKey: Self.recentStationsKey)
+        if let recentStationsKey, let data = try? JSONEncoder().encode(stations) {
+            UserDefaults.standard.set(data, forKey: recentStationsKey)
         }
     }
 
     /// What was kept; none when nothing was, or it no longer decodes (a
     /// Station of an older build).
-    private static func loadRecentStations() -> [Station] {
-        guard let data = UserDefaults.standard.data(forKey: recentStationsKey),
+    private static func loadRecentStations(_ key: String?) -> [Station] {
+        guard let key, let data = UserDefaults.standard.data(forKey: key),
               let stations = try? JSONDecoder().decode([Station].self, from: data) else { return [] }
         return Array(stations.prefix(recentStationLimit))
     }
@@ -745,12 +773,9 @@ final class RadioController {
 
     // MARK: The graph
 
-    private func makeService() -> SimilarityService {
-        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        let directory = caches
-            .appendingPathComponent("Jukebox", isDirectory: true)
-            .appendingPathComponent("similarity", isDirectory: true)
+    /// None while no account is open (`open`).
+    private func makeService() -> SimilarityService? {
+        guard let directory = similarityDirectory else { return nil }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
         return SimilarityService(directory: directory, lastFM: settings.hasLastFM ? LastFMClient(apiKey: key) : nil)

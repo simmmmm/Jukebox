@@ -210,6 +210,12 @@ public struct ServerCredentials: Hashable, Sendable {
     /// What the server could do when last asked (`MusicServer.currentCapabilities`),
     /// so a launch without the network shows the same screens.
     public var capabilities: Set<ServerCapability>
+    /// The name of the account's own folders, when the one made of its
+    /// server's id and user's would be another saved account's (two
+    /// Subsonic addresses that differ only in their punctuation): given
+    /// once by SavedAccounts, kept with the session. Nil for every other
+    /// account, so no folder an install already has is ever renamed.
+    public var folderName: String?
 
     public init(kind: ServerKind, serverURL: URL, serverID: String, serverName: String,
                 serverVersion: String = "", apiVersion: String? = nil, userID: String,
@@ -246,7 +252,7 @@ public struct ServerCredentials: Hashable, Sendable {
 extension ServerCredentials: Codable {
     enum CodingKeys: String, CodingKey {
         case kind, serverURL, serverID, serverName, serverVersion, apiVersion
-        case userID, userName, secret, capabilities
+        case userID, userName, secret, capabilities, folderName
         /// The Jellyfin-only Credentials' token (read, never written).
         case accessToken
     }
@@ -270,6 +276,7 @@ extension ServerCredentials: Codable {
         }
         capabilities = try c.decodeIfPresent(Set<ServerCapability>.self, forKey: .capabilities)
             ?? (kind == .jellyfin ? ServerCapability.jellyfin : [])
+        folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -284,6 +291,7 @@ extension ServerCredentials: Codable {
         try c.encode(userName, forKey: .userName)
         try c.encode(secret, forKey: .secret)
         try c.encode(capabilities, forKey: .capabilities)
+        try c.encodeIfPresent(folderName, forKey: .folderName)
     }
 }
 

@@ -142,6 +142,12 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
 - the primary menu (F10) with Preferences, Keyboard Shortcuts and About;
 - GNOME's own context menus;
 - toasts for a moment's news, a dialog before signing out;
+- more than one account (17 November 2026, `Jukebox/App/Accounts.swift`):
+  with two or more, the primary menu lists them as radio items, the one
+  signed in chosen, a click switches; Add Account… shows the sign-in page
+  over the window with Cancel. Preferences › Accounts lists them as GNOME's
+  Online Accounts does, each with its own Sign Out…; the dialog names the
+  account and, for the one signed in, the account Jukebox goes on with;
 - header capitals on buttons and rows;
 - a playlist of the listener's own edited in place, as on the Mac (since
   16 November 2026): a song's menu has Move Up, Move Down and, last,
@@ -178,9 +184,11 @@ and light for the one on air. Every measure is on the 4-point grid
 Hyprland, KDE, XFCE and the rest run it as it is: a GTK app with its own
 header bar. Their media widgets and `playerctl` read the same MPRIS.
 
-The session's token goes in the keyring where there is one (GNOME Keyring,
-KWallet). Where there is none, it goes in
-`~/.local/share/Jukebox/credentials.json`, readable by its user alone.
+The sessions go in the keyring where there is one (GNOME Keyring,
+KWallet): the one signed in as "credentials", as before, and the list of
+accounts as "accounts". Where there is none, or it does not answer, they go
+in `~/.local/share/Jukebox/credentials.json` and `accounts.json`, readable by
+their user alone. A keyring that does not answer is asked once a launch.
 Measured on a session bus without a keyring: the app starts at once and
 stays signed in.
 
@@ -243,6 +251,19 @@ yet tried: a Subsonic server, a playlist someone else shared.
 The Flatpak, 16 November 2026: in its sandbox under Broadway it signs in to
 the fake Jellyfin from the file, loads the library and its covers. Not yet
 tried in it: sound, the keyring, the media controls.
+
+Accounts, 17 November 2026, under Xvfb with a session bus and keyring of
+their own, against the test Jellyfin's two users: a profile made by the
+build before (signed in, a station played, an album downloaded) opened
+signed in with its history, stations and songs as its one account (from a
+keyring, the list then kept beside the session there; from the file, with
+a keyring that did not answer); a second added from the primary menu; switched
+back and forth, playing on each; a switch to a server that does not answer
+stayed with a toast; one with songs on the computer and its server away
+switched and played them; signing out of another account and of the one
+signed in each took that account's files alone. `dev/linux-errors.sh` runs
+AccountCheck after every build. Not yet tried: adding and switching with
+the keyring (the switches ran on the files), and a real GNOME session.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
 calls are tested in the kit), KDE, XFCE and Hyprland themselves; offline on

@@ -36,6 +36,10 @@ enum Voice {
         for _ in 0..<80 {
             switch app.phase {
             case .signedOut: return nil
+            // Another account being switched to (Accounts.swift): what Siri
+            // asked for is found in that one's library, once it is in.
+            case .signedIn where app.isSwitching || app.credentials == nil:
+                try? await Task.sleep(for: .milliseconds(100))
             case .signedIn where !app.library.tracks.isEmpty: return app
             case .signedIn where app.library.state != .empty && !isLoading(app.library): return app
             default: try? await Task.sleep(for: .milliseconds(100))

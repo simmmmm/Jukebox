@@ -136,11 +136,24 @@ private struct SettingsAccountSection: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.isWide) private var isWide
     @State private var isConfirmingSignOut = false
+    /// Another saved account, asked about before it is signed out of.
+    @State private var leaving: ServerCredentials?
+    @State private var isAdding = false
+    /// Why the switch tapped here did not happen, under the rows.
+    @State private var switchProblem: String?
 
     init() {}
 
     var body: some View {
         Section {
+            // More than one account kept: each a row, the one signed in
+            // checked, a tap switches (Home, afresh), a swipe or a long
+            // press signs out of that one (Accounts.swift).
+            if app.accounts.saved.count > 1 {
+                ForEach(app.accounts.saved, id: \.self) { account in
+                    accountRow(account)
+                }
+            }
             if let credentials = app.credentials {
                 // Its name, and under it which kind of server it is and its
                 // version ("Navidrome 0.64.2"): the sign-in screen's words.
@@ -161,6 +174,24 @@ private struct SettingsAccountSection: View {
                         .textSelection(.enabled)
                 }
             }
+            Button("Add Account") {
+                isAdding = true
+            }
+            .disabled(app.credentials == nil)
+            .sheet(isPresented: $isAdding) {
+                OnboardingView(isAdding: true)
+            }
+            // A dialog of its own, on another row than Sign Out's: one
+            // view, one confirmation dialog.
+            .confirmationDialog(leavingTitle, isPresented: Binding(get: { leaving != nil },
+                                                                   set: { if !$0 { leaving = nil } }),
+                                titleVisibility: .visible) {
+                Button("Sign Out", role: .destructive) {
+                    if let leaving { Task { await app.signOut(leaving) } }
+                }
+            } message: {
+                Text("Jukebox forgets its library, recent stations and downloaded songs on this \(Device.model). The music plays on.")
+            }
             Button("Sign Out", role: .destructive) {
                 isConfirmingSignOut = true
             }
@@ -170,15 +201,62 @@ private struct SettingsAccountSection: View {
             .confirmationDialog(signOutTitle, isPresented: $isConfirmingSignOut, titleVisibility: .visible) {
                 Button("Sign Out", role: .destructive) {
                     // The sheet first, so it does not hang over the swap to
-                    // the sign-in screen.
+                    // the sign-in screen, or the next account's Home.
                     dismiss()
                     Task { await app.signOut() }
                 }
             } message: {
-                Text("Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(Device.model). Your music, playlists and favorites stay on the server.")
+                Text(signOutMessage)
             }
         } header: {
             SettingsHeader(isWide ? "Server" : "Account")
+        } footer: {
+            if let switchProblem {
+                Text(switchProblem)
+            }
+        }
+    }
+
+    /// An account kept: its server, the kind and the user under it.
+    private func accountRow(_ account: ServerCredentials) -> some View {
+        let isActive = app.credentials?.isSameAccount(as: account) == true
+        return Button {
+            guard !isActive else { return }
+            switchProblem = nil
+            Task {
+                switchProblem = await app.switchAccount(to: account)
+                // Switched: the next account's Home, with nothing over it.
+                if switchProblem == nil { dismiss() }
+            }
+        } label: {
+            HStack {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                    Text(verbatim: ServerWords.name(of: account))
+                        .foregroundStyle(.primary)
+                    Text(verbatim: "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
+                        .desktopFont(13, phone: .footnote)
+                        .foregroundStyle(.secondary)
+                }
+                Spacer()
+                if isActive {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(Theme.accent)
+                        .accessibilityLabel("Signed In")
+                }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .disabled(app.isSwitching)
+        .swipeActions {
+            if !isActive {
+                Button("Sign Out", role: .destructive) { leaving = account }
+            }
+        }
+        .contextMenu {
+            if !isActive {
+                Button("Sign Out", role: .destructive) { leaving = account }
+            }
         }
     }
 
@@ -187,6 +265,21 @@ private struct SettingsAccountSection: View {
             return Text("Sign out of \(name)?")
         }
         return Text("Sign out?")
+    }
+
+    private var leavingTitle: Text {
+        guard let leaving else { return Text("Sign out?") }
+        return Text("Sign out of \(ServerWords.name(of: leaving)) as \(leaving.userName)?")
+    }
+
+    /// What a sign-out of the account signed in does; with others kept, it
+    /// says which one Jukebox goes on with.
+    private var signOutMessage: String {
+        let others = app.accounts.saved.filter { app.credentials?.isSameAccount(as: $0) != true }
+        if let next = others.first {
+            return String(localized: "Playback stops and Jukebox forgets this account’s library, recent stations and downloaded songs on this \(Device.model), then goes on with \(ServerWords.name(of: next)). Your music, playlists and favorites stay on the server.")
+        }
+        return String(localized: "Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(Device.model). Your music, playlists and favorites stay on the server.")
     }
 }
 

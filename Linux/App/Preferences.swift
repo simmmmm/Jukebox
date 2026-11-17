@@ -76,20 +76,63 @@ enum Preferences {
             "Share Anonymous Usage", "Which screens and features are used. Never a title, an artist, a search or a server.",
             settings.shareUsage) { settings.shareUsage = $0 })
 
-        if let credentials = app.credentials {
-            let account = group("Server", on: page)
-            let row = adw_action_row_new()!
-            adw_preferences_row_set_title(ptr(row), credentials.serverName.isEmpty ? credentials.serverURL.host ?? "" : credentials.serverName)
-            adw_action_row_set_subtitle(ptr(row), "\(credentials.kind.displayName) \(credentials.serverVersion) · \(credentials.userName)")
-            adw_preferences_group_add(ptr(account), row)
-        }
-
+        let dialog = adw_preferences_dialog_new()!
+        accounts(on: page, in: dialog)
         downloads(on: page)
 
-        let dialog = adw_preferences_dialog_new()!
         adw_preferences_dialog_add(ptr(dialog), ptr(page))
         on(dialog, "closed") { keepKey() }
         adw_dialog_present(ptr(dialog), MainWindow.window)
+    }
+
+    /// Every account kept, as GNOME's Online Accounts lists them: the
+    /// server's name, its kind and version and the user under it, the one
+    /// signed in checked. A click on another switches to it (the dialog
+    /// closes on its Home); Sign Out… on a row signs out of that one alone.
+    /// Add Account… under them, as the iPhone's Settings has it.
+    private static func accounts(on page: Widget, in dialog: UnsafeMutablePointer<AdwDialog>) {
+        let group = group("Accounts", on: page)
+        // In the group's header, where GNOME's Settings puts a group's own
+        // action.
+        let add = button("Add Account…", "flat") {
+            adw_dialog_close(ptr(dialog))
+            MainWindow.addAccount()
+        }.align(vertical: GTK_ALIGN_CENTER)
+        adw_preferences_group_set_header_suffix(ptr(group), add)
+        var rows: [Widget] = []
+        observe(group) {
+            for row in rows { adw_preferences_group_remove(ptr(group), row) }
+            rows = []
+            let active = app.credentials
+            let switching = app.isSwitching
+            for account in app.accounts.saved {
+                let row = adw_action_row_new()!
+                adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
+                adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
+                if active?.isSameAccount(as: account) == true {
+                    let check = gtk_image_new_from_icon_name("object-select-symbolic")!.tooltip("Signed In")
+                    adw_action_row_add_suffix(ptr(row), check)
+                } else {
+                    gtk_list_box_row_set_activatable(ptr(row), 1)
+                    // One switch at a time, while its server is asked.
+                    row.isSensitive = !switching
+                    on(raw(row), "activated") {
+                        Task {
+                            if let problem = await app.switchAccount(to: account) {
+                                adw_preferences_dialog_add_toast(ptr(dialog), adw_toast_new(problem))
+                            } else {
+                                adw_dialog_close(ptr(dialog))
+                            }
+                        }
+                    }
+                }
+                let out = button("Sign Out…", "flat") { MainWindow.confirmSignOut(of: account) }
+                    .align(vertical: GTK_ALIGN_CENTER)
+                adw_action_row_add_suffix(ptr(row), out)
+                adw_preferences_group_add(ptr(group), row)
+                rows.append(row)
+            }
+        }
     }
 
     /// Songs on this computer (OfflineStore), as the Mac's Settings ›
