@@ -127,6 +127,32 @@ carplay_signed() {
   return $missing
 }
 
+# Whether the widget is in the app (PlugIns/JukeboxWidget.appex), and the
+# app and the widget both carry the App Group the snapshot is written into
+# (docs/RELEASE.md, The widget): without it in either signature the widget
+# shows nothing but "Sign in". The app's own checks stay carplay_signed's.
+widget_signed() {
+  local app=$1 bundle part signed missing=0
+  for bundle in "$app" "$app/PlugIns/JukeboxWidget.appex"; do
+    part=widget
+    if [[ $bundle == "$app" ]]; then part=app; fi
+    if [[ ! -d $bundle ]]; then
+      echo "::error::No widget in the $2: $bundle is missing."
+      missing=1
+      continue
+    fi
+    # Read whole first: grep -q in a pipe under pipefail can fail a good one.
+    signed=$(codesign -d --entitlements - --xml "$bundle" 2> /dev/null || true)
+    if [[ $signed == *'<string>group.com.tijmen.Jukebox</string>'* ]]; then
+      echo "The App Group is in the $part's signature ($2)."
+    else
+      echo "::error::No App Group group.com.tijmen.Jukebox in the signature of the $part ($2)."
+      missing=1
+    fi
+  done
+  return $missing
+}
+
 if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
@@ -136,6 +162,7 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   if [[ $status == 0 ]]; then
     carplay_signed build/derived/Build/Products/Debug-iphoneos/Jukebox.app build
     status=$?
+    widget_signed build/derived/Build/Products/Debug-iphoneos/Jukebox.app build || status=1
   fi
   set -e
   { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/errors.txt
@@ -207,6 +234,7 @@ head -200 build/logs/archive-errors.txt
 report build/logs/archive.log "Archive errors"
 [[ $status == 0 ]] || exit $status
 carplay_signed build/Jukebox.xcarchive/Products/Applications/Jukebox.app archive
+widget_signed build/Jukebox.xcarchive/Products/Applications/Jukebox.app archive
 
 # destination export leaves the ipa on the runner; upload sends it.
 export_options() {
@@ -243,6 +271,7 @@ fi
 ipa=$(ls build/export-ipa/*.ipa | head -1)
 rm -rf build/ipa && mkdir -p build/ipa && unzip -q "$ipa" -d build/ipa
 carplay_signed build/ipa/Payload/Jukebox.app ipa
+widget_signed build/ipa/Payload/Jukebox.app ipa
 
 set +e
 xcodebuild -exportArchive -archivePath build/Jukebox.xcarchive \

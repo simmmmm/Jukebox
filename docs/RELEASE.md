@@ -218,6 +218,29 @@ SiriKit › Save. Cloud signing then puts it in the store's profile.
 `carplay_signed` checks it beside CarPlay's, so an upload without it stops.
 The Mac's app has no Siri entitlement: it has App Intents only.
 
+## The widget
+
+The iPhone's app embeds a widget extension, `com.tijmen.Jukebox.Widget`
+(`JukeboxWidget/`, docs/ARCHITECTURE.md). The app writes what it shows
+into the App Group `group.com.tijmen.Jukebox`, which both entitlements
+name (`Jukebox/Jukebox-iOS.entitlements`,
+`JukeboxWidget/JukeboxWidget.entitlements`). **Open**: before the first
+upload with it, in Certificates, Identifiers & Profiles:
+
+1. Identifiers › + › App Groups: `group.com.tijmen.Jukebox`, described
+   "Jukebox".
+2. Identifiers › com.tijmen.Jukebox › Capabilities › App Groups on ›
+   Configure › `group.com.tijmen.Jukebox` › Save (the profile is made again;
+   CarPlay and SiriKit stay on).
+3. Identifiers › + › App IDs › App: `com.tijmen.Jukebox.Widget`, described
+   "Jukebox Widget", with App Groups on and `group.com.tijmen.Jukebox`
+   chosen.
+
+Cloud signing then makes both store profiles. `widget_signed` in
+`ci/app.sh` checks every push's build, the archive and the exported ipa:
+the widget in `PlugIns/`, and the App Group in the app's signature and the
+widget's. An upload without them stops.
+
 ## Builds
 
 - **A push** builds the iPhone's app, signed ad hoc (CarPlay, above), and the
