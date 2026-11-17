@@ -273,6 +273,17 @@ public struct PlexServer: MusicServer {
         return file(track) ?? transcoded(track, kbps: 320, session: playSessionID)
     }
 
+    /// What a cast device fetches itself (MusicServer.castURL): the file
+    /// with the token for an MP3 or a FLAC; anything else, an M4A among them
+    /// (its codec may be ALAC), the transcoder's MP3 at 320, as on Jellyfin.
+    public func castURL(for track: Track) -> CastStream {
+        let types = ["mp3": "audio/mpeg", "flac": "audio/flac"]
+        if let key = track.fileKey, let container = track.container, let type = types[container] {
+            return CastStream(url: connection.url(key, [], withToken: true), contentType: type)
+        }
+        return CastStream(url: transcoded(track, kbps: 320, session: "jukebox-cast-\(track.id)"), contentType: "audio/mpeg")
+    }
+
     public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
         switch quality {
         case .original: file(track, download: true) ?? transcoded(track, kbps: 320, session: download(track, quality))

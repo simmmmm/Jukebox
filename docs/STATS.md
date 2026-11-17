@@ -109,6 +109,7 @@ Buckets:
 | `playback_error` | `reason` (`network`, `server`, `unsupported`, `other`) | How often a song does not play, and why | `AudioPlayer.itemFailed` |
 | `download_chosen` | `kind` (`album`, `playlist`, `mix`) | Are downloads used, and for what | `OfflineStore.download`, each Download on a page |
 | `offline_play_started` | `from` (as `play_started`'s) | Is music played offline, and from what | `AudioPlayer.play`, `playRadio`, while offline (with `play_started`) |
+| `play_on` | `target` (`this_device`, `airplay`, `chromecast`, `jellyfin` (a Jellyfin or Emby client), `subsonic_jukebox`) | Is Play On used, and to where | `PlayOn.choose`, each choice in Play On's list; `airplay` when the system's AirPlay list is opened from it (which speaker is chosen there is the system's) |
 | `sleep_timer_set` | `value` (`15`, `30`, `45`, `60`, `end_of_song`, `end_of_queue`, `off`) | Is the sleep timer used, and for how long | `PlayQueue.setSleepTimer`, each choice in a sleep timer's menu; not when it ends by itself |
 
 The widget counts nothing itself: it runs in a process of its own and only
@@ -172,6 +173,9 @@ App Store Connect › App Privacy: **Usage Data › Product Interaction** and
 **Location › Coarse Location** (the place the server reads from the
 address), both not linked to the user, not used for tracking, purpose
 **Analytics**. Nothing else is collected. Published 16 November 2026.
+Play On (17 November 2026) changes none of it: Chromecasts are spoken to by
+the app itself, with no SDK of Google's, and the other devices are the
+listener's own; only its `play_on` count is new, under Product Interaction.
 
 `Jukebox/Resources/PrivacyInfo.xcprivacy` declares the same, with
 UserDefaults' reason CA92.1 (the app's own settings). XcodeGen puts the

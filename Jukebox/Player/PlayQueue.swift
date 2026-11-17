@@ -165,6 +165,21 @@ class PlayQueue {
     /// Set by AppModel: what is on the device, and whether only that can play.
     @ObservationIgnored weak var offline: OfflineStore?
 
+    /// Where the music plays when it is not here (PlayOn.swift): the list
+    /// of devices, and the one playing; nil here.
+    @ObservationIgnored let playOn = PlayOn()
+    var playsOn: PlayOnDevice?
+    /// The remote device's own level while it plays (the slider's then).
+    var remoteVolume: Double?
+    @ObservationIgnored var playingElsewhere: (any RemotePlayer)?
+    /// The entries the remote holds, in its order.
+    @ObservationIgnored var remoteHeld: [UUID] = []
+    /// Until when what the remote says may still be from before a load.
+    @ObservationIgnored var remoteSettled = Date.distantPast
+    @ObservationIgnored var remoteFailures = 0
+    @ObservationIgnored var remotePoll: Task<Void, Never>?
+    @ObservationIgnored var remoteCalls: Task<Void, Never>?
+
     // MARK: Inside
 
     /// The current entry's play: what the server and the history are told.
@@ -233,6 +248,7 @@ class PlayQueue {
     init(settings: AppSettings, history: HistoryStore) {
         self.settings = settings
         self.history = history
+        playOn.player = self
     }
 
     var current: QueueEntry? { currentIndex.flatMap { queue.indices.contains($0) ? queue[$0] : nil } }
@@ -445,17 +461,17 @@ class PlayQueue {
         if let sleepDeadline, sleepDeadline <= Date() { endSleep() }
         // Nothing in the engine (the queue ended, or an error stopped it):
         // load the current entry again.
-        if playing == nil || !engineHasItem {
+        if playing == nil || (playingElsewhere == nil && !engineHasItem) {
             load(currentIndex, play: true)
             return
         }
         wantsToPlay = true
-        engineResume()
+        if playingElsewhere != nil { remoteDo { try await $0.resume() } } else { engineResume() }
     }
 
     func pause() {
         wantsToPlay = false
-        enginePause()
+        if playingElsewhere != nil { remoteDo { try await $0.pause() } } else { enginePause() }
     }
 
     func next() {
@@ -487,7 +503,7 @@ class PlayQueue {
         elapsed = target
         // Back to its start by hand: no fade in again.
         playing?.fadesIn = false
-        engineSeek(to: target)
+        if playingElsewhere != nil { remoteDo { try await $0.seek(to: target) } } else { engineSeek(to: target) }
     }
 
     func skip(to entry: QueueEntry) {
@@ -544,6 +560,11 @@ class PlayQueue {
     /// Nothing loaded, nothing queued. Each platform's AudioPlayer adds
     /// what its system shows of the player.
     func stop() {
+        // Stopped here and there: a switch of account, a sign-out.
+        if let remote = playingElsewhere {
+            endRemote()
+            Task { await remote.stop() }
+        }
         let finished = finishCurrent()
         wantsToPlay = false
         engineHalt()
@@ -637,10 +658,14 @@ class PlayQueue {
             return
         }
         let finished = finishCurrent()
-        engineReplace(with: url, entry: entry, playSessionID: playSessionID, play: play)
+        if playingElsewhere != nil {
+            remoteLoad(from: start, at: 0, play: play)
+        } else {
+            engineReplace(with: url, entry: entry, playSessionID: playSessionID, play: play)
+        }
         wantsToPlay = play
         begin(entry, at: start, playSessionID: playSessionID, fadesIn: fadesIn)
-        engineStart(play)
+        if playingElsewhere == nil { engineStart(play) }
         deliver(finished)
         checkRadioSupply()
     }
@@ -671,7 +696,10 @@ class PlayQueue {
         let before = currentTrack
         currentIndex = index
         playing = Playing(entry: entry, playSessionID: playSessionID, stationID: context?.station?.id)
-        playing?.fadesIn = fadesIn && before.map { Self.crossfades(from: $0, to: entry.track) } == true
+        // Never on another device: its own player starts each song at its
+        // own volume, and a fade begun there would follow it home.
+        playing?.fadesIn = fadesIn && playingElsewhere == nil
+            && before.map { Self.crossfades(from: $0, to: entry.track) } == true
         engineBegan()
         elapsed = 0
         duration = entry.track.duration
@@ -697,8 +725,13 @@ class PlayQueue {
     /// The engine is told the next entry whenever it may have changed (an
     /// edit, shuffle, repeat, the radio choosing again).
     func preloadNext() {
-        enginePreload(entryToPreload)
+        if playingElsewhere != nil { remoteQueueChanged() } else { enginePreload(entryToPreload) }
     }
+
+    /// Nil while a Jellyfin client plays the queue: it tells the server itself.
+    var reportingServer: (any MusicServer)? { playingElsewhere?.reportsItself == true ? nil : server }
+    /// Where the song is for the reports: elsewhere, as the remote last said.
+    private var reportPosition: TimeInterval { playingElsewhere == nil ? position : elapsed }
 
     /// Where the entry's song is: its file when it is on the device
     /// (always, online too: nothing to fetch, it starts at once), else the
@@ -780,7 +813,8 @@ class PlayQueue {
     /// engine plays one song at a time, so the two do not overlap.
     private var crossfadeLevel: Double {
         let half = Double(settings.crossfade) / 2
-        guard half > 0, let playing, duration > 0 else { return 1 }
+        // Playing elsewhere, the device has the volume (Play On): no fade.
+        guard half > 0, playingElsewhere == nil, let playing, duration > 0 else { return 1 }
         var level = 1.0
         if playing.fadesIn { level = elapsed / half }
         if let next = entryToPreload, Self.crossfades(from: playing.entry.track, to: next.track) {
@@ -838,11 +872,11 @@ class PlayQueue {
         guard var playing else { return nil }
         // Where it stopped and how long it is, as its engine knows, read
         // while the engine still holds it.
-        let position = stoppedPosition
-        let length = playingLength
+        let position = playingElsewhere == nil ? stoppedPosition : elapsed
+        let length = playingElsewhere == nil ? playingLength : duration
         self.playing = nil
         playing.stopClock(Date())
-        if playing.startReported, let server {
+        if playing.startReported, let server = reportingServer {
             let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
                                         playSessionID: playing.playSessionID)
             if let offline, offline.holdsReports(of: report.playSessionID) {
@@ -1063,8 +1097,8 @@ class PlayQueue {
         playing.startReported = true
         playing.lastProgress = now
         self.playing = playing
-        guard let server else { return true }
-        let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
+        guard let server = reportingServer else { return true }
+        let report = PlaybackReport(trackID: playing.entry.track.id, position: reportPosition, isPaused: false,
                                     playSessionID: playing.playSessionID)
         if let offline, offline.holdsReports(of: report.playSessionID) {
             // Offline: kept, and sent when the server answers, so the play
@@ -1084,9 +1118,9 @@ class PlayQueue {
         guard var playing, !playing.nowPlayingReported else { return }
         playing.nowPlayingReported = true
         self.playing = playing
-        guard let server else { return }
+        guard let server = reportingServer else { return }
         if let offline, offline.holdsReports(of: playing.playSessionID) { return }
-        let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: false,
+        let report = PlaybackReport(trackID: playing.entry.track.id, position: reportPosition, isPaused: false,
                                     playSessionID: playing.playSessionID)
         Task { await server.report(.nowPlaying, report) }
     }
@@ -1094,11 +1128,12 @@ class PlayQueue {
     func reportProgress() {
         guard let playing, playing.startReported else { return }
         self.playing?.lastProgress = Date()
-        guard let server else { return }
+        guard let server = reportingServer else { return }
         // Offline the server hears of the play when it is back; how far it
         // got on the way is not kept.
         if let offline, offline.holdsReports(of: playing.playSessionID) { return }
-        let report = PlaybackReport(trackID: playing.entry.track.id, position: position, isPaused: engineIsPaused,
+        let report = PlaybackReport(trackID: playing.entry.track.id, position: reportPosition,
+                                    isPaused: playingElsewhere == nil ? engineIsPaused : !isPlaying,
                                     playSessionID: playing.playSessionID)
         Task { await server.report(.progress, report) }
     }

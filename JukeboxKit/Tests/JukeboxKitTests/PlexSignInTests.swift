@@ -194,6 +194,14 @@ struct PlexSignInTests {
         #expect(capped.hasPrefix("http://nas:32400/music/:/transcode/universal/start.mp3?path=%2Flibrary%2Fmetadata%2F151&"))
         #expect(capped.contains("maxAudioBitrate=128") && capped.contains("protocol=http") && capped.contains("X-Plex-Token=tok"))
         #expect(server.downloadURL(for: track, quality: .original).absoluteString.contains("file.mp3?download=1&X-Plex-Token=tok"))
+        // A Chromecast: the MP3's file with the token; an M4A, the transcoder's MP3.
+        let cast = server.castURL(for: track)
+        #expect(cast.contentType == "audio/mpeg"
+            && cast.url.absoluteString == "http://nas:32400/library/parts/124/1794611181/file.mp3?X-Plex-Token=tok")
+        track.container = "mp4"
+        let converted = server.castURL(for: track)
+        #expect(converted.contentType == "audio/mpeg" && converted.url.absoluteString.contains("start.mp3?")
+            && converted.url.absoluteString.contains("maxAudioBitrate=320") && converted.url.absoluteString.contains("X-Plex-Token=tok"))
         track.container = "opus"
         #expect(server.streamURL(for: track, quality: .original, playSessionID: "s").absoluteString.contains("maxAudioBitrate=320"))
         #expect(server.artworkURL(Artwork(itemID: "149", tag: "/library/metadata/149/thumb/1794902352"), maxPixelSize: 300).absoluteString

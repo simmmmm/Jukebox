@@ -328,6 +328,10 @@ public struct JellyfinServer: MusicServer {
         client.streamURL(trackID: track.id, quality: quality, playSessionID: playSessionID)
     }
 
+    public func castURL(for track: Track) -> CastStream {
+        client.castURL(for: track)
+    }
+
     public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
         client.downloadURL(trackID: track.id, quality: quality)
     }

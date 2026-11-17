@@ -90,7 +90,10 @@ targets:
         # certificate the phone does not know: Jukebox goes where it is told.
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
-        NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin, Navidrome or other music server on this network.
+        NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin, Navidrome or other music server on this network, and on the speakers and TVs you choose in Play On.
+        # Chromecasts, looked for by Bonjour only while Play On's list is open
+        # (Player/CastNetwork.swift).
+        NSBonjourServices: [_googlecast._tcp]
         # "Play <album> in Jukebox" by voice, in the car above all: SiriKit's
         # media intent, handled in the app (Intents/SiriMedia.swift). The Mac
         # has no media intents and ignores these.

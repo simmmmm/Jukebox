@@ -613,6 +613,19 @@ public struct SubsonicClient: MusicServer {
         return connection.url("stream", query)
     }
 
+    /// What a cast device fetches itself (MusicServer.castURL): MP3, FLAC
+    /// and AAC as they are (`format=raw`, the file's own type); everything
+    /// else, M4A among them (its codec may be ALAC), MP3 at 320.
+    public func castURL(for track: Track) -> CastStream {
+        let id = URLQueryItem(name: "id", value: track.id)
+        let types = ["mp3": "audio/mpeg", "flac": "audio/flac", "aac": "audio/aac"]
+        if let suffix = track.container, let type = types[suffix] {
+            return CastStream(url: connection.url("stream", [id, URLQueryItem(name: "format", value: "raw")]),
+                              contentType: type)
+        }
+        return CastStream(url: connection.url("stream", [id] + Self.mp3(kbps: 320)), contentType: "audio/mpeg")
+    }
+
     /// A song's file to save on the phone (docs/OFFLINE.md), a plain file
     /// a background download fetches with no headers:
     /// - `.original`: `download?id=`, the file as it is (the spec: "without

@@ -340,6 +340,47 @@ Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
   test Jellyfin's two users, test and second); Linux's `AccountCheck`
   after every build (`dev/linux-errors.sh`).
 
+## Playing on other devices
+
+Play On, on every client: "van mij mag chromecast er ook in hoor ik wil
+alleen er voor waken dat we niet 10000 knopen krijgen" (17 November 2026).
+So no new button: the AirPlay glyph where it always was (Now Playing, the
+wide bar) opens one list, and Linux has the same glyph in the same place of
+its bar. The list: this device, AirPlay (Apple: the system's own picker as
+a row), the Chromecasts on the network, the user's other Jellyfin or Emby
+clients that take remote control, a Subsonic server's jukebox where the
+user has it. On Plex, Chromecasts only (docs/SERVERS.md). It looks only while it is open: no local network prompt at launch.
+
+- **The queue stays the truth** (`Jukebox/Player/PlayOn.swift`, shared).
+  A `RemotePlayer` is an engine elsewhere: it takes the current song and,
+  where it holds more (`capacity`), the ones after it. Once a second the
+  queue reads where it is and follows, as it follows a gapless engine; an
+  end goes on by the queue's rules. Play, pause, next, seek and the volume
+  slider (the device's own level then) drive it; Now Playing says "Playing
+  on …" in a quiet line.
+- **Jellyfin clients** get up to 100 songs (`PlayNow`, then `PlayLast` for
+  the radio's picks) and report their plays themselves, so the queue does
+  not (measured under Xvfb: one count a song). The song handed over
+  mid-play counts twice when it had counted here already. **A jukebox** gets the list too (`jukeboxControl`). **A Chromecast**
+  (the Default Media Receiver) plays one song, a plain file from
+  `castURL(for:)`, and the queue reports the play.
+- **Chromecasts, without Google's SDK** ("Doe zonder", 17 November 2026):
+  every client speaks castv2 itself, JukeboxKit's `CastSession`. Linux over
+  GIO's TLS, found by Avahi (`Linux/App/Cast.swift`); the iPhone, the iPad
+  and the Mac over Network's TLS, found by Bonjour
+  (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
+  privacy answers stay as they are (`docs/STATS.md`).
+- **What it cannot do**: a server at localhost is refused at once (the TV
+  fetches the songs itself); a TV that cannot play from an https server it
+  does not trust says so. A moment's silence between songs on a Chromecast.
+  On the iPhone, with the app suspended in the background, the TV ends with
+  its song: the next is the queue's to give. CarPlay plays on the phone.
+- **Checked**: the kit's `PlayOnTests` and `JellyfinSessionsIntegrationTests`
+  (a second client on the test Jellyfin over its websocket receives Play,
+  Playstate and SetVolume), `CastProtocolTests`; Linux's `JUKEBOX_CHECK=cast`
+  against a fake TLS receiver; Linux under Xvfb (`docs/LINUX.md`). No real
+  Chromecast yet.
+
 ## Scrobbling
 
 The server scrobbles, not Jukebox: Jellyfin with its Last.fm plugin,

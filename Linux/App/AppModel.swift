@@ -63,6 +63,13 @@ final class AppModel {
         radio.offline = offline
         offline.onConnectivityChange = { [weak self] in self?.connectivityChanged() }
         offline.onSongsChange = { [weak self] in self?.radio.offlineSongsChanged() }
+        // Chromecasts: Avahi finds them, castv2 over GIO's TLS plays on them
+        // (Cast.swift, PlayOn.swift).
+        player.playOn.castFinder = AvahiCastFinder()
+        player.playOn.castPlayer = { device in
+            guard let (host, port) = AvahiCastFinder.split(device.address) else { return nil }
+            return CastPlayer(device: device, socket: GioCastSocket(host: host, port: port))
+        }
     }
 
     func can(_ capability: ServerCapability) -> Bool {

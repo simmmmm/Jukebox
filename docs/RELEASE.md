@@ -248,6 +248,18 @@ Cloud signing then makes both store profiles. `widget_signed` in
 the widget in `PlugIns/`, and the App Group in the app's signature and the
 widget's. An upload without them stops.
 
+## Play On
+
+Chromecasts on the iPhone, the iPad and the Mac are spoken to by the app
+itself (castv2 over Network's TLS, `Jukebox/Player/CastNetwork.swift`); no
+Google Cast SDK ("Doe zonder", the photographer, 17 November 2026). So
+nothing to fetch, no other licence, and App Privacy unchanged: Play On sends
+nothing to anyone but the listener's own server and devices.
+
+- Info.plist (project.yml): `NSBonjourServices` `_googlecast._tcp`;
+  `NSLocalNetworkUsageDescription` names the speakers and TVs. The prompt
+  comes when Play On's list first opens, not at launch. No entitlement.
+
 ## Builds
 
 - **A push** builds the iPhone's app, signed ad hoc (CarPlay, above), and the

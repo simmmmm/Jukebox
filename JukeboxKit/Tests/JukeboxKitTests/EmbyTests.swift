@@ -85,7 +85,13 @@ struct EmbyTests {
             let download = query(server.downloadURL(for: track, quality: .normal))
             #expect(stream[key] == "0123456789abcdef0123456789abcdef" && download[key] == stream[key])
             #expect(stream[other] == nil && download[other] == nil)
+            let cast = query(server.castURL(for: track).url)
+            #expect(cast[key] == stream[key] && cast[other] == nil)
         }
+        let embyClient = try #require((emby as? JellyfinServer)?.client)
+        let jellyfinClient = try #require((jellyfin as? JellyfinServer)?.client)
+        #expect(embyClient.sessionSocketPath(deviceID: "d") == "/embywebsocket?api_key=0123456789abcdef0123456789abcdef&deviceId=d")
+        #expect(jellyfinClient.sessionSocketPath(deviceID: "d") == "/socket?ApiKey=0123456789abcdef0123456789abcdef&deviceId=d")
         let cover = Artwork(itemID: "528", tag: "80f2190aa02cec8adedfdf3a9e3dc56f")
         #expect(query(emby.artworkURL(cover, maxPixelSize: 300)) == ["maxWidth": "300", "maxHeight": "300", "quality": "90", "tag": cover.tag!])
         #expect(query(jellyfin.artworkURL(cover, maxPixelSize: 300)) == ["fillWidth": "300", "fillHeight": "300", "quality": "90", "tag": cover.tag!])

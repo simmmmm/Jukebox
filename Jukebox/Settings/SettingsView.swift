@@ -1031,7 +1031,7 @@ private struct SettingsAboutSection: View {
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("Jukebox")
                         .desktopFont(15, weight: .bold, phone: .headline)
-                    Text("Made for Jellyfin, Emby, Navidrome and other Subsonic servers")
+                    Text("Made for Jellyfin, Emby, Plex, Navidrome and other Subsonic servers")
                         .desktopFont(13, phone: .subheadline)
                         .foregroundStyle(.secondary)
                 }

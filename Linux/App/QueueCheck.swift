@@ -10,6 +10,21 @@
 import Foundation
 import JukeboxKit
 
+/// A device elsewhere that takes everything and says nothing.
+private final class SilentRemote: RemotePlayer {
+    let device = PlayOnDevice(id: "check", name: "Check", kind: .chromecast, address: "")
+    var reportsItself: Bool { false }
+    var capacity: Int { 1 }
+    func load(_ entries: [RemoteEntry], at position: TimeInterval, play: Bool) async throws {}
+    func append(_ entries: [RemoteEntry]) async throws {}
+    func resume() async throws {}
+    func pause() async throws {}
+    func seek(to position: TimeInterval) async throws {}
+    func setVolume(_ level: Double) async throws {}
+    func stop() async {}
+    func status() async throws -> RemoteStatus { RemoteStatus() }
+}
+
 /// The queue with no engine: every song has an address, none plays.
 private final class Bench: PlayQueue {
     /// What the engine was told to hold next.
@@ -199,6 +214,12 @@ enum QueueCheck {
         expect(abs(q.level(for: mixed[1]) - whole / 4) < 0.001, "the sleep timer's fade and the crossfade together")
         q.setSleepTimer(nil)
         q.isPlaying = false
+        // Playing on another device, the device has the volume: no fade.
+        q.play(mixed, startingAt: 1, context: QueueContext(.songs, title: "Songs"))
+        q.playingElsewhere = SilentRemote()
+        q.elapsed = 198.5
+        expect(q.level(for: mixed[1]) == whole, "Crossfade: none while it plays elsewhere")
+        q.playingElsewhere = nil
         q.settings.crossfade = saved
 
         q.stop()

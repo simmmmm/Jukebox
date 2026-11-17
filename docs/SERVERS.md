@@ -507,6 +507,44 @@ measurements):
   ms, saved as `c` = "Jukebox (device)") and `getPlayQueue`. The server keeps
   the songs, the current one, the position and who saved it.
 
+## Playing on other devices
+
+Play On sends the music to another player. Measured on Jellyfin 12.4, 17
+November 2026; `PlayOnTests` and `JellyfinSessionsIntegrationTests`.
+
+- **Jellyfin's other clients** (`Jellyfin/JellyfinSessions.swift`):
+  `GET /Sessions?controllableByUserId=`, keeping sessions with
+  SupportsRemoteControl and Audio, never this device's. Jellyfin passes
+  commands over the client's websocket: a session that only posted
+  `/Sessions/Capabilities/Full` stayed SupportsRemoteControl false, and was
+  listed once its `/socket?ApiKey=` was open (`api_key` there: 403). Then
+  `POST /Sessions/{id}/Playing?playCommand=PlayNow&itemIds=&startIndex=&startPositionTicks=`
+  arrives as a `Play` message, `PlayLast` adds, `/Playing/{Pause, Unpause,
+  Stop, NextTrack, PreviousTrack, Seek}` as `Playstate`, and
+  `/Sessions/{id}/Command` with `SetVolume` (0 to 100, a string) as
+  `GeneralCommand`. What it plays is the session's NowPlayingItem and
+  PlayState. The far client reports its own plays.
+- **A Subsonic server's jukebox** (`Subsonic/SubsonicJukebox.swift`):
+  `jukeboxControl` with `action` status, set, add, skip (index, offset in
+  whole seconds), start, stop, setGain (0 to 1); each answers
+  `jukeboxStatus`, currentIndex -1 for none. Offered only when getUser says
+  `jukeboxRole` and a status answers: Navidrome keeps its jukebox off unless
+  `Jukebox.Enabled`. Not measured on a server with it on.
+- **A cast device** fetches the file itself: `castURL(for:)`, a plain file
+  with the credentials in the query and the type the LOAD names. Jellyfin:
+  `/Audio/{id}/universal` with TranscodingProtocol http and
+  TranscodingContainer mp3. With `Container=mp3` an M4A came as audio/mpeg
+  (97 831 bytes), a FLAC as audio/mpeg (129 508), an MP3 as itself (113 059);
+  with `mp3,aac,m4a|aac,mp4|aac,flac` the FLAC came as itself, audio/flac.
+  A Jellyfin track says its container but not an M4A's codec (it may be
+  ALAC), so a FLAC goes as it is and everything else but MP3 as Jellyfin's
+  MP3 at 320. Subsonic: `stream?format=raw` for mp3, flac and aac,
+  `format=mp3&maxBitRate=320` for the rest. Emby: Jellyfin's, the token as
+  `api_key`. Plex: the file with `X-Plex-Token` for mp3 and flac, the
+  transcoder's MP3 at 320 for the rest.
+- **Emby's other clients** as Jellyfin's ("Emby"). **Plex**: Chromecasts
+  only; its own players are not offered.
+
 ## Playlist entries
 
 Subsonic's `getPlaylist` lists songs, not entries, and `updatePlaylist`
@@ -686,11 +724,13 @@ included.
 Emby's capabilities: `ServerCapability.emby`, Jellyfin's without `lyrics`,
 `syncedLyrics` and `replayGain`.
 
-Play On (branch `play-on`, not on main): `/Sessions?ControllableByUserId=`
-answered on Emby (empty with no other client). Its `castURL` has the token
-as `ApiKey` and needs `tokenKey` when it lands. Emby's clients open their
-websocket at `/embywebsocket?api_key=&deviceId=`, where Jellyfin's is
-`/socket?ApiKey=` (not measured).
+Play On: Jellyfin's Sessions API as it is, measured on 4.10.2 by
+`JellyfinSessionsIntegrationTests` (a second client with its socket open is
+listed and receives Play, Playstate and SetVolume). The socket is
+`/embywebsocket?api_key=&deviceId=` where Jellyfin's is `/socket?ApiKey=`
+(`sessionSocketPath`); a cast URL carries the token as `api_key`
+(`tokenKey`). Emby sends a Play message's `ItemIds` as JSON numbers
+([378, 89, 279]), Jellyfin as strings: the far client's to read.
 
 Not measured: lyrics on Emby (the test files have none), Emby before 4.10,
 an Emby with its first-run wizard finished (the test script stops before
@@ -791,8 +831,13 @@ The test plays a song to its end: one play.
 `playbackTimeline`, `lastPlayed` (`lastViewedAt`). Off: `instantMix` (Plex's
 sonic mixes need Plex Pass and an analysed library), `similarArtists` (names
 from its online agent, not items), `topSongs`, `replayGain` (loudness is in
-the file's streams, not the listing), `transcodeOffset`, and the handoff
-(Plex keeps no state of a client's for another to read).
+the file's streams, not the listing), `transcodeOffset`, `rating` (its one
+rating is the favourite here), and the handoff (Plex keeps no state of a
+client's for another to read).
+
+**Play On**: Chromecasts only. `castURL` is the file with the token for an
+MP3 or a FLAC, else the transcoder's MP3 at 320. Plex's own players
+(Plex Companion) are not offered: not built.
 
 **Tests**: `PlexSignInTests` (no server: detection, the token, the PIN,
 the resources and the choice of address, the mapping, the URLs, the

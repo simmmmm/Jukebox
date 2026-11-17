@@ -204,6 +204,8 @@ struct SubsonicBody: Decodable {
     var openSubsonicExtensions: [SubsonicExtension]
     var scanStatus: SubsonicScanStatus?
     var playQueue: SubsonicPlayQueue?
+    /// jukeboxControl's answer: `jukeboxStatus`, or `jukeboxPlaylist` for get.
+    var jukeboxStatus: SubsonicJukeboxStatus?
 
     var isOK: Bool { status?.lowercased() == "ok" }
 
@@ -236,6 +238,8 @@ struct SubsonicBody: Decodable {
         openSubsonicExtensions = c.lenientList(SubsonicExtension.self, key("openSubsonicExtensions"))
         scanStatus = c.lenient(SubsonicScanStatus.self, key("scanStatus"))
         playQueue = c.lenient(SubsonicPlayQueue.self, key("playQueue"))
+        jukeboxStatus = c.lenient(SubsonicJukeboxStatus.self, key("jukeboxStatus"))
+            ?? c.lenient(SubsonicJukeboxStatus.self, key("jukeboxPlaylist"))
     }
 }
 
@@ -271,12 +275,29 @@ struct SubsonicUser: Decodable {
     var username: String?
     var streamRole: Bool?
     var downloadRole: Bool?
+    var jukeboxRole: Bool?
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: SubsonicKey.self)
         username = c.lenientString(SubsonicKey("username"))
         streamRole = c.lenientBool(SubsonicKey("streamRole"))
         downloadRole = c.lenientBool(SubsonicKey("downloadRole"))
+        jukeboxRole = c.lenientBool(SubsonicKey("jukeboxRole"))
+    }
+}
+
+struct SubsonicJukeboxStatus: Decodable {
+    var currentIndex: Int?
+    var playing: Bool?
+    var gain: Double?
+    var position: Int?
+
+    init(from decoder: any Decoder) throws {
+        let c = try decoder.container(keyedBy: SubsonicKey.self)
+        currentIndex = c.lenientInt(SubsonicKey("currentIndex"))
+        playing = c.lenientBool(SubsonicKey("playing"))
+        gain = c.lenientDouble(SubsonicKey("gain"))
+        position = c.lenientInt(SubsonicKey("position"))
     }
 }
 

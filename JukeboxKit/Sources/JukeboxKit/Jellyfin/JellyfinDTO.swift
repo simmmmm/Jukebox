@@ -85,6 +85,9 @@ struct JellyfinItem: Decodable, Sendable {
     var dateCreated: String?
     var normalizationGain: Double?
     var playlistItemID: String?
+    /// "mp3", "flac", or "mov,mp4,m4a,3gp,3g2,mj2" for an M4A (12.4,
+    /// in the default answer): what a cast device is told it gets.
+    var container: String?
 
     var childCount: Int?
     var songCount: Int?
@@ -120,6 +123,7 @@ struct JellyfinItem: Decodable, Sendable {
         case dateCreated = "DateCreated"
         case normalizationGain = "NormalizationGain"
         case playlistItemID = "PlaylistItemId"
+        case container = "Container"
         case childCount = "ChildCount"
         case songCount = "SongCount"
         case albumCount = "AlbumCount"
@@ -419,6 +423,7 @@ extension JellyfinItem {
             dateAdded: dateCreated.flatMap(JellyfinDate.parse),
             normalizationGain: normalizationGain,
             playlistEntryID: playlistItemID.flatMap { $0.isEmpty ? nil : $0 },
+            container: container.flatMap { $0.isEmpty ? nil : $0.lowercased() },
             credits: credits
         )
     }
