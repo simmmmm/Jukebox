@@ -36,17 +36,20 @@ public struct JellyfinServer: MusicServer {
                 transport: any HTTPTransport = URLSessionTransport()) {
         let token: String? = if case let .jellyfinToken(token) = credentials.secret { token } else { nil }
         self.init(client: JellyfinClient(serverURL: credentials.serverURL, identity: identity, accessToken: token,
-                                         userID: credentials.userID, transport: transport),
+                                         userID: credentials.userID, transport: transport,
+                                         isEmby: credentials.kind == .emby),
                   credentials: credentials)
     }
 
-    public var kind: ServerKind { .jellyfin }
+    /// Jellyfin, or Emby through the same client.
+    public var kind: ServerKind { credentials.kind }
     public var capabilities: Set<ServerCapability> { credentials.capabilities }
 
     /// What a Jellyfin of this version has once signed in: lyrics and
     /// NormalizationGain came with 10.9. A version that cannot be read is
-    /// taken as new.
-    static func capabilities(version: String) -> Set<ServerCapability> {
+    /// taken as new. Emby's are its own, whatever its version (4.10).
+    static func capabilities(kind: ServerKind = .jellyfin, version: String) -> Set<ServerCapability> {
+        if kind == .emby { return ServerCapability.emby }
         guard !SubsonicConnection.numbers(version).isEmpty,
               SubsonicConnection.compare(version, "10.9.0") == .orderedAscending else { return ServerCapability.jellyfin }
         return ServerCapability.jellyfin.subtracting([.lyrics, .syncedLyrics, .replayGain])
@@ -67,7 +70,7 @@ public struct JellyfinServer: MusicServer {
     /// lyrics).
     public func currentCapabilities() async throws -> Set<ServerCapability> {
         let info = try await mapped { try await client.publicInfo() }
-        return Self.capabilities(version: info.version)
+        return Self.capabilities(kind: kind, version: info.version)
     }
 
     public func signOut() async {
@@ -350,7 +353,7 @@ public struct JellyfinServer: MusicServer {
 
 // MARK: - Signing in
 
-/// Signing in to a Jellyfin `MusicServers.detect` found.
+/// Signing in to a Jellyfin (or an Emby) `MusicServers.detect` found.
 public struct JellyfinSignIn: ServerSignIn {
     public let server: DetectedServer
     let client: JellyfinClient
@@ -358,7 +361,8 @@ public struct JellyfinSignIn: ServerSignIn {
     public init(server: DetectedServer, identity: ClientIdentity,
                 transport: any HTTPTransport = URLSessionTransport()) {
         self.server = server
-        client = JellyfinClient(serverURL: server.url, identity: identity, transport: transport)
+        client = JellyfinClient(serverURL: server.url, identity: identity, transport: transport,
+                                isEmby: server.kind == .emby)
     }
 
     /// POST /Users/AuthenticateByName.
@@ -371,8 +375,8 @@ public struct JellyfinSignIn: ServerSignIn {
     }
 
     func session(_ credentials: Credentials) -> ServerCredentials {
-        ServerCredentials(jellyfin: credentials, serverVersion: server.version,
-                          capabilities: JellyfinServer.capabilities(version: server.version))
+        ServerCredentials(jellyfin: credentials, kind: server.kind, serverVersion: server.version,
+                          capabilities: JellyfinServer.capabilities(kind: server.kind, version: server.version))
     }
 }
 

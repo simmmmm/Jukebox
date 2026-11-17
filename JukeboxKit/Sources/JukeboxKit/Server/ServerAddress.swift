@@ -144,14 +144,20 @@ enum ServerAddress {
     }
 
     /// /System/Info/Public with a non-empty Id, then /QuickConnect/Enabled.
+    /// Emby answers the same question: Jellyfin names itself in ProductName
+    /// ("Jellyfin Server"), Emby 4.10 names nothing there (measured), so
+    /// without a ProductName /System/Ping decides ("Emby Server"). Emby has
+    /// no Quick Connect (404).
     static func probeJellyfin(_ url: URL, identity: ClientIdentity,
                               transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
         let client = JellyfinClient(serverURL: url, identity: identity, transport: transport)
         do {
             let info = try await client.publicInfo()
-            var capabilities = JellyfinServer.capabilities(version: info.version)
+            let isEmby = if let product = info.productName { product.contains("Emby") } else { await client.pingSaysEmby() }
+            let kind: ServerKind = isEmby ? .emby : .jellyfin
+            var capabilities = JellyfinServer.capabilities(kind: kind, version: info.version)
             if await client.quickConnectEnabled() { capabilities.insert(.quickConnect) }
-            return .success(DetectedServer(kind: .jellyfin, url: url, id: info.id, name: info.name,
+            return .success(DetectedServer(kind: kind, url: url, id: info.id, name: info.name,
                                            version: info.version, capabilities: capabilities))
         } catch let error as JellyfinError {
             return .failure(MusicServerError(error))

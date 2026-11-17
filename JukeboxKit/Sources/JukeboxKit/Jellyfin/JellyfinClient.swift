@@ -25,11 +25,14 @@ public struct ServerInfo: Codable, Sendable, Hashable {
     public var id: String
     public var name: String
     public var version: String
+    /// "Jellyfin Server" on Jellyfin; Emby 4.10 sends none (measured).
+    public var productName: String?
 
-    public init(id: String, name: String, version: String) {
+    public init(id: String, name: String, version: String, productName: String? = nil) {
         self.id = id
         self.name = name
         self.version = version
+        self.productName = productName
     }
 }
 
@@ -209,21 +212,26 @@ public final class JellyfinClient: Sendable {
     public let accessToken: String?
     public let userID: String?
     public let transport: any HTTPTransport
+    /// Emby, Jellyfin's ancestor: the same API but for the few places where
+    /// they parted, each marked where it is used (docs/SERVERS.md, "Emby").
+    public let isEmby: Bool
 
     public init(serverURL: URL, identity: ClientIdentity, accessToken: String? = nil,
-                userID: String? = nil, transport: any HTTPTransport = URLSessionTransport()) {
+                userID: String? = nil, transport: any HTTPTransport = URLSessionTransport(), isEmby: Bool = false) {
         self.serverURL = serverURL
         self.identity = identity
         self.accessToken = accessToken
         self.userID = userID
         self.transport = transport
+        self.isEmby = isEmby
     }
 
     /// A client for a signed-in session.
     public convenience init(credentials: Credentials, identity: ClientIdentity,
-                            transport: any HTTPTransport = URLSessionTransport()) {
+                            transport: any HTTPTransport = URLSessionTransport(), isEmby: Bool = false) {
         self.init(serverURL: credentials.serverURL, identity: identity,
-                  accessToken: credentials.accessToken, userID: credentials.userID, transport: transport)
+                  accessToken: credentials.accessToken, userID: credentials.userID, transport: transport,
+                  isEmby: isEmby)
     }
 
     /// What a person types as a server ("music.example.com", "192.168.1.5:8096",
@@ -262,7 +270,16 @@ public final class JellyfinClient: Sendable {
             throw JellyfinError.invalidServerAddress
         }
         guard let id = info.id, !id.isEmpty else { throw JellyfinError.invalidServerAddress }
-        return ServerInfo(id: id, name: info.serverName ?? serverURL.host ?? "Jellyfin", version: info.version ?? "")
+        return ServerInfo(id: id, name: info.serverName ?? serverURL.host ?? "Jellyfin", version: info.version ?? "",
+                          productName: info.productName)
+    }
+
+    /// Whether GET /System/Ping says Emby: Emby 4.10 answers the text
+    /// "Emby Server", Jellyfin 12.4 the JSON string "Jellyfin Server"
+    /// (measured). Asked only when /System/Info/Public names no product.
+    func pingSaysEmby() async -> Bool {
+        guard let response = try? await send("GET", "/System/Ping", timeout: 15) else { return false }
+        return String(data: response.body, encoding: .utf8)?.contains("Emby") == true
     }
 
     /// POST /Users/AuthenticateByName. A wrong name or password is
@@ -347,7 +364,7 @@ public final class JellyfinClient: Sendable {
     }
 
     public func artist(id: ItemID) async throws -> Artist {
-        guard let artist = try await item(id: id, fields: Self.artistFields)?.asArtist() else {
+        guard let artist = try await item(id: id, type: "MusicArtist", fields: Self.artistFields)?.asArtist() else {
             throw JellyfinError.notFound
         }
         return artist
@@ -361,7 +378,7 @@ public final class JellyfinClient: Sendable {
         var q = userQuery(user) + Self.imageQuery + Self.paging(start: query.start, limit: query.limit)
         q += [URLQueryItem(name: "IncludeItemTypes", value: "MusicAlbum"),
               URLQueryItem(name: "Recursive", value: "true"),
-              URLQueryItem(name: "Fields", value: Self.albumFields)]
+              URLQueryItem(name: "Fields", value: fields(Self.albumFields))]
         if let artistID = query.artistID { q.append(URLQueryItem(name: "AlbumArtistIds", value: artistID)) }
         if let genre = query.genre { q.append(URLQueryItem(name: "Genres", value: genre)) }
         if query.favoritesOnly { q.append(URLQueryItem(name: "IsFavorite", value: "true")) }
@@ -377,7 +394,7 @@ public final class JellyfinClient: Sendable {
     }
 
     public func album(id: ItemID) async throws -> Album {
-        guard let album = try await item(id: id, fields: Self.albumFields)?.asAlbum() else {
+        guard let album = try await item(id: id, type: "MusicAlbum", fields: fields(Self.albumFields))?.asAlbum() else {
             throw JellyfinError.notFound
         }
         return album
@@ -393,7 +410,7 @@ public final class JellyfinClient: Sendable {
         var q = userQuery(user) + Self.imageQuery
         q += [URLQueryItem(name: "IncludeItemTypes", value: "Audio"),
               URLQueryItem(name: "Recursive", value: "true"),
-              URLQueryItem(name: "Fields", value: Self.trackFields)]
+              URLQueryItem(name: "Fields", value: fields(Self.trackFields))]
         if let albumID = query.albumID { q.append(URLQueryItem(name: "ParentId", value: albumID)) }
         if let artistID = query.artistID { q.append(URLQueryItem(name: "ArtistIds", value: artistID)) }
         if let genre = query.genre { q.append(URLQueryItem(name: "Genres", value: genre)) }
@@ -479,7 +496,7 @@ public final class JellyfinClient: Sendable {
 
     /// A track as it is now: its play count and favourite after a change.
     public func track(id: ItemID) async throws -> Track {
-        guard let track = try await item(id: id, fields: Self.trackFields)?.asTrack() else {
+        guard let track = try await item(id: id, type: "Audio", fields: fields(Self.trackFields))?.asTrack() else {
             throw JellyfinError.notFound
         }
         return track
@@ -507,24 +524,46 @@ public final class JellyfinClient: Sendable {
     }
 
     /// GET /Playlists/{id}/Items: each track with its `playlistEntryID`.
-    /// On 12.4 the entry id is the track's own id (see removeFromPlaylist).
+    /// On 12.4 the entry id is the track's own id (see removeFromPlaylist);
+    /// Emby 4.10 gives each place its own ("1", "2", …, measured).
     public func playlistTracks(playlistID: ItemID) async throws -> [Track] {
         let user = try requireUser()
         var query = userQuery(user) + Self.imageQuery
-        query.append(URLQueryItem(name: "Fields", value: Self.trackFields))
-        let result = try await items("/Playlists/\(Self.segment(playlistID))/Items", query, timeout: 60)
+        query.append(URLQueryItem(name: "Fields", value: fields(Self.trackFields)))
+        let result: JellyfinItemsResult
+        do {
+            result = try await items("/Playlists/\(Self.segment(playlistID))/Items", query, timeout: 60)
+        } catch JellyfinError.server(status: 500, _) where isEmby {
+            // Emby 4.10 answers a playlist it does not have with 500 "Object
+            // reference not set to an instance of an object" (measured).
+            throw JellyfinError.notFound
+        }
         return (result.items ?? []).filter { $0.type == nil || $0.type == "Audio" }.compactMap { $0.asTrack() }
     }
 
     /// POST /Playlists; the new playlist's id. The tracks go in the JSON
-    /// body, so there is no limit from the URL's length.
+    /// body, so there is no limit from the URL's length. Emby 4.10 reads no
+    /// body there (500 "Unrecognized Guid format", measured): its fields go
+    /// in the query, the first 100 tracks with them and the rest added.
     @discardableResult
     public func createPlaylist(name: String, trackIDs: [ItemID]) async throws -> ItemID {
         let user = try requireUser()
-        let response = try await send("POST", "/Playlists",
+        let response: HTTPResponse
+        if isEmby {
+            let first = Array(trackIDs.prefix(Self.idsPerRequest))
+            response = try await send("POST", "/Playlists", query: [
+                URLQueryItem(name: "Name", value: name), URLQueryItem(name: "Ids", value: first.joined(separator: ",")),
+                URLQueryItem(name: "UserId", value: user), URLQueryItem(name: "MediaType", value: "Audio"),
+            ])
+        } else {
+            response = try await send("POST", "/Playlists",
                                       json: JellyfinCreatePlaylist(name: name, ids: trackIDs, userID: user))
+        }
         guard let id = try decode(JellyfinCreatedPlaylist.self, from: response).id, !id.isEmpty else {
             throw JellyfinError.decoding("the new playlist has no id")
+        }
+        if isEmby, trackIDs.count > Self.idsPerRequest {
+            try await addToPlaylist(playlistID: id, trackIDs: Array(trackIDs.dropFirst(Self.idsPerRequest)))
         }
         return id
     }
@@ -582,6 +621,7 @@ public final class JellyfinClient: Sendable {
             .filter { $0.type == nil || $0.type == "MusicArtist" }
             .compactMap { $0.asArtist() }
             .filter { $0.id != artistID }
+            .prefix(max(1, limit)).map { $0 }
     }
 
     /// GET /Items/{id}/InstantMix: Jellyfin's mix from any track, album,
@@ -590,13 +630,15 @@ public final class JellyfinClient: Sendable {
     /// (each 200, `limit` tracks). A track's mix starts with the track
     /// itself; the mix is the seed's genre(s), so on the test library, whose
     /// genres are unsplit strings, it stays inside one artist's genre string.
+    /// Emby 4.10 gives one more than `limit` (6 for 5, measured): cut.
     public func instantMix(seedID: ItemID, limit: Int = 100) async throws -> [Track] {
         let user = try requireUser()
         var query = userQuery(user) + Self.imageQuery
         query += [URLQueryItem(name: "limit", value: String(max(1, limit))),
-                  URLQueryItem(name: "Fields", value: Self.trackFields)]
+                  URLQueryItem(name: "Fields", value: fields(Self.trackFields))]
         let result = try await items("/Items/\(Self.segment(seedID))/InstantMix", query)
-        return (result.items ?? []).filter { $0.type == nil || $0.type == "Audio" }.compactMap { $0.asTrack() }
+        return Array((result.items ?? []).filter { $0.type == nil || $0.type == "Audio" }
+            .compactMap { $0.asTrack() }.prefix(max(1, limit)))
     }
 
     /// Artists, albums, tracks and playlists matching `term`, `limit` of
@@ -621,8 +663,11 @@ public final class JellyfinClient: Sendable {
 
     /// GET /Audio/{id}/Lyrics (10.9+); nil when the track has none (12.4
     /// answers 404). 10.8 had no lyrics, so there is no older route to try.
+    /// Emby keeps lyrics as a track's subtitle streams and reads this route
+    /// as a stream in a container "Lyrics" (500, measured on 4.10): none.
     public func lyrics(trackID: ItemID) async throws -> Lyrics? {
         _ = try requireUser()
+        if isEmby { return nil }
         do {
             let lyrics = try await get(JellyfinLyrics.self, "/Audio/\(Self.segment(trackID))/Lyrics")
             return lyrics.asLyrics()
@@ -658,7 +703,11 @@ public final class JellyfinClient: Sendable {
     ///   44.1 kHz), the FLAC (105 kbit/s, a sine tone) as the file itself.
     ///   At 64 kbit/s all three were HLS; a segment measured 66 kbit/s.
     /// - `api_key` is refused on 12.4 (401); `ApiKey` works, and is what
-    ///   10.8–10.10 read first too.
+    ///   10.8–10.10 read first too. Emby 4.10 the other way round
+    ///   (`tokenKey`).
+    /// - Emby 4.10 the same: the three files as they are, HLS at .low for
+    ///   the MP3 and the M4A and at 64 kbit/s for all three; the segments
+    ///   (AAC, 67 kbit/s at 64) load without a token and without Premiere.
     public func streamURL(trackID: ItemID, quality: StreamQuality, playSessionID: String) -> URL {
         var query = [
             URLQueryItem(name: "UserId", value: userID ?? ""),
@@ -673,20 +722,27 @@ public final class JellyfinClient: Sendable {
             query.append(URLQueryItem(name: "MaxStreamingBitrate", value: String(bitrate)))
         }
         if let accessToken, !accessToken.isEmpty {
-            query.append(URLQueryItem(name: "ApiKey", value: accessToken))
+            query.append(URLQueryItem(name: tokenKey, value: accessToken))
         }
         return url("/Audio/\(Self.segment(trackID))/universal", query)
     }
+
+    /// The token's name in a URL's query: Jellyfin 12.4 takes `ApiKey` and
+    /// refuses `api_key` (401); Emby 4.10 takes `api_key` and refuses
+    /// `ApiKey` (401). Both measured.
+    var tokenKey: String { isEmby ? "api_key" : "ApiKey" }
 
     /// GET /Items/{id}/Images/Primary, square, `maxPixelSize` on its longer
     /// side, with the tag so it caches for good. Needs no token.
     /// On 12.4: 200 image/jpeg; with a tag "Cache-Control: public,
     /// max-age=31536000, immutable", without one only "public". An item
-    /// without the image is 404.
+    /// without the image is 404. Emby 4.10 ignores fillWidth and fillHeight
+    /// (a 600 px cover came at 600) and scales by maxWidth and maxHeight
+    /// (300 came at 300); "public, max-age=31536000" with a tag.
     public func imageURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
         let size = String(max(1, maxPixelSize))
-        var query = [URLQueryItem(name: "fillWidth", value: size),
-                     URLQueryItem(name: "fillHeight", value: size),
+        var query = [URLQueryItem(name: isEmby ? "maxWidth" : "fillWidth", value: size),
+                     URLQueryItem(name: isEmby ? "maxHeight" : "fillHeight", value: size),
                      URLQueryItem(name: "quality", value: "90")]
         if let tag = artwork.tag, !tag.isEmpty { query.append(URLQueryItem(name: "tag", value: tag)) }
         return url("/Items/\(Self.segment(artwork.itemID))/Images/Primary", query)
@@ -755,12 +811,20 @@ extension JellyfinClient {
     /// One item by id with the fields of its kind: GET /Items?userId=&Ids=,
     /// the same answer as a list (10.8 has the route too). Nil when the
     /// server has no such item.
-    func item(id: ItemID, fields: String) async throws -> JellyfinItem? {
+    ///
+    /// Recursive and the item's type are for Emby 4.10, which finds nothing
+    /// by Ids without them, and only tracks with Recursive alone (measured;
+    /// Jellyfin 12.4 answers the same either way). Emby also ignores an id
+    /// it cannot read and answers with the whole library, so there only the
+    /// item asked for counts.
+    func item(id: ItemID, type: String, fields: String) async throws -> JellyfinItem? {
         let user = try requireUser()
         var query = userQuery(user) + Self.imageQuery
-        query += [URLQueryItem(name: "Ids", value: id), URLQueryItem(name: "Fields", value: fields)]
+        query += [URLQueryItem(name: "Ids", value: id), URLQueryItem(name: "Fields", value: fields),
+                  URLQueryItem(name: "Recursive", value: "true"), URLQueryItem(name: "IncludeItemTypes", value: type)]
         let result = try await items("/Items", query)
-        return result.items?.first { $0.id == id } ?? result.items?.first
+        let exact = result.items?.first { $0.id == id }
+        return isEmby ? exact : exact ?? result.items?.first
     }
 
     /// Search's playlists: GET /Items, IncludeItemTypes=Playlist, SearchTerm.
@@ -783,7 +847,7 @@ extension JellyfinClient {
         var base = userQuery(user) + Self.imageQuery + Self.sortQuery(["SortName"], descending: false)
         base += [URLQueryItem(name: "IncludeItemTypes", value: "Audio"),
                  URLQueryItem(name: "Recursive", value: "true"),
-                 URLQueryItem(name: "Fields", value: Self.trackFields)]
+                 URLQueryItem(name: "Fields", value: fields(Self.trackFields))]
         let query = base
 
         // A page of 2000 is about 2.5 MB: more time than a list call.

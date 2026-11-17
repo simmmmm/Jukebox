@@ -300,7 +300,7 @@ extension JellyfinClient {
         }
         query.append(URLQueryItem(name: "AudioBitRate", value: String(quality.aacBitrate ?? 256_000)))
         if let accessToken, !accessToken.isEmpty {
-            query.append(URLQueryItem(name: "ApiKey", value: accessToken))
+            query.append(URLQueryItem(name: tokenKey, value: accessToken))
         }
         return url("/Audio/\(Self.segment(trackID))/universal", query)
     }

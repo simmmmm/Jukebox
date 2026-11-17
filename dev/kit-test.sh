@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # JukeboxKit's build and tests on Linux, in Swift's own Docker image, beside
-# the Jellyfin of dev/jellyfin-test-server.sh and the Navidrome of
-# dev/navidrome-test-server.sh when they run (each server's integration
-# tests skip themselves without it). The same as CI's kit job.
+# the Jellyfin of dev/jellyfin-test-server.sh, the Navidrome of
+# dev/navidrome-test-server.sh and the Emby of dev/emby-test-server.sh when
+# they run (each server's integration tests skip themselves without it).
+# The same as CI's kit job, which has no Emby.
 #
 #   dev/kit-test.sh                 build and every test
 #   dev/kit-test.sh build           build only
@@ -42,6 +43,17 @@ if [[ -n ${NAVIDROME_URL:-} ]]; then
 elif docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$navidrome"; then
   net=(--network jukebox)
   env+=(-e "NAVIDROME_URL=http://$navidrome_host:4533" -e NAVIDROME_USER=test -e NAVIDROME_PASSWORD=test)
+fi
+
+# The Emby of dev/emby-test-server.sh: EMBY_URL=http://other-emby:8096 dev/kit-test.sh
+emby=${JUKEBOX_EMBY_CONTAINER:-jukebox-emby}
+emby_host=emby; [[ $emby == jukebox-emby ]] || emby_host=$emby
+if [[ -n ${EMBY_URL:-} ]]; then
+  net=(--network jukebox)
+  env+=(-e EMBY_URL="$EMBY_URL" -e EMBY_USER="${EMBY_USER:-test}" -e EMBY_PASSWORD="${EMBY_PASSWORD:-test}")
+elif docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$emby"; then
+  net=(--network jukebox)
+  env+=(-e "EMBY_URL=http://$emby_host:8096" -e EMBY_USER=test -e EMBY_PASSWORD=test)
 fi
 
 if [[ ${1:-} == build ]]; then

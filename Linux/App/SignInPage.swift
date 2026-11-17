@@ -92,7 +92,7 @@ enum SignInPage {
         for row in [address, user, password] { on(raw(row), "entry-activated") { submit() } }
 
         let title = label("Jukebox", "serif", "page-title")
-        let fact = label("Music from your Jellyfin, Navidrome or other Subsonic server.", "fact", lines: 0)
+        let fact = label("Music from your Jellyfin, Emby, Navidrome or other Subsonic server.", "fact", lines: 0)
         let column = vbox(spacing: 24, [markTile(), title, fact, group, message, signIn]).margins(24)
         gtk_widget_set_valign(column, GTK_ALIGN_CENTER)
         let clamp = adw_clamp_new()!

@@ -161,11 +161,13 @@ struct JellyfinPublicInfo: Decodable, Sendable {
     var id: String?
     var serverName: String?
     var version: String?
+    var productName: String?
 
     enum CodingKeys: String, CodingKey {
         case id = "Id"
         case serverName = "ServerName"
         case version = "Version"
+        case productName = "ProductName"
     }
 }
 

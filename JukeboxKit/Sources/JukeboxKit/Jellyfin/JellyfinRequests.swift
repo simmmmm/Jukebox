@@ -22,6 +22,14 @@ extension JellyfinClient {
     static let playlistFields = "ChildCount,DateCreated"
     static let genreFields = "ItemCounts"
 
+    /// A track's or album's fields as this server needs them asked: Emby
+    /// 4.10 leaves the year, and PlayCount and LastPlayedDate in UserData,
+    /// out of a list unless they are asked for (measured; its single-item
+    /// route has them all). Jellyfin 12.4 sends all three by default.
+    func fields(_ base: String) -> String {
+        isEmby ? base + ",ProductionYear,UserDataPlayCount,UserDataLastPlayedDate" : base
+    }
+
     /// Only the Primary image's tag, not backdrops and the rest.
     static let imageQuery = [URLQueryItem(name: "EnableImageTypes", value: "Primary"),
                              URLQueryItem(name: "ImageTypeLimit", value: "1")]

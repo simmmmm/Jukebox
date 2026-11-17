@@ -214,7 +214,7 @@ enum Preferences {
             // turned downloads off for this account, that, as a fact.
             let quality = isSubsonic
                 ? "Original is each file as it is, or MP3 at 320 kbit/s when this computer cannot play it; High and Normal have \(app.library.serverKind) convert songs to MP3 at that rate, so more of them fit. Kept songs wait while the power saver is on."
-                : "Original is each file as it is, or AAC at 256 kbit/s when this computer cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Kept songs wait while the power saver is on."
+                : "Original is each file as it is, or AAC at 256 kbit/s when this computer cannot play it; High and Normal have \(app.library.serverKind) convert songs to AAC at that rate, so more of them fit. Kept songs wait while the power saver is on."
             adw_preferences_group_set_description(ptr(group), offline.downloadsAllowed
                 ? quality : "\(server) doesn’t allow downloads for this account. " + quality)
         }

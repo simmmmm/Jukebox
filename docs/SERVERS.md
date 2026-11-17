@@ -1,4 +1,4 @@
-# Servers: Jellyfin, Navidrome and the other Subsonic servers
+# Servers: Jellyfin, Emby, Navidrome and the other Subsonic servers
 
 The photographer, 8 November 2026: "Moet eigenlijk ook voor navidrome en die
 ander". Jukebox, made for their Jellyfin server, also plays from Navidrome and
@@ -134,7 +134,8 @@ typed, normalized as `JellyfinAddress` does, with these rules:
 once, 15 s each.
 1. `GET {base}/System/Info/Public`. JSON with a non-empty `Id` is Jellyfin
    (`ServerName`, `Version`, `Id`; measured: `"ProductName":"Jellyfin
-   Server","Version":"12.4.0"`). Then `GET /QuickConnect/Enabled`.
+   Server","Version":"12.4.0"`), or Emby ("Emby", below). Then `GET
+   /QuickConnect/Enabled`.
 2. `GET {base}/rest/ping.view?v=1.16.1&c=Jukebox&f=json`, no credentials. A
    `subsonic-response` object with `status` and `version` is a Subsonic
    server, whatever the status. Unauthenticated, Navidrome answers (HTTP 200):
@@ -634,6 +635,54 @@ The rest of the library works the same on every server. Where a Subsonic
 server lacks a call the protocol has no capability for, the kit works around
 it: the albums are walked (`allTracks`), 100 ids go in a request (no
 `formPost`), and a server that is not OpenSubsonic has no extensions.
+
+## Emby (17 November 2026)
+
+The photographer: "emby en plex kunnen beide toch". Emby is Jellyfin's
+ancestor, so it is no third client: `JellyfinClient` with `isEmby`, inside
+`JellyfinServer`, `ServerKind.emby`. Measured on Emby 4.10.2
+(`dev/emby-test-server.sh`, `emby/embyserver:latest`, the made-up library),
+without Emby Premiere: nothing Jukebox uses asks for it, transcoding
+included.
+
+| | Jellyfin 12.4 | Emby 4.10 | So |
+|---|---|---|---|
+| Found | `ProductName` "Jellyfin Server" in /System/Info/Public | no `ProductName`; `/System/Ping` says "Emby Server" | the ping is asked only without a `ProductName` |
+| Header | `Authorization: MediaBrowser …` | the same works (`X-Emby-Authorization` not needed); Client is not percent-decoded, Device is | unchanged |
+| Token in a URL | `ApiKey` (`api_key` 401) | `api_key` (`ApiKey` 401) | `tokenKey` |
+| Path | `/` | `/`; `/emby/System/Info/Public` answers too | unchanged (an address typed with `/emby`: not tried further) |
+| Ids | GUIDs | numbers as strings ("378"); GenreItems' ids are JSON numbers (not read) | unchanged |
+| One item | `/Items?Ids=` | nothing without `Recursive=true` and the type; an unreadable id is ignored and the whole library comes | both sent to both; Emby takes only the id asked for |
+| Lists | play count, last played and year by default | only with `Fields=UserDataPlayCount,UserDataLastPlayedDate,ProductionYear` | `fields(_:)` |
+| `/Users/Me` | the user | 500 ("Me" read as an id) | `/Users/{id}` on Emby |
+| Favourites | `/UserFavoriteItems/{id}` | 404; `/Users/{id}/FavoriteItems/{id}` | the 10.8 fallback, as it was |
+| New playlist | JSON body | body not read (500); query | query on Emby, 100 ids, the rest added |
+| Playlist entries | the song's id | one per place ("1", "2", …): a song twice needs no `#n` | unchanged |
+| A gone playlist | 404 | 500 | `.notFound` on Emby |
+| Mix | `limit` | `limit` + 1; a playlist's mix is empty | cut to `limit`; the radio's own picks carry a playlist |
+| Lyrics | `/Audio/{id}/Lyrics` | subtitle streams; that route is read as a stream (500) | none: no `.lyrics` |
+| Loudness | NormalizationGain | none | no `.replayGain` |
+| Artist counts | `AlbumCount`, `SongCount` | none (`ChildCount` is songs) | nil: no "3 albums" on a tile |
+| Covers | `fillWidth`/`fillHeight` | ignored (600 px came for 300); `maxWidth`/`maxHeight` | on Emby; covers beside the files are not read, the test script uploads them |
+| Genres | as tagged ("Folk; Indie") | split ("Folk", "Indie") | unchanged |
+| Stream, download | `/Audio/{id}/universal` | the same answers: files as they are, HLS (AAC) when capped, m4a over http for a download | unchanged |
+| Plays | counted at the start report | the same (twice for two starts; a stop alone counts nothing) | unchanged |
+| Quick Connect | /QuickConnect/Enabled | 404 | no button |
+| Play state | `/DisplayPreferences/jukebox` | the same | unchanged |
+| Sign-out | /Sessions/Logout | the same (401 after) | unchanged |
+
+Emby's capabilities: `ServerCapability.emby`, Jellyfin's without `lyrics`,
+`syncedLyrics` and `replayGain`.
+
+Play On (branch `play-on`, not on main): `/Sessions?ControllableByUserId=`
+answered on Emby (empty with no other client). Its `castURL` has the token
+as `ApiKey` and needs `tokenKey` when it lands. Emby's clients open their
+websocket at `/embywebsocket?api_key=&deviceId=`, where Jellyfin's is
+`/socket?ApiKey=` (not measured).
+
+Not measured: lyrics on Emby (the test files have none), Emby before 4.10,
+an Emby with its first-run wizard finished (the test script stops before
+its last step: the API works without it).
 
 ## Classical music (14 November 2026)
 

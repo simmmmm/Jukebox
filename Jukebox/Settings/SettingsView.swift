@@ -502,12 +502,12 @@ private struct SettingsDownloadsSection: View {
             if app.credentials?.kind.isSubsonic == true {
                 return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
             }
-            return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
+            return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to AAC at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
         }
         if app.credentials?.kind.isSubsonic == true {
             return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
         }
-        return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
+        return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
     }
 
     /// "1.2 GB of 5 GB": what the keep holds, against its limit.
@@ -971,7 +971,7 @@ private struct SettingsAboutSection: View {
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("Jukebox")
                         .desktopFont(15, weight: .bold, phone: .headline)
-                    Text("Made for Jellyfin, Navidrome and other Subsonic servers")
+                    Text("Made for Jellyfin, Emby, Navidrome and other Subsonic servers")
                         .desktopFont(13, phone: .subheadline)
                         .foregroundStyle(.secondary)
                 }
