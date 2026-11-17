@@ -123,12 +123,8 @@ enum Shots {
                 // first as it opens, the first time, from the bar's song.
                 await frames("10b-opening") { NowPlayingPage.open() }
                 await step("10b-now-playing", wait: 3)
-                // Its ⋮ with the sleep timer set: the small moon by ⋮ and
-                // the timer's entry in the menu; off again after.
-                app.player.setSleepTimer(.minutes(30))
                 gtk_widget_activate(NowPlayingPage.more)
                 await step("10c-now-playing-menu", wait: 1)
-                app.player.setSleepTimer(nil)
             }
             // The panel on the lyrics: Night Drive's are timed, and a few
             // lines in. dev/demo/lyrics.json's times are ticks (100 ns), so

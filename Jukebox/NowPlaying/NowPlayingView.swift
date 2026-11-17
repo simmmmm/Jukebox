@@ -339,11 +339,20 @@ struct NowPlayingView: View {
             Spacer(minLength: 0)
 
             if let track = currentTrack {
+                // The moon stays beside ⋮ on the iPad and the Mac ("op
+                // desktop mag ie er sowieso wel gewoon staan").
+                SleepTimerMenu(player: player, font: Self.roomGlyph, ink: .white, side: 40)
+                    .menuStyle(.button)
+                    .buttonStyle(.borderless)
+                    .menuIndicator(.hidden)
                 Menu {
                     TrackMenu(track: track)
-                    SleepTimerItem(player: player)
                 } label: {
-                    MoreGlyph(player: player, font: Self.roomGlyph, ink: .white, side: 40)
+                    Image(systemName: "ellipsis")
+                        .font(Self.roomGlyph)
+                        .foregroundStyle(.white)
+                        .frame(width: 40, height: 40)
+                        .contentShape(.rect)
                 }
                 // The glyph alone, as Close: no border, no arrow.
                 .menuStyle(.button)

@@ -170,10 +170,10 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   same calls as the Mac's (`LibraryStore.remove`, `move`). Moving only
   where the server can reorder, none of it on someone else's playlist.
 
-The sleep timer is in Full Player's ⋮, as on the iPhone and the Mac:
-Sleep Timer › Off, 15 to 60 minutes, End of Song or End of Album, its
-entry saying when it stops or what it waits for, and a small moon before
-⋮'s glyph while it is set. The timer is the queue's (`PlayQueue`, `docs/ARCHITECTURE.md`); MPRIS
+The sleep timer is a moon at the end of Full Player's header, beside ⋮,
+as on the iPhone and the Mac: its menu sets 15 to 60 minutes, End of Song
+or End of Album, and before the moon stand the time left or what it waits
+for. The timer is the queue's (`PlayQueue`, `docs/ARCHITECTURE.md`); MPRIS
 knows nothing of it. One limit of gapless: set in a song's last seconds,
 when GStreamer has already taken the next address, End of Song stops after
 that next one.

@@ -433,9 +433,11 @@ ticks look at, not a Timer iOS may suspend in the background; its last 8 s
 fade the music through `level(for:)`, then it pauses and the volume is the
 listener's again. End of Song holds nothing after the song, so it ends by
 itself and the next waits, paused; End of Album goes round no Repeat All and
-starts no Autoplay. In Now Playing's ⋮ (`SleepTimerMenu.swift`), saying
-when it stops, a small moon before ⋮ while set; on the Mac also Controls ›
-Sleep Timer. Not in the car.
+starts no Autoplay. On the iPhone in Now Playing's ⋮, saying when it
+stops, a small moon before ⋮ while set; on the iPad's and the Mac's Full
+Player a moon beside ⋮ with the time left, as Linux's
+(`SleepTimerMenu.swift`); on the Mac also Controls › Sleep Timer. Not in
+the car.
 
 ## Crossfade
 
