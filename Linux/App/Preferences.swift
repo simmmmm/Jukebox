@@ -134,7 +134,11 @@ enum Preferences {
                     app.radio.lastFMKeyChanged()
                     Stats.track(.lastFMKey, ["state": "added"])
                 }
-                if !isClosed { editing(false) }
+                if !isClosed {
+                    // A refusal of the key before it no longer stands.
+                    adw_action_row_set_subtitle(ptr(saved), "••••••••")
+                    editing(false)
+                }
                 say("Last.fm key saved")
             }
         }
@@ -142,6 +146,8 @@ enum Preferences {
         // the text changes, and Enter tries again.
         on(entry, "apply") { save() }
         on(entry, "entry-activated") { save() }
+        // Typing again: the last answer was about another key.
+        on(entry, "changed") { gtk_widget_remove_css_class(entry, "error") }
 
         let cancel = button("Cancel", "flat") { editing(false) }.align(vertical: GTK_ALIGN_CENTER)
         adw_entry_row_add_suffix(ptr(entry), cancel)
@@ -172,7 +178,9 @@ enum Preferences {
             let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
             Task {
                 let check = await LastFMClient(apiKey: key).validateKey()
-                guard !isClosed, check == .refused, saved.isVisible else { return }
+                // Still the key shown: not one removed or changed meanwhile.
+                guard !isClosed, check == .refused, saved.isVisible,
+                      key == settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
                 adw_action_row_set_subtitle(ptr(saved), "•••••••• · " + (check.problem ?? ""))
             }
         }
