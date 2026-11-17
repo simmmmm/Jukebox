@@ -77,3 +77,9 @@ Docker.
 ## Licence
 
 MIT: see `LICENSE`.
+
+The iPhone's and the iPad's app links Google's Cast SDK for Chromecasts
+(fetched by `ci/google-cast.sh`, not in this repository). It is not MIT: the
+Google APIs Terms of Service and the Google Cast SDK Additional Developer
+Terms of Service, with the open-source licences of what it bundles listed in
+the SDK itself. The Linux and Mac clients speak to Chromecasts without it.
