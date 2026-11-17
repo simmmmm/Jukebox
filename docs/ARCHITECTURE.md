@@ -358,11 +358,12 @@ it. It looks only while it is open: no local network prompt at launch.
   mid-play counts twice when it had counted here already. **A jukebox** gets the list too (`jukeboxControl`). **A Chromecast**
   (the Default Media Receiver) plays one song, a plain file from
   `castURL(for:)`, and the queue reports the play.
-- **Chromecasts by platform**: Linux speaks castv2 itself (JukeboxKit's
-  `CastSession` over GIO's TLS, found by Avahi, `Linux/App/Cast.swift`); the
-  Mac the same over Network's TLS and Bonjour (`Player/CastNetwork.swift`;
-  Google makes no Cast SDK for macOS); the iPhone and the iPad use Google's
-  Cast SDK (`Player/GoogleCast.swift`, `docs/RELEASE.md`).
+- **Chromecasts, without Google's SDK** ("Doe zonder", 17 November 2026):
+  every client speaks castv2 itself, JukeboxKit's `CastSession`. Linux over
+  GIO's TLS, found by Avahi (`Linux/App/Cast.swift`); the iPhone, the iPad
+  and the Mac over Network's TLS, found by Bonjour
+  (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
+  privacy answers stay as they are (`docs/STATS.md`).
 - **What it cannot do**: a server at localhost is refused at once (the TV
   fetches the songs itself); a TV that cannot play from an https server it
   does not trust says so. A moment's silence between songs on a Chromecast.

@@ -1,10 +1,12 @@
-// Chromecasts on the Mac. Google's Cast SDK is for iOS, Android and Chrome
-// only (no macOS framework), so the Mac speaks castv2 itself, as Linux does:
-// JukeboxKit's CastSession over Network's TLS, the receivers found by
-// Bonjour. The protocol is the kit's, tested on Linux; this is the socket
-// and the browser (PlayOn.swift has the player).
+// Chromecasts on the iPhone, the iPad and the Mac: the app speaks castv2
+// itself, as Linux does, JukeboxKit's CastSession over Network's TLS, the
+// receivers found by Bonjour. No Google Cast SDK: the photographer, 17
+// November 2026, "Doe zonder" (it would have sent Google diagnostics and a
+// device id, and asked for its own Cast button). The protocol is the kit's,
+// tested on Linux; this is the socket and the browser (PlayOn.swift has the
+// player). Bonjour looks only while Play On's list is open, so the local
+// network prompt comes then, not at launch.
 
-#if os(macOS)
 import Foundation
 import Network
 
@@ -85,4 +87,3 @@ final class NetworkCastSocket: CastSocket {
         connection.cancel()
     }
 }
-#endif

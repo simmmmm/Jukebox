@@ -16,8 +16,8 @@
 // Foundation only: Linux compiles this file as it is (Package.swift).
 //
 // Each platform brings its Chromecasts (`PlayOn.castFinder`, `castPlayer`):
-// Linux and the Mac speak castv2 themselves (JukeboxKit's CastSession over
-// GIO's TLS or Network's); the iPhone and the iPad use Google's Cast SDK.
+// every client speaks castv2 itself (JukeboxKit's CastSession over GIO's
+// TLS on Linux, Network's on Apple's), with no SDK of Google's.
 
 import Foundation
 import JukeboxKit
@@ -110,8 +110,7 @@ protocol RemotePlayer: AnyObject {
 final class PlayOn {
     /// What the finders see, while the list is open.
     private(set) var devices: [PlayOnDevice] = []
-    /// Chromecasts, by the platform (Linux: Avahi; the Mac: Bonjour; the
-    /// iPhone: Google's Cast SDK). Nil where there are none.
+    /// Chromecasts, by the platform (Linux: Avahi; Apple's: Bonjour).
     @ObservationIgnored var castFinder: (any PlayOnFinder)?
     @ObservationIgnored var castPlayer: ((PlayOnDevice) -> (any RemotePlayer)?)?
     @ObservationIgnored weak var player: PlayQueue?

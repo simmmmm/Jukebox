@@ -165,6 +165,9 @@ App Store Connect › App Privacy: **Usage Data › Product Interaction** and
 **Location › Coarse Location** (the place the server reads from the
 address), both not linked to the user, not used for tracking, purpose
 **Analytics**. Nothing else is collected. Published 16 November 2026.
+Play On (17 November 2026) changes none of it: Chromecasts are spoken to by
+the app itself, with no SDK of Google's, and the other devices are the
+listener's own; only its `play_on` count is new, under Product Interaction.
 
 `Jukebox/Resources/PrivacyInfo.xcprivacy` declares the same, with
 UserDefaults' reason CA92.1 (the app's own settings). XcodeGen puts the

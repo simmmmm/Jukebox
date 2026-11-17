@@ -220,32 +220,15 @@ The Mac's app has no Siri entitlement: it has App Intents only.
 
 ## Play On
 
-Chromecasts on the iPhone and the iPad come through Google's Cast SDK
-(`Jukebox/Player/GoogleCast.swift`).
+Chromecasts on the iPhone, the iPad and the Mac are spoken to by the app
+itself (castv2 over Network's TLS, `Jukebox/Player/CastNetwork.swift`); no
+Google Cast SDK ("Doe zonder", the photographer, 17 November 2026). So
+nothing to fetch, no other licence, and App Privacy unchanged: Play On sends
+nothing to anyone but the listener's own server and devices.
 
-- `ci/google-cast.sh` fetches the dynamic xcframework, 4.8.6, from Google's
-  own server (dl.google.com) into `Vendor/GoogleCast/` and checks its
-  sha256; `ci/app.sh` runs it before `xcodegen generate`. On the
-  photographer's Mac run it once before XcodeGen too: project.yml links
-  `Vendor/GoogleCast/GoogleCast.xcframework` for iOS, and the project does
-  not open without it. The Mac's own build does not link it.
-- Info.plist (project.yml): `NSBonjourServices` `_googlecast._tcp` and
-  `_CC1AD845._googlecast._tcp`; `NSLocalNetworkUsageDescription` names the
-  speakers and TVs. The prompt comes when Play On's list first opens. No
-  entitlement, no Bluetooth key (the SDK dropped guest mode in 4.8.1).
-- **App Privacy must change before a build with the SDK ships.** Its
-  privacy manifest (`PrivacyInfo.xcprivacy` in the framework) declares
-  Device ID, Other Diagnostic Data and Product Interaction, not linked, not
-  tracking, for Analytics and App Functionality, sent to Google; its
-  `NutritionLabel.txt` adds Coarse Location and Performance Data. Jukebox
-  turns its analytics logging off (`disableAnalyticsLogging`), which by
-  Google's words stops the Device ID; the diagnostics stay. The published
-  answers above say nothing else is collected: that is no longer true for
-  such a build. The photographer decides the new answers.
-- Google's Cast design checklist asks for its Cast button; Jukebox has
-  none, by the photographer's rule of no new buttons (Play On's list is the
-  place).
-- The SDK's licence: README, Licence.
+- Info.plist (project.yml): `NSBonjourServices` `_googlecast._tcp`;
+  `NSLocalNetworkUsageDescription` names the speakers and TVs. The prompt
+  comes when Play On's list first opens, not at launch. No entitlement.
 
 ## Builds
 

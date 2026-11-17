@@ -46,13 +46,6 @@ targets:
     # Swift links the system frameworks it imports itself.
     dependencies:
       - package: JukeboxKit
-      # Google's Cast SDK, for Chromecasts on the iPhone and the iPad
-      # (Player/GoogleCast.swift): the pinned build ci/google-cast.sh fetches
-      # from Google into Vendor/, not kept in git. Not on the Mac: Google
-      # makes none for it, and the Mac speaks castv2 itself.
-      - framework: Vendor/GoogleCast/GoogleCast.xcframework
-        embed: true
-        destinationFilters: [iOS]
     # One Info.plist for both: the Mac ignores the UI* keys.
     info:
       path: Jukebox/Info.plist
@@ -95,9 +88,9 @@ targets:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
         NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin, Navidrome or other music server on this network, and on the speakers and TVs you choose in Play On.
-        # Chromecasts, looked for only while Play On's list is open: the
-        # receivers' own service and the Default Media Receiver's (CC1AD845).
-        NSBonjourServices: [_googlecast._tcp, _CC1AD845._googlecast._tcp]
+        # Chromecasts, looked for by Bonjour only while Play On's list is open
+        # (Player/CastNetwork.swift).
+        NSBonjourServices: [_googlecast._tcp]
         # "Play <album> in Jukebox" by voice, in the car above all: SiriKit's
         # media intent, handled in the app (Intents/SiriMedia.swift). The Mac
         # has no media intents and ignores these.
