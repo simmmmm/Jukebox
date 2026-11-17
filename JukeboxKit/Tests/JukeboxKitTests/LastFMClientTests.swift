@@ -165,28 +165,32 @@ final class LastFMClientTests: XCTestCase {
     func testValidateKey() async {
         let (good, mock) = client(LastFMFixtures.cherSimilar)
         let accepted = await good.validateKey()
-        XCTAssertTrue(accepted)
+        XCTAssertEqual(accepted, .accepted)
+        XCTAssertNil(accepted.problem)
         XCTAssertEqual(mock.requests.first?.asked.query["limit"], "1", "one cheap call")
 
         let (bad, _) = client(LastFMFixtures.invalidKey, status: 403)
         let rejected = await bad.validateKey()
-        XCTAssertFalse(rejected)
+        XCTAssertEqual(rejected, .refused)
+        XCTAssertEqual(rejected.problem, "Last.fm did not accept this key")
         // Asked to wait: the key was read and taken.
         let (busy, _) = client(LastFMFixtures.rateLimited)
         let waiting = await busy.validateKey()
-        XCTAssertTrue(waiting)
+        XCTAssertEqual(waiting, .accepted)
+        // Last.fm's trouble or no answer: nothing said about the key.
         let (broken, _) = client("", status: 500)
         let failing = await broken.validateKey()
-        XCTAssertFalse(failing)
+        XCTAssertEqual(failing, .unreachable)
         let offline = LastFMClient(apiKey: "key", transport: LastFMMockTransport { _ in throw URLError(.timedOut) })
         let unreachable = await offline.validateKey()
-        XCTAssertFalse(unreachable)
+        XCTAssertEqual(unreachable, .unreachable)
+        XCTAssertEqual(unreachable.problem, "Could not reach Last.fm; try again")
 
         // No key, or not one: no request at all.
         for key in ["", "   ", "two words"] {
             let mock = LastFMMockTransport { _ in LastFMFixtures.respond(200, LastFMFixtures.cherSimilar) }
             let result = await LastFMClient(apiKey: key, transport: mock).validateKey()
-            XCTAssertFalse(result, key)
+            XCTAssertEqual(result, .refused, key)
             XCTAssertEqual(mock.count, 0, key)
         }
     }

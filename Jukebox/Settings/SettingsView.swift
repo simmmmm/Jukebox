@@ -98,7 +98,7 @@ struct SettingsView: View {
                 // Linux's order: what plays, the radio, privacy, the server.
                 SettingsPlaybackSection()
                 SettingsRadioSection()
-                SettingsLastFMSection(savedKey: settings.lastFMAPIKey)
+                SettingsLastFMSection()
                 SettingsPagesSection(hasSidebar: true)
                 SettingsPrivacySection()
                 SettingsAccountSection()
@@ -111,7 +111,7 @@ struct SettingsView: View {
                 SettingsPlaybackSection()
                 SettingsDownloadsSection()
                 SettingsRadioSection()
-                SettingsLastFMSection(savedKey: settings.lastFMAPIKey)
+                SettingsLastFMSection()
                 SettingsLyricsSection()
                 SettingsPagesSection(hasSidebar: false)
                 SettingsLibrarySection()
@@ -623,48 +623,76 @@ private struct SettingsRadioSection: View {
 /// The listener's own Last.fm key — the photographer's choice (8 November
 /// 2026): the radio works without it, and knows who sounds like whom far
 /// better with it. A key is kept only once Last.fm has accepted it, so a
-/// typo never takes the radio's Last.fm away.
+/// typo never takes the radio's Last.fm away. The same flow as Linux's
+/// Preferences ("invullen opslaan bevestiging krijgen van de app", the
+/// photographer, 18 November 2026): paste, Save, Last.fm is asked, and the
+/// key it accepted is shown as dots, with Change and Remove.
 private struct SettingsLastFMSection: View {
     private enum KeyStatus: Equatable {
         case idle
         case checking
-        case works
-        case rejected
+        case saved
+        case problem(String)
     }
 
     private static let createKeyURL = URL(string: "https://www.last.fm/api/account/create")!
 
     @Environment(AppSettings.self) private var settings
     @Environment(RadioController.self) private var radio
-    @State private var draft: String
+    @State private var draft = ""
+    /// Change: the field again, the saved key kept until another is accepted.
+    @State private var isChanging = false
     @State private var status: KeyStatus = .idle
-    /// Not the view's own task: a key pasted just before Done is still
+    @State private var didRecheck = false
+    /// Not the view's own task: a key saved just before Done is still
     /// checked and kept after the sheet has closed.
     @State private var checkTask: Task<Void, Never>?
 
-    init(savedKey: String) {
-        _draft = State(initialValue: savedKey)
-    }
+    init() {}
+
+    private var isEditing: Bool { !settings.hasLastFM || isChanging }
 
     var body: some View {
         Section {
-            TextField("API Key", text: $draft, prompt: Text("Paste your Last.fm API key"))
-                .desktopFont(15, design: .monospaced, phone: .body.monospaced())
-                .plainTextEntry()
-                .autocorrectionDisabled()
-                .submitLabel(.done)
-                .onSubmit { check(draft, after: .zero) }
-                .onChange(of: draft) { _, newValue in
-                    // Typing: once it rests.
-                    check(newValue, after: .milliseconds(600))
-                }
-                .onAppear {
-                    // The saved key, checked again each time Settings opens:
-                    // a revoked key shows here rather than as a quieter radio.
-                    if status == .idle, !Self.trimmed(draft).isEmpty {
-                        check(draft, after: .zero)
+            if isEditing {
+                TextField("API Key", text: $draft, prompt: Text("Paste your Last.fm API key"))
+                    .desktopFont(15, design: .monospaced, phone: .body.monospaced())
+                    .plainTextEntry()
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .disabled(status == .checking)
+                    .onSubmit(save)
+                    .onChange(of: draft) {
+                        // Typing again: the last answer was about another key.
+                        if case .problem = status { status = .idle }
+                    }
+                    .onDisappear {
+                        // A key typed and left without Save is checked all
+                        // the same, and kept only if Last.fm accepts it.
+                        if status == .idle { save() }
+                    }
+                Button("Save", action: save)
+                    .disabled(Self.trimmed(draft).isEmpty || status == .checking)
+                if isChanging {
+                    Button("Cancel", role: .cancel) {
+                        checkTask?.cancel()
+                        draft = ""
+                        status = .idle
+                        isChanging = false
                     }
                 }
+            } else {
+                LabeledContent("API Key") {
+                    Text(verbatim: "••••••••")
+                        .accessibilityLabel("Saved")
+                }
+                Button("Change Key") {
+                    draft = ""
+                    status = .idle
+                    isChanging = true
+                }
+                Button("Remove Key", role: .destructive, action: remove)
+            }
             statusRow
             Link("Get a Free API Key", destination: Self.createKeyURL)
         } header: {
@@ -672,6 +700,7 @@ private struct SettingsLastFMSection: View {
         } footer: {
             Text("With a key, the radio knows which artists and songs sound alike. Only artist names and song titles are sent to Last.fm.")
         }
+        .onAppear(perform: recheck)
     }
 
     @ViewBuilder private var statusRow: some View {
@@ -689,16 +718,16 @@ private struct SettingsLastFMSection: View {
             }
             .foregroundStyle(.secondary)
             .accessibilityElement(children: .combine)
-        case .works:
+        case .saved:
             Label {
-                Text("Key works")
+                Text("Last.fm accepted this key")
             } icon: {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.secondary)
             }
-        case .rejected:
+        case let .problem(words):
             Label {
-                Text("Last.fm did not accept this key")
+                Text(words)
             } icon: {
                 Image(systemName: "exclamationmark.circle.fill")
                     .foregroundStyle(.red)
@@ -706,28 +735,51 @@ private struct SettingsLastFMSection: View {
         }
     }
 
-    private func check(_ text: String, after delay: Duration) {
+    /// Last.fm asked; only a key it accepted is kept. Refused or unanswered,
+    /// the typed key stays in the field to be put right.
+    private func save() {
+        let key = Self.trimmed(draft)
+        guard !key.isEmpty, status != .checking else { return }
         checkTask?.cancel()
-        let key = Self.trimmed(text)
-        status = key.isEmpty ? .idle : .checking
+        status = .checking
         checkTask = Task {
-            try? await Task.sleep(for: delay)
+            let check = await LastFMClient(apiKey: key).validateKey()
             guard !Task.isCancelled else { return }
-            if key.isEmpty {
-                // Emptied on purpose: the radio goes on without Last.fm.
-                guard settings.hasLastFM else { return }
-                settings.lastFMAPIKey = ""
-                radio.lastFMKeyChanged()
-                Stats.track(.lastFMKey, ["state": "removed"])
+            guard check == .accepted else {
+                status = .problem(check.problem ?? "")
                 return
             }
-            let works = await LastFMClient(apiKey: key).validateKey()
-            guard !Task.isCancelled else { return }
-            status = works ? .works : .rejected
-            guard works, key != Self.trimmed(settings.lastFMAPIKey) else { return }
-            settings.lastFMAPIKey = key
-            radio.lastFMKeyChanged()
-            Stats.track(.lastFMKey, ["state": "added"])
+            if key != Self.trimmed(settings.lastFMAPIKey) {
+                settings.lastFMAPIKey = key
+                radio.lastFMKeyChanged()
+                Stats.track(.lastFMKey, ["state": "added"])
+            }
+            draft = ""
+            isChanging = false
+            status = .saved
+        }
+    }
+
+    private func remove() {
+        checkTask?.cancel()
+        settings.lastFMAPIKey = ""
+        radio.lastFMKeyChanged()
+        Stats.track(.lastFMKey, ["state": "removed"])
+        draft = ""
+        status = .idle
+    }
+
+    /// The saved key, asked about again once each time Settings opens, as
+    /// before the dots: a revoked key shows here rather than as a quieter
+    /// radio. Quietly; only a refusal is said, and the key stays.
+    private func recheck() {
+        guard !didRecheck, settings.hasLastFM else { return }
+        didRecheck = true
+        let key = Self.trimmed(settings.lastFMAPIKey)
+        checkTask = Task {
+            let check = await LastFMClient(apiKey: key).validateKey()
+            guard !Task.isCancelled, check == .refused, status == .idle, !isChanging else { return }
+            status = .problem(check.problem ?? "")
         }
     }
 
