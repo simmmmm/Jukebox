@@ -134,6 +134,10 @@ enum Style {
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
         .home-card { background-color: \(raised); border-radius: 18px; padding: 12px; }
+        /* Its Play and Continue compact, belonging to the words above them:
+           32 by 72 at least, a lighter weight ("qua UI verhoudingen vind
+           ik dit heel lomp", 18 November 2026). */
+        .home-card button.page-button { min-height: 32px; min-width: 48px; padding: 0 12px; font-weight: 600; }
         button.word { min-height: 40px; padding: 0 8px; font-size: 15px; }
         button.plain { padding: 0; min-height: 0; background: none; box-shadow: none; font-weight: inherit; }
         .playing { color: @accent_color; }

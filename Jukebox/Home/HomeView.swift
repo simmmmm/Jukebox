@@ -164,7 +164,7 @@ enum HomeLayout {
 /// thing to do about it: go on with it here (HandoffStore). The
 /// photographer, 13 November 2026: "zodat ik verder kan waar ik gebleven was
 /// als ik wegga van mijn pc". On its own ground, as Your Station under it
-/// (homeCard), and Continue at the size of a page's Shuffle.
+/// (homeCard), and Continue compact, as its Play.
 private struct HomeHandoffNotice: View {
     let margin: CGFloat
 
@@ -188,8 +188,8 @@ private struct HomeHandoffNotice: View {
                 Button(offer.isOwn ? String(localized: "Continue") : String(localized: "Continue Here")) {
                     handoff.continueHere()
                 }
-                .buttonStyle(.quietAction)
-                .padding(.top, Theme.Space.xs)
+                .buttonStyle(.compactQuietAction)
+                .padding(.top, isWide ? Theme.Space.s : Theme.Space.xs)
             }
             .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
             // Wide, as wide as its words, as Linux's.
@@ -270,8 +270,8 @@ private struct HomeOfflineNotice: View {
 /// that station instead, lit, under the one small label, "On air", with
 /// the song; a tap then opens Now Playing. The Radio tab shows it too, while
 /// nothing is on the air. On a wide page as Linux has it (spec §5): the art
-/// 120, 24, and beside it the name in the serif, the fact and Play, 16
-/// under it, the words in the middle of the art's height.
+/// 120, 24, and beside it the name in the serif, the fact and Play, 12
+/// under it, the words in the middle of the art's height (the iPhone's too).
 struct HomeStationHero: View {
     let measures: HomeMeasures
 
@@ -301,15 +301,15 @@ struct HomeStationHero: View {
         let isStacked = dynamicTypeSize.isAccessibilitySize
         let layout = isStacked
             ? AnyLayout(VStackLayout(alignment: .leading, spacing: gap))
-            : AnyLayout(HStackLayout(alignment: isWide ? .center : .top, spacing: gap))
+            : AnyLayout(HStackLayout(alignment: .center, spacing: gap))
         layout {
             StationArtwork(station: shown, size: isWide ? Self.wideArt : HomeLayout.heroArt)
+            // The name, its fact and Play as one group in the middle of the
+            // art's height, not Play pushed to its foot: "qua UI
+            // verhoudingen vind ik dit heel lomp" (18 November 2026).
             words(onAir)
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: isWide ? .leading : .topLeading)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
-        // As tall as the art, so the name starts at its top and Play ends
-        // at its foot; taller when the words need it.
-        .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
         // Wide, as wide as the art and its words, as Linux's.
         .fixedSize(horizontal: isWide, vertical: false)
@@ -375,14 +375,10 @@ struct HomeStationHero: View {
                     .foregroundStyle(.secondary)
                     .padding(.top, measures.isWide ? Theme.Space.xs : 0)
             }
-            // Play at the art's foot; on a wide page 16 under the words,
-            // which stand in the middle of the art.
-            if measures.isWide {
-                Color.clear.frame(height: Theme.Space.s)
-            } else {
-                Spacer(minLength: Theme.Space.m)
-            }
+            // 12 under the words (the iPhone's undrawn 6 of the 44 to
+            // touch makes its look 14).
             playButton(onAir)
+                .padding(.top, measures.isWide ? Theme.Space.s : Theme.Space.xs)
         }
     }
 
@@ -421,8 +417,8 @@ struct HomeStationHero: View {
                 }
             }
         }
-        // The size of a page's Play (PagePlayButtons), not larger.
-        .buttonStyle(.action)
+        // Compact: it belongs to the words above it.
+        .buttonStyle(.compactAction)
         .accessibilityHint(onAir == nil ? Text("Starts Your Station") : Text(verbatim: ""))
         // The words around it open the station's page on a tap (while
         // nothing plays) or a long press; VoiceOver gives a container

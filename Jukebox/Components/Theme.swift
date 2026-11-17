@@ -292,23 +292,33 @@ struct SecondaryButtonStyle: ButtonStyle {
 /// The photographer, 18 November 2026, of the artist page: "bij de artiest
 /// en op meerdere plekken de buttons allemaal een beetje gek", and of
 /// Home: "buttons voelen ook erg groot icm met de rest".
+///
+/// Compact, in Home's cards (homeCard): 32 tall, 72 wide at least, the
+/// word at a lighter weight, so it belongs to the words above it. The
+/// photographer, 18 November 2026, of Your Station's card: "qua UI
+/// verhoudingen vind ik dit heel lomp er uit zien zo".
 struct ActionButtonStyle: ButtonStyle {
     let isFilled: Bool
+    var isCompact = false
 
     @Environment(\.isEnabled) private var isEnabled
     @Environment(\.isWide) private var isWide
 
+    /// Drawn height; on the iPhone the rest of 44 is there, undrawn.
+    private var height: CGFloat { isCompact ? 32 : 36 }
+
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .desktopFont(15, weight: .bold, phone: .subheadline.weight(.semibold))
+            .desktopFont(15, weight: isCompact ? .semibold : .bold,
+                         phone: .subheadline.weight(isCompact ? .medium : .semibold))
             .lineLimit(1)
             .foregroundStyle(isFilled ? Theme.onAccent : Theme.accent)
-            .padding(.horizontal, Theme.Space.l)
-            .frame(minWidth: 96, minHeight: 36)
+            .padding(.horizontal, isCompact ? Theme.Space.m : Theme.Space.l)
+            .frame(minWidth: isCompact ? 72 : 96, minHeight: height)
             .background(isFilled ? Theme.accent : Theme.accent.opacity(0.12),
                         in: .rect(cornerRadius: Theme.Radius.artwork))
             .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
-            .padding(.vertical, isWide ? 0 : Theme.Space.xs)
+            .padding(.vertical, isWide ? 0 : (44 - height) / 2)
             .contentShape(.rect)
             .fixedSize()
     }
@@ -327,6 +337,10 @@ extension ButtonStyle where Self == ActionButtonStyle {
     static var action: ActionButtonStyle { ActionButtonStyle(isFilled: true) }
     /// The quieter one beside it.
     static var quietAction: ActionButtonStyle { ActionButtonStyle(isFilled: false) }
+    /// Play in a card of Home's.
+    static var compactAction: ActionButtonStyle { ActionButtonStyle(isFilled: true, isCompact: true) }
+    /// Continue in a card of Home's.
+    static var compactQuietAction: ActionButtonStyle { ActionButtonStyle(isFilled: false, isCompact: true) }
 }
 
 /// A page's row: Play and Shuffle as a pair, the same size, on every page

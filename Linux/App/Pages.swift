@@ -163,7 +163,7 @@ enum HomePage {
         let play = playButton(onAir && app.player.isPlaying ? "Pause" : "Play") {
             if app.radio.station?.id == station.id { app.player.togglePlayPause() } else { app.radio.start(station) }
         }
-        gtk_widget_set_margin_top(play, 16)
+        gtk_widget_set_margin_top(play, 12)
         append(play, to: words)
         // On its own ground (Style's home-card): "beide staan zo in het
         // niets met deze opmaak" (the photographer, 18 November 2026).
