@@ -121,23 +121,41 @@ public struct LastFMClient: Sendable {
         return Array(tracks.prefix(max(0, limit)))
     }
 
-    /// Whether the key works (one cheap call), for Settings.
-    public func validateKey() async -> Bool {
+    /// What Last.fm said of a key: Settings keeps it only when accepted, and
+    /// says why not otherwise, in the same words on every client.
+    public enum KeyCheck: Sendable, Equatable {
+        case accepted
+        case refused
+        /// No answer, or Last.fm's own trouble: nothing said about the key.
+        case unreachable
+
+        public var problem: String? {
+            switch self {
+            case .accepted: nil
+            case .refused: "Last.fm did not accept this key"
+            case .unreachable: "Could not reach Last.fm; try again"
+            }
+        }
+    }
+
+    /// Whether Last.fm takes the key (one cheap call), for Settings.
+    public func validateKey() async -> KeyCheck {
         let key = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !key.isEmpty, !key.contains(where: \.isWhitespace) else { return false }
+        guard !key.isEmpty, !key.contains(where: \.isWhitespace) else { return .refused }
         do {
             _ = try await similarArtists(to: "Cher", limit: 1)
-            return true
+            return .accepted
         } catch let failure as Failure {
             switch failure {
             // Asked to wait, or "not found": Last.fm read the key and took it.
-            case .rateLimited, .notFound: return true
-            case .invalidKey, .other: return false
+            case .rateLimited, .notFound: return .accepted
+            case .invalidKey: return .refused
+            // A status of 500, an answer that cannot be read, "service
+            // offline": Last.fm's trouble, the key may well be good.
+            case .other: return .unreachable
             }
         } catch {
-            // No answer at all says nothing good about the key: Settings
-            // shows it as not working, and the listener can try again.
-            return false
+            return .unreachable
         }
     }
 

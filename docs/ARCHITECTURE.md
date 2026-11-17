@@ -341,7 +341,9 @@ Navidrome with its own Last.fm link, from the playback reports the app
 already sends (Jellyfin's start/progress/stopped; Subsonic's scrobble). The
 photographer, 8 November 2026: "Laat scrobblen lekker via de server lopen."
 One place for every client, and no song twice on Last.fm. The Last.fm key in
-Settings is only for the radio's similar artists and songs.
+Settings is only for the radio's similar artists and songs. Every client
+keeps it only once Last.fm accepted it (`LastFMClient.validateKey`), then
+shows it as dots with Change and Remove.
 
 ## Lyrics
 
