@@ -205,7 +205,7 @@ enum Stats {
         }
     }
 
-    /// The kind of server, coarsely: `jellyfin`, `emby`, `navidrome`, or
+    /// The kind of server, coarsely: `jellyfin`, `emby`, `navidrome`, `plex`, or
     /// `subsonic` for every other Subsonic server (Gonic, Airsonic, …, and
     /// one that names itself: never its own word); `none` signed out. Never
     /// which server, nor its version.
@@ -215,6 +215,7 @@ enum Stats {
         case .emby?: return "emby"
         case .subsonic(.navidrome)?: return "navidrome"
         case .subsonic?: return "subsonic"
+        case .plex?: return "plex"
         case nil: return "none"
         }
     }

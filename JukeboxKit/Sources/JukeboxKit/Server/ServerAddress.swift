@@ -19,7 +19,9 @@ enum ServerAddress {
     /// JellyfinAddress knows): Navidrome's 4533 (measured), Gonic's 4747,
     /// Airsonic's 4040 and LMS's 5082 (their documentation).
     static let subsonicPorts = [4533, 4747, 4040, 5082]
-    static let fallbackPorts = [JellyfinAddress.defaultPort] + subsonicPorts
+    /// Plex Media Server's own, plain http too.
+    static let plexPort = 32400
+    static let fallbackPorts = [JellyfinAddress.defaultPort] + subsonicPorts + [plexPort]
 
     // MARK: The addresses to try
 
@@ -27,12 +29,12 @@ enum ServerAddress {
     /// the web apps' own paths cut off (Jellyfin's "/web…" there, and here
     /// Navidrome's last segment "/app" and Gonic's "/admin…"); then, when
     /// no port and no "https://" were typed, the same host over http on
-    /// 8096, 4533, 4747, 4040 and 5082: a fresh install listens on its own
+    /// 8096, 4533, 4747, 4040, 5082 and 32400: a fresh install listens on its own
     /// port only. Empty when it cannot be an address.
     static func candidates(_ typed: String) -> [URL] {
         guard var parts = JellyfinAddress.parse(typed) else { return [] }
         parts.path = serverPath(parts.path)
-        if parts.typedScheme == nil, let port = parts.port, subsonicPorts.contains(port) { parts.scheme = "http" }
+        if parts.typedScheme == nil, let port = parts.port, subsonicPorts.contains(port) || port == plexPort { parts.scheme = "http" }
         guard let first = parts.url(scheme: parts.scheme, port: parts.port) else { return [] }
         var list = [first]
         // Not after a typed "https://": TLS was asked for, and plain http
@@ -130,14 +132,17 @@ enum ServerAddress {
                       transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
         async let jellyfin = probeJellyfin(url, identity: identity, transport: transport)
         async let subsonic = probeSubsonic(url, identity: identity, transport: transport)
+        async let plex = PlexSignIn.probe(url, identity: identity, transport: transport)
         let j = await jellyfin
         if case .success = j { return j }
+        let p = await plex
+        if case .success = p { return p }
         let s = await subsonic
         if case .success = s { return s }
         // A Subsonic server that proved itself and cannot be used (it
         // speaks XML only) says so; else whether anything answered.
         if case .failure(.server(status: 30, _)) = s { return s }
-        for result in [j, s] {
+        for result in [j, s, p] {
             if case let .failure(error) = result, !error.isTransport { return .failure(.invalidServerAddress) }
         }
         return j

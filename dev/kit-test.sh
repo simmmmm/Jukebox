@@ -69,3 +69,15 @@ fi
 # second run does not compile everything again.
 docker run --rm "${net[@]}" "${env[@]}" -v "$PWD:/kit" -v "$volume:/kit/.build" -w /kit \
   "$IMAGE" "${cmd[@]}"
+
+# The Plex of dev/plex-test-server.sh, after the rest, from inside its own
+# network namespace (127.0.0.1): unclaimed, it answers without a token from
+# itself and from its network's gateway only, and refused another container
+# on that network with 401 whatever ALLOWED_NETWORKS said (measured, 17
+# November 2026). Only when every test ran, or the filter names Plex.
+plex=${JUKEBOX_PLEX_CONTAINER:-jukebox-plex}
+if [[ ${1:-} != build ]] && docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$plex" \
+  && { [[ " $* " != *" --filter "* ]] || [[ "$*" == *Plex* ]]; }; then
+  docker run --rm --network "container:$plex" -e PLEX_URL=http://127.0.0.1:32400 \
+    -v "$PWD:/kit" -v "$volume:/kit/.build" -w /kit "$IMAGE" stdbuf -oL swift test --filter PlexIntegration
+fi

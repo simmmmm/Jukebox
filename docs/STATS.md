@@ -82,11 +82,11 @@ Buckets:
 
 | Event | Properties | The question it answers | Where |
 |---|---|---|---|
-| `app_open` | `server` (`jellyfin`, `emby`, `navidrome`, `subsonic`, `none`) | How many starts, on which system, version, language and device; which kinds of server are used | `AppModel.restore`, once a launch, when the keychain has said |
-| `signed_in` | `server` (`jellyfin`, `emby`, `navidrome`, `subsonic`), `method` (`password`, `quick_connect`, `api_key`) | How people sign in, and to what; is Quick Connect worth it | OnboardingView |
+| `app_open` | `server` (`jellyfin`, `emby`, `navidrome`, `plex`, `subsonic`, `none`) | How many starts, on which system, version, language and device; which kinds of server are used | `AppModel.restore`, once a launch, when the keychain has said |
+| `signed_in` | `server` (`jellyfin`, `emby`, `navidrome`, `plex`, `subsonic`), `method` (`password`, `quick_connect`, `api_key`, `plex_pin`: Sign In with Plex; a Plex token is `api_key`) | How people sign in, and to what; is Quick Connect worth it; is Sign In with Plex | OnboardingView |
 | `sign_in_failed` | `reason` (`unreachable`, `not_a_server`, `wrong_password`, `needs_api_key`, `needs_https`, `other`) | Where people stop before the music | OnboardingView |
 | `signed_out` | none | Do people leave, or move servers | `AppModel.signOut`, of any saved account |
-| `account_added` | `server` (`jellyfin`, `emby`, `navidrome`, `subsonic`), `count` (the accounts kept now: `1`, `2`, `3+`) | Do people keep more than one account, and of which kinds | `AppModel.signIn`, when the account is new on the device (the first included; not a sign-in again, not the migration) |
+| `account_added` | `server` (`jellyfin`, `emby`, `navidrome`, `plex`, `subsonic`), `count` (the accounts kept now: `1`, `2`, `3+`) | Do people keep more than one account, and of which kinds | `AppModel.signIn`, when the account is new on the device (the first included; not a sign-in again, not the migration) |
 | `account_switched` | none | Is the switch between accounts used | `AppModel.switchAccount`, once the server answered (or offline, with songs on the device) |
 | `library_loaded` | `tracks` (bucket), `from` (`cache`, `server`), `seconds` (bucket) | How large libraries are; how long a launch and a load take | LibraryStore |
 | `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a place in the wide window (`home`, `radio`, `search`, `playlist`, or a library kind: `albums`, `artists`, `songs`, `playlists`, `favorites`, `genres`, `recently_added`, `downloaded`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings`; `carplay` once each time the car connects. The wide window never sends `library`: its kinds are places there | Which screens are used, which never; is CarPlay used | MainTabView (tabs), CarPlaySceneDelegate (`carplay`), WideShell (the wide window's places, and Search from its field), `routeDestinations()` (pushes), the cover, panels and sheet |
@@ -120,8 +120,9 @@ reads what the app wrote. What its buttons start, the app plays and counts,
 The kind of server, coarsely (`Stats.server`):
 
 - `jellyfin`
-- `emby` (from 17 November 2026)
+- `emby` (since 17 November 2026)
 - `navidrome`
+- `plex` (since 17 November 2026)
 - `subsonic` for every other Subsonic server: Gonic, Airsonic, Ampache, LMS,
   the original, and one that names itself in its own word (that word is never
   sent)
@@ -182,3 +183,9 @@ A privacy policy for the App Store's listing should say the same in words:
 anonymous counts of features used, on the developer's own server, no cookies,
 no id kept on the device, a rough place read from the address, off in
 Settings › Privacy.
+
+Sign In with Plex (17 November 2026) makes Jukebox talk to plex.tv while
+someone signs in: the PIN, the list of their servers, their account's id
+and name. That is the listener's own service, asked for them, as their
+server is; Jukebox collects none of it, so the published App Privacy label
+stays as it is.

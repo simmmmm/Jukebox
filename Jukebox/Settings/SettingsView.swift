@@ -507,12 +507,12 @@ private struct SettingsDownloadsSection: View {
     private var qualityFooter: Text {
         let model = Device.model
         if runsOnMac {
-            if app.credentials?.kind.isSubsonic == true {
+            if app.credentials?.kind.convertedFormat == "MP3" {
                 return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
             }
             return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to AAC at that rate, so more of them fit. Songs wait while this \(model) is on a hotspot unless Download on a Hotspot is on; kept songs wait in Low Power Mode.")
         }
-        if app.credentials?.kind.isSubsonic == true {
+        if app.credentials?.kind.convertedFormat == "MP3" {
             return Text("Original is each file as it is, or MP3 at 320 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to MP3 at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")
         }
         return Text("Original is each file as it is, or AAC at 256 kbit/s when this \(model) cannot play it; High and Normal have \(app.serverKindName) convert songs to AAC at that rate, so more of them fit. Songs download on Wi-Fi unless Download over Cellular is on; kept songs wait in Low Power Mode.")

@@ -31,6 +31,7 @@
 // and the password in one group of rows, Sign In centred under them, as
 // wide as its word (OnboardingWideForm).
 
+import AuthenticationServices
 import JukeboxKit
 import SwiftUI
 
@@ -138,7 +139,7 @@ struct OnboardingView: View {
                     .onSubmit { connect() }
                     .frame(minHeight: 52)
             }
-            Text("The address you open your Jellyfin, Emby or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
+            Text("The address you open your Jellyfin, Emby, Plex or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
                 .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let serverError {
@@ -153,6 +154,14 @@ struct OnboardingView: View {
             .disabled(trimmedAddress.isEmpty)
             .accessibilityLabel(isConnecting ? Text("Connecting") : Text("Continue"))
             .padding(.top, Theme.Space.s)
+
+            // Plex's people seldom know their server's address: plex.tv
+            // does, once they have signed in there.
+            PlexSignInButton(show: show)
+                .disabled(isConnecting)
+            Text("For Plex, sign in at plex.tv in your browser instead; Jukebox never sees your Plex password.")
+                .desktopFont(13, phone: .footnote)
+                .foregroundStyle(.secondary)
         }
     }
 
@@ -221,7 +230,7 @@ struct OnboardingView: View {
     fileprivate static func message(for error: Error, at url: URL) -> String {
         switch error as? MusicServerError {
         case .invalidServerAddress?:
-            return String(localized: "There is no Jellyfin, Emby, Navidrome or other Subsonic server at this address.")
+            return String(localized: "There is no Jellyfin, Emby, Plex, Navidrome or other Subsonic server at this address.")
         case let .transport(reason)?:
             // Jukebox guesses https for a name with dots; a home server
             // behind plain http (or a certificate the phone does not trust)
@@ -299,6 +308,8 @@ private struct OnboardingAccountForm: View {
                 quickConnectPanel
             } else if usesAPIKey, apiKeySignIn != nil {
                 apiKeyForm
+            } else if server.kind == .plex {
+                plexForm
             } else {
                 passwordForm
             }
@@ -467,12 +478,37 @@ private struct OnboardingAccountForm: View {
         }
     }
 
+    // MARK: Plex
+
+    /// A Plex server has no passwords of its own: its people sign in at
+    /// plex.tv. A token, for a server reached without plex.tv, goes where
+    /// an API key goes.
+    private var plexForm: some View {
+        VStack(alignment: .leading, spacing: Theme.Space.m) {
+            Text("Plex opens in your browser to sign in; Jukebox never sees your Plex password.")
+                .desktopFont(13, phone: .footnote)
+                .foregroundStyle(.secondary)
+            if let errorMessage {
+                OnboardingErrorText(message: errorMessage)
+            }
+            PlexSignInButton(server: server, prominent: true, show: show)
+                .padding(.top, Theme.Space.s)
+            Button {
+                switchToAPIKey(help: PlexSignIn.tokenHelp)
+            } label: {
+                Text("Use a Token")
+            }
+            .buttonStyle(.secondary)
+        }
+    }
+
     // MARK: An API key
 
     private var apiKeyForm: some View {
         VStack(alignment: .leading, spacing: Theme.Space.m) {
             OnboardingFields {
-                SecureField("API Key", text: $apiKey)
+                // Plex's own word for its key (X-Plex-Token).
+                SecureField(LocalizedStringKey(isPlex ? "Token" : "API Key"), text: $apiKey)
                     .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.go)
@@ -480,9 +516,15 @@ private struct OnboardingAccountForm: View {
                     .onSubmit { signInWithAPIKey() }
                     .frame(minHeight: 52)
             }
-            Text("A key made in the server’s own settings, for Jukebox alone: it can be taken back there without changing your password.")
-                .desktopFont(13, phone: .footnote)
-                .foregroundStyle(.secondary)
+            Group {
+                if isPlex {
+                    Text("Plex’s token for this server, for a server you reach without plex.tv.")
+                } else {
+                    Text("A key made in the server’s own settings, for Jukebox alone: it can be taken back there without changing your password.")
+                }
+            }
+            .desktopFont(13, phone: .footnote)
+            .foregroundStyle(.secondary)
             if let errorMessage {
                 OnboardingErrorText(message: errorMessage)
             }
@@ -501,7 +543,7 @@ private struct OnboardingAccountForm: View {
                 Button {
                     openURL(apiKeyHelp)
                 } label: {
-                    Text("How to Make a Key")
+                    isPlex ? Text("How to Find a Token") : Text("How to Make a Key")
                 }
                 .buttonStyle(.secondary)
             }
@@ -509,12 +551,14 @@ private struct OnboardingAccountForm: View {
                 usesAPIKey = false
                 errorMessage = nil
             } label: {
-                Text("Use a Password Instead")
+                isPlex ? Text("Sign In with Plex Instead") : Text("Use a Password Instead")
             }
             .buttonStyle(.secondary)
             .disabled(isSigningIn)
         }
     }
+
+    private var isPlex: Bool { server.kind == .plex }
 
     private var trimmedAPIKey: String {
         apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -812,6 +856,11 @@ private struct OnboardingWideForm: View {
                     }
                     .buttonStyle(.secondary)
                 }
+                // Where Quick Connect is, as on Linux: a Plex server found
+                // at the address is the one signed in to; with none, the
+                // account's own.
+                PlexSignInButton(server: server?.kind == .plex ? server : nil, show: show)
+                    .disabled(isWorking)
             }
             .frame(maxWidth: .infinity)
         }
@@ -945,6 +994,171 @@ private struct OnboardingWideForm: View {
     }
 }
 
+// MARK: - Plex
+
+/// Sign In with Plex: plex.tv's own page in the browser (Apple's web
+/// sign-in, with Safari's Plex sign-in if there is one), so the password
+/// goes to Plex and never to Jukebox; meanwhile the kit asks plex.tv every
+/// 2 s whether it is done (JukeboxKit's PlexAccount, docs/SERVERS.md
+/// "Plex"). Then the account's server: the one found at the address typed,
+/// the only one, or the one chosen from a list when there are several.
+/// The owner, 17 November 2026: "emby en plex kunnen beide toch".
+private struct PlexSignInButton: View {
+    /// The Plex server found at the address typed: that one is signed in to.
+    var server: DetectedServer?
+    /// The step's one filled button (a Plex server's account step).
+    var prominent = false
+    let show: (String) -> Void
+
+    @Environment(AppModel.self) private var app
+    @Environment(\.webAuthenticationSession) private var webAuthenticationSession
+    @State private var task: Task<Void, Never>?
+    @State private var choices: [PlexAccount.Server] = []
+    @State private var accountToken = ""
+    @State private var isChoosing = false
+
+    var body: some View {
+        Group {
+            if task != nil {
+                VStack(spacing: Theme.Space.s) {
+                    HStack(spacing: Theme.Space.s) {
+                        ProgressView()
+                        Text("Waiting for Plex…")
+                    }
+                    .desktopFont(13, phone: .footnote)
+                    .foregroundStyle(.secondary)
+                    .accessibilityElement(children: .combine)
+                    Button {
+                        task?.cancel()
+                        task = nil
+                    } label: {
+                        Text("Cancel")
+                    }
+                    .buttonStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+            } else if prominent {
+                Button {
+                    start()
+                } label: {
+                    Text("Sign In with Plex")
+                }
+                .buttonStyle(.prominent)
+            } else {
+                Button {
+                    start()
+                } label: {
+                    Text("Sign In with Plex")
+                }
+                .buttonStyle(.secondary)
+            }
+        }
+        .confirmationDialog("Which Plex Server?", isPresented: $isChoosing, titleVisibility: .visible) {
+            ForEach(choices) { choice in
+                Button(choice.name) { finish(choice) }
+            }
+        }
+        .onDisappear { task?.cancel() }
+    }
+
+    private func start() {
+        let account = PlexAccount(identity: app.identity)
+        let session = webAuthenticationSession
+        task = Task {
+            do {
+                let pin = try await account.start(forwardURL: URL(string: "jukebox://plex"))
+                // Plex's page and the asking side by side: the token ends
+                // both, the page cancelled rather than waited for (Plex may
+                // not go on to jukebox:// by itself). The page closed by the
+                // person stops the asking; closed by Plex going on, the
+                // asking finishes.
+                let asking = Task { try await account.token(for: pin) }
+                let page = Task { @MainActor in
+                    do {
+                        _ = try await session.authenticate(using: pin.authURL, callbackURLScheme: "jukebox")
+                    } catch {
+                        asking.cancel()
+                    }
+                }
+                let token: String
+                do {
+                    token = try await withTaskCancellationHandler {
+                        try await asking.value
+                    } onCancel: {
+                        asking.cancel()
+                    }
+                } catch {
+                    page.cancel()
+                    throw error
+                }
+                page.cancel()
+                var servers = try await account.servers(token: token)
+                if let server {
+                    servers = servers.filter { $0.id == server.id }
+                    guard !servers.isEmpty else {
+                        return fail(String(localized: "This Plex account cannot play from \(server.name)."))
+                    }
+                }
+                guard !servers.isEmpty else {
+                    return fail(String(localized: "This Plex account has no server to play from yet."))
+                }
+                accountToken = token
+                if servers.count == 1 {
+                    await signIn(servers[0], account: account)
+                } else {
+                    // The dialog is the wait now; its Cancel leaves the button.
+                    task = nil
+                    choices = servers
+                    isChoosing = true
+                }
+            } catch {
+                // Cancel already put the button back.
+                guard !Task.isCancelled else { return }
+                guard !(error is CancellationError) else {
+                    task = nil
+                    return
+                }
+                Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
+                fail(Self.message(for: error))
+            }
+        }
+    }
+
+    private func finish(_ choice: PlexAccount.Server) {
+        task = Task { await signIn(choice, account: PlexAccount(identity: app.identity)) }
+    }
+
+    private func signIn(_ choice: PlexAccount.Server, account: PlexAccount) async {
+        do {
+            let credentials = try await account.signIn(to: choice, accountToken: accountToken, preferring: server?.url)
+            task = nil
+            Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "plex_pin"])
+            await app.signIn(credentials)
+        } catch {
+            guard !Task.isCancelled else { return }
+            Stats.track(.signInFailed, ["reason": Stats.signInFailure(error)])
+            fail(Self.message(for: error))
+        }
+    }
+
+    private func fail(_ message: String) {
+        task = nil
+        show(message)
+    }
+
+    private static func message(for error: Error) -> String {
+        switch error as? MusicServerError {
+        case .notFound?:
+            // plex.tv forgets a sign-in after 30 minutes.
+            return String(localized: "The sign-in at Plex took too long. Sign in with Plex again.")
+        case .unauthorized?:
+            return String(localized: "Plex did not accept this sign-in. Sign in with Plex again.")
+        default:
+            return error.localizedDescription
+        }
+    }
+}
+
 // MARK: - Parts
 
 /// The mark coming on, the name in the serif, and what Jukebox is for: a
@@ -961,7 +1175,7 @@ private struct OnboardingWelcome: View {
                 Text("Jukebox")
                     .desktopFont(40, design: .serif, phone: .serif(.largeTitle))
                     .accessibilityAddTraits(.isHeader)
-                Text("Music from your Jellyfin, Emby, Navidrome or other Subsonic server.")
+                Text("Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server.")
                     .desktopFont(15, phone: .body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(isWide ? .leading : .center)

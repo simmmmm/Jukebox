@@ -139,8 +139,15 @@ Published 16 November 2026.
   in the keychain; lyrics are looked up at LRCLIB with title, artist, album
   and length, and with the listener's own Last.fm key the radio asks Last.fm
   by artist names and song titles: neither is data about the person.
+  Sign In with Plex (17 November 2026) asks plex.tv, the listener's own
+  Plex account, for their servers; nothing of it reaches the developer, so
+  the label is unchanged (docs/STATS.md, "The App Store").
 
 This matches `Jukebox/Resources/PrivacyInfo.xcprivacy`.
+
+Sign In with Plex uses Apple's web sign-in (`WebAuthenticationSession`,
+ASWebAuthenticationSession under it): no Info.plist key, entitlement or
+registered URL scheme. Its callback scheme, `jukebox`, is the session's own.
 
 ## Age rating
 

@@ -15,9 +15,14 @@ extension ServerKind {
     /// What a capped stream or a download is converted to: Jellyfin makes
     /// AAC, a Subsonic server MP3 (JukeboxKit asks it for MP3, since
     /// Navidrome's own choice, Ogg Opus, does not play on the phone;
-    /// docs/SERVERS.md, "Streaming, measured").
+    /// docs/SERVERS.md, "Streaming, measured"), Plex MP3 too (its
+    /// transcoder's progressive MP3, "Plex"). Emby makes AAC as Jellyfin
+    /// does (HLS when capped, m4a for a download; "Emby").
     var convertedFormat: String {
-        isSubsonic ? "MP3" : "AAC"
+        switch self {
+        case .jellyfin, .emby: "AAC"
+        case .subsonic, .plex: "MP3"
+        }
     }
 }
 

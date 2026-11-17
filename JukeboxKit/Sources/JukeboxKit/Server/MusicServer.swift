@@ -74,6 +74,8 @@ public enum ServerKind: Hashable, Sendable, Codable {
     /// "emby en plex kunnen beide toch".
     case emby
     case subsonic(flavour: SubsonicFlavour)
+    /// Plex Media Server (Plex/PlexServer.swift).
+    case plex
 
     /// "Jellyfin", "Navidrome", …: "Signing in to Tijmen's Music · Navidrome 0.64.2".
     public var displayName: String {
@@ -81,6 +83,7 @@ public enum ServerKind: Hashable, Sendable, Codable {
         case .jellyfin: "Jellyfin"
         case .emby: "Emby"
         case let .subsonic(flavour): flavour.displayName
+        case .plex: "Plex"
         }
     }
 
@@ -202,6 +205,10 @@ public enum ServerSecret: Hashable, Sendable, Codable {
     /// refuses tokens (error 41) and offers no API key, and only over https
     /// or on the home network.
     case subsonicPassword(String)
+    /// Plex's access token to this server: from plex.tv's sign-in in the
+    /// browser (the server's own token, for a server shared with the user),
+    /// or pasted as an API key.
+    case plexToken(String)
 }
 
 /// A signed-in session, as the keychain keeps it: everything the app needs
@@ -589,8 +596,8 @@ public enum MusicServers {
     /// the address as typed (normalized as JellyfinClient.normalize does,
     /// with Navidrome's "/app" cut off like Jellyfin's "/web"); then, when
     /// no port and no "https://" were typed, the same host over http on
-    /// Jellyfin's 8096, Navidrome's 4533, Gonic's 4747, Airsonic's 4040
-    /// and LMS's 5082.
+    /// Jellyfin's 8096, Navidrome's 4533, Gonic's 4747, Airsonic's 4040,
+    /// LMS's 5082 and Plex's 32400.
     public static func candidateAddresses(for typed: String) -> [URL] {
         ServerAddress.candidates(typed)
     }
@@ -620,6 +627,8 @@ public enum MusicServers {
                 return SubsonicAPIKeySignIn(server: server, identity: identity, transport: transport)
             }
             return SubsonicSignIn(server: server, identity: identity, transport: transport)
+        case .plex:
+            return PlexSignIn(server: server, identity: identity, transport: transport)
         }
     }
 
@@ -629,6 +638,7 @@ public enum MusicServers {
         switch credentials.kind {
         case .jellyfin, .emby: JellyfinServer(credentials: credentials, identity: identity, transport: transport)
         case .subsonic: SubsonicClient(credentials: credentials, identity: identity, transport: transport)
+        case .plex: PlexServer(credentials: credentials, identity: identity, transport: transport)
         }
     }
 }

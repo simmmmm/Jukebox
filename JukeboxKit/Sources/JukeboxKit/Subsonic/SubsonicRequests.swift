@@ -67,7 +67,7 @@ struct SubsonicConnection: Sendable {
             // sees the URL either way: why this is https or home only).
             [URLQueryItem(name: "u", value: user),
              URLQueryItem(name: "p", value: "enc:" + hex(Array(password.utf8)))]
-        case .jellyfinToken:
+        case .jellyfinToken, .plexToken:
             []
         }
     }

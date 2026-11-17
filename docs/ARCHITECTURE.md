@@ -5,7 +5,7 @@ songs, playlists, playlists the app makes up itself on Home, and a radio
 that plays on from anything. iPhone, iPad and the Mac (one SwiftUI target);
 Linux since 14 November 2026 (the same Swift under GTK and libadwaita,
 `docs/LINUX.md`). Jellyfin; since 9 November 2026 also Navidrome and other
-Subsonic servers.
+Subsonic servers; since 17 November 2026 Plex.
 
 Asked for on 8 November 2026: "op de homepage wil ik dat de app zelf leuke
 playlists verzint en of een goede radio functie heeft — ik vind vooral de
@@ -92,7 +92,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
 | Kit: lyrics | `Lyrics/*` (LRCParser, LyricsQuery, LRCLIBClient, LyricsCache), tests |
 | Kit: artwork | `Artwork/CoverAccent.swift` (Now Playing's accent from its cover, BRAND.md), `Artwork/CoverWall.swift` (the still page's wall and floor from it), tests |
-| Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
+| Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Plex/*` (PlexServer, PlexSignIn), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
 | Kit: offline | `Offline/*` (OfflineManifest, KeepPolicy: the automatic keep, JellyfinClient.downloadURL), tests, `docs/OFFLINE.md` except "In the app" |
 | App: library | `Jukebox/Library/*`: LibraryStore, every library screen, AddToPlaylistSheet |
 | App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift`: AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, the radio's feeding. `PlayQueue` is the queue and its rules on both platforms (play, next and previous, shuffle, repeat, Up Next's edits and "Then", the radio's feed and trim, the playback reports); each AudioPlayer is that class with its engine (AVQueuePlayer; `Linux/App/AudioPlayer.swift`'s GStreamer), and `Linux/App/QueueCheck.swift` checks the rules after every Linux build |
@@ -533,8 +533,36 @@ more; one `any MusicServer` goes where it did.
 | Artwork | `artworkURL(_:maxPixelSize:)` in `ArtworkView`, `StationArtwork`, Now Playing's accent and ground, the lock screen. A Subsonic URL carries the session's one token and salt, so a cover is always one URL and the cache holds. |
 | Screens | `can(_:)` hides Lyrics (without `.lyrics` and LRCLIB), similar artists' request (`.similarArtists`), move handles (`.playlistReorder`), Normalize Volume (`.replayGain`; off, with why), Rating (`.rating`: a Subsonic server's one to five stars, a submenu beside Favorite in a song's and an album's menu only, `RatingMenu`; `LibraryStore.setRating`, the stars read back as `userRating`; none on Jellyfin, docs/SERVERS.md). `Playlist.isReadOnly` (someone else's): no Delete, Add Songs or Edit, and not among Add to Playlist's. Up Next says "From Navidrome's mix" (JukeboxKit's `PickReason.instantMix.text` still says Jellyfin's). |
 | Settings | Server: the name, and under it the kind and version ("Navidrome 0.64.2", without Navidrome's build in brackets). The quality footers say AAC for Jellyfin, MP3 for a Subsonic server. |
-| Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
+| Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, `plex`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
 
 The screenshot walk signs in to the fake Jellyfin through the same screen:
 `dev/fake-jellyfin.swift` answers `/rest/…` as Jellyfin 12.4 does (404, no
 body: not a Subsonic server), so it is found as Jellyfin.
+
+## Plex
+
+Asked for on 17 November 2026: "emby en plex kunnen beide toch".
+`JukeboxKit/Sources/JukeboxKit/Plex/`: `PlexServer` (the `MusicServer`,
+`.plex`, Plex Media Server's own API) and `PlexSignIn` (finding one at an
+address, a token as an API key, and `PlexAccount`: plex.tv's sign-in in the
+browser). docs/SERVERS.md ("Plex") has the map and the measurements.
+
+- **Sign-in, no new screens.** Plex's people sign in at plex.tv, in the
+  browser, and seldom know their server's address. "Sign In with Plex" sits
+  where Quick Connect does: on the iPhone under Continue, and as the account
+  step's one button when the address typed is a Plex server; in the wide
+  window and on Linux under Sign In. Apple: `WebAuthenticationSession`
+  (`PlexSignInButton` in OnboardingView), with the kit asking plex.tv every
+  2 s; Linux: the default browser (`gtk_uri_launcher`), the button turning
+  into Cancel. More than one server: a confirmation dialog (Apple), an
+  `AdwAlertDialog` (Linux). A Plex address with a user name and password
+  turns the password's field into a token's, as an API key's does.
+- **Kept** like any account: the server's address, its token for this
+  account (`ServerSecret.plexToken`), plex.tv's user id, in the keychain or
+  the keyring.
+- **Plays** the file as it is (`Track.fileKey`, Plex's `Part.key`), or a
+  progressive MP3 from Plex's transcoder; never HLS.
+- **Off** on Plex: the handoff (Plex keeps no state for another device to
+  read), the radio's server mixes, similar artists, top songs, Normalize
+  Volume.
+- **Stats**: `server` `plex`, `method` `plex_pin` (docs/STATS.md).
