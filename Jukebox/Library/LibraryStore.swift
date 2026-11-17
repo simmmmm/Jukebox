@@ -58,6 +58,10 @@ final class LibraryStore {
     /// Bumped by `open` and `reset`: a load that ends after a sign-out (or
     /// after signing in as someone else) is dropped, not shown.
     @ObservationIgnored private var generation = 0
+    /// When the server was last asked for the library, answered or not:
+    /// `refreshIfStale` waits from it, so a server that is down is not
+    /// asked again at every return to the window.
+    @ObservationIgnored private var lastAsked: Date?
 
     init() {}
 
@@ -134,6 +138,25 @@ final class LibraryStore {
         }
         startLoad(generation: generation)
         await loadTask?.value
+    }
+
+    /// Everything again when the app comes to the front and the server was
+    /// last asked `staleAfter` ago: the library was read only at a launch,
+    /// so music added on the server since could not be found or played
+    /// until the app started again (the photographer, on Linux, where
+    /// nothing pulls to refresh). Nothing before the first read; a load
+    /// under way is waited for, not doubled.
+    func refreshIfStale(now: Date = Date()) async {
+        guard Self.isStale(lastAsked, now: now) else { return }
+        await refresh()
+    }
+
+    /// A read costs what a launch's does: not at every glance at the window.
+    static let staleAfter: TimeInterval = 5 * 60
+
+    static func isStale(_ lastAsked: Date?, now: Date) -> Bool {
+        guard let lastAsked else { return false }
+        return now.timeIntervalSince(lastAsked) >= staleAfter
     }
 
     /// Signed out: forget everything.
@@ -474,6 +497,7 @@ private extension LibraryStore {
         }
         guard let server else { return }
         let started = Date()
+        lastAsked = started
         state = .loading(progress: nil)
         // Every page of tracks moves the bar: they are most of the wait.
         let progress: @Sendable (Int, Int) -> Void = { done, total in
