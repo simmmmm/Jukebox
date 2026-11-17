@@ -119,28 +119,3 @@ final class AvahiCastFinder: PlayOnFinder {
         return (host, port)
     }
 }
-
-// TEMP: PlayOn.swift's, removed at merge
-struct PlayOnDevice: Identifiable, Hashable {
-    enum Kind: String, Hashable { case chromecast, jellyfin, subsonicJukebox }
-    let id: String
-    let name: String
-    let kind: Kind
-    /// A Chromecast's "host:port"; a Jellyfin session's id; the server's id for its jukebox.
-    let address: String
-}
-
-/// One source of devices (main actor, the app's default).
-protocol PlayOnFinder: AnyObject {
-    /// Looks until `stop`, telling every change of what it found.
-    func start(_ found: @escaping ([PlayOnDevice]) -> Void)
-    func stop()
-}
-
-/// Bytes to and from a Chromecast; callbacks on the main actor.
-protocol CastSocket: AnyObject {
-    /// The bytes as they come; nil once the connection closed or failed.
-    var received: ((Data?) -> Void)? { get set }
-    func send(_ data: Data)
-    func close()
-}

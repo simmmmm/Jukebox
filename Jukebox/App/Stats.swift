@@ -66,6 +66,7 @@ enum Stats {
         case downloadChosen = "download_chosen"
         case offlinePlayStarted = "offline_play_started"
         case sleepTimerSet = "sleep_timer_set"
+        case playOn = "play_on"
     }
 
     /// On unless turned off. Read with `bool(forKey:)` once the key is
