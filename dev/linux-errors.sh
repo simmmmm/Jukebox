@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # dev/linux-build.sh, showing only the errors (and the last line); then,
-# built, the check of the queue's rules (Linux/App/QueueCheck.swift).
+# built, the check of the queue's rules (Linux/App/QueueCheck.swift) and of
+# the accounts (Linux/App/AccountCheck.swift; in a folder of its own, with
+# no session bus, so no keyring is ever asked).
 cd "$(dirname "$0")/.."
 log=$(mktemp)
 dev/linux-build.sh "$@" >"$log" 2>&1
@@ -9,4 +11,5 @@ built=$?
 grep -E 'error:' -A4 "$log" | grep -v '^\[' | awk '!seen[$0]++' | head -${LINES_MAX:-120}
 tail -2 "$log"
 rm -f "$log"
-[[ $built == 0 ]] && JUKEBOX_CHECK=queue ".build-linux/${1:-debug}/Jukebox"
+[[ $built == 0 ]] && JUKEBOX_CHECK=queue ".build-linux/${1:-debug}/Jukebox" \
+  && DBUS_SESSION_BUS_ADDRESS=disabled: JUKEBOX_CHECK=accounts ".build-linux/${1:-debug}/Jukebox"

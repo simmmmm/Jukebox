@@ -80,6 +80,9 @@ final class Navigator {
     /// Settings over the wide window on an iPad (the sidebar's menu, ⌘,).
     /// The Mac has its Settings window.
     var isSettingsPresented = false
+    /// Add Account… from a menu (AccountMenuItems): the sign-in in a sheet
+    /// over the window (RootView).
+    var isAddingAccount = false
     /// What is typed in the wide window's one search field, in its bar
     /// (WideShell): the Search place shows what it finds (SearchView). It
     /// keeps its text, on any place, until it is cleared.

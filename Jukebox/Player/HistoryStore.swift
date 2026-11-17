@@ -3,6 +3,10 @@
 // This device's listening history (JukeboxKit's ListeningHistory) in
 // Application Support, written a moment after each play so a crash loses at
 // most one. The radio and the mixes read it; the player writes it.
+//
+// One file an account (AccountFiles.history): the radio's learning and
+// Home's mixes are of that account's library, and another server's
+// artists and ids would only mislead them.
 
 import Foundation
 import JukeboxKit
@@ -12,17 +16,31 @@ import Observation
 final class HistoryStore {
     private(set) var history = ListeningHistory()
 
-    private let url: URL
+    /// The account's file; nil while none is signed in, and nothing is kept.
+    @ObservationIgnored private var url: URL?
     /// One writer, in order: a slow write can never land after a newer one.
     private let writer = DispatchQueue(label: "Jukebox.history", qos: .utility)
     @ObservationIgnored private var saveTask: Task<Void, Never>?
 
-    init() {
-        url = Self.fileURL()
-        // Read at once, on launch, so the first mixes and the first station
-        // already know what was heard. The file is at most 20 000 small
-        // events (ListeningHistory.limit), a few megabytes.
-        history = ListeningHistory.load(from: url)
+    init() {}
+
+    /// Signed in, or switched to: the account's history, read at once so
+    /// the first mixes and the first station already know what was heard.
+    /// The file is at most 20 000 small events (ListeningHistory.limit), a
+    /// few megabytes.
+    func open(_ file: URL) {
+        close()
+        url = file
+        history = ListeningHistory.load(from: file)
+    }
+
+    /// The account put away: what is not yet written goes to its own file
+    /// first. The file stays, also at a sign-out: signing in again finds the
+    /// radio's learning where it was.
+    func close() {
+        if saveTask != nil { saveNow() }
+        url = nil
+        history = ListeningHistory()
     }
 
     func record(_ event: PlayEvent) {
@@ -72,18 +90,18 @@ final class HistoryStore {
     }
 
     private func saveNow() {
+        saveTask?.cancel()
+        saveTask = nil
+        guard let url else { return }
         let snapshot = history
-        let url = self.url
         writer.async {
             try? snapshot.save(to: url)
         }
     }
 
-    private static func fileURL() -> URL {
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
-            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
-        return base
-            .appendingPathComponent("Jukebox", isDirectory: true)
-            .appendingPathComponent("history.json", isDirectory: false)
+    /// Waits for the writes under way: a file moved or read after this is
+    /// the one last written (the migration, AccountCheck).
+    func flush() {
+        writer.sync {}
     }
 }

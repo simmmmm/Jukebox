@@ -7,7 +7,8 @@
 #   dev/jellyfin-test-server.sh          start, set up, print the URL
 #   dev/jellyfin-test-server.sh --reset  throw the server and library away first
 #
-# User "test", password "test". The server is "jellyfin" on the Docker network
+# User "test", password "test" (and "second", "second" for a second
+# account). The server is "jellyfin" on the Docker network
 # "jukebox" (port 8096), and localhost:8096 from here.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -142,5 +143,13 @@ for _ in $(seq 1 120); do
   sleep 3
 done
 echo "scan: $state, tracks without genres: $bare, album artists: $artists"
+
+# A second user, second/second, on the same library: two accounts on one
+# server, as the app keeps them (JukeboxKit's SavedAccountsTests, the
+# Linux client's switch).
+if ! curl -sf "${H[@]}" "$URL/Users" | jq -e '.[] | select(.Name == "second")' >/dev/null; then
+  curl -sf -X POST "${H[@]}" -H 'Content-Type: application/json' "$URL/Users/New" \
+    -d '{"Name":"second","Password":"second"}' >/dev/null
+fi
 
 echo "Jellyfin at $URL (Docker: http://${alias:-jellyfin}:8096): $have of $want tracks, user test/test, user id $USER_ID"

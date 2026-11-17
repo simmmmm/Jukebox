@@ -29,6 +29,9 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     /// and both must play the same queue.
     private let app = AppModel.shared
     private var interface: CPInterfaceController?
+    /// The account whose lists show: another signed in (Accounts.swift),
+    /// what the driver had opened of the last one's goes.
+    private var shownAccount: String?
 
     private let home = CPListTemplate(title: String(localized: "Home"), sections: [])
     private let radio = CPListTemplate(title: String(localized: "Radio"), sections: [])
@@ -101,6 +104,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
                 interface.setRootTemplate(notice, animated: false, completion: nil)
             }
             return
+        }
+        let account = app.credentials.map { OfflinePaths.account(for: $0) }
+        if let account, account != shownAccount {
+            if shownAccount != nil, interface.templates.count > 1 {
+                interface.popToRootTemplate(animated: false, completion: nil)
+            }
+            shownAccount = account
         }
         home.updateSections(homeSections())
         radio.updateSections(radioSections())
