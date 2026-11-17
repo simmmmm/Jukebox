@@ -354,7 +354,8 @@ it. It looks only while it is open: no local network prompt at launch.
   on …" in a quiet line.
 - **Jellyfin clients** get up to 100 songs (`PlayNow`, then `PlayLast` for
   the radio's picks) and report their plays themselves, so the queue does
-  not. **A jukebox** gets the list too (`jukeboxControl`). **A Chromecast**
+  not (measured under Xvfb: one count a song). The song handed over
+  mid-play counts twice when it had counted here already. **A jukebox** gets the list too (`jukeboxControl`). **A Chromecast**
   (the Default Media Receiver) plays one song, a plain file from
   `castURL(for:)`, and the queue reports the play.
 - **Chromecasts by platform**: Linux speaks castv2 itself (JukeboxKit's
