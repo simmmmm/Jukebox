@@ -91,6 +91,17 @@ final class AppModel {
         radio.offline = offline
         offline.onConnectivityChange = { [weak self] in self?.connectivityChanged() }
         offline.onSongsChange = { [weak self] in self?.radio.offlineSongsChanged() }
+        // Chromecasts (PlayOn.swift): Google's Cast SDK on the iPhone and
+        // the iPad, castv2 over Network's TLS on the Mac, which has no SDK.
+        #if os(macOS)
+        player.playOn.castFinder = BonjourCastFinder()
+        player.playOn.castPlayer = { device in
+            CastPlayer(device: device, socket: NetworkCastSocket(service: device.address))
+        }
+        #elseif canImport(GoogleCast)
+        player.playOn.castFinder = GoogleCastFinder()
+        player.playOn.castPlayer = { device in GoogleCastPlayer(device: device) }
+        #endif
     }
 
     /// Whether the signed-in server can do this (Quick Connect and API keys

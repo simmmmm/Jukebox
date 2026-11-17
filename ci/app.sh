@@ -47,6 +47,8 @@ if [[ -n $xcode ]]; then sudo xcode-select -s "$xcode"; fi
 xcodebuild -version | tee build/logs/xcode-version.txt
 
 command -v xcodegen >/dev/null || brew install xcodegen
+# Google's Cast SDK, which project.yml links for the iPhone and the iPad.
+ci/google-cast.sh
 xcodegen generate
 
 # The errors, once each, without the runner's path, on the summary page.
