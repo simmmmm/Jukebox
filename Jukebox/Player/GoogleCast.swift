@@ -12,6 +12,7 @@
 #if os(iOS) && canImport(GoogleCast)
 import Foundation
 import GoogleCast
+import JukeboxKit
 
 enum GoogleCast {
     /// Once, as Play On first opens.

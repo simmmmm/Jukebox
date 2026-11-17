@@ -2,9 +2,10 @@
 # Google's Cast SDK for iOS into Vendor/GoogleCast (gitignored), which
 # project.yml links for the iPhone and the iPad (Player/GoogleCast.swift).
 # Google's own build from Google's own server, the version pinned and its
-# sha256 checked; never a mirror. The dynamic xcframework: GTMSessionFetcher
-# and the rest it needs are inside it, where the static one asks for them as
-# CocoaPods dependencies. Run before `xcodegen generate` (ci/app.sh does;
+# sha256 checked; never a mirror. The framework's own Info.plist inside
+# Google's 4.8.6 package says 4.8.3 (read on 17 November 2026). The dynamic
+# xcframework: GTMSessionFetcher and the rest it needs are inside it, where
+# the static one asks for them as CocoaPods dependencies. Run before `xcodegen generate` (ci/app.sh does;
 # docs/RELEASE.md for the photographer's Mac).
 #
 # The SDK is not MIT: Google APIs Terms of Service and the Google Cast SDK
@@ -25,7 +26,9 @@ fi
 rm -rf "$target"
 mkdir -p "$target"
 unzip -q "$zip" -d "$target/unpacked"
-mv "$target/unpacked/GoogleCastSDK-ios-${version}_dynamic_xcframework/GoogleCast.xcframework" "$target/"
+# The framework, and the licences of what it bundles (README, Licence).
+mv "$target/unpacked/GoogleCastSDK-ios-${version}_dynamic_xcframework/GoogleCast.xcframework" \
+   "$target/unpacked/GoogleCastSDK-ios-${version}_dynamic_xcframework/OpenSourceLicenses" "$target/"
 rm -rf "$target/unpacked" "$(dirname "$zip")"
 echo "$version" > "$target/VERSION"
 echo "Google Cast SDK $version in $target"

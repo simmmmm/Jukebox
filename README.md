@@ -81,5 +81,18 @@ MIT: see `LICENSE`.
 The iPhone's and the iPad's app links Google's Cast SDK for Chromecasts
 (fetched by `ci/google-cast.sh`, not in this repository). It is not MIT: the
 Google APIs Terms of Service and the Google Cast SDK Additional Developer
-Terms of Service, with the open-source licences of what it bundles listed in
-the SDK itself. The Linux and Mac clients speak to Chromecasts without it.
+Terms of Service. Inside it, by the SDK's own index (4.8.6, kept beside it
+in `Vendor/GoogleCast/OpenSourceLicenses/`):
+
+- Apache-2.0: Abseil, gRPC, TCMalloc, Google Toolbox for Mac,
+  gtm_session_fetcher, Material Components for iOS, MDFFontDiskLoader,
+  MDFInternationalization, MDFTextAccessibility, audio_to_tactile,
+  program_image_remapper.
+- BSD-3-Clause: Protocol Buffers (and its Go v2 and Java parts), Chromium's
+  cast code and its protos (some of those files MIT, MPL or Apache-2.0),
+  Kiss FFT.
+- MPL-2.0: Eigen 3 (some files BSD, MIT or Apache-2.0).
+- Apple's sample code licence: SimplePing. Public domain: the tz database.
+
+The app shows no acknowledgements screen of them yet. The Linux and Mac
+clients speak to Chromecasts without the SDK.
