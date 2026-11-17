@@ -46,7 +46,7 @@ enum WidgetDoors {
         case .launching:
             return nil
         case .signedOut:
-            return WidgetSnapshot(signedIn: false, onAir: false, mixes: [])
+            return WidgetSnapshot(signedIn: false, account: "", onAir: false, mixes: [])
         case .signedIn:
             // Light means on air (tells.md, 1): while it plays, not while
             // it waits paused, when the widget's Play is wanted again.
@@ -55,7 +55,9 @@ enum WidgetDoors {
                 onAir = app.player.isPlaying
             }
             let mixes = app.mixes.mixes.prefix(3).map { WidgetSnapshot.Mix(id: $0.id, title: $0.title) }
-            return WidgetSnapshot(signedIn: true, onAir: onAir, mixes: mixes)
+            // The account too: a switch (AppModel.switchAccount) writes the
+            // next account's mixes and covers even where their ids match.
+            return WidgetSnapshot(signedIn: true, account: app.credentials?.folder ?? "", onAir: onAir, mixes: mixes)
         }
     }
 
@@ -63,14 +65,15 @@ enum WidgetDoors {
         guard let folder = WidgetSnapshot.folder else { return }
         let files = FileManager.default
         try? files.createDirectory(at: folder, withIntermediateDirectories: true)
-        // Yesterday's covers, and every one after a sign-out, go.
-        let wanted = Set(snapshot.mixes.map { WidgetSnapshot.cover(of: $0.id) })
+        // Yesterday's covers, another account's after a switch, and every
+        // one after the last account's sign-out, go.
+        let wanted = Set(snapshot.mixes.map { snapshot.cover(of: $0) })
         for name in (try? files.contentsOfDirectory(atPath: folder.path)) ?? []
         where name.hasSuffix(".jpg") && !wanted.contains(name) {
             try? files.removeItem(at: folder.appendingPathComponent(name))
         }
         for mix in snapshot.mixes {
-            let file = folder.appendingPathComponent(WidgetSnapshot.cover(of: mix.id))
+            let file = folder.appendingPathComponent(snapshot.cover(of: mix))
             // A mix's id is its day's: its cover does not change that day.
             guard !files.fileExists(atPath: file.path),
                   let artwork = app.mixes.mixes.first(where: { $0.id == mix.id })?.artwork.first,

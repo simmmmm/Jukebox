@@ -46,7 +46,7 @@ nonisolated struct DoorsEntry: TimelineEntry {
 /// the app does something (WidgetDoors), never by the clock.
 nonisolated struct DoorsProvider: TimelineProvider {
     func placeholder(in context: Context) -> DoorsEntry {
-        DoorsEntry(date: Date(), snapshot: WidgetSnapshot(signedIn: true, onAir: false, mixes: []), covers: [:])
+        DoorsEntry(date: Date(), snapshot: WidgetSnapshot(signedIn: true, account: "", onAir: false, mixes: []), covers: [:])
     }
 
     func getSnapshot(in context: Context, completion: @escaping (DoorsEntry) -> Void) {
@@ -60,9 +60,9 @@ nonisolated struct DoorsProvider: TimelineProvider {
     private func current() -> DoorsEntry {
         let snapshot = WidgetSnapshot.read()
         var covers: [String: Data] = [:]
-        if let folder = WidgetSnapshot.folder {
-            for mix in snapshot?.mixes ?? [] {
-                covers[mix.id] = try? Data(contentsOf: folder.appendingPathComponent(WidgetSnapshot.cover(of: mix.id)))
+        if let folder = WidgetSnapshot.folder, let snapshot {
+            for mix in snapshot.mixes {
+                covers[mix.id] = try? Data(contentsOf: folder.appendingPathComponent(snapshot.cover(of: mix)))
             }
         }
         return DoorsEntry(date: Date(), snapshot: snapshot, covers: covers)

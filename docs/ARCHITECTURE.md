@@ -463,7 +463,9 @@ Control Center have one): it is doors into the music.
   `App/WidgetDoors.swift` into the App Group `group.com.tijmen.Jukebox`
   (signed in, Your Station on the air, the mixes' ids and titles, their
   covers as 120-pixel JPEGs) when any of it changes, then
-  `WidgetCenter.reloadAllTimelines`. The widget never asks the server and
+  `WidgetCenter.reloadAllTimelines`. An account switch writes the next
+  account's (the covers are named by the account's folder too); the last
+  account's sign-out empties it. The widget never asks the server and
   holds no credentials. Signed out it says "Sign in in Jukebox".
 - **The mark** is drawn from `Components/ArchShapes.swift` and
   `ArtMeasures.swift`, which the widget compiles too.

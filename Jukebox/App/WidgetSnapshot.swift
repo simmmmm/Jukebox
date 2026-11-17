@@ -15,6 +15,10 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
     }
 
     var signedIn: Bool
+    /// The account's own folder name (ServerCredentials.folder), empty
+    /// signed out: two accounts' mixes of a day can share an id, and after a
+    /// switch the last account's covers must not show.
+    var account: String
     /// Your Station plays: its arch is lit and it has no Play.
     var onAir: Bool
     /// Home's first three, in Home's order.
@@ -32,10 +36,10 @@ nonisolated struct WidgetSnapshot: Codable, Equatable, Sendable {
 
     static let file = "snapshot.json"
 
-    /// A mix's cover in the folder: a small JPEG, named by the mix's id
-    /// (kind, key and day) in letters and digits.
-    static func cover(of mixID: String) -> String {
-        String(mixID.unicodeScalars.filter(CharacterSet.alphanumerics.contains).map(Character.init)) + ".jpg"
+    /// A mix's cover in the folder: a small JPEG, named by the account and
+    /// the mix's id (kind, key and day) in letters and digits.
+    func cover(of mix: Mix) -> String {
+        String((account + mix.id).unicodeScalars.filter(CharacterSet.alphanumerics.contains).map(Character.init)) + ".jpg"
     }
 
     /// Nil before the app has written one (installed, never opened).
