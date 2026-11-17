@@ -125,6 +125,11 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// A converted stream can start part-way (OpenSubsonic's
     /// `transcodeOffset`), for seeking in it.
     case transcodeOffset
+    /// One to five stars per user on songs and albums: Subsonic's setRating
+    /// (API 1.6.0) and `userRating`. Jellyfin has none to offer: its
+    /// UserData.Rating is a number without a scale that none of its own
+    /// clients shows or sorts by (docs/SERVERS.md, "Ratings").
+    case rating
 
     /// What every Jellyfin 10.9+ server has once signed in. Quick Connect
     /// is a question for the sign-in screen, not the session.
@@ -483,6 +488,9 @@ public protocol MusicServer: Sendable {
     // MARK: Changes
 
     func setFavorite(_ isFavorite: Bool, item: ItemRef) async throws
+    /// 1 to 5 stars on a track or an album; 0 takes the rating away
+    /// (`.rating`; `unsupported` without it).
+    func setRating(_ stars: Int, item: ItemRef) async throws
 
     /// A playlist's tracks in order, each with its `playlistEntryID`: what
     /// removing or moving that place needs. Jellyfin: its PlaylistItemId.

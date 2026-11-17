@@ -180,6 +180,9 @@ struct LibraryAlbumMenu: View {
             Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
                 Task { await library.toggleFavorite(.album(album.id)) }
             }
+            if library.can(.rating) {
+                RatingMenu(item: .album(album.id))
+            }
         }
         if includesGoToArtist, let artist = albumArtist {
             Section {

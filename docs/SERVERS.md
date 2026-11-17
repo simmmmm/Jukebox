@@ -316,6 +316,7 @@ app does where a Subsonic server lacks it.
 | Member | Jellyfin | Subsonic |
 |---|---|---|
 | `setFavorite(_:item:)` | POST/DELETE /UserFavoriteItems/{id} | `star` / `unstar` with `id=` (a song), `albumId=` or `artistId=` by `ItemRef`. Navidrome took all three, and `id=` for an album or an artist too; an unknown id is ok (logged "Cannot star/unstar unknown id"). The item's `starred` date is the favourite (`getStarred2` lists them; not needed, the items say it). |
+| `setRating(_:item:)` | none (`unsupported`; "Ratings" below) | `setRating?id=&rating=` 1 to 5, 0 takes it away, `id=` for a song and an album alike (Navidrome 0.64.2 answers error 10 to `albumId=`, 70 to an unknown id; it takes an artist's id too, not used). Read back as `userRating` on songs (absent when unrated) and albums (0 when unrated), measured on getSong, search3, getAlbum, getAlbumList2. |
 | `playlistTracks(playlistID:)` | GET /Playlists/{id}/Items, `PlaylistItemId` | `getPlaylist?id=` → `playlist.entry[]` (Child) in order, duplicates kept; entry ids made as below |
 | `createPlaylist(name:trackIDs:)` | POST /Playlists (ids in the body) | `createPlaylist?name=&songId=…` → `playlist.id` (API 1.14.0+ answers with the playlist, measured; before, the newest playlist of that name). More than 100: one form POST with `formPost`, else the first 100 and then `updatePlaylist` 100 at a time. No songs: `name` alone (measured ok, `songCount` 0). An unknown song id is dropped silently (measured: ok, `songCount` 0). |
 | `addToPlaylist(playlistID:trackIDs:)` | POST /Playlists/{id}/Items?ids= | `updatePlaylist?playlistId=&songIdToAdd=…`, at the end, in order, duplicates kept (measured A B C A + D A → A B C A D A) |
@@ -621,6 +622,17 @@ with Subsonic's field beside Jellyfin's.
 | `playbackTimeline` | always | `playbackReport` listed | listed | `scrobble` only |
 | `lastPlayed` | always | OpenSubsonic (`played`) | yes | taste at 0.6, Recently Played from this device |
 | `transcodeOffset` | never (HLS seeks) | `transcodeOffset` listed | listed | (player round) |
+| `rating` | never | API 1.6.0+ (`setRating`) | yes, songs and albums | no Rating in the menus |
+
+Ratings (17 November 2026). Jellyfin 12.4 keeps a per-user
+`UserData.Rating`, a number without a scale: POST /UserItems/{id}/UserData
+with `Rating` 8 kept 8 and set `Likes` true; `Rating` null did not clear it,
+DELETE /UserItems/{id}/Rating did (measured). /UserItems/{id}/Rating itself
+takes only `likes`. No sort by it (`ItemSortBy` has none), and none of
+Jellyfin's own clients shows it: jellyfin-web's rating button
+(`src/elements/emby-ratingbutton/emby-ratingbutton.js`) is the heart, which
+reads `Likes` and sets the favourite. Stars only Jukebox could see are not
+offered there.
 
 Navidrome 0.64.2's `getOpenSubsonicExtensions`, without credentials:
 `transcodeOffset` 1, `formPost` 1, `songLyrics` 1 2, `indexBasedQueue` 1,

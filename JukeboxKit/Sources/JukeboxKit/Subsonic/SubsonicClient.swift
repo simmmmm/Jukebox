@@ -318,6 +318,14 @@ public struct SubsonicClient: MusicServer {
         _ = try await call(isFavorite ? "star" : "unstar", [URLQueryItem(name: name, value: item.id)])
     }
 
+    /// setRating takes `id` for a song and an album alike (the spec's one
+    /// parameter; Navidrome 0.64.2 answers error 10 to `albumId`, measured).
+    /// 0 removes the rating.
+    public func setRating(_ stars: Int, item: ItemRef) async throws {
+        _ = try await call("setRating", [URLQueryItem(name: "id", value: item.id),
+                                         URLQueryItem(name: "rating", value: String(min(5, max(0, stars))))])
+    }
+
     /// getPlaylist's songs in order, duplicates kept, each with an entry id
     /// made here: "<songID>#<n>", n counting that song's earlier places
     /// from 0 (docs/SERVERS.md, "Playlist entries").

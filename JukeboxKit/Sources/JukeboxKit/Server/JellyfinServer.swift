@@ -166,6 +166,12 @@ public struct JellyfinServer: MusicServer {
         try await mapped { try await client.setFavorite(isFavorite, itemID: item.id) }
     }
 
+    /// Jellyfin keeps no stars a listener would see anywhere else
+    /// (`ServerCapability.rating`).
+    public func setRating(_ stars: Int, item: ItemRef) async throws {
+        throw MusicServerError.unsupported(.rating)
+    }
+
     /// A playlist's tracks with an entry id for each place. Jellyfin 12.4's
     /// own (PlaylistItemId) is the song's id (measured), so a song twice in
     /// a playlist has one id for both places, which the contract and the
