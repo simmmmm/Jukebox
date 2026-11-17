@@ -22,6 +22,13 @@ enum Preferences {
         adw_preferences_group_add(ptr(playing), toggle(
             "Autoplay", "When an album or a playlist ends, play on with a station from its last song.",
             settings.autoplay) { settings.autoplay = $0 })
+        let crossfades = AppSettings.crossfades
+        let crossfade = combo("Crossfade", crossfades.map { $0 == 0 ? "Off" : "\($0) s" },
+                              selected: crossfades.firstIndex(of: settings.crossfade) ?? 0) {
+            settings.crossfade = crossfades[$0]
+        }
+        adw_action_row_set_subtitle(ptr(crossfade), "A song fades out and the next fades in. Songs that follow each other on an album never fade.")
+        adw_preferences_group_add(ptr(playing), crossfade)
         adw_preferences_group_add(ptr(playing), toggle(
             "Continue Where You Left Off", "When Jukebox opens, the song you last played, here or on another device, is ready to play.",
             settings.resumeOnLaunch) { settings.resumeOnLaunch = $0 })

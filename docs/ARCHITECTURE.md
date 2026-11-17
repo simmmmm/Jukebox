@@ -338,6 +338,18 @@ itself and the next waits, paused; End of Album goes round no Repeat All and
 starts no Autoplay. A moon beside Now Playing's ⋮ (`SleepTimerMenu`), with
 the time left; on the Mac also Controls › Sleep Timer. Not in the car.
 
+## Crossfade
+
+Settings › Playback (Preferences' Playing on Linux): Off, as it starts, or
+2 to 12 s. `PlayQueue.crossfadeLevel`, in `level(for:)` beside normalisation
+and the sleep timer's fade, on the players' own ticks: a song's last half of
+the length fades out and the next one's first half fades in, so no
+AudioPlayer changed and the one engine plays one song at a time (no
+overlap). Never between songs that follow each other on their album
+(`PlayQueue.crossfades`), so albums stay gapless; a move by hand cuts.
+No equalizer: AVPlayer applies an audio tap only to progressive streams,
+not to Jellyfin's HLS transcodes, so it could not sound the same everywhere.
+
 ## CarPlay
 
 The car's screen, Apple's templates (`Jukebox/CarPlay/CarPlayScene.swift`,
