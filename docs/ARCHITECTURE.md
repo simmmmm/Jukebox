@@ -325,6 +325,19 @@ is in.
 `LRCLIBLiveTests` asks the real LRCLIB where it answers within 3 s (GitHub's
 runners) or with `LRCLIB_LIVE=1`, and skips itself elsewhere.
 
+## The sleep timer
+
+Asked for with what other players have ("maak ze allemaal maar").
+One timer in `PlayQueue`, so every client keeps the same:
+15, 30 or 45 minutes, an hour, End of Song, End of Album (or Playlist, or
+Queue; not on a station). A timer of minutes is a deadline the player's own
+ticks look at, not a Timer iOS may suspend in the background; its last 8 s
+fade the music through `level(for:)`, then it pauses and the volume is the
+listener's again. End of Song holds nothing after the song, so it ends by
+itself and the next waits, paused; End of Album goes round no Repeat All and
+starts no Autoplay. A moon beside Now Playing's ⋮ (`SleepTimerMenu`), with
+the time left; on the Mac also Controls › Sleep Timer. Not in the car.
+
 ## CarPlay
 
 The car's screen, Apple's templates (`Jukebox/CarPlay/CarPlayScene.swift`,
@@ -349,6 +362,36 @@ belangrijks in de ios app, carplay!"
   car run at once; the iPad's own manifest (`~ipad`) keeps it one window.
   No lyrics and no other phone-only notice
   in the car (Apple's CarPlay addendum). Entitlement: `docs/RELEASE.md`.
+
+## Siri and Shortcuts
+
+`Jukebox/Intents/`. Asked for with the other players' features ("maak ze
+allemaal maar", 17 November 2026); in the car, without a voice, every song
+is a tap while driving.
+
+- **"Play … in Jukebox"**, any name in the library, on the iPhone, the iPad and in the car:
+  SiriKit's `INPlayMediaIntent`, handled in the app (`SiriMedia.swift`,
+  through `JukeboxAppDelegate`), no extension. Siri hears the name and what
+  it is; `Voice.find` looks in the library. No name: Your Station. A
+  station's name ("Radiohead radio"): its station.
+- **Why not App Intents alone**: an App Shortcut's phrase matches only the
+  names suggested beforehand, and App Intents' audio schema (MediaIntents'
+  `AudioSearch`) is iOS 27.
+- **App Intents** (`MusicIntents.swift`), on the iPhone, the iPad and the
+  Mac, in Siri and the Shortcuts app with nothing set up: Play, Start a
+  Station, Play Your Station, Shuffle (the library or the favourites), Like
+  This Song. `MusicEntity` is an album, artist, playlist, song, genre or Your
+  Station; its query searches the library in memory. Pause, Next and the
+  rest are the system's (RemoteCommands).
+- **One way of playing**: `Voice` calls `player.play`, `radio.start`,
+  `radio.like` as the screens do. It waits for `AppModel.shared` to restore
+  the session, as CarPlay does from a cold start; signed out it says to sign
+  in. Counts: `from` `siri` (`docs/STATS.md`).
+- **On the device**: entities stay in the app; nothing is donated, given
+  as vocabulary or put in Spotlight. The playlists, the albums played lately
+  and the favourites are the phrases' suggestions.
+- Siri's permission is asked once, when the window has a library. The
+  entitlement: `docs/RELEASE.md`, Siri.
 
 ## Usage counts
 

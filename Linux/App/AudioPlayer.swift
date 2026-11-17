@@ -281,6 +281,8 @@ final class AudioPlayer: PlayQueue {
     }
 
     private func tick() {
+        // The sleep timer's deadline and fade, before anything else.
+        checkSleep()
         guard let playing else { return }
         var position: gint64 = 0
         if pendingSeek == nil, gst_element_query_position(engine, GST_FORMAT_TIME, &position) != 0 {

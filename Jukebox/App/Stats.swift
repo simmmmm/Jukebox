@@ -65,6 +65,7 @@ enum Stats {
         case playbackError = "playback_error"
         case downloadChosen = "download_chosen"
         case offlinePlayStarted = "offline_play_started"
+        case sleepTimerSet = "sleep_timer_set"
     }
 
     /// On unless turned off. Read with `bool(forKey:)` once the key is
@@ -80,6 +81,16 @@ enum Stats {
     static let api = URL(string: "https://stats.numa.photo/api/track")!
     static let clientID = "4f8b948e-55ca-4c2c-9e10-06d2f5260c33"
     static let clientSecret = "sec_f5fef333b75ba30ea16c"
+
+    /// Where the next `play()` was asked from when that is not the queue's
+    /// kind: `siri` (Intents/Voice.swift). Taken by that play, set or not, so
+    /// it never counts a later one.
+    static var nextFrom: String?
+
+    static func takeFrom(_ kind: QueueContext.Kind) -> String {
+        defer { nextFrom = nil }
+        return nextFrom ?? source(kind)
+    }
 
     static func track(_ name: Name, _ props: [String: Value] = [:]) {
         guard on, !clientID.isEmpty else { return }

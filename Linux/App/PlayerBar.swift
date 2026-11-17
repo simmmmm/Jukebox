@@ -467,6 +467,37 @@ enum NowPlayingPage {
     /// open, the bar's and the docked panel's own gone (Style's `in-room`).
     /// Lying over the page, the panel keeps its ground: the room shows
     /// under it otherwise.
+    /// The sleep timer, a moon beside ⋮, as the iPhone's and the Mac's
+    /// (Jukebox/NowPlaying/SleepTimerMenu.swift): before it the time left,
+    /// or what it waits for ("End of Album"). The timer is the queue's.
+    private static func sleepTimer() -> Widget {
+        let left = label("", "t15", "times")
+        let moon = gtk_image_new_from_icon_name("weather-clear-night-symbolic")!
+        let button = gtk_menu_button_new()!.css("flat").tooltip("Sleep Timer")
+        gtk_menu_button_set_child(ptr(button), hbox(spacing: 8, [left, moon]))
+        // The words apart from the menu: they change every second, and the
+        // menu, made again, would close under the pointer.
+        observe(left) {
+            let player = app.player
+            if let seconds = player.sleepLeft {
+                setText(left, clock(seconds))
+            } else {
+                setText(left, player.sleepChoice.map(player.sleepTitle) ?? "")
+            }
+            left.isVisible = player.sleepChoice != nil
+        }
+        observe(button) {
+            let player = app.player
+            var items: [(String, () -> Void)] = player.sleepChoices.map { choice in
+                (player.sleepTitle(choice), { app.player.setSleepTimer(choice) })
+            }
+            // Off only while it runs; the words before the moon say which.
+            if player.sleepChoice != nil { items.insert(("Off", { app.player.setSleepTimer(nil) }), at: 0) }
+            gtk_menu_button_set_popover(ptr(button), popoverMenu(items))
+        }
+        return button
+    }
+
     private static func ground() {
         guard let window = MainWindow.window else { return }
         let open = isOpen
@@ -512,6 +543,7 @@ enum NowPlayingPage {
         adw_header_bar_set_show_title(ptr(header), 0)
         adw_header_bar_pack_start(ptr(header), down)
         adw_header_bar_pack_end(ptr(header), more)
+        adw_header_bar_pack_end(ptr(header), sleepTimer())
         let page = adw_toolbar_view_new()!
         adw_toolbar_view_add_top_bar(ptr(page), header)
         adw_toolbar_view_set_content(ptr(page), overlay)
