@@ -37,6 +37,8 @@ gboolean jb_secret_available(void) {
 }
 
 gboolean jb_secret_store(const char *account, const char *json) {
+    // Stored over the item with the same attributes, in place (libsecret
+    // replaces it): never cleared first, so a failed store keeps the old.
     // The session keeps the label it always had; the list has its own.
     const char *label = g_strcmp0(account, "credentials") ? "Jukebox accounts" : "Jukebox";
     return secret_password_store_sync(schema(), SECRET_COLLECTION_DEFAULT, label,

@@ -35,7 +35,7 @@ public struct SavedAccounts: Hashable, Sendable {
             Self.keep(active, in: &all)
         }
         self.all = all
-        self.active = active ?? all.first
+        self.active = active.flatMap { active in all.first { $0.isSameAccount(as: active) } } ?? all.first
         needsSaving = all != (saved ?? [])
     }
 
@@ -52,7 +52,8 @@ public struct SavedAccounts: Hashable, Sendable {
     @discardableResult
     public mutating func activate(_ account: ServerCredentials) -> Bool {
         let added = Self.keep(account, in: &all)
-        active = account
+        // The list's copy: with the folder name it was given, or kept.
+        active = all.first { $0.isSameAccount(as: account) } ?? account
         return added
     }
 
@@ -60,6 +61,8 @@ public struct SavedAccounts: Hashable, Sendable {
     /// version, its capabilities), in its place.
     public mutating func update(_ account: ServerCredentials) {
         guard let at = all.firstIndex(where: { $0.isSameAccount(as: account) }) else { return }
+        var account = account
+        if account.folderName == nil { account.folderName = all[at].folderName }
         all[at] = account
         if active?.isSameAccount(as: account) == true { active = account }
     }
@@ -72,14 +75,33 @@ public struct SavedAccounts: Hashable, Sendable {
     }
 
     /// In its place when it is there (true: it was not, and is added).
+    /// A new account whose folder name another saved account has already
+    /// gets one of its own; one already here keeps the one it had.
     @discardableResult
     private static func keep(_ account: ServerCredentials, in list: inout [ServerCredentials]) -> Bool {
+        var account = account
         if let at = list.firstIndex(where: { $0.isSameAccount(as: account) }) {
+            if account.folderName == nil { account.folderName = list[at].folderName }
             list[at] = account
             return false
         }
+        if account.folderName == nil, list.contains(where: { $0.folder == account.folder }) {
+            account.folderName = account.baseFolder + "-" + Self.stableHash(account.serverURL.absoluteString + "\n" + account.userID)
+        }
         list.append(account)
         return true
+    }
+
+    /// FNV-1a, 32 bits, in hex: the same on every launch and platform, as
+    /// Swift's own hash is not.
+    static func stableHash(_ text: String) -> String {
+        var hash: UInt32 = 2_166_136_261
+        for byte in text.utf8 {
+            hash ^= UInt32(byte)
+            hash = hash &* 16_777_619
+        }
+        let hex = String(hash, radix: 16)
+        return String(repeating: "0", count: 8 - hex.count) + hex
     }
 }
 
@@ -89,5 +111,17 @@ extension ServerCredentials {
     /// folder are named by, too.
     public func isSameAccount(as other: ServerCredentials) -> Bool {
         serverID == other.serverID && userID == other.userID
+    }
+
+    /// The name of the account's own folders and files on the device (its
+    /// songs, its history; the app's OfflinePaths and AccountFiles).
+    public var folder: String { folderName ?? baseFolder }
+
+    /// The server's id and the user's, letters and digits only, as every
+    /// account's folders were named before there was a list: Jellyfin's
+    /// hex GUIDs, or a Subsonic server's URL and the user's name.
+    public var baseFolder: String {
+        let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
+        return "\(String(serverID.filter { allowed.contains($0) }))-\(String(userID.filter { allowed.contains($0) }))"
     }
 }

@@ -98,6 +98,34 @@ struct SavedAccountsTests {
         #expect(accounts.active == nil)
     }
 
+    @Test("Two accounts whose folder names would be one: the newer gets its own, the older keeps its")
+    func folderNames() throws {
+        // Two Subsonic addresses that differ only in punctuation fold to
+        // one name ("httpnaslocal4533-anna").
+        func subsonic(_ url: String) -> ServerCredentials {
+            ServerCredentials(kind: .subsonic(flavour: .navidrome), serverURL: URL(string: url)!, serverID: url,
+                              serverName: "", userID: "anna", userName: "anna", secret: .subsonicAPIKey("k"))
+        }
+        let first = subsonic("http://nas.local:4533"), second = subsonic("http://nas-local:4533")
+        #expect(first.folder == second.folder)
+        var accounts = SavedAccounts(active: first, saved: nil)
+        accounts.activate(second)
+        let named = try #require(accounts.all.last)
+        #expect(accounts.all[0].folderName == nil)
+        #expect(named.folderName != nil && named.folder != accounts.all[0].folder)
+        #expect(accounts.active?.folder == named.folder)
+        // Stable: signed in again, read back, or after the other is gone.
+        accounts.activate(second)
+        #expect(accounts.all.last?.folder == named.folder)
+        let read = try JSONDecoder().decode([ServerCredentials].self, from: JSONEncoder().encode(accounts.all))
+        #expect(SavedAccounts(active: second, saved: read).active?.folder == named.folder)
+        accounts.remove(first)
+        #expect(accounts.all.first?.folder == named.folder)
+        // Every account without a clash keeps the name it always had.
+        #expect(home.folderName == nil && home.folder == "home-tijmen")
+        #expect(SavedAccounts.stableHash("a") == SavedAccounts.stableHash("a"))
+    }
+
     @Test("What the server said of itself since replaces the account's entry")
     func update() {
         var accounts = SavedAccounts(active: home, saved: [home, shared])

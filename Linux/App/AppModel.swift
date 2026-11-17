@@ -100,7 +100,8 @@ final class AppModel {
             Stats.track(.accountAdded, ["server": Stats.server(credentials.kind),
                                         "count": Stats.accountCount(accounts.saved.count)])
         }
-        await begin(credentials)
+        // As the list keeps it: perhaps with a folder name of its own.
+        await begin(accounts.active ?? credentials)
     }
 
     /// Another saved account (the iPhone's AppModel.switchAccount has the

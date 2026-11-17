@@ -38,6 +38,10 @@ final class Accounts {
 
     init() {}
 
+    /// The one signed in as the list keeps it: a new account with its own
+    /// folder name, when another had the one it would have had.
+    var active: ServerCredentials? { list.active }
+
     /// At a launch: the keychain's session and list, put together. An
     /// install from before the list has one session: it is the list now,
     /// and the device's history and stations from then are its own
@@ -70,7 +74,7 @@ final class Accounts {
     func activate(_ account: ServerCredentials) -> Bool {
         let added = list.activate(account)
         Keychain.saveAccounts(list.all)
-        Keychain.save(account)
+        Keychain.save(list.active ?? account)
         saved = list.all
         return added
     }

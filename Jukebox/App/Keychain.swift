@@ -71,18 +71,23 @@ enum Keychain {
         }
     }
 
+    /// Over the item in place, or a new one when there is none: never a
+    /// delete and then an add, which a failed add would leave with nothing
+    /// (the list of accounts lost).
     private static func write(_ data: Data, as account: String) {
-        delete(account)
-        let query: [String: Any] = [
+        let item: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account,
+        ]
+        let changes: [String: Any] = [
             kSecValueData as String: data,
             // Readable after the first unlock: the radio fetches its next
             // tracks with the phone locked.
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
         ]
-        SecItemAdd(sent(query), nil)
+        guard SecItemUpdate(sent(item), changes as CFDictionary) == errSecItemNotFound else { return }
+        SecItemAdd(sent(item.merging(changes) { $1 }), nil)
     }
 
     private static func delete(_ account: String) {

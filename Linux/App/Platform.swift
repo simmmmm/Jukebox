@@ -93,13 +93,24 @@ enum Keychain {
         }
         let url = file(item)
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        // Opened with its permissions (and given them again, were it there
-        // already), so it is never readable by another in between.
-        let descriptor = open(url.path, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
+        // Written whole beside it, then put in its place in one step: the
+        // file is the old one or the new one, never half of either (a full
+        // disk, the app ended mid-write). Opened with its permissions (and
+        // given them again, were it there already), so it is never readable
+        // by another in between.
+        let temporary = url.deletingLastPathComponent().appendingPathComponent(".\(item).json.new", isDirectory: false)
+        let descriptor = open(temporary.path, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
         guard descriptor >= 0 else { return }
         fchmod(descriptor, 0o600)
         let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
-        try? handle.write(contentsOf: data)
+        do {
+            try handle.write(contentsOf: data)
+            try handle.synchronize()
+        } catch {
+            unlink(temporary.path)
+            return
+        }
+        if rename(temporary.path, url.path) != 0 { unlink(temporary.path) }
     }
 }
 

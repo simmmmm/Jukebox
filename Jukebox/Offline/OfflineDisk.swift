@@ -174,11 +174,10 @@ nonisolated enum OfflinePaths {
     /// keeps its songs), or a Subsonic server's URL and the user's name;
     /// anything but letters and digits is left out, so the name is always a
     /// plain folder name.
+    /// A new account whose name another saved one has already gets its own
+    /// (JukeboxKit's SavedAccounts, `ServerCredentials.folder`).
     static func account(for credentials: ServerCredentials) -> String {
-        let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789")
-        let server = String(credentials.serverID.filter { allowed.contains($0) })
-        let user = String(credentials.userID.filter { allowed.contains($0) })
-        return "\(server)-\(user)"
+        credentials.folder
     }
 
     static func folder(_ account: String) -> URL {

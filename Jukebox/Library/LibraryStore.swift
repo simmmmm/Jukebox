@@ -376,8 +376,12 @@ extension LibraryStore {
     static func cacheURL(for credentials: ServerCredentials) -> URL {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        return LibraryCache.url(in: caches.appendingPathComponent("Jukebox", isDirectory: true),
-                                serverID: credentials.serverID, userID: credentials.userID)
+        let folder = caches.appendingPathComponent("Jukebox", isDirectory: true)
+        // An account whose name another saved one had (SavedAccounts).
+        if let name = credentials.folderName {
+            return folder.appendingPathComponent("library-\(name).json", isDirectory: false)
+        }
+        return LibraryCache.url(in: folder, serverID: credentials.serverID, userID: credentials.userID)
     }
 
     /// Songs: every track by title.
