@@ -61,6 +61,11 @@
   .collage .iphone { position: absolute; right: 0; bottom: 0; width: 24%; border-width: clamp(3px, .7vw, 6px); border-radius: clamp(12px, 3.4vw, 32px); }
   .second { margin-top: 20px; }
 
+  .servers { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 14px 36px; margin: 8px 0 72px; padding: 0; color: var(--soft); }
+  .servers a { display: inline-flex; align-items: center; gap: 10px; color: inherit; text-decoration: none; }
+  .servers img { border-radius: 0; filter: grayscale(1) opacity(.65); transition: filter .3s; }
+  .servers a:hover, .servers a:focus-visible { color: var(--ink); }
+  .servers a:hover img, .servers a:focus-visible img { filter: none; }
   .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 40px 48px; margin: 16px 0 72px; }
   .facts p { color: var(--soft); }
 
@@ -83,6 +88,16 @@
       <img class="iphone" src="screenshots/iphone-now-playing.jpg" width="600" height="1304" alt="Jukebox on the iPhone: Now Playing, the sleeve with its record half out, playing from Your Station">
     </div>
   </header>
+
+  <!-- The servers it plays from, each in its own mark: grey until hovered
+       ("niet in kleur als het kan op misschien op hover"). -->
+  <ul class="servers">
+    <li><a href="https://jellyfin.org"><img src="brand/servers/jellyfin.svg" width="28" height="28" alt="">Jellyfin</a></li>
+    <li><a href="https://emby.media"><img src="brand/servers/emby.svg" width="28" height="28" alt="">Emby</a></li>
+    <li><a href="https://www.plex.tv"><img src="brand/servers/plex.svg" width="28" height="28" alt="">Plex</a></li>
+    <li><a href="https://www.navidrome.org"><img src="brand/servers/navidrome.svg" width="28" height="28" alt="">Navidrome</a></li>
+    <li>and the other Subsonic servers</li>
+  </ul>
 
   <section class="facts">
     <div>
