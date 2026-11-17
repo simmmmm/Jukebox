@@ -1,6 +1,6 @@
 # Jukebox
 
-The music on your Jellyfin, Navidrome or other Subsonic server, on the
+The music on your Jellyfin, Plex, Navidrome or other Subsonic server, on the
 iPhone, the iPad, the Mac and Linux. Artists, albums, songs and playlists; playlists
 Jukebox makes up for you on Home; and a radio that plays on from any song,
 artist, album, genre or decade and learns from what you skip.

@@ -76,6 +76,11 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// (Jellyfin's universal URL lists what the player plays and Jellyfin
     /// decides). Nil when unknown.
     public var container: String?
+    /// Plex's `Part.key`, the file's own path on the server
+    /// ("/library/parts/123/1794611181/file.mp3"): what its stream and its
+    /// download are, as the file is. Plex's part id is not the track's
+    /// id, and the URL is made without asking the server. Nil elsewhere.
+    public var fileKey: String?
 
     // What classical listeners need apart (the classical research, 14
     // November 2026): "iets wat ik ook graag zou willen supporten is klassieke

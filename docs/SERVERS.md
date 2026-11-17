@@ -1,4 +1,4 @@
-# Servers: Jellyfin, Navidrome and the other Subsonic servers
+# Servers: Jellyfin, Plex, Navidrome and the other Subsonic servers
 
 The photographer, 8 November 2026: "Moet eigenlijk ook voor navidrome en die
 ander". Jukebox, made for their Jellyfin server, also plays from Navidrome and
@@ -127,7 +127,7 @@ typed, normalized as `JellyfinAddress` does, with these rules:
   Navidrome's 4533, Gonic's 4747, Airsonic's 4040 and LMS's 5082 (their
   documented defaults; Navidrome's measured).
 - When no port and no "https://" were typed, the same host over http on 8096,
-  4533, 4747, 4040 and 5082 follows the address as typed (Jellyfin's rule,
+  4533, 4747, 4040, 5082 and Plex's 32400 follows the address as typed (Jellyfin's rule,
   extended: a fresh install listens on its own port only).
 
 **Asking** (`MusicServers.detect`): every candidate at once, both ways at
@@ -634,6 +634,110 @@ The rest of the library works the same on every server. Where a Subsonic
 server lacks a call the protocol has no capability for, the kit works around
 it: the albums are walked (`allTracks`), 100 ids go in a request (no
 `formPost`), and a server that is not OpenSubsonic has no extensions.
+
+## Plex (17 November 2026)
+
+The owner: "emby en plex kunnen beide toch". `Plex/PlexServer.swift` (the
+`MusicServer`) and `Plex/PlexSignIn.swift` (finding one, plex.tv's sign-in,
+a token). Plex Media Server's own HTTP API with `Accept: application/json`.
+Measured on 1.43.5 (`dev/plex-test-server.sh`: unclaimed, on an internal
+Docker network with no way out, the made-up library read by the
+"Personal Media Artists" agent).
+
+**Found** at an address like any other: `GET /identity`, which every Plex
+server answers without a token, `machineIdentifier` and `version`. Its name
+is the root's `friendlyName` where it shows it, else the host. 32400 is one
+of the fallback ports, and plain http when typed.
+
+**Signing in.** A Plex server has no user names or passwords of its own.
+- **Sign In with Plex**, Plex's PIN flow: `POST https://plex.tv/api/v2/pins`
+  with `strong=true`; the person signs in at
+  `https://app.plex.tv/auth#?clientID=…&code=…&context[device][product]=Jukebox`
+  in the browser (Apple's web sign-in on the iPhone, iPad and Mac, with
+  `forwardUrl=jukebox://plex` so the sheet can close; the default browser
+  through GTK on Linux), while the app asks `GET /api/v2/pins/{id}` every
+  2 s for `authToken`. Then `GET /api/v2/resources?includeHttps=1&includeRelay=1`:
+  the servers (`provides` has "server"), one's own first; with an address
+  typed, only that server; several, the person chooses. The address: every
+  one at once, `GET /identity` with the token, 5 s; the first in order that
+  answers wins, the typed one first, then local, remote, relay. Kept: the
+  server's `accessToken` for this account (`ServerSecret.plexToken`); the
+  user is plex.tv's `GET /api/v2/user` `id`, so a sign-in again is the same
+  account. `X-Plex-Client-Identifier` is the installation's own
+  (`ClientIdentity.deviceID`).
+- **A token** (X-Plex-Token), for a server reached without plex.tv: where an
+  API key goes (`PlexSignIn` is an `APIKeySignIn`; a password asked of it
+  throws `needsAPIKey` with Plex's page on finding a token). Tried on
+  `/library/sections`; the user is named by the server's `/myplex/account`
+  (its owner) and kept apart by the token (`token-` and its MD5), since the
+  server does not say whose a token is. The same person by plex.tv is
+  another account.
+- Untested end to end: no plex.tv account was used. The PIN, resources and
+  user answers' shapes are Plex's documentation's (`PlexSignInTests`).
+- A stored local address stops answering away from home; the account is
+  then signed in to again (a ponytail: the other addresses are not kept).
+
+**The map.**
+
+| Member | Plex |
+|---|---|
+| `allTracks`, `allAlbums`, `allArtists` | every music section's (`/library/sections`, type "artist"), `/library/sections/{id}/all?type=10/9/8`, 1000 a page. Tracks carry no genres: the album's. |
+| `playlists` | `/playlists?playlistType=audio`; a smart one is read-only |
+| `genres` | the albums' genres, counted |
+| one item, `albumTracks`, `search` | `/library/metadata/{id}`, `…/children`, `/hubs/search` |
+| `setFavorite` | `PUT /:/rate?rating=10` (five stars), `-1` clears it (measured both) |
+| playlists' changes | `POST /playlists?type=audio&uri=server://{machine}/com.plexapp.plugins.library/library/metadata/{ids}`, `PUT …/items?uri=`, `DELETE …/items/{playlistItemID}`, `PUT …/items/{id}/move?after={id}` (none: first) |
+| `lyrics` | the file's stream of `streamType` 4 (an .lrc or Plex Pass's), its `key` as text |
+| `streamURL`, `downloadURL` | below |
+| `artworkURL` | `/photo/:/transcode?width=&height=&url=<thumb>` and the token |
+| `report` | below |
+| play state, mixes, similar artists, top songs, loudness | none: off |
+
+**Measured on 1.43.5**:
+- A playlist holds a song once: 150, 151, 150 made two items; adding 150
+  again added nothing (`leafCountAdded` 0). `playlistItemID` names each
+  place.
+- Moves: A B C D, the first to 2 gave B C A D, as on Jellyfin.
+- An unclaimed server answers its own network's gateway and itself without
+  a token; another container on its network got 401 whatever
+  `ALLOWED_NETWORKS` said, so `dev/kit-test.sh` runs the Plex tests in its
+  network namespace.
+
+**Streaming.** The file as it is: `Part.key`
+(`/library/parts/123/…/file.mp3`, `Track.fileKey`) and the token: 200 with
+Content-Length, 206 for a range (measured). That is what Jukebox's gapless
+and normalisation want, as on every server. Capped, or a file the player
+cannot play (Ogg, Opus, …, as Subsonic's rule): the universal music
+transcoder as one progressive MP3, never HLS:
+`/music/:/transcode/universal/start.mp3?path=/library/metadata/{id}&protocol=http&directPlay=0&directStream=1&maxAudioBitrate=`.
+Plex's Generic profile has no music target (400), so the request adds one
+(`X-Plex-Client-Profile-Extra`, MP3 over http). An MP3 under the cap is
+copied (200 audio/mpeg, no Content-Length, `Accept-Ranges: none`,
+measured). A FLAC or AAC converted is not measured: the server fetches its
+converters from plex.tv, which the test server cannot reach. Downloads:
+the file (`?download=1`) at Original, MP3 256 or 128 at High and Normal.
+`downloadsAllowed` is true: Plex's `allowSync` is its own (Plex Pass's)
+downloads, false on a server without it.
+
+**Reports.** `.nowPlaying` and `.progress` are `/:/timeline` (`state`
+playing or paused, `time` in ms); `.played` is `/:/scrobble`, the one play;
+`.stopped` the timeline at 0 s. A timeline with `duration` that reaches the
+end counts a play of its own (measured: twice with the scrobble), so none is
+sent; without it neither a timeline at the end nor a stop there counted.
+The test plays a song to its end: one play.
+
+**Capabilities**: `lyrics`, `syncedLyrics`, `playlistReorder`,
+`playbackTimeline`, `lastPlayed` (`lastViewedAt`). Off: `instantMix` (Plex's
+sonic mixes need Plex Pass and an analysed library), `similarArtists` (names
+from its online agent, not items), `topSongs`, `replayGain` (loudness is in
+the file's streams, not the listing), `transcodeOffset`, and the handoff
+(Plex keeps no state of a client's for another to read).
+
+**Tests**: `PlexSignInTests` (no server: detection, the token, the PIN,
+the resources and the choice of address, the mapping, the URLs, the
+reports, lyrics, the keychain) and `PlexIntegrationTests` (the real server:
+358 songs, 54 albums, 23 artists; the file, a range, the copied MP3, a
+cover; a favourite; a playlist's every change; one play counted).
 
 ## Classical music (14 November 2026)
 

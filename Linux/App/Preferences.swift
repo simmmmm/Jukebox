@@ -190,7 +190,8 @@ enum Preferences {
         }.align(horizontal: GTK_ALIGN_START)
         gtk_widget_set_margin_top(removeAll, 12)
         adw_preferences_group_add(ptr(group), removeAll)
-        let isSubsonic = app.credentials?.kind.isSubsonic == true
+        // MP3 from a Subsonic server or Plex, AAC from Jellyfin.
+        let convertsToMP3 = app.credentials?.kind.convertedFormat == "MP3"
         let server = app.credentials.map { $0.serverName.isEmpty ? ($0.serverURL.host ?? "Your server") : $0.serverName } ?? "Your server"
         observe(group) {
             upTo.isVisible = settings.keepSongs
@@ -212,7 +213,7 @@ enum Preferences {
             // What each quality means on this kind of server (the Mac's
             // footer, docs/OFFLINE.md); first, when the server's admin
             // turned downloads off for this account, that, as a fact.
-            let quality = isSubsonic
+            let quality = convertsToMP3
                 ? "Original is each file as it is, or MP3 at 320 kbit/s when this computer cannot play it; High and Normal have \(app.library.serverKind) convert songs to MP3 at that rate, so more of them fit. Kept songs wait while the power saver is on."
                 : "Original is each file as it is, or AAC at 256 kbit/s when this computer cannot play it; High and Normal have Jellyfin convert songs to AAC at that rate, so more of them fit. Kept songs wait while the power saver is on."
             adw_preferences_group_set_description(ptr(group), offline.downloadsAllowed

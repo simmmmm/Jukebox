@@ -203,8 +203,8 @@ enum Stats {
         }
     }
 
-    /// The kind of server, coarsely: `jellyfin`, `navidrome`, or `subsonic`
-    /// for every other Subsonic server (Gonic, Airsonic, …, and one that
+    /// The kind of server, coarsely: `jellyfin`, `navidrome`, `plex`, or
+    /// `subsonic` for every other Subsonic server (Gonic, Airsonic, …, and one that
     /// names itself: never its own word); `none` signed out. Never which
     /// server, nor its version.
     static func server(_ kind: ServerKind?) -> String {
@@ -212,6 +212,7 @@ enum Stats {
         case .jellyfin?: return "jellyfin"
         case .subsonic(.navidrome)?: return "navidrome"
         case .subsonic?: return "subsonic"
+        case .plex?: return "plex"
         case nil: return "none"
         }
     }

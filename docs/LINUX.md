@@ -148,6 +148,10 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   over the window with Cancel. Preferences › Accounts lists them as GNOME's
   Online Accounts does, each with its own Sign Out…; the dialog names the
   account and, for the one signed in, the account Jukebox goes on with;
+- Sign In with Plex under Sign In (17 November 2026, `SignInPage.swift`):
+  plex.tv's page in the default browser (`gtk_uri_launcher`), the button
+  Cancel while it waits, an alert to choose when the account has more than
+  one server; a Plex address with a password asks for its token instead;
 - header capitals on buttons and rows;
 - a playlist of the listener's own edited in place, as on the Mac (since
   16 November 2026): a song's menu has Move Up, Move Down and, last,

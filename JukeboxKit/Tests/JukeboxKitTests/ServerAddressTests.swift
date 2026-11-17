@@ -63,7 +63,7 @@ struct ServerAddressTests {
                                          deviceID: "test-device")
 
     static func ports(_ base: String, path: String = "") -> [String] {
-        [8096, 4533, 4747, 4040, 5082].map { "http://\(base):\($0)\(path)" }
+        [8096, 4533, 4747, 4040, 5082, 32400].map { "http://\(base):\($0)\(path)" }
     }
 
     @Test("The addresses to try, for what people type", arguments: [
