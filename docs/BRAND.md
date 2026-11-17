@@ -177,8 +177,11 @@ box: width 24, height 28, baseline 30, stroke 2.6, gaps 2.2.
 - **Heavy cut, 20 pt and below:** stroke 3.2, gaps 1.9, core 5.6 wide,
   width 26, so the parts stay three at 16 and 11 pt
   ([mark-small-template.svg](brand/mark-small-template.svg)).
-- **Warm-up:** on the welcome screen the bands start as cold glass and fade
-  on one by one, outer, inner, core, in about 1.2 s. At once under Reduce
+- **Warm-up:** the welcome opens close on the mark on its sleeve; the
+  bands are drawn one by one, outer, inner, then the core comes on. Then
+  the picture draws back to the whole sleeve and the record slides out
+  ("eerst die opbouw en dan uitzoomen", 17 November 2026). About 4 s; the
+  record stays still, as the welcome plays nothing. At once under Reduce
   Motion.
 - **Still while playing.** It once breathed; sketch D stilled it. Endless
   motion is a glow by other means, and beside the record it would run the
@@ -390,7 +393,7 @@ The same brand on GNOME, in GTK 4 and libadwaita's own controls
 | Radio: on air, Stations, the dial | `Radio/RadioView.swift`; `Radio/RadioOnAirCard.swift` (`RadioOnAirCard`, `RadioThumbs`, `RadioDial`, also on a station's page and Now Playing) |
 | Now Playing | `NowPlaying/SleeveRecord.swift`, `NowPlaying/NowPlayingGround.swift`, `NowPlaying/TurntableMeasures.swift`, `NowPlaying/NowPlayingView.swift`; JukeboxKit's `Artwork/CoverWall.swift` |
 | Mini player's station (11 pt, template, accent) | `NowPlaying/MiniPlayer.swift` |
-| Welcome's mark coming on, About's | `Settings/ShellAppMark.swift`, `Settings/OnboardingView.swift`, `Settings/SettingsView.swift` |
+| Welcome's sleeve and its mark coming on (`WelcomeSleeve`), About's mark | `Settings/ShellAppMark.swift`, `Settings/OnboardingView.swift`, `Settings/SettingsView.swift` |
 | Mixes: square, artists under them | `Components/Tiles.swift` (`MixCard`) |
 | Launch screen | `Assets.xcassets/LaunchBackground`, `RootView`'s launching phase |
 | Icon | `Assets.xcassets/AppIcon.appiconset` |

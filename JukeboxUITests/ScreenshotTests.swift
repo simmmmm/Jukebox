@@ -883,8 +883,8 @@ final class Walk {
             return false
         }
 
-        // The icon's warm-up has settled.
-        pause(2.5)
+        // The welcome's picture has settled: the mark on, the record out.
+        pause(5)
         if takingPictures { picture(names[0]) }
         try enter("localhost:8096", into: address, "Welcome: the server's address")
         if takingPictures { picture(names[1]) }

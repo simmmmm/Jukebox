@@ -18,8 +18,9 @@
 // toevoegen dan Istie erna wel klaar voor release".
 //
 // The fields on the page's ground between hairlines, no card (docs/design/
-// tells.md, 6), under the mark, flat, its bands coming on one by one as a
-// fade: the first thing anyone sees of Jukebox is its mark (ShellAppMark).
+// tells.md, 6), under the mark on its sleeve: the first thing anyone sees
+// of Jukebox is its mark coming on, close, then the sleeve whole and its
+// record sliding out (WelcomeSleeve, in ShellAppMark.swift).
 // The address and the user name are remembered for the next sign-in (after a
 // sign-out); the password never is — the keychain's AutoFill offers it.
 //
@@ -72,7 +73,7 @@ struct OnboardingView: View {
                 ScrollView {
                     // Linux's column: 24 between each of its parts.
                     VStack(spacing: isWide ? Theme.Space.xl : Theme.Space.xxl) {
-                        OnboardingWelcome()
+                        OnboardingWelcome(animatesIn: !isAdding)
                         // One on top of the other while they cross-fade, so
                         // the page does not grow by both for a moment.
                         ZStack(alignment: .top) {
@@ -1161,15 +1162,21 @@ private struct PlexSignInButton: View {
 
 // MARK: - Parts
 
-/// The mark coming on, the name in the serif, and what Jukebox is for: a
-/// fact, not a slogan.
+/// The mark coming on on its sleeve, the name in the serif, and what
+/// Jukebox is for: a fact, not a slogan.
 private struct OnboardingWelcome: View {
+    let animatesIn: Bool
+
     @Environment(\.isWide) private var isWide
 
     var body: some View {
         // Wide, Linux's column: 24 between the mark, the name and the fact.
         VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.l) {
-            ShellAppMark(side: 112, animatesIn: true)
+            // 300 by 200 on the iPhone; wide, 240 by 160 at the column's edge.
+            WelcomeSleeve(width: isWide ? 240 : 300, animatesIn: animatesIn)
+                // Wide, the sleeve's edge at the column's, where the words
+                // start: it stands 16 in from its picture's.
+                .offset(x: isWide ? -16 : 0)
             VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.s) {
                 // Wide, a page title's 40, as Linux's sign-in sets "Jukebox".
                 Text("Jukebox")
