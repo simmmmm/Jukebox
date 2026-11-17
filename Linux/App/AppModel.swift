@@ -1,7 +1,9 @@
 // Linux's root object: the session and the stores every screen reads. The
 // iPhone's AppModel (Jukebox/App/AppModel.swift) without SwiftUI's
 // navigation paths, and with the same stores, which are the same files
-// (Package.swift's `shared`), the songs kept on the machine among them.
+// (Package.swift's `shared`), the songs kept on the machine among them, and
+// the same accounts (Accounts.swift): MainWindow goes Home when the account
+// changes.
 
 import Foundation
 import JukeboxKit
@@ -20,9 +22,14 @@ final class AppModel {
     }
 
     private(set) var phase: Phase = .launching
+    /// Nil for a moment while another account is switched to.
     private(set) var credentials: ServerCredentials?
     private(set) var server: (any MusicServer)?
+    /// Asking the server of the account being switched to.
+    private(set) var isSwitching = false
 
+    /// Every account kept on this computer, the one signed in among them.
+    let accounts = Accounts()
     let identity: ClientIdentity
     let settings: AppSettings
     let library: LibraryStore
@@ -71,9 +78,11 @@ final class AppModel {
     }
 
     /// Signed in last time: open as it was, the library from disk at once.
+    /// An install from before the list of accounts has its one session as
+    /// the list's only entry (Accounts.restore).
     func restore() async {
         guard phase == .launching else { return }
-        let saved = Keychain.loadCredentials()
+        let saved = accounts.restore()
         Stats.track(.appOpen, ["server": Stats.server(saved?.kind)])
         if let saved {
             await begin(saved)
@@ -82,30 +91,71 @@ final class AppModel {
         }
     }
 
+    /// The first account, one more (Preferences' Add Account), or one
+    /// already here signed in again; over an account signed in, that one is
+    /// put away first, as a switch does.
     func signIn(_ credentials: ServerCredentials) async {
-        Keychain.save(credentials)
+        if self.credentials != nil { putAway() }
+        if accounts.activate(credentials) {
+            Stats.track(.accountAdded, ["server": Stats.server(credentials.kind),
+                                        "count": Stats.accountCount(accounts.saved.count)])
+        }
         await begin(credentials)
     }
 
-    func signOut() async {
+    /// Another saved account (the iPhone's AppModel.switchAccount has the
+    /// reasons): nil when switched, else the words why not.
+    func switchAccount(to account: ServerCredentials) async -> String? {
+        guard let current = credentials, !current.isSameAccount(as: account), !isSwitching else { return nil }
+        isSwitching = true
+        defer { isSwitching = false }
+        let name = ServerWords.name(of: account)
+        switch await AccountStores.reach(MusicServers.open(account, identity: identity)) {
+        case .answers:
+            break
+        case .refuses:
+            return "\(name) no longer accepts this sign-in. Sign out of it, then add it again."
+        case .silent:
+            guard offline.hasSongs(of: account) else {
+                return "\(name) isn’t answering, so Jukebox stays on \(ServerWords.name(of: current))."
+            }
+        }
+        // Signed out, or switched, while the server was asked.
+        guard credentials == current else { return nil }
+        Stats.track(.accountSwitched)
+        putAway()
+        accounts.activate(account)
+        await begin(account)
+        return nil
+    }
+
+    /// Signs out of an account, the one signed in when none is named (the
+    /// iPhone's AppModel.signOut has what goes and what stays).
+    func signOut(_ account: ServerCredentials? = nil) async {
+        guard let current = credentials else { return }
+        let leaving = account ?? current
         Stats.track(.signedOut)
-        player.stop()
-        radio.reset()
+        guard leaving.isSameAccount(as: current) else {
+            _ = accounts.remove(leaving)
+            let unsent = offline.forget(leaving)
+            AccountFiles.forget(leaving)
+            let server = MusicServers.open(leaving, identity: identity)
+            if !unsent.isEmpty { await OfflineReports.send(unsent, with: server) }
+            await server.signOut()
+            return
+        }
         let server = self.server
         // What was heard offline goes to the server on the way out; then the
         // account's downloads go (OfflineStore.signOut), as on the iPhone.
         let unsent = offline.takeReports()
-        offline.signOut()
-        Keychain.deleteCredentials()
+        AccountStores(app: self).close(forgetting: true)
         credentials = nil
         self.server = nil
-        player.server = nil
-        radio.server = nil
-        handoff.server = nil
-        handoff.reset()
-        library.reset()
-        mixes.reset()
-        phase = .signedOut
+        if let next = accounts.remove(current) {
+            await begin(next)
+        } else {
+            phase = .signedOut
+        }
         if let server, !unsent.isEmpty { await OfflineReports.send(unsent, with: server) }
         await server?.signOut()
     }
@@ -114,21 +164,16 @@ final class AppModel {
         let server = MusicServers.open(credentials, identity: identity)
         self.credentials = credentials
         self.server = server
-        player.server = server
-        radio.server = server
         phase = .signedIn
-        // The songs on the machine first: they play before the library from
-        // the server has come, or without it.
-        await offline.open(server: server)
-        await library.open(server: server)
-        // What another device plays, or this one played last: once the
-        // library is in, since an offer is of a song in it.
-        handoff.server = server
-        handoff.start()
-        // The radio first: its graph needs nothing from the mixes.
-        radio.prepare()
+        await AccountStores(app: self).open(server)
         refreshServer(server)
-        await mixes.rebuild(library: library, history: history, settings: settings)
+    }
+
+    /// The account signed in, put away for another: everything of it stays.
+    private func putAway() {
+        AccountStores(app: self).close(forgetting: false)
+        credentials = nil
+        server = nil
     }
 
     /// What the server can do now, asked once a launch (the iPhone's
@@ -139,15 +184,11 @@ final class AppModel {
             var updated = server.credentials
             updated.capabilities = fresh
             guard updated != server.credentials, self.credentials == server.credentials else { return }
-            Keychain.save(updated)
+            accounts.update(updated)
             let opened = MusicServers.open(updated, identity: identity)
             credentials = opened.credentials
             self.server = opened
-            player.server = opened
-            radio.server = opened
-            library.use(opened)
-            offline.use(opened)
-            handoff.server = opened
+            AccountStores(app: self).use(opened)
         }
     }
 
@@ -169,5 +210,12 @@ final class AppModel {
         let id = UUID().uuidString
         UserDefaults.standard.set(id, forKey: key)
         return id
+    }
+}
+
+extension AccountStores {
+    init(app: AppModel) {
+        self.init(player: app.player, library: app.library, history: app.history, radio: app.radio,
+                  mixes: app.mixes, offline: app.offline, handoff: app.handoff, settings: app.settings)
     }
 }

@@ -32,6 +32,12 @@ enum ServerWords {
         return "\(kind.displayName) \(shown)"
     }
 
+    /// "Tijmen's Music", or a Subsonic server's host: what an account's row
+    /// and its messages call its server.
+    static func name(of account: ServerCredentials) -> String {
+        account.serverName.isEmpty ? (account.serverURL.host ?? account.serverURL.absoluteString) : account.serverName
+    }
+
     static func shortVersion(_ version: String) -> String {
         var shown = version.trimmingCharacters(in: .whitespacesAndNewlines)
         if let bracket = shown.firstIndex(of: "(") {

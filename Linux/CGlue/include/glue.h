@@ -7,14 +7,15 @@
 #include <gst/gst.h>
 
 // The keyring (libsecret's calls take attribute lists as "...").
-// jb_secret_load's answer is the caller's, freed with g_free.
+// jb_secret_load's answer is the caller's, freed with g_free; NULL with
+// `failed` false is no such item, with it true a keyring that did not answer.
 // Whether the desktop has a keyring at all (GNOME Keyring, KWallet): a
 // bare Hyprland or XFCE may have none, and asking one that is not there
 // waits out D-Bus's 25 seconds.
 gboolean jb_secret_available(void);
-gboolean jb_secret_store(const char *json);
-char *jb_secret_load(void);
-void jb_secret_clear(void);
+gboolean jb_secret_store(const char *account, const char *json);
+char *jb_secret_load(const char *account, gboolean *failed);
+void jb_secret_clear(const char *account);
 
 // g_object_set, one property of each kind used.
 void jb_set_string(gpointer object, const char *name, const char *value);

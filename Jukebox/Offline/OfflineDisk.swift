@@ -11,10 +11,15 @@
 //     files/            the songs, "<track id>.<ext>" (the kit's OfflineFile.fileName,
 //                       from the Content-Type the server sent)
 //
-// Another account's folder is never read: signing out removes the account's
-// folder (OfflineStore.signOut), and a folder of an account that is not the
-// one signing in is a leftover of that and goes too. So the next account,
-// perhaps on another server, never plays the last one's songs.
+// Another account's folder is never read: each account kept on the device
+// (Accounts.swift) has its own, read only while it is the one signed in, so
+// a switch back finds its songs where they were. Signing out of an account
+// removes its folder (OfflineStore.signOut, OfflineStore.forget). Until the
+// accounts were a list (17 November 2026), a folder not the signing-in
+// account's was a leftover and went at sign-in; now it can be another
+// saved account's, so nothing is swept.
+// ponytail: a folder left by a sign-out the app was ended in the middle of
+// stays until that account signs in and out again.
 //
 // Everything here runs off the main actor (the store's writer queue, a
 // detached task at sign-in, the download session's queue): `nonisolated`,
@@ -162,8 +167,7 @@ nonisolated struct OfflineAccountState: Sendable {
 
 /// The account's folders, under `base`: Application Support/Offline on
 /// Apple's systems (OfflineStore+Apple.swift), ~/.local/share/jukebox/offline
-/// on Linux (Platform.swift). Nothing but account folders goes in `base`:
-/// `OfflineDisk.load` removes every other.
+/// on Linux (Platform.swift). Nothing but account folders goes in `base`.
 nonisolated enum OfflinePaths {
     /// The account's folder name: the server's id and the user's — Jellyfin's
     /// hex GUIDs, as before (a Jellyfin sign-in of the Jellyfin-only app
@@ -210,10 +214,9 @@ nonisolated enum OfflineDisk {
     /// manifest does not know is a download whose news was lost (the app
     /// was ended as it finished) and is kept for the reasons it was wanted
     /// for, or removed when nothing wanted it. Other accounts' folders are
-    /// leftovers of a sign-out, and go.
+    /// not touched: they are other saved accounts'.
     static func load(_ account: String) -> OfflineAccountState {
         prepareBase()
-        removeOtherAccounts(keeping: account)
         var manifest = OfflineManifest.load(from: OfflinePaths.manifest(account))
         let collections = read([OfflineCollection].self, from: OfflinePaths.collections(account)) ?? []
         let queue = read(OfflineQueueFile.self, from: OfflinePaths.queue(account)) ?? OfflineQueueFile()
@@ -284,12 +287,15 @@ nonisolated enum OfflineDisk {
         return Int64(size)
     }
 
-    private static func removeOtherAccounts(keeping account: String) {
-        let base = OfflinePaths.base
-        let names = (try? FileManager.default.contentsOfDirectory(atPath: base.path)) ?? []
-        for name in names where name != account {
-            try? FileManager.default.removeItem(at: base.appendingPathComponent(name, isDirectory: true))
-        }
+    /// An account's plays heard offline and not yet told to its server.
+    static func reports(of account: String) -> [PendingPlay] {
+        read([PendingPlay].self, from: OfflinePaths.reports(account)) ?? []
+    }
+
+    /// Whether an account has any song in its folder.
+    static func hasSongs(_ account: String) -> Bool {
+        let names = (try? FileManager.default.contentsOfDirectory(atPath: OfflinePaths.files(account).path)) ?? []
+        return names.contains { !$0.hasPrefix(".") }
     }
 
     private static func write<Value: Encodable>(_ value: Value, to url: URL) {

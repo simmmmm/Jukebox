@@ -16,6 +16,7 @@ import PackageDescription
 /// The files of Jukebox/ that Linux compiles too. One that gains an
 /// `import SwiftUI` or `UIKit` leaves this list, or loses the import.
 let shared = [
+    "Jukebox/App/Accounts.swift",
     "Jukebox/App/AppSettings.swift",
     "Jukebox/App/PanelState.swift",
     "Jukebox/App/ServerWords.swift",

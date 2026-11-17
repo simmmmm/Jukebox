@@ -38,6 +38,14 @@ enum MainWindow {
     private static var current: Int?
     /// Whether the places are folded away, for the buttons that show them.
     private static let fold = Fold()
+    /// The account whose pages are made (OfflinePaths.account's name): when
+    /// another is signed in, its Home comes afresh.
+    private static var shownAccount: String?
+    /// The sign-in page shows over the signed-in window, for Add Account.
+    private static var isAddingAccount = false
+    /// The primary menu's accounts, one radio item each while there are two
+    /// or more: GNOME's quick switch, as in its apps with accounts.
+    private static let accountItems = g_menu_new()!
 
     /// The Search page, reached through the header's field alone (SearchField):
     /// "de search pagina mag uit het menu" (14 November 2026).
@@ -87,13 +95,28 @@ enum MainWindow {
         observe(stack) {
             switch app.phase {
             case .launching: gtk_stack_set_visible_child_name(ptr(stack), "launching")
-            case .signedOut: gtk_stack_set_visible_child_name(ptr(stack), "signin")
+            case .signedOut:
+                // Signed out of the last account: the pages made for it go.
+                if shownAccount != nil { forgetPages() }
+                shownAccount = nil
+                isAddingAccount = false
+                gtk_stack_set_visible_child_name(ptr(stack), "signin")
             case .signedIn:
+                // Another account (switched to, added, or the next after a
+                // sign-out; nil a moment between two): Home, afresh, and
+                // nothing of the last one's pages.
+                let account = app.credentials.map { OfflinePaths.account(for: $0) }
+                if let account, account != shownAccount {
+                    if shownAccount != nil { forgetPages() }
+                    shownAccount = account
+                    isAddingAccount = false
+                }
+                guard !isAddingAccount else { return }
                 gtk_stack_set_visible_child_name(ptr(stack), "main")
-                // Signed in (again, perhaps to another server): Home, afresh.
-                if pages.isEmpty { select(0) }
+                if pages.isEmpty, account != nil { select(0) }
             }
         }
+        followAccounts(application)
         // The player's errors, for a moment, as GNOME shows such things.
         observe(toasts) {
             if let message = app.player.errorMessage { toast(message) }
@@ -112,7 +135,8 @@ enum MainWindow {
             guard adw_overlay_split_view_get_collapsed(ptr(split)) != 0, app.settings.showsAnyPage else { return }
             adw_overlay_split_view_set_show_sidebar(ptr(split), adw_overlay_split_view_get_show_sidebar(ptr(split)) == 0 ? 1 : 0)
         }
-        action(application, "sign-out", nil) { confirmSignOut() }
+        action(application, "sign-out", nil) { if let account = app.credentials { confirmSignOut(of: account) } }
+        action(application, "add-account", nil) { addAccount() }
         // Space plays and pauses wherever the focus is ("op de desktop
         // varianten zou spatie altijd play/pause moeten zijn", 16 November
         // 2026): seen first, in the capture phase, so the button, tile or
@@ -145,6 +169,31 @@ enum MainWindow {
     /// The sign-in page whatever the session, for the screenshot walk.
     static func showSignIn() {
         gtk_stack_set_visible_child_name(ptr(stack), "signin")
+    }
+
+    /// Add Account (the primary menu, Preferences): the sign-in page over
+    /// the window, with Cancel; signed in there, the new account is the
+    /// one signed in (AppModel.signIn) and the window comes back on its Home.
+    static func addAccount() {
+        guard app.phase == .signedIn else { return }
+        NowPlayingPage.close()
+        isAddingAccount = true
+        SignInPage.prepareForAnother()
+        gtk_stack_set_visible_child_name(ptr(stack), "signin")
+    }
+
+    /// Cancel on the sign-in page over the window.
+    static func cancelAddAccount() {
+        isAddingAccount = false
+        gtk_stack_set_visible_child_name(ptr(stack), "main")
+    }
+
+    /// Another saved account: its Home once its server has answered, or a
+    /// toast saying why the one signed in stays.
+    static func switchAccount(to account: ServerCredentials) {
+        Task {
+            if let problem = await app.switchAccount(to: account) { toast(problem) }
+        }
     }
 
     static func toast(_ message: String) {
@@ -343,11 +392,41 @@ enum MainWindow {
         g_menu_append(items, "Preferences", "app.preferences")
         g_menu_append(items, "Keyboard Shortcuts", "win.show-help-overlay")
         g_menu_append(items, "About Jukebox", "app.about")
-        let account = g_menu_new()!
-        g_menu_append(account, "Sign Out…", "app.sign-out")
-        g_menu_append_section(items, nil, ptr(account))
+        g_menu_append_section(items, nil, ptr(accountItems))
         return items
     }()
+
+    /// The primary menu's accounts: with two or more, each a radio item
+    /// (its server and user), the one signed in chosen, a click switches;
+    /// then Add Account… and Sign Out… (of the one signed in).
+    private static func followAccounts(_ application: UnsafeMutablePointer<AdwApplication>) {
+        let chosen = g_simple_action_new_stateful("account", g_variant_type_new("s"), g_variant_new_string(""))!
+        on(raw(chosen), "activate", argument: { parameter in
+            guard let parameter else { return }
+            let key = String(cString: g_variant_get_string(OpaquePointer(parameter), nil))
+            guard let account = app.accounts.saved.first(where: { OfflinePaths.account(for: $0) == key }) else { return }
+            switchAccount(to: account)
+        })
+        g_action_map_add_action(ptr(application), ptr(chosen))
+        observe(stack) {
+            let saved = app.accounts.saved
+            let active = app.credentials
+            g_menu_remove_all(accountItems)
+            if saved.count > 1 {
+                for account in saved {
+                    let item = g_menu_item_new("\(ServerWords.name(of: account)) · \(account.userName)", nil)!
+                    g_menu_item_set_action_and_target_value(item, "app.account",
+                                                            g_variant_new_string(OfflinePaths.account(for: account)))
+                    g_menu_append_item(accountItems, item)
+                    g_object_unref(raw(item))
+                }
+            }
+            g_menu_append(accountItems, "Add Account…", "app.add-account")
+            // Of the account chosen above; its dialog names it.
+            g_menu_append(accountItems, "Sign Out…", "app.sign-out")
+            g_simple_action_set_state(chosen, g_variant_new_string(active.map { OfflinePaths.account(for: $0) } ?? ""))
+        }
+    }
 
     /// Preferences › Pages, as the Mac's sidebar follows it: a place off
     /// leaves the sidebar; the hair before the library's places only while
@@ -514,11 +593,23 @@ enum MainWindow {
         }
     }
 
-    /// Signing out forgets this account's library on this computer: asked
+    /// Signing out forgets that account's library on this computer: asked
     /// first, as GNOME asks before what cannot be taken back at a click.
-    private static func confirmSignOut() {
-        guard app.phase == .signedIn else { return }
-        let dialog = adw_alert_dialog_new("Sign Out?", "The library and the songs downloaded to this computer are removed. Your music and playlists stay on your server.")!
+    /// With more than one account it says which, and what stays: the others,
+    /// and the one Jukebox goes on with.
+    static func confirmSignOut(of account: ServerCredentials) {
+        guard app.phase == .signedIn, let active = app.credentials else { return }
+        let name = ServerWords.name(of: account)
+        let others = app.accounts.saved.filter { !$0.isSameAccount(as: account) }
+        let body: String
+        if others.isEmpty {
+            body = "The library and the songs downloaded to this computer are removed. Your music and playlists stay on your server."
+        } else if account.isSameAccount(as: active), let next = others.first {
+            body = "Its library and the songs downloaded for it are removed from this computer, and Jukebox goes on with \(ServerWords.name(of: next)). Your music and playlists stay on the server."
+        } else {
+            body = "Its library and the songs downloaded for it are removed from this computer. Your music and playlists stay on the server."
+        }
+        let dialog = adw_alert_dialog_new(others.isEmpty ? "Sign Out?" : "Sign Out of \(name) as \(account.userName)?", body)!
         adw_alert_dialog_add_response(ptr(dialog), "cancel", "Cancel")
         adw_alert_dialog_add_response(ptr(dialog), "sign-out", "Sign Out")
         adw_alert_dialog_set_response_appearance(ptr(dialog), "sign-out", ADW_RESPONSE_DESTRUCTIVE)
@@ -526,10 +617,8 @@ enum MainWindow {
         adw_alert_dialog_set_close_response(ptr(dialog), "cancel")
         on(raw(dialog), "response", argument: { response in
             guard let response, String(cString: response.assumingMemoryBound(to: CChar.self)) == "sign-out" else { return }
-            Task {
-                await app.signOut()
-                forgetPages()
-            }
+            // The pages follow the account signed in (`present`'s observer).
+            Task { await app.signOut(account) }
         })
         adw_dialog_present(ptr(dialog), window)
     }

@@ -1,5 +1,5 @@
 // What the shared files (Package.swift's `shared`) ask of the platform, in
-// Linux's own way: where the signed-in session is kept, what the device is
+// Linux's own way: where the accounts' sessions are kept, what the device is
 // called, and for the songs kept on the machine (the shared OfflineStore)
 // where they live, the network and the power saver.
 
@@ -8,51 +8,98 @@ import CGlue
 import Foundation
 import JukeboxKit
 
-/// The signed-in session in the desktop's keyring (libsecret: GNOME
-/// Keyring, KWallet): a server's token is as good as a password to it. The
-/// iPhone's Keychain.swift, by the same name.
+/// The sessions in the desktop's keyring (libsecret: GNOME Keyring,
+/// KWallet): a server's token is as good as a password to it. The
+/// iPhone's Keychain.swift, by the same name and with the same two items:
+/// "credentials", the session signed in (all a build from before the list
+/// of accounts knows), and "accounts", every account kept.
 ///
-/// A desktop without a keyring (a bare Hyprland, some XFCEs) keeps it in a
-/// file only its user can read, as ssh keeps a key: "werkt het dan ook nice
-/// in bijv hyprland xfce kde" (the photographer, 14 November 2026). A token,
-/// never the password, which is not kept anywhere.
+/// A desktop without a keyring (a bare Hyprland, some XFCEs) keeps them in
+/// files only its user can read, as ssh keeps a key: "werkt het dan ook
+/// nice in bijv hyprland xfce kde" (the photographer, 14 November 2026).
+/// Tokens, never a password, which is not kept anywhere.
 enum Keychain {
-    private static var file: URL {
+    private static let active = "credentials"
+    private static let list = "accounts"
+
+    /// ~/.local/share/Jukebox/credentials.json and accounts.json.
+    private static func file(_ item: String) -> URL {
         let data = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? URL(fileURLWithPath: NSHomeDirectory(), isDirectory: true)
-        return data.appendingPathComponent("Jukebox/credentials.json", isDirectory: false)
+        return data.appendingPathComponent("Jukebox/\(item).json", isDirectory: false)
     }
 
     static func save(_ credentials: ServerCredentials) {
-        guard let data = try? JSONEncoder().encode(credentials),
-              let json = String(data: data, encoding: .utf8) else { return }
-        if jb_secret_available() != 0, jb_secret_store(json) != 0 {
+        guard let data = try? JSONEncoder().encode(credentials) else { return }
+        write(data, as: active)
+    }
+
+    static func saveAccounts(_ accounts: [ServerCredentials]) {
+        guard let data = try? JSONEncoder().encode(accounts) else { return }
+        write(data, as: list)
+    }
+
+    /// The session signed in, and every account kept (nil: no list yet).
+    /// Nil as a whole when the session could not be read (a keyring that
+    /// did not answer); `listKnown` false when the list could not, so
+    /// nothing is written over it from what was not read.
+    static func loadAccounts() -> (active: ServerCredentials?, saved: [ServerCredentials]?, listKnown: Bool)? {
+        guard case let .read(signedIn) = read(active) else { return nil }
+        let session = signedIn.flatMap { try? JSONDecoder().decode(ServerCredentials.self, from: $0) }
+        guard case let .read(kept) = read(list) else { return (session, nil, false) }
+        return (session, kept.flatMap { try? JSONDecoder().decode([ServerCredentials].self, from: $0) }, true)
+    }
+
+    /// Signed out of the last account: none is signed in.
+    static func deleteCredentials() {
+        if jb_secret_available() != 0 { jb_secret_clear(active) }
+        try? FileManager.default.removeItem(at: file(active))
+    }
+
+    private enum Answer {
+        /// Read; nil when there is no such item.
+        case read(Data?)
+        case unreadable
+    }
+
+    /// The keyring's item where there is one, else the file (as it was
+    /// kept while the desktop had no keyring, or one that did not answer
+    /// when it was written). A keyring that does not answer, and no file:
+    /// not known.
+    private static func read(_ item: String) -> Answer {
+        var failed: gboolean = 0
+        if hasKeyring, let found = jb_secret_load(item, &failed) {
+            defer { g_free(found) }
+            return .read(Data(String(cString: found).utf8))
+        }
+        // Each question to a keyring that does not answer waits out D-Bus's
+        // 25 seconds: asked once a launch, not for every item.
+        if failed != 0 { keyringAnswers = false }
+        let kept = try? Data(contentsOf: file(item))
+        // Not in a file, and a keyring is there that did not answer: it may
+        // hold it.
+        return kept == nil && !keyringAnswers && jb_secret_available() != 0 ? .unreadable : .read(kept)
+    }
+
+    private static var keyringAnswers = true
+    private static var hasKeyring: Bool { keyringAnswers && jb_secret_available() != 0 }
+
+    private static func write(_ data: Data, as item: String) {
+        if hasKeyring, let json = String(data: data, encoding: .utf8),
+           jb_secret_store(item, json) != 0 {
             // In the keyring now: not in a file as well.
-            try? FileManager.default.removeItem(at: file)
+            try? FileManager.default.removeItem(at: file(item))
             return
         }
-        try? FileManager.default.createDirectory(at: file.deletingLastPathComponent(), withIntermediateDirectories: true)
+        let url = file(item)
+        try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         // Opened with its permissions (and given them again, were it there
         // already), so it is never readable by another in between.
-        let descriptor = open(file.path, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
+        let descriptor = open(url.path, O_WRONLY | O_CREAT | O_TRUNC, 0o600)
         guard descriptor >= 0 else { return }
         fchmod(descriptor, 0o600)
         let handle = FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
         try? handle.write(contentsOf: data)
-    }
-
-    static func loadCredentials() -> ServerCredentials? {
-        if jb_secret_available() != 0, let found = jb_secret_load() {
-            defer { g_free(found) }
-            return try? JSONDecoder().decode(ServerCredentials.self, from: Data(String(cString: found).utf8))
-        }
-        guard let data = try? Data(contentsOf: file) else { return nil }
-        return try? JSONDecoder().decode(ServerCredentials.self, from: data)
-    }
-
-    static func deleteCredentials() {
-        if jb_secret_available() != 0 { jb_secret_clear() }
-        try? FileManager.default.removeItem(at: file)
     }
 }
 

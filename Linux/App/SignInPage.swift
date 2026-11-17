@@ -2,6 +2,8 @@
 // page. JukeboxKit finds what is at the address (Jellyfin, Navidrome or
 // another Subsonic server) and signs in to it; a server that takes an API
 // key instead of a password is asked for that in the same field.
+// The same page adds an account to those kept (the primary menu's or
+// Preferences' Add Account): over the signed-in window, with Cancel.
 // ponytail: no Quick Connect on Linux yet (the kit has it: QuickConnectSignIn).
 
 import CAdw
@@ -9,12 +11,24 @@ import Foundation
 import JukeboxKit
 
 enum SignInPage {
+    private static var user: Widget!
+    private static var password: Widget!
+
+    /// Add Account: the address stays (often the same server, another
+    /// user), the user name and the password are typed afresh.
+    static func prepareForAnother() {
+        gtk_editable_set_text(ptr(user), "")
+        gtk_editable_set_text(ptr(password), "")
+    }
+
     static func make() -> Widget {
         let address = adw_entry_row_new()!
         adw_preferences_row_set_title(ptr(address), "Server Address")
         let user = adw_entry_row_new()!
+        Self.user = user
         adw_preferences_row_set_title(ptr(user), "User Name")
         let password = adw_password_entry_row_new()!
+        Self.password = password
         adw_preferences_row_set_title(ptr(password), "Password")
         let group = adw_preferences_group_new()!
         for row in [address, user, password] { adw_preferences_group_add(ptr(group), row) }
@@ -77,7 +91,12 @@ enum SignInPage {
         adw_clamp_set_maximum_size(ptr(clamp), 420)
         adw_clamp_set_child(ptr(clamp), column)
         let toolbar = adw_toolbar_view_new()!
-        adw_toolbar_view_add_top_bar(ptr(toolbar), adw_header_bar_new())
+        let header = adw_header_bar_new()!
+        // Adding an account, over the window signed in: back to it.
+        let cancel = button("Cancel") { MainWindow.cancelAddAccount() }
+        observe(cancel) { cancel.isVisible = app.phase == .signedIn }
+        adw_header_bar_pack_start(ptr(header), cancel)
+        adw_toolbar_view_add_top_bar(ptr(toolbar), header)
         adw_toolbar_view_set_content(ptr(toolbar), clamp)
         return toolbar
     }
