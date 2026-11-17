@@ -1,6 +1,6 @@
 // The contract (Server/MusicServer.swift) as the app relies on it, the same
-// checks on every test server that runs: Jellyfin through JellyfinServer,
-// Navidrome through SubsonicClient, both opened as the app opens them
+// checks on every test server that runs: Jellyfin and Emby through
+// JellyfinServer, Navidrome through SubsonicClient, opened as the app opens them
 // (MusicServers.detect, signIn, open) and used only as `any MusicServer`.
 // Where the two must differ the contract says how (topSongs, the mixes'
 // answers without agents); everywhere else one rule for both. And the two
@@ -39,10 +39,21 @@ enum TestServers {
         return MusicServers.open(client.credentials, identity: NavidromeTestServer.identity)
     }
 
+    static let embyIdentity = EmbyTestServer.identity("contract")
+
+    static let emby = Task<any MusicServer, any Error> {
+        guard let url = EmbyTestServer.url else { throw MusicServerError.invalidServerAddress }
+        let server = try await MusicServers.detect(url.absoluteString, identity: embyIdentity)
+        let credentials = try await MusicServers.signIn(to: server, identity: embyIdentity)
+            .signIn(username: EmbyTestServer.user, password: EmbyTestServer.password)
+        return MusicServers.open(credentials, identity: embyIdentity)
+    }
+
     static var available: [Case] {
         var list: [Case] = []
         if JellyfinTestServer.url != nil { list.append(Case(name: "Jellyfin") { try await jellyfin.value }) }
         if NavidromeTestServer.url != nil { list.append(Case(name: "Navidrome") { try await navidrome.value }) }
+        if EmbyTestServer.url != nil { list.append(Case(name: "Emby") { try await emby.value }) }
         return list
     }
 
@@ -136,7 +147,9 @@ struct ServerContractTests {
         #expect(album.name == "Iron Gardens" && album.artists.first?.name == "MC Polder" && album.year == 2016)
         #expect(album.trackCount == 8)
         let artist = try await server.artist(id: try #require(album.artists.first?.id))
-        #expect(artist.name == "MC Polder" && artist.albumCount == 3)
+        // Emby 4.10 counts no artist's albums (no AlbumCount, whatever the
+        // Fields; measured): the tile goes without its "3 albums".
+        #expect(artist.name == "MC Polder" && artist.albumCount == (server.kind == .emby ? nil : 3))
 
         let unknown = "ffffffffffffffffffffffffffffffff"
         await #expect(throws: MusicServerError.notFound) { _ = try await server.track(id: unknown) }
@@ -226,7 +239,10 @@ struct ServerContractTests {
             #expect(try await server.playlists().first { $0.id == id }?.trackCount == 2)
 
             #expect(try await server.search(String(name.suffix(8)), limit: 10).playlists.map(\.id) == [id])
-            #expect(try await !server.instantMix(from: .playlist(id), limit: 10).isEmpty)
+            // Emby 4.10 mixes nothing from a playlist (an empty answer,
+            // measured): the radio carries on with its own picks.
+            let mix = try await server.instantMix(from: .playlist(id), limit: 10)
+            #expect(server.kind == .emby || !mix.isEmpty)
         } catch {
             try? await server.deletePlaylist(id: id)
             throw error

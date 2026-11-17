@@ -248,6 +248,11 @@ tracks in MP3, FLAC and M4A, genres in clusters. Requests carry
 `Authorization: MediaBrowser Client="Jukebox", Device="…", DeviceId="…", Version="…", Token="…"`.
 Times are ticks (10 000 000 a second); dates have seven fractional digits.
 
+Emby (17 November 2026, "emby en plex kunnen beide toch") is Jellyfin's
+ancestor and goes through the same `JellyfinClient` and `JellyfinServer`,
+with `isEmby` where the two parted (`docs/SERVERS.md`, "Emby";
+`dev/emby-test-server.sh`, Emby 4.10 on the same library, port 8097).
+
 ## From one device to another
 
 The photographer, 13 November 2026: "ik wil ook dat de ios app en de linux

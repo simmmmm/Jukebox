@@ -138,7 +138,7 @@ struct OnboardingView: View {
                     .onSubmit { connect() }
                     .frame(minHeight: 52)
             }
-            Text("The address you open your Jellyfin or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
+            Text("The address you open your Jellyfin, Emby or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
                 .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let serverError {
@@ -221,7 +221,7 @@ struct OnboardingView: View {
     fileprivate static func message(for error: Error, at url: URL) -> String {
         switch error as? MusicServerError {
         case .invalidServerAddress?:
-            return String(localized: "There is no Jellyfin, Navidrome or other Subsonic server at this address.")
+            return String(localized: "There is no Jellyfin, Emby, Navidrome or other Subsonic server at this address.")
         case let .transport(reason)?:
             // Jukebox guesses https for a name with dots; a home server
             // behind plain http (or a certificate the phone does not trust)
@@ -961,7 +961,7 @@ private struct OnboardingWelcome: View {
                 Text("Jukebox")
                     .desktopFont(40, design: .serif, phone: .serif(.largeTitle))
                     .accessibilityAddTraits(.isHeader)
-                Text("Music from your Jellyfin, Navidrome or other Subsonic server.")
+                Text("Music from your Jellyfin, Emby, Navidrome or other Subsonic server.")
                     .desktopFont(15, phone: .body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(isWide ? .leading : .center)
