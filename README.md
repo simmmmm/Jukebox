@@ -8,6 +8,10 @@ artist, album, genre or decade and learns from what you skip.
 What plays on one device shows on the other: leave the computer, and the
 phone goes on where it was.
 
+Keep more than one account, a home server and a shared one, and switch
+between them in Settings or the menu; each keeps its own library, downloads
+and radio.
+
 In the car it plays through CarPlay: Home, Radio and the Library on the car's
 screen, and Now Playing with the station's thumbs. Siri plays any album,
 artist, playlist or station by name ("Play Blue in Jukebox"), and the same

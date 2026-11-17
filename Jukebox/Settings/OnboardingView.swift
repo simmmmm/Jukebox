@@ -46,10 +46,26 @@ struct OnboardingView: View {
     /// Wide: the second step was asked for by Quick Connect on the one
     /// page, so it starts there and its Cancel comes back to the page.
     @State private var startsQuickConnect = false
+    /// Settings' Add Account: the same screen in a sheet, with Cancel; it
+    /// closes once the new account is the one signed in.
+    let isAdding: Bool
+    @Environment(\.dismiss) private var dismiss
 
-    init() {}
+    init(isAdding: Bool = false) {
+        self.isAdding = isAdding
+        // Often the same server and another user: the address stays, the
+        // user name is typed afresh.
+        if isAdding { OnboardingMemory.userName = "" }
+    }
 
     var body: some View {
+        page
+            .onChange(of: app.credentials) { _, signedIn in
+                if isAdding, signedIn != nil { dismiss() }
+            }
+    }
+
+    private var page: some View {
         NavigationStack {
             GeometryReader { proxy in
                 ScrollView {
@@ -93,6 +109,13 @@ struct OnboardingView: View {
             }
             .background(Theme.ground.ignoresSafeArea())
             .inlineTitle()
+            .toolbar {
+                if isAdding {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") { dismiss() }
+                    }
+                }
+            }
             #if os(macOS)
             // Every Mac window has a name (the Window menu, Mission
             // Control); the page says it again in the serif, as Linux's

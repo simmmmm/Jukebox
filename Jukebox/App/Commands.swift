@@ -40,6 +40,11 @@ struct JukeboxCommands: Commands {
                 .keyboardShortcut(.downArrow)
             #endif
         }
+        // Music's own Account menu: the accounts kept, the one signed in
+        // checked, and Add Account… (AccountMenu.swift).
+        CommandMenu("Account") {
+            AccountMenuItems(app: app)
+        }
         // The wide window's search field, in its bar: ⌘F, as the Mac's Find.
         CommandGroup(before: .textEditing) {
             Button("Search") {

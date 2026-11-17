@@ -43,6 +43,8 @@ enum Stats {
         case signedIn = "signed_in"
         case signInFailed = "sign_in_failed"
         case signedOut = "signed_out"
+        case accountAdded = "account_added"
+        case accountSwitched = "account_switched"
         case libraryLoaded = "library_loaded"
         case screen
         case playStarted = "play_started"
@@ -126,6 +128,11 @@ enum Stats {
         case ..<10_000: return "1k-9k"
         default: return "10k+"
         }
+    }
+
+    /// The accounts kept on the device.
+    static func accountCount(_ count: Int) -> String {
+        count >= 3 ? "3+" : String(max(count, 1))
     }
 
     /// How long something took, in seconds.

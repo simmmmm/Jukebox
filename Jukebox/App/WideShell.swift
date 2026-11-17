@@ -411,12 +411,15 @@ private struct Places: View {
 /// or on Home's bar when there are no places.
 private struct MainMenu: View {
     @Environment(Navigator.self) private var navigator
+    @Environment(AppModel.self) private var app
 
     var body: some View {
         Menu {
             Button("Settings…") {
                 navigator.isSettingsPresented = true
             }
+            Divider()
+            AccountMenuItems(app: app)
         } label: {
             Image(systemName: "line.3.horizontal")
                 .desktopFont(15)

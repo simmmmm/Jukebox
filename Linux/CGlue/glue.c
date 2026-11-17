@@ -2,7 +2,8 @@
 #include <math.h>
 #include <libsecret/secret.h>
 
-// One item, as the iPhone's keychain has one: the signed-in session.
+// Two items, as the iPhone's keychain has them, told apart by "account":
+// "credentials", the session signed in, and "accounts", every one kept.
 static const SecretSchema *schema(void) {
     static const SecretSchema s = {
         "com.tijmen.Jukebox", SECRET_SCHEMA_NONE,
@@ -35,21 +36,29 @@ gboolean jb_secret_available(void) {
     return known;
 }
 
-gboolean jb_secret_store(const char *json) {
-    return secret_password_store_sync(schema(), SECRET_COLLECTION_DEFAULT, "Jukebox",
-                                      json, NULL, NULL, "account", "credentials", NULL);
+gboolean jb_secret_store(const char *account, const char *json) {
+    // Stored over the item with the same attributes, in place (libsecret
+    // replaces it): never cleared first, so a failed store keeps the old.
+    // The session keeps the label it always had; the list has its own.
+    const char *label = g_strcmp0(account, "credentials") ? "Jukebox accounts" : "Jukebox";
+    return secret_password_store_sync(schema(), SECRET_COLLECTION_DEFAULT, label,
+                                      json, NULL, NULL, "account", account, NULL);
 }
 
-char *jb_secret_load(void) {
-    char *found = secret_password_lookup_sync(schema(), NULL, NULL, "account", "credentials", NULL);
+char *jb_secret_load(const char *account, gboolean *failed) {
+    GError *error = NULL;
+    char *found = secret_password_lookup_sync(schema(), NULL, &error, "account", account, NULL);
+    // No item is no error; a keyring that would not answer (locked, gone) is.
+    *failed = error != NULL;
+    g_clear_error(&error);
     if (!found) return NULL;
     char *copy = g_strdup(found);
     secret_password_free(found);
     return copy;
 }
 
-void jb_secret_clear(void) {
-    secret_password_clear_sync(schema(), NULL, NULL, "account", "credentials", NULL);
+void jb_secret_clear(const char *account) {
+    secret_password_clear_sync(schema(), NULL, NULL, "account", account, NULL);
 }
 
 void jb_set_string(gpointer object, const char *name, const char *value) { g_object_set(object, name, value, NULL); }

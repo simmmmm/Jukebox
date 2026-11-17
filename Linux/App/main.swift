@@ -27,8 +27,10 @@ private func watchMainQueue() {
     }, nil)
 }
 
-// dev/linux-errors.sh's check of the queue's rules: no window, no settings.
+// dev/linux-errors.sh's checks of the queue's rules and of the accounts:
+// no window, no settings.
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "queue" { exit(QueueCheck.run()) }
+if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "accounts" { exit(AccountCheck.run()) }
 watchMainQueue()
 DefaultsFile.load()
 let application = adw_application_new("com.tijmen.Jukebox", G_APPLICATION_DEFAULT_FLAGS)!
