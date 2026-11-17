@@ -212,6 +212,37 @@ struct NavidromeIntegrationTests {
         }
     }
 
+    @Test("Ratings: a song's and an album's stars, read back where the library reads them, and taken away")
+    func ratings() async throws {
+        let client = try await NavidromeTestServer.client()
+        #expect(client.capabilities.contains(.rating))
+        let tracks = try await client.allTracks(progress: nil)
+        let song = try #require(tracks.min { $0.id < $1.id })
+        let albumID = try #require(song.albumID)
+        defer {
+            Task {
+                try? await client.setRating(0, item: .track(song.id))
+                try? await client.setRating(0, item: .album(albumID))
+            }
+        }
+
+        try await client.setRating(4, item: .track(song.id))
+        try await client.setRating(2, item: .album(albumID))
+        #expect(try await client.track(id: song.id).rating == 4)
+        #expect(try await client.allTracks(progress: nil).first { $0.id == song.id }?.rating == 4)
+        #expect(try await client.album(id: albumID).rating == 2)
+        let albums = try await client.allAlbums()
+        #expect(albums.first { $0.id == albumID }?.rating == 2)
+        // The album's stars are its own, not its songs'.
+        #expect(try await client.albumTracks(albumID: albumID).filter { $0.rating != nil }.map(\.id) == [song.id])
+
+        try await client.setRating(0, item: .track(song.id))
+        try await client.setRating(0, item: .album(albumID))
+        #expect(try await client.track(id: song.id).rating == nil)
+        #expect(try await client.album(id: albumID).rating == nil)
+        #expect(try await client.allTracks(progress: nil).allSatisfy { $0.rating == nil })
+    }
+
     @Test("Search: artists, albums and songs of a term")
     func search() async throws {
         let client = try await NavidromeTestServer.client()

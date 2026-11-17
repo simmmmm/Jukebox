@@ -288,6 +288,33 @@ final class LibraryStore {
         await setFavorite(!isFavorite(item.id), item: item)
     }
 
+    /// A track's or album's stars, 1 to 5, from the library's own copy: a
+    /// menu may hold an older copy (the queue's, a playlist's).
+    func rating(_ item: ItemRef) -> Int? {
+        switch item {
+        case .track(let id): track(id: id)?.rating
+        case .album(let id): album(id: id)?.rating
+        case .artist: nil
+        }
+    }
+
+    /// 1 to 5 stars, 0 for none, on a server with `.rating`. Shown at once
+    /// and put back if the server says no, as a favourite. The radio does
+    /// not read ratings, so no snapshot is made again.
+    func setRating(_ stars: Int, item: ItemRef) async {
+        let was = rating(item)
+        let new = stars > 0 ? stars : nil
+        guard was != new, let server else { return }
+        mirrorRating(new, item: item)
+        do {
+            try await server.setRating(stars, item: item)
+            // What kind of thing and how many stars, never which (Stats).
+            Stats.track(.ratingSet, ["item": Self.favoriteKind(of: item), "stars": String(stars)])
+        } catch {
+            mirrorRating(was, item: item)
+        }
+    }
+
     /// A playlist's tracks, from the server (playlists change elsewhere too).
     func tracks(in playlist: Playlist) async throws -> [Track] {
         guard let server else { throw MusicServerError.notSignedIn }
@@ -552,6 +579,17 @@ private extension LibraryStore {
             albums[i].isFavorite = isFavorite
         } else if let i = index.artistPosition[itemID], artists.indices.contains(i) {
             artists[i].isFavorite = isFavorite
+        }
+    }
+
+    func mirrorRating(_ stars: Int?, item: ItemRef) {
+        switch item {
+        case .track(let id):
+            if let i = index.trackPosition[id], tracks.indices.contains(i) { tracks[i].rating = stars }
+        case .album(let id):
+            if let i = index.albumPosition[id], albums.indices.contains(i) { albums[i].rating = stars }
+        case .artist:
+            break
         }
     }
 

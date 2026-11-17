@@ -140,7 +140,10 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   header's end, the same on every page: a click in it (or Ctrl+F) shows
   the Search page, which is not in the sidebar;
 - the primary menu (F10) with Preferences, Keyboard Shortcuts and About;
-- GNOME's own context menus;
+- GNOME's own context menus; on a server with ratings a song's and an
+  album's menu (the album page's ⋮ too) have Rating, a submenu of None
+  and one to five stars with GNOME's check mark (`ratingItems`, as the
+  Mac's `RatingMenu`);
 - toasts for a moment's news, a dialog before signing out;
 - more than one account (17 November 2026, `Jukebox/App/Accounts.swift`):
   with two or more, the primary menu lists them as radio items, the one

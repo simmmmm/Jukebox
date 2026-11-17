@@ -174,16 +174,58 @@ private nonisolated final class PointHandler {
     init(_ run: @escaping @MainActor (Double, Double) -> Void) { self.run = run }
 }
 
+/// What separates the parts of a choice's title (`submenuChoice`): a
+/// control character no menu's words have.
+private let submenuMark: Character = "\u{1F}"
+
+/// A choice under a submenu, as a menu's title: `popoverMenu` puts it under
+/// `submenu`, ticked when `checked`. Menus stay lists of (title, action),
+/// as every caller builds them.
+func submenuChoice(_ submenu: String, _ title: String, checked: Bool) -> String {
+    [submenu, title, checked ? "checked" : ""].joined(separator: String(submenuMark))
+}
+
+/// Rating › None and one to five stars, the given one ticked: beside the
+/// favourite in a song's and an album's menu, on a server that keeps
+/// ratings, as the Mac's RatingMenu. Nothing elsewhere ("ik wil alleen er
+/// voor waken dat we niet 10000 knopen krijgen", 17 November 2026).
+func ratingItems(_ item: ItemRef) -> [(String, () -> Void)] {
+    guard app.library.can(.rating) else { return [] }
+    let given = app.library.rating(item) ?? 0
+    return (0...5).map { stars -> (String, () -> Void) in
+        let title = stars == 0 ? "None" : String(repeating: "★", count: stars)
+        return (submenuChoice("Rating", title, checked: stars == given),
+                { Task { await app.library.setRating(stars, item: item) } })
+    }
+}
+
 /// A menu of `items` as a popover; `prefix` names its actions apart from
 /// another menu's on the same widget.
 func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
     let menu = g_menu_new()!
     let actions = g_simple_action_group_new()!
+    var submenus: [String: OpaquePointer] = [:]
     for (index, (title, action)) in items.enumerated() {
-        let simple = g_simple_action_new("item\(index)", nil)!
+        // A choice (`submenuChoice`) goes under its submenu, made where
+        // its first choice is, with a check mark: an action with a state.
+        let parts = title.split(separator: submenuMark, omittingEmptySubsequences: false).map(String.init)
+        let isChoice = parts.count == 3
+        let simple = isChoice
+            ? g_simple_action_new_stateful("item\(index)", nil, g_variant_new_boolean(parts[2].isEmpty ? 0 : 1))!
+            : g_simple_action_new("item\(index)", nil)!
         on(raw(simple), "activate") { action() }
         g_action_map_add_action(ptr(actions), ptr(simple))
-        g_menu_append(menu, title, "menu.item\(index)")
+        guard isChoice else {
+            g_menu_append(menu, title, "menu.item\(index)")
+            continue
+        }
+        let submenu = submenus[parts[0]] ?? {
+            let made = g_menu_new()!
+            g_menu_append_submenu(menu, parts[0], ptr(made))
+            submenus[parts[0]] = made
+            return made
+        }()
+        g_menu_append(submenu, parts[1], "menu.item\(index)")
     }
     let popover = gtk_popover_menu_new_from_model(ptr(menu))!
     gtk_widget_insert_action_group(popover, "menu", ptr(actions))
@@ -231,6 +273,7 @@ func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
         let favorite = app.library.isFavorite(first.id)
         items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
                       { Task { await app.library.setFavorite(!favorite, item: .track(first.id)) } }))
+        items += ratingItems(.track(first.id))
         if let albumID = first.albumID, let album = app.library.album(id: albumID) {
             items.append(("Go to Album", { Pages.open(album) }))
         }
@@ -484,6 +527,7 @@ func albumMenu(_ album: Album) -> [(String, () -> Void)] {
             ("Add to Queue", { app.player.addToQueue(tracks) }),
             ("Add to Playlist…", { Playlists.add(tracks) }),
             ("Start a Station", { app.radio.start(.album(album.id)) })]
+        + ratingItems(.album(album.id))
 }
 
 /// A station's tile: the arch at the page's tile size, its name and a fact.

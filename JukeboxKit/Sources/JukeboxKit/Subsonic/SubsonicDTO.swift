@@ -324,6 +324,8 @@ struct SubsonicChild: Decodable {
     var duration: Double?
     var coverArt: String?
     var starred: String?
+    /// 1 to 5; absent or 0 when unrated.
+    var userRating: Int?
     var playCount: Int?
     var played: String?
     var created: String?
@@ -365,6 +367,7 @@ struct SubsonicChild: Decodable {
         duration = c.lenientDouble(key("duration"))
         coverArt = c.lenientString(key("coverArt"))
         starred = c.lenientString(key("starred"))
+        userRating = c.lenientInt(key("userRating"))
         playCount = c.lenientInt(key("playCount"))
         played = c.lenientString(key("played"))
         created = c.lenientString(key("created"))
@@ -459,6 +462,8 @@ struct SubsonicAlbum: Decodable {
     var genre: String?
     var genres: [String]
     var starred: String?
+    /// 1 to 5; Navidrome 0.64.2 sends 0 for an unrated album (measured).
+    var userRating: Int?
     var playCount: Int?
     var played: String?
     var song: [SubsonicChild]
@@ -487,6 +492,7 @@ struct SubsonicAlbum: Decodable {
         genre = c.lenientString(key("genre"))
         genres = c.lenientNames(key("genres"))
         starred = c.lenientString(key("starred"))
+        userRating = c.lenientInt(key("userRating"))
         playCount = c.lenientInt(key("playCount"))
         played = c.lenientString(key("played"))
         song = c.lenientList(SubsonicChild.self, key("song"))
@@ -721,7 +727,8 @@ extension SubsonicChild {
             credits: credits,
             work: work,
             movement: movement,
-            grouping: grouping)
+            grouping: grouping,
+            rating: Subsonic.stars(userRating))
     }
 
     /// The contributors by role, in Role's order: Navidrome lists them in
@@ -757,7 +764,8 @@ extension SubsonicAlbum {
             isFavorite: starred.map { !$0.isEmpty } ?? false,
             dateAdded: created.flatMap(JellyfinDate.parse),
             playCount: max(0, playCount ?? 0),
-            lastPlayed: played.flatMap(JellyfinDate.parse))
+            lastPlayed: played.flatMap(JellyfinDate.parse),
+            rating: Subsonic.stars(userRating))
     }
 
     /// Who the album is by, for a song that does not say its album artist
@@ -830,6 +838,13 @@ extension SubsonicPlainLyrics {
 
 /// Mapping helpers the DTOs share.
 enum Subsonic {
+    /// `userRating` as stars: 1 to 5, else unrated (0 is Navidrome's
+    /// unrated album, absent its unrated song).
+    static func stars(_ userRating: Int?) -> Int? {
+        guard let userRating, (1...5).contains(userRating) else { return nil }
+        return userRating
+    }
+
     /// OpenSubsonic's `genres` (split by the server), else the one `genre`.
     static func genres(_ list: [String], _ one: String?) -> [String] {
         if !list.isEmpty { return list }

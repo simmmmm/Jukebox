@@ -310,11 +310,12 @@ struct SubsonicClientTests {
             SubsonicConnection.capabilities(apiVersion: version, openSubsonic: open, extensions: ext)
         }
         #expect(caps(nil) == [.lyrics])
-        #expect(caps("1.8.0") == [.lyrics, .playlistReorder])
-        #expect(caps("1.11.0") == [.lyrics, .playlistReorder, .instantMix, .similarArtists])
-        #expect(caps("1.15.0") == [.lyrics, .playlistReorder, .instantMix, .similarArtists, .topSongs])
+        #expect(caps("1.5.0") == [.lyrics])
+        #expect(caps("1.8.0") == [.lyrics, .playlistReorder, .rating])
+        #expect(caps("1.11.0") == [.lyrics, .playlistReorder, .rating, .instantMix, .similarArtists])
+        #expect(caps("1.15.0") == [.lyrics, .playlistReorder, .rating, .instantMix, .similarArtists, .topSongs])
         #expect(caps("1.16.1", true, F.navidromeExtensions) == [
-            .lyrics, .playlistReorder, .instantMix, .similarArtists, .topSongs, .syncedLyrics, .replayGain,
+            .lyrics, .playlistReorder, .rating, .instantMix, .similarArtists, .topSongs, .syncedLyrics, .replayGain,
             .lastPlayed, .playbackTimeline, .transcodeOffset])
         #expect(caps("1.16.1", true, ["apiKeyAuthentication"]).contains(.apiKeySignIn))
     }
@@ -328,7 +329,7 @@ struct SubsonicClientTests {
 
         let gonic = SubsonicFake()
         gonic.on("ping", body: #"{"subsonic-response":{"status":"ok","version":"1.15.0","type":"gonic","serverVersion":"0.16.4","openSubsonic":false}}"#)
-        #expect(try await F.client(gonic).currentCapabilities() == [.lyrics, .playlistReorder, .instantMix, .similarArtists, .topSongs])
+        #expect(try await F.client(gonic).currentCapabilities() == [.lyrics, .playlistReorder, .rating, .instantMix, .similarArtists, .topSongs])
         #expect(gonic.requests("getOpenSubsonicExtensions").isEmpty)
     }
 
@@ -547,6 +548,17 @@ struct SubsonicClientTests {
         try await client.setFavorite(false, item: .artist("ar1"))
         #expect(fake.requests.map { "\($0.endpoint) \($0.params.first!.name)=\($0.params.first!.value)" }
                 == ["star id=s1", "star albumId=al1", "unstar artistId=ar1"])
+    }
+
+    @Test("Ratings: setRating with id for a song and an album alike, 0 to take it away")
+    func ratings() async throws {
+        let fake = SubsonicFake()
+        fake.on("setRating", ok: "")
+        let client = F.client(fake)
+        try await client.setRating(4, item: .track("s1"))
+        try await client.setRating(0, item: .album("al1"))
+        #expect(fake.requests.map { "\($0.endpoint) id=\($0.value("id") ?? "") rating=\($0.value("rating") ?? "")" }
+                == ["setRating id=s1 rating=4", "setRating id=al1 rating=0"])
     }
 
     @Test("Downloads allowed: getUser's downloadRole; true when it does not say or there is no getUser")

@@ -59,6 +59,7 @@ enum Stats {
         case playlistCreated = "playlist_created"
         case playlistSongsAdded = "playlist_songs_added"
         case favoriteSet = "favorite_set"
+        case ratingSet = "rating_set"
         case searchUsed = "search_used"
         case settingChanged = "setting_changed"
         case lastFMKey = "lastfm_key"

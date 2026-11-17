@@ -264,6 +264,9 @@ enum PlayerBar {
             items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
                           { Task { await app.library.setFavorite(!favorite, item: .track(track.id)) } }))
         }
+        // Always, as the Mac's bar menu has it: a menu's entry, not a
+        // button on the bar.
+        items += ratingItems(.track(track.id))
         return items
     }
 

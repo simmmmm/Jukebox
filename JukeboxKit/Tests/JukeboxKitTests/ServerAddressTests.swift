@@ -154,7 +154,7 @@ struct ServerAddressTests {
         let server = try await MusicServers.detect("http://192.168.1.4:4040", identity: Self.identity, transport: old)
         #expect(server.kind == .subsonic(flavour: .subsonic))
         #expect(server.version == "1.15.0" && server.apiVersion == "1.15.0")
-        #expect(server.capabilities == [.lyrics, .playlistReorder, .instantMix, .similarArtists, .topSongs])
+        #expect(server.capabilities == [.lyrics, .playlistReorder, .rating, .instantMix, .similarArtists, .topSongs])
         #expect(!old.requests.contains { $0.path.contains("getOpenSubsonicExtensions") })
 
         let gonic = AddressFake { url in
