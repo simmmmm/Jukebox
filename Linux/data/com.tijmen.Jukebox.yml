@@ -22,6 +22,9 @@ finish-args:
   # The signed-in session in the desktop's keyring (Platform.swift's
   # Keychain); without this Jukebox sees no keyring and keeps it in its file.
   - --talk-name=org.freedesktop.secrets
+  # Chromecasts on the network, found by the system's Avahi (CGlue/cast.c):
+  # Jukebox sends no mDNS of its own, so the sandbox needs Avahi's bus name.
+  - --system-talk-name=org.freedesktop.Avahi
   # The desktop's media controls (CGlue/mpris.c).
   - --own-name=org.mpris.MediaPlayer2.Jukebox
 modules:

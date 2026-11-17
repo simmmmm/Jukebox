@@ -67,6 +67,24 @@ GtkWidget *jb_drawing_new(int width, int height, int min_width);
 void jb_drawing_resize(GtkWidget *widget, int width, int height, int min_width);
 void jb_drawing_set(GtkWidget *widget, GdkTexture *texture, double x, double y, double width, double height);
 
+// A Chromecast (cast.c): TLS to the receiver with GIO, its own certificate
+// accepted; every callback on GLib's main loop. `received` gets the bytes as
+// they come, and NULL once, when the connection closed or failed. After
+// jb_cast_close nothing more is called.
+typedef struct JbCast JbCast;
+typedef void (*JbCastReceived)(const guint8 *bytes, gsize length, gpointer data);
+JbCast *jb_cast_connect(const char *host, guint16 port, JbCastReceived received, gpointer data);
+void jb_cast_send(JbCast *cast, const guint8 *bytes, gsize length);
+void jb_cast_close(JbCast *cast);
+// Chromecasts on the network, through Avahi on the system bus. `service` is
+// the mDNS name, the key of a removal; `id` and `name` are the TXT record's
+// id= and fn= (else the service name). Nothing is called without Avahi.
+typedef struct JbAvahi JbAvahi;
+typedef void (*JbCastFound)(const char *service, const char *id, const char *name, const char *host,
+                            guint16 port, gboolean removed, gpointer data);
+JbAvahi *jb_avahi_browse(JbCastFound found, gpointer data);
+void jb_avahi_stop(JbAvahi *avahi);
+
 // MPRIS: how GNOME's own media controls (the clock's menu, the lock
 // screen, the keyboard's media keys) see and steer a player. D-Bus by hand
 // is C's work; Swift gives the state and gets the commands.
