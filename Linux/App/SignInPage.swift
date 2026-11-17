@@ -13,12 +13,20 @@ import JukeboxKit
 enum SignInPage {
     private static var user: Widget!
     private static var password: Widget!
+    private static var cancel: Widget!
 
     /// Add Account: the address stays (often the same server, another
-    /// user), the user name and the password are typed afresh.
+    /// user), the user name and the password are typed afresh, and Cancel
+    /// goes back to the window.
     static func prepareForAnother() {
         gtk_editable_set_text(ptr(user), "")
         gtk_editable_set_text(ptr(password), "")
+        showsCancel(true)
+    }
+
+    /// Only while an account is being added.
+    static func showsCancel(_ shown: Bool) {
+        cancel.isVisible = shown
     }
 
     static func make() -> Widget {
@@ -94,7 +102,8 @@ enum SignInPage {
         let header = adw_header_bar_new()!
         // Adding an account, over the window signed in: back to it.
         let cancel = button("Cancel") { MainWindow.cancelAddAccount() }
-        observe(cancel) { cancel.isVisible = app.phase == .signedIn }
+        cancel.isVisible = false
+        Self.cancel = cancel
         adw_header_bar_pack_start(ptr(header), cancel)
         adw_toolbar_view_add_top_bar(ptr(toolbar), header)
         adw_toolbar_view_set_content(ptr(toolbar), clamp)

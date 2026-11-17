@@ -136,6 +136,9 @@ struct SavedAccountsTests {
             #expect(try await server.downloadsAllowed())
             #expect(try await server.allAlbums().count > 0)
         }
-        for account in accounts.all { await MusicServers.open(account, identity: identity).signOut() }
+        // Signing out of one ends its session alone: the other plays on.
+        await MusicServers.open(second, identity: identity).signOut()
+        #expect(try await MusicServers.open(first, identity: identity).downloadsAllowed())
+        await MusicServers.open(first, identity: identity).signOut()
     }
 }

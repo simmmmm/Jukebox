@@ -202,8 +202,7 @@ final class AppModel {
         // What was heard offline and not yet told to the server goes on the
         // way out, when the server answers. Then the account's downloads go
         // (OfflineStore.signOut): the next account never plays its songs.
-        let unsent = offline.takeReports()
-        AccountStores(app: self).close(forgetting: true)
+        let unsent = AccountStores(app: self).close(forgetting: true)
         credentials = nil
         self.server = nil
         if let next = accounts.remove(current) {

@@ -147,8 +147,7 @@ final class AppModel {
         let server = self.server
         // What was heard offline goes to the server on the way out; then the
         // account's downloads go (OfflineStore.signOut), as on the iPhone.
-        let unsent = offline.takeReports()
-        AccountStores(app: self).close(forgetting: true)
+        let unsent = AccountStores(app: self).close(forgetting: true)
         credentials = nil
         self.server = nil
         if let next = accounts.remove(current) {

@@ -99,7 +99,7 @@ enum MainWindow {
                 // Signed out of the last account: the pages made for it go.
                 if shownAccount != nil { forgetPages() }
                 shownAccount = nil
-                isAddingAccount = false
+                isAddingAccount = false; SignInPage.showsCancel(false)
                 gtk_stack_set_visible_child_name(ptr(stack), "signin")
             case .signedIn:
                 // Another account (switched to, added, or the next after a
@@ -109,7 +109,7 @@ enum MainWindow {
                 if let account, account != shownAccount {
                     if shownAccount != nil { forgetPages() }
                     shownAccount = account
-                    isAddingAccount = false
+                    isAddingAccount = false; SignInPage.showsCancel(false)
                 }
                 guard !isAddingAccount else { return }
                 gtk_stack_set_visible_child_name(ptr(stack), "main")
@@ -184,7 +184,7 @@ enum MainWindow {
 
     /// Cancel on the sign-in page over the window.
     static func cancelAddAccount() {
-        isAddingAccount = false
+        isAddingAccount = false; SignInPage.showsCancel(false)
         gtk_stack_set_visible_child_name(ptr(stack), "main")
     }
 

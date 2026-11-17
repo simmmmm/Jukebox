@@ -32,6 +32,9 @@ final class Accounts {
     /// Every account, in the order they were added.
     private(set) var saved: [ServerCredentials] = []
     @ObservationIgnored private var list = SavedAccounts(active: nil, saved: [])
+    /// False when the keychain's list could not be read at launch: only a
+    /// listener's own change (an account added, signed out of) writes it.
+    @ObservationIgnored private var listKnown = true
 
     init() {}
 
@@ -47,6 +50,7 @@ final class Accounts {
     func restore() -> ServerCredentials? {
         guard let kept = Keychain.loadAccounts() else { return nil }
         list = SavedAccounts(active: kept.active, saved: kept.saved)
+        listKnown = kept.listKnown
         // The rename moves only what is not there yet, so even with the
         // list unknown it takes nothing from another account.
         if SavedAccounts.isMigrating(active: kept.active, saved: kept.saved), let active = list.active {
@@ -74,7 +78,7 @@ final class Accounts {
     /// The same account with what its server said of itself since.
     func update(_ account: ServerCredentials) {
         list.update(account)
-        Keychain.saveAccounts(list.all)
+        if listKnown { Keychain.saveAccounts(list.all) }
         if let active = list.active, active.isSameAccount(as: account) { Keychain.save(active) }
         saved = list.all
     }
@@ -202,8 +206,11 @@ struct AccountStores {
     }
 
     /// The account signed in, put away. `forgetting` at a sign-out: its
-    /// library cache, songs and recent stations go too (its history stays).
-    func close(forgetting: Bool) {
+    /// library cache, songs and recent stations go too (its history stays),
+    /// and its plays heard offline and not yet told come back, the stop of
+    /// its last song among them, to be sent on the way out.
+    @discardableResult
+    func close(forgetting: Bool) -> [PendingPlay] {
         // Nothing more is saved as this account's "left off": with no
         // server the handoff saves nothing, and the stop below is no news.
         handoff.server = nil
@@ -214,9 +221,11 @@ struct AccountStores {
         if forgetting { radio.reset() } else { radio.close() }
         radio.server = nil
         history.close()
+        let unsent = forgetting ? offline.takeReports() : []
         if forgetting { offline.signOut() } else { offline.close() }
         if forgetting { library.reset() } else { library.close() }
         mixes.reset()
+        return unsent
     }
 
     /// Whether an account's server answers it, asked before switching to
