@@ -174,16 +174,44 @@ private nonisolated final class PointHandler {
     init(_ run: @escaping @MainActor (Double, Double) -> Void) { self.run = run }
 }
 
+/// What separates the parts of a choice's title (`submenuChoice`): a
+/// control character no menu's words have.
+private let submenuMark: Character = "\u{1F}"
+
+/// A choice under a submenu, as a menu's title: `popoverMenu` puts it under
+/// `submenu`, ticked when `checked`. Menus stay lists of (title, action),
+/// as every caller builds them.
+func submenuChoice(_ submenu: String, _ title: String, checked: Bool) -> String {
+    [submenu, title, checked ? "checked" : ""].joined(separator: String(submenuMark))
+}
+
 /// A menu of `items` as a popover; `prefix` names its actions apart from
 /// another menu's on the same widget.
 func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
     let menu = g_menu_new()!
     let actions = g_simple_action_group_new()!
+    var submenus: [String: OpaquePointer] = [:]
     for (index, (title, action)) in items.enumerated() {
-        let simple = g_simple_action_new("item\(index)", nil)!
+        // A choice (`submenuChoice`) goes under its submenu, made where
+        // its first choice is, with a check mark: an action with a state.
+        let parts = title.split(separator: submenuMark, omittingEmptySubsequences: false).map(String.init)
+        let isChoice = parts.count == 3
+        let simple = isChoice
+            ? g_simple_action_new_stateful("item\(index)", nil, g_variant_new_boolean(parts[2].isEmpty ? 0 : 1))!
+            : g_simple_action_new("item\(index)", nil)!
         on(raw(simple), "activate") { action() }
         g_action_map_add_action(ptr(actions), ptr(simple))
-        g_menu_append(menu, title, "menu.item\(index)")
+        guard isChoice else {
+            g_menu_append(menu, title, "menu.item\(index)")
+            continue
+        }
+        let submenu = submenus[parts[0]] ?? {
+            let made = g_menu_new()!
+            g_menu_append_submenu(menu, parts[0], ptr(made))
+            submenus[parts[0]] = made
+            return made
+        }()
+        g_menu_append(submenu, parts[1], "menu.item\(index)")
     }
     let popover = gtk_popover_menu_new_from_model(ptr(menu))!
     gtk_widget_insert_action_group(popover, "menu", ptr(actions))
@@ -586,9 +614,17 @@ func shelf(_ tiles: [Widget]) -> Widget {
     return shelf
 }
 
-/// The one filled button a screen may have, 40 tall.
+/// The one filled button a screen may have, 36 tall.
 func playButton(_ title: String = "Play", action: @escaping @MainActor () -> Void) -> Widget {
     button(title, "suggested-action", "page-button", action: action).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
+}
+
+/// The one beside Play, its size, on a faint ground of the accent: Shuffle,
+/// New Picks, Stop, Continue (the Mac's ActionButtonStyle, quiet). The
+/// photographer, 18 November 2026: "bij de artiest en op meerdere plekken
+/// de buttons allemaal een beetje gek".
+func quietButton(_ title: String, action: @escaping @MainActor () -> Void) -> Widget {
+    button(title, "quiet", "page-button", action: action).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
 }
 
 /// Every other action: a word in the accent.

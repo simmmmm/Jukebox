@@ -462,13 +462,11 @@ struct PlaylistDetailView: View {
             Text(LibraryText.summary(count: count, duration: duration))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-            VStack(spacing: Theme.Space.m) {
-                PlayShuffleButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
-                                   shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
-                LibraryRadioButton(seed: seed(for: shown, tracks: tracks))
-            }
-            .padding(.top, Theme.Space.m)
-            .disabled(tracks.isEmpty)
+            // Start Radio is in the "…" above.
+            PagePlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
+                            shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
+                .padding(.top, Theme.Space.m)
+                .disabled(tracks.isEmpty)
         }
         .frame(maxWidth: .infinity)
     }

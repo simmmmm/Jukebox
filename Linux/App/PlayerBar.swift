@@ -463,41 +463,29 @@ enum NowPlayingPage {
         sleeve.show(app.player.currentTrack)
     }
 
+    /// The sleep timer, under Full Player's ⋮ as on the iPhone and the Mac
+    /// (Jukebox/NowPlaying/SleepTimerMenu.swift): Sleep Timer › Off and the
+    /// choices, the one set ticked; the entry says when it stops or what it
+    /// waits for. The timer is the queue's.
+    private static func sleepItems() -> [(String, () -> Void)] {
+        let player = app.player
+        var title = "Sleep Timer"
+        if let deadline = player.sleepDeadline {
+            title += " · Stops at \(deadline.formatted(date: .omitted, time: .shortened))"
+        } else if let choice = player.sleepChoice {
+            title += " · \(player.sleepTitle(choice))"
+        }
+        let choices: [SleepChoice?] = [nil] + player.sleepChoices.map { $0 }
+        return choices.map { choice in
+            (submenuChoice(title, choice.map(player.sleepTitle) ?? "Off", checked: choice == player.sleepChoice),
+             { app.player.setSleepTimer(choice) })
+        }
+    }
+
     /// The room's ground: dark whatever the system's appearance while it is
     /// open, the bar's and the docked panel's own gone (Style's `in-room`).
     /// Lying over the page, the panel keeps its ground: the room shows
     /// under it otherwise.
-    /// The sleep timer, a moon beside ⋮, as the iPhone's and the Mac's
-    /// (Jukebox/NowPlaying/SleepTimerMenu.swift): before it the time left,
-    /// or what it waits for ("End of Album"). The timer is the queue's.
-    private static func sleepTimer() -> Widget {
-        let left = label("", "t15", "times")
-        let moon = gtk_image_new_from_icon_name("weather-clear-night-symbolic")!
-        let button = gtk_menu_button_new()!.css("flat").tooltip("Sleep Timer")
-        gtk_menu_button_set_child(ptr(button), hbox(spacing: 8, [left, moon]))
-        // The words apart from the menu: they change every second, and the
-        // menu, made again, would close under the pointer.
-        observe(left) {
-            let player = app.player
-            if let seconds = player.sleepLeft {
-                setText(left, clock(seconds))
-            } else {
-                setText(left, player.sleepChoice.map(player.sleepTitle) ?? "")
-            }
-            left.isVisible = player.sleepChoice != nil
-        }
-        observe(button) {
-            let player = app.player
-            var items: [(String, () -> Void)] = player.sleepChoices.map { choice in
-                (player.sleepTitle(choice), { app.player.setSleepTimer(choice) })
-            }
-            // Off only while it runs; the words before the moon say which.
-            if player.sleepChoice != nil { items.insert(("Off", { app.player.setSleepTimer(nil) }), at: 0) }
-            gtk_menu_button_set_popover(ptr(button), popoverMenu(items))
-        }
-        return button
-    }
-
     private static func ground() {
         guard let window = MainWindow.window else { return }
         let open = isOpen
@@ -533,17 +521,23 @@ enum NowPlayingPage {
         gtk_overlay_add_overlay(ptr(overlay), content)
 
         down = iconButton("go-down-symbolic", "Close Full Player", "flat") { close() }
-        // ⋮: the song's menu, made as it opens (the song and the window's
-        // width decide it), under the button.
+        // ⋮: the song's menu and the sleep timer, made as it opens (the
+        // song and the window's width decide it), under the button.
         more = iconButton("view-more-symbolic", "More", "flat") {
             showMenu(at: more, x: Double(gtk_widget_get_width(more)) / 2, y: Double(gtk_widget_get_height(more)),
-                     PlayerBar.songMenu(narrow: !PlayerBar.songActions.isVisible))
+                     PlayerBar.songMenu(narrow: !PlayerBar.songActions.isVisible) + sleepItems())
         }
+        // While the timer is set, a small moon before ⋮'s glyph: the one
+        // sign of it outside the menu ("verstop dat maantje ff in dat more
+        // menutje", the photographer, 18 November 2026).
+        let moon = gtk_image_new_from_icon_name("weather-clear-night-symbolic")!.css("dim-label")
+        gtk_image_set_pixel_size(ptr(moon), 12)
+        gtk_button_set_child(ptr(more), hbox(spacing: 4, [moon, gtk_image_new_from_icon_name("view-more-symbolic")!]))
+        observe(moon) { moon.isVisible = app.player.sleepChoice != nil }
         header = adw_header_bar_new()!
         adw_header_bar_set_show_title(ptr(header), 0)
         adw_header_bar_pack_start(ptr(header), down)
         adw_header_bar_pack_end(ptr(header), more)
-        adw_header_bar_pack_end(ptr(header), sleepTimer())
         let page = adw_toolbar_view_new()!
         adw_toolbar_view_add_top_bar(ptr(page), header)
         adw_toolbar_view_set_content(ptr(page), overlay)

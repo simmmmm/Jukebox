@@ -311,13 +311,11 @@ struct AlbumDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            VStack(spacing: Theme.Space.m) {
-                PlayShuffleButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
-                                   shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
-                LibraryRadioButton(seed: .album(shown.id))
-            }
-            .padding(.top, Theme.Space.m)
-            .disabled(tracks.isEmpty)
+            // Start Radio is in the "…" above.
+            PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
+                            shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
+                .padding(.top, Theme.Space.m)
+                .disabled(tracks.isEmpty)
         }
         .frame(maxWidth: .infinity)
     }

@@ -118,16 +118,26 @@ private struct HomeFeed: View {
             HomeHandoffNotice(margin: measures.margin)
             HomeStationHero(measures: measures)
                 .padding(.horizontal, measures.margin)
-            // On a wide page the space alone parts them, as on Linux.
-            if !measures.isWide {
-                Hairline()
-            }
+            // Its own ground parts it from the mixes, on every client.
             HomeMixesSection(measures: measures)
             HomePlayedLatelySection(measures: measures)
             HomeMostPlayedSection(measures: measures)
             HomeExploreSection(measures: measures)
             HomeRecentlyAddedSection(measures: measures)
         }
+    }
+}
+
+extension View {
+    /// Your Station and the music to go on with, each on a ground one step
+    /// up from the page (Theme.raised), flat, with no line or shadow, its
+    /// corners concentric with the art's 6 at 12 in. The photographer, 18
+    /// November 2026: "kan je van 'doorgaan waar je was' iets beter
+    /// afkaderen, hoeft niet extreem, hetzelfde geldt voor your station;
+    /// beide staan zo in het niets met deze opmaak". Linux's home-card.
+    func homeCard() -> some View {
+        padding(Theme.Space.m)
+            .background(Theme.raised, in: .rect(cornerRadius: Theme.Radius.artwork + Theme.Space.m))
     }
 }
 
@@ -153,11 +163,13 @@ enum HomeLayout {
 /// Music on another device, or this one's from last time, and the one
 /// thing to do about it: go on with it here (HandoffStore). The
 /// photographer, 13 November 2026: "zodat ik verder kan waar ik gebleven was
-/// als ik wegga van mijn pc". Words on the ground, as the notice above it.
+/// als ik wegga van mijn pc". On its own ground, as Your Station under it
+/// (homeCard), and Continue at the size of a page's Shuffle.
 private struct HomeHandoffNotice: View {
     let margin: CGFloat
 
     @Environment(HandoffStore.self) private var handoff
+    @Environment(\.isWide) private var isWide
 
     init(margin: CGFloat) {
         self.margin = margin
@@ -176,9 +188,13 @@ private struct HomeHandoffNotice: View {
                 Button(offer.isOwn ? String(localized: "Continue") : String(localized: "Continue Here")) {
                     handoff.continueHere()
                 }
-                .buttonStyle(.secondary)
+                .buttonStyle(.quietAction)
+                .padding(.top, Theme.Space.xs)
             }
             .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+            // Wide, as wide as its words, as Linux's.
+            .fixedSize(horizontal: isWide, vertical: false)
+            .homeCard()
             .accessibilityElement(children: .contain)
             .padding(.horizontal, margin)
         }
@@ -246,10 +262,10 @@ private struct HomeOfflineNotice: View {
 
 // MARK: - Your Station
 
-/// Your Station on top, on the page's ground: its arch beside its name in
-/// the serif, one fact — when it last played — and the screen's one filled
-/// button, which plays it at once. Flat, as every station is that is not on
-/// the air. A tap elsewhere opens Your Station's page, to see what it would
+/// Your Station on top, on a ground of its own (homeCard): its arch beside
+/// its name in the serif, one fact — when it last played — and the screen's
+/// one filled button, which plays it at once. Flat, as every station is
+/// that is not on the air. A tap elsewhere opens Your Station's page, to see what it would
 /// play first, as every station's tile does. While a station plays it shows
 /// that station instead, lit, under the one small label, "On air", with
 /// the song; a tap then opens Now Playing. The Radio tab shows it too, while
@@ -295,6 +311,9 @@ struct HomeStationHero: View {
         // at its foot; taller when the words need it.
         .fixedSize(horizontal: false, vertical: true)
         .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+        // Wide, as wide as the art and its words, as Linux's.
+        .fixedSize(horizontal: isWide, vertical: false)
+        .homeCard()
         .contentShape(.rect)
         .onTapGesture {
             if onAir != nil {
@@ -401,11 +420,9 @@ struct HomeStationHero: View {
                     Text("Play")
                 }
             }
-            // Wide, as wide as its word, as Linux's.
-            .frame(minWidth: measures.isWide ? nil : 64)
         }
-        .buttonStyle(.prominent)
-        .fixedSize()
+        // The size of a page's Play (PagePlayButtons), not larger.
+        .buttonStyle(.action)
         .accessibilityHint(onAir == nil ? Text("Starts Your Station") : Text(verbatim: ""))
         // The words around it open the station's page on a tap (while
         // nothing plays) or a long press; VoiceOver gives a container

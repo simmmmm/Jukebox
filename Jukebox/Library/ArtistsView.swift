@@ -268,13 +268,12 @@ struct ArtistDetailView: View {
             VStack(alignment: .leading, spacing: Theme.Space.xl) {
                 header(shown)
 
-                VStack(spacing: Theme.Space.m) {
-                    PlayShuffleButtons(play: { playAll(shown, shuffled: false) },
-                                       shuffle: { playAll(shown, shuffled: true) })
-                    LibraryRadioButton(seed: seed(for: shown))
-                }
-                .disabled(!hasTracks)
-                .padding(.horizontal, Theme.margin)
+                // Under the centred photo and name, centred too; Start Radio
+                // in the "…" above.
+                PagePlayButtons(play: { playAll(shown, shuffled: false) },
+                                shuffle: { playAll(shown, shuffled: true) })
+                    .disabled(!hasTracks)
+                    .frame(maxWidth: .infinity)
 
                 if !top.isEmpty {
                     VStack(alignment: .leading, spacing: Theme.Space.s) {

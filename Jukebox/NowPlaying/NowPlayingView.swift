@@ -339,18 +339,11 @@ struct NowPlayingView: View {
             Spacer(minLength: 0)
 
             if let track = currentTrack {
-                SleepTimerMenu(player: player, font: Self.roomGlyph, ink: .white, side: 40)
-                    .menuStyle(.button)
-                    .buttonStyle(.borderless)
-                    .menuIndicator(.hidden)
                 Menu {
                     TrackMenu(track: track)
+                    SleepTimerItem(player: player)
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .font(Self.roomGlyph)
-                        .foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
-                        .contentShape(.rect)
+                    MoreGlyph(player: player, font: Self.roomGlyph, ink: .white, side: 40)
                 }
                 // The glyph alone, as Close: no border, no arrow.
                 .menuStyle(.button)
@@ -494,15 +487,11 @@ struct NowPlayingView: View {
                 Spacer(minLength: 0)
 
                 if let track = currentTrack {
-                    SleepTimerMenu(player: player, font: .title3.weight(.semibold), ink: ink, side: 44)
                     Menu {
                         TrackMenu(track: track)
+                        SleepTimerItem(player: player)
                     } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.title3.weight(.semibold))
-                            .foregroundStyle(ink)
-                            .frame(width: 44, height: 44)
-                            .contentShape(.rect)
+                        MoreGlyph(player: player, font: .title3.weight(.semibold), ink: ink, side: 44)
                     }
                     .accessibilityLabel("More")
                 }

@@ -196,8 +196,8 @@ struct LibraryAlbumMenu: View {
     }
 }
 
-/// The station button under a page's Play and Shuffle: a word in the
-/// accent, beside the one filled button.
+/// Start Radio beside Play and Shuffle where a page has no "…" to hold it
+/// (a genre's, on the iPhone): a word in the accent at their size.
 struct LibraryRadioButton: View {
     let seed: StationSeed
 
@@ -214,6 +214,7 @@ struct LibraryRadioButton: View {
             radio.start(seed)
         } label: {
             Text("Start Radio")
+                .font(.subheadline.weight(.semibold))
         }
         .buttonStyle(.secondary)
     }

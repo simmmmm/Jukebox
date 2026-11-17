@@ -123,8 +123,17 @@ enum Style {
            their hover in the dialog's 8 of margin. */
         listview.picks { padding: 0 8px 16px; }
         listview.picks > row { padding: 8px; }
-        /* The page's buttons, 40 tall: Play filled, the rest words. */
-        button.page-button { min-height: 40px; padding: 0 24px; font-size: 15px; }
+        /* A page's actions (Parts.swift): Play filled and the one beside it
+           on a faint ground of the accent, the same size, 36 by 96 at least
+           ("buttons voelen ook erg groot", 18 November 2026); words for
+           the rest. */
+        button.page-button { min-height: 36px; min-width: 64px; padding: 0 16px; font-size: 15px; }
+        button.quiet { background-color: alpha(\(accent), 0.12); color: \(accent); box-shadow: none; }
+        button.quiet:hover { background-color: alpha(\(accent), 0.18); }
+        button.quiet:active { background-color: alpha(\(accent), 0.24); }
+        /* Home's Your Station and the music to go on with, on a ground one
+           step up, flat, its corners concentric with the art's 6 at 12 in. */
+        .home-card { background-color: \(raised); border-radius: 18px; padding: 12px; }
         button.word { min-height: 40px; padding: 0 8px; font-size: 15px; }
         button.plain { padding: 0; min-height: 0; background: none; box-shadow: none; font-weight: inherit; }
         .playing { color: @accent_color; }

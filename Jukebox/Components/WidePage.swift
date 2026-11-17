@@ -284,27 +284,6 @@ struct PageRule: View {
     }
 }
 
-/// A head's Play, the page's one filled button, and Shuffle, a word in the
-/// accent beside it (Linux's playButton and wordButton): 15 bold.
-struct PagePlayButtons: View {
-    let play: () -> Void
-    var shuffle: (() -> Void)?
-
-    var body: some View {
-        HStack(spacing: Theme.Space.l) {
-            Button(action: play) {
-                Text("Play")
-                    .desktopFont(15, weight: .bold)
-            }
-            .buttonStyle(.prominent)
-            .fixedSize()
-            if let shuffle {
-                WordButton("Shuffle", action: shuffle)
-            }
-        }
-    }
-}
-
 /// Every other action on a wide page: a word in the accent, 15 bold.
 struct WordButton: View {
     let title: LocalizedStringKey

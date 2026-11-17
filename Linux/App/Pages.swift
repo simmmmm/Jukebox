@@ -131,13 +131,15 @@ enum HomePage {
     /// melding echt niet over de controls hebben" (the photographer, 14
     /// November 2026, of a banner over the player's bar).
     private static func handoffNotice(_ offer: HandoffStore.Offer) -> Widget {
-        let go = wordButton(offer.isOwn ? "Continue" : "Continue Here") { app.handoff.continueHere() }
+        let go = quietButton(offer.isOwn ? "Continue" : "Continue Here") { app.handoff.continueHere() }
+        gtk_widget_set_margin_top(go, 8)
+        // On its own ground, as Your Station under it (Style's home-card).
         let words = vbox(spacing: 4, [
-            label(offer.heading, "fact").margins(horizontal: 8),
-            label("\(offer.track.name) · \(offer.track.artistLine)").margins(horizontal: 8),
+            label(offer.heading, "fact"),
+            label("\(offer.track.name) · \(offer.track.artistLine)"),
             go,
-        ])
-        return words.margins(horizontal: 4, vertical: 8)
+        ]).css("home-card").align(horizontal: GTK_ALIGN_START)
+        return words.margins(vertical: 8)
     }
 
     /// Your Station: its arch 120, 24, the name in the serif, one fact, the
@@ -163,7 +165,10 @@ enum HomePage {
         }
         gtk_widget_set_margin_top(play, 16)
         append(play, to: words)
+        // On its own ground (Style's home-card): "beide staan zo in het
+        // niets met deze opmaak" (the photographer, 18 November 2026).
         let row = hbox(spacing: 24, [art.widget, words.align(vertical: GTK_ALIGN_CENTER)])
+            .css("home-card").align(horizontal: GTK_ALIGN_START)
         gtk_widget_set_margin_top(row, 32)
         keep(art, on: raw(row), as: "art")
         return row
@@ -254,7 +259,7 @@ enum RadioPage {
         gtk_widget_set_margin_top(name, 4)
         gtk_widget_set_margin_top(since, 4)
         let pause = playButton("Pause") { app.player.togglePlayPause() }
-        let stop = wordButton("Stop") {
+        let stop = quietButton("Stop") {
             app.radio.stop()
             app.player.stop()
         }
@@ -794,7 +799,7 @@ enum Pages {
                                         length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })]),
                           actions: [
             playButton { app.player.play(tracks, context: context) },
-            wordButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
+            quietButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
             hbox(spacing: 8, [heartButton { .album(album.id) }, moreButton(more)]),
         ])
         keep(art, on: raw(top), as: "art")
@@ -884,7 +889,7 @@ enum Pages {
         if own { more.append(("Delete Playlist", { Playlists.delete(playlist, then: gone) })) }
         let top = heading(art: art.widget, title: playlist.name, facts: fact, actions: [
             playButton { app.player.play(list.items, context: context) },
-            wordButton("Shuffle") { app.player.play(list.items, context: context, shuffled: true) },
+            quietButton("Shuffle") { app.player.play(list.items, context: context, shuffled: true) },
             moreButton(more),
         ])
         keep(art, on: raw(top), as: "art")
@@ -1005,7 +1010,7 @@ enum Pages {
         let seed = StationSeed.genre(key: genre.key, name: genre.name)
         let actions = [
             playButton { app.player.play(tracks, context: context) },
-            wordButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
+            quietButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
             moreButton([("Start Radio", {
                 Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
                 app.radio.start(seed)
@@ -1046,7 +1051,7 @@ enum Pages {
                 Stats.track(.mixPlayed)
                 app.player.play(mix.tracks, context: context)
             },
-            wordButton("Shuffle") { app.player.play(mix.tracks, context: context, shuffled: true) },
+            quietButton("Shuffle") { app.player.play(mix.tracks, context: context, shuffled: true) },
             moreButton([("Start a Station", { app.radio.start(mix.stationSeed) }),
                         ("Add to Playlist…", { Playlists.add(mix.tracks) })]),
         ])
@@ -1084,7 +1089,7 @@ enum Pages {
         }
         let top = heading(art: art.widget, title: station.title, facts: fact, actions: [
             playButton { app.radio.start(station, preview: picks) },
-            wordButton("New Picks") { choose(app.radio.drawPageSeed(for: station)) },
+            quietButton("New Picks") { choose(app.radio.drawPageSeed(for: station)) },
         ])
         keep(art, on: raw(top), as: "art")
         let column = vbox([top, rule(), list.widget])

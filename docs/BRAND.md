@@ -80,8 +80,16 @@ labels are its own.
 7. **On the ground:** content on the page, parted by hairlines and space
    (`Hairline`). One radius, 6 pt, for artwork (`Theme.Radius.artwork`);
    system controls keep their shapes. One filled button a screen: a plain
-   accent rectangle, 6 pt corners, unlit. Other actions are a word in the
-   accent or a plain SF Symbol, never an icon-and-label pill.
+   accent rectangle, 6 pt corners, unlit, 36 tall. The action beside it in
+   a page's row (Shuffle, New Picks, Stop, Continue) is its twin, the same
+   size on the accent at 12% (`.quietAction`, Linux's `quiet`): "bij de
+   artiest en op meerdere plekken de buttons allemaal een beetje gek" (18
+   November 2026). Start Radio is in the page's "…". Other actions are a
+   word in the accent or a plain SF Symbol, never an icon-and-label pill.
+   Home's Your Station and the music to go on with each stand on the
+   raised ground (`Theme.raised`), flat, corners 18 at 12 in: "kan je van
+   'doorgaan waar je was' iets beter afkaderen, hoeft niet extreem" (18
+   November 2026).
 8. **Editorial, left-aligned:** titles, rows and Now Playing's words at the
    margin; shelves run off the right edge so the next tile peeks in. Centre
    only where Apple does: the transport, a page's own header.

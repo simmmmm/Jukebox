@@ -284,6 +284,36 @@ struct SecondaryButtonStyle: ButtonStyle {
     }
 }
 
+/// A page's actions, side by side and the same size: Play filled, the
+/// screen's one filled button, and beside it Shuffle (New Picks, Stop,
+/// Continue) in the same shape on a faint ground of the accent. 36 tall,
+/// 96 wide at least, 15 pt; on the iPhone 4 more above and below that are
+/// not drawn, so a finger still has 44. Linux's page-button and quiet, 1:1.
+/// The photographer, 18 November 2026, of the artist page: "bij de artiest
+/// en op meerdere plekken de buttons allemaal een beetje gek", and of
+/// Home: "buttons voelen ook erg groot icm met de rest".
+struct ActionButtonStyle: ButtonStyle {
+    let isFilled: Bool
+
+    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isWide) private var isWide
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .desktopFont(15, weight: .bold, phone: .subheadline.weight(.semibold))
+            .lineLimit(1)
+            .foregroundStyle(isFilled ? Theme.onAccent : Theme.accent)
+            .padding(.horizontal, Theme.Space.l)
+            .frame(minWidth: 96, minHeight: 36)
+            .background(isFilled ? Theme.accent : Theme.accent.opacity(0.12),
+                        in: .rect(cornerRadius: Theme.Radius.artwork))
+            .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
+            .padding(.vertical, isWide ? 0 : Theme.Space.xs)
+            .contentShape(.rect)
+            .fixedSize()
+    }
+}
+
 extension ButtonStyle where Self == ProminentButtonStyle {
     static var prominent: ProminentButtonStyle { ProminentButtonStyle() }
 }
@@ -292,23 +322,35 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
     static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
 }
 
-/// Play and Shuffle side by side, under an album's or a playlist's header:
-/// the page's one filled button, and Shuffle as a word beside it.
-struct PlayShuffleButtons: View {
+extension ButtonStyle where Self == ActionButtonStyle {
+    /// Play, in a page's row of actions.
+    static var action: ActionButtonStyle { ActionButtonStyle(isFilled: true) }
+    /// The quieter one beside it.
+    static var quietAction: ActionButtonStyle { ActionButtonStyle(isFilled: false) }
+}
+
+/// A page's row: Play and Shuffle as a pair, the same size, on every page
+/// that has them (an album's, an artist's, a playlist's, a genre's, a
+/// mix's), on the iPhone and on a wide page. Start Radio is in the page's
+/// "…", as Linux has it. Wide, 16 apart, as Linux's head.
+struct PagePlayButtons: View {
     let play: () -> Void
-    let shuffle: () -> Void
+    var shuffle: (() -> Void)?
+
+    @Environment(\.isWide) private var isWide
 
     var body: some View {
-        HStack(spacing: Theme.Space.xl) {
+        HStack(spacing: isWide ? Theme.Space.l : Theme.Space.m) {
             Button(action: play) {
                 Text("Play")
             }
-            .buttonStyle(.prominent)
-            .fixedSize()
-            Button(action: shuffle) {
-                Text("Shuffle")
+            .buttonStyle(.action)
+            if let shuffle {
+                Button(action: shuffle) {
+                    Text("Shuffle")
+                }
+                .buttonStyle(.quietAction)
             }
-            .buttonStyle(.secondary)
         }
     }
 }

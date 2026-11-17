@@ -131,18 +131,11 @@ struct MixDetailView: View {
             Text(HomeText.summary(count: mix.tracks.count, duration: mix.duration))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
-            PlayShuffleButtons(play: { player.playMix(mix) },
-                               shuffle: { player.playMix(mix, shuffled: true) })
+            // Start Radio is in the "…" above.
+            PagePlayButtons(play: { player.playMix(mix) },
+                            shuffle: { player.playMix(mix, shuffled: true) })
                 .padding(.top, Theme.Space.m)
                 .disabled(mix.tracks.isEmpty)
-            Button {
-                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
-                radio.start(mix.stationSeed)
-            } label: {
-                Text("Start Radio")
-            }
-            .buttonStyle(.secondary)
-            .accessibilityHint("Plays on from this mix, for as long as you listen")
         }
         .frame(maxWidth: .infinity)
     }
@@ -165,6 +158,12 @@ struct MixDetailView: View {
     @ViewBuilder
     private var moreItems: some View {
         Section {
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
+                radio.start(mix.stationSeed)
+            }
+        }
+        Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext(mix.tracks)
             }
@@ -185,8 +184,8 @@ struct MixDetailView: View {
     }
 
     /// The head on a wide page, as an album's (PageHead): the collage, and
-    /// at its foot the title, its artists, its length, Play, Shuffle as a
-    /// word, and ⋮; the hairline under it.
+    /// at its foot the title, its artists, its length, Play and Shuffle,
+    /// and ⋮; the hairline under it.
     private func wideHeader(page: DesktopMeasures.Page) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             PageHead(page: page, title: mix.title, lead: mix.subtitle,
@@ -196,12 +195,6 @@ struct MixDetailView: View {
                 PagePlayButtons(play: { player.playMix(mix) },
                                 shuffle: { player.playMix(mix, shuffled: true) })
                 MoreMenu {
-                    Section {
-                        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                            Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
-                            radio.start(mix.stationSeed)
-                        }
-                    }
                     moreItems
                 }
             }

@@ -36,8 +36,9 @@ struct RadioOnAirCard: View {
 
     /// As Linux's (spec §5): the art 176, lit; beside it, in the middle of
     /// its height, "On air", the name in the serif at 32, the song, and 16
-    /// under them Pause, the page's one filled button, and Stop. The dial is
-    /// in Up next and the thumbs are the bar's: "de muziek gaat voor".
+    /// under them Pause, the page's one filled button, and Stop the same
+    /// size (PagePlayButtons). The dial is in Up next and the thumbs are
+    /// the bar's: "de muziek gaat voor".
     private var wide: some View {
         HStack(alignment: .center, spacing: Theme.Space.xl) {
             Button {
@@ -75,8 +76,7 @@ struct RadioOnAirCard: View {
                     } label: {
                         Text(player.isPlaying ? "Pause" : "Play")
                     }
-                    .buttonStyle(.prominent)
-                    .fixedSize()
+                    .buttonStyle(.action)
                     .disabled(radio.isStarting)
                     Button {
                         // The station first, so the song that stops is not
@@ -86,7 +86,7 @@ struct RadioOnAirCard: View {
                     } label: {
                         Text("Stop")
                     }
-                    .buttonStyle(.secondary)
+                    .buttonStyle(.quietAction)
                 }
                 .padding(.top, Theme.Space.m)
             }

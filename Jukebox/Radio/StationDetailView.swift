@@ -15,7 +15,7 @@
 //
 // Sketch D's rules (docs/design/tells.md): the title in the serif, the art
 // flat unless the station is on the air, one filled button (Play), New
-// Picks as a word beside it, facts rather than a slogan under the title
+// Picks beside it the same size, facts rather than a slogan under the title
 // (what kind of station, when it last played), sentence-case headings and
 // no reasons under the songs — those are the queue's.
 //
@@ -218,12 +218,12 @@ struct StationDetailView: View {
         HomeShelves.stationDates(events: history.history.events)[station.id]
     }
 
-    /// The page's one filled button, Play, and New Picks beside it as a
-    /// word; on the air, Play or Pause, and Stop.
+    /// The page's one filled button, Play, and New Picks beside it, the
+    /// same size (PagePlayButtons); on the air, Play or Pause, and Stop.
     @ViewBuilder
     private func buttons(onAir: Bool) -> some View {
         // 16 apart in a wide page's head, as Linux's.
-        HStack(spacing: isWide ? Theme.Space.l : Theme.Space.xl) {
+        HStack(spacing: isWide ? Theme.Space.l : Theme.Space.m) {
             if onAir {
                 Button {
                     // Its first songs are being chosen (it was started from
@@ -241,8 +241,7 @@ struct StationDetailView: View {
                         Text("Play")
                     }
                 }
-                .buttonStyle(.prominent)
-                .fixedSize()
+                .buttonStyle(.action)
                 Button {
                     // The station first, so the song that stops is not taken
                     // as a skip; then the music. As the Radio tab does.
@@ -251,18 +250,15 @@ struct StationDetailView: View {
                 } label: {
                     Text("Stop")
                 }
-                .buttonStyle(.secondary)
+                .buttonStyle(.quietAction)
             } else {
                 Button {
                     Stats.track(.stationPage, ["action": "play"])
                     play(from: 0)
                 } label: {
-                    // Wide, as wide as its word, as Linux's.
                     Text("Play")
-                        .frame(minWidth: isWide ? nil : 64)
                 }
-                .buttonStyle(.prominent)
-                .fixedSize()
+                .buttonStyle(.action)
                 // Nothing in the library fits the station: nothing to play.
                 .disabled(picks?.isEmpty == true)
                 .accessibilityHint("Plays these songs, then more like them")
@@ -271,7 +267,7 @@ struct StationDetailView: View {
                 } label: {
                     Text("New Picks")
                 }
-                .buttonStyle(.secondary)
+                .buttonStyle(.quietAction)
                 .disabled(picks?.isEmpty != false || isDrawing)
                 .accessibilityHint("Chooses other songs for this station")
             }

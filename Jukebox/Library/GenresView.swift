@@ -151,9 +151,12 @@ struct GenreDetailView: View {
                     Text(LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks)))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
-                    PlayShuffleButtons(play: { play(tracks, shuffled: false) },
-                                       shuffle: { play(tracks, shuffled: true) })
-                    LibraryRadioButton(seed: .genre(key: genre.key, name: genre.name))
+                    // No "…" here: Start Radio stays a word in the row,
+                    // under it when the row has no room.
+                    ViewThatFits(in: .horizontal) {
+                        HStack(spacing: Theme.Space.l) { compactActions(tracks) }
+                        VStack(alignment: .leading, spacing: 0) { compactActions(tracks) }
+                    }
                 }
                 .disabled(tracks.isEmpty)
                 .padding(.horizontal, Theme.margin)
@@ -174,6 +177,13 @@ struct GenreDetailView: View {
                                   emptyMessage: "No songs in the library carry this genre.")
             }
         }
+    }
+
+    @ViewBuilder
+    private func compactActions(_ tracks: [Track]) -> some View {
+        PagePlayButtons(play: { play(tracks, shuffled: false) },
+                        shuffle: { play(tracks, shuffled: true) })
+        LibraryRadioButton(seed: .genre(key: genre.key, name: genre.name))
     }
 
     private func play(_ tracks: [Track], shuffled: Bool) {
