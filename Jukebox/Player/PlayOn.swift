@@ -196,7 +196,7 @@ extension PlayQueue {
     /// Hand the queue to `remote`, from where it is now. The play goes on as
     /// the same play: no skip, no second count.
     func play(on remote: any RemotePlayer) {
-        let old = self.remote
+        let old = playingElsewhere
         let wasPlaying = isPlaying || wantsToPlay
         let position = elapsed
         // A Jellyfin client reports the song itself from now on: the server
@@ -208,7 +208,7 @@ extension PlayQueue {
         }
         engineHalt()
         engineRuns(false)
-        self.remote = remote
+        playingElsewhere = remote
         playsOn = remote.device
         remoteVolume = nil
         remoteFailures = 0
@@ -221,7 +221,7 @@ extension PlayQueue {
 
     /// Back here, from where the remote is, playing if it played.
     func playHere() {
-        guard let remote else { return }
+        guard let remote = playingElsewhere else { return }
         let wasPlaying = isPlaying || wantsToPlay
         let position = elapsed
         endRemote()
@@ -239,7 +239,7 @@ extension PlayQueue {
     func endRemote() {
         remotePoll?.cancel()
         remotePoll = nil
-        remote = nil
+        playingElsewhere = nil
         remoteHeld = []
         playsOn = nil
         remoteVolume = nil
@@ -264,7 +264,7 @@ extension PlayQueue {
 
     /// `index` from its `position`, with what follows it.
     func remoteLoad(from index: Int, at position: TimeInterval, play: Bool) {
-        guard let remote, let server else { return }
+        guard let remote = playingElsewhere, let server else { return }
         let entries = remoteWindow(from: index, capacity: remote.capacity)
         guard !entries.isEmpty else { return }
         remoteHeld = entries.map(\.id)
@@ -277,7 +277,7 @@ extension PlayQueue {
     /// from the current entry on is brought in line. Added songs are added;
     /// anything else loads it again from where it is.
     func remoteQueueChanged() {
-        guard let remote, let server, let current, let currentIndex else { return }
+        guard let remote = playingElsewhere, let server, let current, let currentIndex else { return }
         let wanted = remoteWindow(from: currentIndex, capacity: remote.capacity).map(\.id)
         guard let here = remoteHeld.firstIndex(of: current.id) else {
             remoteLoad(from: currentIndex, at: elapsed, play: wantsToPlay)
@@ -307,7 +307,7 @@ extension PlayQueue {
     /// One call to the remote, in order after the ones before; a failure
     /// counts towards losing it (`remoteTick`).
     func remoteDo(_ call: @escaping (any RemotePlayer) async throws -> Void) {
-        guard let remote else { return }
+        guard let remote = playingElsewhere else { return }
         let before = remoteCalls
         remoteCalls = Task { [weak self] in
             await before?.value
@@ -332,7 +332,7 @@ extension PlayQueue {
 
     /// Once a second: where the remote is, followed.
     private func remoteTick() async {
-        guard let remote else { return }
+        guard let remote = playingElsewhere else { return }
         // The sleep timer runs on the player's ticks; the iPhone's engine,
         // empty now, gives none.
         checkSleep()
@@ -341,10 +341,10 @@ extension PlayQueue {
             status = try await remote.status()
         } catch {
             remoteFailures += 1
-            if remoteFailures >= 3, self.remote === remote { lost(remote) }
+            if remoteFailures >= 3, playingElsewhere === remote { lost(remote) }
             return
         }
-        guard self.remote === remote else { return }
+        guard playingElsewhere === remote else { return }
         remoteFailures = 0
         if let volume = status.volume { remoteVolume = volume }
         // Just loaded: what it says may still be the song before.
