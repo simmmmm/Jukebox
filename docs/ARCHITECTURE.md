@@ -24,6 +24,7 @@ Mac's, is Linux's window, 1:1 (below).
 |---|---|
 | `JukeboxKit/` | Swift package, Foundation only, Swift 6 strict. Jellyfin, Subsonic, Last.fm and LRCLIB clients, the library index, the radio, the mixes, the LRC parser. Built and tested on Linux (`dev/kit-test.sh`) against a real Jellyfin (`dev/jellyfin-test-server.sh`). |
 | `Jukebox/` | The SwiftUI app for the iPhone, the iPad and the Mac: iOS 26 and macOS 26, Swift 5 mode, MainActor default isolation (project.yml). The Mac is a native macOS destination of the same target, not Catalyst; `Components/Platform.swift` holds the few things the two spell differently (the image type, the device's name, the bar's placements, `\.isWide`). Compiled on GitHub's macOS (`ci/app.sh`) and, for a quick try, on the photographer's Mac (`docs/RELEASE.md`); not on the Linux machine, so read its Swift twice before pushing. |
+| `JukeboxWidget/` | The iPhone's and the iPad's widget, an app extension (The widget, below). |
 | `Linux/` | The Linux client: `App/` (Swift on GTK 4, libadwaita, GStreamer), `CGlue/` (the C Swift cannot call as it is, and MPRIS), `data/` (icon, desktop entry). Built and run here: `dev/linux-build.sh`. `docs/LINUX.md`. |
 | `Package.swift` | The Linux client's package. Its `shared` list names the files of `Jukebox/` Linux compiles too (the stores, not the screens). A file that gains `import SwiftUI` leaves the list, or loses the import. |
 | `project.yml` | XcodeGen. One target for the iPhone, the iPad and the Mac: one bundle ID, so one App Store record and one purchase. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
@@ -392,6 +393,35 @@ is a tap while driving.
   and the favourites are the phrases' suggestions.
 - Siri's permission is asked once, when the window has a library. The
   entitlement: `docs/RELEASE.md`, Siri.
+
+## The widget
+
+`JukeboxWidget/`, the iPhone's and the iPad's. Asked for with the other
+players' features ("maak ze allemaal maar"), and: "ik wil alleen er voor
+waken dat we niet 10000 knopen krijgen" (17 November 2026). So it adds no
+screen to the app, and it is no second Now Playing (the lock screen and
+Control Center have one): it is doors into the music.
+
+- **Small**: Your Station. The mark, flat, and Play; while it plays the
+  mark is lit and says "On air". **Medium**: the same, and Home's first
+  three mixes, each a Play. **The lock screen** (circular): the mark,
+  Your Station's Play. A tap anywhere else opens the app.
+- **The buttons** are `Intents/WidgetIntents.swift`'s, hidden from
+  Shortcuts, compiled into both targets and performed by the app (an audio
+  intent runs in the app's process, launched in the background as for
+  Siri): `Voice.start` and `player.playMix`, counted `from` `widget`.
+- **What it knows**: `App/WidgetSnapshot.swift`, written by
+  `App/WidgetDoors.swift` into the App Group `group.com.tijmen.Jukebox`
+  (signed in, Your Station on the air, the mixes' ids and titles, their
+  covers as 120-pixel JPEGs) when any of it changes, then
+  `WidgetCenter.reloadAllTimelines`. The widget never asks the server and
+  holds no credentials. Signed out it says "Sign in in Jukebox".
+- **The mark** is drawn from `Components/ArchShapes.swift` and
+  `ArtMeasures.swift`, which the widget compiles too.
+- **Not on the Mac**: its widget would need a sandboxed extension, the App
+  Group in the Mac's entitlements and a second export, all untried until
+  an upload. The code would compile there as it is.
+- Portal steps and CI's check: `docs/RELEASE.md`, The widget.
 
 ## Usage counts
 

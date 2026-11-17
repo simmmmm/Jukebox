@@ -81,7 +81,8 @@ enum Stats {
     static let clientSecret = "sec_f5fef333b75ba30ea16c"
 
     /// Where the next `play()` was asked from when that is not the queue's
-    /// kind: `siri` (Intents/Voice.swift). Taken by that play, set or not, so
+    /// kind: `siri` (Intents/Voice.swift), `widget` (Intents/WidgetIntents.swift).
+    /// Taken by that play, set or not, so
     /// it never counts a later one.
     static var nextFrom: String?
 

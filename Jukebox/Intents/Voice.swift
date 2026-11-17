@@ -197,8 +197,9 @@ enum Voice {
         return Answer(played: true, text: String(localized: "Playing \(context.title)."))
     }
 
-    static func start(_ station: Station, app: AppModel) async -> Answer {
-        Stats.track(.stationStarted, ["seed": Stats.seed(station.seed), "from": "siri"])
+    /// `from`: `siri`, or `widget` for the widget's button (WidgetIntents.swift).
+    static func start(_ station: Station, app: AppModel, from: String = "siri") async -> Answer {
+        Stats.track(.stationStarted, ["seed": Stats.seed(station.seed), "from": from])
         app.radio.start(station)
         // The station chooses its first songs off the main actor.
         for _ in 0..<80 where app.radio.isStarting {
