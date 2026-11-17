@@ -255,14 +255,15 @@ tried in it: sound, the keyring, the media controls.
 Accounts, 17 November 2026, under Xvfb with a session bus and keyring of
 their own, against the test Jellyfin's two users: a profile made by the
 build before (signed in, a station played, an album downloaded) opened
-signed in with its history, stations and songs as its one account (a broken
-keyring and no keyring); a second added from the primary menu; switched
+signed in with its history, stations and songs as its one account (from a
+keyring, the list then kept beside the session there; from the file, with
+a keyring that did not answer); a second added from the primary menu; switched
 back and forth, playing on each; a switch to a server that does not answer
 stayed with a toast; one with songs on the computer and its server away
 switched and played them; signing out of another account and of the one
 signed in each took that account's files alone. `dev/linux-errors.sh` runs
-AccountCheck after every build. Not yet tried: the migration from a working
-keyring.
+AccountCheck after every build. Not yet tried: adding and switching with
+the keyring (the switches ran on the files), and a real GNOME session.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
 calls are tested in the kit), KDE, XFCE and Hyprland themselves; offline on
