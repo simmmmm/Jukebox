@@ -146,9 +146,20 @@ nonisolated final class SiriMedia: NSObject, INPlayMediaIntentHandling {
     /// in your app").
     /// Not the main actor's (the class is nonisolated), so the answer, which
     /// comes on another queue, lands in a closure that belongs to none.
+    ///
+    /// Not in the simulator: the screenshot walk's build there is unsigned
+    /// (ci/screenshots.sh, CODE_SIGNING_ALLOWED=NO), so it has no Siri
+    /// entitlement, and INPreferences then throws an Objective-C exception
+    /// that ends the app, a second after every sign-in (the walk of 589adbe,
+    /// "requires the entitlement com.apple.developer.siri"). Swift cannot
+    /// catch it, and iOS cannot ask a process for its own entitlements, so
+    /// the call is left out where it may lack them. The phone's builds carry
+    /// it: ci/app.sh's carplay_signed fails one that does not.
     static func askOnce() {
+        #if !targetEnvironment(simulator)
         guard INPreferences.siriAuthorizationStatus() == .notDetermined else { return }
         INPreferences.requestSiriAuthorization { _ in }
+        #endif
     }
 }
 #endif
