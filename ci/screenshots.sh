@@ -394,6 +394,30 @@ collect() {
   cut -f1 "$found" | sort -u | wc -l | tr -d ' '
 }
 
+# What the app said and how it ended, beside the walk's log: the crash
+# reports macOS wrote for it during the walk (the simulator's apps write
+# theirs on the runner, ~/Library/Logs/DiagnosticReports) as
+# <label>-crash-<n>.ips, and the simulator's own log of the app's last
+# five minutes as <label>-device.log. Why: a walk that ends "Lost connection
+# to the application" or "stopped running" says nothing of where (589adbe
+# crashed right after sign-in, and nobody here has a Mac to look).
+crashes() {
+  local kind=$1 udid=$2 label=$3 report n=0
+  while IFS= read -r report; do
+    n=$(( n + 1 ))
+    cp "$report" "$out/$label-crash-$n.ips"
+    echo "$label: the app crashed: ${report##*/} (logs/$label-crash-$n.ips)"
+    # The decisive lines in the run's log too: the exception and the
+    # crashed thread's first frames of the report's readable half.
+    grep -E '"(type|signal|subtype|codes|indicator|message)"|"symbol"' "$report" | head -40
+  done < <(find "$HOME/Library/Logs/DiagnosticReports" -maxdepth 2 -name 'Jukebox*.ips' \
+    -newer "$work/started-$label" 2> /dev/null)
+  if [[ $kind != mac ]]; then
+    bounded 120 xcrun simctl spawn "$udid" log show --predicate 'process == "Jukebox"' \
+      --last 5m --style compact 2> /dev/null | tail -600 > "$out/$label-device.log"
+  fi
+}
+
 # One walk: one test on a device's simulator, at most $4 seconds, and its
 # pictures exported. xcodebuild's own test timeout ends a stuck test with a
 # result bundle intact; the perl alarm is the last resort. The allowance
@@ -419,6 +443,8 @@ walk() {
   # test: xcodebuild hands TEST_RUNNER_ variables over without the prefix).
   export TEST_RUNNER_JUKEBOX_SHOTS=$direct
   echo "$label: $test on the $kind, at most $limit s"
+  # Crash reports written after this moment are this walk's (crashes, below).
+  touch "$work/started-$label"
   bounded "$limit" xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox \
     -destination "$destination" -derivedDataPath "$derived" \
     -only-testing:"JukeboxUITests/$class/$test" -resultBundlePath "$result" \
@@ -431,6 +457,7 @@ walk() {
   verdict=$(bounded 120 xcrun xcresulttool get test-results summary --path "$result" 2>/dev/null \
     | verdict)
   echo "$label: $verdict" >> "$out/$kind/verdict.txt"
+  crashes "$kind" "$udid" "$label"
   mkdir -p "$work/attachments/$label"
   if [[ -d $result ]]; then
     bounded 300 xcrun xcresulttool export attachments --path "$result" \
@@ -657,7 +684,7 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
   done
   # The walks' logs and the fake server's; the simulator build's errors only
   # (its whole log is many megabytes, and in the artifact).
-  for log in "$out"/*.log; do
+  for log in "$out"/*.log "$out"/*.ips; do
     [[ -f $log && $log != */build-for-testing*.log ]] && cp "$log" "$part/logs/"
   done
   grep -E 'error:' "$out/build-for-testing.log" 2> /dev/null | sed "s#$PWD/##g" | sort -u \
