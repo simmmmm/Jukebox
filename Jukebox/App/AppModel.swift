@@ -40,6 +40,14 @@ final class AppModel {
     private(set) var server: (any MusicServer)?
     /// Asking the server of the account being switched to (`switchAccount`).
     private(set) var isSwitching = false
+    /// Why the last switch did not happen, for the alert RootView shows
+    /// (a switch from a menu has no place of its own to say it).
+    var switchProblem: String?
+
+    /// Another account from a menu or a row: switched, or why not.
+    func choose(_ account: ServerCredentials) {
+        Task { switchProblem = await switchAccount(to: account) }
+    }
 
     /// Every account kept on this device (Accounts.swift), the one signed
     /// in among them.
@@ -237,6 +245,7 @@ final class AppModel {
     private func resetNavigation() {
         navigator.isNowPlayingPresented = false
         navigator.isSettingsPresented = false
+        navigator.isAddingAccount = false
         navigator.addToPlaylist = nil
         navigator.tab = .home
         navigator.place = .home

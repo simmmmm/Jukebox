@@ -132,6 +132,17 @@ struct RootView: View {
                 app.navigator.isSettingsPresented = false
                 app.navigator.searchQuery = ""
             }
+            // Add Account… from the ≡ menu or the Mac's Account menu, and
+            // why a switch from there did not happen (AccountMenu.swift).
+            .sheet(isPresented: Bindable(app.navigator).isAddingAccount) {
+                OnboardingView(isAdding: true)
+            }
+            .alert("Still on This Account",
+                   isPresented: Binding(get: { app.switchProblem != nil }, set: { if !$0 { app.switchProblem = nil } })) {
+                Button("OK") {}
+            } message: {
+                Text(app.switchProblem ?? "")
+            }
     }
 
     @ViewBuilder private var content: some View {

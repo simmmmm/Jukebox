@@ -298,8 +298,12 @@ was lost as the app was ended) joins it with the reasons it was wanted for, or
 is removed when nothing wanted it.
 
 **Signing out removes the account's folder**, downloads in flight included.
-A folder of any other account than the one signing in is removed as a
-leftover. Decided so, rather than kept and hidden: sign-out already forgets
+Every other saved account keeps its own (since 17 November 2026, when the
+app learnt to keep more than one account, `Jukebox/App/Accounts.swift`): a
+switch puts the folder away with its queue and its plays heard offline, and
+a switch back goes on with it. Until then a folder of any other account than
+the one signing in was removed as a leftover; now nothing is swept. Decided
+so, rather than kept and hidden, for the account signed out of: sign-out already forgets
 the library and recent stations ("Jukebox forgets the library, your recent
 stations and the downloaded songs on this iPhone", the dialog says now), and
 songs for an account nobody is signed in to would be gigabytes no Settings
