@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jukebox</title>
+<meta name="description" content="Music from your Jellyfin, Navidrome or Subsonic server, on iPhone, iPad, Mac and Linux.">
+<meta property="og:title" content="Jukebox">
+<meta property="og:description" content="The music on your own server, with a radio that plays on and learns from what you skip.">
+<meta property="og:image" content="https://tijmen.me/jukebox/screenshots/linux-album.png">
+<link rel="icon" type="image/svg+xml" href="brand/mark.svg">
+<style>
+  /* The Arch, from docs/BRAND.md: flat grounds, Paper by day and Night by
+     night; Copper by day and Glow by night; titles in a serif, as on sleeves. */
+  :root {
+    --ground: #F6F3EE; --raised: #ECE7DF; --ink: #2A1505; --soft: #6B5A4C;
+    --accent: #A84A17; --core: #F7A136; --on-accent: #F6F3EE;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #121110; --raised: #1B1918; --ink: #F6F3EE; --soft: #A69B90;
+      --accent: #FFB54D; --core: #FFB54D; --on-accent: #2A1505;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Adwaita Sans", Inter, "Segoe UI", sans-serif;
+  }
+  main { max-width: 1040px; margin: 0 auto; padding: 0 20px 96px; }
+  h1, h2 { font-family: ui-serif, "New York", "Iowan Old Style", Georgia, serif; font-weight: 400; }
+  h1 { font-size: clamp(48px, 9vw, 88px); line-height: 1; margin: 24px 0 16px; }
+  h2 { font-size: 28px; margin: 0 0 8px; }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+
+  header { text-align: center; padding: 72px 0 56px; }
+  header p { max-width: 34em; margin: 0 auto 28px; color: var(--soft); font-size: 20px; }
+
+  /* Light means on air: the arch is flat until you put it on. */
+  .arch { width: 120px; height: 120px; cursor: pointer; transition: filter .6s; }
+  .arch path { stroke: var(--accent); }
+  .arch .core { stroke: none; fill: var(--core); }
+  .arch:hover, .arch:focus-visible { filter: drop-shadow(0 0 18px var(--core)) brightness(1.15); outline: none; }
+  .onair { height: 1.5em; color: var(--accent); font-size: 14px; opacity: 0; transition: opacity .6s; }
+  .arch:hover + .onair, .arch:focus-visible + .onair { opacity: 1; }
+
+  .button {
+    display: inline-block; padding: 12px 22px; border-radius: 999px;
+    background: var(--accent); color: var(--on-accent); text-decoration: none; font-weight: 600;
+  }
+  .badge { display: inline-block; vertical-align: middle; }
+  .badge img { border-radius: 0; }
+  .quiet { margin-left: 18px; }
+
+  img { max-width: 100%; height: auto; display: block; border-radius: 12px; }
+  .phone { width: 240px; margin: 0 auto 28px; border-radius: 28px; }
+  .second { margin-top: 20px; }
+
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 40px 48px; margin: 80px 0; }
+  .facts p { color: var(--soft); }
+
+  .get { border-top: 1px solid var(--raised); padding-top: 48px; }
+  pre { background: var(--raised); padding: 14px 16px; border-radius: 10px; overflow-x: auto; font-size: 14px; }
+  footer { margin-top: 72px; color: var(--soft); font-size: 14px; }
+  @media (prefers-reduced-motion: reduce) { .arch, .onair { transition: none; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <svg class="arch" viewBox="0 0 32 32" tabindex="0" role="img" aria-label="Jukebox, the Arch">
+      <g fill="none" stroke-linecap="round" stroke-width="2.6">
+        <path d="M5.30 28.70V14.00A10.70 10.70 0 0 1 26.70 14.00V28.70"/>
+        <path d="M10.10 28.70V14.00A5.90 5.90 0 0 1 21.90 14.00V28.70"/>
+      </g>
+      <path class="core" d="M13.60 14.00A2.40 2.40 0 0 1 18.40 14.00V27.60A2.40 2.40 0 0 1 13.60 27.60Z"/>
+    </svg>
+    <div class="onair">On air</div>
+    <h1>Jukebox</h1>
+    <p>The music on your own server, on the iPhone, the iPad, the Mac and Linux. With a radio that plays on and learns from what you skip.</p>
+    <img class="phone" src="screenshots/iphone-now-playing.jpg" alt="Jukebox on the iPhone: Now Playing, the sleeve with its record half out, playing from Your Station">
+    <!-- Apple's own badge, from its marketing tools, as its embed code links it. -->
+    <a class="badge" href="https://apps.apple.com/app/id6832197407"><img src="https://toolbox.marketingtools.apple.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" width="150" height="50" alt="Download on the App Store"></a>
+    <a class="quiet" href="https://github.com/simmmmm/Jukebox/releases">Get it for Linux</a>
+  </header>
+
+  <img src="screenshots/linux-album.png" width="1430" height="890" alt="Jukebox on Linux, dark: an album open, the Now Playing panel with what plays next beside it, and the bar below with the song and its artist">
+  <img class="second" src="screenshots/linux-radio.png" width="1430" height="890" loading="lazy" alt="Jukebox on Linux: Radio, with Your Station on air under its arch and the other stations below">
+
+  <section class="facts">
+    <div>
+      <h2>Your server, your records</h2>
+      <p>Jellyfin, Emby, Plex, Navidrome and the other Subsonic servers. Keep a home server and a shared one, each with its own library, downloads and radio.</p>
+    </div>
+    <div>
+      <h2>A radio that plays on</h2>
+      <p>From any song, artist, album, genre or decade. Turn the dial from Familiar to Adventurous. It learns from what you skip.</p>
+    </div>
+    <div>
+      <h2>Mixes made for you</h2>
+      <p>Home makes up playlists from your own library, new every morning.</p>
+    </div>
+    <div>
+      <h2>Goes on where it was</h2>
+      <p>What plays on one device shows on the other. Leave the computer, and the phone carries on.</p>
+    </div>
+    <div>
+      <h2>In the car</h2>
+      <p>CarPlay with Home, Radio and the Library. Siri plays any album, artist, playlist or station by name.</p>
+    </div>
+    <div>
+      <h2>At home on each</h2>
+      <p>SwiftUI on the iPhone, the iPad and the Mac. GTK 4 and libadwaita on Linux. One Swift codebase under both.</p>
+    </div>
+  </section>
+
+  <section class="get">
+    <h2>Get it</h2>
+    <p>Linux: the Flatpak or the AppImage from <a href="https://github.com/simmmmm/Jukebox/releases">Releases</a>, or build it yourself:</p>
+    <pre>git clone https://github.com/simmmmm/Jukebox && cd Jukebox && dev/linux-install.sh</pre>
+    <p>iPhone, iPad and Mac: free on the <a href="https://apps.apple.com/app/id6832197407">App Store</a>.</p>
+    <p>The source is on <a href="https://github.com/simmmmm/Jukebox">GitHub</a>.</p>
+  </section>
+
+  <footer>Made by Tijmen. Open source. <a href="https://github.com/simmmmm/Jukebox/blob/main/docs/PRIVACY.md">Privacy</a>.</footer>
+</main>
+</body>
+</html>
