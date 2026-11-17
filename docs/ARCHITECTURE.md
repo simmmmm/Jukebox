@@ -482,7 +482,7 @@ more; one `any MusicServer` goes where it did.
 | Artwork | `artworkURL(_:maxPixelSize:)` in `ArtworkView`, `StationArtwork`, Now Playing's accent and ground, the lock screen. A Subsonic URL carries the session's one token and salt, so a cover is always one URL and the cache holds. |
 | Screens | `can(_:)` hides Lyrics (without `.lyrics` and LRCLIB), similar artists' request (`.similarArtists`), move handles (`.playlistReorder`), Normalize Volume (`.replayGain`; off, with why). `Playlist.isReadOnly` (someone else's): no Delete, Add Songs or Edit, and not among Add to Playlist's. Up Next says "From Navidrome's mix" (JukeboxKit's `PickReason.instantMix.text` still says Jellyfin's). |
 | Settings | Server: the name, and under it the kind and version ("Navidrome 0.64.2", without Navidrome's build in brackets). The quality footers say AAC for Jellyfin, MP3 for a Subsonic server. |
-| Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
+| Stats | `app_open` and `signed_in` carry `server`: `jellyfin`, `navidrome`, `plex`, or `subsonic` for every other (`none` signed out); `docs/STATS.md`. |
 
 The screenshot walk signs in to the fake Jellyfin through the same screen:
 `dev/fake-jellyfin.swift` answers `/rest/…` as Jellyfin 12.4 does (404, no

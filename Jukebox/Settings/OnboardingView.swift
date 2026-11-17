@@ -1068,28 +1068,30 @@ private struct PlexSignInButton: View {
             do {
                 let pin = try await account.start(forwardURL: URL(string: "jukebox://plex"))
                 // Plex's page and the asking side by side: the token ends
-                // both. The page closing by itself (Plex went on to
-                // jukebox://) leaves the asking to finish; closed by the
-                // person, it is cancelled.
-                let token = try await withThrowingTaskGroup(of: String?.self) { group in
-                    group.addTask { try await account.token(for: pin) }
-                    group.addTask { @MainActor in
-                        do {
-                            _ = try await session.authenticate(using: pin.authURL, callbackURLScheme: "jukebox")
-                        } catch {
-                            // Closed before Plex was done: nothing to say.
-                            throw CancellationError()
-                        }
-                        return nil
+                // both, the page cancelled rather than waited for (Plex may
+                // not go on to jukebox:// by itself). The page closed by the
+                // person stops the asking; closed by Plex going on, the
+                // asking finishes.
+                let asking = Task { try await account.token(for: pin) }
+                let page = Task { @MainActor in
+                    do {
+                        _ = try await session.authenticate(using: pin.authURL, callbackURLScheme: "jukebox")
+                    } catch {
+                        asking.cancel()
                     }
-                    for try await found in group {
-                        if let found {
-                            group.cancelAll()
-                            return found
-                        }
-                    }
-                    throw CancellationError()
                 }
+                let token: String
+                do {
+                    token = try await withTaskCancellationHandler {
+                        try await asking.value
+                    } onCancel: {
+                        asking.cancel()
+                    }
+                } catch {
+                    page.cancel()
+                    throw error
+                }
+                page.cancel()
                 var servers = try await account.servers(token: token)
                 if let server {
                     servers = servers.filter { $0.id == server.id }

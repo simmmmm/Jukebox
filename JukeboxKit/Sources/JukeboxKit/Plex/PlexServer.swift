@@ -49,9 +49,11 @@ public struct PlexServer: MusicServer {
 
     // MARK: Who
 
-    /// The server answers; what it can do does not change with its version.
+    /// The server answers this session (the library, which takes the
+    /// token: /identity answers anyone); what it can do does not change
+    /// with its version.
     public func currentCapabilities() async throws -> Set<ServerCapability> {
-        _ = try await connection.container("/identity")
+        _ = try await connection.container("/library/sections")
         return Self.capabilities
     }
 
@@ -267,9 +269,9 @@ public struct PlexServer: MusicServer {
 
     public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
         switch quality {
-        case .original: file(track, download: true) ?? transcoded(track, kbps: 320, session: UUID().uuidString)
-        case .high: transcoded(track, kbps: 256, session: UUID().uuidString)
-        case .normal: transcoded(track, kbps: 128, session: UUID().uuidString)
+        case .original: file(track, download: true) ?? transcoded(track, kbps: 320, session: download(track, quality))
+        case .high: transcoded(track, kbps: 256, session: download(track, quality))
+        case .normal: transcoded(track, kbps: 128, session: download(track, quality))
         }
     }
 
@@ -299,9 +301,20 @@ public struct PlexServer: MusicServer {
         ], withToken: true)
     }
 
+    /// One transcoder session a song and quality: the same URL each time,
+    /// and no new session left on the server by asking again.
+    func download(_ track: Track, _ quality: DownloadQuality) -> String {
+        "jukebox-download-\(track.id)-\(quality.rawValue)"
+    }
+
     /// Whoever may play a song may have its file: Plex's `allowSync` is
-    /// its own downloads (Plex Pass's), false on a server without it.
-    public func downloadsAllowed() async throws -> Bool { true }
+    /// its own downloads (Plex Pass's), false on a server without it. Asked
+    /// of the library all the same, as a switch of accounts asks it whether
+    /// the server answers and takes the token.
+    public func downloadsAllowed() async throws -> Bool {
+        _ = try await connection.container("/library/sections")
+        return true
+    }
 
     /// /photo/:/transcode, within `maxPixelSize` square. `tag` is the
     /// image's path ("/library/metadata/149/thumb/1794902352": the number
