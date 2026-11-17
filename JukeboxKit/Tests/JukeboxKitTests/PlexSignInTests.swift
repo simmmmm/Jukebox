@@ -146,6 +146,58 @@ struct PlexSignInTests {
         #expect(credentials.userID == "12345678" && credentials.userName == "listener")
         // The server's own token for this account, not the account's.
         #expect(credentials.secret == .plexToken("home-token"))
+        // Every address kept, in the order to try.
+        #expect(credentials.addresses == servers[0].addresses)
+    }
+
+    /// Home's address and the remote one, as plex.tv gave them.
+    static let home = URL(string: "http://192.168.1.10:32400")!
+    static let remote = URL(string: "https://198-51-100-2.home.plex.direct:32400")!
+    static func signedInAtHome() -> ServerCredentials {
+        var credentials = ServerCredentials(kind: .plex, serverURL: home, serverID: "home", serverName: "Home",
+                                            userID: "1", userName: "me", secret: .plexToken("tok"),
+                                            capabilities: PlexServer.capabilities)
+        credentials.addresses = [home, remote]
+        return credentials
+    }
+
+    @Test("Signed in at home, opened away: the first request finds the remote address, and the songs come from there")
+    func awayFromHome() async throws {
+        let fake = AddressFake { url in
+            if url.host == "192.168.1.10" { return try AddressFake.refused() }
+            return url.path == "/identity" ? .json(PlexFixtures.identity) : .json(#"{"MediaContainer":{"size":0}}"#)
+        }
+        let server = PlexServer(credentials: Self.signedInAtHome(), identity: Self.identity, transport: fake)
+        #expect(try await server.downloadsAllowed())
+        let track = Track(id: "151", name: "Ghost Machine")
+        #expect(server.streamURL(for: track, quality: .low, playSessionID: "s").host == Self.remote.host)
+        #expect(fake.requests.last?.host == Self.remote.host && fake.requests.last?.path == "/library/sections")
+        // Asked once: the next request goes straight there.
+        let asked = fake.requests.count
+        _ = try await server.playlists()
+        #expect(fake.requests.count == asked + 1 && fake.requests.last?.host == Self.remote.host)
+        // The account itself is unchanged: nothing to save.
+        #expect(server.credentials == Self.signedInAtHome())
+    }
+
+    @Test("Home answers again first; gone from home mid-session, asked again; none answering, the error is the network's")
+    func movingAround() async throws {
+        let atHome = Flag(true)
+        let fake = AddressFake { url in
+            if url.host == "192.168.1.10", !atHome.value { return try AddressFake.refused() }
+            return url.path == "/identity" ? .json(PlexFixtures.identity) : .json(#"{"MediaContainer":{"size":0}}"#)
+        }
+        let server = PlexServer(credentials: Self.signedInAtHome(), identity: Self.identity, transport: fake)
+        _ = try await server.playlists()
+        #expect(fake.requests.last?.host == Self.home.host)
+        atHome.value = false
+        _ = try await server.playlists()
+        #expect(fake.requests.last?.host == Self.remote.host)
+
+        let offline = AddressFake { _ in try AddressFake.refused() }
+        let nowhere = PlexServer(credentials: Self.signedInAtHome(), identity: Self.identity, transport: offline)
+        await #expect(throws: MusicServerError.self) { try await nowhere.playlists() }
+        #expect(nowhere.streamURL(for: Track(id: "1", name: "x"), quality: .low, playSessionID: "s").host == Self.home.host)
     }
 
     @Test("plex.tv: away from home, the remote address; the address typed first of all")
@@ -239,12 +291,21 @@ struct PlexSignInTests {
 
     @Test("A Plex session in the keychain reads back as it was")
     func keychain() throws {
-        let credentials = ServerCredentials(kind: .plex, serverURL: URL(string: "http://nas:32400")!, serverID: "m",
-                                            serverName: "nas", userID: "1", userName: "me", secret: .plexToken("tok"),
-                                            capabilities: PlexServer.capabilities)
+        let credentials = Self.signedInAtHome()
         let read = try JSONDecoder().decode(ServerCredentials.self, from: JSONEncoder().encode(credentials))
-        #expect(read == credentials)
+        #expect(read == credentials && read.addresses == [Self.home, Self.remote])
         #expect(MusicServers.open(read, identity: Self.identity) is PlexServer)
+    }
+}
+
+/// A switch, across tasks.
+final class Flag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var on: Bool
+    init(_ on: Bool) { self.on = on }
+    var value: Bool {
+        get { lock.withLock { on } }
+        set { lock.withLock { on = newValue } }
     }
 }
 

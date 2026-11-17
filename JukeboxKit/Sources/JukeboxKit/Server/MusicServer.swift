@@ -238,6 +238,12 @@ public struct ServerCredentials: Hashable, Sendable {
     /// once by SavedAccounts, kept with the session. Nil for every other
     /// account, so no folder an install already has is ever renamed.
     public var folderName: String?
+    /// Every address of the server, in the order they are tried when the
+    /// account opens: a Plex server's from plex.tv (the one typed, then
+    /// local, remote, relay), so an account signed in at home plays away
+    /// from it too (PlexServer). Empty for every other account: its one
+    /// address is `serverURL`.
+    public var addresses: [URL] = []
 
     public init(kind: ServerKind, serverURL: URL, serverID: String, serverName: String,
                 serverVersion: String = "", apiVersion: String? = nil, userID: String,
@@ -274,7 +280,7 @@ public struct ServerCredentials: Hashable, Sendable {
 extension ServerCredentials: Codable {
     enum CodingKeys: String, CodingKey {
         case kind, serverURL, serverID, serverName, serverVersion, apiVersion
-        case userID, userName, secret, capabilities, folderName
+        case userID, userName, secret, capabilities, folderName, addresses
         /// The Jellyfin-only Credentials' token (read, never written).
         case accessToken
     }
@@ -299,6 +305,7 @@ extension ServerCredentials: Codable {
         capabilities = try c.decodeIfPresent(Set<ServerCapability>.self, forKey: .capabilities)
             ?? (kind == .jellyfin ? ServerCapability.jellyfin : kind == .emby ? ServerCapability.emby : [])
         folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
+        addresses = try c.decodeIfPresent([URL].self, forKey: .addresses) ?? []
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -314,6 +321,7 @@ extension ServerCredentials: Codable {
         try c.encode(secret, forKey: .secret)
         try c.encode(capabilities, forKey: .capabilities)
         try c.encodeIfPresent(folderName, forKey: .folderName)
+        if !addresses.isEmpty { try c.encode(addresses, forKey: .addresses) }
     }
 }
 

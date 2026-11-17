@@ -600,10 +600,13 @@ browser). docs/SERVERS.md ("Plex") has the map and the measurements.
   turns the password's field into a token's, as an API key's does.
 - **Kept** like any account: the server's address, its token for this
   account (`ServerSecret.plexToken`), plex.tv's user id, in the keychain or
-  the keyring.
+  the keyring; and every address plex.tv gave (`addresses`: local, remote,
+  relay), so the session speaks to whichever answers where it opens
+  (`PlexReach`), at home or away.
 - **Plays** the file as it is (`Track.fileKey`, Plex's `Part.key`), or a
   progressive MP3 from Plex's transcoder; never HLS.
 - **Off** on Plex: the handoff (Plex keeps no state for another device to
   read), the radio's server mixes, similar artists, top songs, Normalize
-  Volume.
+  Volume, ratings (its one rating is the favourite), Play On to Plex's own
+  players (Chromecasts only).
 - **Stats**: `server` `plex`, `method` `plex_pin` (docs/STATS.md).

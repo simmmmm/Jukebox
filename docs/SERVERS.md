@@ -775,8 +775,12 @@ of the fallback ports, and plain http when typed.
   another account.
 - Untested end to end: no plex.tv account was used. The PIN, resources and
   user answers' shapes are Plex's documentation's (`PlexSignInTests`).
-- A stored local address stops answering away from home; the account is
-  then signed in to again (a ponytail: the other addresses are not kept).
+- Every address is kept with the account in that order
+  (`ServerCredentials.addresses`), so one signed in at home plays away from
+  it: the session's first request asks them all as the sign-in does (at
+  once, 5 s, the first in order that answers; `PlexReach`), and a request
+  the chosen one no longer answers asks again. The account itself is not
+  rewritten. A token pasted for one address has only that one.
 
 **The map.**
 

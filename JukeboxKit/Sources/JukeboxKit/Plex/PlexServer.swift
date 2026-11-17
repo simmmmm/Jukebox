@@ -41,7 +41,8 @@ public struct PlexServer: MusicServer {
         self.credentials = credentials
         let token: String? = if case let .plexToken(token) = credentials.secret { token } else { nil }
         connection = PlexConnection(baseURL: credentials.serverURL, token: token, identity: identity,
-                                    transport: transport)
+                                    transport: transport,
+                                    reach: credentials.addresses.count > 1 ? PlexReach(credentials.addresses) : nil)
     }
 
     public var kind: ServerKind { .plex }
@@ -392,13 +393,24 @@ struct PlexConnection: Sendable {
     let token: String?
     let identity: ClientIdentity
     let transport: any HTTPTransport
+    /// A server with more than one address (signed in through plex.tv):
+    /// which of them this session speaks to.
+    var reach: PlexReach? = nil
 
     static func segment(_ text: String) -> String { JellyfinClient.escape(text) }
+
+    /// The address spoken to: the one that answered, once asked; until
+    /// then the one the account was signed in at.
+    /// ponytail: a URL made before the first request (a cover from the
+    /// cached library) has the sign-in's address, and covers are cached by
+    /// URL, so away from home they are fetched again; a cover keyed by
+    /// path, if it matters.
+    var base: URL { reach?.current ?? baseURL }
 
     /// The base and a path (a Plex key is a path); the token in the query
     /// for a URL a player or a download fetches without headers.
     func url(_ path: String, _ query: [URLQueryItem] = [], withToken: Bool = false) -> URL {
-        var string = baseURL.absoluteString
+        var string = base.absoluteString
         while string.hasSuffix("/") { string.removeLast() }
         string += path.hasPrefix("/") ? path : "/" + path
         var query = query
@@ -408,7 +420,7 @@ struct PlexConnection: Sendable {
                 "\(JellyfinClient.escape($0.name))=\(JellyfinClient.escape($0.value ?? ""))"
             }.joined(separator: "&")
         }
-        return URL(string: string) ?? baseURL
+        return URL(string: string) ?? base
     }
 
     /// Plex's own headers, for its server and for plex.tv alike.
@@ -424,9 +436,28 @@ struct PlexConnection: Sendable {
         return headers
     }
 
+    /// At the address that answers: the first request asks them all, and a
+    /// request the chosen one no longer answers (gone from home meanwhile)
+    /// asks again and is sent once more.
     @discardableResult
     func send(_ method: String, _ path: String, _ query: [URLQueryItem] = [],
               timeout: TimeInterval = 30) async throws -> Data {
+        guard let reach, let token else { return try await sendHere(method, path, query, timeout: timeout) }
+        await reach.settle(token: token, identity: identity, transport: transport)
+        let tried = base
+        // None answered just now (offline): no second asking.
+        let answered = reach.current != nil
+        do {
+            return try await sendHere(method, path, query, timeout: timeout)
+        } catch MusicServerError.transport(let reason) where answered {
+            await reach.settle(token: token, identity: identity, transport: transport, failed: tried)
+            guard base != tried else { throw MusicServerError.transport(reason) }
+            return try await sendHere(method, path, query, timeout: timeout)
+        }
+    }
+
+    private func sendHere(_ method: String, _ path: String, _ query: [URLQueryItem],
+                          timeout: TimeInterval) async throws -> Data {
         var request = URLRequest(url: url(path, query))
         request.httpMethod = method
         request.timeoutInterval = timeout
@@ -465,6 +496,46 @@ struct PlexConnection: Sendable {
         } catch {
             throw MusicServerError.decoding("\(T.self)")
         }
+    }
+}
+
+/// Which of a Plex server's addresses (`ServerCredentials.addresses`) a
+/// session speaks to: one signed in at home has a local address that does
+/// not answer away from it. Asked as the sign-in asks (every one at once,
+/// 5 s, the first in order that answers), once, by the first request; the
+/// requests at the same time wait for that one asking. When none answers
+/// (offline) nothing is kept, and the next request asks again.
+final class PlexReach: @unchecked Sendable {
+    let addresses: [URL]
+    private let lock = NSLock()
+    private var chosen: URL?
+    private var asking: Task<Void, Never>?
+
+    init(_ addresses: [URL]) {
+        self.addresses = addresses
+    }
+
+    /// The one that answered; nil until one has.
+    var current: URL? { lock.withLock { chosen } }
+
+    /// Asked, unless known; `failed`: the address that just did not answer,
+    /// asked again unless another has been chosen since.
+    func settle(token: String, identity: ClientIdentity, transport: any HTTPTransport, failed: URL? = nil) async {
+        let task: Task<Void, Never>? = lock.withLock {
+            if let asking { return asking }
+            if let chosen, failed == nil || chosen != failed { return nil }
+            let addresses = addresses
+            let task = Task {
+                let url = await PlexAccount.firstAnswering(addresses, token: token, identity: identity, transport: transport)
+                self.lock.withLock {
+                    if let url { self.chosen = url }
+                    self.asking = nil
+                }
+            }
+            asking = task
+            return task
+        }
+        await task?.value
     }
 }
 

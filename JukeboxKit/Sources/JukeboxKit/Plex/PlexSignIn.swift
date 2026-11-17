@@ -183,22 +183,29 @@ public struct PlexAccount: Sendable {
     public func signIn(to server: Server, accountToken: String, preferring typed: URL? = nil) async throws -> ServerCredentials {
         let token = server.accessToken ?? accountToken
         let addresses = (typed.map { [$0] } ?? []) + server.addresses.filter { $0 != typed }
-        guard let url = await firstAnswering(addresses, token: token) else {
+        guard let url = await Self.firstAnswering(addresses, token: token, identity: identity, transport: transport) else {
             throw MusicServerError.transport("None of \(server.name)’s addresses answered.")
         }
         let account = PlexConnection(baseURL: site, token: accountToken, identity: identity, transport: transport)
         let user = try PlexConnection.decode(PlexUser.self, await account.send("GET", "/api/v2/user"))
         guard let id = user.id else { throw MusicServerError.decoding("user") }
-        return ServerCredentials(kind: .plex, serverURL: url, serverID: server.id, serverName: server.name,
-                                 serverVersion: server.version, userID: id,
-                                 userName: user.username ?? user.title ?? "", secret: .plexToken(token),
-                                 capabilities: PlexServer.capabilities)
+        var credentials = ServerCredentials(kind: .plex, serverURL: url, serverID: server.id, serverName: server.name,
+                                            serverVersion: server.version, userID: id,
+                                            userName: user.username ?? user.title ?? "", secret: .plexToken(token),
+                                            capabilities: PlexServer.capabilities)
+        // All of them, in this order: the one that answers here may not
+        // answer elsewhere (home's, away from home), so the account opens
+        // at whichever answers then (PlexServer).
+        credentials.addresses = addresses
+        return credentials
     }
 
     /// Every address asked at once (5 s each); the first in order that
-    /// answered /identity wins, so a home address beats the relay.
-    func firstAnswering(_ addresses: [URL], token: String) async -> URL? {
-        let answered = await withTaskGroup(of: (Int, Bool).self) { group in
+    /// answers /identity wins, so a home address beats the relay. Known
+    /// as soon as every one before it has failed.
+    static func firstAnswering(_ addresses: [URL], token: String, identity: ClientIdentity,
+                               transport: any HTTPTransport) async -> URL? {
+        await withTaskGroup(of: (Int, Bool).self) { group in
             for (i, url) in addresses.enumerated() {
                 group.addTask {
                     var request = URLRequest(url: PlexConnection(baseURL: url, token: token, identity: identity,
@@ -210,11 +217,16 @@ public struct PlexAccount: Sendable {
                     return (i, (try? await PlexConnection.send(request, transport)) != nil)
                 }
             }
-            var answered = Set<Int>()
-            for await (i, ok) in group where ok { answered.insert(i) }
-            return answered
+            var answers = [Bool?](repeating: nil, count: addresses.count)
+            for await (i, ok) in group {
+                answers[i] = ok
+                if let first = answers.firstIndex(where: { $0 != false }), answers[first] == true {
+                    group.cancelAll()
+                    return addresses[first]
+                }
+            }
+            return nil
         }
-        return answered.min().map { addresses[$0] }
     }
 }
 
