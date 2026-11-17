@@ -339,6 +339,10 @@ struct NowPlayingView: View {
             Spacer(minLength: 0)
 
             if let track = currentTrack {
+                SleepTimerMenu(player: player, font: Self.roomGlyph, ink: .white, side: 40)
+                    .menuStyle(.button)
+                    .buttonStyle(.borderless)
+                    .menuIndicator(.hidden)
                 Menu {
                     TrackMenu(track: track)
                 } label: {
@@ -490,6 +494,7 @@ struct NowPlayingView: View {
                 Spacer(minLength: 0)
 
                 if let track = currentTrack {
+                    SleepTimerMenu(player: player, font: .title3.weight(.semibold), ink: ink, side: 44)
                     Menu {
                         TrackMenu(track: track)
                     } label: {

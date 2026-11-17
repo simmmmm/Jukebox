@@ -2,7 +2,8 @@
 // both players share, run with an engine that does nothing:
 // dev/linux-errors.sh runs it after every build (JUKEBOX_CHECK=queue). Next
 // and previous, repeat, Play Next and Add to Queue with Up Next's "Then",
-// move and remove, shuffle and back, a station chosen again and trimmed.
+// move and remove, shuffle and back, a station chosen again and trimmed,
+// the sleep timer.
 // Nothing is sent (Stats off, no server) and nothing written (no song
 // plays, so none is finished into the history).
 
@@ -11,9 +12,14 @@ import JukeboxKit
 
 /// The queue with no engine: every song has an address, none plays.
 private final class Bench: PlayQueue {
+    /// What the engine was told to hold next.
+    var held: UUID?
+
     override func address(of entry: QueueEntry, playSessionID: String) -> URL? {
         URL(fileURLWithPath: "/dev/null")
     }
+
+    override func enginePreload(_ entry: QueueEntry?) { held = entry?.id }
 }
 
 enum QueueCheck {
@@ -114,6 +120,49 @@ enum QueueCheck {
         q.volume = -1
         expect(q.volume == 0, "Volume below 0: 0")
         q.volume = volume
+
+        // The sleep timer: a timer of minutes fades over its last seconds
+        // and pauses at its deadline, the volume whole again; End of Song
+        // holds nothing after the song and waits for it to end; End of
+        // Queue beats Repeat All; Off stops nothing. The engine "plays".
+        let start = Date()
+        let whole = q.level(for: tracks[0])
+        q.play(tracks, context: album)
+        q.isPlaying = true
+        q.setSleepTimer(.minutes(15), now: start)
+        q.checkSleep(now: start.addingTimeInterval(14 * 60))
+        expect(q.sleepChoice == .minutes(15) && q.sleepLeft == 60 && q.wantsToPlay, "15 minutes: one left after 14")
+        q.checkSleep(now: start.addingTimeInterval(15 * 60 - PlayQueue.sleepFade / 2))
+        expect(abs(q.level(for: tracks[0]) - whole / 2) < 0.001, "half as loud halfway through its fade")
+        q.checkSleep(now: start.addingTimeInterval(15 * 60 + 0.5))
+        expect(q.sleepChoice == nil && q.sleepLeft == nil && !q.wantsToPlay && q.level(for: tracks[0]) == whole,
+               "at its deadline: paused, the volume whole again")
+
+        q.play(tracks, context: album)
+        q.setSleepTimer(.endOfSong)
+        expect(q.held == nil, "End of Song: nothing held after the song")
+        q.checkSleep(now: start.addingTimeInterval(24 * 3600))
+        expect(q.sleepChoice == .endOfSong && q.wantsToPlay, "End of Song waits for the song, however long")
+        q.entryEnded()
+        expect(q.currentIndex == 1 && !q.wantsToPlay && q.sleepChoice == nil && q.held == q.queue[2].id,
+               "and then the next waits, paused, and is held again")
+
+        q.play(tracks, startingAt: 4, context: album)
+        q.repeatMode = .all
+        q.setSleepTimer(.endOfQueue)
+        expect(q.sleepTitle(.endOfQueue) == "End of Album" && q.held == nil, "End of Album: Repeat All does not go round")
+        q.entryEnded()
+        expect(q.currentIndex == 4 && !q.wantsToPlay && q.sleepChoice == nil, "and at its end it stops there")
+        q.repeatMode = .off
+
+        q.play(tracks, context: album)
+        q.setSleepTimer(.minutes(15), now: start)
+        q.setSleepTimer(nil)
+        q.checkSleep(now: start.addingTimeInterval(16 * 60))
+        expect(q.sleepChoice == nil && q.sleepDeadline == nil && q.wantsToPlay, "Off: nothing stops")
+        q.playRadio(picks(tracks), station: station)
+        expect(!q.sleepChoices.contains(.endOfQueue), "a station has no end to wait for")
+        q.isPlaying = false
 
         q.stop()
         expect(q.queue.isEmpty && !q.hasTrack && q.context == nil, "Stop")

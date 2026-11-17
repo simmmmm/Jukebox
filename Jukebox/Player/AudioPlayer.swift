@@ -265,6 +265,8 @@ final class AudioPlayer: PlayQueue {
     }
 
     private func tick() {
+        // The sleep timer's deadline and fade, before anything else.
+        checkSleep()
         guard let playing, let item = playingItem, engine.currentItem === item else { return }
         if !isSeeking, let time = Self.seconds(engine.currentTime()) {
             let value = max(0, time)

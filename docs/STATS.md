@@ -105,6 +105,7 @@ Buckets:
 | `playback_error` | `reason` (`network`, `server`, `unsupported`, `other`) | How often a song does not play, and why | `AudioPlayer.itemFailed` |
 | `download_chosen` | `kind` (`album`, `playlist`, `mix`) | Are downloads used, and for what | `OfflineStore.download`, each Download on a page |
 | `offline_play_started` | `from` (as `play_started`'s) | Is music played offline, and from what | `AudioPlayer.play`, `playRadio`, while offline (with `play_started`) |
+| `sleep_timer_set` | `value` (`15`, `30`, `45`, `60`, `end_of_song`, `end_of_queue`, `off`) | Is the sleep timer used, and for how long | `PlayQueue.setSleepTimer`, each choice in a sleep timer's menu; not when it ends by itself |
 
 ### `server`
 
