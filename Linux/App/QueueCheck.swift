@@ -235,6 +235,15 @@ enum QueueCheck {
         _ = handover.take()
         expect(!handover.started() && handover.started(), "a short song's own start is not the next one's")
 
+        // Songs added on the server play without a relaunch: back at the
+        // window, a library read a while ago is read again
+        // (LibraryStore.refreshIfStale); one just read, or not yet, is not.
+        let now = Date()
+        expect(LibraryStore.isStale(now.addingTimeInterval(-LibraryStore.staleAfter), now: now),
+               "a library read a while ago is read again")
+        expect(!LibraryStore.isStale(now.addingTimeInterval(-60), now: now), "nor one read a minute ago")
+        expect(!LibraryStore.isStale(nil, now: now), "nor one not read yet")
+
         for what in failed { print("queue check failed: \(what)") }
         print("queue rules: \(checks - failed.count) of \(checks) checks pass")
         return failed.isEmpty ? 0 : 1

@@ -149,6 +149,13 @@ enum MainWindow {
         // The window of keys (Ctrl+?), which GTK opens for the window's
         // "show-help-overlay" once it has one.
         gtk_application_window_set_help_overlay(ptr(window), ptr(Shortcuts.window()))
+        // Back at the window: music added on the server since (copied in
+        // from the file manager, say) shows and plays without a relaunch
+        // (LibraryStore.refreshIfStale; the iPhone's RootView on .active).
+        on(raw(window), "notify::is-active") {
+            guard gtk_window_is_active(ptr(window)) != 0, !app.offline.isOffline else { return }
+            Task { await app.library.refreshIfStale() }
+        }
         Mpris.start()
         RadioPage.follow(window)
         Task { await app.restore() }

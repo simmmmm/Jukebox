@@ -136,6 +136,25 @@ final class LibraryStore {
         await loadTask?.value
     }
 
+    /// Everything again when the app comes to the front and the last read
+    /// is `staleAfter` old: the library was read only at a launch, so music
+    /// added on the server since could not be found or played until the
+    /// app started again (the photographer, on Linux, where nothing pulls
+    /// to refresh). Nothing before the first read; a load under way is
+    /// waited for, not doubled.
+    func refreshIfStale(now: Date = Date()) async {
+        guard Self.isStale(lastLoaded, now: now) else { return }
+        await refresh()
+    }
+
+    /// A read costs what a launch's does: not at every glance at the window.
+    static let staleAfter: TimeInterval = 5 * 60
+
+    static func isStale(_ lastLoaded: Date?, now: Date) -> Bool {
+        guard let lastLoaded else { return false }
+        return now.timeIntervalSince(lastLoaded) >= staleAfter
+    }
+
     /// Signed out: forget everything.
     func reset() {
         // "Forget everything": the cached library goes too.

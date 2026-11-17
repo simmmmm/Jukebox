@@ -120,6 +120,9 @@ struct RootView: View {
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 app.offline.appBecameActive()
+                // Music added on the server since, without a relaunch
+                // (LibraryStore.refreshIfStale): the Mac has no pull to refresh.
+                if !app.offline.isOffline { Task { await app.library.refreshIfStale() } }
                 // What the computer was playing, there when the phone is
                 // picked up, not a quarter of a minute later.
                 Task { await app.handoff.refresh() }
