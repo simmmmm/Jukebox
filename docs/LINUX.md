@@ -166,6 +166,10 @@ knows nothing of it. One limit of gapless: set in a song's last seconds,
 when GStreamer has already taken the next address, End of Song stops after
 that next one.
 
+Crossfade is in Preferences' Playing, as the queue's (`PlayQueue`,
+`docs/ARCHITECTURE.md`): playbin's own volume, on the player's ticks, so the
+handover and gapless albums are as they were.
+
 Keys: Space plays and pauses wherever the focus is, except in a field
 typed in (Ctrl+Space everywhere), Ctrl+Right and Ctrl+Left skip, Ctrl+F
 goes to the search field, Ctrl+, opens Preferences, Ctrl+? shows them all.

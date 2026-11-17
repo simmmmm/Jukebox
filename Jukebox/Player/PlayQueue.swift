@@ -187,6 +187,9 @@ class PlayQueue {
         /// `played` went: the server counted the play.
         var startReported = false
         var lastProgress = Date.distantPast
+        /// Crossfade: it came on by itself after a song that faded out, so
+        /// it fades in (`crossfadeLevel`). A move by hand cuts.
+        var fadesIn = false
 
         mutating func startClock(_ now: Date) {
             if playingSince == nil { playingSince = now }
@@ -482,6 +485,8 @@ class PlayQueue {
         let upper = duration > 0 ? duration : max(seconds, 0)
         let target = max(0, min(seconds, upper))
         elapsed = target
+        // Back to its start by hand: no fade in again.
+        playing?.fadesIn = false
         engineSeek(to: target)
     }
 
@@ -616,7 +621,8 @@ class PlayQueue {
     // MARK: Loading
 
     /// Make `index` the current entry, from its start, in a fresh engine.
-    private func load(_ index: Int, play: Bool) {
+    /// `fadesIn`: the song before ended by itself (Crossfade).
+    private func load(_ index: Int, play: Bool, fadesIn: Bool = false) {
         guard queue.indices.contains(index) else { return }
         // Offline, a song not on the device cannot play: the next one that
         // is, in its place; none, and the music stops here.
@@ -633,7 +639,7 @@ class PlayQueue {
         let finished = finishCurrent()
         engineReplace(with: url, entry: entry, playSessionID: playSessionID, play: play)
         wantsToPlay = play
-        begin(entry, at: start, playSessionID: playSessionID)
+        begin(entry, at: start, playSessionID: playSessionID, fadesIn: fadesIn)
         engineStart(play)
         deliver(finished)
         checkRadioSupply()
@@ -659,10 +665,13 @@ class PlayQueue {
     }
 
     /// `entry` is current now, already the engine's: loaded by `load`, or
-    /// moved on to by the engine itself (gapless).
-    func begin(_ entry: QueueEntry, at index: Int, playSessionID: String) {
+    /// moved on to by the engine itself (gapless), which is never by hand.
+    func begin(_ entry: QueueEntry, at index: Int, playSessionID: String, fadesIn: Bool = true) {
+        // The song before, while `currentIndex` is still its.
+        let before = currentTrack
         currentIndex = index
         playing = Playing(entry: entry, playSessionID: playSessionID, stationID: context?.station?.id)
+        playing?.fadesIn = fadesIn && before.map { Self.crossfades(from: $0, to: entry.track) } == true
         engineBegan()
         elapsed = 0
         duration = entry.track.duration
@@ -761,9 +770,37 @@ class PlayQueue {
     /// server's ReplayGain), which is only ever softer, since an engine
     /// cannot go above 1.
     func level(for track: Track) -> Double {
-        let volume = volume * sleepFadeLevel
+        let volume = volume * sleepFadeLevel * crossfadeLevel
         guard settings.normalizeVolume, let gain = track.normalizationGain else { return volume }
         return volume * min(1, pow(10, gain / 20))
+    }
+
+    /// Settings' Crossfade: the song's last half of it fades out and the
+    /// next one's first half fades in, on the engine's own ticks. One
+    /// engine plays one song at a time, so the two do not overlap.
+    private var crossfadeLevel: Double {
+        let half = Double(settings.crossfade) / 2
+        guard half > 0, let playing, duration > 0 else { return 1 }
+        var level = 1.0
+        if playing.fadesIn { level = elapsed / half }
+        if let next = entryToPreload, Self.crossfades(from: playing.entry.track, to: next.track) {
+            // Silent a tick (half a second, both players) before the end:
+            // the last tick's level would otherwise carry into the next
+            // song's first moment, before `begin` turns it down.
+            level = min(level, (duration - elapsed - 0.5) / half)
+        }
+        return max(0, min(1, level))
+    }
+
+    /// Songs that follow each other on their album never fade: gapless
+    /// albums are the point of Jukebox. Of the same album without track
+    /// numbers, neither, to be safe; shuffled, they do.
+    static func crossfades(from song: Track, to next: Track) -> Bool {
+        guard let album = song.albumID, album == next.albumID else { return true }
+        guard let number = song.trackNumber, let nextNumber = next.trackNumber else { return false }
+        let disc = song.discNumber ?? 1, nextDisc = next.discNumber ?? 1
+        let follows = nextDisc == disc ? nextNumber == number + 1 : nextDisc == disc + 1 && nextNumber == 1
+        return !follows
     }
 
     private func queueChanged() {
@@ -900,7 +937,7 @@ class PlayQueue {
         } else if repeatMode == .one {
             load(currentIndex, play: true)
         } else if let next = indexAfter(currentIndex, wrapping: wraps) {
-            load(next, play: true)
+            load(next, play: true, fadesIn: true)
         } else {
             queueEnded()
         }

@@ -321,6 +321,14 @@ private struct SettingsPlaybackSection: View {
                 SettingsDetailLabel(title: "Autoplay",
                                     detail: "When an album or playlist ends, keep playing similar music")
             }
+            Picker(selection: $settings.crossfade) {
+                ForEach(AppSettings.crossfades, id: \.self) { seconds in
+                    Text(seconds == 0 ? "Off" : "\(seconds) s").tag(seconds)
+                }
+            } label: {
+                SettingsDetailLabel(title: "Crossfade",
+                                    detail: "A song fades out and the next fades in. Songs that follow each other on an album never fade.")
+            }
             // In the player at launch, paused, rather than in Home's notice
             // (HandoffStore).
             Toggle(isOn: $settings.resumeOnLaunch) {
