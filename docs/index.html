@@ -55,16 +55,16 @@
   /* The iPad and the iPhone together, the phone standing before the iPad's
      corner ("een nette collage van de iphone en de ipad bovenaan", the
      photographer, 17 November 2026). The bezels are drawn, flat. */
-  .collage { position: relative; max-width: 860px; margin: 0 auto 36px; padding: 0 5% 5% 0; }
+  .collage { position: relative; max-width: 860px; margin: 40px auto 0; padding: 0 5% 5% 0; }
   .collage img { background: #0B0A0A; border: solid #0B0A0A; box-shadow: 0 0 0 1px rgb(128 128 128 / .35); }
   .collage .ipad { width: 100%; border-width: clamp(5px, 1.1vw, 10px); border-radius: clamp(10px, 2.4vw, 22px); }
   .collage .iphone { position: absolute; right: 0; bottom: 0; width: 24%; border-width: clamp(3px, .7vw, 6px); border-radius: clamp(12px, 3.4vw, 32px); }
   .second { margin-top: 20px; }
 
-  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 40px 48px; margin: 80px 0; }
+  .facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 40px 48px; margin: 16px 0 72px; }
   .facts p { color: var(--soft); }
 
-  .get { border-top: 1px solid var(--raised); padding-top: 48px; }
+  .get { border-top: 1px solid var(--raised); padding-top: 48px; margin-top: 80px; }
   pre { background: var(--raised); padding: 14px 16px; border-radius: 10px; overflow-x: auto; font-size: 14px; }
   footer { margin-top: 72px; color: var(--soft); font-size: 14px; }
 </style>
@@ -75,17 +75,14 @@
     <img class="icon" src="brand/icon.png" width="120" height="120" alt="Jukebox's icon: the Arch, lit, on its cabinet">
     <h1>Jukebox</h1>
     <p>The music on your own server, on the iPhone, the iPad, the Mac and Linux. With a radio that plays on and learns from what you skip.</p>
+    <!-- Apple's own badge, from its marketing tools, as its embed code links it. -->
+    <a class="badge" href="https://apps.apple.com/app/id6832197407"><img src="https://toolbox.marketingtools.apple.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" width="150" height="50" alt="Download on the App Store"></a>
+    <a class="quiet" href="https://github.com/simmmmm/Jukebox/releases">Get it for Linux</a>
     <div class="collage">
       <img class="ipad" src="screenshots/ipad-radio.jpg" width="1600" height="1200" alt="Jukebox on the iPad: Radio, its stations each under an arch, the sidebar with the library and the bar below with the song playing">
       <img class="iphone" src="screenshots/iphone-now-playing.jpg" width="600" height="1304" alt="Jukebox on the iPhone: Now Playing, the sleeve with its record half out, playing from Your Station">
     </div>
-    <!-- Apple's own badge, from its marketing tools, as its embed code links it. -->
-    <a class="badge" href="https://apps.apple.com/app/id6832197407"><img src="https://toolbox.marketingtools.apple.com/api/badges/download-on-the-app-store/black/en-us?size=250x83" width="150" height="50" alt="Download on the App Store"></a>
-    <a class="quiet" href="https://github.com/simmmmm/Jukebox/releases">Get it for Linux</a>
   </header>
-
-  <img src="screenshots/linux-album.png" width="1430" height="890" alt="Jukebox on Linux, dark: an album open, the Now Playing panel with what plays next beside it, and the bar below with the song and its artist">
-  <img class="second" src="screenshots/linux-radio.png" width="1430" height="890" loading="lazy" alt="Jukebox on Linux: Radio, with Your Station on air under its arch and the other stations below">
 
   <section class="facts">
     <div>
@@ -113,6 +110,9 @@
       <p>SwiftUI on the iPhone, the iPad and the Mac. GTK 4 and libadwaita on Linux. One Swift codebase under both.</p>
     </div>
   </section>
+
+  <img src="screenshots/linux-album.png" width="1430" height="890" alt="Jukebox on Linux, dark: an album open, the Now Playing panel with what plays next beside it, and the bar below with the song and its artist">
+  <img class="second" src="screenshots/linux-radio.png" width="1430" height="890" loading="lazy" alt="Jukebox on Linux: Radio, with Your Station on air under its arch and the other stations below">
 
   <section class="get">
     <h2>Get it</h2>
