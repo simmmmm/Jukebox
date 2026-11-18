@@ -170,6 +170,13 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   same calls as the Mac's (`LibraryStore.remove`, `move`). Moving only
   where the server can reorder, none of it on someone else's playlist.
 
+Songs are picked with Ctrl and Shift in any list of songs, lit as
+libadwaita's selected rows; the menu on a pick is for all of them. Copy
+Link is in a song's, an album's and an artist's menu; Choose Picture… in a
+playlist's ⋮ (an administrator on Jellyfin or Emby); Mini Player in the
+primary menu (`Extras.swift`, docs/ARCHITECTURE.md). Picking was tried by
+mouse under Xvfb (XTest): Ctrl, Shift, the menu, a plain click playing.
+
 The sleep timer is a moon at the end of Full Player's header, beside ⋮,
 as on the iPhone and the Mac: its menu sets 15 to 60 minutes, End of Song
 or End of Album, and before the moon stand the time left or what it waits

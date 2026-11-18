@@ -543,6 +543,32 @@ Control Center have one): it is doors into the music.
   an upload. The code would compile there as it is.
 - Portal steps and CI's check: `docs/RELEASE.md`, The widget.
 
+## Sharing, a playlist's picture, songs picked, the mini player
+
+From features.md's "De moeite waard" ("doe alles", 18 November 2026), each
+in a menu that was there ("niet 10000 knopen"):
+
+- **Sharing**: Share… (Apple's share sheet) or Copy Link (Linux) in a
+  song's, an album's and an artist's menu. "Night Bus by Blue Room Trio" and
+  a link that opens in the friend's own app: the server's own where it makes
+  one (`ServerShareLinks`, for Navidrome's shares, not built yet), else
+  Odesli's song.link or album.link found through Apple's iTunes search,
+  else Apple Music's artist page, else the words alone
+  (`JukeboxKit/Sharing/Sharing.swift`). Only the title and the main artist
+  go to Apple, and only once the listener shares.
+- **A playlist's picture**: Choose Picture… in a playlist's "…"/⋮ (Photos on
+  the iPhone and the iPad, a file on the Mac and Linux), as a JPEG of 1200
+  at most. Only on Jellyfin and Emby, and only for an administrator: 12.4
+  answers 403 to anyone else (`Server/PlaylistCovers.swift`, measured).
+- **Songs picked together** in a wide list (Linux, the iPad's and the Mac's
+  window): Ctrl or ⌘ adds one, Shift a run; the menu on a pick has Play
+  Next, Add to Queue (Play Last) and Add to Playlist… for all of them. A
+  plain click plays as before and forgets them (`Library/TrackPicks.swift`,
+  shared; checked in QueueCheck).
+- **The mini player**: Window › Mini Player (⌥⌘M) on the Mac, a small
+  window above the others; Mini Player in Linux's primary menu, in place of
+  the big window. None on the iPhone and the iPad: the bar is theirs.
+
 ## Usage counts
 
 Anonymous counts of which screens and features are used go to the
