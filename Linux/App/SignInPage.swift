@@ -15,7 +15,11 @@ import Foundation
 import JukeboxKit
 
 enum SignInPage {
-    private static var user: Widget!
+    /// The address, the user name and Use Quick Connect: the screenshot
+    /// walk's too (Shots).
+    static var address: Widget!
+    static var user: Widget!
+    static var quickConnect: Widget!
     private static var password: Widget!
     private static var cancel: Widget!
 
@@ -35,6 +39,7 @@ enum SignInPage {
 
     static func make() -> Widget {
         let address = adw_entry_row_new()!
+        Self.address = address
         adw_preferences_row_set_title(ptr(address), "Server Address")
         let user = adw_entry_row_new()!
         Self.user = user
@@ -226,6 +231,7 @@ enum SignInPage {
             }
         }
         quick = button("Use Quick Connect", "flat") { useQuickConnect() }.align(horizontal: GTK_ALIGN_CENTER)
+        Self.quickConnect = quick
         quick.isVisible = false
         // The address left: asked now, quietly (Sign In says what went
         // wrong), so Quick Connect shows only for a server that has it.
