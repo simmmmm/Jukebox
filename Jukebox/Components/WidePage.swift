@@ -530,8 +530,14 @@ extension View {
     }
 }
 
+extension EnvironmentValues {
+    /// The songs picked with a row's own (PageTrackRows), empty when it is
+    /// not picked: its look and its menu (TrackRow, TrackMenu).
+    @Entry var pickedTracks: [Track] = []
+}
+
 /// Songs as rows on a wide page (TrackRow's wide form), on the margin the
-/// caller gives; a click plays from that song.
+/// caller gives; a click plays from that song, with ⌘ or ⇧ picks it.
 struct PageTrackRows: View {
     let tracks: [Track]
     var numbered = false
@@ -539,11 +545,17 @@ struct PageTrackRows: View {
     let play: (Track) -> Void
 
     @Environment(AudioPlayer.self) private var player
+    /// Songs picked with ⌘ or ⇧ (TrackPicks), for the menu on all of them.
+    @State private var picks = TrackPicks()
+    @State private var keys: EventModifiers = []
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 0) {
-            ForEach(tracks) { track in
+            ForEach(Array(tracks.enumerated()), id: \.element.id) { i, track in
                 Button {
+                    if keys.contains(.command) { picks.click(i, .toggle); return }
+                    if keys.contains(.shift) { picks.click(i, .extend); return }
+                    picks.plain(i)
                     // Offline, a song not on the device says why rather than play.
                     guard !player.refusesOffline(track) else { return }
                     play(track)
@@ -552,7 +564,11 @@ struct PageTrackRows: View {
                              subtitle: subtitle(track))
                 }
                 .buttonStyle(.plain)
+                .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
             }
         }
+        .onModifierKeysChanged(mask: [.command, .shift]) { _, now in keys = now }
+        // Picked by place: another list forgets them.
+        .onChange(of: tracks.map(\.id)) { picks.clear() }
     }
 }

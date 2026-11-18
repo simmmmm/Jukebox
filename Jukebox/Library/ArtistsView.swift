@@ -54,6 +54,7 @@ struct ArtistsView: View {
                             Stats.track(.stationStarted, ["seed": "artist", "from": "menu"])
                             radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
                         }
+                        ShareMenuItem(item: .artist(artist))
                     }
                 }
                 .padding(.top, Theme.Space.xl)
@@ -395,6 +396,7 @@ struct ArtistDetailView: View {
                 Task { await library.toggleFavorite(.artist(shown.id)) }
             }
         }
+        ShareMenuItem(item: .artist(shown))
     }
 
     private func seed(for shown: Artist) -> StationSeed {

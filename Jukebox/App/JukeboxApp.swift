@@ -51,6 +51,15 @@ struct JukeboxApp: App {
             SettingsView(asWindow: true)
                 .appEnvironment(app, panel: panel)
         }
+        // Window › Mini Player: small, above the other windows
+        // (NowPlaying/MacMiniPlayer.swift).
+        Window("Mini Player", id: "mini-player") {
+            MacMiniPlayer()
+                .appEnvironment(app, panel: panel)
+        }
+        .windowResizability(.contentSize)
+        .windowLevel(.floating)
+        .defaultPosition(.topTrailing)
         #endif
     }
 }

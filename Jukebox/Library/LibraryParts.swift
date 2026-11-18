@@ -191,6 +191,7 @@ struct LibraryAlbumMenu: View {
                 }
             }
         }
+        ShareMenuItem(item: .album(album))
     }
 
     private var albumArtist: Artist? {

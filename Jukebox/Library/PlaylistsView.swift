@@ -206,6 +206,12 @@ struct PlaylistDetailView: View {
     @State private var isAddingSongs = false
     /// Counts loads, so an answer that a later load has overtaken is dropped.
     @State private var loadCount = 0
+    /// Choose Picture… where the server and the user may (PlaylistPicture).
+    @State private var picturesAllowed = false
+    @State private var isChoosingPicture = false
+    /// Songs picked with ⌘ or ⇧ in the wide list (TrackPicks).
+    @State private var picks = TrackPicks()
+    @State private var keys: EventModifiers = []
 
     var body: some View {
         let shown = library.playlists.first(where: { $0.id == playlist.id }) ?? playlist
@@ -271,6 +277,8 @@ struct PlaylistDetailView: View {
         // Every time the page appears, not only the first: songs added from
         // Now Playing or another app while it was covered are shown.
         .task(id: playlist.id) { await load() }
+        .task(id: playlist.id) { picturesAllowed = await library.playlistCoversAllowed() }
+        .playlistPicturePicker(isPresented: $isChoosingPicture, for: shown, failed: $errorMessage)
         // A song added from a menu while the page is open (Add to Playlist…
         // changes the count at once); not while Add Songs is open, which
         // reloads once when it closes.
@@ -311,15 +319,19 @@ struct PlaylistDetailView: View {
 
             if let entries {
                 ForEach(entries) { entry in
+                    let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
                     Button {
+                        if keys.contains(.command) { picks.click(i, .toggle); return }
+                        if keys.contains(.shift) { picks.click(i, .extend); return }
+                        picks.plain(i)
                         guard !player.refusesOffline(entry.track) else { return }
-                        let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
                         play(tracks, from: i, playlist: shown, shuffled: false)
                     } label: {
                         TrackRow(entry.track, subtitle: entry.track.artistLine,
                                  removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) })
                     }
                     .buttonStyle(.plain)
+                    .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
                 }
                 .onDelete(perform: deleteAction(shown))
                 .onMove(perform: moveAction(shown))
@@ -353,6 +365,8 @@ struct PlaylistDetailView: View {
             }
         }
         .listStyle(.plain)
+        .onModifierKeysChanged(mask: [.command, .shift]) { _, now in keys = now }
+        .onChange(of: entries?.map(\.id)) { picks.clear() }
         .pageGround()
         .onPageWidth($width)
         .libraryScrolledTitle(shown.name, after: page.cover + Theme.Space.xl)
@@ -439,6 +453,13 @@ struct PlaylistDetailView: View {
                 player.addToQueue(tracks)
             }
             .disabled(tracks.isEmpty)
+        }
+        if picturesAllowed, !shown.isReadOnly {
+            Section {
+                Button("Choose Picture…", systemImage: "photo") {
+                    isChoosingPicture = true
+                }
+            }
         }
         if !shown.isReadOnly {
             Section {

@@ -32,6 +32,9 @@ struct TrackRow: View {
     @Environment(AppModel.self) private var app
     @Environment(OfflineStore.self) private var offline
     @Environment(\.isWide) private var isWide
+    /// The songs picked with this one in a wide list (TrackPicks), empty
+    /// when it is not picked.
+    @Environment(\.pickedTracks) private var pickedTracks
     @State private var isHovered = false
 
     init(_ track: Track, leading: Leading = .artwork, subtitle: String? = nil, reason: PickReason? = nil,
@@ -231,12 +234,14 @@ struct TrackRow: View {
         // The pointer over it: the whole row lit, 8 past its ends.
         .background {
             RoundedRectangle(cornerRadius: Theme.Space.s)
-                .fill(Color.primary.opacity(isHovered ? 0.07 : 0))
+                // Picked: a little more, as a selected row is; never the
+                // accent, which means on air.
+                .fill(Color.primary.opacity(!pickedTracks.isEmpty ? 0.1 : isHovered ? 0.07 : 0))
                 .padding(.horizontal, -Theme.Space.s)
         }
         .onHover { isHovered = $0 }
         .contextMenu {
-            TrackMenu(track: track, removal: removal)
+            TrackMenu(track: track, removal: removal, picked: pickedTracks)
         } preview: {
             // As the iPhone's: the preview's hosting controller needs the
             // AppModel carried into it.
@@ -309,6 +314,8 @@ struct TrackMenu: View {
     let track: Track
     /// A playlist's own song, on a wide page: Remove from Playlist.
     var removal: (() -> Void)?
+    /// Two or more picked with it (TrackPicks): the menu is theirs.
+    var picked: [Track] = []
 
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
@@ -316,6 +323,24 @@ struct TrackMenu: View {
     @Environment(Navigator.self) private var navigator
 
     var body: some View {
+        if picked.count > 1 {
+            Section("\(picked.count) Songs") {
+                Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
+                    player.playNext(picked)
+                }
+                Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
+                    player.addToQueue(picked)
+                }
+                Button("Add to Playlist…", systemImage: "text.badge.plus") {
+                    navigator.addToPlaylist = AddToPlaylistRequest(tracks: picked)
+                }
+            }
+        } else {
+            single
+        }
+    }
+
+    @ViewBuilder private var single: some View {
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext([track])
@@ -351,6 +376,7 @@ struct TrackMenu: View {
                     navigator.open(.artist(artist))
                 }
             }
+            ShareMenuItem(item: .track(track))
         }
         if let removal {
             Section {

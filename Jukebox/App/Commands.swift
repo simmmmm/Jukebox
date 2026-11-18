@@ -12,6 +12,7 @@ import AppKit
 
 struct JukeboxCommands: Commands {
     let app: AppModel
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         CommandMenu("Controls") {
@@ -55,6 +56,13 @@ struct JukeboxCommands: Commands {
                 .keyboardShortcut("f")
                 .disabled(!app.navigator.isWide || app.phase != .signedIn)
         }
+        #if os(macOS)
+        // Music's Window › MiniPlayer, its key too (MacMiniPlayer.swift).
+        CommandGroup(before: .windowArrangement) {
+            Button("Mini Player") { openWindow(id: "mini-player") }
+                .keyboardShortcut("m", modifiers: [.command, .option])
+        }
+        #endif
         #if os(iOS)
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") { app.navigator.isSettingsPresented = true }
