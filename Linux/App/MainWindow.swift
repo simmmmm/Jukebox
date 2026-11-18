@@ -128,6 +128,7 @@ enum MainWindow {
         action(application, "previous", "<Control>Left") { app.player.previous() }
         action(application, "preferences", "<Control>comma") { Preferences.present() }
         action(application, "about", nil) { About.present() }
+        action(application, "mini-player", nil) { MiniPlayer.open() }
         action(application, "now-playing", "<Control><Shift>n") { if app.player.currentTrack != nil { NowPlayingPage.open() } }
         action(application, "close-now-playing", nil) { NowPlayingPage.close() }
         // Folded, the places come over the page (GNOME's F9).
@@ -305,7 +306,8 @@ enum MainWindow {
             // the rows, made or not.
             let shown = app.settings.shows(.sidebarPlaylists)
             defer { for row in playlistRows { row.isVisible = shown } }
-            guard listed.map(\.id) != playlists.map(\.id) else { return }
+            // A new picture of one's own too (Choose Picture…).
+            guard listed.map(\.id) != playlists.map(\.id) || listed.map(\.imageTag) != playlists.map(\.imageTag) else { return }
             for row in playlistRows { gtk_list_box_remove(ptr(places), row) }
             playlistRows = []
             playlists = listed
@@ -396,6 +398,7 @@ enum MainWindow {
 
     private static let menuItems: OpaquePointer = {
         let items = g_menu_new()!
+        g_menu_append(items, "Mini Player", "app.mini-player")
         g_menu_append(items, "Preferences", "app.preferences")
         g_menu_append(items, "Keyboard Shortcuts", "win.show-help-overlay")
         g_menu_append(items, "About Jukebox", "app.about")

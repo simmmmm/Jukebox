@@ -28,6 +28,8 @@ let shared = [
     "Jukebox/Home/MixStore.swift",
     "Jukebox/Library/LibraryIndex.swift",
     "Jukebox/Library/LibraryStore.swift",
+    "Jukebox/Library/ShareAndCover.swift",
+    "Jukebox/Library/TrackPicks.swift",
     "Jukebox/NowPlaying/LyricsFinder.swift",
     "Jukebox/NowPlaying/TurntableMeasures.swift",
     "Jukebox/NowPlaying/UpNextList.swift",

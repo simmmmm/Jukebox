@@ -347,7 +347,12 @@ final class ItemList<Item, Row: AnyObject> {
         keep(self, on: raw(widget), as: "jukebox-list")
     }
 
+    /// Told when the items change, before the rows show them (a list's
+    /// picked songs are by place, so they go: TrackPicks).
+    var willSet: (() -> Void)?
+
     func set(_ items: [Item]) {
+        willSet?()
         let old = self.items.count
         self.items = items
         var names: [UnsafePointer<CChar>?] = items.indices.map { UnsafePointer(strdup(String($0))) }

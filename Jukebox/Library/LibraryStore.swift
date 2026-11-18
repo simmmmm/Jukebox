@@ -479,6 +479,11 @@ extension LibraryStore {
         let names = playlists.map { LibraryIndex.fold($0.name) }
         return items(LibraryIndex.matches(names, term: term, limit: limit), in: playlists)
     }
+
+    /// A playlist's new picture (ShareAndCover.swift's setCover).
+    func notePlaylistImage(_ id: ItemID, tag: String?) {
+        updatePlaylist(id) { $0.imageTag = tag }
+    }
 }
 
 // MARK: - Loading

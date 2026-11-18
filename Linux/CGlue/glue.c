@@ -124,6 +124,40 @@ void jb_on_secondary_click(GtkWidget *widget, JbPointHandler handler, gpointer d
     gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click));
 }
 
+// A click on a song's row, for picking songs (Jukebox/Library/TrackPicks.swift):
+// with Ctrl or Shift held it is claimed, so the list does not also play the
+// row; a plain one is told too, and left to the list, which plays it.
+typedef struct {
+    JbRowClick handler;
+    gpointer data;
+    GDestroyNotify destroy;
+} RowClickClosure;
+
+static void row_click_pressed(GtkGestureClick *gesture, int presses, double x, double y, gpointer user) {
+    RowClickClosure *closure = user;
+    GdkModifierType state = gtk_event_controller_get_current_event_state(GTK_EVENT_CONTROLLER(gesture));
+    int toggle = (state & GDK_CONTROL_MASK) != 0, extend = (state & GDK_SHIFT_MASK) != 0;
+    if (toggle || extend) gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+    closure->handler(toggle, extend, closure->data);
+}
+
+static void row_click_free(gpointer user, GClosure *unused) {
+    RowClickClosure *closure = user;
+    if (closure->destroy) closure->destroy(closure->data);
+    g_free(closure);
+}
+
+void jb_on_row_click(GtkWidget *widget, JbRowClick handler, gpointer data, GDestroyNotify destroy) {
+    RowClickClosure *closure = g_new0(RowClickClosure, 1);
+    closure->handler = handler;
+    closure->data = data;
+    closure->destroy = destroy;
+    GtkGesture *click = gtk_gesture_click_new();
+    gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click), GDK_BUTTON_PRIMARY);
+    g_signal_connect_data(click, "pressed", G_CALLBACK(row_click_pressed), closure, row_click_free, 0);
+    gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click));
+}
+
 void jb_popover_point_to(GtkWidget *popover, double x, double y) {
     GdkRectangle at = {(int)x, (int)y, 1, 1};
     gtk_popover_set_pointing_to(GTK_POPOVER(popover), &at);
@@ -285,4 +319,60 @@ void jb_drag_to_scroll(GtkWidget *scrolled) {
     g_signal_connect(drag, "drag-end", G_CALLBACK(drag_end), d);
     gtk_widget_add_controller(scrolled, GTK_EVENT_CONTROLLER(drag));
     g_object_set_data_full(G_OBJECT(scrolled), "jb-drag", d, g_free);
+}
+
+// A picture chosen for a playlist's cover (Linux/App/Extras.swift): GTK's
+// file dialog, the portal's under Flatpak, showing images only. `handler`
+// hears the file's path, or NULL when nothing was chosen.
+typedef struct {
+    JbPathHandler handler;
+    gpointer data;
+    GDestroyNotify destroy;
+} PathClosure;
+
+static void picture_chosen(GObject *source, GAsyncResult *result, gpointer user) {
+    PathClosure *closure = user;
+    GFile *file = gtk_file_dialog_open_finish(GTK_FILE_DIALOG(source), result, NULL);
+    char *path = file ? g_file_get_path(file) : NULL;
+    closure->handler(path, closure->data);
+    g_free(path);
+    if (file) g_object_unref(file);
+    if (closure->destroy) closure->destroy(closure->data);
+    g_free(closure);
+}
+
+void jb_choose_picture(GtkWindow *parent, const char *title, JbPathHandler handler, gpointer data, GDestroyNotify destroy) {
+    PathClosure *closure = g_new0(PathClosure, 1);
+    closure->handler = handler;
+    closure->data = data;
+    closure->destroy = destroy;
+    GtkFileDialog *dialog = gtk_file_dialog_new();
+    gtk_file_dialog_set_title(dialog, title);
+    GtkFileFilter *filter = gtk_file_filter_new();
+    gtk_file_filter_set_name(filter, "Pictures");
+    gtk_file_filter_add_pixbuf_formats(filter);
+    GListStore *filters = g_list_store_new(GTK_TYPE_FILE_FILTER);
+    g_list_store_append(filters, filter);
+    gtk_file_dialog_set_filters(dialog, G_LIST_MODEL(filters));
+    gtk_file_dialog_open(dialog, parent, NULL, picture_chosen, closure);
+    g_object_unref(filters);
+    g_object_unref(filter);
+    g_object_unref(dialog);
+}
+
+// The picture at `path` as a JPEG of at most `side` on its longer side, for
+// a server to take: a photographer's file may be 50 MB. NULL when GdkPixbuf
+// cannot read it; g_free the bytes.
+guchar *jb_jpeg_from_file(const char *path, int side, gsize *length) {
+    GdkPixbuf *pixbuf = gdk_pixbuf_new_from_file_at_scale(path, side, side, TRUE, NULL);
+    if (!pixbuf) return NULL;
+    // The camera's orientation, as the photograph is seen.
+    GdkPixbuf *upright = gdk_pixbuf_apply_embedded_orientation(pixbuf);
+    g_object_unref(pixbuf);
+    gchar *buffer = NULL;
+    char *keys[] = {"quality", NULL};
+    char *values[] = {"90", NULL};
+    gboolean done = gdk_pixbuf_save_to_bufferv(upright, &buffer, length, "jpeg", keys, values, NULL);
+    g_object_unref(upright);
+    return done ? (guchar *)buffer : NULL;
 }

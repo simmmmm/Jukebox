@@ -43,6 +43,11 @@ void jb_breakpoint_set(AdwBreakpoint *breakpoint, gpointer object, const char *p
 // take. `destroy` frees `data` when the widget goes.
 typedef void (*JbPointHandler)(double x, double y, gpointer data);
 void jb_on_secondary_click(GtkWidget *widget, JbPointHandler handler, gpointer data, GDestroyNotify destroy);
+typedef void (*JbRowClick)(int toggle, int extend, gpointer data);
+void jb_on_row_click(GtkWidget *widget, JbRowClick handler, gpointer data, GDestroyNotify destroy);
+typedef void (*JbPathHandler)(const char *path, gpointer data);
+void jb_choose_picture(GtkWindow *parent, const char *title, JbPathHandler handler, gpointer data, GDestroyNotify destroy);
+guchar *jb_jpeg_from_file(const char *path, int side, gsize *length);
 // A horizontal GtkScrolledWindow scrolled by dragging with the mouse, and
 // thrown with a little momentum when let go. A press that hardly moves is
 // still a click on what it is over.

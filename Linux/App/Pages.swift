@@ -723,7 +723,8 @@ enum LibraryPages {
         tile.show(artist.artwork, artist.name, "")
         let button = tileButton(tile.widget) { Pages.open(artist) }
         contextMenu(on: button) {
-            [("Start Radio", { app.radio.start(.artist(key: artist.key, name: artist.name, id: artist.id)) })]
+            [("Start Radio", { app.radio.start(.artist(key: artist.key, name: artist.name, id: artist.id)) }),
+             ("Copy Link", { Share.copy(.artist(artist)) })]
         }
         return button
     }
@@ -844,6 +845,7 @@ enum Pages {
         observe(menuButton) {
             let items = more + ratingItems(.album(album.id))
                 + (artist.map { artist in [("Go to Artist", { open(artist) })] } ?? [])
+                + [("Copy Link", { Share.copy(.album(album)) })]
             gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(items))
         }
         // The first genre of a joined tag ("Folk; Acoustic" is Folk), as
@@ -941,11 +943,19 @@ enum Pages {
             ("Add to Queue", { app.player.addToQueue(list.items) }),
         ]
         if own { more.append(("Delete Playlist", { Playlists.delete(playlist, then: gone) })) }
+        let moreMenu = moreButton(more)
+        // Its own picture, where the server takes one (Extras.swift).
+        PlaylistCover.offer(playlist) { items in gtk_menu_button_set_popover(ptr(moreMenu), popoverMenu(more.dropLast() + items + more.suffix(1))) }
         let top = heading(art: art.widget, title: playlist.name, facts: fact, actions: [
             playButton { app.player.play(list.items, context: context) },
             quietButton("Shuffle") { app.player.play(list.items, context: context, shuffled: true) },
-            moreButton(more),
+            moreMenu,
         ])
+        // A new picture shows at once.
+        observe(top) {
+            let shown = app.library.playlists.first { $0.id == playlist.id }
+            if let artwork = shown?.artwork, shown?.imageTag != playlist.imageTag { art.show(artwork) }
+        }
         keep(art, on: raw(top), as: "art")
         // Empty, what to do about it, as the Mac's page says it.
         let empty = vbox()

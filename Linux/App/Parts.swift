@@ -280,6 +280,7 @@ func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
         if let ref = first.primaryArtist, let artist = app.library.artist(ref) {
             items.append(("Go to Artist", { Pages.open(artist) }))
         }
+        items.append(("Copy Link", { Share.copy(.track(first)) }))
     }
     return items
 }
@@ -308,8 +309,11 @@ final class TrackRow {
     /// Down), and after it (Remove from Playlist, last, as on the Mac).
     var firstItems: [(String, () -> Void)] = []
     var lastItems: [(String, () -> Void)] = []
+    /// Its list's picked songs (TrackPicks), where the list has them.
+    private let picked: PickedRows?
 
-    init(numbered: Bool = false) {
+    init(numbered: Bool = false, picked: PickedRows? = nil) {
+        self.picked = picked
         gtk_label_set_xalign(ptr(number), 1)
         gtk_label_set_xalign(ptr(time), 1)
         time.size(width: 40)
@@ -333,9 +337,37 @@ final class TrackRow {
             let playing = app.player.currentTrack?.id
             self?.mark(playing)
         }
+        if let picked {
+            onRowClick(widget) { [weak self] toggle, extend in
+                guard let self else { return }
+                if toggle { picked.picks.click(self.position, .toggle) }
+                else if extend { picked.picks.click(self.position, .extend) }
+                else { picked.picks.plain(self.position) }
+            }
+            observe(widget) { [weak self] in
+                _ = picked.picks
+                self?.markPicked()
+            }
+        }
     }
 
-    func menu() -> [(String, () -> Void)] { firstItems + trackMenu(menuTracks) + lastItems }
+    /// The song's own menu; on one of two or more picked, the picks' Play
+    /// Next, Add to Queue and Add to Playlist… (trackMenu for several).
+    func menu() -> [(String, () -> Void)] {
+        if let picked {
+            let tracks = picked.picks.tracks(at: position, in: picked.items())
+            if tracks.count > 1 { return trackMenu(tracks) }
+        }
+        return firstItems + trackMenu(menuTracks) + lastItems
+    }
+
+    /// Picked: the list's own row (its padding included) lit as
+    /// libadwaita's selected rows are.
+    func markPicked() {
+        guard let picked, let row = gtk_widget_get_parent(widget) else { return }
+        if picked.picks.contains(position) { gtk_widget_add_css_class(row, "picked") }
+        else { gtk_widget_remove_css_class(row, "picked") }
+    }
 
     private func mark(_ playing: ItemID?) {
         let isPlaying = track != nil && playing == track?.id
@@ -378,9 +410,10 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
                subtitle: ((Track) -> String)? = nil,
                remove: ((Int) -> Void)? = nil, move: ((Int, Int) -> Void)? = nil) -> ItemList<Track, TrackRow> {
     weak var made: ItemList<Track, TrackRow>?
+    let picked = PickedRows { made?.items ?? [] }
     let list = ItemList<Track, TrackRow>(
         make: {
-            let row = TrackRow(numbered: numbered)
+            let row = TrackRow(numbered: numbered, picked: picked)
             if let move { reorderable(row, move) }
             return (row.widget, row)
         },
@@ -393,18 +426,48 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
                 if index < (made?.items.count ?? 0) - 1 { row.firstItems.append(("Move Down", { move(index, index + 1) })) }
             }
             row.lastItems = remove.map { remove in [("Remove from Playlist", { remove(index) })] } ?? []
+            row.markPicked()
         },
         activate: { _, index, items in
             app.player.play(items, startingAt: index, context: context())
         })
     made = list
+    list.willSet = { picked.picks.clear() }
+    keep(picked, on: raw(list.widget), as: "picked")
     list.widget.css("rows")
     onFocusedRow(of: list.widget, "<Shift>F10|Menu") { row in
         showMenu(at: row.widget, x: 0, y: Double(gtk_widget_get_height(row.widget)), row.menu())
     }
     if let remove { onFocusedRow(of: list.widget, "Delete|KP_Delete") { remove($0.position) } }
+    onFocusedRow(of: list.widget, "Escape") { _ in picked.picks.clear() }
     list.set(tracks)
     return list
+}
+
+/// A list's picked songs (TrackPicks): Ctrl-click and Shift-click on a
+/// desktop, for Play Next, Add to Queue and Add to Playlist… on all of them.
+@Observable final class PickedRows {
+    var picks = TrackPicks()
+    let items: () -> [Track]
+    init(_ items: @escaping () -> [Track]) { self.items = items }
+}
+
+/// What a click with Ctrl or Shift, or none, does on a row (CGlue's
+/// jb_on_row_click claims the first two from the list).
+private nonisolated final class RowClick {
+    let run: @MainActor (Bool, Bool) -> Void
+    init(_ run: @escaping @MainActor (Bool, Bool) -> Void) { self.run = run }
+}
+
+private func onRowClick(_ widget: Widget, _ body: @escaping (Bool, Bool) -> Void) {
+    jb_on_row_click(widget, { toggle, extend, data in
+        guard let data else { return }
+        let click = Unmanaged<RowClick>.fromOpaque(data).takeUnretainedValue()
+        MainActor.assumeIsolated { click.run(toggle != 0, extend != 0) }
+    }, Unmanaged.passRetained(RowClick(body)).toOpaque(), { data in
+        guard let data else { return }
+        Unmanaged<RowClick>.fromOpaque(data).release()
+    })
 }
 
 /// What a key runs on the row with the focus, kept by the list's widget.
@@ -527,7 +590,7 @@ func albumMenu(_ album: Album) -> [(String, () -> Void)] {
             ("Add to Queue", { app.player.addToQueue(tracks) }),
             ("Add to Playlist…", { Playlists.add(tracks) }),
             ("Start a Station", { app.radio.start(.album(album.id)) })]
-        + ratingItems(.album(album.id))
+        + ratingItems(.album(album.id)) + [("Copy Link", { Share.copy(.album(album)) })]
 }
 
 /// A station's tile: the arch at the page's tile size, its name and a fact.

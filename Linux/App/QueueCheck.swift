@@ -244,6 +244,22 @@ enum QueueCheck {
         expect(!LibraryStore.isStale(now.addingTimeInterval(-60), now: now), "nor one read a minute ago")
         expect(!LibraryStore.isStale(nil, now: now), "nor one not read yet")
 
+        // Songs picked in a list (TrackPicks): Ctrl one by one, Shift a run,
+        // the menu on a pick for all of them, on another row for that row.
+        var picks = TrackPicks()
+        picks.plain(1)
+        picks.click(3, .extend)
+        expect(picks.rows == [1, 2, 3], "Shift after a plain click picks the run from it")
+        picks.click(2, .toggle)
+        picks.click(0, .toggle)
+        expect(picks.rows == [0, 1, 3], "Ctrl takes one out and puts one in")
+        expect(picks.tracks(at: 3, in: tracks).map(\.id) == ["t1", "t2", "t4"], "the menu on a pick is for every pick, in order")
+        expect(picks.tracks(at: 4, in: tracks).map(\.id) == ["t5"], "and on another row for that row")
+        picks.click(4, .extend)
+        expect(picks.rows == [0, 1, 2, 3, 4], "Shift runs from the last Ctrl-click")
+        picks.clear()
+        expect(picks.isEmpty && picks.tracks(at: 9, in: tracks).isEmpty, "cleared, and a row past the end is nothing")
+
         for what in failed { print("queue check failed: \(what)") }
         print("queue rules: \(checks - failed.count) of \(checks) checks pass")
         return failed.isEmpty ? 0 : 1
