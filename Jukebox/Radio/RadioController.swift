@@ -56,6 +56,12 @@ final class RadioController {
     /// library's snapshot, the graph): a station's page then chooses its
     /// list again, rather than show one that Play would no longer play.
     private(set) var previewInputs = 0
+    /// What the listener plays at this hour, for Your Station's card (and
+    /// CarPlay's first row, and Linux's): "Weekday mornings: Jazz and Folk".
+    /// Nil until the history shows a pattern for now (TasteProfile.timeFact):
+    /// the card then says what it said before. `refreshYourStationFact`
+    /// works it out again.
+    private(set) var yourStationFact: TimeFact?
 
     var server: (any MusicServer)?
     /// Set by AppModel: offline, what the radio may choose from.
@@ -80,6 +86,7 @@ final class RadioController {
     @ObservationIgnored private var enrichTask: Task<Void, Never>?
     @ObservationIgnored private var snapshotTask: Task<Void, Never>?
     @ObservationIgnored private var dialTask: Task<Void, Never>?
+    @ObservationIgnored private var factTask: Task<Void, Never>?
     @ObservationIgnored private var isWatchingLibrary = false
     /// Set while the radio itself moves the player on (a thumbs down skips
     /// the track): that skip is the listener's thumbs, already acted on.
@@ -136,6 +143,24 @@ final class RadioController {
         if service == nil { service = makeService() }
         rebuildGraph()
         watchLibrary()
+        refreshYourStationFact()
+    }
+
+    /// Your Station's fact for now, from the library and this device's
+    /// history, off the main actor (a TasteProfile: some 30 ms on 20 000
+    /// tracks). At sign-in and when the library changes; a screen showing
+    /// the card calls it as it appears, as the hour moves on.
+    func refreshYourStationFact() {
+        let snapshot = library.snapshot
+        let events = history.history
+        factTask?.cancel()
+        factTask = Task { [weak self] in
+            let fact = await Task.detached(priority: .utility) {
+                TasteProfile(snapshot: snapshot, history: events, now: Date()).timeFact
+            }.value
+            guard !Task.isCancelled, let self else { return }
+            if self.yourStationFact != fact { self.yourStationFact = fact }
+        }
     }
 
     func start(_ seed: StationSeed) {
@@ -272,6 +297,9 @@ final class RadioController {
         enrichTask?.cancel()
         graphTask = nil
         enrichTask = nil
+        factTask?.cancel()
+        factTask = nil
+        yourStationFact = nil
         service = nil
         graph = SimilarityGraph()
         onPhone = nil
@@ -839,6 +867,7 @@ final class RadioController {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
             self?.rebuildGraph()
+            self?.refreshYourStationFact()
         }
     }
 }

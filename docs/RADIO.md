@@ -143,7 +143,7 @@ Each track's evidence, `e`:
 - each event in this device's history: completed +1, partial +0.3, skipped
   −0.8, liked +3, disliked −4, fading with a 21-day half-life (measured: a
   completion three weeks ago counts 0.51 of one today; the test allows
-  0.45 … 0.55).
+  0.45 … 0.55). A skip of a song the listener knows is "not now" (below).
 
 | | Formula |
 |---|---|
@@ -170,9 +170,73 @@ on this device was down, in the last half year (the mixes' rule;
 started from it. A later thumbs up lifts it. As evidence alone (affinity
 −0.87, a score × 0.44) a thumbs down was not enough ("What it does when …").
 
+**Not now.** A thumbs down is "never" (above). A skip of a well-known song
+(familiarity 0.6 or a favourite, counted without its skips) is "not now":
+it counts × the clock's nearness (below) of its hour to now's, so against
+the song in that slot and hardly elsewhere, and its last-heard time rests it
+(the freshness, back to 0.84 after three days). Measured: a favourite
+skipped Tuesday 08:00 is at 0.883 that evening (0.884 unskipped; 0.812
+before this change), in Your Station's pool and allowed; the next Tuesday
+morning 0.813. Its artist 0.423 (0.423). A song never heard, skipped, counts
+−0.8 everywhere as before. A skip inside a session works as it did.
+
 `topArtists`/`topGenres` leave out the disliked and put the never-heard
 last, biggest first, so a new listener still gets a list. `topTracks` and
 `lastHeard` are there for the mixes.
+
+## The clock
+
+"leren van wanneer ik welke muziek op prijs kan stellen en daar mijn 'your
+station' op afbaken" (the photographer, 18 November 2026; the research is
+`build/research/radio.md`). Only Your Station reads it: Discovery is about
+the new, not the hour, and every other station has a seed of its own.
+
+In `TasteData`, for `now` (the device's calendar):
+1. Each history event gets a nearness `k = e^(2·(cos(2π·Δhour/24) − 1))`
+   (about ±3 hours, round over midnight), × 0.3 on the other kind of day
+   (weekday, weekend), on top of the 21-day fade.
+2. Per artist and genre: its share of what was heard (positive outcomes)
+   near now, against its share at the other hours. `L = ln((near + 0.05) /
+   (rest + 0.05))`, at most 1, and 0 below ln 1.6.
+3. `λ = n / (n + 12)`, `n` the sessions near now (45 minutes apart starts a
+   new one; each counts once, by its nearest event).
+4. Your Station chooses and weighs its 30 artists, 12 genres and 300 songs
+   by affinity × `e^(λ·L)`, and its scores × `e^(λ·L)` of the track (its
+   artist's, or its genres' on average, the larger).
+
+When `λ·L` of a pick is 0.3 or more, its reason is "Often on weekday
+mornings" (`PickReason.timeOfDay(TimeSlot)`, in Home's hours: morning from
+5, afternoon 12, evening 17, night 21). `TasteProfile.timeFact` (in the app
+`RadioController.yourStationFact`) is "Weekday mornings: Jazz and Vocal
+Jazz", for Your Station's card: with λ 0.4 or more, and a genre at λ·L 0.3
+in a sixth of the slot's plays; else nil.
+
+Measured (`RadioClockTests`): a made-up listener, eight weeks, 1 213
+events, a session most workday mornings (7–10, seven in ten all Jazz) and
+weekend nights (21–2, seven in ten all Electronic), and one or two at any
+hour. Your Station, 20 seeds × 30 picks, against the same without the clock:
+
+| | Time-blind | Clock | Target |
+|---|---|---|---|
+| Jazz, Tuesday 08:00 (λ 0.62) | 0.177 | 0.398 (× 2.25) | ≥ 2× |
+| Electronic, Saturday 23:00 (λ 0.47) | 0.412 | 0.558 (× 1.36) | ≥ 2×, not met: 0.82 is nearly all of it |
+| Wednesday 15:00, any cluster | | at most 0.010 apart | ±0.03 |
+| no pattern, 2 and 8 weeks, Tuesday and Saturday every 3 hours | | at most 0.027 apart | ±0.03 |
+| "Often on …" | 0 | 239 and 183 of 600; 0 at 15:00 and without a pattern | |
+| the fact | | both slots; none at 15:00 or without a pattern | |
+
+Jazz on Tuesday 08:00 by weeks of history: 0 weeks 0.090 → 0.090 (λ 0),
+1 week 0.113 → 0.292 (λ 0.27), 2 weeks 0.127 → 0.315 (0.42), 4 weeks
+0.153 → 0.353 (0.56), 8 weeks 0.177 → 0.398 (0.62). Most of the lift is
+there after a week.
+
+The genre of the last two weeks' 264 plays, from the six weeks before:
+mean log-probability −1.464 time-blind, −1.414 with the clock (perplexity
+4.32 → 4.11).
+
+Its ceiling: tags, not sound; one device (the iPhone mixes walking and the
+car); slots of a few hours; an artist with morning and night songs is one
+artist. `TasteProfile` with 20 000 tracks and events: 26–31 ms (release).
 
 ## The similarity graph, from the library
 
@@ -255,8 +319,9 @@ The winning channel is the reason under the track in Up Next:
 - era: "From the 1990s".
 
 Taste gives the reason only where taste is the point:
-- Your Station: "One of your favourites" (a heart, or affinity 0.6, about
-  eight recent plays), "Not heard in a while";
+- Your Station: "Often on weekday mornings" when the clock lifted it,
+  else "One of your favourites" (a heart, or affinity 0.6, about eight
+  recent plays), "Not heard in a while";
 - Discovery: "New to you";
 - Loved: "One of your favourites";
 - a favourite on a genre station below 0.5: "One of your favourites".
@@ -388,10 +453,10 @@ seeds they do not.
 
 | adventurousness | coherent | in cluster (played / unplayed seeds) | unheard | favourites | distinct artists in 50 | seed artist's share | separation / repeat / album violations |
 |---|---|---|---|---|---|---|---|
-| 0 | 1.000 | 0.971 (0.990 / 0.939) | 0.339 | 0.073 | 7.8 | 0.184 | 0 / 0 / 0 |
-| 0.35 (default) | 1.000 | 0.960 (0.977 / 0.931) | 0.441 | 0.070 | 8.6 | 0.184 | 0 / 0 / 0 |
-| 0.7 | 1.000 | 0.935 (0.955 / 0.902) | 0.621 | 0.062 | 9.7 | 0.183 | 0 / 0 / 0 |
-| 1 | 0.941 | 0.790 (0.793 / 0.787) | 0.817 | 0.020 | 15.1 | 0.170 | 0 / 0 / 0 |
+| 0 | 1.000 | 0.971 (0.990 / 0.939) | 0.339 | 0.075 | 7.8 | 0.184 | 0 / 0 / 0 |
+| 0.35 (default) | 1.000 | 0.962 (0.979 / 0.933) | 0.440 | 0.068 | 8.6 | 0.184 | 0 / 0 / 0 |
+| 0.7 | 1.000 | 0.937 (0.957 / 0.902) | 0.619 | 0.058 | 9.7 | 0.182 | 0 / 0 / 0 |
+| 1 | 0.941 | 0.791 (0.793 / 0.787) | 0.815 | 0.020 | 15.0 | 0.168 | 0 / 0 / 0 |
 
 At 0 the station stays near and known (97% in cluster, a third unheard). At
 1 it goes further out (79% in cluster, through second-degree neighbours and
@@ -402,11 +467,11 @@ artists, so 8.6 distinct in 50 is most of the neighbourhood.
 
 | What | Without | After |
 |---|---|---|
-| Thumbs down on a song by artist X (6 picks in): X's songs in the next 30, average over 48 stations | 5.31 | 0.02 |
-| Three skips of Shoegaze on Rock Radio: Shoegaze's share of the next 30, 12 runs | 0.386 | 0.150 |
-| Thumbs up at 0.6: the liked artist's share of the next 15 (separation 3 holds any artist to 0.25 at most) | 0.158 | 0.185 |
-| … the liked artist and its close neighbours (edge ≥ 0.5) | 0.456 | 0.502 |
-| … picks that say "Because you liked" | 0 | 0.358 |
+| Thumbs down on a song by artist X (6 picks in): X's songs in the next 30, average over 48 stations | 5.25 | 0.02 |
+| Three skips of Shoegaze on Rock Radio: Shoegaze's share of the next 30, 12 runs | 0.369 | 0.128 |
+| Thumbs up at 0.6: the liked artist's share of the next 15 (separation 3 holds any artist to 0.25 at most) | 0.154 | 0.185 |
+| … the liked artist and its close neighbours (edge ≥ 0.5) | 0.448 | 0.500 |
+| … picks that say "Because you liked" | 0 | 0.348 |
 
 **Every kind of seed**, 200 picks each (about 13 hours): 200 tracks, no
 repeat in the first 150 and none within 12 hours of music, no separation
@@ -414,15 +479,15 @@ violations. The first track and the reasons of the first 50:
 
 | Seed | First | Reasons in 50 |
 |---|---|---|
-| track | the seed track | similar artist 19, genre 16, by artist 9, favourite 5, seed 1 |
-| artist | by the artist, affinity 0.85 | similar artist 33, by artist 10, genre 5, favourite 2 |
+| track | the seed track | similar artist 19, genre 15, by artist 9, favourite 6, seed 1 |
+| artist | by the artist, affinity 0.85 | similar artist 32, by artist 10, genre 6, favourite 2 |
 | album | from the album | similar artist 25, by artist 20, genre 4, seed 1 |
-| genre (Jazz) | Jazz, affinity 0.91 | genre 44, favourite 6 |
+| genre (Jazz) | Jazz, affinity 0.91 | genre 43, favourite 7 |
 | decade (1990s) | from 1999 | era 50 |
-| collection (12 favourites) | from the playlist | by artist 20, similar artist 13, genre 12, seed 3, favourite 2 |
-| personal | affinity 0.94 | favourite 49, rediscover 1 |
+| collection (12 favourites) | from the playlist | by artist 21, genre 12, similar artist 12, seed 3, favourite 2 |
+| personal | affinity 0.94 | favourite 50 |
 | discovery | familiarity 0.00 | discovery 49, by artist 1 |
-| favorites | a favourite | favourite 48, by artist 1, genre 1 |
+| favorites | a favourite | favourite 47, by artist 2, genre 1 |
 
 ### Speed
 
@@ -583,10 +648,10 @@ The library is RadioFixtures' unless said.
 | the same song is on its album and a best-of (40 of 120 tracks, 6 × 60) | 46 songs played twice | 0 (and 7 → 0 twice in a mix) |
 | a song was thumbed down yesterday (4 songs, their artist's station, 10 × 60) | played 7 times | 0 |
 | the seed artist's song gets a thumbs down on their station (32 stations, next 30) | the artist 5.9 → 0.3, their close neighbours 0.65 → 0.45 | 5.9 → 3.3, 0.65 → 0.70 |
-| the station plays 1 000 songs (3 artist stations, all heard to the end) | the seed's cluster by hundreds 0.98 0.89 0.49 0.09 0.00 0.00 0.00 0.00 0.00 0.00 | 0.98 0.89 0.80 0.70 0.61 0.60 0.63 0.65 0.67 0.70; songs again in each hundred 0.00 0.03 0.38 0.55 0.61 0.61 0.68 0.71 0.77 0.83, never within 12 hours; distinct artists in 50: 8.3 → 16.0; no artist above 0.20 of any 50 |
+| the station plays 1 000 songs (3 artist stations, all heard to the end) | the seed's cluster by hundreds 0.98 0.89 0.49 0.09 0.00 0.00 0.00 0.00 0.00 0.00 | 0.98 0.88 0.79 0.68 0.60 0.59 0.64 0.65 0.71 0.66; songs again in each hundred 0.00 0.04 0.35 0.54 0.59 0.63 0.69 0.71 0.81 0.78, never within 12 hours; distinct artists in 50: 8.3 → 16.3; no artist above 0.20 of any 50 |
 | 50 skips in a row (4 stations) | — | no repeat, no skipped song back in the next 30, no score 0 (no underflow), 21 artists tried in the 50 |
 | 50 thumbs down in a row (3 stations) | — | none back in the next 40, no repeat, never fewer than asked |
-| the dial goes 0 ↔ 1 every 5 picks (200) | — | unheard 0.12 at 0, 0.75 at 1; no separation or album violation; no song within 12 hours |
+| the dial goes 0 ↔ 1 every 5 picks (200) | — | unheard 0.12 at 0, 0.74 at 1; no separation or album violation; no song within 12 hours |
 | names: "Beyoncé", "Beyonce", "BEYONCÉ"; "Sigur Rós"/"Sigur Ros"; "AC/DC"; "The The"; "Simon & Garfunkel"/"and" | — | one artist each; a station from the plain spelling finds the library's ("Beyoncé Radio") |
 | a guest only ever in "A; B" or "A feat. B" | — | their own station, opening with a song they are on, 20 of 20 in its genre |
 
@@ -618,6 +683,10 @@ Each round is in the test output of its time.
 | | … 0.3 × freshness | 0.49 and 47% |
 | | the station's own artist after a thumbs down at × 0.2 | 5.9 → 4.7, as if nothing was said |
 | | … at × 0.07 | → 1.0 |
+| 11. the clock and "not now" | Your Station by the hour (The clock); λ·L against the share overall, lifting both ways | Jazz × 1.33 at Tuesday 08:00, as morning Jazz made the overall share lean its way; Wednesday 15:00 Jazz 0.18 → 0.12 (a lift below 0) |
+| | … against the share at the other hours, only up, from ln 1.25 | Jazz × 2.25, but 0.098 apart at Wednesday 15:00 (Rock lifted as the mornings left it) and 0.065 without a pattern |
+| | … also the score × e^(λ·L), as the profile's weights stop at 1; from ln 1.6 | the table in The clock |
+| | a known song's skip × its nearness to now | the listening rows above moved by up to 0.02 (the made-up history skips loved songs) |
 
 ## Building on it
 
