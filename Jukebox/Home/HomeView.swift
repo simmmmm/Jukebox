@@ -217,7 +217,12 @@ extension View {
     /// afkaderen, hoeft niet extreem, hetzelfde geldt voor your station;
     /// beide staan zo in het niets met deze opmaak". Linux's home-card.
     func homeCard(_ ground: Color = Theme.raised) -> some View {
+        // The words' side gets as much air as the words have above and
+        // below: "Geef ze beide ff wat meer padding aan de rechterkant,
+        // zodat het meer in balans is met boven en onder" (the photographer,
+        // 18 November 2026).
         padding(Theme.Space.m)
+            .padding(.trailing, Theme.Space.xl)
             .background(ground, in: .rect(cornerRadius: Theme.Radius.artwork + Theme.Space.m))
     }
 
@@ -228,7 +233,7 @@ extension View {
     @ViewBuilder
     func homeCardFrame(isPaired: Bool, isWide: Bool) -> some View {
         if isPaired {
-            frame(width: CGFloat(DesktopMeasures.homeCard) - 2 * Theme.Space.m, alignment: .leading)
+            frame(width: CGFloat(DesktopMeasures.homeCard) - 2 * Theme.Space.m - Theme.Space.xl, alignment: .leading)
                 .frame(maxHeight: .infinity)
         } else {
             frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)

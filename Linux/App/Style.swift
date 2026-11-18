@@ -138,7 +138,7 @@ enum Style {
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
-        .home-card { background-color: \(raised); border-radius: 18px; padding: 12px; }
+        .home-card { background-color: \(raised); border-radius: 18px; padding: 12px 36px 12px 12px; }
         /* Each card one button (Pages.cardButton): its words as words,
            a little darker under the pointer, the word at its foot in the
            accent. */
