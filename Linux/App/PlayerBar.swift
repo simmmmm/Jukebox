@@ -102,7 +102,7 @@ enum PlayerBar {
         // has them ("mis ook nog repeat, repeat all en shuffle", 14 November
         // 2026): lit in the accent while on. A station chooses its own
         // order, so there they rest, dimmed.
-        let shuffle = gtk_toggle_button_new()!.css("flat", "mode").tooltip("Shuffle")
+        let shuffle = gtk_toggle_button_new()!.css("flat", "mode").named("Shuffle")
         gtk_button_set_icon_name(ptr(shuffle), "media-playlist-shuffle-symbolic")
         var isSettingMode = false
         on(shuffle, "toggled") { if !isSettingMode { app.player.toggleShuffle() } }
@@ -130,7 +130,7 @@ enum PlayerBar {
         times = [elapsed, total]
         let scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 1)!
         gtk_scale_set_draw_value(ptr(scale), 0)
-        scale.expand(horizontal: true).tooltip("Position")
+        scale.expand(horizontal: true).named("Position")
         // The listener's hand on the slider, as against the song moving it:
         // a drag seeks once it rests, not at every step of the way.
         var isSetting = false
@@ -161,7 +161,7 @@ enum PlayerBar {
         gtk_widget_set_margin_start(volume, 8)
         let popover = gtk_popover_new()!
         gtk_popover_set_child(ptr(popover), levelScale(width: 160).margins(8))
-        volumeButton = gtk_menu_button_new()!.css("flat").tooltip("Volume")
+        volumeButton = gtk_menu_button_new()!.css("flat").named("Volume")
         gtk_menu_button_set_popover(ptr(volumeButton), popover)
         volumeButton.isVisible = false
         gtk_widget_set_margin_start(volumeButton, 8)
@@ -193,7 +193,7 @@ enum PlayerBar {
             let disliked = track.map { app.radio.disliked.contains($0.id) } ?? false
             if disliked { gtk_widget_add_css_class(notThis, "given") } else { gtk_widget_remove_css_class(notThis, "given") }
             setIcon(play, player.isPlaying ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
-            play.tooltip(player.isPlaying ? "Pause" : "Play")
+            play.named(player.isPlaying ? "Pause" : "Play")
         }
         observe(speaker) {
             let icon = app.player.volume == 0 ? "audio-volume-muted-symbolic" : "audio-volume-high-symbolic"
@@ -267,6 +267,9 @@ enum PlayerBar {
         // Always, as the Mac's bar menu has it: a menu's entry, not a
         // button on the bar.
         items += ratingItems(.track(track.id))
+        // Who made it, where the server said: Full Player is where a song's
+        // details are.
+        items += creditItems(track)
         return items
     }
 
@@ -274,7 +277,7 @@ enum PlayerBar {
     private static func levelScale(width: Int32) -> Widget {
         let level = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.05)!.css("level")
         gtk_scale_set_draw_value(ptr(level), 0)
-        level.size(width: width).tooltip("Volume")
+        level.size(width: width).named("Volume")
         var isSetting = false
         // Playing elsewhere, the device's own level (PlayOn.swift).
         on(level, "value-changed") {
@@ -301,7 +304,7 @@ enum PlayerBar {
         let rows = vbox(spacing: 0)
         let popover = gtk_popover_new()!
         gtk_popover_set_child(ptr(popover), vbox(spacing: 8, [label("Play On", "heading").align(horizontal: GTK_ALIGN_START).margins(horizontal: 8), rows]).margins(8))
-        let button = gtk_menu_button_new()!.css("flat").tooltip("Play On")
+        let button = gtk_menu_button_new()!.css("flat").named("Play On")
         gtk_menu_button_set_icon_name(ptr(button), Glyphs.name("play-on"))
         gtk_menu_button_set_popover(ptr(button), popover)
         on(raw(popover), "show") { app.player.playOn.look() }
@@ -342,7 +345,7 @@ enum PlayerBar {
     /// One of the panel's buttons: lit (pressed, the glyph in the accent)
     /// while the panel shows its content; pressed then, it closes the panel.
     private static func panelButton(_ icon: String, _ name: String, _ content: PanelState.Content) -> Widget {
-        let toggle = gtk_toggle_button_new()!.css("flat").tooltip(name)
+        let toggle = gtk_toggle_button_new()!.css("flat").named(name)
         gtk_button_set_icon_name(ptr(toggle), icon)
         var isSetting = false
         on(toggle, "toggled") { if !isSetting { app.panel.toggle(content) } }
@@ -526,7 +529,7 @@ enum NowPlayingPage {
     private static func sleepTimer() -> Widget {
         let left = label("", "t15", "times")
         let moon = gtk_image_new_from_icon_name("weather-clear-night-symbolic")!
-        let button = gtk_menu_button_new()!.css("flat").tooltip("Sleep Timer")
+        let button = gtk_menu_button_new()!.css("flat").named("Sleep Timer")
         gtk_menu_button_set_child(ptr(button), hbox(spacing: 8, [left, moon]))
         // The words apart from the menu: they change every second, and the
         // menu, made again, would close under the pointer.

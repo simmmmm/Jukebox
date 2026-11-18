@@ -12,7 +12,8 @@
 // panel has it (UpNextList, shared): where it plays from at the top (the
 // album's cover and title, or the station's mark, name and dial), a
 // hairline, the song playing and the ones to come, "Then", and a foot that
-// counts them ("6 songs · 27 min"). Shuffle and repeat are in the bar there.
+// counts them ("6 songs · 27 min"), then the History of what played,
+// dimmed, as the iPhone's. Shuffle and repeat are in the bar there.
 // A song is dragged to where it goes, or moved and removed from its menu.
 
 import JukeboxKit
@@ -173,7 +174,8 @@ struct QueueView: View {
         // one queue (PlayQueue) keeps which ones they are on both.
         let items = UpNextList.items(current: player.current, upNext: player.upNext, context: player.context,
                                      currentIndex: player.currentIndex, added: player.addedIDs,
-                                     autoplay: settings.autoplay, repeatMode: player.repeatMode)
+                                     autoplay: settings.autoplay, repeatMode: player.repeatMode,
+                                     played: player.played)
         let head = UpNextList.head(player.context, playing: player.currentTrack, library: library, mixes: mixes)
         return List {
             if let head {
@@ -266,14 +268,26 @@ struct QueueView: View {
                 .contextMenu {
                     panelMenu(entry, playing: playing)
                 }
+                // Played: there, but quieter than what is to come.
+                .opacity(style == .played ? 0.5 : 1)
                 .accessibilityElement(children: .combine)
                 .accessibilityAddTraits(playing ? [] : .isButton)
                 .accessibilityHint(playing ? "" : "Plays this song")
+                // VoiceOver's activate, as a tap: the gesture alone is not one.
+                .accessibilityAction {
+                    if !playing { player.skip(to: entry) }
+                }
                 .panelRow()
         case .then:
             panelWords("Then")
                 .padding(.top, Theme.Space.xl)
                 .padding(.bottom, Theme.Space.xs)
+                .panelRow()
+        case .history:
+            panelWords("History")
+                .padding(.top, Theme.Space.xl)
+                .padding(.bottom, Theme.Space.xs)
+                .accessibilityAddTraits(.isHeader)
                 .panelRow()
         case let .note(text):
             panelWords(text)
@@ -566,6 +580,7 @@ private extension UpNextList.Item {
         switch self {
         case let .song(entry, _, _, _, _): entry.id.uuidString
         case .then: "then"
+        case .history: "history"
         case .note: "note"
         case .foot: "foot"
         }
@@ -573,7 +588,7 @@ private extension UpNextList.Item {
 
     /// A song still to come: what can be moved and taken out.
     var isUpcoming: Bool {
-        if case let .song(_, _, _, playing, _) = self { return !playing }
+        if case let .song(_, _, style, playing, _) = self { return !playing && style != .played }
         return false
     }
 }
@@ -645,7 +660,7 @@ private struct QueuePanelRow: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .frame(minHeight: style == .numbered ? 48 : style == .covered ? 64 : 72)
+        .frame(minHeight: style == .numbered ? 48 : style == .station ? 72 : 64)
     }
 
     private func title(_ track: Track) -> some View {

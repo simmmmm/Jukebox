@@ -200,6 +200,8 @@ enum Style {
         .queue-row { min-height: 48px; }
         .queue-row.covered { min-height: 64px; }
         .queue-row.station { min-height: 72px; }
+        /* History: there, but quieter than what is to come (the iPhone's 50 %). */
+        .queue-row.played { min-height: 64px; opacity: 0.5; }
         /* The dial: the accent, its knob always shown (it is set, not read). */
         /* grid-ok: the 4 track centred in 16 */
         scale.dial { padding: 6px 0; }

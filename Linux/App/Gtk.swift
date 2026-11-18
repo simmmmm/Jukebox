@@ -186,6 +186,16 @@ extension UnsafeMutablePointer where Pointee == GtkWidget {
         return self
     }
 
+    /// The tooltip, and the name a screen reader says: for a control with
+    /// no words of its own (a symbol, a slider, a menu of a symbol). GTK
+    /// gives the tooltip only as a description, so Orca said "button".
+    @discardableResult
+    func named(_ text: String) -> Widget {
+        gtk_widget_set_tooltip_text(self, text)
+        jb_accessible_label(self, text)
+        return self
+    }
+
     var isVisible: Bool {
         get { gtk_widget_get_visible(self) != 0 }
         nonmutating set { if isVisible != newValue { gtk_widget_set_visible(self, newValue ? 1 : 0) } }
@@ -249,8 +259,7 @@ func button(_ title: String, _ classes: String..., action: @escaping @MainActor 
 /// A button of one of Adwaita's symbols, named for the screen reader and
 /// the pointer.
 func iconButton(_ icon: String, _ name: String, _ classes: String..., action: @escaping @MainActor () -> Void) -> Widget {
-    let button = gtk_button_new_from_icon_name(icon)!
-    gtk_widget_set_tooltip_text(button, name)
+    let button = gtk_button_new_from_icon_name(icon)!.named(name)
     for name in classes { gtk_widget_add_css_class(button, name) }
     on(button, "clicked", action)
     return button

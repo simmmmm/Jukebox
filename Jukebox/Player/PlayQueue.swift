@@ -804,8 +804,34 @@ class PlayQueue {
     /// cannot go above 1.
     func level(for track: Track) -> Double {
         let volume = volume * sleepFadeLevel * crossfadeLevel
-        guard settings.normalizeVolume, let gain = track.normalizationGain else { return volume }
+        guard settings.normalizeVolume, let gain = gain(for: track) else { return volume }
         return volume * min(1, pow(10, gain / 20))
+    }
+
+    /// The song's gain, or its album's while the album is heard as one: in
+    /// order from its own page, or a queue of that album alone. Track gain
+    /// there would bring the loud songs down and leave the quiet ones, and
+    /// the album would flatten (build/research/features.md, 5); Finamp does
+    /// the same. No switch: Normalize Volume does what fits.
+    func gain(for track: Track) -> Double? {
+        let albumGain = track.albumNormalizationGain
+            ?? track.albumID.flatMap { library?.album(id: $0)?.normalizationGain }
+        // Stops at the first other album: asked on every tick, and a
+        // shuffled library is 20 000 songs.
+        let oneAlbum = track.albumID != nil && queue.allSatisfy { $0.track.albumID == track.albumID }
+        return Self.gain(for: track, albumGain: albumGain, context: context, isShuffled: isShuffled,
+                         queueIsItsAlbum: oneAlbum)
+    }
+
+    /// `gain(for:)`'s rule, without the store, for QueueCheck.
+    static func gain(for track: Track, albumGain: Double?, context: QueueContext?, isShuffled: Bool,
+                     queueIsItsAlbum: Bool) -> Double? {
+        guard let albumGain, let album = track.albumID else { return track.normalizationGain }
+        let inOrder: Bool = {
+            guard case let .album(id)? = context?.kind else { return false }
+            return id == album && !isShuffled
+        }()
+        return inOrder || queueIsItsAlbum ? albumGain : track.normalizationGain
     }
 
     /// Settings' Crossfade: the song's last half of it fades out and the

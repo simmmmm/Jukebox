@@ -443,7 +443,8 @@ extension JellyfinItem {
             isFavorite: userData?.isFavorite ?? false,
             dateAdded: dateCreated.flatMap(JellyfinDate.parse),
             playCount: userData?.playCount ?? 0,
-            lastPlayed: userData?.lastPlayedDate.flatMap(JellyfinDate.parse)
+            lastPlayed: userData?.lastPlayedDate.flatMap(JellyfinDate.parse),
+            normalizationGain: normalizationGain
         )
     }
 

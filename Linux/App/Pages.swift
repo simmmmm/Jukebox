@@ -782,7 +782,7 @@ enum LibraryPages {
         for string in strings { free(UnsafeMutablePointer(mutating: string)) }
         gtk_drop_down_set_selected(ptr(drop), guint(selected))
         on(drop, "notify::selected") { chosen(Int(gtk_drop_down_get_selected(ptr(drop)))) }
-        return drop.tooltip("Sort albums by")
+        return drop.named("Sort albums by")
     }
 }
 
@@ -904,6 +904,50 @@ enum Pages {
         if !guest.isEmpty {
             append(sectionTitle("Appears on"), to: column)
             append(shelf(guest.map { albumTile($0) }), to: column)
+        }
+        // Who sounds like them, as on the Mac and the iPhone (LibraryStore's
+        // rule, shared): the radio's graph, made again as it learns; the
+        // server's when the graph knows nobody, asked once the page is open.
+        let similar = vbox().css("group")
+        append(similar, to: column)
+        var fromServer: [Artist] = []
+        var isGone = false
+        on(similar, "destroy") { isGone = true }
+        func showSimilar() {
+            guard !isGone else { return }
+            clear(similar)
+            defer { measure(column) }
+            let found = app.library.similarArtists(to: artist, graph: app.radio.graph, fromServer: fromServer)
+            guard !found.isEmpty else { return }
+            append(sectionTitle("Similar artists"), to: similar)
+            append(shelf(found.map { LibraryPages.artistTile($0) }), to: similar)
+        }
+        observe(similar) { showSimilar() }
+        Task {
+            fromServer = await app.library.serverSimilarArtists(to: artist)
+            if !fromServer.isEmpty { showSimilar() }
+        }
+        // What the server knows of them, last, four lines until More.
+        if let overview = (app.library.artist(id: artist.id) ?? artist).overview?
+            .trimmingCharacters(in: .whitespacesAndNewlines), !overview.isEmpty {
+            let words = label(overview, "t15", "fact", lines: 4, selectable: true)
+            // About 640 wide, as the Mac's.
+            gtk_label_set_max_width_chars(ptr(words), 80)
+            let about = vbox(spacing: 8, [sectionTitle("About", below: 0), words])
+            // ponytail: a length, not the laid-out lines, says whether More
+            // is needed; four lines of 80 hold about 320 characters.
+            if overview.count > 320 {
+                var whole = false
+                var more: Widget!
+                more = wordButton("More") {
+                    whole.toggle()
+                    gtk_label_set_lines(ptr(words), whole ? -1 : 4)
+                    gtk_label_set_ellipsize(ptr(words), whole ? PANGO_ELLIPSIZE_NONE : PANGO_ELLIPSIZE_END)
+                    gtk_button_set_label(ptr(more), whole ? "Less" : "More")
+                }
+                append(more, to: about)
+            }
+            append(about, to: column)
         }
         Stats.track(.screen, ["name": "artist"])
         Nav.push(artist.name, pageColumn(column))

@@ -63,6 +63,8 @@ struct AlbumsView: View {
                 .menuIndicator(.hidden)
                 .fixedSize()
                 .accessibilityLabel("Sort By")
+                // The label above replaces the shown order: say it as the value.
+                .accessibilityValue(Text(Self.name(of: sort)))
                 .disabled(searching)
             }
             .padding(.horizontal, page.side)

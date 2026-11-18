@@ -47,6 +47,10 @@ void jb_on_secondary_click(GtkWidget *widget, JbPointHandler handler, gpointer d
 // thrown with a little momentum when let go. A press that hardly moves is
 // still a click on what it is over.
 void jb_drag_to_scroll(GtkWidget *scrolled);
+// What a screen reader calls a widget: a button of only a symbol has no
+// words of its own, and gtk_accessible_update_property is variadic, which
+// Swift cannot call.
+void jb_accessible_label(GtkWidget *widget, const char *label);
 // A popover's arrow at a point of its parent.
 void jb_popover_point_to(GtkWidget *popover, double x, double y);
 // A list's row that can be dragged onto another row of its list: `moved`

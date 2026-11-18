@@ -185,6 +185,29 @@ func submenuChoice(_ submenu: String, _ title: String, checked: Bool) -> String 
     [submenu, title, checked ? "checked" : ""].joined(separator: String(submenuMark))
 }
 
+/// An item under a submenu with no check mark, as a menu's title: Credits'
+/// people. `enabled` false greys it (someone not in the library).
+func submenuItem(_ submenu: String, _ title: String, enabled: Bool) -> String {
+    [submenu, title, "plain", enabled ? "on" : "off"].joined(separator: String(submenuMark))
+}
+
+/// Credits › who made the song, by role ("Composer: Clara Schumann"), in a
+/// song's menu where the server gave any (Navidrome's contributors,
+/// Jellyfin's composer): the sleeve's back, quietly, as the Mac's Credits
+/// submenu. One opens the artist's page when the library has them.
+func creditItems(_ track: Track) -> [(String, () -> Void)] {
+    // The library's copy: Jellyfin's composers are read with the library,
+    // not with a playlist's or the queue's songs.
+    let known = app.library.track(id: track.id) ?? track
+    return LibraryIndex.creditGroups(known).flatMap { group in
+        group.credits.map { credit -> (String, () -> Void) in
+            let artist = app.library.artist(credit.artist)
+            return (submenuItem("Credits", "\(group.role): \(LibraryIndex.creditName(credit))", enabled: artist != nil),
+                    { if let artist { Pages.open(artist) } })
+        }
+    }
+}
+
 /// Rating › None and one to five stars, the given one ticked: beside the
 /// favourite in a song's and an album's menu, on a server that keeps
 /// ratings, as the Mac's RatingMenu. Nothing elsewhere ("ik wil alleen er
@@ -210,12 +233,14 @@ func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
         // its first choice is, with a check mark: an action with a state.
         let parts = title.split(separator: submenuMark, omittingEmptySubsequences: false).map(String.init)
         let isChoice = parts.count == 3
+        let isUnder = isChoice || parts.count == 4
         let simple = isChoice
             ? g_simple_action_new_stateful("item\(index)", nil, g_variant_new_boolean(parts[2].isEmpty ? 0 : 1))!
             : g_simple_action_new("item\(index)", nil)!
+        if parts.count == 4, parts[3] == "off" { g_simple_action_set_enabled(simple, 0) }
         on(raw(simple), "activate") { action() }
         g_action_map_add_action(ptr(actions), ptr(simple))
-        guard isChoice else {
+        guard isUnder else {
             g_menu_append(menu, title, "menu.item\(index)")
             continue
         }
@@ -280,6 +305,7 @@ func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
         if let ref = first.primaryArtist, let artist = app.library.artist(ref) {
             items.append(("Go to Artist", { Pages.open(artist) }))
         }
+        items += creditItems(first)
     }
     return items
 }
@@ -650,7 +676,7 @@ func wordButton(_ title: String, action: @escaping @MainActor () -> Void) -> Wid
 
 /// ⋮: the rest of what can be done with what the page shows.
 func moreButton(_ items: [(String, () -> Void)]) -> Widget {
-    let more = gtk_menu_button_new()!.css("flat").tooltip("More")
+    let more = gtk_menu_button_new()!.css("flat").named("More")
     gtk_menu_button_set_icon_name(ptr(more), "view-more-symbolic")
     gtk_menu_button_set_popover(ptr(more), popoverMenu(items))
     return more.align(vertical: GTK_ALIGN_CENTER)
@@ -666,7 +692,7 @@ func heartButton(_ item: @escaping () -> ItemRef?) -> Widget {
         let given = item().map { app.library.isFavorite($0.id) } ?? false
         setIcon(heart, Glyphs.name(given ? "heart" : "heart-outline"))
         if given { gtk_widget_add_css_class(heart, "given") } else { gtk_widget_remove_css_class(heart, "given") }
-        heart.tooltip(given ? "Remove from Favorites" : "Add to Favorites")
+        heart.named(given ? "Remove from Favorites" : "Add to Favorites")
     }
     return heart.align(vertical: GTK_ALIGN_CENTER)
 }
