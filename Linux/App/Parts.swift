@@ -84,13 +84,16 @@ final class PageMeasure {
     private(set) var tile: Int32 = 176
     /// Played lately's columns.
     private(set) var columns = 2
+    /// Home's two cards side by side (DesktopMeasures.Page.pairsHomeCards).
+    private(set) var pairsHomeCards = true
     /// An album's cover: 160 under 720.
     var cover: Int32 { margin == 24 ? 160 : 224 }
 
-    func set(margin: Int32, tile: Int32, columns: Int) {
-        if margin != self.margin { self.margin = margin }
-        if tile != self.tile { self.tile = tile }
-        if columns != self.columns { self.columns = columns }
+    func set(_ page: DesktopMeasures.Page) {
+        if Int32(page.margin) != margin { margin = Int32(page.margin) }
+        if Int32(page.tile) != tile { tile = Int32(page.tile) }
+        if page.columns != columns { columns = page.columns }
+        if page.pairsHomeCards != pairsHomeCards { pairsHomeCards = page.pairsHomeCards }
     }
 }
 

@@ -29,8 +29,7 @@ enum HomePage {
             }
             append(pageTitle(RelativeDay.partOfDay()), to: column)
             if let notice = offlineNotice() { append(notice, to: column) }
-            if let offer = app.handoff.offer { append(handoffNotice(offer), to: column) }
-            append(yourStation(), to: column)
+            appendCards(to: column)
 
             let mixes = app.mixes.mixes
             if !mixes.isEmpty {
@@ -126,21 +125,76 @@ enum HomePage {
     }
 
     /// Music on another device, or this one's from last time, and the one
-    /// thing to do about it (HandoffStore): words on Home's ground, as on
-    /// the iPhone, and nowhere near the player's controls — "ik wil die
-    /// melding echt niet over de controls hebben" (the photographer, 14
-    /// November 2026, of a banner over the player's bar).
-    private static func handoffNotice(_ offer: HandoffStore.Offer) -> Widget {
-        let go = cardLink(offer.isOwn ? "Continue" : "Continue Here", icon: "go-next-symbolic", trailing: true)
-        gtk_widget_set_margin_top(go, 8)
-        let words = vbox(spacing: 4, [
-            label(offer.heading, "fact").align(horizontal: GTK_ALIGN_START),
-            label("\(offer.track.name) · \(offer.track.artistLine)").align(horizontal: GTK_ALIGN_START),
-            go,
-        ])
-        // The whole card goes on with it, as Your Station's under it.
-        let card = cardButton(words) { app.handoff.continueHere() }
-        return card.margins(vertical: 8)
+    /// thing to do about it (HandoffStore): on Home, nowhere near the
+    /// player's controls — "ik wil die melding echt niet over de controls
+    /// hebben" (the photographer, 14 November 2026, of a banner over the
+    /// player's bar). In the form of Your Station's card beside it ("beide
+    /// met een soortgelijke opmaak", 18 November 2026): the song's cover 120 with
+    /// the record behind it, then the heading, the song in the serif, its
+    /// artist, and Continue at the foot. The whole card goes on with it.
+    private static func handoffCard(_ offer: HandoffStore.Offer, paired: Bool) -> Widget {
+        let art = Art(120)
+        art.show(offer.track.artwork)
+        let words = vbox()
+        append(cardLine(offer.heading, ["t13", "fact"], paired: paired), to: words)
+        append(cardLine(offer.track.name, ["serif", "section-title"], paired: paired), to: words)
+        append(cardLine(offer.track.artistLine, ["t13", "fact"], paired: paired, above: 8), to: words)
+        let link = cardLink(offer.isOwn ? "Continue" : "Continue Here", icon: "go-next-symbolic", trailing: true)
+        gtk_widget_set_margin_top(link, 12)
+        append(link, to: words)
+        // A step lighter than Your Station's ground: "'where you left off'
+        // misschien in een lichtere tint" (the photographer, 18 November
+        // 2026); Style.swift's home-card.lighter.
+        let card = cardButton(cardRow(art.widget, words, paired: paired)) { app.handoff.continueHere() }.css("lighter")
+        keep(art, on: raw(card), as: "art")
+        return card
+    }
+
+    /// The music to go on with and Your Station: side by side, each
+    /// DesktopMeasures.homeCard wide and as tall as the other, where the
+    /// page has room (Page.pairsHomeCards), 32 under the title; else one
+    /// above the other, each as wide as its words, as before.
+    private static func appendCards(to column: Widget) {
+        let paired = PageMeasure.shared.pairsHomeCards
+        guard let offer = app.handoff.offer else {
+            append(yourStation(paired: false), to: column)
+            return
+        }
+        let goOn = handoffCard(offer, paired: paired)
+        let station = yourStation(paired: paired)
+        guard paired else {
+            append(goOn.margins(vertical: 8), to: column)
+            append(station, to: column)
+            return
+        }
+        gtk_widget_set_margin_top(station, 0)
+        for card in [goOn, station] { card.align(horizontal: GTK_ALIGN_FILL).size(width: Int32(DesktopMeasures.homeCard)) }
+        let row = hbox(spacing: 24, [goOn, station]).align(horizontal: GTK_ALIGN_START)
+        gtk_box_set_homogeneous(ptr(row), 1)
+        gtk_widget_set_margin_top(row, 32)
+        append(row, to: column)
+    }
+
+    /// One line of a card's words, ending in "…". In the row its card is
+    /// as wide as the row gives (`homeCard`), so the line takes the width
+    /// it is given rather than widening the card.
+    private static func cardLine(_ text: String, _ classes: [String], paired: Bool, above: Int32 = 0) -> Widget {
+        let line = label(text)
+        for name in classes { line.css(name) }
+        if paired { gtk_label_set_max_width_chars(ptr(line), 1) }
+        gtk_widget_set_margin_top(line, above)
+        return line
+    }
+
+    /// A card's art with the record peeking from behind it, as Now
+    /// Playing's from its sleeve ("met misschien een kleine 'plaat'
+    /// graphic", the photographer, 18 November 2026), and its words 24
+    /// beside it, in the middle of its height.
+    private static func cardRow(_ art: Widget, _ words: Widget, paired: Bool) -> Widget {
+        let withRecord = gtk_overlay_new()!
+        gtk_overlay_set_child(ptr(withRecord), cardRecord(120))
+        gtk_overlay_add_overlay(ptr(withRecord), art)
+        return hbox(spacing: 24, [withRecord, words.align(vertical: GTK_ALIGN_CENTER).expand(horizontal: paired)])
     }
 
     /// A card of Home's (Style's home-card) that is one button: a click,
@@ -167,35 +221,25 @@ enum HomePage {
 
     /// Your Station: its arch 120, 24, the name in the serif, one fact, the
     /// one Play; "On air" over the name while it plays.
-    private static func yourStation() -> Widget {
+    private static func yourStation(paired: Bool) -> Widget {
         let station = app.radio.station(for: .personal)
         let art = StationArt(120)
         art.show(station)
         let onAir = app.radio.station?.id == station.id
         let dates = HomeShelves.stationDates(events: app.history.history.events)
         let fact = onAir ? RadioPage.started(station) ?? "" : RelativeDay.lastPlayed(dates[station.id])
-        let name = label("Your Station", "serif", "section-title").align(horizontal: GTK_ALIGN_START)
         let words = vbox()
         if onAir { append(label("On air", "t13", "accent"), to: words) }
-        append(name, to: words)
-        let line = label(fact, "t13", "fact")
-        gtk_widget_set_margin_top(line, 8)
-        append(line, to: words)
+        append(cardLine("Your Station", ["serif", "section-title"], paired: paired), to: words)
+        append(cardLine(fact, ["t13", "fact"], paired: paired, above: 8), to: words)
         let playing = onAir && app.player.isPlaying
         let link = cardLink(playing ? "Pause" : "Play", icon: playing ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
         gtk_widget_set_margin_top(link, 12)
         append(link, to: words)
-        // The art with a record peeking from behind it, as Now Playing's
-        // from its sleeve: "met misschien een kleine 'plaat' graphic" (the
-        // photographer, 18 November 2026).
-        let withRecord = gtk_overlay_new()!
-        gtk_overlay_set_child(ptr(withRecord), cardRecord(120))
-        gtk_overlay_add_overlay(ptr(withRecord), art.widget)
         // On its own ground, one button (cardButton): Play, or on the air
         // Pause and Play, as its filled button did; the station's page on
         // the secondary button, as a station's tile has it.
-        let row = hbox(spacing: 24, [withRecord, words.align(vertical: GTK_ALIGN_CENTER)])
-        let card = cardButton(row) {
+        let card = cardButton(cardRow(art.widget, words, paired: paired)) {
             if app.radio.station?.id == station.id { app.player.togglePlayPause() } else { app.radio.start(station) }
         }
         contextMenu(on: card) { [("Go to Station", { Pages.open(station) })] }

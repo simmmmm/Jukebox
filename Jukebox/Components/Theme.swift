@@ -66,6 +66,13 @@ enum Theme {
     /// #ECE7DF by day, #1B1918 by night.
     static let raised = Color(light: 0xECE7DF, dark: 0x1B1918)
 
+    /// Home's music to go on with, beside Your Station on a wide page: a
+    /// step lighter ("'where you left off' misschien in een lichtere tint",
+    /// the photographer, 18 November 2026). By night one step up from
+    /// raised, #242120; by day halfway back to the paper, #F1EDE6, as a
+    /// step past it would no longer read as a card. Linux's `lighter`.
+    static let raisedLighter = Color(light: 0xF1EDE6, dark: 0x242120)
+
     /// The Arch's own colours (docs/BRAND.md). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
     /// only — the station on the air, the icon — never for text.

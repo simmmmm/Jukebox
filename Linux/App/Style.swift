@@ -33,6 +33,11 @@ enum Style {
         // One step up, for the sidebar, the panel and the bar (the designer's
         // spec, §1).
         let raised = dark ? "#1B1918" : "#ECE7DF"
+        // The music to go on with, beside Your Station: a step lighter
+        // ("misschien in een lichtere tint", 18 November 2026). By night
+        // one step up from raised; by day halfway back to the paper, as a
+        // step past it would no longer read as a card. Theme.raisedLighter.
+        let lighter = dark ? "#242120" : "#F1EDE6"
         // libadwaita 1.5 reads its colours by name, 1.6 and later from
         // variables (which GTK before 4.16 cannot read, and says so).
         var css = """
@@ -140,6 +145,9 @@ enum Style {
         button.home-card { font-weight: inherit; box-shadow: none; }
         button.home-card:hover { background-color: shade(\(raised), 0.97); }
         button.home-card:active { background-color: shade(\(raised), 0.94); }
+        button.home-card.lighter { background-color: \(lighter); }
+        button.home-card.lighter:hover { background-color: shade(\(lighter), 0.97); }
+        button.home-card.lighter:active { background-color: shade(\(lighter), 0.94); }
         .card-link { font-weight: 400; }
         button.word { min-height: 40px; padding: 0 8px; font-size: 15px; }
         button.plain { padding: 0; min-height: 0; background: none; box-shadow: none; font-weight: inherit; }
