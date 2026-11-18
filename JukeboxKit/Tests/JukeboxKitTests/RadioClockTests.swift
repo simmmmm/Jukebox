@@ -136,6 +136,17 @@ final class RadioClockTests: XCTestCase {
         let w = Self.world
         let listener = Listener(library: w.library, weeks: 8, pattern: true)
         Self.line("clock: \(listener.history.events.count) events in 8 weeks; Your Station, 20 seeds x 30 picks, clock against time-blind")
+        // What the listener plays in each slot themselves, heard to the end.
+        func own(_ cluster: Int, weekend: Bool, _ hours: (Double) -> Bool) -> Double {
+            let plays = listener.history.events.filter { e in
+                let h = Double(Listener.calendar.component(.hour, from: e.date))
+                return e.outcome == .completed && Listener.calendar.isDateInWeekend(e.date) == weekend && hours(h)
+            }
+            let hits = plays.filter { e in e.artistKeys.contains { w.library.clusterOfArtist[$0] == cluster } }
+            return Double(hits.count) / Double(max(1, plays.count))
+        }
+        Self.line(String(format: "clock: the listener's own share, heard to the end: Jazz on workdays 7-10 %.2f, Electronic on weekend days 21-2 %.2f",
+                         own(2, weekend: false) { $0 >= 7 && $0 < 10 }, own(1, weekend: true) { $0 >= 21 || $0 < 2 }))
         let cases: [(String, Date, Int)] = [("Tuesday 08:00, Jazz", Self.tuesdayMorning, 2),
                                             ("Saturday 23:00, Electronic", Self.saturdayNight, 1)]
         for (name, now, cluster) in cases {

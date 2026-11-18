@@ -219,11 +219,18 @@ hour. Your Station, 20 seeds × 30 picks, against the same without the clock:
 | | Time-blind | Clock | Target |
 |---|---|---|---|
 | Jazz, Tuesday 08:00 (λ 0.62) | 0.177 | 0.398 (× 2.25) | ≥ 2× |
-| Electronic, Saturday 23:00 (λ 0.47) | 0.412 | 0.558 (× 1.36) | ≥ 2×, not met: 0.82 is nearly all of it |
+| Electronic, Saturday 23:00 (λ 0.47) | 0.412 | 0.558 (× 1.36) | ≥ 2×, not met: 0.82 is more than the listener's own 0.72 then |
 | Wednesday 15:00, any cluster | | at most 0.010 apart | ±0.03 |
 | no pattern, 2 and 8 weeks, Tuesday and Saturday every 3 hours | | at most 0.027 apart | ±0.03 |
 | "Often on …" | 0 | 239 and 183 of 600; 0 at 15:00 and without a pattern | |
 | the fact | | both slots; none at 15:00 or without a pattern | |
+
+The listener's own share, heard to the end: Jazz 0.76 on workdays 7–10,
+Electronic 0.72 on weekend nights. The same with three other draws of the
+listener (seeds 12–14, not in the test): Jazz × 2.11 … 2.48; Electronic
+× 1.16 … 1.41, λ 0.38 … 0.42, so no "Often on" and no fact there; Wednesday
+15:00 at most 0.018 apart; but without a pattern at most 0.037 … 0.047
+apart, over the ±0.03: chance still lifts a genre now and then.
 
 Jazz on Tuesday 08:00 by weeks of history: 0 weeks 0.090 → 0.090 (λ 0),
 1 week 0.113 → 0.292 (λ 0.27), 2 weeks 0.127 → 0.315 (0.42), 4 weeks
@@ -686,7 +693,7 @@ Each round is in the test output of its time.
 | 11. the clock and "not now" | Your Station by the hour (The clock); λ·L against the share overall, lifting both ways | Jazz × 1.33 at Tuesday 08:00, as morning Jazz made the overall share lean its way; Wednesday 15:00 Jazz 0.18 → 0.12 (a lift below 0) |
 | | … against the share at the other hours, only up, from ln 1.25 | Jazz × 2.25, but 0.098 apart at Wednesday 15:00 (Rock lifted as the mornings left it) and 0.065 without a pattern |
 | | … also the score × e^(λ·L), as the profile's weights stop at 1; from ln 1.6 | the table in The clock |
-| | a known song's skip × its nearness to now | the listening rows above moved by up to 0.02 (the made-up history skips loved songs) |
+| | a known song's skip × its nearness to now | the listening rows above moved by up to 0.022, and a mix's day-to-day overlap by 0.05 (Pop 0.27 → 0.32: the mixes' taste is at midnight, where a morning skip of a known song now counts little); the made-up history skips loved songs |
 
 ## Building on it
 
