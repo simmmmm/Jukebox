@@ -86,7 +86,11 @@ static GVariant *property(GDBusConnection *c, const char *sender, const char *pa
     if (!g_strcmp0(name, "Position")) return g_variant_new_int64(now.position);
     if (!g_strcmp0(name, "CanGoNext")) return g_variant_new_boolean(has && now.can_next);
     if (!g_strcmp0(name, "CanGoPrevious")) return g_variant_new_boolean(has && now.can_previous);
-    if (!g_strcmp0(name, "CanPlay") || !g_strcmp0(name, "CanPause") || !g_strcmp0(name, "CanSeek"))
+    // Play always: with nothing loaded it goes on where the listener left
+    // off, or plays Your Station (Mpris.swift). False, GNOME Shell hides the
+    // player's buttons and the Play key goes nowhere.
+    if (!g_strcmp0(name, "CanPlay")) return g_variant_new_boolean(TRUE);
+    if (!g_strcmp0(name, "CanPause") || !g_strcmp0(name, "CanSeek"))
         return g_variant_new_boolean(has);
     g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_UNKNOWN_PROPERTY, "No property %s", name);
     return NULL;
@@ -165,7 +169,6 @@ void jb_mpris_update(const char *status, const char *track_id, const char *title
     g_variant_builder_add(&changed, "{sv}", "Metadata", metadata());
     g_variant_builder_add(&changed, "{sv}", "CanGoNext", g_variant_new_boolean(has && can_next));
     g_variant_builder_add(&changed, "{sv}", "CanGoPrevious", g_variant_new_boolean(has && can_previous));
-    g_variant_builder_add(&changed, "{sv}", "CanPlay", g_variant_new_boolean(has));
     g_variant_builder_add(&changed, "{sv}", "CanPause", g_variant_new_boolean(has));
     g_variant_builder_add(&changed, "{sv}", "CanSeek", g_variant_new_boolean(has));
     g_dbus_connection_emit_signal(bus, NULL, PATH, "org.freedesktop.DBus.Properties", "PropertiesChanged",
@@ -176,4 +179,17 @@ void jb_mpris_set_position(gint64 position, gboolean seeked) {
     now.position = position;
     if (bus && seeked)
         g_dbus_connection_emit_signal(bus, NULL, PATH, PLAYER, "Seeked", g_variant_new("(x)", position), NULL);
+}
+
+void jb_request_background(const char *reason) {
+    GDBusConnection *session = g_bus_get_sync(G_BUS_TYPE_SESSION, NULL, NULL);
+    if (!session) return;
+    GVariantBuilder options;
+    g_variant_builder_init(&options, G_VARIANT_TYPE_VARDICT);
+    g_variant_builder_add(&options, "{sv}", "reason", g_variant_new_string(reason));
+    g_dbus_connection_call(session, "org.freedesktop.portal.Desktop", "/org/freedesktop/portal/desktop",
+                           "org.freedesktop.portal.Background", "RequestBackground",
+                           g_variant_new("(sa{sv})", "", &options), NULL, G_DBUS_CALL_FLAGS_NONE, -1, NULL,
+                           NULL, NULL);
+    g_object_unref(session);
 }

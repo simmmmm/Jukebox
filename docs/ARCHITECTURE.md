@@ -523,7 +523,10 @@ Control Center have one): it is doors into the music.
 - **Small**: Your Station. The mark, flat, and Play; while it plays the
   mark is lit and says "On air". **Medium**: the same, and Home's first
   three mixes, each a Play. **The lock screen** (circular): the mark,
-  Your Station's Play. A tap anywhere else opens the app.
+  Your Station's Play. A tap anywhere else opens the app. **A control**
+  (`YourStationControl`, iOS 18's `ControlWidget`): Your Station's Play in
+  Control Center, on the iPhone's Lock Screen and on the Action Button,
+  with the radio's waves for a symbol (a control draws no mark).
 - **The buttons** are `Intents/WidgetIntents.swift`'s, hidden from
   Shortcuts, compiled into both targets and performed by the app (an audio
   intent runs in the app's process, launched in the background as for
@@ -542,6 +545,29 @@ Control Center have one): it is doors into the music.
   Group in the Mac's entitlements and a second export, all untried until
   an upload. The code would compile there as it is.
 - Portal steps and CI's check: `docs/RELEASE.md`, The widget.
+
+## Your Station from outside the window
+
+Easier to start, with no button added to the app ("doe alles", 18 November
+2026; `build/research/radio.md` 4.3). Each in its platform's own place:
+
+- **Play with nothing loaded**, on a desktop: Linux's Play key (MPRIS) and
+  Space, the Mac's Space and Play key (F8), an iPad keyboard's Space. The
+  music to go on with if there is some (HandoffStore), else Your Station
+  (`HandoffStore.playWithNothingLoaded`). MPRIS's `CanPlay` stays true, so
+  GNOME keeps its buttons. The Mac's F8 reaches Jukebox only while the
+  system takes it for the Now Playing app.
+- **Not on the iPhone and the iPad's remote commands**: a car or headphones
+  send Play by themselves when they connect, and Apple's HIG lets that
+  resume, never start. An empty queue keeps Play off there
+  (`RemoteCommands.swift`); CarPlay starts nothing by itself.
+- **A menu on the icon**: the Mac's Dock menu (while it runs), GNOME's
+  launcher menu (the desktop entry's action, `jukebox --play-station`, also
+  with Jukebox closed). **The control** on the iPhone and the iPad (The
+  widget, below).
+- **Linux plays on with the window closed** while the music plays; the
+  launcher or the media controls bring the window back. A Flatpak asks the
+  background portal, so GNOME lists it under Background Apps.
 
 ## Usage counts
 

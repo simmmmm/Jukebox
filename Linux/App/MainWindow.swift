@@ -121,9 +121,9 @@ enum MainWindow {
         observe(toasts) {
             if let message = app.player.errorMessage { toast(message) }
         }
-        action(application, "quit", "<Control>q") { gtk_window_close(ptr(window)) }
+        action(application, "quit", "<Control>q") { quit() }
         action(application, "search", "<Control>f") { showSearch() }
-        action(application, "play", "<Control>space") { app.player.togglePlayPause() }
+        action(application, "play", "<Control>space") { playOrPause() }
         action(application, "next", "<Control>Right") { app.player.next() }
         action(application, "previous", "<Control>Left") { app.player.previous() }
         action(application, "preferences", "<Control>comma") { Preferences.present() }
@@ -156,6 +156,18 @@ enum MainWindow {
             guard gtk_window_is_active(ptr(window)) != 0, !app.offline.isOffline else { return }
             Task { await app.library.refreshIfStale() }
         }
+        // Closed while the music plays, the window hides and the music plays
+        // on, as GNOME's players do: the launcher, or the media controls'
+        // Raise, bring it back as it was (present above). Closed with
+        // nothing playing, Jukebox quits. Paused while hidden it stays, so
+        // the Play key goes on; Quit (Ctrl+Q, MPRIS) always quits.
+        observe(window) { gtk_window_set_hide_on_close(ptr(window), app.player.isPlaying ? 1 : 0) }
+        on(raw(window), "notify::visible") {
+            guard gtk_widget_get_visible(window) == 0, !askedForBackground,
+                  ProcessInfo.processInfo.environment["FLATPAK_ID"] != nil else { return }
+            askedForBackground = true
+            jb_request_background("Plays your music with the window closed")
+        }
         Mpris.start()
         RadioPage.follow(window)
         Task { await app.restore() }
@@ -163,6 +175,37 @@ enum MainWindow {
         // The drawings are made at the scale of the window's screen.
         Screen.follow(window)
         Shots.walk()
+    }
+
+    /// A Flatpak asks the background portal once, the first time the
+    /// window hides with the music on.
+    private static var askedForBackground = false
+
+    static func quit() {
+        g_application_quit(g_application_get_default())
+    }
+
+    /// Play or pause (Space, Ctrl+Space); with nothing loaded, the music to
+    /// go on with or Your Station, as the Play key (Mpris.swift).
+    static func playOrPause() {
+        if app.player.hasTrack {
+            app.player.togglePlayPause()
+        } else {
+            app.handoff.playWithNothingLoaded(from: "play_key")
+        }
+    }
+
+    /// GNOME's launcher menu, Play Your Station (the desktop entry's
+    /// action, main.swift): Your Station once the session and the library
+    /// are in, ten seconds at most from a cold start, as Siri waits on the
+    /// iPhone (Voice.ready).
+    static func playYourStation() {
+        Task {
+            for _ in 0..<100 where app.library.tracks.isEmpty && app.phase != .signedOut {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            app.handoff.startYourStation(from: "launcher")
+        }
     }
 
     /// The places over the page where they are folded, for the screenshot
@@ -652,7 +695,7 @@ enum MainWindow {
 private let spacePlays: GtkShortcutFunc = { window, _, _ in
     if let window, let focus = gtk_root_get_focus(ptr(window)),
        g_type_check_instance_is_a(ptr(focus), gtk_editable_get_type()) != 0 { return 0 }
-    MainActor.assumeIsolated { app.player.togglePlayPause() }
+    MainActor.assumeIsolated { MainWindow.playOrPause() }
     return 1
 }
 

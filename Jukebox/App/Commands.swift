@@ -16,7 +16,7 @@ struct JukeboxCommands: Commands {
     var body: some Commands {
         CommandMenu("Controls") {
             // Never disabled: a disabled item could still take Space from a
-            // field typed in. With nothing to play, nothing happens.
+            // field typed in. With nothing loaded it plays Your Station.
             Button(app.player.isPlaying ? String(localized: "Pause") : String(localized: "Play")) {
                 playOrPause()
             }
@@ -74,6 +74,13 @@ struct JukeboxCommands: Commands {
             return
         }
         #endif
-        app.player.togglePlayPause()
+        // Nothing loaded: the music to go on with, or Your Station, as
+        // Linux's Space and Play key. A key pressed is the listener's own
+        // hand (an iPad's keyboard too), never a car's Play.
+        if app.player.hasTrack {
+            app.player.togglePlayPause()
+        } else {
+            app.handoff.playWithNothingLoaded(from: "play_key")
+        }
     }
 }
