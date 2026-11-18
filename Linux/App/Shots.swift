@@ -67,6 +67,7 @@ enum Shots {
             }
             MainWindow.select(5)
             await step("07-songs", wait: 2)
+            await picking()
             MainWindow.select(6)
             await step("08-playlists", wait: 2)
             await hovering([find(visiblePage(), { gtk_widget_has_css_class($0, "tile") != 0 })], "08a-playlists-hover")
@@ -104,6 +105,7 @@ enum Shots {
                 app.player.play(tracks, startingAt: 1, context: QueueContext(.album(album.id), title: album.name))
                 MainWindow.select(0)
                 await step("09-home-playing", wait: 4)
+                await miniPlayer()
                 // Narrow, the places folded away come over the page.
                 if MainWindow.showPlaces() {
                     await step("09-places-over", wait: 1)
@@ -485,6 +487,33 @@ enum Shots {
         return gtk_widget_get_next_sibling(first) ?? first
     }
 
+    /// Songs picked with Ctrl and Shift on Songs (TrackPicks): lit, and the
+    /// menu on one of them for all of them; frames.txt says what it held.
+    private static func picking() async {
+        guard let folder, let rows = find(visiblePage(), { gtk_widget_has_css_class($0, "rows") != 0 }),
+              let picked: PickedRows = kept(on: raw(rows), as: "picked") else { return }
+        picked.picks.plain(1)
+        picked.picks.click(3, .extend)
+        picked.picks.click(5, .toggle)
+        await step("07a-songs-picked", wait: 1)
+        let tracks = picked.picks.tracks(at: 2, in: picked.items())
+        let menu = trackMenu(tracks).map(\.0)
+        let file = "\(folder)/frames.txt"
+        let line = "picked: \(tracks.map(\.name)), menu: \(menu)\n"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + line).write(toFile: file, atomically: true, encoding: .utf8)
+        picked.picks.clear()
+    }
+
+    /// Mini Player (Extras.swift): its window alone, then the big one again.
+    private static func miniPlayer() async {
+        MiniPlayer.open()
+        try? await Task.sleep(for: .seconds(2))
+        guard let folder, let mini = MiniPlayer.shown, let node = picture(mini) else { return }
+        write(node, to: "\(folder)/09m-mini-player.png", of: mini)
+        gtk_window_close(ptr(mini))
+        try? await Task.sleep(for: .seconds(1))
+    }
+
     private static func step(_ name: String, wait seconds: Double) async {
         try? await Task.sleep(for: .seconds(seconds))
         guard let folder, let node = picture(MainWindow.window) else { return }
@@ -533,9 +562,9 @@ enum Shots {
     }
 
     /// A picture to a PNG, rendered as the window's own are.
-    private static func write(_ node: OpaquePointer, to path: String) {
+    private static func write(_ node: OpaquePointer, to path: String, of window: Widget = MainWindow.window) {
         defer { gsk_render_node_unref(node) }
-        guard let native = gtk_widget_get_native(MainWindow.window), let renderer = gtk_native_get_renderer(native),
+        guard let native = gtk_widget_get_native(window), let renderer = gtk_native_get_renderer(native),
               let texture = gsk_renderer_render_texture(renderer, node, nil) else { return }
         gdk_texture_save_to_png(texture, path)
         g_object_unref(raw(texture))

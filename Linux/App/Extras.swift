@@ -85,6 +85,8 @@ private nonisolated final class PathChosen {
 /// MiniPlayer on the Mac. Amperfy 2.1.1 has one (features.md).
 enum MiniPlayer {
     private static var window: Widget?
+    /// The window while it shows, for the screenshot walk.
+    static var shown: Widget? { window }
 
     static func open() {
         guard window == nil, app.player.currentTrack != nil else { return }
