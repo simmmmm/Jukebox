@@ -80,6 +80,14 @@ typedef void (*JbCastReceived)(const guint8 *bytes, gsize length, gpointer data)
 JbCast *jb_cast_connect(const char *host, guint16 port, JbCastReceived received, gpointer data);
 void jb_cast_send(JbCast *cast, const guint8 *bytes, gsize length);
 void jb_cast_close(JbCast *cast);
+// A websocket (socket.c), libsoup's: RemoteControl's commands. `received`
+// gets each text message, and NULL once, when it closed or failed. After
+// jb_socket_close nothing more is called.
+typedef struct JbSocket JbSocket;
+typedef void (*JbSocketReceived)(const char *text, gpointer data);
+JbSocket *jb_socket_connect(const char *url, JbSocketReceived received, gpointer data);
+void jb_socket_send(JbSocket *socket, const char *text);
+void jb_socket_close(JbSocket *socket);
 // Chromecasts on the network, through Avahi on the system bus. `service` is
 // the mDNS name, the key of a removal; `id` and `name` are the TXT record's
 // id= and fn= (else the service name). Nothing is called without Avahi.

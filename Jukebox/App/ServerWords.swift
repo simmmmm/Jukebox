@@ -43,6 +43,19 @@ enum ServerWords {
         account.serverName.isEmpty ? (account.serverURL.host ?? account.serverURL.absoluteString) : account.serverName
     }
 
+    /// Settings' word on Playback Reporting, under the server, on Jellyfin
+    /// and Emby only (the plugin is theirs): whether Jukebox found it and
+    /// what it is for. The photographer, 18 November 2026: "ik heb playback
+    /// reporting geinstalleerd, maak daar ook ff een notitie van in de app
+    /// settings".
+    static func playbackReportingNote(_ account: ServerCredentials) -> String? {
+        guard account.kind == .jellyfin || account.kind == .emby else { return nil }
+        if account.capabilities.contains(.playbackReporting) {
+            return String(localized: "Playback Reporting is installed: Your Year counts every play, from every device.")
+        }
+        return String(localized: "Playback Reporting was not found, or this account may not read it (it takes an administrator). With the plugin installed, Your Year counts every device; until then, only this one.")
+    }
+
     static func shortVersion(_ version: String) -> String {
         var shown = version.trimmingCharacters(in: .whitespacesAndNewlines)
         if let bracket = shown.firstIndex(of: "(") {

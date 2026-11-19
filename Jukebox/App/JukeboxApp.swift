@@ -128,6 +128,9 @@ struct RootView: View {
                 // What the computer was playing, there when the phone is
                 // picked up, not a quarter of a minute later.
                 Task { await app.handoff.refresh() }
+                // The speaker's socket, which the system may have closed
+                // while the app slept (RemoteControl).
+                app.remote.wake()
             }
             #if os(macOS)
             // A Mac's window stays .active while another app is in front, so

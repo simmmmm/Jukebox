@@ -895,7 +895,7 @@ enum Pages {
         // Made again as the album's rating changes, so its tick is the
         // server's.
         observe(menuButton) {
-            let items = more + ratingItems(.album(album.id))
+            let items = more + ratingItems(.album(album.id)) + shareItems(album.id, tracks: tracks.map(\.id))
                 + (artist.map { artist in [("Go to Artist", { open(artist) })] } ?? [])
             gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(items))
         }

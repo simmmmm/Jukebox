@@ -4,8 +4,9 @@
 // client over that client's websocket, so only a client with one open is
 // listed: measured on 12.4 (17 November 2026), a session that only posted
 // /Sessions/Capabilities/Full had SupportsRemoteControl false, and true
-// once its socket was open. Jukebox's own sessions keep no socket and are
-// never listed. The far client reports its own plays to the server.
+// once its socket was open. Another Jukebox is listed too, where it keeps
+// its socket open (RemoteControl.swift). The far client reports its own
+// plays to the server.
 
 import Foundation
 #if canImport(FoundationNetworking)

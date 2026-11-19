@@ -63,8 +63,11 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   # without its agents is what docs/SERVERS.md measures as "a server that
   # has nothing to go on". No scheduled scans: the library does not change.
   # -u: the library under ~/.cache is this user's; Navidrome writes only /data.
+  # JUKEBOX_NAVIDROME_SHARING=false: a server whose owner turned sharing
+  # off, for the kit's test that Share is then not offered.
+  sharing=(); [[ -n ${JUKEBOX_NAVIDROME_SHARING:-} ]] && sharing=(-e "ND_ENABLESHARING=$JUKEBOX_NAVIDROME_SHARING")
   docker run -d --name "$NAME" --network jukebox --network-alias "$alias" \
-    -u "$(id -u):$(id -g)" -p "$PORT:4533" \
+    -u "$(id -u):$(id -g)" -p "$PORT:4533" "${sharing[@]}" \
     -e ND_LOGLEVEL=warn -e ND_AGENTS="" -e ND_LASTFM_ENABLED=false -e ND_SPOTIFY_ID="" \
     -e ND_DEEZER_ENABLED=false -e ND_LISTENBRAINZ_ENABLED=false -e ND_ENABLEINSIGHTSCOLLECTOR=false \
     -e ND_SCANNER_SCHEDULE=0 -e ND_SCANNER_SCANONSTARTUP=true \

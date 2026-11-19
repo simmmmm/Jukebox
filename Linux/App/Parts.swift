@@ -225,6 +225,23 @@ func ratingItems(_ item: ItemRef) -> [(String, () -> Void)] {
     }
 }
 
+/// Copy Share Link, on a server that shares (ShareLinks.swift): the server
+/// makes the link on the click, it goes to the clipboard, a toast says so.
+func shareItems(_ id: ItemID, tracks: [ItemID]) -> [(String, () -> Void)] {
+    guard app.library.can(.share) else { return [] }
+    return [("Copy Share Link", {
+        Task {
+            guard let url = await app.library.shareLink(for: id, tracks: tracks),
+                  let display = gdk_display_get_default() else {
+                MainWindow.toast(String(localized: "The server did not make a link."))
+                return
+            }
+            gdk_clipboard_set_text(gdk_display_get_clipboard(display), url.absoluteString)
+            MainWindow.toast(String(localized: "Link copied"))
+        }
+    })]
+}
+
 /// A menu of `items` as a popover; `prefix` names its actions apart from
 /// another menu's on the same widget.
 func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
@@ -302,6 +319,7 @@ func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
         items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
                       { Task { await app.library.setFavorite(!favorite, item: .track(first.id)) } }))
         items += ratingItems(.track(first.id))
+        items += shareItems(first.id, tracks: [first.id])
         if let albumID = first.albumID, let album = app.library.album(id: albumID) {
             items.append(("Go to Album", { Pages.open(album) }))
         }
@@ -557,6 +575,7 @@ func albumMenu(_ album: Album) -> [(String, () -> Void)] {
             ("Add to Playlist…", { Playlists.add(tracks) }),
             ("Start a Station", { app.radio.start(.album(album.id)) })]
         + ratingItems(.album(album.id))
+        + shareItems(album.id, tracks: tracks.map(\.id))
 }
 
 /// A station's tile: the arch at the page's tile size, its name and a fact.

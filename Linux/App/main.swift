@@ -32,6 +32,7 @@ private func watchMainQueue() {
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "queue" { exit(QueueCheck.run()) }
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "accounts" { exit(AccountCheck.run()) }
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "cast" { exit(CastCheck.run()) }
+if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "remote" { exit(RemoteCheck.run()) }
 watchMainQueue()
 DefaultsFile.load()
 let application = adw_application_new("com.tijmen.Jukebox", G_APPLICATION_DEFAULT_FLAGS)!

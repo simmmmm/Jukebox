@@ -207,6 +207,12 @@ requirement" (14 November 2026).
   kept (below, Accounts).
 - What a server lacks is not offered: `app.can(.lyrics)`,
   `library.can(.playlistReorder)` (`ServerCapability`).
+- Asked of the server, never from its name (docs/SERVERS.md,
+  "Capabilities"): Copy Share Link in a song's and an album's menu
+  (`.share`, Navidrome); Your Year in Settings' server section, from
+  Playback Reporting (`.playbackReporting`) or else this device's history,
+  with a note there on Jellyfin and Emby saying which; moods and tempo
+  into the radio's graph where songs carry them (`MoodEdges`).
 - Words name the server by its kind: `library.serverKind` ("your Navidrome
   server").
 - Offline (`OfflineStore.isOffline`) only songs on the phone play: a row
@@ -370,6 +376,14 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md). It looks only while it
   and the Mac over Network's TLS, found by Bonjour
   (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
   privacy answers stay as they are (`docs/STATS.md`).
+- **Jukebox as the speaker** (18 November 2026, "net als bij spotify"):
+  on Jellyfin and Emby (`.remoteControl`) every client keeps a websocket
+  open (`Player/RemoteControl.swift`, shared; URLSession's on Apple's,
+  libsoup's on Linux) and is listed in the other clients' Play On. Their
+  Play, Pause, Next, Seek and volume drive its queue; while controlled it
+  says what it plays at once, as a progress report (no play counted). The
+  iPhone only while it plays or is open. Checked: the kit's
+  `RemoteControlTests`, Linux's `JUKEBOX_CHECK=remote`.
 - **What it cannot do**: a server at localhost is refused at once (the TV
   fetches the songs itself); a TV that cannot play from an https server it
   does not trust says so. A moment's silence between songs on a Chromecast.

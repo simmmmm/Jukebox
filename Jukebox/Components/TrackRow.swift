@@ -375,6 +375,7 @@ struct TrackMenu: View {
             if library.can(.rating) {
                 RatingMenu(item: .track(track.id))
             }
+            CopyShareLinkButton(id: track.id, tracks: [track.id])
         }
         Section {
             if let albumID = track.albumID, let album = library.album(id: albumID) {

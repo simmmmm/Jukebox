@@ -64,6 +64,8 @@ final class AppModel {
     /// What plays here, kept for the listener's other devices, and what
     /// plays there, offered here (HandoffStore).
     let handoff: HandoffStore
+    /// This device as a speaker the phone controls (RemoteControl.swift).
+    let remote: RemoteControl
 
     init() {
         identity = ClientIdentity(
@@ -81,6 +83,7 @@ final class AppModel {
         mixes = MixStore()
         offline = OfflineStore(settings: settings, library: library, history: history)
         handoff = HandoffStore(player: player, radio: radio, library: library, settings: settings, identity: identity)
+        remote = RemoteControl(player: player, library: library)
         player.radio = radio
         // What moves play counts and "Recently Played" when a song is heard
         // to the end (AudioPlayer calls library.notePlayed).
@@ -98,6 +101,7 @@ final class AppModel {
         player.playOn.castPlayer = { device in
             CastPlayer(device: device, socket: NetworkCastSocket(service: device.address))
         }
+        remote.connect = { URLSessionCommandSocket(url: $0) }
     }
 
     /// Whether the signed-in server can do this (Quick Connect and API keys
@@ -319,6 +323,6 @@ final class AppModel {
 extension AccountStores {
     init(app: AppModel) {
         self.init(player: app.player, library: app.library, history: app.history, radio: app.radio,
-                  mixes: app.mixes, offline: app.offline, handoff: app.handoff, settings: app.settings)
+                  mixes: app.mixes, offline: app.offline, handoff: app.handoff, settings: app.settings, remote: app.remote)
     }
 }

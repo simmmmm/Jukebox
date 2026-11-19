@@ -139,6 +139,7 @@ private struct SettingsAccountSection: View {
     /// Another saved account, asked about before it is signed out of.
     @State private var leaving: ServerCredentials?
     @State private var isAdding = false
+    @State private var isShowingYear = false
     /// Why the switch tapped here did not happen, under the rows.
     @State private var switchProblem: String?
 
@@ -167,6 +168,10 @@ private struct SettingsAccountSection: View {
                     Text("Server")
                 }
                 LabeledContent("User", value: credentials.userName)
+                // The year's music, from the server's record where it keeps
+                // one (the note under this section says which).
+                Button("Your Year") { isShowingYear = true }
+                    .sheet(isPresented: $isShowingYear) { YourYearView() }
                 LabeledContent("Address") {
                     Text(verbatim: credentials.serverURL.absoluteString)
                         .lineLimit(1)
@@ -213,6 +218,9 @@ private struct SettingsAccountSection: View {
         } footer: {
             if let switchProblem {
                 Text(switchProblem)
+            } else if let credentials = app.credentials,
+                      let note = ServerWords.playbackReportingNote(credentials) {
+                Text(note)
             }
         }
     }

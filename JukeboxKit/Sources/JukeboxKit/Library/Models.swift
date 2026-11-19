@@ -113,6 +113,13 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// The listener's stars, 1 to 5; nil when unrated or the server keeps
     /// none (`ServerCapability.rating`: Subsonic's `userRating`).
     public var rating: Int?
+    /// The moods as tagged (MOOD), where the server passes them:
+    /// OpenSubsonic's `moods`. Nil when none, never empty. The radio's
+    /// `MoodEdges` reads them.
+    public var moods: [String]?
+    /// Beats a minute as tagged (BPM, TBPM): OpenSubsonic's `bpm`, whose 0
+    /// means untagged and is nil here.
+    public var bpm: Int?
 
     public init(id: ItemID, name: String, albumID: ItemID? = nil, albumName: String? = nil,
                 artists: [ArtistRef] = [], albumArtist: ArtistRef? = nil, genres: [String] = [],
@@ -122,7 +129,7 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
                 dateAdded: Date? = nil, normalizationGain: Double? = nil, playlistEntryID: String? = nil,
                 container: String? = nil, credits: [Credit]? = nil, work: String? = nil,
                 movement: Movement? = nil, grouping: String? = nil, discTitle: String? = nil,
-                rating: Int? = nil, albumNormalizationGain: Double? = nil) {
+                rating: Int? = nil, albumNormalizationGain: Double? = nil, moods: [String]? = nil, bpm: Int? = nil) {
         self.id = id
         self.name = name
         self.albumID = albumID
@@ -150,6 +157,8 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
         self.grouping = grouping
         self.discTitle = discTitle
         self.rating = rating
+        self.moods = moods
+        self.bpm = bpm
     }
 
     /// Who is credited in `role`, in the server's order.
