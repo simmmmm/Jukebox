@@ -67,19 +67,13 @@ enum DrawingCache {
 
     /// The texture kept for `key`: this one, or the one drawn first.
     static func put(_ key: String, _ texture: Texture, bytes: Int) -> Texture {
-        if let found = kept[key] {
-            g_object_unref(raw(texture.pointer))
-            return found.texture
-        }
+        if let found = kept[key] { return found.texture }
         kept[key] = (texture, bytes)
         order.append(key)
         total += bytes
         while total > 64 << 20, order.count > 1 {
             let oldest = order.removeFirst()
-            if let gone = kept.removeValue(forKey: oldest) {
-                total -= gone.bytes
-                g_object_unref(raw(gone.texture.pointer))
-            }
+            if let gone = kept.removeValue(forKey: oldest) { total -= gone.bytes }
         }
         return texture
     }
@@ -95,12 +89,12 @@ func drawn(_ key: String, width: Double, height: Double, scale: Double, covers: 
            _ draw: @escaping @Sendable (OpaquePointer, [Draw.Cover]) -> Void) async -> Texture? {
     let key = drawingKey(key, scale: scale)
     if let found = DrawingCache.get(key) { return found }
-    // ArtworkLoader may let a cover go while it is being read.
-    for cover in covers { g_object_ref(raw(cover.pointer)) }
     let made = await Task.detached(priority: .utility) {
         Draw.render(width: width, height: height, scale: scale, covers: covers, draw)
     }.value
-    for cover in covers { g_object_unref(raw(cover.pointer)) }
+    // Held here until the drawing is back: a cover ArtworkLoader let go
+    // meanwhile is then freed on the main thread, not the drawing's.
+    withExtendedLifetime(covers) {}
     guard let made else { return nil }
     return DrawingCache.put(key, made.texture, bytes: made.bytes)
 }
@@ -153,7 +147,7 @@ nonisolated enum Draw {
         // cairo's ARGB32 is premultiplied BGRA in memory on a little-endian machine.
         guard let texture = gdk_memory_texture_new(wide, high, GDK_MEMORY_B8G8R8A8_PREMULTIPLIED, bytes, gsize(stride))
         else { return nil }
-        return (Texture(pointer: texture), stride * Int(high))
+        return (Texture(owning: texture), stride * Int(high))
     }
 
     /// A cover's pixels in a cairo surface (the buffer is the caller's to
