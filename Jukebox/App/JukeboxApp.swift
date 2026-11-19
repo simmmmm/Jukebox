@@ -241,6 +241,7 @@ struct MainTabView: View {
                 NavigationStack(path: navigator.path(for: .home)) {
                     HomeView().routeDestinations()
                 }
+                .modifier(MiniPlayerBar())
             }
             // Settings › Pages: Radio off, its tab goes; every library kind
             // off, the Library's. The tab shown stays until another is
@@ -250,6 +251,7 @@ struct MainTabView: View {
                     NavigationStack(path: navigator.path(for: .radio)) {
                         RadioView().routeDestinations()
                     }
+                    .modifier(MiniPlayerBar())
                 }
             }
             if settings.showsLibrary || navigator.tab == .library {
@@ -257,20 +259,19 @@ struct MainTabView: View {
                     NavigationStack(path: navigator.path(for: .library)) {
                         LibraryView().routeDestinations()
                     }
+                    .modifier(MiniPlayerBar())
                 }
             }
             Tab(value: AppTab.search, role: .search) {
                 NavigationStack(path: navigator.path(for: .search)) {
                     SearchView().routeDestinations()
                 }
+                .modifier(MiniPlayerBar())
             }
         }
         // The tab bar; a narrow iPad window has it too.
         .tabViewStyle(.sidebarAdaptable)
-        .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory {
-            MiniPlayer()
-        }
+        .modifier(BottomAccessory())
         .fullScreenCover(isPresented: $navigator.isNowPlayingPresented) {
             NowPlayingView()
         }
@@ -288,6 +289,23 @@ struct MainTabView: View {
         .sheet(item: Binding(get: { self.navigator.isNowPlayingPresented ? nil : self.navigator.addToPlaylist },
                              set: { self.navigator.addToPlaylist = $0 })) { request in
             AddToPlaylistSheet(tracks: request.tracks)
+        }
+    }
+}
+
+/// iOS 26's tab bar: it shrinks as a page scrolls down, the player rides
+/// above it in the accessory. iOS 18 has neither; its player is each tab's
+/// own bar (`MiniPlayerBar`).
+private struct BottomAccessory: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+                .tabBarMinimizeBehavior(.onScrollDown)
+                .tabViewBottomAccessory {
+                    AccessoryMiniPlayer()
+                }
+        } else {
+            content
         }
     }
 }

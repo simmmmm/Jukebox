@@ -23,9 +23,14 @@ struct MiniPlayer: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
-    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+    /// Beside the minimised tab bar there is room for the title and one
+    /// button only (iOS 26's accessory, `AccessoryMiniPlayer`); iOS 18's
+    /// bar above the tabs is always full width.
+    private let isInline: Bool
 
-    init() {}
+    init(isInline: Bool = false) {
+        self.isInline = isInline
+    }
 
     var body: some View {
         HStack(spacing: Theme.Space.xs) {
@@ -202,12 +207,6 @@ struct MiniPlayer: View {
 
     // MARK: State
 
-    /// Beside the minimised tab bar there is room for the title and one
-    /// button only.
-    private var isInline: Bool {
-        placement == .inline
-    }
-
     private var isStation: Bool {
         player.context?.isRadio == true
     }
@@ -252,6 +251,36 @@ struct MiniPlayer: View {
     private func openNowPlaying() {
         guard player.hasTrack else { return }
         navigator.isNowPlayingPresented = true
+    }
+}
+
+/// iOS 26's accessory tells the player where it sits: the environment value
+/// is 26's alone, so it is read here and handed on.
+@available(iOS 26, *)
+struct AccessoryMiniPlayer: View {
+    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
+
+    var body: some View {
+        MiniPlayer(isInline: placement == .inline)
+    }
+}
+
+/// iOS 18 has no bottom accessory: the player sits in a bar of its own on
+/// each tab's foot, just above the tab bar, in the bar's own material with a
+/// hairline over it, as Music had it before 26. Tapped, Now Playing as on 26.
+struct MiniPlayerBar: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(iOS 26, *) {
+            content
+        } else {
+            content.safeAreaInset(edge: .bottom, spacing: 0) {
+                MiniPlayer()
+                    .padding(.horizontal, Theme.Space.s)
+                    .frame(height: 56)
+                    .background(.bar)
+                    .overlay(alignment: .top) { Hairline(inset: 0) }
+            }
+        }
     }
 }
 #endif
