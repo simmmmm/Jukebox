@@ -53,6 +53,10 @@ public struct LibrarySnapshot: Sendable {
 
     public static let empty = LibrarySnapshot(tracks: [])
 
+    /// Made by the same `init`, not merely from the same tracks: whether
+    /// something worked out from `other` still holds for this one.
+    public func isSameSnapshot(as other: LibrarySnapshot) -> Bool { index === other.index }
+
     public var isEmpty: Bool { tracks.isEmpty }
 
     public func track(id: ItemID) -> Track? {

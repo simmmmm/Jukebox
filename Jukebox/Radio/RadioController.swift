@@ -113,6 +113,22 @@ final class RadioController {
     /// The library's songs that are on the phone, as a snapshot, with what
     /// it was made from: made again only when one of those moved.
     @ObservationIgnored private var onPhone: OnPhoneSnapshot?
+    /// The library as the radio reads it, with Last.fm's tags as genres
+    /// (SimilarityService.radioSnapshot), and the snapshot it was made from:
+    /// "Tags are the radio's weakest link" (build/research/radio.md, 4.4;
+    /// "doe alles", the photographer, 18 November 2026).
+    @ObservationIgnored private var tagged: (source: LibrarySnapshot, radio: LibrarySnapshot)?
+    /// The listener's Last.fm plays of library songs, for the clock, when
+    /// Settings has their Last.fm name (SimilarityService.scrobbles).
+    @ObservationIgnored private var scrobbles = ListeningHistory()
+
+    /// What the radio chooses from online: the library with its tags, once
+    /// they are made for the library as it is now; else the library itself.
+    private var radioSnapshot: LibrarySnapshot {
+        let snapshot = library.snapshot
+        if let tagged, tagged.source.isSameSnapshot(as: snapshot) { return tagged.radio }
+        return snapshot
+    }
 
     private struct OnPhoneSnapshot {
         let revision: Int
@@ -151,12 +167,13 @@ final class RadioController {
     /// tracks). At sign-in and when the library changes; a screen showing
     /// the card calls it as it appears, as the hour moves on.
     func refreshYourStationFact() {
-        let snapshot = library.snapshot
+        let snapshot = radioSnapshot
         let events = history.history
+        let scrobbles = self.scrobbles
         factTask?.cancel()
         factTask = Task { [weak self] in
             let fact = await Task.detached(priority: .utility) {
-                TasteProfile(snapshot: snapshot, history: events, now: Date()).timeFact
+                TasteProfile(snapshot: snapshot, history: events, scrobbles: scrobbles, now: Date()).timeFact
             }.value
             guard !Task.isCancelled, let self else { return }
             if self.yourStationFact != fact { self.yourStationFact = fact }
@@ -303,6 +320,8 @@ final class RadioController {
         service = nil
         graph = SimilarityGraph()
         onPhone = nil
+        tagged = nil
+        scrobbles = ListeningHistory()
         liked = []
         disliked = []
         recentStations = []
@@ -415,12 +434,17 @@ final class RadioController {
         }
     }
 
-    /// Settings changed the Last.fm key.
+    /// Settings changed the Last.fm key, or the listener's Last.fm name.
+    /// Without a key the files' genres and this device's history alone.
     func lastFMKeyChanged() {
         enrichTask?.cancel()
         enrichTask = nil
+        tagged = nil
+        scrobbles = ListeningHistory()
+        previewInputs += 1
         service = makeService()
         rebuildGraph()
+        refreshYourStationFact()
     }
 
     /// The station seed for a track, artist, album …, named and with
@@ -589,7 +613,7 @@ final class RadioController {
     /// songs on the phone alone.
     private func startInputs(playingNow: ItemID?, shown: [ItemID] = []) -> RadioStartInputs {
         let phone = offline?.isOffline == true ? onPhoneSnapshot() : nil
-        let snapshot = phone ?? library.snapshot
+        let snapshot = phone ?? radioSnapshot
         return RadioStartInputs(snapshot: snapshot,
                                 // The library's index is built after its
                                 // tracks arrive; a station started in that
@@ -597,6 +621,7 @@ final class RadioController {
                                 // nothing. Not offline: none on the phone is none.
                                 fallback: phone == nil && snapshot.isEmpty ? library.tracks : [],
                                 history: history.history,
+                                scrobbles: scrobbles,
                                 graph: graph,
                                 settings: RadioSettings(adventurousness: settings.adventurousness),
                                 now: Date(),
@@ -806,25 +831,31 @@ final class RadioController {
         guard let directory = similarityDirectory else { return nil }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        return SimilarityService(directory: directory, lastFM: settings.hasLastFM ? LastFMClient(apiKey: key) : nil)
+        return SimilarityService(directory: directory, lastFM: settings.hasLastFM ? LastFMClient(apiKey: key) : nil,
+                                 user: settings.lastFMUser)
     }
 
     /// The library's own edges at once (with what Last.fm said before, from
-    /// disk), then Last.fm's for the artists the listener likes most.
+    /// disk, its tags too), then Last.fm's for the artists the listener
+    /// likes most.
     private func rebuildGraph() {
         guard let service else { return }
         let snapshot = library.snapshot
         graphTask?.cancel()
         graphTask = Task { [weak self] in
-            let graph = await service.graph(for: snapshot)
+            let radio = await service.radioSnapshot(for: snapshot)
+            let graph = await service.graph(for: radio)
             guard !Task.isCancelled, let self, self.service === service else { return }
+            self.tagged = (snapshot, radio)
             self.graph = graph
             self.enrich(snapshot, with: service)
         }
     }
 
     /// One enrichment at a time: a newer one waits for the one before, so
-    /// Last.fm is never asked twice over at once.
+    /// Last.fm is never asked twice over at once. The listener's scrobbles
+    /// first (a few requests, and the clock's cold start), then who sounds
+    /// like whom, then the artists' tags.
     private func enrich(_ snapshot: LibrarySnapshot, with service: SimilarityService) {
         guard settings.hasLastFM, !snapshot.isEmpty else { return }
         let events = history.history
@@ -833,12 +864,26 @@ final class RadioController {
         enrichTask = Task { [weak self] in
             _ = await previous?.value
             guard !Task.isCancelled else { return }
+            let plays = await service.scrobbles(for: snapshot)
+            guard !Task.isCancelled, let self, self.service === service else { return }
+            if plays.events != self.scrobbles.events {
+                self.scrobbles = plays
+                self.previewInputs += 1
+                self.refreshYourStationFact()
+            }
             let priority = await Task.detached(priority: .utility) {
                 TasteProfile(snapshot: snapshot, history: events, now: Date()).topArtists(150)
             }.value
-            let graph = await service.enrich(snapshot: snapshot, priority: priority)
-            guard !Task.isCancelled, let self, self.service === service else { return }
+            let before = await service.radioSnapshot(for: snapshot)
+            let graph = await service.enrich(snapshot: before, priority: priority)
+            guard !Task.isCancelled, self.service === service else { return }
             self.graph = graph
+            let radio = await service.enrichTags(snapshot: snapshot, priority: priority)
+            let radioGraph = await service.graph(for: radio)
+            guard !Task.isCancelled, self.service === service, self.library.snapshot.isSameSnapshot(as: snapshot) else { return }
+            self.tagged = (snapshot, radio)
+            self.graph = radioGraph
+            self.refreshYourStationFact()
         }
     }
 
@@ -894,6 +939,8 @@ nonisolated private struct RadioStartInputs: Sendable {
     /// The library's tracks while its index is not built yet, else none.
     let fallback: [Track]
     let history: ListeningHistory
+    /// The listener's Last.fm plays, for the clock; empty without a name.
+    let scrobbles: ListeningHistory
     let graph: SimilarityGraph
     let settings: RadioSettings
     let now: Date
@@ -903,7 +950,7 @@ nonisolated private struct RadioStartInputs: Sendable {
 
     func session(for station: Station, randomSeed: UInt64) -> (session: RadioSession, index: LibrarySnapshot) {
         let index = snapshot.isEmpty && !fallback.isEmpty ? LibrarySnapshot(tracks: fallback) : snapshot
-        let taste = TasteProfile(snapshot: index, history: history, now: now)
+        let taste = TasteProfile(snapshot: index, history: history, scrobbles: scrobbles, now: now)
         // Heard anywhere in the last hours: it waits (RadioSettings).
         var recent = history.trackIDs(since: now.addingTimeInterval(-settings.noRepeatHours * 3600))
         recent.formUnion(playingNow)
