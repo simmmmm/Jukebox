@@ -103,7 +103,8 @@ final class TasteData: Sendable {
     /// - Parameter timeAware: false is the radio as it was before the clock
     ///   (no lift, a skip counting everywhere), for the measurements.
     init(snapshot: LibrarySnapshot, history: ListeningHistory, scrobbles: ListeningHistory = ListeningHistory(),
-         now: Date, calendar: Calendar = .current, timeAware: Bool = true) {
+         now: Date, calendar: Calendar = .current, timeAware: Bool = true,
+         scrobbleWeight: Double = TasteData.scrobbleWeight) {
         let index = snapshot.index
         let tracks = snapshot.tracks
         let n = tracks.count
@@ -245,7 +246,7 @@ final class TasteData: Sendable {
                 let near = Self.nearness(hours: c.hour - nowClock.hour, sameKindOfDay: c.weekend == nowClock.weekend)
                 let decay = exp2(-days(since: event.date) / Self.halfLifeDays)
                 countForClock(event, track: index.trackByID[event.trackID], date: date, near: near, decay: decay,
-                              value: decay, weight: Self.scrobbleWeight)
+                              value: decay, weight: scrobbleWeight)
             }
         }
 
