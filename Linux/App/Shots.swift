@@ -161,8 +161,13 @@ enum Shots {
             Preferences.present()
             await step("16-preferences", wait: 2)
             if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
-                await scrolled(ptr(dialog), to: 0.4, "16c-preferences-pages")
-                await scrolled(ptr(dialog), to: 1, "16b-preferences-downloads")
+                // Preferences is in pages: each picture its page, under the
+                // names the pictures had when it was one long one.
+                await shown(dialog, .playback, "16a-preferences-playback")
+                await shown(dialog, .radio, "16d-preferences-radio")
+                await shown(dialog, .library, "16c-preferences-pages")
+                await shown(dialog, .downloads, "16b-preferences-downloads")
+                await shown(dialog, .privacy, "16e-preferences-privacy")
                 adw_dialog_force_close(dialog)
             }
             await notCounted(albums)
@@ -455,6 +460,12 @@ enum Shots {
         await step(name, wait: 1)
     }
 
+    /// One of Preferences' pages, chosen as its view switcher would.
+    private static func shown(_ dialog: UnsafeMutablePointer<AdwDialog>, _ page: Preferences.Page, _ name: String) async {
+        adw_preferences_dialog_set_visible_page_name(ptr(dialog), page.rawValue)
+        await step(name, wait: 1)
+    }
+
     /// Preferences › Pages: a sidebar with fewer places, on Albums; then
     /// every page off, from Albums, which goes Home: no sidebar at all,
     /// Home, the panel and the bar. The listener's choice put back after.
@@ -561,7 +572,7 @@ enum Shots {
         Preferences.present()
         try? await Task.sleep(for: .seconds(1))
         if let dialog = dialog() {
-            await scrolled(dialog, to: 0.62, "30c-preferences-not-counted")
+            await shown(ptr(dialog), .privacy, "30c-preferences-not-counted")
             adw_dialog_force_close(ptr(dialog))
         }
         store.set(.album, id: album.id, name: album.name, counted: true)

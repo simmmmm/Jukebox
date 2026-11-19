@@ -1,18 +1,38 @@
 // Preferences, as GNOME's apps have them (libadwaita's preferences dialog):
 // the same choices as the iPhone's Settings, kept by the same AppSettings,
 // less what only a phone has (the mobile network, the record that spins).
+//
+// In pages, the dialog's own view switcher over them and its search: "Voor
+// een volgende versie moeten we ff de instellingen netjes opdelen in
+// paginas, apple hig manier volgens mij kan dat ook op de gnome hig manier
+// op Linux" (the photographer, 19 November 2026). The pages and their order
+// are the iPhone's, the iPad's and the Mac's (SettingsView.swift's
+// SettingsPage); About is the main menu's About Jukebox. A group's title
+// only where it tells something the page's does not.
 
 import CAdw
 import Foundation
 import JukeboxKit
 
 enum Preferences {
+    /// The pages' names, for the walk (Shots.swift) to open one.
+    enum Page: String {
+        case accounts, playback, radio, library, downloads, privacy
+    }
+
     static func present() {
         let settings = app.settings
         Stats.track(.screen, ["name": "settings"])
-        let page = adw_preferences_page_new()!
+        let dialog = adw_preferences_dialog_new()!
+        adw_preferences_dialog_set_search_enabled(ptr(dialog), 1)
+        let accountsPage = page(.accounts, "Accounts", "avatar-default-symbolic", in: dialog)
+        let playbackPage = page(.playback, "Playback", "media-playback-start-symbolic", in: dialog)
+        let radioPage = page(.radio, "Radio", Glyphs.name("radio"), in: dialog)
+        let libraryPage = page(.library, "Library", "folder-music-symbolic", in: dialog)
+        let downloadsPage = page(.downloads, "Downloads", Glyphs.name("download"), in: dialog)
+        let privacyPage = page(.privacy, "Privacy", "view-conceal-symbolic", in: dialog)
 
-        let playing = group("Playing", on: page)
+        let playing = group(nil, on: playbackPage)
         let qualities: [(String, StreamQuality)] = [("Original", .original), ("High (320 kbit/s)", .high),
                                                     ("Normal (256 kbit/s)", .normal), ("Low (128 kbit/s)", .low)]
         adw_preferences_group_add(ptr(playing), combo("Streaming Quality", qualities.map { $0.0 },
@@ -41,8 +61,7 @@ enum Preferences {
             "Find Lyrics Online", "When your server has none for a song, ask LRCLIB (lrclib.net).",
             settings.findLyricsOnline) { settings.findLyricsOnline = $0 })
 
-        let dialog = adw_preferences_dialog_new()!
-        let radio = group("Radio", on: page)
+        let radio = group("Last.fm", on: radioPage)
         let saveTypedKey = lastFM(on: radio, in: dialog)
         adw_preferences_group_set_description(
             ptr(radio), "With a Last.fm API key, the radio also knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Nothing is written to Last.fm.")
@@ -50,7 +69,7 @@ enum Preferences {
         // Which places the sidebar shows (AppSettings.hiddenPages), in its
         // order; Home has no switch. The photographer, 15 November 2026:
         // "kan je zelf bepalen hoe minimalistisch je alles wilt hebben".
-        let pages = group("Pages", on: page)
+        let pages = group("Pages", on: libraryPage)
         adw_preferences_group_set_description(ptr(pages), "Home is always there. Pages that are off stay reachable from Home and Search.")
         let titles: [AppSettings.Page: String] = [
             .radio: "Radio", .albums: "Albums", .artists: "Artists", .songs: "Songs", .playlists: "Playlists",
@@ -65,16 +84,17 @@ enum Preferences {
             adw_preferences_group_add(ptr(pages), row)
         }
 
-        let privacy = group("Privacy", on: page)
+        // Not Counted first, as on the iPhone: what is kept from the server,
+        // then what is told the developer.
+        NotCountedUI.group(on: privacyPage)
+        let privacy = group(nil, on: privacyPage)
         adw_preferences_group_add(ptr(privacy), toggle(
             "Share Anonymous Usage", "Which screens and features are used. Never a title, an artist, a search or a server.",
             settings.shareUsage) { settings.shareUsage = $0 })
 
-        NotCountedUI.group(on: page)
-        accounts(on: page, in: dialog)
-        downloads(on: page)
+        accounts(on: accountsPage, in: dialog)
+        downloads(on: downloadsPage)
 
-        adw_preferences_dialog_add(ptr(dialog), ptr(page))
         on(dialog, "closed") { saveTypedKey() }
         adw_dialog_present(ptr(dialog), MainWindow.window)
     }
@@ -253,7 +273,7 @@ enum Preferences {
     /// closes on its Home); Sign Out… on a row signs out of that one alone.
     /// Add Account… under them, as the iPhone's Settings has it.
     private static func accounts(on page: Widget, in dialog: UnsafeMutablePointer<AdwDialog>) {
-        let group = group("Accounts", on: page)
+        let group = group(nil, on: page)
         // In the group's header, where GNOME's Settings puts a group's own
         // action.
         let add = button("Add Account…", "flat") {
@@ -321,7 +341,7 @@ enum Preferences {
     private static func downloads(on page: Widget) {
         let settings = app.settings
         let offline = app.offline
-        let group = group("Downloads", on: page)
+        let group = group(nil, on: page)
         let keep = toggle("Keep Songs I Play", "Songs you play often or lately stay on this computer, to play without a connection",
                           settings.keepSongs) { settings.keepSongs = $0 }
         adw_preferences_group_add(ptr(group), keep)
@@ -407,9 +427,22 @@ enum Preferences {
         return row
     }
 
-    private static func group(_ title: String, on page: Widget) -> Widget {
+    /// A page of the dialog: its name in the view switcher, with its icon,
+    /// and `name` for the walk to open it by.
+    private static func page(_ name: Page, _ title: String, _ icon: String,
+                             in dialog: UnsafeMutablePointer<AdwDialog>) -> Widget {
+        let page = adw_preferences_page_new()!
+        adw_preferences_page_set_name(ptr(page), name.rawValue)
+        adw_preferences_page_set_title(ptr(page), title)
+        adw_preferences_page_set_icon_name(ptr(page), icon)
+        adw_preferences_dialog_add(ptr(dialog), ptr(page))
+        return page
+    }
+
+    /// Nil: no title, where the page's own says it.
+    private static func group(_ title: String?, on page: Widget) -> Widget {
         let group = adw_preferences_group_new()!
-        adw_preferences_group_set_title(ptr(group), title)
+        if let title { adw_preferences_group_set_title(ptr(group), title) }
         adw_preferences_page_add(ptr(page), ptr(group))
         return group
     }
