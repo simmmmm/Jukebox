@@ -896,16 +896,22 @@ enum Pages {
         // Made again as the album's rating changes, so its tick is the
         // server's.
         observe(menuButton) {
-            let items = more + ratingItems(.album(album.id)) + shareItems(album.id, tracks: tracks.map(\.id))
+            let items = more + ratingItems(.album(album.id)) + NotCountedUI.items(.album, album.id, album.name)
+                + shareItems(album.id, tracks: tracks.map(\.id))
                 + (artist.map { artist in [("Go to Artist", { open(artist) })] } ?? [])
                 + publicShareItems(.album(album))
             gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(items))
         }
         // The first genre of a joined tag ("Folk; Acoustic" is Folk), as
         // Genres lists them and the Mac's head says it.
+        let albumFacts = facts([])
+        let base = [album.year.map(String.init), LibraryIndex.genreNames(album.genres).first,
+                    length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })]
+            .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+        // "· Not counted" while the album is marked.
+        observe(albumFacts) { setText(albumFacts, app.player.notCounted.fact(base, .album, album.id)) }
         let top = heading(art: art.widget, title: album.name, lead: album.artistLine,
-                          facts: facts([album.year.map(String.init), LibraryIndex.genreNames(album.genres).first,
-                                        length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })]),
+                          facts: albumFacts,
                           actions: [
             playButton { app.player.play(tracks, context: context) },
             quietButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
@@ -1039,10 +1045,17 @@ enum Pages {
             ("Play Next", { app.player.playNext(list.items) }),
             ("Add to Queue", { app.player.addToQueue(list.items) }),
         ]
-        if own { more.append(("Delete Playlist", { Playlists.delete(playlist, then: gone) })) }
-        let moreMenu = moreButton(more)
-        // Its own picture, where the server takes one (Extras.swift).
-        PlaylistCover.offer(playlist) { items in gtk_menu_button_set_popover(ptr(moreMenu), popoverMenu(more.dropLast() + items + more.suffix(1))) }
+        let delete: [(String, () -> Void)] = own ? [("Delete Playlist", { Playlists.delete(playlist, then: gone) })] : []
+        let moreMenu = moreButton([])
+        // Its own picture, where the server takes one (Extras.swift); the
+        // menu made again as Don't Count Plays is ticked.
+        var picture: [(String, () -> Void)] = []
+        func makeMenu() {
+            let items = more + NotCountedUI.items(.playlist, playlist.id, playlist.name) + picture + delete
+            gtk_menu_button_set_popover(ptr(moreMenu), popoverMenu(items))
+        }
+        observe(moreMenu) { makeMenu() }
+        PlaylistCover.offer(playlist) { items in picture = items; makeMenu() }
         let top = heading(art: art.widget, title: playlist.name, facts: fact, actions: [
             playButton { app.player.play(list.items, context: context) },
             quietButton("Shuffle") { app.player.play(list.items, context: context, shuffled: true) },
@@ -1061,13 +1074,17 @@ enum Pages {
         // Add Songs waits for the songs it has, to tick them: a song added
         // twice stays twice on Jellyfin.
         var isLoaded = false
+        // "· Not counted" while the playlist is marked.
+        var lengthText = ""
+        observe(fact) { setText(fact, app.player.notCounted.fact(lengthText, .playlist, playlist.id)) }
         func show(_ tracks: [Track]) {
             isLoaded = true
             list.set(tracks)
             // Without an image of its own, the covers of its first
             // albums, as on the iPhone.
             if playlist.artwork == nil { art.show(collage: firstCovers(tracks)) }
-            setText(fact, length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration }))
+            lengthText = length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })
+            setText(fact, app.player.notCounted.fact(lengthText, .playlist, playlist.id))
             empty.isVisible = tracks.isEmpty
         }
         // A playlist's songs are the server's to say: it changes elsewhere

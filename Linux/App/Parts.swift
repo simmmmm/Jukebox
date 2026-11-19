@@ -188,6 +188,12 @@ func submenuChoice(_ submenu: String, _ title: String, checked: Bool) -> String 
     [submenu, title, checked ? "checked" : ""].joined(separator: String(submenuMark))
 }
 
+/// A check item of the menu itself, not under a submenu: Don't Count
+/// Plays (NotCounted.swift).
+func checkItem(_ title: String, checked: Bool) -> String {
+    submenuChoice("", title, checked: checked)
+}
+
 /// An item under a submenu with no check mark, as a menu's title: Credits'
 /// people. `enabled` false greys it (someone not in the library).
 func submenuItem(_ submenu: String, _ title: String, enabled: Bool) -> String {
@@ -260,8 +266,8 @@ func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
         if parts.count == 4, parts[3] == "off" { g_simple_action_set_enabled(simple, 0) }
         on(raw(simple), "activate") { action() }
         g_action_map_add_action(ptr(actions), ptr(simple))
-        guard isUnder else {
-            g_menu_append(menu, title, "menu.item\(index)")
+        guard isUnder, !parts[0].isEmpty else {
+            g_menu_append(menu, isUnder ? parts[1] : title, "menu.item\(index)")
             continue
         }
         let submenu = submenus[parts[0]] ?? {
@@ -319,6 +325,7 @@ func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
         items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
                       { Task { await app.library.setFavorite(!favorite, item: .track(first.id)) } }))
         items += ratingItems(.track(first.id))
+        items += NotCountedUI.items(.song, first.id, first.name)
         items += shareItems(first.id, tracks: [first.id])
         if let albumID = first.albumID, let album = app.library.album(id: albumID) {
             items.append(("Go to Album", { Pages.open(album) }))
@@ -638,6 +645,7 @@ func albumMenu(_ album: Album) -> [(String, () -> Void)] {
             ("Add to Playlist…", { Playlists.add(tracks) }),
             ("Start a Station", { app.radio.start(.album(album.id)) })]
         + ratingItems(.album(album.id))
+        + NotCountedUI.items(.album, album.id, album.name)
         + shareItems(album.id, tracks: tracks.map(\.id))
         + publicShareItems(.album(album))
 }

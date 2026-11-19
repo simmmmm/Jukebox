@@ -168,7 +168,7 @@ enum PlayerBar {
         // Lyrics shows only where there are lyrics to be had (the server's,
         // or LRCLIB's when Preferences allow it), as on the iPhone.
         observe(lyrics) { lyrics.isVisible = lyricsToBeHad() }
-        let tools = hbox(spacing: 8, [lyrics, upNext, playOnButton(), volume, volumeButton]).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER)
+        let tools = hbox(spacing: 8, [NotCountedUI.sign(), lyrics, upNext, playOnButton(), volume, volumeButton]).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER)
         tools.margins(horizontal: 16)
 
         let bar = ThreeZones.make(songZone, middle, tools).css("player-bar")
@@ -267,6 +267,7 @@ enum PlayerBar {
         // Always, as the Mac's bar menu has it: a menu's entry, not a
         // button on the bar.
         items += ratingItems(.track(track.id))
+        items += NotCountedUI.items(.song, track.id, track.name)
         // Who made it, where the server said: Full Player is where a song's
         // details are.
         items += creditItems(track)
