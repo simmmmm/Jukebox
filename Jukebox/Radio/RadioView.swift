@@ -248,7 +248,7 @@ private struct RadioStationList: View {
             VStack(alignment: .leading, spacing: measures.belowHeading) {
                 HomeSectionTitle("Stations", measures: measures)
                 Shelf(items: stations, width: measures.tile, margin: measures.margin) { station in
-                    StationTileLink(station: station, fact: RelativeDay.played(dates[station.id]))
+                    StationTileLink(station: station, fact: fact(station, dates))
                 }
             }
         } else {
@@ -256,11 +256,20 @@ private struct RadioStationList: View {
                 SectionHeader("Stations")
                 VStack(spacing: 0) {
                     ForEach(stations) { station in
-                        RadioStationRow(station: station, fact: RelativeDay.played(dates[station.id]))
+                        RadioStationRow(station: station, fact: fact(station, dates))
                     }
                 }
             }
         }
+    }
+
+    /// Your Station off the air says what is played at this hour, as on
+    /// Home; every station otherwise when it last played.
+    private func fact(_ station: Station, _ dates: [String: Date]) -> String {
+        if station.seed == .personal, radio.station?.id != station.id, let fact = radio.yourStationFact {
+            return fact.text
+        }
+        return RelativeDay.played(dates[station.id])
     }
 
     private var listed: [Station] {

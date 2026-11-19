@@ -120,6 +120,8 @@ struct RootView: View {
             .onChange(of: scenePhase) { _, phase in
                 guard phase == .active else { return }
                 app.offline.appBecameActive()
+                // The hour may have moved on: Your Station's fact for now.
+                app.radio.refreshYourStationFact()
                 // Music added on the server since, without a relaunch
                 // (LibraryStore.refreshIfStale): the Mac has no pull to refresh.
                 if !app.offline.isOffline { Task { await app.library.refreshIfStale() } }
@@ -131,6 +133,7 @@ struct RootView: View {
             // A Mac's window stays .active while another app is in front, so
             // coming back from the Finder with new music is AppKit's news.
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                app.radio.refreshYourStationFact()
                 if !app.offline.isOffline { Task { await app.library.refreshIfStale() } }
             }
             #endif

@@ -153,7 +153,10 @@ enum MainWindow {
         // from the file manager, say) shows and plays without a relaunch
         // (LibraryStore.refreshIfStale; the iPhone's RootView on .active).
         on(raw(window), "notify::is-active") {
-            guard gtk_window_is_active(ptr(window)) != 0, !app.offline.isOffline else { return }
+            guard gtk_window_is_active(ptr(window)) != 0 else { return }
+            // The hour may have moved on: Your Station's fact for now.
+            app.radio.refreshYourStationFact()
+            guard !app.offline.isOffline else { return }
             Task { await app.library.refreshIfStale() }
         }
         Mpris.start()

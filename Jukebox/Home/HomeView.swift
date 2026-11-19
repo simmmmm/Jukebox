@@ -22,6 +22,7 @@ struct HomeView: View {
     @Environment(HistoryStore.self) private var history
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
+    @Environment(RadioController.self) private var radio
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.isWide) private var isWide
 
@@ -67,6 +68,8 @@ struct HomeView: View {
         .task(id: library.lastLoaded) {
             await mixes.rebuildIfStale(library: library, history: history, settings: settings)
         }
+        // Your Station's fact is the hour's: worked out again as Home shows.
+        .onAppear { radio.refreshYourStationFact() }
         // Back from the background the next morning: today's mixes.
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
@@ -524,9 +527,11 @@ struct HomeStationHero: View {
             } else {
                 name(String(localized: "Your Station"))
                     .foregroundStyle(.primary)
-                // A fact, not a slogan: when it last played on this device.
-                // Wide, 8 under the name, as Linux's.
-                Text(RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
+                // A fact, not a slogan: what the listener plays at this hour
+                // (RadioController.yourStationFact), else when it last
+                // played on this device. Wide, 8 under the name, as Linux's.
+                Text(radio.yourStationFact?.text
+                     ?? RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
                     .desktopFont(13, phone: .subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.top, measures.isWide ? Theme.Space.xs : 0)

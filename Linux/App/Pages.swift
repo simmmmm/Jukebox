@@ -19,6 +19,8 @@ enum HomePage {
     /// tiles, each section 40 under the last.
     static func make() -> Widget {
         let column = vbox()
+        // Your Station's fact is the hour's: worked out again as Home shows.
+        app.radio.refreshYourStationFact()
         observe(column) {
             let library = app.library
             clear(column)
@@ -227,7 +229,10 @@ enum HomePage {
         art.show(station)
         let onAir = app.radio.station?.id == station.id
         let dates = HomeShelves.stationDates(events: app.history.history.events)
-        let fact = onAir ? RadioPage.started(station) ?? "" : RelativeDay.lastPlayed(dates[station.id])
+        // Off the air, what is played at this hour (RadioController.yourStationFact),
+        // else when it last played.
+        let fact = onAir ? RadioPage.started(station) ?? ""
+            : app.radio.yourStationFact?.text ?? RelativeDay.lastPlayed(dates[station.id])
         let words = vbox()
         if onAir { append(label("On air", "t13", "accent"), to: words) }
         append(cardLine("Your Station", ["serif", "section-title"], paired: paired), to: words)
@@ -307,7 +312,11 @@ enum RadioPage {
             // The one on air is the hero above.
             listed.removeAll { $0.id == app.radio.station?.id }
             append(sectionTitle("Stations"), to: stations)
-            append(shelf(listed.prefix(12).map { stationTile($0, fact: RelativeDay.played(dates[$0.id])) }), to: stations)
+            // Your Station (never on the air here) with the hour's fact, as on Home.
+            let hourFact = app.radio.yourStationFact?.text
+            append(shelf(listed.prefix(12).map {
+                stationTile($0, fact: $0.seed == .personal ? hourFact ?? RelativeDay.played(dates[$0.id]) : RelativeDay.played(dates[$0.id]))
+            }), to: stations)
             let kinds = suggested.filter {
                 switch $0.seed {
                 case .genre, .decade: true
