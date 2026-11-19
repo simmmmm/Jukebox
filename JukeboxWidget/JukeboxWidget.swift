@@ -6,9 +6,13 @@
 //   otherwise a Play.
 // - Medium: the same, and beside it Home's first three mixes, each a
 //   Play by itself.
-// - The lock screen: the mark, Your Station's Play.
-// - A control (Control Center, the Lock Screen, the Action Button): Your
-//   Station's Play.
+// - The lock screen: the mark, Your Station's Play. The iPhone's and the
+//   iPad's: the Mac has no accessory families.
+// - A control (Control Center, the Lock Screen, the Action Button, and the
+//   Mac's Control Center and menu bar): Your Station's Play.
+//
+// One target for the iPhone, the iPad and the Mac (project.yml): the Mac's
+// desktop and Notification Center show the same Small and Medium.
 //
 // The buttons are WidgetIntents.swift's, performed by the app; a tap
 // anywhere else opens the app. Everything shown comes from the snapshot
@@ -19,7 +23,11 @@
 // one filled button, "On air" the one label.
 
 import SwiftUI
+#if os(iOS)
 import UIKit
+#else
+import AppKit
+#endif
 import WidgetKit
 
 @main
@@ -55,7 +63,16 @@ struct DoorsWidget: Widget {
         }
         .configurationDisplayName("Jukebox")
         .description("Your Station and Home's mixes.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular])
+        .supportedFamilies(families)
+    }
+
+    /// The Mac has no lock screen's families.
+    private var families: [WidgetFamily] {
+        #if os(iOS)
+        [.systemSmall, .systemMedium, .accessoryCircular]
+        #else
+        [.systemSmall, .systemMedium]
+        #endif
     }
 }
 
@@ -107,13 +124,21 @@ struct DoorsView: View {
     var body: some View {
         content
             .containerBackground(for: .widget) {
+                #if os(iOS)
                 if family == .accessoryCircular {
                     AccessoryWidgetBackground()
                 } else {
-                    // The page's ground (Theme.ground), flat.
-                    Color(rgb: scheme == .dark ? 0x121110 : 0xF6F3EE)
+                    ground
                 }
+                #else
+                ground
+                #endif
             }
+    }
+
+    /// The page's ground (Theme.ground), flat.
+    private var ground: Color {
+        Color(rgb: scheme == .dark ? 0x121110 : 0xF6F3EE)
     }
 
     private var signedIn: Bool { entry.snapshot?.signedIn == true }
@@ -121,8 +146,10 @@ struct DoorsView: View {
 
     @ViewBuilder private var content: some View {
         switch family {
+        #if os(iOS)
         case .accessoryCircular:
             lockScreen
+        #endif
         case .systemMedium where signedIn && !(entry.snapshot?.mixes.isEmpty ?? true):
             HStack(spacing: 16) {
                 station
@@ -206,13 +233,24 @@ struct DoorsView: View {
     }
 
     @ViewBuilder private func cover(_ mix: WidgetSnapshot.Mix) -> some View {
-        if let data = entry.covers[mix.id], let image = UIImage(data: data) {
-            Image(uiImage: image).resizable().scaledToFill()
+        if let image = coverImage(mix) {
+            image.resizable().scaledToFill()
         } else {
             Rectangle().fill(Color.primary.opacity(0.08))
         }
     }
 
+    /// The cover the app saved, in the platform's own image type.
+    private func coverImage(_ mix: WidgetSnapshot.Mix) -> Image? {
+        guard let data = entry.covers[mix.id] else { return nil }
+        #if os(iOS)
+        return UIImage(data: data).map { Image(uiImage: $0) }
+        #else
+        return NSImage(data: data).map { Image(nsImage: $0) }
+        #endif
+    }
+
+    #if os(iOS)
     /// The mark in the lock screen's one colour; Your Station's Play while
     /// it is off the air.
     @ViewBuilder private var lockScreen: some View {
@@ -227,6 +265,7 @@ struct DoorsView: View {
             mark
         }
     }
+    #endif
 
     /// Copper by day, Glow by night (Theme.accent).
     private var accent: Color {

@@ -29,11 +29,9 @@ struct JukeboxApp: App {
         // when the keychain has said which kind of server it is.
         // The bars' titles in the serif, before the first bar is made.
         Theme.styleNavigationBars()
-        #if os(iOS)
         // The widget follows from the first moment, a launch in the
         // background for its own button too (App/WidgetDoors.swift).
         WidgetDoors.follow(AppModel.shared)
-        #endif
     }
 
     var body: some Scene {

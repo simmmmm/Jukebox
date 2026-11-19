@@ -2,7 +2,9 @@
 # CI's app job (.github/workflows/ci.yml, on GitHub's macOS): the Xcode
 # project from project.yml, then either
 #   - the app compiled (every push) for the iPhone, signed ad hoc and its
-#     signature checked for CarPlay, then for the Mac without signing, then, when the iPhone's compiled, the pictures of its
+#     signature checked for CarPlay and the widget, then for the Mac, signed
+#     ad hoc and checked for the widget, then, when the iPhone's compiled,
+#     the pictures of its
 #     screens (ci/screenshots.sh), or
 #   - with TESTFLIGHT=true: archived, signed by Xcode itself with the App
 #     Store Connect API key (role Admin: it makes the certificate and the
@@ -127,13 +129,16 @@ carplay_signed() {
   return $missing
 }
 
-# Whether the widget is in the app (PlugIns/JukeboxWidget.appex), and the
-# app and the widget both carry the App Group the snapshot is written into
-# (docs/RELEASE.md, The widget): without it in either signature the widget
-# shows nothing but "Sign in". The app's own checks stay carplay_signed's.
+# Whether the widget is in the app (PlugIns/JukeboxWidget.appex, on the Mac
+# Contents/PlugIns/), and the app and the widget both carry the App Group the
+# snapshot is written into (docs/RELEASE.md, The widget): without it in
+# either signature the widget shows nothing but "Sign in". The Mac's widget
+# must be sandboxed too, or macOS never loads it. The iPhone's own checks
+# stay carplay_signed's.
 widget_signed() {
-  local app=$1 bundle part signed missing=0
-  for bundle in "$app" "$app/PlugIns/JukeboxWidget.appex"; do
+  local app=$1 bundle part signed missing=0 plugins=$1/PlugIns mac=false
+  if [[ -d $app/Contents ]]; then plugins=$app/Contents/PlugIns mac=true; fi
+  for bundle in "$app" "$plugins/JukeboxWidget.appex"; do
     part=widget
     if [[ $bundle == "$app" ]]; then part=app; fi
     if [[ ! -d $bundle ]]; then
@@ -147,6 +152,12 @@ widget_signed() {
       echo "The App Group is in the $part's signature ($2)."
     else
       echo "::error::No App Group group.com.tijmen.Jukebox in the signature of the $part ($2)."
+      missing=1
+    fi
+    # Squeezed first: codesign's XML may break a line between key and value.
+    signed=$(tr -d ' \t\n' <<< "$signed")
+    if [[ $mac == true && $signed != *'<key>com.apple.security.app-sandbox</key><true/>'* ]]; then
+      echo "::error::The $part is not sandboxed ($2)."
       missing=1
     fi
   done
@@ -178,13 +189,17 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   report build/logs/build.log "Compile errors"
 
   # The Mac: the same target, built for macOS. After the iPhone's, so a
-  # Mac-only error never hides the iPhone's.
+  # Mac-only error never hides the iPhone's. Signed ad hoc, as its archive
+  # is, so the signatures carry the entitlements widget_signed reads.
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
-    -destination 'generic/platform=macOS' \
-    CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+    -destination 'generic/platform=macOS' -derivedDataPath build/derived-mac \
+    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
     > build/logs/build-mac.log 2>&1
   mac_status=$?
+  if [[ $mac_status == 0 ]]; then
+    widget_signed build/derived-mac/Build/Products/Debug/Jukebox.app "Mac build" || mac_status=1
+  fi
   set -e
   { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build-mac.log || true; } \
     | sed "s#$PWD/##g" | sort -u > build/logs/errors-mac.txt
@@ -294,16 +309,42 @@ else
   # The Mac's build of the same app, to the same App Store Connect record.
   # Signed ad hoc when archived, so its sandbox entitlements are inside the
   # archive; the export signs it for the store with the same API key.
+  # As the iPhone's: the archive checked, then a pkg signed for the store
+  # and read, and only then the upload. The store's signature is the one
+  # that shows the portal's App Group (docs/RELEASE.md, The widget); a Mac
+  # build without the widget and the group is never uploaded.
   set +e
   xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
     -destination 'generic/platform=macOS' -archivePath build/Jukebox-mac.xcarchive \
     DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" \
-    > build/logs/archive-mac.log 2>&1 \
-  && xcodebuild -exportArchive -archivePath build/Jukebox-mac.xcarchive \
-    -exportOptionsPlist build/ExportOptions.plist -exportPath build/export-mac "${auth[@]}" \
-    > build/logs/export-mac.log 2>&1
+    > build/logs/archive-mac.log 2>&1
   mac_status=$?
+  if [[ $mac_status == 0 ]]; then
+    widget_signed build/Jukebox-mac.xcarchive/Products/Applications/Jukebox.app "Mac archive" || mac_status=1
+  fi
+  if [[ $mac_status == 0 ]]; then
+    xcodebuild -exportArchive -archivePath build/Jukebox-mac.xcarchive \
+      -exportOptionsPlist build/ExportOptions-ipa.plist -exportPath build/export-mac-pkg "${auth[@]}" \
+      > build/logs/export-mac-pkg.log 2>&1
+    mac_status=$?
+    if [[ $mac_status != 0 ]]; then
+      tail -40 build/logs/export-mac-pkg.log
+      report build/logs/export-mac-pkg.log "Mac export errors"
+    fi
+  fi
+  if [[ $mac_status == 0 ]]; then
+    pkg=$(ls build/export-mac-pkg/*.pkg | head -1)
+    rm -rf build/pkg && pkgutil --expand-full "$pkg" build/pkg
+    mac_app=$(find build/pkg -name Jukebox.app -type d -prune | head -1)
+    widget_signed "${mac_app:-build/pkg/Jukebox.app}" "Mac pkg" || mac_status=1
+  fi
+  if [[ $mac_status == 0 ]]; then
+    xcodebuild -exportArchive -archivePath build/Jukebox-mac.xcarchive \
+      -exportOptionsPlist build/ExportOptions.plist -exportPath build/export-mac "${auth[@]}" \
+      > build/logs/export-mac.log 2>&1
+    mac_status=$?
+  fi
   set -e
   report build/logs/archive-mac.log "Mac archive errors"
   # No export log when the archive failed.
