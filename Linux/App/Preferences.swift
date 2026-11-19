@@ -218,6 +218,9 @@ enum Preferences {
             rows = []
             let active = app.credentials
             let switching = app.isSwitching
+            // Whether Playback Reporting answers, on Jellyfin and Emby: the
+            // group's own description, where GNOME puts a group's note.
+            adw_preferences_group_set_description(ptr(group), active.flatMap(ServerWords.playbackReportingNote))
             for account in app.accounts.saved {
                 let row = adw_action_row_new()!
                 adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
@@ -244,6 +247,19 @@ enum Preferences {
                 adw_action_row_add_suffix(ptr(row), out)
                 adw_preferences_group_add(ptr(group), row)
                 rows.append(row)
+            }
+            // The year's music, a subpage (YourYearPage): from the server's
+            // record where it keeps one, as the description above says.
+            if active != nil {
+                let year = adw_action_row_new()!
+                adw_preferences_row_set_title(ptr(year), "Your Year")
+                adw_action_row_add_suffix(ptr(year), gtk_image_new_from_icon_name("go-next-symbolic")!)
+                gtk_list_box_row_set_activatable(ptr(year), 1)
+                on(raw(year), "activated") {
+                    adw_preferences_dialog_push_subpage(ptr(dialog), YourYearPage.make())
+                }
+                adw_preferences_group_add(ptr(group), year)
+                rows.append(year)
             }
         }
     }

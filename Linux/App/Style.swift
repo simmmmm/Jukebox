@@ -67,6 +67,8 @@ enum Style {
         css += """
         /* Titles as on sleeves: the system's serif, regular weight (tells.md 3). */
         .serif { font-family: serif; font-weight: 400; }
+        /* Your Year's months: flat bars in the accent. */
+        .year-bar { background-color: @accent_bg_color; }
         /* The type scale (the designer's spec, §7): size / line, in px. */
         .page-title { font-size: 40px; line-height: 48px; }
         .hero-title { font-size: 32px; line-height: 40px; }

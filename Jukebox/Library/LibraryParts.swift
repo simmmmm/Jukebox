@@ -183,6 +183,7 @@ struct LibraryAlbumMenu: View {
             if library.can(.rating) {
                 RatingMenu(item: .album(album.id))
             }
+            CopyShareLinkButton(id: album.id, tracks: songs.map(\.id))
         }
         if includesGoToArtist, let artist = albumArtist {
             Section {

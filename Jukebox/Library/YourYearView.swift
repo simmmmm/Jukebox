@@ -1,0 +1,120 @@
+// Your Year on the iPhone, the iPad and the Mac: the year in serif as on a
+// sleeve, the minutes and plays as a fact, where they come from, the months
+// as bars, then the songs, artists, albums and genres it was made of.
+// Opened from Settings' server section, in a sheet (YourYearLoader has the
+// why of the place and of the sources). Linux's is Preferences' subpage.
+
+import JukeboxKit
+import SwiftUI
+
+struct YourYearView: View {
+    @Environment(AppModel.self) private var app
+    @Environment(LibraryStore.self) private var library
+    @Environment(HistoryStore.self) private var history
+    @Environment(\.dismiss) private var dismiss
+    @State private var year: YourYear?
+
+    var body: some View {
+        NavigationStack {
+            content
+                .navigationTitle("Your Year")
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.inline)
+                #endif
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("Done") { dismiss() }
+                    }
+                }
+        }
+        .task {
+            year = await YourYearLoader.load(year: YourYearLoader.year(), server: app.server,
+                                             history: history.history, library: library)
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        if let year, year.isEmpty {
+            ContentUnavailableView("Nothing played yet", systemImage: "music.note",
+                                   description: Text(YourYearLoader.source(year)))
+        } else if let year {
+            List {
+                Section {
+                    VStack(alignment: .leading, spacing: Theme.Space.s) {
+                        Text(verbatim: String(year.year))
+                            .font(.serif(.largeTitle))
+                        Text(YourYearLoader.facts(year))
+                            .foregroundStyle(.secondary)
+                        MonthBars(minutes: year.months)
+                            .padding(.top, Theme.Space.m)
+                    }
+                    .padding(.vertical, Theme.Space.s)
+                } footer: {
+                    Text(YourYearLoader.source(year))
+                }
+                entries("Songs", year.songs, artwork: true)
+                entries("Artists", year.artists, artwork: false)
+                entries("Albums", year.albums, artwork: true)
+                entries("Genres", year.genres, artwork: false)
+            }
+        } else {
+            ProgressView()
+        }
+    }
+
+    @ViewBuilder
+    private func entries(_ title: LocalizedStringKey, _ list: [YourYear.Entry], artwork: Bool) -> some View {
+        if !list.isEmpty {
+            Section(title) {
+                ForEach(Array(list.enumerated()), id: \.element.id) { rank, entry in
+                    HStack(spacing: Theme.Space.m) {
+                        Text(verbatim: "\(rank + 1)")
+                            .font(.serif(.body))
+                            .foregroundStyle(.secondary)
+                            .frame(width: 24, alignment: .trailing)
+                        if artwork {
+                            ArtworkView(entry.track?.artwork, size: 40)
+                        }
+                        VStack(alignment: .leading, spacing: 0) {
+                            Text(verbatim: entry.name).lineLimit(1)
+                            if let detail = entry.detail {
+                                Text(verbatim: detail).font(.footnote).foregroundStyle(.secondary).lineLimit(1)
+                            }
+                        }
+                        Spacer(minLength: Theme.Space.s)
+                        Text(YourYearLoader.plays(entry))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// Twelve bars, January first, each as tall as its month's minutes; flat
+/// ground, the accent for the bars.
+private struct MonthBars: View {
+    let minutes: [Int]
+
+    var body: some View {
+        let most = max(1, minutes.max() ?? 1)
+        let letters = YourYearLoader.monthLetters
+        HStack(alignment: .bottom, spacing: Theme.Space.xs) {
+            ForEach(0..<12, id: \.self) { month in
+                VStack(spacing: Theme.Space.xs) {
+                    Rectangle()
+                        .fill(Theme.accent)
+                        .frame(height: max(1, 64 * CGFloat(minutes[month]) / CGFloat(most)))
+                    Text(verbatim: letters.indices.contains(month) ? letters[month] : "")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+        .frame(height: 88, alignment: .bottom)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Minutes by month"))
+    }
+}

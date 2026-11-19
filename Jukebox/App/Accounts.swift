@@ -178,6 +178,8 @@ struct AccountStores {
     let offline: OfflineStore
     let handoff: HandoffStore
     let settings: AppSettings
+    /// This device as a speaker other clients control (RemoteControl.swift).
+    let remote: RemoteControl
 
     /// Signed in, or switched to.
     func open(_ server: any MusicServer) async {
@@ -194,6 +196,7 @@ struct AccountStores {
         // library is in, since what is offered is a song in it.
         handoff.server = server
         handoff.start()
+        remote.server = server
         // The radio first: its graph is made in the background and needs
         // nothing from the mixes, so it does not wait for them to be made.
         radio.prepare()
@@ -207,6 +210,8 @@ struct AccountStores {
         library.use(server)
         offline.use(server)
         handoff.server = server
+        // Asked since sign-in: remote control may have come (or gone).
+        remote.server = server
     }
 
     /// The account signed in, put away. `forgetting` at a sign-out: its
@@ -219,6 +224,8 @@ struct AccountStores {
         // server the handoff saves nothing, and the stop below is no news.
         handoff.server = nil
         handoff.reset()
+        // No longer listed as this account's speaker.
+        remote.server = nil
         // Its last song is told to its own server and history.
         player.stop()
         player.server = nil

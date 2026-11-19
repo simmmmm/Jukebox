@@ -313,7 +313,8 @@ struct ServerContractTests {
     @Test("Mixes, similar artists, top songs: answers as the capabilities say", arguments: TestServers.available)
     func serverOnly(_ test: TestServers.Case) async throws {
         let server = try await test.open()
-        #expect(try await server.currentCapabilities() == server.capabilities)
+        // What is asked only once signed in (ServerProbe) aside.
+        #expect(try await server.currentCapabilities().subtracting(ServerCapability.asked) == server.capabilities)
         let tracks = try await server.allTracks(progress: nil)
         let seed = try #require(tracks.first { $0.albumArtist?.name == "MC Polder" })
         let artistID = try #require(seed.albumArtist?.id)

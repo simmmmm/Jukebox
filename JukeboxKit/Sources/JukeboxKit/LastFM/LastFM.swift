@@ -537,7 +537,10 @@ public actor SimilarityService {
 
     private func libraryEdges(for snapshot: LibrarySnapshot) -> SimilarityGraph {
         if let libraryGraph, libraryGraph.index === snapshot.index { return libraryGraph.graph }
-        let graph = SimilarityGraph.fromLibrary(snapshot)
+        var graph = SimilarityGraph.fromLibrary(snapshot)
+        // Moods and tempo where the server passes them (Navidrome): songs
+        // in the same mood are near. Nothing for an untagged library.
+        graph.merge(MoodEdges.graph(for: snapshot.tracks))
         libraryGraph = (snapshot.index, graph)
         return graph
     }

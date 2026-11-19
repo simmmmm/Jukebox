@@ -175,12 +175,17 @@ public struct PlaybackReport: Sendable, Hashable {
     public var isPaused: Bool
     /// One id per play of a track, the same in its start, progress and stop.
     public var playSessionID: String
+    /// 0...1: the player's level, for a device other clients control
+    /// (RemoteControlMessage); nil says nothing of it.
+    public var volume: Double?
 
-    public init(trackID: ItemID, position: TimeInterval, isPaused: Bool, playSessionID: String) {
+    public init(trackID: ItemID, position: TimeInterval, isPaused: Bool, playSessionID: String,
+                volume: Double? = nil) {
         self.trackID = trackID
         self.position = position
         self.isPaused = isPaused
         self.playSessionID = playSessionID
+        self.volume = volume
     }
 }
 

@@ -139,6 +139,29 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// clients shows or sorts by (docs/SERVERS.md, "Ratings").
     case rating
 
+    // Asked of the server, never taken from its name: the photographer, 18
+    // November 2026, "zorg dat je ook alleen die opties toont als het
+    // beschikbaar is op die server en dat je dat ook zeker weet". Each is
+    // set by `currentCapabilities()` only when the server answered yes, and
+    // dropped only when it answered no (`ServerProbe`).
+
+    /// Jukebox can be a session other clients control (Play On from the
+    /// phone to the computer): Jellyfin's and Emby's Sessions API answered
+    /// this user. The commands then come over the session's websocket
+    /// (`RemoteControlMessage`).
+    case remoteControl
+    /// A link anyone can open: Subsonic's createShare, where getShares
+    /// answered (Navidrome with sharing on; 501 with it off, measured on
+    /// 0.64.2).
+    case share
+    /// Jellyfin's Playback Reporting plugin answered this user's query:
+    /// every play on every device, for Your Year. Its routes need an
+    /// administrator (403 for anyone else, measured).
+    case playbackReporting
+
+    /// Those asked once signed in, never at sign-in: they need the session.
+    public static let asked: Set<ServerCapability> = [.remoteControl, .share, .playbackReporting]
+
     /// What every Jellyfin 10.9+ server has once signed in. Quick Connect
     /// is a question for the sign-in screen, not the session.
     public static let jellyfin: Set<ServerCapability> = [
@@ -150,6 +173,33 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// subtitle streams; /Audio/{id}/Lyrics is read as a stream and answers
     /// 500) and without a loudness gain (no NormalizationGain).
     public static let emby: Set<ServerCapability> = jellyfin.subtracting([.lyrics, .syncedLyrics, .replayGain])
+}
+
+/// One question to the server about one capability. Yes is an answer it
+/// gave; no is a no it gave (no such route, not for this user); anything
+/// else (no network, a timeout, a session it no longer takes) is not
+/// knowing, and then what was known before stays, so a feature does not
+/// come and go with the Wi-Fi.
+enum ServerProbe {
+    static func check(_ capability: ServerCapability, kept: Set<ServerCapability>,
+                      _ ask: () async throws -> Void) async -> ServerCapability? {
+        do {
+            try await ask()
+            return capability
+        } catch let error as MusicServerError {
+            switch error {
+            case .unsupported, .notAllowed, .notFound: return nil
+            default: return kept.contains(capability) ? capability : nil
+            }
+        } catch let error as JellyfinError {
+            switch error {
+            case .notFound, .server(status: 403, _), .server(status: 501, _): return nil
+            default: return kept.contains(capability) ? capability : nil
+            }
+        } catch {
+            return kept.contains(capability) ? capability : nil
+        }
+    }
 }
 
 /// What answered at an address, before anyone has signed in: what the
@@ -302,7 +352,10 @@ extension ServerCredentials: Codable {
             secret = .jellyfinToken(try c.decode(String.self, forKey: .accessToken))
             kind = .jellyfin
         }
-        capabilities = try c.decodeIfPresent(Set<ServerCapability>.self, forKey: .capabilities)
+        // As names, leniently: one a newer build kept (and this one does not
+        // know) is passed over, not the account lost.
+        let names = try c.decodeIfPresent([String].self, forKey: .capabilities)
+        capabilities = names.map({ Set($0.compactMap(ServerCapability.init(rawValue:))) })
             ?? (kind == .jellyfin ? ServerCapability.jellyfin : kind == .emby ? ServerCapability.emby : [])
         folderName = try c.decodeIfPresent(String.self, forKey: .folderName)
         addresses = try c.decodeIfPresent([URL].self, forKey: .addresses) ?? []
@@ -610,6 +663,19 @@ public protocol MusicServer: Sendable {
     /// downloading", Subsonic's downloadRole. The app hides downloads and
     /// pauses the automatic keep when it does not.
     func downloadsAllowed() async throws -> Bool
+
+    // MARK: Sharing (SubsonicShare.swift)
+
+    /// A link anyone can open for `id` (a song, an album, a playlist);
+    /// `tracks` are the songs it stands for, to reuse a share made before.
+    /// Only where `.share`; elsewhere `unsupported(.share)`.
+    func shareURL(for id: ItemID, tracks: [ItemID]) async throws -> URL
+}
+
+extension MusicServer {
+    public func shareURL(for id: ItemID, tracks: [ItemID]) async throws -> URL {
+        throw MusicServerError.unsupported(.share)
+    }
 }
 
 // MARK: - Finding and opening servers

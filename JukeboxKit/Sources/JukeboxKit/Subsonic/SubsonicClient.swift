@@ -53,9 +53,15 @@ public struct SubsonicClient: MusicServer {
         let ping = try await call("ping", timeout: 15)
         let openSubsonic = ping.openSubsonic == true
         let extensions = openSubsonic ? await connection.extensions() : []
-        return SubsonicConnection.capabilities(apiVersion: ping.version ?? credentials.apiVersion,
-                                               openSubsonic: openSubsonic, extensions: extensions)
+        var set = SubsonicConnection.capabilities(apiVersion: ping.version ?? credentials.apiVersion,
+                                                  openSubsonic: openSubsonic, extensions: extensions)
             .subtracting(ServerCapability.signingInOnly)
+        // Sharing is the owner's switch (Navidrome's EnableSharing): asked,
+        // not assumed from the API version that names it.
+        if let share = await ServerProbe.check(.share, kept: capabilities, {
+            _ = try await call("getShares", timeout: 10, lacking: .share)
+        }) { set.insert(share) }
+        return set
     }
 
     /// Subsonic has no sign-out: the app forgets the token, which holds

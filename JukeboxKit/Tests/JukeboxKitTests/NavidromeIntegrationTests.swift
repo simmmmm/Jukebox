@@ -109,7 +109,8 @@ struct NavidromeIntegrationTests {
         let kept = try JSONDecoder().decode(ServerCredentials.self, from: try JSONEncoder().encode(credentials))
         let reopened = MusicServers.open(kept, identity: identity)
         #expect(try await !reopened.genres().isEmpty)
-        #expect(try await reopened.currentCapabilities() == credentials.capabilities)
+        // What is asked only once signed in (ServerProbe) aside.
+        #expect(try await reopened.currentCapabilities().subtracting(ServerCapability.asked) == credentials.capabilities)
         #expect(try await reopened.downloadsAllowed())
 
         await #expect(throws: MusicServerError.unauthorized) {
