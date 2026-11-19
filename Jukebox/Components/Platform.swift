@@ -65,6 +65,17 @@ extension PlatformImage {
     }
 }
 
+#if os(macOS)
+extension NSImage {
+    /// UIImage's call, for the widget's covers (WidgetDoors.swift): an
+    /// NSImage has no JPEG of its own, its bitmap representation does.
+    func jpegData(compressionQuality: CGFloat) -> Data? {
+        guard let tiff = tiffRepresentation, let bitmap = NSBitmapImageRep(data: tiff) else { return nil }
+        return bitmap.representation(using: .jpeg, properties: [.compressionFactor: compressionQuality])
+    }
+}
+#endif
+
 /// What the device is, in the words the app says it with.
 enum Device {
     /// "iPhone", "iPad" or "Mac": "Songs on this iPad".

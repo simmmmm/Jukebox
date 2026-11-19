@@ -46,9 +46,9 @@ targets:
     # Swift links the system frameworks it imports itself.
     dependencies:
       - package: JukeboxKit
-      # The widget, in PlugIns/: the iPhone's and the iPad's only.
+      # The widget, in PlugIns/ (Contents/PlugIns/ on the Mac): the
+      # iPhone's, the iPad's and the Mac's.
       - target: JukeboxWidget
-        destinationFilters: [iOS]
     # One Info.plist for both: the Mac ignores the UI* keys.
     info:
       path: Jukebox/Info.plist
@@ -123,11 +123,15 @@ targets:
 
   # The widget (JukeboxWidget/JukeboxWidget.swift, docs/ARCHITECTURE.md):
   # Your Station and Home's mixes, read from what the app writes into the
-  # App Group. The iPhone's and the iPad's: a Mac widget would need a
-  # sandboxed extension and its own export (docs/ARCHITECTURE.md).
+  # App Group. One target for the iPhone, the iPad and the Mac, as the app
+  # is: one bundle ID, so one App ID and one set of portal steps
+  # (docs/RELEASE.md, The widget), the same sources, and the app embeds
+  # it on both by the same dependency. A second Mac-only target would copy
+  # all of this for no gain; what differs is the Mac's entitlements alone.
   JukeboxWidget:
     type: app-extension
-    platform: iOS
+    platform: auto
+    supportedDestinations: [iOS, macOS]
     sources:
       - path: JukeboxWidget
       # The app's files the widget needs too, each Foundation or SwiftUI
@@ -153,8 +157,17 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.tijmen.Jukebox.Widget
         TARGETED_DEVICE_FAMILY: "1,2"
         CODE_SIGN_STYLE: Automatic
-        # The App Group it reads from, as the app's iOS entitlements have it.
+        SUPPORTS_MACCATALYST: NO
+        # The App Group it reads from, as the app's entitlements have it.
         CODE_SIGN_ENTITLEMENTS: JukeboxWidget/JukeboxWidget.entitlements
+        # The Mac's: a Mac widget loads only sandboxed, and the group is the
+        # same iOS-style `group.` one. macOS 15 and later let a Mac app reach
+        # such a group's container when the Mac App Store or TestFlight
+        # deployed it, or its profile authorises the group (Apple's
+        # forums, thread 721701): the store's profile, made by cloud
+        # signing once the App IDs carry the group.
+        "CODE_SIGN_ENTITLEMENTS[sdk=macosx*]": JukeboxWidget/JukeboxWidget-macOS.entitlements
+        "ENABLE_HARDENED_RUNTIME[sdk=macosx*]": YES
         # WidgetIntents.swift leaves the app's world out of the widget.
         SWIFT_ACTIVE_COMPILATION_CONDITIONS: $(inherited) WIDGET_EXTENSION
 

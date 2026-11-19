@@ -8,12 +8,14 @@
 // background for a widget's button, CarPlay or Siri: what they start lights
 // the widget too.
 //
-// The iPhone's and the iPad's: the Mac has no widget (docs/ARCHITECTURE.md,
-// The widget).
+// The iPhone's, the iPad's and the Mac's alike: the Mac's app writes the
+// same snapshot into the same App Group (docs/ARCHITECTURE.md, The widget).
 
-#if os(iOS)
 import JukeboxKit
+import SwiftUI
+#if os(iOS)
 import UIKit
+#endif
 import WidgetKit
 
 enum WidgetDoors {
@@ -89,4 +91,3 @@ enum WidgetDoors {
         WidgetCenter.shared.reloadAllTimelines()
     }
 }
-#endif

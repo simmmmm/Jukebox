@@ -14,6 +14,13 @@ import AppIntents
 nonisolated struct PlayYourStationFromWidget: AudioPlaybackIntent {
     static let title: LocalizedStringResource = "Play Your Station"
     static let isDiscoverable = false
+    #if os(macOS)
+    /// The Mac's widget asks the app itself: macOS is not known to launch a
+    /// Mac app in the background for a widget's audio intent as iOS does,
+    /// and the widget's own copy plays nothing (WIDGET_EXTENSION). So the
+    /// tap opens Jukebox, which plays; its window is where it plays anyway.
+    static let openAppWhenRun = true
+    #endif
 
     init() {}
 
@@ -36,6 +43,10 @@ nonisolated struct PlayYourStationFromWidget: AudioPlaybackIntent {
 nonisolated struct PlayMixFromWidget: AudioPlaybackIntent {
     static let title: LocalizedStringResource = "Play Mix"
     static let isDiscoverable = false
+    #if os(macOS)
+    /// As PlayYourStationFromWidget's: performed in the Mac's app.
+    static let openAppWhenRun = true
+    #endif
 
     @Parameter(title: "Mix")
     var mixID: String
