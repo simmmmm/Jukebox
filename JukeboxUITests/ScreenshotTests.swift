@@ -987,6 +987,18 @@ final class Walk {
         let card = app.staticTexts["Your Station"].firstMatch
         guard find(card, "Home: Your Station's card", timeout: 15) else { return false }
         if !onScreen(card) { reveal(card) }
+        // Home's card is one button since its Play became a word at its
+        // foot ("het hele ding gewoon klikbaar maken"): labelled "Your
+        // Station, …, Play", with no Play of its own to find.
+        let whole = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Your Station")).firstMatch
+        if whole.exists, whole.isEnabled {
+            guard try tap(whole, "Home: Your Station's card") else { return false }
+            if !app.buttons["Pause"].firstMatch.waitForExistence(timeout: 45) {
+                note("Home: Your Station's card: nothing was playing 45 s after it")
+            }
+            pause(3)
+            return true
+        }
         return try play("Home: Your Station's Play")
     }
 
