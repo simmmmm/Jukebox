@@ -157,7 +157,12 @@ enum UpNext {
             }
             head.isVisible = true
             setText(title, name)
-            if let collage { art.show(collage: collage) } else { art.show(cover) }
+            // An album's: its title sleeve when it has no cover.
+            var sleeve: TitleSleeve.Words?
+            if case let .album(id)? = app.player.context?.kind, let album = app.library.album(id: id) {
+                sleeve = TitleSleeve.Words(album: album)
+            }
+            if let collage { art.show(collage: collage) } else { art.show(cover, sleeve: sleeve) }
             setText(artist, line)
             artist.isVisible = !line.isEmpty
         }
@@ -269,7 +274,7 @@ final class UpNextRow {
         let track = entry.track
         mark.isVisible = style == .numbered
         art.widget.isVisible = style != .numbered
-        if style != .numbered { art.show(track.artwork) }
+        if style != .numbered { art.show(track.artwork, sleeve: TitleSleeve.Words(track: track)) }
         setText(number, position.map(String.init) ?? "")
         number.isVisible = !playing
         bars.isVisible = playing

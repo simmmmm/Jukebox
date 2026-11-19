@@ -438,6 +438,7 @@ struct NowPlayingView: View {
         let titleFrame: CGRect? = anchors.title.map { proxy[$0] }
         return NowPlayingGround(size: proxy.size, sleeveRoom: room, title: titleFrame, wide: anchors.wide,
                                 still: isStill, walls: walls, artwork: currentTrack?.artwork,
+                                sleeve: currentTrack.map(TitleSleeve.Words.init(track:)),
                                 side: side ?? .alone, label: recordLabel(disc: side?.disc),
                                 isPlaying: player.isPlaying && !Self.showsLandStill)
     }
@@ -638,7 +639,7 @@ struct NowPlayingView: View {
             Button {
                 show(.cover)
             } label: {
-                ArtworkView(currentTrack?.artwork, size: 60)
+                ArtworkView(currentTrack?.artwork, size: 60, sleeve: currentTrack.map(TitleSleeve.Words.init(track:)))
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Show Record")

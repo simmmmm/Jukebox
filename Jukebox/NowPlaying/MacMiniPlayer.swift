@@ -17,7 +17,7 @@ struct MacMiniPlayer: View {
         let track = player.currentTrack
         VStack(alignment: .leading, spacing: Theme.Space.l) {
             HStack(spacing: Theme.Space.m) {
-                ArtworkView(track?.artwork, size: 64, cornerRadius: Theme.Radius.artwork)
+                ArtworkView(track?.artwork, size: 64, cornerRadius: Theme.Radius.artwork, sleeve: track.map(TitleSleeve.Words.init(track:)))
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(track?.name ?? String(localized: "Nothing playing"))
                         .desktopFont(15, weight: .medium)

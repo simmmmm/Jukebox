@@ -32,14 +32,24 @@ final class ImagePipeline {
         memory.object(forKey: url as NSURL)
     }
 
+    /// Covers the server said it has not (an answer other than 200, or
+    /// bytes that are no picture), this session: their album's title sleeve
+    /// shows at once, not after asking again. A network that failed is not
+    /// in it: that cover is asked again next time.
+    private var missing: Set<URL> = []
+
+    func isMissing(_ url: URL) -> Bool { missing.contains(url) }
+
     func image(for url: URL) async -> PlatformImage? {
         if let image = cached(url) { return image }
         if let task = inFlight[url] { return await task.value }
         let session = self.session
         let task = Task<PlatformImage?, Never> {
-            guard let (data, response) = try? await session.data(from: url),
-                  (response as? HTTPURLResponse)?.statusCode == 200,
-                  let image = PlatformImage(data: data) else { return nil }
+            guard let (data, response) = try? await session.data(from: url) else { return nil }
+            guard (response as? HTTPURLResponse)?.statusCode == 200, let image = PlatformImage(data: data) else {
+                self.missing.insert(url)
+                return nil
+            }
             return await image.preparedForDisplay()
         }
         inFlight[url] = task
@@ -148,17 +158,33 @@ struct ArtworkView: View {
     var cornerRadius: CGFloat = Theme.Radius.artwork
     /// Shown while loading and when there is no image.
     var placeholder = "music.note"
+    /// An album's words: with them, a cover the server has not is the
+    /// album's title sleeve (TitleSleeve), not the note.
+    var sleeve: TitleSleeve.Words?
 
     @Environment(AppModel.self) private var app
     @Environment(\.displayScale) private var displayScale
     @State private var loaded: PlatformImage?
+    /// The url the server had no cover for, once asked.
+    @State private var missingURL: URL?
 
     init(_ artwork: Artwork?, size: CGFloat? = nil, cornerRadius: CGFloat = Theme.Radius.artwork,
-         placeholder: String = "music.note") {
+         placeholder: String = "music.note", sleeve: TitleSleeve.Words? = nil) {
         self.artwork = artwork
         self.size = size
         self.cornerRadius = cornerRadius
         self.placeholder = placeholder
+        self.sleeve = sleeve
+    }
+
+    /// No artwork at all, or the server answered without one. While a
+    /// cover is on its way, the quiet square, so covers do not flash a
+    /// sleeve before they come.
+    private func showsSleeve(_ url: URL?) -> Bool {
+        guard sleeve != nil else { return false }
+        if artwork == nil { return true }
+        guard let url else { return false }
+        return missingURL == url || ImagePipeline.shared.isMissing(url)
     }
 
     var body: some View {
@@ -172,6 +198,8 @@ struct ArtworkView: View {
                     Image(platformImage: image)
                         .resizable()
                         .scaledToFill()
+                } else if let sleeve, showsSleeve(url) {
+                    TitleSleeveFace(words: sleeve)
                 } else {
                     ZStack {
                         Rectangle().fill(.quaternary)
@@ -195,6 +223,7 @@ struct ArtworkView: View {
                 // cover would replace the new one.
                 guard !Task.isCancelled else { return }
                 loaded = image
+                if image == nil, ImagePipeline.shared.isMissing(url) { missingURL = url }
             }
             .accessibilityHidden(true)
     }
@@ -203,6 +232,45 @@ struct ArtworkView: View {
         guard let artwork, let server = app.server else { return nil }
         let points = size ?? 300
         return server.artworkURL(artwork, maxPixelSize: ImagePipeline.bucket(Int(points * displayScale)))
+    }
+}
+
+/// An album without a cover as a printed sleeve (TitleSleeve, the rule for
+/// both platforms; Linux's is Draw.titleSleeve): its print's flat ground,
+/// the title in New York, the artist under it in SF Pro, each line set at
+/// TitleSleeve's baseline. Measured in the Canvas with the very fonts it
+/// draws, at the side it is given.
+struct TitleSleeveFace: View {
+    let words: TitleSleeve.Words
+
+    var body: some View {
+        Canvas { context, size in
+            let side = Double(min(size.width, size.height))
+            let room = CGSize(width: 100_000, height: 100_000)
+            func text(_ string: String, _ face: TitleSleeve.Face, _ points: Double) -> Text {
+                Text(verbatim: string)
+                    .font(.system(size: points, weight: .regular, design: face == .title ? .serif : .default))
+            }
+            let sleeve = TitleSleeve.layout(words, side: side) { string, face, points in
+                Double(context.resolve(text(string, face, points)).measure(in: room).width)
+            }
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color(rgb: sleeve.print.ground)))
+            func line(_ string: String, _ face: TitleSleeve.Face, _ points: Double, baseline: Double, ink: UInt32) {
+                var resolved = context.resolve(text(string, face, points))
+                resolved.shading = .color(Color(rgb: ink))
+                let measured = resolved.measure(in: room)
+                let top = baseline - Double(resolved.firstBaseline(in: measured))
+                context.draw(resolved, in: CGRect(x: sleeve.padding, y: top, width: Double(measured.width),
+                                                  height: Double(measured.height)))
+            }
+            for (index, string) in sleeve.lines.enumerated() {
+                line(string, .title, sleeve.titleSize, baseline: sleeve.lineBaseline(index), ink: sleeve.print.title)
+            }
+            if let artist = sleeve.artist {
+                line(artist, .artist, sleeve.artistSize, baseline: sleeve.artistBaseline, ink: sleeve.print.artist)
+            }
+        }
+        .accessibilityHidden(true)
     }
 }
 

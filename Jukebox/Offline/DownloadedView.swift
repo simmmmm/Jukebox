@@ -237,7 +237,7 @@ private struct DownloadedCover: View {
     var body: some View {
         switch collection.item {
         case let .album(album):
-            ArtworkView(album.artwork, size: size, cornerRadius: Theme.Radius.artwork)
+            ArtworkView(album.artwork, size: size, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(album: album))
         case let .playlist(playlist):
             ArtworkView(playlist.artwork ?? collection.tracks.first?.artwork, size: size,
                         cornerRadius: Theme.Radius.artwork, placeholder: "music.note.list")

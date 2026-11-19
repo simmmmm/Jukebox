@@ -79,7 +79,7 @@ enum YourYearPage {
             adw_action_row_add_prefix(ptr(row), number)
             if covers {
                 let art = Art(40)
-                art.show(entry.track?.artwork)
+                art.show(entry.track?.artwork, sleeve: entry.track.map(TitleSleeve.Words.init(track:)))
                 arts.append(art)
                 adw_action_row_add_prefix(ptr(row), art.widget)
             }

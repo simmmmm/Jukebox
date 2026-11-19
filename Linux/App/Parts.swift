@@ -434,7 +434,7 @@ final class TrackRow {
         self.track = track
         menuTracks = [track]
         setText(number, track.trackNumber.map(String.init) ?? "")
-        art.show(track.artwork)
+        art.show(track.artwork, sleeve: TitleSleeve.Words(track: track))
         setText(title, track.name)
         setText(subtitle, words ?? track.artistLine)
         subtitle.isVisible = !(words ?? track.artistLine).isEmpty
@@ -614,8 +614,9 @@ final class Tile {
         }
     }
 
-    func show(_ artwork: Artwork?, _ name: String, _ line: String) {
-        art.show(artwork)
+    /// `sleeve`: an album's words, for its title sleeve when it has no cover.
+    func show(_ artwork: Artwork?, _ name: String, _ line: String, sleeve: TitleSleeve.Words? = nil) {
+        art.show(artwork, sleeve: sleeve)
         setText(title, name)
         setText(subtitle, line)
         subtitle.isVisible = !line.isEmpty
@@ -630,7 +631,7 @@ final class Tile {
 
 func albumTile(_ album: Album, fact: String? = nil) -> Widget {
     let tile = Tile()
-    tile.show(album.artwork, album.name, fact ?? album.artistLine)
+    tile.show(album.artwork, album.name, fact ?? album.artistLine, sleeve: TitleSleeve.Words(album: album))
     let button = tileButton(tile.widget) { Pages.open(album) }
     contextMenu(on: button) { albumMenu(album) }
     return button

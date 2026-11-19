@@ -394,7 +394,7 @@ private struct SearchAlbumRow: View {
 
     var body: some View {
         HStack(spacing: Theme.Space.m) {
-            ArtworkView(album.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
+            ArtworkView(album.artwork, size: 48, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(album: album))
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Text(album.name)
                     .lineLimit(1)

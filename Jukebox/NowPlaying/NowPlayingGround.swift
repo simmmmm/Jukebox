@@ -151,6 +151,8 @@ struct NowPlayingGround: View {
     /// D1's colours; nil until the cover's are known, or with no cover.
     let walls: NowPlayingWalls?
     let artwork: Artwork?
+    /// The album's words, for its title sleeve when it has no cover.
+    let sleeveWords: TitleSleeve.Words?
     /// Where the playing song lies on its album.
     let side: TurntableSide
     let label: RecordLabel?
@@ -171,7 +173,9 @@ struct NowPlayingGround: View {
     @State private var tone: (url: URL, color: AverageColor)?
 
     init(size: CGSize, sleeveRoom: CGRect?, title: CGRect?, wide: Bool, still: Bool, walls: NowPlayingWalls?,
-         artwork: Artwork?, side: TurntableSide, label: RecordLabel?, isPlaying: Bool) {
+         artwork: Artwork?, sleeve: TitleSleeve.Words? = nil, side: TurntableSide, label: RecordLabel?,
+         isPlaying: Bool) {
+        self.sleeveWords = sleeve
         self.size = size
         self.sleeveRoom = sleeveRoom
         self.title = title
@@ -388,7 +392,8 @@ struct NowPlayingGround: View {
                 .position(x: center.x, y: center.y)
             VinylSheen(diameter: diameter)
                 .position(x: center.x, y: center.y)
-            SleeveCard(artwork: artwork, side: placed.sleeve.width, edge: edgeColor, shadow: shadow, strength: strength)
+            SleeveCard(artwork: artwork, sleeve: sleeveWords, side: placed.sleeve.width, edge: edgeColor, shadow: shadow,
+                       strength: strength)
                 .position(x: placed.sleeve.midX, y: placed.sleeve.midY)
         }
         .frame(width: size.width, height: size.height, alignment: .topLeading)

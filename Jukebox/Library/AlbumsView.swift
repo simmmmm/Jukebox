@@ -191,7 +191,7 @@ struct AlbumDetailView: View {
         WidePage(title: shown.name, hasHead: true) { page, _ in
             PageHead(page: page, title: shown.name, lead: shown.artistLine,
                      leadAction: { goToArtist(shown) }, facts: player.notCounted.fact(Self.facts(shown, tracks: tracks), .album, shown.id)) { size in
-                ArtworkView(shown.artwork, size: size)
+                ArtworkView(shown.artwork, size: size, sleeve: TitleSleeve.Words(album: shown))
             } actions: {
                 PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
                                 shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
@@ -290,7 +290,7 @@ struct AlbumDetailView: View {
 
     private func header(_ shown: Album, tracks: [Track]) -> some View {
         VStack(spacing: Theme.Space.s) {
-            ArtworkView(shown.artwork, size: 260)
+            ArtworkView(shown.artwork, size: 260, sleeve: TitleSleeve.Words(album: shown))
                 .padding(.bottom, Theme.Space.m)
             Text(shown.name)
                 .font(.serif(.title))
