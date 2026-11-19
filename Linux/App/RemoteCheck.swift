@@ -19,6 +19,8 @@ private final class SilentQueue: PlayQueue {
 }
 
 enum RemoteCheck {
+    static let idleSeconds = Int(ProcessInfo.processInfo.environment["JUKEBOX_REMOTE_IDLE"] ?? "") ?? 0
+
     static func run() -> Int32 {
         guard let typed = ProcessInfo.processInfo.environment["JUKEBOX_REMOTE_URL"] else {
             print("remote check: set JUKEBOX_REMOTE_URL to a test Jellyfin or Emby")
@@ -39,7 +41,8 @@ enum RemoteCheck {
             result = await check(typed)
             g_main_loop_quit(loop)
         }
-        g_timeout_add_seconds(60, { _ in
+        // A minute for the check, more when it waits idle first.
+        g_timeout_add_seconds(guint(60 + idleSeconds), { _ in
             print("remote check: FAILED, timed out")
             exit(1)
         }, nil)
@@ -95,6 +98,12 @@ enum RemoteCheck {
                 return 1
             }
             print("remote check: listed as \(session.deviceName) (\(session.client))")
+            if idleSeconds > 0 {
+                // JUKEBOX_REMOTE_IDLE: the socket left alone past the server's
+                // lost-socket time (about 60 s), kept by the keep-alives alone.
+                print("remote check: idle for \(idleSeconds) s")
+                try await Task.sleep(for: .seconds(idleSeconds))
+            }
 
             func until(_ what: String, _ ok: () -> Bool) async throws {
                 for _ in 0..<50 where !ok() { try await Task.sleep(for: .milliseconds(100)) }

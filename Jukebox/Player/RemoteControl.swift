@@ -58,6 +58,8 @@ final class RemoteControl {
     private var isControlled = false
     private var lastSaid: (id: ItemID, paused: Bool, volume: Double, at: Date)?
     private var reportSession = UUID().uuidString
+    private var songSince = Date.distantPast
+    private var lastTrackID: ItemID?
 
     init(player: PlayQueue, library: LibraryStore) {
         self.player = player
@@ -194,11 +196,20 @@ final class RemoteControl {
               let track = player.currentTrack else { return }
         let paused = !player.isPlaying
         let now = Date()
+        // Each second for the first 3 s of a song: the queue's Stopped report
+        // of the song before can land after this one's and empty the
+        // session's NowPlayingItem (measured on 12.4), and the controller
+        // would see nothing playing until the next.
+        if track.id != lastTrackID {
+            lastTrackID = track.id
+            songSince = now
+            reportSession = UUID().uuidString
+        }
+        let settling = now.timeIntervalSince(songSince) < 3
         if let last = lastSaid, last.id == track.id, last.paused == paused, last.volume == player.volume,
-           paused || now.timeIntervalSince(last.at) < 5 {
+           !settling, paused || now.timeIntervalSince(last.at) < 5 {
             return
         }
-        if lastSaid?.id != track.id { reportSession = UUID().uuidString }
         lastSaid = (track.id, paused, player.volume, now)
         let report = PlaybackReport(trackID: track.id, position: player.elapsed, isPaused: paused,
                                     playSessionID: reportSession, volume: player.volume)

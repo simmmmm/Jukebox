@@ -2,8 +2,8 @@
 // (JukeboxKit's YourYear): Jellyfin's or Emby's Playback Reporting where it
 // answers this user (`ServerCapability.playbackReporting`), every device;
 // otherwise this device's own history, and the page says so. Plex's
-// history (viewedAt) is not used: the test Plex is unclaimed and offline,
-// so it could not be proven to answer. One file for every client
+// history (viewedAt) is not used, and not tried: the test Plex is
+// unclaimed and offline. One file for every client
 // (Package.swift's `shared`); each draws the page its own way, from
 // Settings' server section (no new button: "niet 10000 knopen").
 

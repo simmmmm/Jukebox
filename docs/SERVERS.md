@@ -664,7 +664,7 @@ with Subsonic's field beside Jellyfin's.
 | `rating` | never | API 1.6.0+ (`setRating`) | yes, songs and albums | no Rating in the menus |
 | `remoteControl` | `/Sessions?controllableByUserId=` answers (Emby too) | never | — | not listed in others' Play On |
 | `share` | never | `getShares` answers | yes; 501 with `ND_ENABLESHARING=false` | no Copy Share Link |
-| `playbackReporting` | the plugin's query answers this user (Emby too) | never | — | Your Year from this device only |
+| `playbackReporting` | the plugin's query answers this user (Emby: the same route; only its 404 without the plugin measured) | never | — | Your Year from this device only |
 
 The last three (18 November 2026, "zorg dat je ook alleen die opties toont
 als het beschikbaar is op die server en dat je dat ook zeker weet") are
@@ -696,8 +696,8 @@ by the kit's `ServerFeaturesTests` and Linux's `JUKEBOX_CHECK=remote`.
   `bpm` on every song, `[]` and 0 when untagged; the kit keeps them as nil
   then. `MoodEdges` turns them into track edges for the radio.
 - **Plex**: its history (`viewedAt`), moods and sonic similarity are not
-  used. The test Plex is unclaimed and has no way out, so none could be
-  proven to answer.
+  used, and not tried: the test Plex is unclaimed and has no way out
+  (moods come from plex.tv's agents, sonic similarity needs Plex Pass).
 
 Ratings (17 November 2026). Jellyfin 12.4 keeps a per-user
 `UserData.Rating`, a number without a scale: POST /UserItems/{id}/UserData

@@ -188,7 +188,19 @@ struct RemoteControlTests {
             credentials: try await JellyfinClient(serverURL: url, identity: phone, isEmby: isEmby)
                 .signIn(username: "test", password: "test"),
             identity: phone, isEmby: isEmby)
-        defer { Task { await speakerClient.signOut(); await phoneClient.signOut() } }
+        // Signed out whatever happens, awaited, so no test session stays on
+        // the server.
+        do {
+            try await drive(speakerClient, phoneClient, speaker: speaker, isEmby: isEmby)
+        } catch {
+            await speakerClient.signOut(); await phoneClient.signOut()
+            throw error
+        }
+        await speakerClient.signOut(); await phoneClient.signOut()
+    }
+
+    func drive(_ speakerClient: JellyfinClient, _ phoneClient: JellyfinClient, speaker: ClientIdentity,
+               isEmby: Bool) async throws {
 
         let socketURL = try #require(speakerClient.sessionSocketURL)
         #expect(socketURL.scheme == "ws")
