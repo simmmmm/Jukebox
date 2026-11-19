@@ -81,7 +81,12 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
         // offline only the songs on the phone play.
         Task {
             await app.restore()
-            if app.phase == .signedIn { app.offline.appBecameActive() }
+            if app.phase == .signedIn {
+                app.offline.appBecameActive()
+                // In the car the phone's window may not come to the front:
+                // Your Station's fact for this hour.
+                app.radio.refreshYourStationFact()
+            }
         }
     }
 
@@ -162,14 +167,15 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     /// Your Station, first on Home and on Radio: its arch, lit while it is
     /// on the air, and the one fact the phone's Home gives, the song on the
-    /// air or when it last played. At its end Play in the accent; on the
+    /// air, or what is played at this hour, or when it last played. At its end Play in the accent; on the
     /// air CarPlay's own playing bars in its place.
     private func yourStationRow(_ station: Station) -> CPListItem {
         let player = app.player
         let onAir = app.radio.stationOnAir(player: player)?.seed == .personal
         let fact: String? = onAir
             ? player.currentTrack.map { "\($0.name) · \($0.artistLine)" }
-            : RelativeDay.lastPlayed(HomeShelves.stationDates(events: app.history.history.events)[station.id])
+            : app.radio.yourStationFact?.text
+                ?? RelativeDay.lastPlayed(HomeShelves.stationDates(events: app.history.history.events)[station.id])
         let item = CPListItem(text: String(localized: "Your Station"), detailText: fact,
                               image: stationMark(onAir: onAir),
                               accessoryImage: onAir ? nil : glyph("play.fill", color: accent),

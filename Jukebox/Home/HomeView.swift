@@ -22,6 +22,7 @@ struct HomeView: View {
     @Environment(HistoryStore.self) private var history
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
+    @Environment(RadioController.self) private var radio
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.isWide) private var isWide
 
@@ -67,6 +68,8 @@ struct HomeView: View {
         .task(id: library.lastLoaded) {
             await mixes.rebuildIfStale(library: library, history: history, settings: settings)
         }
+        // Your Station's fact is the hour's: worked out again as Home shows.
+        .onAppear { radio.refreshYourStationFact() }
         // Back from the background the next morning: today's mixes.
         .onChange(of: scenePhase) { _, phase in
             guard phase == .active else { return }
@@ -82,6 +85,7 @@ private struct HomeFeed: View {
     @Environment(HistoryStore.self) private var history
     @Environment(AppSettings.self) private var settings
     @Environment(MixStore.self) private var mixes
+    @Environment(HandoffStore.self) private var handoff
     @Environment(\.isWide) private var isWide
 
     init() {}
@@ -115,9 +119,22 @@ private struct HomeFeed: View {
     private func sections(_ measures: HomeMeasures) -> some View {
         VStack(alignment: .leading, spacing: measures.betweenSections) {
             HomeOfflineNotice(margin: measures.margin)
-            HomeHandoffNotice(margin: measures.margin)
-            HomeStationHero(measures: measures)
+            if measures.pairsHomeCards, handoff.offer != nil {
+                // Side by side where the page has room, each as tall as
+                // the other: "kunnen die twee tegels ook op dezelfde rij
+                // naast elkaar" (the photographer, 18 November 2026).
+                // Linux's HomePage.appendCards.
+                HStack(alignment: .top, spacing: Theme.Space.xl) {
+                    HomeHandoffNotice(margin: 0, isPaired: true)
+                    HomeStationHero(measures: measures, isPaired: true)
+                }
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, measures.margin)
+            } else {
+                HomeHandoffNotice(margin: measures.margin)
+                HomeStationHero(measures: measures)
+                    .padding(.horizontal, measures.margin)
+            }
             // Its own ground parts it from the mixes, on every client.
             HomeMixesSection(measures: measures)
             HomePlayedLatelySection(measures: measures)
@@ -156,8 +173,10 @@ struct HomeCardLink: View {
                 .controlSize(.mini)
                 .tint(Theme.accent)
         } else {
+            // The word says it; VoiceOver need not read "play" twice.
             Image(systemName: systemImage)
                 .imageScale(.small)
+                .accessibilityHidden(true)
         }
     }
 }
@@ -202,9 +221,29 @@ extension View {
     /// November 2026: "kan je van 'doorgaan waar je was' iets beter
     /// afkaderen, hoeft niet extreem, hetzelfde geldt voor your station;
     /// beide staan zo in het niets met deze opmaak". Linux's home-card.
-    func homeCard() -> some View {
+    func homeCard(_ ground: Color = Theme.raised) -> some View {
+        // The words' side gets as much air as the words have above and
+        // below: "Geef ze beide ff wat meer padding aan de rechterkant,
+        // zodat het meer in balans is met boven en onder" (the photographer,
+        // 18 November 2026).
         padding(Theme.Space.m)
-            .background(Theme.raised, in: .rect(cornerRadius: Theme.Radius.artwork + Theme.Space.m))
+            .padding(.trailing, Theme.Space.xl)
+            .background(ground, in: .rect(cornerRadius: Theme.Radius.artwork + Theme.Space.m))
+    }
+
+    /// A card's content, inside its ground: in the row of two
+    /// (`isPaired`), DesktopMeasures.homeCard wide and as tall as the row,
+    /// in the middle of it; else as wide as its words, at most heroWidth,
+    /// and on a wide page no wider (Linux's).
+    @ViewBuilder
+    func homeCardFrame(isPaired: Bool, isWide: Bool) -> some View {
+        if isPaired {
+            frame(width: CGFloat(DesktopMeasures.homeCard) - 2 * Theme.Space.m - Theme.Space.xl, alignment: .leading)
+                .frame(maxHeight: .infinity)
+        } else {
+            frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+                .fixedSize(horizontal: isWide, vertical: false)
+        }
     }
 }
 
@@ -235,12 +274,15 @@ enum HomeLayout {
 /// at its foot.
 private struct HomeHandoffNotice: View {
     let margin: CGFloat
+    /// Beside Your Station, in the row of two.
+    var isPaired = false
 
     @Environment(HandoffStore.self) private var handoff
     @Environment(\.isWide) private var isWide
 
-    init(margin: CGFloat) {
+    init(margin: CGFloat, isPaired: Bool = false) {
         self.margin = margin
+        self.isPaired = isPaired
     }
 
     var body: some View {
@@ -250,27 +292,61 @@ private struct HomeHandoffNotice: View {
             Button {
                 handoff.continueHere()
             } label: {
-                VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                    // Wide, Linux's: both lines 15, the first at 60%.
-                    Text(offer.heading)
-                        .desktopFont(15, phone: .subheadline)
-                        .foregroundStyle(.secondary)
-                    Text(line)
-                        .desktopFont(15, phone: nil)
-                        .foregroundStyle(.primary)
-                        .lineLimit(2)
-                    HomeCardLink(title: action, systemImage: "chevron.forward", isTrailing: true)
-                        .padding(.top, Theme.Space.s)
+                if isWide {
+                    wide(offer, action: action)
+                } else {
+                    // The iPhone's, as it was: words alone, on raised.
+                    VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                        Text(offer.heading)
+                            .desktopFont(15, phone: .subheadline)
+                            .foregroundStyle(.secondary)
+                        Text(line)
+                            .desktopFont(15, phone: nil)
+                            .foregroundStyle(.primary)
+                            .lineLimit(2)
+                        HomeCardLink(title: action, systemImage: "chevron.forward", isTrailing: true)
+                            .padding(.top, Theme.Space.s)
+                    }
+                    .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
+                    .homeCard()
                 }
-                .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
-                // Wide, as wide as its words, as Linux's.
-                .fixedSize(horizontal: isWide, vertical: false)
-                .homeCard()
             }
             .buttonStyle(HomeCardButtonStyle())
             .accessibilityLabel(Text(verbatim: "\(offer.heading), \(line), \(action)"))
             .padding(.horizontal, margin)
         }
+    }
+
+    /// On a wide page in Your Station's form, as Linux's handoffCard
+    /// ("beide met een soortgelijke opmaak", 18 November 2026): the song's
+    /// cover 120 with the record behind it, 24, then the heading, the song
+    /// in the serif, its artist 8 under it and Continue 12 under that, in
+    /// the middle of the art's height; a step lighter than Your Station.
+    private func wide(_ offer: HandoffStore.Offer, action: String) -> some View {
+        HStack(alignment: .center, spacing: Theme.Space.xl) {
+            HomeCardRecord(side: 120) {
+                ArtworkView(offer.track.artwork, size: 120)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                Text(offer.heading)
+                    .desktopFont(13)
+                    .foregroundStyle(.secondary)
+                Text(offer.track.name)
+                    .desktopFont(24, design: .serif)
+                    .foregroundStyle(.primary)
+                Text(offer.track.artistLine)
+                    .desktopFont(13)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, Theme.Space.s)
+                HomeCardLink(title: action, systemImage: "chevron.forward", isTrailing: true)
+                    .padding(.top, Theme.Space.m)
+            }
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .fixedSize(horizontal: false, vertical: true)
+        .homeCardFrame(isPaired: isPaired, isWide: true)
+        .homeCard(Theme.raisedLighter)
     }
 }
 
@@ -347,6 +423,8 @@ private struct HomeOfflineNotice: View {
 /// under it, the words in the middle of the art's height (the iPhone's too).
 struct HomeStationHero: View {
     let measures: HomeMeasures
+    /// Beside the music to go on with, in the row of two.
+    var isPaired = false
 
     @Environment(RadioController.self) private var radio
     @Environment(AudioPlayer.self) private var player
@@ -356,8 +434,9 @@ struct HomeStationHero: View {
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    init(measures: HomeMeasures) {
+    init(measures: HomeMeasures, isPaired: Bool = false) {
         self.measures = measures
+        self.isPaired = isPaired
     }
 
     var body: some View {
@@ -391,9 +470,9 @@ struct HomeStationHero: View {
             // As tall as the art, so the name starts at its top and the
             // word ends at its foot; taller when the words need it.
             .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
-            // Wide, as wide as the art and its words, as Linux's.
-            .fixedSize(horizontal: isWide, vertical: false)
+            // Wide, as wide as the art and its words, as Linux's; in the
+            // row of two, the row's width.
+            .homeCardFrame(isPaired: isPaired, isWide: isWide)
             .homeCard()
         }
         .buttonStyle(HomeCardButtonStyle())
@@ -448,9 +527,11 @@ struct HomeStationHero: View {
             } else {
                 name(String(localized: "Your Station"))
                     .foregroundStyle(.primary)
-                // A fact, not a slogan: when it last played on this device.
-                // Wide, 8 under the name, as Linux's.
-                Text(RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
+                // A fact, not a slogan: what the listener plays at this hour
+                // (RadioController.yourStationFact), else when it last
+                // played on this device. Wide, 8 under the name, as Linux's.
+                Text(radio.yourStationFact?.text
+                     ?? RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
                     .desktopFont(13, phone: .subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.top, measures.isWide ? Theme.Space.xs : 0)

@@ -4,17 +4,15 @@
 // artiest met een link die in zijn eigen app opent"; "doe alles", 18
 // November 2026).
 //
-// The link, in order:
-// 1. The server's own, where it makes one (`ServerShareLinks`: Navidrome's
-//    shares, which play for anyone with the link). No server adopts it here;
-//    it is the seam for that work.
-// 2. Odesli's page (song.link, album.link), which opens Spotify, Apple
+// A server that makes its own link to play (Navidrome's shares) has Copy
+// Share Link instead (the app's ShareLinks.swift). Elsewhere, the link:
+// 1. Odesli's page (song.link, album.link), which opens Spotify, Apple
 //    Music, Tidal and the rest, found through Apple's public iTunes search.
 //    Only the title and the main artist leave the device, as for LRCLIB, and
 //    only when the listener asks to share. An artist has no Odesli page by
 //    Apple's id (artist.link/i/… is empty, measured 18 November 2026), so
 //    its link is Apple Music's page, which opens on the web elsewhere.
-// 3. None: the name alone. Better than a link to someone else's song.
+// 2. None: the name alone. Better than a link to someone else's song.
 
 import Foundation
 #if canImport(FoundationNetworking)
@@ -57,12 +55,6 @@ extension Track {
     var primaryArtistName: String { artists.first?.name ?? albumArtist?.name ?? "" }
 }
 
-/// A server that makes its own links to share (Navidrome's createShare):
-/// `server as? any ServerShareLinks`. Nil: none for that item.
-public protocol ServerShareLinks: MusicServer {
-    func shareURL(for item: ShareItem) async throws -> URL?
-}
-
 /// The words and the link, as one text to send.
 public struct ShareText: Sendable, Hashable {
     public var words: String
@@ -87,14 +79,10 @@ public struct Sharing: Sendable {
         self.transport = transport
     }
 
-    /// The server's link, else Odesli's or Apple Music's, else the words
-    /// alone. Never throws: a share always has its words.
-    public func text(for item: ShareItem, server: (any MusicServer)? = nil) async -> ShareText {
-        if let server = server as? any ServerShareLinks,
-           let url = try? await server.shareURL(for: item) {
-            return ShareText(words: item.words, url: url)
-        }
-        return ShareText(words: item.words, url: try? await publicLink(for: item))
+    /// Odesli's or Apple Music's link, else the words alone. Never throws:
+    /// a share always has its words.
+    public func text(for item: ShareItem) async -> ShareText {
+        ShareText(words: item.words, url: try? await publicLink(for: item))
     }
 
     /// Odesli's page for a song or an album, Apple Music's for an artist,

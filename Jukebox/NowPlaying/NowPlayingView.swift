@@ -487,7 +487,8 @@ struct NowPlayingView: View {
                     Image(systemName: "chevron.down")
                         .font(.title3.weight(.semibold))
                         .foregroundStyle(ink)
-                        .frame(width: 44, height: 44)
+                        // At least 44, and as large as Larger Text makes the glyph.
+                        .frame(minWidth: 44, minHeight: 44)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
@@ -503,6 +504,9 @@ struct NowPlayingView: View {
                         MoreGlyph(player: player, font: .title3.weight(.semibold), ink: ink, side: 44)
                     }
                     .accessibilityLabel("More")
+                    // The moon is the timer's one sign outside the menu:
+                    // VoiceOver hears it too.
+                    .accessibilityValue(player.sleepChoice != nil ? "Sleep Timer On" : "")
                 }
             }
         }
@@ -732,7 +736,9 @@ struct NowPlayingView: View {
                 .font(.title3)
                 .foregroundStyle(disliked ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
                 .symbolEffect(.bounce, value: disliked)
-                .frame(width: 44, height: 44)
+                // At least 44: with Larger Text the glyph outgrows a fixed
+                // square and would run into the heart beside it.
+                .frame(minWidth: 44, minHeight: 44)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -758,7 +764,7 @@ struct NowPlayingView: View {
                 .font(.title3)
                 .foregroundStyle(favorite ? AnyShapeStyle(.tint) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
                 .symbolEffect(.bounce, value: favorite)
-                .frame(width: 44, height: 44)
+                .frame(minWidth: 44, minHeight: 44)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

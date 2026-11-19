@@ -345,6 +345,7 @@ final class RadioEvaluationTests: XCTestCase {
         case .discovery: "discovery"
         case .becauseYouLiked: "becauseYouLiked"
         case .instantMix: "instantMix"
+        case .timeOfDay: "timeOfDay"
         }
     }
 }

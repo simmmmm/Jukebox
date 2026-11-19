@@ -301,8 +301,11 @@ struct JellyfinPlaybackInfo: Encodable, Sendable {
     /// transcode.
     var playMethod = "DirectStream"
     var canSeek = true
+    /// 0–100, only when said: what a controller's volume slider shows.
+    var volumeLevel: Int?
 
     enum CodingKeys: String, CodingKey {
+        case volumeLevel = "VolumeLevel"
         case itemID = "ItemId"
         case mediaSourceID = "MediaSourceId"
         case positionTicks = "PositionTicks"
@@ -319,6 +322,7 @@ struct JellyfinPlaybackInfo: Encodable, Sendable {
         positionTicks = JellyfinTicks.ticks(seconds: report.position)
         isPaused = report.isPaused
         playSessionID = report.playSessionID
+        volumeLevel = report.volume.map { Int((min(1, max(0, $0)) * 100).rounded()) }
     }
 }
 
@@ -443,7 +447,8 @@ extension JellyfinItem {
             isFavorite: userData?.isFavorite ?? false,
             dateAdded: dateCreated.flatMap(JellyfinDate.parse),
             playCount: userData?.playCount ?? 0,
-            lastPlayed: userData?.lastPlayedDate.flatMap(JellyfinDate.parse)
+            lastPlayed: userData?.lastPlayedDate.flatMap(JellyfinDate.parse),
+            normalizationGain: normalizationGain
         )
     }
 

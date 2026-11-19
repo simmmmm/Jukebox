@@ -6,14 +6,20 @@
 // browser, for Plex's people, who seldom know their server's address.
 // The same page adds an account to those kept (the primary menu's or
 // Preferences' Add Account): over the signed-in window, with Cancel.
-// ponytail: no Quick Connect on Linux yet (the kit has it: QuickConnectSignIn).
+// Use Quick Connect under Sign In where the Jellyfin at the address has it
+// on (the server is asked once the address is left), as on the Mac.
 
 import CAdw
+import CGlue
 import Foundation
 import JukeboxKit
 
 enum SignInPage {
-    private static var user: Widget!
+    /// The address, the user name and Use Quick Connect: the screenshot
+    /// walk's too (Shots).
+    static var address: Widget!
+    static var user: Widget!
+    static var quickConnect: Widget!
     private static var password: Widget!
     private static var cancel: Widget!
 
@@ -33,6 +39,7 @@ enum SignInPage {
 
     static func make() -> Widget {
         let address = adw_entry_row_new()!
+        Self.address = address
         adw_preferences_row_set_title(ptr(address), "Server Address")
         let user = adw_entry_row_new()!
         Self.user = user
@@ -161,10 +168,98 @@ enum SignInPage {
         }
         plex = button("Sign In with Plex", "flat") { signInWithPlex() }.align(horizontal: GTK_ALIGN_CENTER)
 
+        // Quick Connect: a code typed into another signed-in Jellyfin app,
+        // so no password is typed here. Offered only where the server said
+        // it has it on (`/QuickConnect/Enabled`, asked by the kit's detect
+        // as the address is left); the same button cancels the wait.
+        var way: (any QuickConnectSignIn)?
+        var askedAt = ""
+        var quickTask: Task<Void, Never>?
+        var quick: Widget!
+        let code = label("", "title-1", "numeric", selectable: true).align(horizontal: GTK_ALIGN_CENTER)
+        code.isVisible = false
+        func quickDone() {
+            quickTask = nil
+            code.isVisible = false
+            gtk_button_set_label(ptr(quick), "Use Quick Connect")
+            signIn.isSensitive = true
+            plex.isSensitive = true
+        }
+        func useQuickConnect() {
+            if let running = quickTask {
+                running.cancel()
+                message.isVisible = false
+                return quickDone()
+            }
+            guard !isBusy, plexTask == nil, let way else { return }
+            gtk_button_set_label(ptr(quick), "Cancel")
+            signIn.isSensitive = false
+            plex.isSensitive = false
+            say("Asking \(way.server.name) for a code…")
+            quickTask = Task {
+                do {
+                    var state = try await way.quickConnectStart()
+                    try Task.checkCancellation()
+                    setText(code, state.code)
+                    // Read digit by digit, as it is typed.
+                    jb_accessible_label(code, state.code.map(String.init).joined(separator: " "))
+                    code.isVisible = true
+                    say("Enter this code in another Jellyfin app: Settings › Quick Connect. Jukebox waits here.")
+                    // The server says nothing by itself: asked every 3 s,
+                    // as on the iPhone, for the few minutes a code lives.
+                    while !state.isAuthenticated {
+                        try await Task.sleep(for: .seconds(3))
+                        state = try await way.quickConnectState(secret: state.secret)
+                    }
+                    let credentials = try await way.signIn(quickConnectSecret: state.secret)
+                    try Task.checkCancellation()
+                    quickDone()
+                    message.isVisible = false
+                    Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "quick_connect"])
+                    await app.signIn(credentials)
+                } catch {
+                    guard !Task.isCancelled else { return }
+                    quickDone()
+                    Stats.track(.signInFailed, ["reason": Stats.signInFailure(error, quickConnect: true)])
+                    // The Mac's words.
+                    switch error as? MusicServerError {
+                    case .notFound?: say("The code has expired. Use Quick Connect again for a new one.")
+                    case .unauthorized?: say("Quick Connect is turned off on this server. Sign in with your password instead.")
+                    default: say(error.localizedDescription)
+                    }
+                }
+            }
+        }
+        quick = button("Use Quick Connect", "flat") { useQuickConnect() }.align(horizontal: GTK_ALIGN_CENTER)
+        Self.quickConnect = quick
+        quick.isVisible = false
+        // The address left: asked now, quietly (Sign In says what went
+        // wrong), so Quick Connect shows only for a server that has it.
+        let leaving = gtk_event_controller_focus_new()!
+        on(leaving, "leave") {
+            let typed = text(address)
+            guard !typed.isEmpty, typed != askedAt else { return }
+            askedAt = typed
+            Task {
+                let found = try? await app.detectServer(at: typed)
+                guard text(address) == typed else { return }
+                way = found.flatMap { $0.capabilities.contains(.quickConnect) ? app.signIn(to: $0) as? any QuickConnectSignIn : nil }
+                quick.isVisible = way != nil
+            }
+        }
+        gtk_widget_add_controller(address, ptr(leaving))
+        // Another address: what the last one offered no longer holds.
+        on(raw(address), "changed") {
+            guard quickTask == nil, text(address) != askedAt else { return }
+            askedAt = ""
+            way = nil
+            quick.isVisible = false
+        }
+
         let title = label("Jukebox", "serif", "page-title")
         let fact = label("Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server.", "fact", lines: 0)
-        let actions = vbox(spacing: 8, [signIn, plex])
-        let column = vbox(spacing: 24, [markTile(), title, fact, group, message, actions]).margins(24)
+        let actions = vbox(spacing: 8, [signIn, quick, plex])
+        let column = vbox(spacing: 24, [markTile(), title, fact, group, code, message, actions]).margins(24)
         gtk_widget_set_valign(column, GTK_ALIGN_CENTER)
         let clamp = adw_clamp_new()!
         adw_clamp_set_maximum_size(ptr(clamp), 420)

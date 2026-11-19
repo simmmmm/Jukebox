@@ -15,7 +15,7 @@ final class RemoteCommands {
         let center = MPRemoteCommandCenter.shared()
 
         targets.append(center.playCommand.addTarget { [weak player] _ in
-            Task { @MainActor in player?.resume() }
+            Task { @MainActor in RemoteCommands.play(player, toggles: false) }
             return .success
         })
         targets.append(center.pauseCommand.addTarget { [weak player] _ in
@@ -23,7 +23,7 @@ final class RemoteCommands {
             return .success
         })
         targets.append(center.togglePlayPauseCommand.addTarget { [weak player] _ in
-            Task { @MainActor in player?.togglePlayPause() }
+            Task { @MainActor in RemoteCommands.play(player, toggles: true) }
             return .success
         })
         targets.append(center.nextTrackCommand.addTarget { [weak player] _ in
@@ -70,11 +70,34 @@ final class RemoteCommands {
         update(hasTrack: false, stationPlays: false, liked: false, disliked: false)
     }
 
+    /// Play, and Play/Pause. With nothing loaded the Mac's Play key (F8)
+    /// plays the music to go on with, or Your Station, as Space and Linux's
+    /// Play key do: on a computer it is the listener's own hand. The iPhone
+    /// and the iPad only resume: a car or headphones send Play by
+    /// themselves when they connect, and Apple's HIG lets that resume what
+    /// was playing, never start something new. So there an empty queue
+    /// keeps both commands off, and the car stays quiet.
+    private static func play(_ player: AudioPlayer?, toggles: Bool) {
+        guard let player else { return }
+        #if os(macOS)
+        if !player.hasTrack {
+            AppModel.shared.handoff.playWithNothingLoaded(from: "play_key")
+            return
+        }
+        #endif
+        if toggles { player.togglePlayPause() } else { player.resume() }
+    }
+
     func update(hasTrack: Bool, stationPlays: Bool, liked: Bool, disliked: Bool) {
         let center = MPRemoteCommandCenter.shared()
+        #if os(macOS)
+        center.playCommand.isEnabled = true
+        center.togglePlayPauseCommand.isEnabled = true
+        #else
         center.playCommand.isEnabled = hasTrack
-        center.pauseCommand.isEnabled = hasTrack
         center.togglePlayPauseCommand.isEnabled = hasTrack
+        #endif
+        center.pauseCommand.isEnabled = hasTrack
         center.nextTrackCommand.isEnabled = hasTrack
         center.previousTrackCommand.isEnabled = hasTrack
         center.changePlaybackPositionCommand.isEnabled = hasTrack

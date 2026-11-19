@@ -45,7 +45,7 @@ enum Preferences {
         let radio = group("Radio", on: page)
         let saveTypedKey = lastFM(on: radio, in: dialog)
         adw_preferences_group_set_description(
-            ptr(radio), "With a Last.fm API key, the radio also knows which artists and songs sound alike.")
+            ptr(radio), "With a Last.fm API key, the radio also knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Nothing is written to Last.fm.")
 
         // Which places the sidebar shows (AppSettings.hiddenPages), in its
         // order; Home has no switch. The photographer, 15 November 2026:
@@ -97,7 +97,16 @@ enum Preferences {
         adw_preferences_row_set_title(ptr(saved), "Last.fm API Key")
         adw_action_row_set_subtitle(ptr(saved), "••••••••")
         gtk_widget_add_css_class(saved, "property")
+        // The listener's Last.fm name, optional, once a key is kept: one
+        // row in the key's flow (✓ or Enter, Last.fm asked, kept only when
+        // it knows them), for the clock's scrobbles. Emptied, it is gone.
+        // Not a secret, so shown as typed.
+        let user = adw_entry_row_new()!
+        adw_preferences_row_set_title(ptr(user), "Last.fm Username")
+        adw_entry_row_set_show_apply_button(ptr(user), 1)
+        gtk_editable_set_text(ptr(user), settings.lastFMUser)
         var isChecking = false
+        var isCheckingUser = false
         var isClosed = false
 
         func typed() -> String {
@@ -145,10 +154,45 @@ enum Preferences {
                     // A refusal of the key before it no longer stands.
                     adw_action_row_set_subtitle(ptr(saved), "••••••••")
                     editing(false)
+                    user.isVisible = true
                 }
                 say("Last.fm key saved")
             }
         }
+        func typedUser() -> String {
+            String(cString: gtk_editable_get_text(ptr(user))).trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        func saveUser() {
+            let name = typedUser()
+            guard !isCheckingUser, name != settings.lastFMUser.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+            gtk_widget_remove_css_class(user, "error")
+            guard !name.isEmpty else {
+                settings.lastFMUser = ""
+                app.radio.lastFMKeyChanged()
+                say("Last.fm username removed")
+                return
+            }
+            isCheckingUser = true
+            user.isSensitive = false
+            let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            Task {
+                let check = await LastFMClient(apiKey: key).validateUser(name)
+                isCheckingUser = false
+                if !isClosed { user.isSensitive = true }
+                guard check == .accepted else {
+                    // The typed name stays, to be put right.
+                    if !isClosed { gtk_widget_add_css_class(user, "error") }
+                    say(check.problem ?? "")
+                    return
+                }
+                settings.lastFMUser = name
+                app.radio.lastFMKeyChanged()
+                say("Last.fm username saved")
+            }
+        }
+        on(user, "apply") { saveUser() }
+        on(user, "entry-activated") { saveUser() }
+        on(user, "changed") { gtk_widget_remove_css_class(user, "error") }
         // ✓, and Enter: after "Could not reach Last.fm" the ✓ is gone until
         // the text changes, and Enter tries again.
         on(entry, "apply") { save() }
@@ -169,14 +213,17 @@ enum Preferences {
             Stats.track(.lastFMKey, ["state": "removed"])
             editing(true)
             cancel.isVisible = false
+            user.isVisible = false
             say("Last.fm key removed")
         }.align(vertical: GTK_ALIGN_CENTER)
         adw_action_row_add_suffix(ptr(saved), change)
         adw_action_row_add_suffix(ptr(saved), remove)
         adw_preferences_group_add(ptr(group), entry)
         adw_preferences_group_add(ptr(group), saved)
+        adw_preferences_group_add(ptr(group), user)
         editing(!settings.hasLastFM)
         cancel.isVisible = false
+        user.isVisible = settings.hasLastFM
 
         // The saved key, asked about again each time Preferences opens, as
         // the iPhone's Settings does: a revoked key shows here rather than as
@@ -195,6 +242,7 @@ enum Preferences {
             isClosed = true
             // Not one Last.fm already answered about.
             if entry.isVisible, !isChecking, gtk_widget_has_css_class(entry, "error") == 0 { save() }
+            if user.isVisible, gtk_widget_has_css_class(user, "error") == 0 { saveUser() }
         }
     }
 
@@ -218,12 +266,15 @@ enum Preferences {
             rows = []
             let active = app.credentials
             let switching = app.isSwitching
+            // Whether Playback Reporting answers, on Jellyfin and Emby: the
+            // group's own description, where GNOME puts a group's note.
+            adw_preferences_group_set_description(ptr(group), active.flatMap(ServerWords.playbackReportingNote))
             for account in app.accounts.saved {
                 let row = adw_action_row_new()!
                 adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
                 adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
                 if active?.isSameAccount(as: account) == true {
-                    let check = gtk_image_new_from_icon_name("object-select-symbolic")!.tooltip("Signed In")
+                    let check = gtk_image_new_from_icon_name("object-select-symbolic")!.named("Signed In")
                     adw_action_row_add_suffix(ptr(row), check)
                 } else {
                     gtk_list_box_row_set_activatable(ptr(row), 1)
@@ -244,6 +295,19 @@ enum Preferences {
                 adw_action_row_add_suffix(ptr(row), out)
                 adw_preferences_group_add(ptr(group), row)
                 rows.append(row)
+            }
+            // The year's music, a subpage (YourYearPage): from the server's
+            // record where it keeps one, as the description above says.
+            if active != nil {
+                let year = adw_action_row_new()!
+                adw_preferences_row_set_title(ptr(year), "Your Year")
+                adw_action_row_add_suffix(ptr(year), gtk_image_new_from_icon_name("go-next-symbolic")!)
+                gtk_list_box_row_set_activatable(ptr(year), 1)
+                on(raw(year), "activated") {
+                    adw_preferences_dialog_push_subpage(ptr(dialog), YourYearPage.make())
+                }
+                adw_preferences_group_add(ptr(group), year)
+                rows.append(year)
             }
         }
     }

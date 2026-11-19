@@ -38,6 +38,8 @@ final class AppModel {
     let radio: RadioController
     let mixes: MixStore
     let handoff: HandoffStore
+    /// This device as a speaker the phone controls (RemoteControl.swift).
+    let remote: RemoteControl
     let offline: OfflineStore
     /// The window's right panel: open or not, Up next or the lyrics.
     let panel = PanelState()
@@ -53,6 +55,7 @@ final class AppModel {
         radio = RadioController(player: player, library: library, history: history, settings: settings)
         mixes = MixStore()
         handoff = HandoffStore(player: player, radio: radio, library: library, settings: settings, identity: identity)
+        remote = RemoteControl(player: player, library: library)
         player.radio = radio
         // What moves play counts and "Played lately" when a song is heard
         // to the end.
@@ -70,6 +73,8 @@ final class AppModel {
             guard let (host, port) = AvahiCastFinder.split(device.address) else { return nil }
             return CastPlayer(device: device, socket: GioCastSocket(host: host, port: port))
         }
+        // Foundation's websocket has no libcurl support on Linux: libsoup's.
+        remote.connect = { SoupCommandSocket(url: $0) }
     }
 
     func can(_ capability: ServerCapability) -> Bool {
@@ -223,6 +228,6 @@ final class AppModel {
 extension AccountStores {
     init(app: AppModel) {
         self.init(player: app.player, library: app.library, history: app.history, radio: app.radio,
-                  mixes: app.mixes, offline: app.offline, handoff: app.handoff, settings: app.settings)
+                  mixes: app.mixes, offline: app.offline, handoff: app.handoff, settings: app.settings, remote: app.remote)
     }
 }

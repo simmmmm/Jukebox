@@ -3,7 +3,7 @@
 // dev/linux-errors.sh runs it after every build (JUKEBOX_CHECK=queue). Next
 // and previous, repeat, Play Next and Add to Queue with Up Next's "Then",
 // move and remove, shuffle and back, a station chosen again and trimmed,
-// the sleep timer.
+// the sleep timer, album gain.
 // Nothing is sent (Stats off, no server) and nothing written (no song
 // plays, so none is finished into the history).
 
@@ -243,6 +243,18 @@ enum QueueCheck {
                "a library read a while ago is read again")
         expect(!LibraryStore.isStale(now.addingTimeInterval(-60), now: now), "nor one read a minute ago")
         expect(!LibraryStore.isStale(nil, now: now), "nor one not read yet")
+
+        // Album gain while the album is heard as one, the song's own
+        // otherwise, and the song's when the album has none.
+        let song = Track(id: "g", name: "G", albumID: "a", normalizationGain: -9)
+        func gain(_ context: QueueContext?, shuffled: Bool = false, oneAlbum: Bool = false, album: Double? = -6) -> Double? {
+            PlayQueue.gain(for: song, albumGain: album, context: context, isShuffled: shuffled, queueIsItsAlbum: oneAlbum)
+        }
+        expect(gain(album) == -6, "an album in order plays at its album gain")
+        expect(gain(album, shuffled: true) == -9, "shuffled, at the song's")
+        expect(gain(album, shuffled: true, oneAlbum: true) == -6, "a queue of one album, at the album's")
+        expect(gain(QueueContext(.playlist("p"), title: "P")) == -9, "a playlist, at the song's")
+        expect(gain(album, album: nil) == -9, "no album gain: the song's")
 
         // Songs picked in a list (TrackPicks): Ctrl one by one, Shift a run,
         // the menu on a pick for all of them, on another row for that row.

@@ -206,6 +206,8 @@ struct SubsonicBody: Decodable {
     var playQueue: SubsonicPlayQueue?
     /// jukeboxControl's answer: `jukeboxStatus`, or `jukeboxPlaylist` for get.
     var jukeboxStatus: SubsonicJukeboxStatus?
+    /// getShares' and createShare's answer.
+    var shares: [SubsonicShare]
 
     var isOK: Bool { status?.lowercased() == "ok" }
 
@@ -236,6 +238,7 @@ struct SubsonicBody: Decodable {
         user = c.lenient(SubsonicUser.self, key("user"))
         tokenInfo = c.lenient(SubsonicTokenInfo.self, key("tokenInfo"))
         openSubsonicExtensions = c.lenientList(SubsonicExtension.self, key("openSubsonicExtensions"))
+        shares = c.lenient(SubsonicShares.self, key("shares"))?.share ?? []
         scanStatus = c.lenient(SubsonicScanStatus.self, key("scanStatus"))
         playQueue = c.lenient(SubsonicPlayQueue.self, key("playQueue"))
         jukeboxStatus = c.lenient(SubsonicJukeboxStatus.self, key("jukeboxStatus"))
@@ -361,10 +364,16 @@ struct SubsonicChild: Decodable {
     var work: String?
     var movement: Movement?
     var grouping: String?
+    /// OpenSubsonic: MOOD and BPM as tagged. Navidrome 0.64.2 sends both on
+    /// every song, `[]` and 0 when untagged (measured).
+    var moods: [String]
+    var bpm: Int?
 
     init(from decoder: any Decoder) throws {
         let c = try decoder.container(keyedBy: SubsonicKey.self)
         func key(_ name: String) -> SubsonicKey { SubsonicKey(name) }
+        moods = c.lenientNames(key("moods"))
+        bpm = c.lenientInt(key("bpm"))
         contributors = c.lenientList(SubsonicContributor.self, key("contributors"))
         displayComposer = c.lenientString(key("displayComposer"))
         work = c.lenientNames(key("works")).first
@@ -749,7 +758,10 @@ extension SubsonicChild {
             work: work,
             movement: movement,
             grouping: grouping,
-            rating: Subsonic.stars(userRating))
+            rating: Subsonic.stars(userRating),
+            albumNormalizationGain: albumGain,
+            moods: moods.isEmpty ? nil : moods,
+            bpm: bpm.flatMap { $0 > 0 ? $0 : nil })
     }
 
     /// The contributors by role, in Role's order: Navidrome lists them in

@@ -66,6 +66,12 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// (negative: play softer): Jellyfin 10.9+'s NormalizationGain,
     /// OpenSubsonic's replayGain.trackGain.
     public var normalizationGain: Double?
+    /// The same for the whole album the track is on, where the server
+    /// sends it with the song (OpenSubsonic's replayGain.albumGain).
+    /// Jellyfin keeps it on the album instead (`Album.normalizationGain`).
+    /// PlayQueue plays an album heard as one at this, so its quiet songs
+    /// stay quieter than its loud ones, as mastered.
+    public var albumNormalizationGain: Double?
     /// Set when the track came from a playlist: what removing or moving it
     /// there needs. Jellyfin's PlaylistItemId; for Subsonic, which has none,
     /// "<songID>#<n>" (SubsonicClient.playlistTracks).
@@ -107,6 +113,13 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
     /// The listener's stars, 1 to 5; nil when unrated or the server keeps
     /// none (`ServerCapability.rating`: Subsonic's `userRating`).
     public var rating: Int?
+    /// The moods as tagged (MOOD), where the server passes them:
+    /// OpenSubsonic's `moods`. Nil when none, never empty. The radio's
+    /// `MoodEdges` reads them.
+    public var moods: [String]?
+    /// Beats a minute as tagged (BPM, TBPM): OpenSubsonic's `bpm`, whose 0
+    /// means untagged and is nil here.
+    public var bpm: Int?
 
     public init(id: ItemID, name: String, albumID: ItemID? = nil, albumName: String? = nil,
                 artists: [ArtistRef] = [], albumArtist: ArtistRef? = nil, genres: [String] = [],
@@ -116,7 +129,7 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
                 dateAdded: Date? = nil, normalizationGain: Double? = nil, playlistEntryID: String? = nil,
                 container: String? = nil, credits: [Credit]? = nil, work: String? = nil,
                 movement: Movement? = nil, grouping: String? = nil, discTitle: String? = nil,
-                rating: Int? = nil) {
+                rating: Int? = nil, albumNormalizationGain: Double? = nil, moods: [String]? = nil, bpm: Int? = nil) {
         self.id = id
         self.name = name
         self.albumID = albumID
@@ -135,6 +148,7 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
         self.lastPlayed = lastPlayed
         self.dateAdded = dateAdded
         self.normalizationGain = normalizationGain
+        self.albumNormalizationGain = albumNormalizationGain
         self.playlistEntryID = playlistEntryID
         self.container = container
         self.credits = credits
@@ -143,6 +157,8 @@ public struct Track: Identifiable, Hashable, Codable, Sendable {
         self.grouping = grouping
         self.discTitle = discTitle
         self.rating = rating
+        self.moods = moods
+        self.bpm = bpm
     }
 
     /// Who is credited in `role`, in the server's order.
@@ -230,11 +246,16 @@ public struct Album: Identifiable, Hashable, Codable, Sendable {
     public var lastPlayed: Date?
     /// The listener's stars, 1 to 5, as on `Track`.
     public var rating: Int?
+    /// The album's loudness gain as one record, in dB, as
+    /// `Track.normalizationGain` (Jellyfin 10.9+'s NormalizationGain on a
+    /// MusicAlbum, from its LUFS scan). Nil where the server gives none.
+    public var normalizationGain: Double?
 
     public init(id: ItemID, name: String, artists: [ArtistRef] = [], year: Int? = nil,
                 genres: [String] = [], imageTag: String? = nil, trackCount: Int? = nil,
                 duration: TimeInterval? = nil, isFavorite: Bool = false, dateAdded: Date? = nil,
-                playCount: Int = 0, lastPlayed: Date? = nil, rating: Int? = nil) {
+                playCount: Int = 0, lastPlayed: Date? = nil, rating: Int? = nil,
+                normalizationGain: Double? = nil) {
         self.id = id
         self.name = name
         self.artists = artists
@@ -248,6 +269,7 @@ public struct Album: Identifiable, Hashable, Codable, Sendable {
         self.playCount = playCount
         self.lastPlayed = lastPlayed
         self.rating = rating
+        self.normalizationGain = normalizationGain
     }
 
     public var artistLine: String { artists.map(\.name).joined(separator: ", ") }

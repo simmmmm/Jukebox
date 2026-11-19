@@ -45,6 +45,13 @@ final class AppSettings {
         didSet { defaults.set(lastFMAPIKey, forKey: Keys.lastFMAPIKey) }
     }
 
+    /// The listener's Last.fm name, optional: with it the radio's clock
+    /// reads their scrobbles from day one (docs/RADIO.md, "Scrobbles").
+    /// Read only; empty: none. Never sent to Stats.
+    var lastFMUser: String {
+        didSet { defaults.set(lastFMUser, forKey: Keys.lastFMUser) }
+    }
+
     /// When an album, a playlist or a mix ends, play on with a station from
     /// its last track, as Music's Autoplay does.
     var autoplay: Bool {
@@ -219,6 +226,7 @@ final class AppSettings {
         cellularQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.cellularQuality) ?? "") ?? .normal
         normalizeVolume = defaults.object(forKey: Keys.normalizeVolume) as? Bool ?? true
         lastFMAPIKey = defaults.string(forKey: Keys.lastFMAPIKey) ?? ""
+        lastFMUser = defaults.string(forKey: Keys.lastFMUser) ?? ""
         autoplay = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
         adventurousness = defaults.object(forKey: Keys.adventurousness) as? Double ?? 0.35
         let crossfade = defaults.integer(forKey: Keys.crossfade)
@@ -244,6 +252,7 @@ final class AppSettings {
         static let cellularQuality = "cellularQuality"
         static let normalizeVolume = "normalizeVolume"
         static let lastFMAPIKey = "lastFMAPIKey"
+        static let lastFMUser = "lastFMUser"
         static let adventurousness = "adventurousness"
         static let autoplay = "autoplay"
         static let crossfade = "crossfade"

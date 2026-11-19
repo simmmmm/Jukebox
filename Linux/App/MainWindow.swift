@@ -121,9 +121,9 @@ enum MainWindow {
         observe(toasts) {
             if let message = app.player.errorMessage { toast(message) }
         }
-        action(application, "quit", "<Control>q") { gtk_window_close(ptr(window)) }
+        action(application, "quit", "<Control>q") { quit() }
         action(application, "search", "<Control>f") { showSearch() }
-        action(application, "play", "<Control>space") { app.player.togglePlayPause() }
+        action(application, "play", "<Control>space") { playOrPause() }
         action(application, "next", "<Control>Right") { app.player.next() }
         action(application, "previous", "<Control>Left") { app.player.previous() }
         action(application, "preferences", "<Control>comma") { Preferences.present() }
@@ -154,8 +154,23 @@ enum MainWindow {
         // from the file manager, say) shows and plays without a relaunch
         // (LibraryStore.refreshIfStale; the iPhone's RootView on .active).
         on(raw(window), "notify::is-active") {
-            guard gtk_window_is_active(ptr(window)) != 0, !app.offline.isOffline else { return }
+            guard gtk_window_is_active(ptr(window)) != 0 else { return }
+            // The hour may have moved on: Your Station's fact for now.
+            app.radio.refreshYourStationFact()
+            guard !app.offline.isOffline else { return }
             Task { await app.library.refreshIfStale() }
+        }
+        // Closed while the music plays, the window hides and the music plays
+        // on, as GNOME's players do: the launcher, or the media controls'
+        // Raise, bring it back as it was (present above). Closed with
+        // nothing playing, Jukebox quits. Paused while hidden it stays, so
+        // the Play key goes on; Quit (Ctrl+Q, MPRIS) always quits.
+        observe(window) { gtk_window_set_hide_on_close(ptr(window), app.player.isPlaying ? 1 : 0) }
+        on(raw(window), "notify::visible") {
+            guard gtk_widget_get_visible(window) == 0, !askedForBackground,
+                  ProcessInfo.processInfo.environment["FLATPAK_ID"] != nil else { return }
+            askedForBackground = true
+            jb_request_background("Plays your music with the window closed")
         }
         Mpris.start()
         RadioPage.follow(window)
@@ -164,6 +179,37 @@ enum MainWindow {
         // The drawings are made at the scale of the window's screen.
         Screen.follow(window)
         Shots.walk()
+    }
+
+    /// A Flatpak asks the background portal once, the first time the
+    /// window hides with the music on.
+    private static var askedForBackground = false
+
+    static func quit() {
+        g_application_quit(g_application_get_default())
+    }
+
+    /// Play or pause (Space, Ctrl+Space); with nothing loaded, the music to
+    /// go on with or Your Station, as the Play key (Mpris.swift).
+    static func playOrPause() {
+        if app.player.hasTrack {
+            app.player.togglePlayPause()
+        } else {
+            app.handoff.playWithNothingLoaded(from: "play_key")
+        }
+    }
+
+    /// GNOME's launcher menu, Play Your Station (the desktop entry's
+    /// action, main.swift): Your Station once the session and the library
+    /// are in, ten seconds at most from a cold start, as Siri waits on the
+    /// iPhone (Voice.ready).
+    static func playYourStation() {
+        Task {
+            for _ in 0..<100 where app.library.tracks.isEmpty && app.phase != .signedOut {
+                try? await Task.sleep(for: .milliseconds(100))
+            }
+            app.handoff.startYourStation(from: "launcher")
+        }
     }
 
     /// The places over the page where they are folded, for the screenshot
@@ -389,7 +435,7 @@ enum MainWindow {
     /// (Preferences › Pages, every page off) at the end of every page's,
     /// or Preferences could never be reached to bring them back.
     static func mainMenu() -> Widget {
-        let menu = gtk_menu_button_new()!.tooltip("Main Menu")
+        let menu = gtk_menu_button_new()!.named("Main Menu")
         gtk_menu_button_set_icon_name(ptr(menu), "open-menu-symbolic")
         gtk_menu_button_set_menu_model(ptr(menu), ptr(menuItems))
         gtk_menu_button_set_primary(ptr(menu), 1)
@@ -538,7 +584,7 @@ enum MainWindow {
             let current = adw_breakpoint_bin_get_current_breakpoint(ptr(bin))
             guard let page = zip(breakpoints, rows).first(where: { $0.0 == current })?.1.page else { return }
             // Told while the bin is allocated: the pages change after it.
-            Task { PageMeasure.shared.set(margin: Int32(page.margin), tile: Int32(page.tile), columns: page.columns) }
+            Task { PageMeasure.shared.set(page) }
         }
         return bin
     }
@@ -546,7 +592,7 @@ enum MainWindow {
     /// The places' button at the start of a place's header: shown while
     /// they are folded away, it lays them over the page.
     private static func sidebarButton() -> Widget {
-        let button = gtk_toggle_button_new()!.tooltip("Show Sidebar")
+        let button = gtk_toggle_button_new()!.named("Show Sidebar")
         gtk_button_set_icon_name(ptr(button), "sidebar-show-symbolic")
         // Only while they are folded away, and only while there are any.
         observe(button) { button.isVisible = fold.isCollapsed && app.settings.showsAnyPage }
@@ -655,7 +701,7 @@ enum MainWindow {
 private let spacePlays: GtkShortcutFunc = { window, _, _ in
     if let window, let focus = gtk_root_get_focus(ptr(window)),
        g_type_check_instance_is_a(ptr(focus), gtk_editable_get_type()) != 0 { return 0 }
-    MainActor.assumeIsolated { app.player.togglePlayPause() }
+    MainActor.assumeIsolated { MainWindow.playOrPause() }
     return 1
 }
 

@@ -139,6 +139,7 @@ private struct SettingsAccountSection: View {
     /// Another saved account, asked about before it is signed out of.
     @State private var leaving: ServerCredentials?
     @State private var isAdding = false
+    @State private var isShowingYear = false
     /// Why the switch tapped here did not happen, under the rows.
     @State private var switchProblem: String?
 
@@ -167,6 +168,10 @@ private struct SettingsAccountSection: View {
                     Text("Server")
                 }
                 LabeledContent("User", value: credentials.userName)
+                // The year's music, from the server's record where it keeps
+                // one (the note under this section says which).
+                Button("Your Year") { isShowingYear = true }
+                    .sheet(isPresented: $isShowingYear) { YourYearView() }
                 LabeledContent("Address") {
                     Text(verbatim: credentials.serverURL.absoluteString)
                         .lineLimit(1)
@@ -213,6 +218,9 @@ private struct SettingsAccountSection: View {
         } footer: {
             if let switchProblem {
                 Text(switchProblem)
+            } else if let credentials = app.credentials,
+                      let note = ServerWords.playbackReportingNote(credentials) {
+                Text(note)
             }
         }
     }
@@ -655,6 +663,13 @@ private struct SettingsLastFMSection: View {
     /// Not the view's own task: a key saved just before Done is still
     /// checked and kept after the sheet has closed.
     @State private var checkTask: Task<Void, Never>?
+    /// The listener's Last.fm name, optional, once a key is kept: one field,
+    /// in the key's flow (typed, saved with Return or on leaving, Last.fm
+    /// asked), so the clock has their scrobbles from day one. Emptied, it
+    /// is gone. Not a secret, so shown as typed.
+    @State private var userDraft: String?
+    @State private var userStatus: KeyStatus = .idle
+    @State private var userTask: Task<Void, Never>?
 
     init() {}
 
@@ -701,17 +716,70 @@ private struct SettingsLastFMSection: View {
                 }
                 Button("Remove Key", role: .destructive, action: remove)
             }
-            statusRow
+            statusRow(status, saved: "Last.fm accepted this key")
+            if settings.hasLastFM {
+                TextField("Username", text: userText, prompt: Text("Optional"))
+                    .plainTextEntry()
+                    .autocorrectionDisabled()
+                    .submitLabel(.done)
+                    .disabled(userStatus == .checking)
+                    .onSubmit(saveUser)
+                    .onDisappear(perform: saveUser)
+                statusRow(userStatus, saved: "Last.fm knows this listener")
+            }
             Link("Get a Free API Key", destination: Self.createKeyURL)
         } header: {
             SettingsHeader("Last.fm")
         } footer: {
-            Text("With a key, the radio knows which artists and songs sound alike. Only artist names and song titles are sent to Last.fm.")
+            Text("With a key, the radio knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
         }
         .onAppear(perform: recheck)
     }
 
-    @ViewBuilder private var statusRow: some View {
+    /// The field: the name saved until it is typed in.
+    private var userText: Binding<String> {
+        Binding {
+            userDraft ?? settings.lastFMUser
+        } set: { typed in
+            userDraft = typed
+            // Typing again: the last answer was about another name.
+            if case .problem = userStatus { userStatus = .idle }
+        }
+    }
+
+    /// Last.fm asked; only a name it knows, with plays it shows, is kept.
+    /// Emptied, the name goes: the clock then reads this device alone.
+    private func saveUser() {
+        guard let typed = userDraft.map(Self.trimmed), userStatus != .checking else { return }
+        guard typed != Self.trimmed(settings.lastFMUser) else {
+            userDraft = nil
+            return
+        }
+        guard !typed.isEmpty else {
+            settings.lastFMUser = ""
+            radio.lastFMKeyChanged()
+            userDraft = nil
+            userStatus = .idle
+            return
+        }
+        let key = Self.trimmed(settings.lastFMAPIKey)
+        userTask?.cancel()
+        userStatus = .checking
+        userTask = Task {
+            let check = await LastFMClient(apiKey: key).validateUser(typed)
+            guard !Task.isCancelled else { return }
+            guard check == .accepted else {
+                userStatus = .problem(check.problem ?? "")
+                return
+            }
+            settings.lastFMUser = typed
+            radio.lastFMKeyChanged()
+            userDraft = nil
+            userStatus = .saved
+        }
+    }
+
+    @ViewBuilder private func statusRow(_ status: KeyStatus, saved: String) -> some View {
         switch status {
         case .idle:
             EmptyView()
@@ -728,7 +796,7 @@ private struct SettingsLastFMSection: View {
             .accessibilityElement(children: .combine)
         case .saved:
             Label {
-                Text("Last.fm accepted this key")
+                Text(saved)
             } icon: {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.secondary)
@@ -770,6 +838,9 @@ private struct SettingsLastFMSection: View {
 
     private func remove() {
         checkTask?.cancel()
+        userTask?.cancel()
+        userDraft = nil
+        userStatus = .idle
         settings.lastFMAPIKey = ""
         radio.lastFMKeyChanged()
         Stats.track(.lastFMKey, ["state": "removed"])

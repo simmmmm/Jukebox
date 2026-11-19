@@ -89,7 +89,13 @@ labels are its own.
    Home's Your Station and the music to go on with each stand on the
    raised ground (`Theme.raised`), flat, corners 18 at 12 in: "kan je van
    'doorgaan waar je was' iets beter afkaderen, hoeft niet extreem" (18
-   November 2026).
+   November 2026). On a wide page from 1000 they share a row, each 400
+   wide and as tall as the other, the music to go on with first, in Your
+   Station's form (its cover with the record behind it), a step lighter
+   (`Theme.raisedLighter`: `#242120` by night, `#F1EDE6` by day): "kunnen
+   die twee tegels ook op dezelfde rij naast elkaar … maar 'where you left
+   off' misschien in een lichtere tint?" (18 November 2026). Narrower, and
+   on the iPhone, one above the other.
 8. **Editorial, left-aligned:** titles, rows and Now Playing's words at the
    margin; shelves run off the right edge so the next tile peeks in. Centre
    only where Apple does: the transport, a page's own header.

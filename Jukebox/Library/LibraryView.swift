@@ -86,13 +86,17 @@ private struct LibraryLinkRow: View {
     let route: Route
     var isLast = false
 
+    /// The symbols' column, 32 at the default size: it grows with the
+    /// title3 glyph under Larger Text, so the glyph never runs into the name.
+    @ScaledMetric(relativeTo: .title3) private var iconWidth: CGFloat = 32
+
     var body: some View {
         NavigationLink(value: route) {
             HStack(spacing: Theme.Space.l) {
                 Image(systemName: symbol)
                     .font(.title3)
                     .foregroundStyle(Theme.accent)
-                    .frame(width: 32)
+                    .frame(width: iconWidth)
                     .accessibilityHidden(true)
                 Text(title)
                     .font(.title3)

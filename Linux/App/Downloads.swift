@@ -40,7 +40,7 @@ func downloadControl(_ reason: OfflineReason, name: String, collection: @escapin
             ring = nil
         case let .downloading(fraction: fraction, waiting: waiting):
             let words = waiting.map(OfflineText.waiting) ?? "Downloading, \(OfflineText.percent(fraction))"
-            menu.tooltip(words)
+            menu.named(words)
             if said != (waiting.map(OfflineText.waiting) ?? "") {
                 said = waiting.map(OfflineText.waiting) ?? ""
                 gtk_menu_button_set_popover(ptr(menu), removalMenu(waiting: waiting.map(OfflineText.waiting), name: name, reason: reason))
@@ -53,7 +53,7 @@ func downloadControl(_ reason: OfflineReason, name: String, collection: @escapin
             showRing(percent, in: image) { ring == percent }
         case .downloaded:
             ring = nil
-            menu.tooltip("Downloaded")
+            menu.named("Downloaded")
             gtk_image_set_from_icon_name(ptr(image), Glyphs.name("downloaded"))
             if said != "downloaded" {
                 said = "downloaded"

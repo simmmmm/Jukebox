@@ -222,7 +222,8 @@ struct RadioThumbs: View {
                     .font(.title3)
                     .foregroundStyle(disliked ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
                     .symbolEffect(.bounce, value: disliked)
-                    .frame(width: 44, height: 44)
+                    // At least 44, and as large as Larger Text makes the glyph.
+                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
@@ -238,7 +239,7 @@ struct RadioThumbs: View {
                     // The tint: the app's accent here, the cover's on Now Playing.
                     .foregroundStyle(liked ? AnyShapeStyle(.tint) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
                     .symbolEffect(.bounce, value: liked)
-                    .frame(width: 44, height: 44)
+                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)

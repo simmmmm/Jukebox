@@ -38,12 +38,13 @@ extension SimilarityGraph {
         var mass = [Double](repeating: 0, count: artists)
         var genreArtists = [[(artist: Int, share: Double)]](repeating: [], count: index.genreCount)
         for a in 0..<artists {
-            var counts: [Int: Int] = [:]
+            // A Last.fm tag counts at its weight (LibrarySnapshot.GenreTag).
+            var counts: [Int: Double] = [:]
             var total = 0
             let records = index.artistOwnTracks[a].isEmpty ? index.artistTracks[a] : index.artistOwnTracks[a]
             for t in records where index.trackArtists[t].contains(a) {
                 total += 1
-                for g in index.trackGenres[t] { counts[g, default: 0] += 1 }
+                for (k, g) in index.trackGenres[t].enumerated() { counts[g, default: 0] += index.genreWeight(t, k) }
             }
             guard total > 0 else { continue }
             let list = counts.map { (genre: $0.key, share: Double($0.value) / Double(total)) }

@@ -13,11 +13,10 @@ import UniformTypeIdentifiers
 /// when the sheet asks for it.
 nonisolated struct SharedMusic: Transferable, Sendable {
     let item: ShareItem
-    let server: (any MusicServer)?
 
     static var transferRepresentation: some TransferRepresentation {
         DataRepresentation(exportedContentType: .utf8PlainText) { shared in
-            Data(await Sharing().text(for: shared.item, server: shared.server).text.utf8)
+            Data(await Sharing().text(for: shared.item).text.utf8)
         }
     }
 }
@@ -29,8 +28,10 @@ struct ShareMenuItem: View {
     @Environment(LibraryStore.self) private var library
 
     var body: some View {
-        ShareLink(item: SharedMusic(item: item, server: library.server), preview: SharePreview(item.name)) {
-            Label("Share…", systemImage: "square.and.arrow.up")
+        if library.sharesPublicLink(item) {
+            ShareLink(item: SharedMusic(item: item), preview: SharePreview(item.name)) {
+                Label("Share…", systemImage: "square.and.arrow.up")
+            }
         }
     }
 }

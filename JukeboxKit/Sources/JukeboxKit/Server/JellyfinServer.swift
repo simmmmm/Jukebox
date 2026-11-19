@@ -68,9 +68,21 @@ public struct JellyfinServer: MusicServer {
 
     /// /System/Info/Public's version (an upgrade to or past 10.9 adds
     /// lyrics).
+    /// Then what is asked rather than known from the version: whether this
+    /// user's sessions can be controlled (Play On to this device), and
+    /// whether Playback Reporting answers this user (Your Year).
     public func currentCapabilities() async throws -> Set<ServerCapability> {
         let info = try await mapped { try await client.publicInfo() }
-        return Self.capabilities(kind: kind, version: info.version)
+        var set = Self.capabilities(kind: kind, version: info.version)
+        let kept = capabilities
+        async let remote = ServerProbe.check(.remoteControl, kept: kept) {
+            _ = try await client.remoteSessions()
+        }
+        async let reporting = ServerProbe.check(.playbackReporting, kept: kept) {
+            try await client.playbackReportingAnswers()
+        }
+        for found in await [remote, reporting] { if let found { set.insert(found) } }
+        return set
     }
 
     public func signOut() async {

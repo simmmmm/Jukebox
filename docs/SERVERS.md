@@ -662,6 +662,42 @@ with Subsonic's field beside Jellyfin's.
 | `lastPlayed` | always | OpenSubsonic (`played`) | yes | taste at 0.6, Recently Played from this device |
 | `transcodeOffset` | never (HLS seeks) | `transcodeOffset` listed | listed | (player round) |
 | `rating` | never | API 1.6.0+ (`setRating`) | yes, songs and albums | no Rating in the menus |
+| `remoteControl` | `/Sessions?controllableByUserId=` answers (Emby too) | never | — | not listed in others' Play On |
+| `share` | never | `getShares` answers | yes; 501 with `ND_ENABLESHARING=false` | no Copy Share Link |
+| `playbackReporting` | the plugin's query answers this user (Emby: the same route; only its 404 without the plugin measured) | never | — | Your Year from this device only |
+
+The last three (18 November 2026, "zorg dat je ook alleen die opties toont
+als het beschikbaar is op die server en dat je dat ook zeker weet") are
+asked, not known: `currentCapabilities()` tries each (`ServerProbe`). A yes
+is an answer; a no is 404, 403 or 501; anything else (no network, a
+timeout) keeps what was known, so nothing comes and goes with the Wi-Fi.
+Asked at every sign-in, switch and launch (`refreshServer`). Kept by name,
+so a build that meets one it does not know passes it over. Proven both ways
+by the kit's `ServerFeaturesTests` and Linux's `JUKEBOX_CHECK=remote`.
+
+- **Remote control**, measured on Jellyfin 12.4 and Emby 4.10: after
+  `/Sessions/Capabilities/Full` (`SupportsMediaControl`, `SupportedCommands`
+  `SetVolume`) and the socket open, the session is listed to the user's
+  other sessions; `Play`, `Playstate` and `GeneralCommand` messages arrive
+  (Emby's ids as numbers). A progress report alone sets the session's
+  NowPlayingItem, position, IsPaused and VolumeLevel without counting a
+  play (12.4: PlayCount 0 → 0), so a controlled Jukebox says what it plays
+  that way.
+- **Playback Reporting** 19.0.0.0 on Jellyfin 12.4: one table,
+  PlaybackActivity (DateCreated, UserId, ItemId, ItemType, ItemName,
+  PlaybackMethod, ClientName, DeviceName, PlayDuration in seconds), read by
+  POST `/user_usage_stats/submit_custom_query` (`{"colums": […], "results":
+  [[text]]}`); an administrator 200, another user 403, no plugin 404 (Emby
+  without it: 404). A play of 15 s was kept, one of 2 s not. `SELECT *`
+  fails on a row with no PlaybackMethod, so columns are named; every query
+  is of the signed-in user's id (hex only), as an administrator reads the
+  whole household.
+- **Moods and tempo** (no capability, data): Navidrome sends `moods` and
+  `bpm` on every song, `[]` and 0 when untagged; the kit keeps them as nil
+  then. `MoodEdges` turns them into track edges for the radio.
+- **Plex**: its history (`viewedAt`), moods and sonic similarity are not
+  used, and not tried: the test Plex is unclaimed and has no way out
+  (moods come from plex.tv's agents, sonic similarity needs Plex Pass).
 
 Ratings (17 November 2026). Jellyfin 12.4 keeps a per-user
 `UserData.Rating`, a number without a scale: POST /UserItems/{id}/UserData

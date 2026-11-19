@@ -409,35 +409,12 @@ struct ArtistDetailView: View {
         player.play(tracks, context: QueueContext(.artist(shown.id), title: shown.name), shuffled: shuffled)
     }
 
-    /// The radio's graph first (the library's own edges, and Last.fm's with
-    /// a key); the server's similar artists when the graph knows nobody.
-    /// Only artists in the library: a tile must open a page with music.
+    /// LibraryStore's, shared with Linux's artist page.
     private func similarArtists(to shown: Artist) -> [Artist] {
-        var result: [Artist] = []
-        var seen: Set<ItemID> = [shown.id]
-        for neighbor in radio.graph.similarArtists(to: shown.key, limit: 40) {
-            guard let ref = library.snapshot.artist(key: neighbor.key),
-                  let found = library.artist(ref),
-                  seen.insert(found.id).inserted else { continue }
-            result.append(found)
-            if result.count == 12 { break }
-        }
-        if result.isEmpty {
-            return serverSimilar.filter { $0.id != shown.id }
-        }
-        return result
+        library.similarArtists(to: shown, graph: radio.graph, fromServer: serverSimilar)
     }
 
-    /// Not asked of a server that has no such call (a Subsonic server
-    /// before API 1.11): the graph's are all there is then.
     private func loadServerSimilar() async {
-        guard let server = library.server, library.can(.similarArtists) else { return }
-        let found = (try? await server.similarArtists(artistID: artist.id, limit: 20)) ?? []
-        var seen = Set<ItemID>()
-        serverSimilar = found.compactMap { candidate in
-            guard let own = library.artist(id: candidate.id) ?? library.artist(candidate.ref),
-                  seen.insert(own.id).inserted else { return nil }
-            return own
-        }
+        serverSimilar = await library.serverSimilarArtists(to: artist)
     }
 }

@@ -247,6 +247,35 @@ nonisolated struct LibraryIndex: Sendable {
         return out
     }
 
+    /// A song's credits as its menu shows them on every client (Credits):
+    /// by role in the kit's order (composer, conductor, performer,
+    /// lyricist, arranger), the role in words over who. A performer who is
+    /// the song's own artist is left out: the row says that already. Empty
+    /// where the server gave none, and then there is no Credits.
+    static func creditGroups(_ track: Track) -> [(role: String, credits: [Credit])] {
+        let artists = Set(track.artists.map(\.key))
+        let credits = (track.credits ?? []).filter { $0.role != .performer || !artists.contains($0.artist.key) }
+        return Credit.Role.allCases.compactMap { role in
+            let these = credits.filter { $0.role == role }
+            guard !these.isEmpty else { return nil }
+            let one = these.count == 1
+            let word: String = switch role {
+            case .composer: one ? "Composer" : "Composers"
+            case .conductor: one ? "Conductor" : "Conductors"
+            case .performer: one ? "Performer" : "Performers"
+            case .lyricist: one ? "Lyricist" : "Lyricists"
+            case .arranger: one ? "Arranger" : "Arrangers"
+            }
+            return (word, these)
+        }
+    }
+
+    /// "Anne-Sophie Mutter, violin": a performer's instrument after the name.
+    static func creditName(_ credit: Credit) -> String {
+        guard let instrument = credit.instrument, !instrument.isEmpty else { return credit.artist.name }
+        return "\(credit.artist.name), \(instrument.lowercased())"
+    }
+
     // MARK: Orders
 
     static func inDiscOrder(_ a: Track, _ b: Track) -> Bool {

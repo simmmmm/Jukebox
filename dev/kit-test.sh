@@ -56,6 +56,13 @@ elif docker ps --format '{{.Names}}' 2>/dev/null | grep -qx "$emby"; then
   env+=(-e "EMBY_URL=http://$emby_host:8096" -e EMBY_USER=test -e EMBY_PASSWORD=test)
 fi
 
+# Servers only some tests need, passed on when set (ServerFeaturesTests):
+# a Jellyfin with Playback Reporting, a Navidrome with sharing off.
+#   PLAYBACK_REPORTING_URL=http://other-jellyfin:8096 NAVIDROME_NOSHARE_URL=http://other-navidrome:4533
+for name in PLAYBACK_REPORTING_URL NAVIDROME_NOSHARE_URL; do
+  if [[ -n ${!name:-} ]]; then net=(--network jukebox); env+=(-e "$name=${!name}"); fi
+done
+
 if [[ ${1:-} == build ]]; then
   cmd=(swift build)
 else

@@ -152,7 +152,16 @@ if bounded "$(allow 300)" xcrun swiftc -O -parse-as-library dev/fake-jellyfin.sw
   # --song-lengths: songs of 2:30 to 5:30, as a real library has, not the
   # test library's few seconds, so the album pages and the scrubber look
   # like what a listener sees.
-  "$work/fake-jellyfin" --port 8096 --data dev/demo --song-lengths \
+  # A work round (a branch ending in "walk", not the store's) has music
+  # playing on another device, so Home shows its card beside Your Station;
+  # main's and the store's pictures stay as they were.
+  handoff=
+  case $ref in
+    store-*) ;;
+    *walk) handoff="--handoff Studio" ;;
+  esac
+  # shellcheck disable=SC2086 # two words, or none
+  "$work/fake-jellyfin" --port 8096 --data dev/demo --song-lengths $handoff \
     > "$out/fake-jellyfin.log" 2>&1 < /dev/null &
   server=$!
   answered=false

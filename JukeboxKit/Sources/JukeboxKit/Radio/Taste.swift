@@ -35,11 +35,58 @@ final class TasteData: Sendable {
     let rankedGenres: [String]
     let rankedTracks: [ItemID]
 
+    // The clock (docs/RADIO.md, "The clock"): "leren van wanneer ik welke
+    // muziek op prijs kan stellen en daar mijn 'your station' op afbaken"
+    // (the photographer, 18 November 2026). Only Your Station reads these.
+    /// When `now` is: weekday or weekend, part of the day.
+    let slot: TimeSlot
+    /// By artist and genre number: λ · L, how much more (or less, below 0)
+    /// they are heard around this hour on this kind of day than overall,
+    /// already shrunk by the evidence. 0 everywhere without a pattern.
+    let artistLift: [Double]
+    let genreLift: [Double]
+    /// λ = n / (n + 12), n the sessions near now.
+    let timeConfidence: Double
+    /// By genre number: its share of what was heard to the end near now, and
+    /// overall (for the fact on Your Station's card and the tests).
+    let genreShareNow: [Double]
+    let genreShareAll: [Double]
+
     // What each outcome says, and how fast it fades (docs/RADIO.md).
     static let halfLifeDays = 21.0
     static let playCountHalfLifeDays = 90.0
     /// How long a thumbs down keeps a song off the radio: the mixes' half year.
     static let thumbsDownDays = 183.0
+    /// A song this familiar (and not by its skips) that is skipped is "not
+    /// now", not "less": the skip counts in its own hours only. Measured
+    /// and argued in docs/RADIO.md ("Not now").
+    static let knownSkip = 0.6
+    /// The clock's prior: sessions near now before λ is a half.
+    static let sessionPrior = 12.0
+    /// Smoothing of a share before the log ratio, and the ratio's bound.
+    static let liftAlpha = 0.05
+    static let liftBound = 1.0
+    /// Only what is heard clearly more now (a quarter more than at other
+    /// hours) lifts. Less, below 0, did not: Jazz heard on
+    /// workday mornings made its share overall larger, so at 15:00 its lift
+    /// was below 0 and Your Station dropped it from 0.18 to 0.12 of its
+    /// picks, though the listener plays it then as much as anywhere else
+    /// but the mornings; and by chance alone a listener with no pattern
+    /// moved a cluster's share by up to 0.05 (measured, RadioClockTests).
+    static let liftThreshold = log(1.6)
+    /// What a scrobble counts for the clock against one of this device's
+    /// plays: what was heard elsewhere (a phone in a pocket, someone else
+    /// at the speaker) says less of this listener here. Measured in
+    /// docs/RADIO.md ("Scrobbles").
+    static let scrobbleWeight = 0.5
+    /// A gap this long between two events starts a new session.
+    static let sessionGap = 45.0 * 60
+
+    /// How near an event's hour and kind of day are to now's: about ±3 hours
+    /// wide, round over midnight; × 0.3 on the other kind of day.
+    static func nearness(hours: Double, sameKindOfDay: Bool) -> Double {
+        exp(2 * (cos(2 * .pi * hours / 24) - 1)) * (sameKindOfDay ? 1 : 0.3)
+    }
 
     static func value(of outcome: PlayOutcome) -> Double {
         switch outcome {
@@ -51,7 +98,13 @@ final class TasteData: Sendable {
         }
     }
 
-    init(snapshot: LibrarySnapshot, history: ListeningHistory, now: Date) {
+    /// - Parameter scrobbles: Last.fm's plays of library songs, for the
+    ///   clock only (SimilarityService.scrobbles); none changes nothing.
+    /// - Parameter timeAware: false is the radio as it was before the clock
+    ///   (no lift, a skip counting everywhere), for the measurements.
+    init(snapshot: LibrarySnapshot, history: ListeningHistory, scrobbles: ListeningHistory = ListeningHistory(),
+         now: Date, calendar: Calendar = .current, timeAware: Bool = true,
+         scrobbleWeight: Double = TasteData.scrobbleWeight) {
         let index = snapshot.index
         let tracks = snapshot.tracks
         let n = tracks.count
@@ -59,6 +112,44 @@ final class TasteData: Sendable {
         func days(since date: Date) -> Double {
             let d = (reference - date.timeIntervalSinceReferenceDate) / 86_400
             return d.isFinite ? max(0, d) : 0
+        }
+        let at = history.events.map { index.trackByID[$0.trackID] }
+
+        // The clock: each event's hour and kind of day, by arithmetic rather
+        // than a Calendar call per event (20 000 of them).
+        // ponytail: one offset for all, now's: across a DST change an event
+        // is an hour off, well inside the ±3 hours; Saturday and Sunday are
+        // the weekend whatever the locale says.
+        let offset = Double(calendar.timeZone.secondsFromGMT(for: now))
+        func clock(_ date: Date) -> (hour: Double, weekend: Bool) {
+            let local = date.timeIntervalSince1970 + offset
+            guard local.isFinite else { return (0, false) }
+            let day = (local / 86_400).rounded(.down)
+            // 1 January 1970 was a Thursday; 0 is Sunday.
+            let weekday = ((Int(max(-1e12, min(1e12, day))) + 4) % 7 + 7) % 7
+            return ((local - day * 86_400) / 3600, weekday == 0 || weekday == 6)
+        }
+        let nowClock = clock(now)
+        let near: [Double] = history.events.map { event in
+            let c = clock(event.date)
+            return Self.nearness(hours: c.hour - nowClock.hour, sameKindOfDay: c.weekend == nowClock.weekend)
+        }
+
+        // How well each song is known before its skips: a skip's own quarter
+        // play would make a song skipped a dozen times "well known".
+        var knownEvents = [Double](repeating: 0, count: n)
+        var knownLight = [Double](repeating: 0, count: n)
+        for (k, event) in history.events.enumerated() {
+            guard let i = at[k] else { continue }
+            switch event.outcome {
+            case .completed: knownEvents[i] += 1
+            case .partial, .liked: knownLight[i] += 0.5
+            case .skipped, .disliked: break
+            }
+        }
+        let known: [Bool] = (0..<n).map { i in
+            let heard = max(Double(max(0, tracks[i].playCount)), knownEvents[i]) + knownLight[i]
+            return tracks[i].isFavorite || 1 - exp(-heard / 3) >= Self.knownSkip
         }
 
         var evidence = [Double](repeating: 0, count: n)
@@ -94,10 +185,86 @@ final class TasteData: Sendable {
         var strayArtist = [Double](repeating: 0, count: index.artistCount)
         var strayGenre = [Double](repeating: 0, count: index.genreCount)
         var thumbsDown = [Bool](repeating: false, count: n)
-        for event in history.events {
+        // The clock's evidence: what was heard (positive outcomes), near now
+        // and overall, by artist and genre; and the sessions near now.
+        var artistNear = [Double](repeating: 0, count: index.artistCount)
+        var artistAll = [Double](repeating: 0, count: index.artistCount)
+        var genreNear = [Double](repeating: 0, count: index.genreCount)
+        var genreAll = [Double](repeating: 0, count: index.genreCount)
+        var totalNear = 0.0, totalAll = 0.0
+        var sessions = 0.0, session = 0.0
+        var sessionEnd = -Double.infinity
+        /// One event for the clock, oldest first: `weight` 1 for this
+        /// device's, `scrobbleWeight` for one of Last.fm's.
+        func countForClock(_ event: PlayEvent, track: Int?, date: Double, near: Double, decay: Double,
+                           value v: Double, weight: Double) {
+            // A session counts once, by its nearest event.
+            if date - sessionEnd > Self.sessionGap {
+                sessions += session
+                session = 0
+            }
+            sessionEnd = max(sessionEnd, date)
+            session = max(session, weight * near * decay)
+            guard v > 0 else { return }
+            let w = v * weight
+            totalAll += w
+            totalNear += w * near
+            if let t = track {
+                for a in index.trackArtists[t] {
+                    artistAll[a] += w
+                    artistNear[a] += w * near
+                }
+                for (j, g) in index.trackGenres[t].enumerated() {
+                    let gw = w * index.genreWeight(t, j)
+                    genreAll[g] += gw
+                    genreNear[g] += gw * near
+                }
+            } else {
+                for a in event.artistKeys.compactMap({ index.artistByKey[$0] }) {
+                    artistAll[a] += w
+                    artistNear[a] += w * near
+                }
+                for g in event.genreKeys.compactMap({ index.genreByKey[$0] }) {
+                    genreAll[g] += w
+                    genreNear[g] += w * near
+                }
+            }
+        }
+
+        // Last.fm's scrobbles (docs/RADIO.md, "Scrobbles"): weeks of when
+        // the listener plays what, on day one. Only those older than this
+        // device's first event, so a play this device also scrobbled (a
+        // Navidrome or a Jellyfin plugin sends them) is never counted twice;
+        // for the clock alone (Jellyfin's play counts already say what is
+        // liked), and below this device's own.
+        if timeAware, !scrobbles.events.isEmpty {
+            let firstOwn = history.events.lazy.map(\.date).min() ?? .distantFuture
+            for event in scrobbles.events.sorted(by: { $0.date < $1.date }) where event.date < firstOwn {
+                let date = event.date.timeIntervalSinceReferenceDate
+                guard date.isFinite else { continue }
+                let c = clock(event.date)
+                let near = Self.nearness(hours: c.hour - nowClock.hour, sameKindOfDay: c.weekend == nowClock.weekend)
+                let decay = exp2(-days(since: event.date) / Self.halfLifeDays)
+                countForClock(event, track: index.trackByID[event.trackID], date: date, near: near, decay: decay,
+                              value: decay, weight: scrobbleWeight)
+            }
+        }
+
+        for (k, event) in history.events.enumerated() {
             let decay = exp2(-days(since: event.date) / Self.halfLifeDays)
-            let v = Self.value(of: event.outcome) * decay
-            if let i = index.trackByID[event.trackID] {
+            var v = Self.value(of: event.outcome) * decay
+            let date = event.date.timeIntervalSinceReferenceDate
+            if timeAware, date.isFinite {
+                countForClock(event, track: at[k], date: date, near: near[k], decay: decay, value: v, weight: 1)
+                // Not now: a song the listener knows, skipped, was not
+                // wanted then. Pandora's "tired of this track" against its
+                // thumbs down; the research's (docs/RADIO.md) "a skip of a
+                // loved song is mostly 'not now'". It counts in its own hours
+                // and kind of day, not against the song (and its artist and
+                // genres) everywhere for weeks; the freshness rests it.
+                if event.outcome == .skipped, let i = at[k], known[i] { v *= near[k] }
+            }
+            if let i = at[k] {
                 evidence[i] += v
                 // Oldest first: the last thumbs given is the one that holds.
                 if event.outcome == .disliked {
@@ -121,6 +288,27 @@ final class TasteData: Sendable {
                 for key in event.genreKeys {
                     if let g = index.genreByKey[key] { strayGenre[g] += 0.5 * v }
                 }
+            }
+        }
+
+        // The lift: L = ln((share near now + α) / (share overall + α)),
+        // shrunk toward nothing by λ = n / (n + 12): with few sessions near
+        // now the station is what it was.
+        sessions += session
+        let confidence = timeAware && sessions > 0 ? sessions / (sessions + Self.sessionPrior) : 0
+        func shares(_ values: [Double], _ total: Double) -> [Double] {
+            total > 0 ? values.map { $0 / total } : values.map { _ in 0 }
+        }
+        let genreShareNow = shares(genreNear, totalNear), genreShareAll = shares(genreAll, totalAll)
+        func lifts(_ nearValues: [Double], _ allValues: [Double]) -> [Double] {
+            guard confidence > 0, totalNear > 0 else { return nearValues.map { _ in 0 } }
+            // Against the rest of the hours, not all of them: the slot's own
+            // plays made "overall" lean its way (Jazz 0.66 near workday 08:00
+            // against 0.44 overall, but 0.3 at other hours).
+            let away = zip(allValues, nearValues).map { max(0, $0 - $1) }
+            return zip(shares(nearValues, totalNear), shares(away, totalAll - totalNear)).map { now, rest in
+                let l = log((now + Self.liftAlpha) / (rest + Self.liftAlpha))
+                return l >= Self.liftThreshold ? confidence * min(l, Self.liftBound) : 0
             }
         }
 
@@ -154,7 +342,7 @@ final class TasteData: Sendable {
             for (k, a) in index.trackArtists[i].enumerated() {
                 artistEvidence[a] += k == 0 ? signed : 0.5 * signed
             }
-            for g in index.trackGenres[i] { genreEvidence[g] += signed }
+            for (k, g) in index.trackGenres[i].enumerated() { genreEvidence[g] += signed * index.genreWeight(i, k) }
         }
         let artistScale = max(3, Self.percentile(artistEvidence.filter { $0 > 0 }, 0.9))
         let genreScale = max(3, Self.percentile(genreEvidence.filter { $0 > 0 }, 0.75))
@@ -194,6 +382,25 @@ final class TasteData: Sendable {
         self.rankedArtists = artistOrder.map { index.artistKeys[$0] }
         self.rankedGenres = genreOrder.map { index.genreKeys[$0] }
         self.rankedTracks = trackOrder.map { tracks[$0].id }
+        self.slot = TimeSlot(hour: Int(nowClock.hour), weekend: nowClock.weekend)
+        self.timeConfidence = confidence
+        self.artistLift = lifts(artistNear, artistAll)
+        self.genreLift = lifts(genreNear, genreAll)
+        self.genreShareNow = genreShareNow
+        self.genreShareAll = genreShareAll
+    }
+
+    /// The fact only with enough sessions near now (λ a half, twelve) and a
+    /// genre heard clearly more now (λ · L 0.3, a third more), in at least
+    /// a sixth of what was heard then: a card says it only when it is so.
+    var timeFact: TimeFact? {
+        guard timeConfidence >= 0.4 else { return nil }
+        let genres = genreLift.indices
+            .filter { genreLift[$0] >= 0.3 && genreShareNow[$0] >= 1.0 / 6 }
+            .sorted { genreShareNow[$0] != genreShareNow[$1] ? genreShareNow[$0] > genreShareNow[$1] : $0 < $1 }
+            .prefix(2)
+        guard !genres.isEmpty else { return nil }
+        return TimeFact(slot: slot, genres: genres.map { index.genreNames[$0] })
     }
 
     static func bounded(_ x: Double, _ low: Double = -1, _ high: Double = 1) -> Double {
@@ -206,6 +413,11 @@ final class TasteData: Sendable {
         let at = Int((Double(sorted.count - 1) * p).rounded())
         return sorted[min(sorted.count - 1, max(0, at))]
     }
+}
+
+extension TasteData {
+    func artistLift(key: String) -> Double { index.artistByKey[key].map { artistLift[$0] } ?? 0 }
+    func genreLift(key: String) -> Double { index.genreByKey[key].map { genreLift[$0] } ?? 0 }
 }
 
 // MARK: - For building on (the mixes)

@@ -9,7 +9,15 @@ extension LibraryStore {
     /// The words and the link a friend gets for a song, an album or an
     /// artist (Sharing: the server's link, else Odesli's, else the words).
     func shareText(_ item: ShareItem) async -> ShareText {
-        await Sharing().text(for: item, server: server)
+        await Sharing().text(for: item)
+    }
+
+    /// Whether Share… (Copy Link) is offered: not for a song or an album on
+    /// a server that makes its own link to play them (Copy Share Link,
+    /// ShareLinks.swift), so a menu has one way to share, not two.
+    func sharesPublicLink(_ item: ShareItem) -> Bool {
+        if case .artist = item { return true }
+        return !can(.share)
     }
 
     /// Whether this account may give a playlist of its own a picture: the

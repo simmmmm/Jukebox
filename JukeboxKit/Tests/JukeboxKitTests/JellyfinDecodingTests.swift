@@ -92,6 +92,12 @@ struct JellyfinDecodingTests {
         #expect(try item(json).asAlbum()?.duration == 60)
     }
 
+    @Test("An album's NormalizationGain is the album's gain (10.9's LUFS scan of the album)")
+    func albumGain() throws {
+        let json = #"{"Id":"a","Name":"A","Type":"MusicAlbum","NormalizationGain":-5.5}"#
+        #expect(try item(json).asAlbum()?.normalizationGain == -5.5)
+    }
+
     @Test("An album artist with counts and overview; a genre; a playlist")
     func others() throws {
         let artist = try #require(try item(JellyfinFixtures.artist).asArtist())

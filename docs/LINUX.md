@@ -196,8 +196,19 @@ In a list of songs Shift+F10 or the Menu key opens the song's menu, and
 in a playlist of one's own Delete removes the song.
 
 GNOME's media controls (the clock's menu, the lock screen, the keyboard's
-keys) see Jukebox through MPRIS, with the cover. The Play key with nothing
-loaded goes on where this computer, or another device, left off.
+keys) see Jukebox through MPRIS, with the cover. The Play key (and Space)
+with nothing loaded goes on where this computer, or another device, left
+off, else plays Your Station; so Play is always there in GNOME's controls.
+The icon's menu (a right-click in the dash) has Play Your Station, with
+Jukebox closed too (`jukebox --play-station`, GApplication's
+`play-station` action).
+
+Closing the window while the music plays hides it, and the music plays on,
+as GNOME's players do; the launcher or the media controls bring it back.
+Closed with nothing playing, Jukebox quits; paused while hidden it stays,
+so the Play key goes on. Ctrl+Q quits always. A Flatpak asks the
+background portal once, so GNOME shows it under Background Apps, with a
+way to end it.
 
 Jukebox's soul is in the content, as on the iPhone (`docs/BRAND.md`,
 `docs/design/tells.md`): Copper by day and Glow by night as the accent,

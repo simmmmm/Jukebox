@@ -416,6 +416,42 @@ final class LibraryStore {
     }
 }
 
+// MARK: - Who sounds like an artist
+
+extension LibraryStore {
+    /// An artist's page's Similar artists, the same on every client: the
+    /// radio's graph first (the library's own edges, and Last.fm's with a
+    /// key); `fromServer` when the graph knows nobody. Only artists in the
+    /// library: a tile must open a page with music.
+    func similarArtists(to artist: Artist, graph: SimilarityGraph, fromServer: [Artist]) -> [Artist] {
+        var result: [Artist] = []
+        var seen: Set<ItemID> = [artist.id]
+        for neighbor in graph.similarArtists(to: artist.key, limit: 40) {
+            guard let ref = snapshot.artist(key: neighbor.key),
+                  let found = self.artist(ref),
+                  seen.insert(found.id).inserted else { continue }
+            result.append(found)
+            if result.count == 12 { break }
+        }
+        return result.isEmpty ? fromServer.filter { $0.id != artist.id } : result
+    }
+
+    /// The server's own idea of who is alike (Jellyfin's /Similar, a
+    /// Subsonic server's getArtistInfo2, from Last.fm there), as the
+    /// library's own artists. Not asked of a server without such a call (a
+    /// Subsonic server before API 1.11): the graph's are all there is then.
+    func serverSimilarArtists(to artist: Artist) async -> [Artist] {
+        guard let server, can(.similarArtists) else { return [] }
+        let found = (try? await server.similarArtists(artistID: artist.id, limit: 20)) ?? []
+        var seen = Set<ItemID>()
+        return found.compactMap { candidate in
+            guard let own = self.artist(id: candidate.id) ?? self.artist(candidate.ref),
+                  seen.insert(own.id).inserted else { return nil }
+            return own
+        }
+    }
+}
+
 // MARK: - Beyond the contract, for the library's screens
 
 extension LibraryStore {

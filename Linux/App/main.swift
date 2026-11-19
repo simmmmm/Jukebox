@@ -32,10 +32,24 @@ private func watchMainQueue() {
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "queue" { exit(QueueCheck.run()) }
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "accounts" { exit(AccountCheck.run()) }
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "cast" { exit(CastCheck.run()) }
+if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "remote" { exit(RemoteCheck.run()) }
 watchMainQueue()
 DefaultsFile.load()
 let application = adw_application_new("com.tijmen.Jukebox", G_APPLICATION_DEFAULT_FLAGS)!
 on(raw(application), "activate") { MainWindow.present(in: application) }
+
+// Play Your Station, the desktop entry's action (GNOME's right-click on the
+// icon), works with Jukebox closed or open: `jukebox --play-station` names
+// the application's action. GApplication sends it to the Jukebox already
+// running, if there is one, and then shows that window (activate); else
+// this one starts, shows its window and plays once the library is in.
+let playStation = g_simple_action_new("play-station", nil)!
+on(raw(playStation), "activate") { MainWindow.playYourStation() }
+g_action_map_add_action(ptr(application), ptr(playStation))
+if CommandLine.arguments.dropFirst().contains("--play-station") {
+    g_application_register(ptr(application), nil, nil)
+    g_action_group_activate_action(ptr(application), "play-station", nil)
+}
 
 // Every choice kept in UserDefaults (the Last.fm key, the volume, the
 // panel, the device's id) was gone at the next start on Linux ("last fm api

@@ -29,7 +29,9 @@ let shared = [
     "Jukebox/Library/LibraryIndex.swift",
     "Jukebox/Library/LibraryStore.swift",
     "Jukebox/Library/ShareAndCover.swift",
+    "Jukebox/Library/ShareLinks.swift",
     "Jukebox/Library/TrackPicks.swift",
+    "Jukebox/Library/YourYearLoader.swift",
     "Jukebox/NowPlaying/LyricsFinder.swift",
     "Jukebox/NowPlaying/TurntableMeasures.swift",
     "Jukebox/NowPlaying/UpNextList.swift",
@@ -40,6 +42,7 @@ let shared = [
     "Jukebox/Player/HistoryStore.swift",
     "Jukebox/Player/PlayOn.swift",
     "Jukebox/Player/PlayQueue.swift",
+    "Jukebox/Player/RemoteControl.swift",
     "Jukebox/Radio/RadioController.swift",
 ]
 
@@ -53,7 +56,9 @@ let package = Package(
                        providers: [.apt(["libgstreamer1.0-dev"])]),
         .systemLibrary(name: "CSecret", path: "Linux/CSecret", pkgConfig: "libsecret-1",
                        providers: [.apt(["libsecret-1-dev"])]),
-        .target(name: "CGlue", dependencies: ["CAdw", "CGst", "CSecret"], path: "Linux/CGlue"),
+        .systemLibrary(name: "CSoup", path: "Linux/CSoup", pkgConfig: "libsoup-3.0",
+                       providers: [.apt(["libsoup-3.0-dev"])]),
+        .target(name: "CGlue", dependencies: ["CAdw", "CGst", "CSecret", "CSoup"], path: "Linux/CGlue"),
         .executableTarget(
             name: "Jukebox",
             dependencies: ["JukeboxKit", "CAdw", "CGst", "CGlue"],

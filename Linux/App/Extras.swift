@@ -15,6 +15,13 @@ import CGlue
 import Foundation
 import JukeboxKit
 
+/// Copy Link, unless the server makes its own link to play (Copy Share
+/// Link, ShareLinks.swift), which a friend can hear: one way to share a
+/// song or an album, never two.
+func publicShareItems(_ item: ShareItem) -> [(String, () -> Void)] {
+    app.library.sharesPublicLink(item) ? [("Copy Link", { Share.copy(item) })] : []
+}
+
 enum Share {
     /// "Copy Link": the words and the link on the clipboard, then a toast
     /// saying so; the words alone when no link was found.

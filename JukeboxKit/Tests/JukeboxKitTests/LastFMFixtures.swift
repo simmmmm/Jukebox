@@ -63,9 +63,33 @@ struct LastFMKnowledge: Sendable {
     /// By "artist|title".
     var similarTracks: [String: [(artist: String, title: String, match: Double)]] = [:]
     var topTracks: [String: [String]] = [:]
+    /// By artist, as Last.fm spells them: (tag, count 0 … 100).
+    var topTags: [String: [(name: String, count: Int)]] = [:]
+    /// By listener: their plays, any order. A listener named in
+    /// `hiddenUsers` keeps them private.
+    var scrobbles: [String: [LastFMClient.Scrobble]] = [:]
+    var hiddenUsers: Set<String> = []
+    /// What a listener plays now: the row user.getrecenttracks puts first,
+    /// without a date.
+    var nowPlaying: [String: (artist: String, title: String)] = [:]
 
     func answer(_ request: LastFMRequest) -> HTTPResponse {
         switch request.method {
+        case "artist.gettoptags":
+            guard let tags = topTags[request.artist] else { return LastFMFixtures.respond(200, LastFMFixtures.artistNotFound) }
+            return LastFMFixtures.respond(200, LastFMFixtures.topTags(request.artist, tags))
+        case "user.getrecenttracks":
+            let user = request.query["user"] ?? ""
+            if hiddenUsers.contains(user) { return LastFMFixtures.respond(200, LastFMFixtures.hiddenUser) }
+            guard let plays = scrobbles[user] else { return LastFMFixtures.respond(200, LastFMFixtures.userNotFound) }
+            let from = Double(request.query["from"] ?? "").map { Date(timeIntervalSince1970: $0) } ?? .distantPast
+            let limit = Int(request.query["limit"] ?? "") ?? 50
+            let page = Int(request.query["page"] ?? "") ?? 1
+            let all = plays.filter { $0.date >= from }.sorted { $0.date > $1.date }
+            let pages = max(1, (all.count + limit - 1) / limit)
+            let these = Array(all.dropFirst((page - 1) * limit).prefix(limit))
+            return LastFMFixtures.respond(200, LastFMFixtures.recentTracks(user, these, page: page, pages: pages,
+                                                                           total: all.count, nowPlaying: page == 1 ? nowPlaying[user] : nil))
         case "artist.getsimilar":
             guard let similar = similarArtists[request.artist] else { return LastFMFixtures.respond(200, LastFMFixtures.artistNotFound) }
             return LastFMFixtures.respond(200, LastFMFixtures.similarArtists(request.artist, similar))
@@ -132,6 +156,39 @@ enum LastFMFixtures {
         return #"{"toptracks":{"track":["# + items.joined(separator: ",") + #"],"@attr":{"artist":"# + quoted(artist)
             + #","page":"1","perPage":"50","totalPages":"1","total":""# + String(titles.count) + #""}}}"#
     }
+
+    /// artist.gettoptags in Last.fm's documented shape: `count` a number.
+    static func topTags(_ artist: String, _ tags: [(name: String, count: Int)]) -> String {
+        let items = tags.map { t in
+            #"{"count":\#(t.count),"name":\#(quoted(t.name)),"url":"https://www.last.fm/tag/x"}"#
+        }
+        return #"{"toptags":{"tag":["# + items.joined(separator: ",") + #"],"@attr":{"artist":"# + quoted(artist) + "}}}"
+    }
+
+    /// user.getrecenttracks in Last.fm's documented shape: the artist and
+    /// album as {"#text": …}, the date's `uts` a string, numbers in "@attr"
+    /// strings, and the song playing now first, with no date.
+    static func recentTracks(_ user: String, _ plays: [LastFMClient.Scrobble], page: Int, pages: Int, total: Int,
+                             nowPlaying: (artist: String, title: String)? = nil) -> String {
+        var items = plays.map { p in
+            """
+            {"artist":{"mbid":"","#text":\(quoted(p.artist))},"streamable":"0","image":[{"size":"small","#text":""}],\
+            "mbid":"","album":{"mbid":"","#text":"An Album"},"name":\(quoted(p.title)),"url":"https://www.last.fm/music/x",\
+            "date":{"uts":"\(Int(p.date.timeIntervalSince1970))","#text":"01 Nov 2026, 08:00"}}
+            """
+        }
+        if let nowPlaying {
+            items.insert("""
+            {"artist":{"mbid":"","#text":\(quoted(nowPlaying.artist))},"streamable":"0","image":[],"mbid":"",\
+            "album":{"mbid":"","#text":""},"name":\(quoted(nowPlaying.title)),"@attr":{"nowplaying":"true"},"url":""}
+            """, at: 0)
+        }
+        return #"{"recenttracks":{"track":["# + items.joined(separator: ",") + #"],"@attr":{"user":"# + quoted(user)
+            + #","totalPages":"\#(pages)","page":"\#(page)","perPage":"200","total":"\#(total)"}}}"#
+    }
+
+    static let userNotFound = #"{"error":6,"message":"User not found","links":[]}"#
+    static let hiddenUser = #"{"error":17,"message":"Login: User required to be logged in","links":[]}"#
 
     // Straight from Last.fm.
     static let cherSimilar = #"""

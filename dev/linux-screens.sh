@@ -6,6 +6,7 @@
 #
 #   dev/linux-screens.sh                 every size  -> build/linux-screens/<size>/*.png
 #   dev/linux-screens.sh 1440x900-dark   one of them
+#   HANDOFF=Studio dev/linux-screens.sh  with music to go on with on Home
 #
 # The debug build as it is (dev/linux-build.sh first). Needs Xvfb and jq.
 set -euo pipefail
@@ -22,7 +23,8 @@ if [[ ! -x $fake || ${sources[0]} -nt $fake || ${sources[1]} -nt $fake ]]; then
   docker run --rm -u "$(id -u):$(id -g)" -e HOME=/tmp -v "$PWD:/src" -w /src jukebox-linux-build \
     swiftc -O -static-stdlib -parse-as-library "${sources[@]}" -o "$fake" 2>&1 | { grep -v mktemp || true; }
 fi
-"$fake" --port $port --data dev/demo --song-lengths --slow-downloads >"$work/fake.log" 2>&1 &
+# HANDOFF=Studio: music playing on "Studio", offered on Home beside Your Station.
+"$fake" --port $port --data dev/demo --song-lengths --slow-downloads ${HANDOFF:+--handoff "$HANDOFF"} >"$work/fake.log" 2>&1 &
 fake_pid=$!
 trap 'kill $fake_pid 2>/dev/null; rm -rf "$work"' EXIT
 for _ in $(seq 1 40); do curl -fs "http://localhost:$port/System/Info/Public" >/dev/null && break; sleep 0.25; done

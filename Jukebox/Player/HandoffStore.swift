@@ -192,6 +192,38 @@ final class HandoffStore {
         self.offer = nil
     }
 
+    // MARK: Play with nothing loaded
+
+    /// Play with nothing in the player, on a desktop (Linux's Play key and
+    /// Space, the Mac's Space and its Play key): the music to go on with if
+    /// there is some, else Your Station. A computer's Play is always the
+    /// listener's own hand, so it may start music. Never on the iPhone: a
+    /// car or headphones send Play by themselves when they connect, and
+    /// Apple's HIG lets that only resume (RemoteCommands.swift).
+    func playWithNothingLoaded(from: String) {
+        guard !player.hasTrack else { return }
+        if let offer, goOn(with: offer, playing: true) {
+            self.offer = nil
+            return
+        }
+        startYourStation(from: from)
+    }
+
+    /// Your Station, from outside the window (the keys above, the Mac's
+    /// Dock menu, GNOME's launcher menu); played on if it is already the one
+    /// in the player. `from` is `station_started`'s (docs/STATS.md).
+    func startYourStation(from: String) {
+        // Before the library is in, the station would have nothing to choose from.
+        guard !library.tracks.isEmpty else { return }
+        let station = radio.station(for: .personal)
+        if player.context?.station?.id == station.id {
+            player.resume()
+            return
+        }
+        Stats.track(.stationStarted, ["seed": "personal", "from": from])
+        radio.start(station)
+    }
+
     /// The offer's queue in the player, at its song and place. Playing, it
     /// is taken over now; paused, it waits for Play (`ready`), which takes
     /// it over then. False when the player would not have it.

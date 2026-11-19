@@ -33,6 +33,11 @@ enum Style {
         // One step up, for the sidebar, the panel and the bar (the designer's
         // spec, §1).
         let raised = dark ? "#1B1918" : "#ECE7DF"
+        // The music to go on with, beside Your Station: a step lighter
+        // ("misschien in een lichtere tint", 18 November 2026). By night
+        // one step up from raised; by day halfway back to the paper, as a
+        // step past it would no longer read as a card. Theme.raisedLighter.
+        let lighter = dark ? "#242120" : "#F1EDE6"
         // libadwaita 1.5 reads its colours by name, 1.6 and later from
         // variables (which GTK before 4.16 cannot read, and says so).
         var css = """
@@ -62,6 +67,8 @@ enum Style {
         css += """
         /* Titles as on sleeves: the system's serif, regular weight (tells.md 3). */
         .serif { font-family: serif; font-weight: 400; }
+        /* Your Year's months: flat bars in the accent. */
+        .year-bar { background-color: @accent_bg_color; }
         /* The type scale (the designer's spec, §7): size / line, in px. */
         .page-title { font-size: 40px; line-height: 48px; }
         .hero-title { font-size: 32px; line-height: 40px; }
@@ -136,13 +143,16 @@ enum Style {
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
-        .home-card { background-color: \(raised); border-radius: 18px; padding: 12px; }
+        .home-card { background-color: \(raised); border-radius: 18px; padding: 12px 36px 12px 12px; }
         /* Each card one button (Pages.cardButton): its words as words,
            a little darker under the pointer, the word at its foot in the
            accent. */
         button.home-card { font-weight: inherit; box-shadow: none; }
         button.home-card:hover { background-color: shade(\(raised), 0.97); }
         button.home-card:active { background-color: shade(\(raised), 0.94); }
+        button.home-card.lighter { background-color: \(lighter); }
+        button.home-card.lighter:hover { background-color: shade(\(lighter), 0.97); }
+        button.home-card.lighter:active { background-color: shade(\(lighter), 0.94); }
         .card-link { font-weight: 400; }
         button.word { min-height: 40px; padding: 0 8px; font-size: 15px; }
         button.plain { padding: 0; min-height: 0; background: none; box-shadow: none; font-weight: inherit; }
@@ -203,6 +213,8 @@ enum Style {
         .queue-row { min-height: 48px; }
         .queue-row.covered { min-height: 64px; }
         .queue-row.station { min-height: 72px; }
+        /* History: there, but quieter than what is to come (the iPhone's 50 %). */
+        .queue-row.played { min-height: 64px; opacity: 0.5; }
         /* The dial: the accent, its knob always shown (it is set, not read). */
         /* grid-ok: the 4 track centred in 16 */
         scale.dial { padding: 6px 0; }

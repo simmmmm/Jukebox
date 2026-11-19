@@ -207,6 +207,12 @@ requirement" (14 November 2026).
   kept (below, Accounts).
 - What a server lacks is not offered: `app.can(.lyrics)`,
   `library.can(.playlistReorder)` (`ServerCapability`).
+- Asked of the server, never from its name (docs/SERVERS.md,
+  "Capabilities"): Copy Share Link in a song's and an album's menu
+  (`.share`, Navidrome); Your Year in Settings' server section, from
+  Playback Reporting (`.playbackReporting`) or else this device's history,
+  with a note there on Jellyfin and Emby saying which; moods and tempo
+  into the radio's graph where songs carry them (`MoodEdges`).
 - Words name the server by its kind: `library.serverKind` ("your Navidrome
   server").
 - Offline (`OfflineStore.isOffline`) only songs on the phone play: a row
@@ -317,7 +323,8 @@ Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
   mixes are made again from those.
 - **Shared**: `AppSettings` (qualities, pages, downloads' limit, the
   switches) and the Last.fm API key, a key to Last.fm's catalogue rather
-  than anyone's Last.fm account (the servers scrobble).
+  than anyone's Last.fm account (the servers scrobble), and the listener's
+  Last.fm username, read only.
 - **A switch** (`AppModel.switchAccount`): the new account's server is asked
   first, with its own session (`AccountStores.reach`, 10 s at most); silent,
   the account signed in stays and the words say so, unless the new one has
@@ -370,6 +377,14 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md). It looks only while it
   and the Mac over Network's TLS, found by Bonjour
   (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
   privacy answers stay as they are (`docs/STATS.md`).
+- **Jukebox as the speaker** (18 November 2026, "net als bij spotify"):
+  on Jellyfin and Emby (`.remoteControl`) every client keeps a websocket
+  open (`Player/RemoteControl.swift`, shared; URLSession's on Apple's,
+  libsoup's on Linux) and is listed in the other clients' Play On. Their
+  Play, Pause, Next, Seek and volume drive its queue; while controlled it
+  says what it plays at once, as a progress report (no play counted). The
+  iPhone only while it plays or is open. Checked: the kit's
+  `RemoteControlTests`, Linux's `JUKEBOX_CHECK=remote`.
 - **What it cannot do**: a server at localhost is refused at once (the TV
   fetches the songs itself); a TV that cannot play from an https server it
   does not trust says so. A moment's silence between songs on a Chromecast.
@@ -388,9 +403,13 @@ Navidrome with its own Last.fm link, from the playback reports the app
 already sends (Jellyfin's start/progress/stopped; Subsonic's scrobble). The
 photographer, 8 November 2026: "Laat scrobblen lekker via de server lopen."
 One place for every client, and no song twice on Last.fm. The Last.fm key in
-Settings is only for the radio's similar artists and songs. Every client
-keeps it only once Last.fm accepted it (`LastFMClient.validateKey`), then
-shows it as dots with Change and Remove.
+Settings is only for the radio: similar artists and songs, the artists'
+tags. Every client keeps it only once Last.fm accepted it
+(`LastFMClient.validateKey`), then shows it as dots with Change and Remove.
+Under it, once a key is kept, one optional field for the listener's Last.fm
+username, kept only once Last.fm shows their plays
+(`LastFMClient.validateUser`): the clock reads those scrobbles, and nothing
+is ever written to Last.fm (docs/RADIO.md, "Scrobbles").
 
 ## Lyrics
 
@@ -523,7 +542,10 @@ Control Center have one): it is doors into the music.
 - **Small**: Your Station. The mark, flat, and Play; while it plays the
   mark is lit and says "On air". **Medium**: the same, and Home's first
   three mixes, each a Play. **The lock screen** (circular): the mark,
-  Your Station's Play. A tap anywhere else opens the app.
+  Your Station's Play. A tap anywhere else opens the app. **A control**
+  (`YourStationControl`, iOS 18's `ControlWidget`): Your Station's Play in
+  Control Center, on the iPhone's Lock Screen and on the Action Button,
+  with the radio's waves for a symbol (a control draws no mark).
 - **The buttons** are `Intents/WidgetIntents.swift`'s, hidden from
   Shortcuts, compiled into both targets and performed by the app (an audio
   intent runs in the app's process, launched in the background as for
@@ -543,6 +565,29 @@ Control Center have one): it is doors into the music.
   an upload. The code would compile there as it is.
 - Portal steps and CI's check: `docs/RELEASE.md`, The widget.
 
+## Your Station from outside the window
+
+Easier to start, with no button added to the app ("doe alles", 18 November
+2026; `build/research/radio.md` 4.3). Each in its platform's own place:
+
+- **Play with nothing loaded**, on a desktop: Linux's Play key (MPRIS) and
+  Space, the Mac's Space and Play key (F8), an iPad keyboard's Space. The
+  music to go on with if there is some (HandoffStore), else Your Station
+  (`HandoffStore.playWithNothingLoaded`). MPRIS's `CanPlay` stays true, so
+  GNOME keeps its buttons. The Mac's F8 reaches Jukebox only while the
+  system takes it for the Now Playing app.
+- **Not on the iPhone and the iPad's remote commands**: a car or headphones
+  send Play by themselves when they connect, and Apple's HIG lets that
+  resume, never start. An empty queue keeps Play off there
+  (`RemoteCommands.swift`); CarPlay starts nothing by itself.
+- **A menu on the icon**: the Mac's Dock menu (while it runs), GNOME's
+  launcher menu (the desktop entry's action, `jukebox --play-station`, also
+  with Jukebox closed). **The control** on the iPhone and the iPad (The
+  widget, below).
+- **Linux plays on with the window closed** while the music plays; the
+  launcher or the media controls bring the window back. A Flatpak asks the
+  background portal, so GNOME lists it under Background Apps.
+
 ## Sharing, a playlist's picture, songs picked, the mini player
 
 From features.md's "De moeite waard" ("doe alles", 18 November 2026), each
@@ -550,12 +595,12 @@ in a menu that was there ("niet 10000 knopen"):
 
 - **Sharing**: Share… (Apple's share sheet) or Copy Link (Linux) in a
   song's, an album's and an artist's menu. "Night Bus by Blue Room Trio" and
-  a link that opens in the friend's own app: the server's own where it makes
-  one (`ServerShareLinks`, for Navidrome's shares, not built yet), else
-  Odesli's song.link or album.link found through Apple's iTunes search,
+  a link that opens in the friend's own app: Odesli's song.link or album.link found through Apple's iTunes search,
   else Apple Music's artist page, else the words alone
   (`JukeboxKit/Sharing/Sharing.swift`). Only the title and the main artist
-  go to Apple, and only once the listener shares.
+  go to Apple, and only once the listener shares. On a server that makes
+  its own link to play (Copy Share Link, above), a song and an album have
+  that one instead: one way to share, not two.
 - **A playlist's picture**: Choose Picture… in a playlist's "…"/⋮ (Photos on
   the iPhone and the iPad, a file on the Mac and Linux), as a JPEG of 1200
   at most. Only on Jellyfin and Emby, and only for an administrator: 12.4

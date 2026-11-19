@@ -376,3 +376,7 @@ guchar *jb_jpeg_from_file(const char *path, int side, gsize *length) {
     g_object_unref(upright);
     return done ? (guchar *)buffer : NULL;
 }
+
+void jb_accessible_label(GtkWidget *widget, const char *label) {
+    gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+}

@@ -145,9 +145,24 @@ public struct TasteProfile: Sendable {
     /// Worked out once (Radio/Taste.swift), aligned with the snapshot.
     let data: TasteData
 
-    public init(snapshot: LibrarySnapshot, history: ListeningHistory, now: Date) {
-        data = TasteData(snapshot: snapshot, history: history, now: now)
+    /// - Parameter calendar: whose hours and days the clock reads (the
+    ///   device's; the tests pass one of their own).
+    /// - Parameter scrobbles: the listener's Last.fm plays of library songs
+    ///   (SimilarityService.scrobbles), older evidence for the clock than
+    ///   this device's own; none changes nothing.
+    public init(snapshot: LibrarySnapshot, history: ListeningHistory, scrobbles: ListeningHistory = ListeningHistory(),
+                now: Date, calendar: Calendar = .current) {
+        data = TasteData(snapshot: snapshot, history: history, scrobbles: scrobbles, now: now, calendar: calendar)
     }
+
+    init(data: TasteData) {
+        self.data = data
+    }
+
+    /// What the listener plays at this time, when the history says so
+    /// clearly enough: "Weekday mornings: Jazz and Folk", for Your
+    /// Station's card. Nil without a pattern (docs/RADIO.md, "The clock").
+    public var timeFact: TimeFact? { data.timeFact }
 
     /// -1 (avoid) … 0 (unknown or neutral) … 1 (loved).
     public func trackAffinity(_ id: ItemID) -> Double {
@@ -322,6 +337,8 @@ public enum PickReason: Hashable, Codable, Sendable {
     case discovery
     case becauseYouLiked(String)
     case instantMix
+    /// Your Station, when the hour decided it: "Often on weekday mornings".
+    case timeOfDay(TimeSlot)
 
     /// "More by Radiohead", "Because you like Portishead", "From the 1990s".
     public var text: String {
@@ -337,7 +354,46 @@ public enum PickReason: Hashable, Codable, Sendable {
         case .discovery: "New to you"
         case let .becauseYouLiked(title): "Because you liked “\(title)”"
         case .instantMix: "From Jellyfin’s mix"
+        case let .timeOfDay(slot): "Often on \(slot.words)"
         }
+    }
+}
+
+/// A kind of day and a part of it, as Home names the day (RelativeDay's
+/// hours: morning from 5, afternoon from 12, evening from 17, night from 21).
+public struct TimeSlot: Hashable, Codable, Sendable {
+    public enum Part: String, Hashable, Codable, Sendable { case morning, afternoon, evening, night }
+    public var weekend: Bool
+    public var part: Part
+
+    public init(weekend: Bool, part: Part) {
+        self.weekend = weekend
+        self.part = part
+    }
+
+    public init(hour: Int, weekend: Bool) {
+        let part: Part = switch hour {
+        case 5..<12: .morning
+        case 12..<17: .afternoon
+        case 17..<21: .evening
+        default: .night
+        }
+        self.init(weekend: weekend, part: part)
+    }
+
+    /// "weekday mornings", "weekend nights".
+    public var words: String { "\(weekend ? "weekend" : "weekday") \(part.rawValue)s" }
+}
+
+/// What the listener plays at this time: "Weekday mornings: Jazz and Folk".
+public struct TimeFact: Hashable, Sendable {
+    public var slot: TimeSlot
+    /// The genres heard more now than overall, most heard first; one or two.
+    public var genres: [String]
+
+    public var text: String {
+        let words = slot.words
+        return words.prefix(1).uppercased() + words.dropFirst() + ": " + genres.joined(separator: " and ")
     }
 }
 

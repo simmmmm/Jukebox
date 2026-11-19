@@ -52,6 +52,10 @@ guchar *jb_jpeg_from_file(const char *path, int side, gsize *length);
 // thrown with a little momentum when let go. A press that hardly moves is
 // still a click on what it is over.
 void jb_drag_to_scroll(GtkWidget *scrolled);
+// What a screen reader calls a widget: a button of only a symbol has no
+// words of its own, and gtk_accessible_update_property is variadic, which
+// Swift cannot call.
+void jb_accessible_label(GtkWidget *widget, const char *label);
 // A popover's arrow at a point of its parent.
 void jb_popover_point_to(GtkWidget *popover, double x, double y);
 // A list's row that can be dragged onto another row of its list: `moved`
@@ -81,6 +85,14 @@ typedef void (*JbCastReceived)(const guint8 *bytes, gsize length, gpointer data)
 JbCast *jb_cast_connect(const char *host, guint16 port, JbCastReceived received, gpointer data);
 void jb_cast_send(JbCast *cast, const guint8 *bytes, gsize length);
 void jb_cast_close(JbCast *cast);
+// A websocket (socket.c), libsoup's: RemoteControl's commands. `received`
+// gets each text message, and NULL once, when it closed or failed. After
+// jb_socket_close nothing more is called.
+typedef struct JbSocket JbSocket;
+typedef void (*JbSocketReceived)(const char *text, gpointer data);
+JbSocket *jb_socket_connect(const char *url, JbSocketReceived received, gpointer data);
+void jb_socket_send(JbSocket *socket, const char *text);
+void jb_socket_close(JbSocket *socket);
 // Chromecasts on the network, through Avahi on the system bus. `service` is
 // the mDNS name, the key of a removal; `id` and `name` are the TXT record's
 // id= and fn= (else the service name). Nothing is called without Avahi.
@@ -106,5 +118,10 @@ void jb_mpris_update(const char *status, const char *track_id, const char *title
                      const char *album, const char *art_url, gint64 length, gboolean can_next,
                      gboolean can_previous);
 void jb_mpris_set_position(gint64 position, gboolean seeked);
+
+// The background portal's RequestBackground: a Flatpak asks to go on
+// without a window (the music after the window closed), so GNOME lists it
+// under Background Apps rather than ending it. Fire and forget.
+void jb_request_background(const char *reason);
 
 #endif

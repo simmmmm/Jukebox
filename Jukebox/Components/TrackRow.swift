@@ -83,6 +83,7 @@ struct TrackRow: View {
                         Image(systemName: "waveform")
                             .symbolEffect(.variableColor.iterative, isActive: player.isPlaying)
                             .foregroundStyle(Theme.accent)
+                            .accessibilityLabel("Playing")
                     } else {
                         Text(number.map(String.init) ?? "")
                             .monospacedDigit()
@@ -140,7 +141,8 @@ struct TrackRow: View {
                     Image(systemName: "ellipsis")
                         .font(.body.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .frame(width: 32, height: 44)
+                        // At least, not at most: the glyph grows with Larger Text.
+                        .frame(minWidth: 32, minHeight: 44)
                         .contentShape(.rect)
                 }
                 .accessibilityLabel("More")
@@ -309,6 +311,40 @@ struct RatingMenu: View {
     }
 }
 
+/// Credits › who made the song, a section a role ("Composer", "Performers"),
+/// where the server gave any (Navidrome's contributors, Jellyfin's
+/// composer): the sleeve's back, quietly, in the song's menu and not as a
+/// button of its own. One opens the artist's page when the library has
+/// them. The words are LibraryIndex's, Linux's too.
+struct CreditsMenu: View {
+    let track: Track
+
+    @Environment(LibraryStore.self) private var library
+    @Environment(Navigator.self) private var navigator
+
+    var body: some View {
+        // The library's copy: Jellyfin's composers are read with the
+        // library, not with a playlist's or the queue's songs.
+        let groups = LibraryIndex.creditGroups(library.track(id: track.id) ?? track)
+        if !groups.isEmpty {
+            Menu("Credits", systemImage: "person.2") {
+                ForEach(groups.indices, id: \.self) { i in
+                    let group = groups[i]
+                    Section(group.role) {
+                        ForEach(group.credits, id: \.self) { credit in
+                            let artist = library.artist(credit.artist)
+                            Button(LibraryIndex.creditName(credit)) {
+                                if let artist { navigator.open(.artist(artist)) }
+                            }
+                            .disabled(artist == nil)
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 /// What can be done with a track, as Music orders it.
 struct TrackMenu: View {
     let track: Track
@@ -364,6 +400,7 @@ struct TrackMenu: View {
             if library.can(.rating) {
                 RatingMenu(item: .track(track.id))
             }
+            CopyShareLinkButton(id: track.id, tracks: [track.id])
         }
         Section {
             if let albumID = track.albumID, let album = library.album(id: albumID) {
@@ -376,6 +413,7 @@ struct TrackMenu: View {
                     navigator.open(.artist(artist))
                 }
             }
+            CreditsMenu(track: track)
             ShareMenuItem(item: .track(track))
         }
         if let removal {

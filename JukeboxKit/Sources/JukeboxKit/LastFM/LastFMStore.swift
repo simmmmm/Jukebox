@@ -5,11 +5,14 @@
 // Portishead, so the graph is made again from the answers for every
 // snapshot, and an artist added later gets the edges Last.fm already gave.
 //
-// Four files in the service's directory, JSON, each written whole and
+// Six files in the service's directory, JSON, each written whole and
 // atomically, so a crash leaves the last good one:
 // - lastfm-artists.json: artist.getsimilar, by the library's artist key;
 // - lastfm-tracks.json: track.getsimilar, by artist key and title key;
 // - lastfm-top-tracks.json: artist.gettoptracks, by artist key;
+// - lastfm-tags.json: artist.gettoptags, by artist key;
+// - lastfm-scrobbles.json: user.getrecenttracks of the listener named in
+//   Settings, the last 90 days;
 // - lastfm-graph.json: the Last.fm edges as mapped onto the library the
 //   last time Last.fm was asked (a SimilarityGraph), read only when the
 //   answers themselves are missing.
@@ -68,6 +71,30 @@ struct LastFMStore: Sendable {
         var tracks: [Top]
     }
 
+    struct TagAnswer: Codable, Sendable, Hashable {
+        var name: String
+        var fetched: Date
+        /// Empty when Last.fm does not know the artist.
+        var tags: [LastFMClient.Tag]
+    }
+
+    /// One listener's scrobbles, newest first, with the keys made once.
+    struct ScrobbleAnswer: Codable, Sendable, Hashable {
+        struct Play: Codable, Sendable, Hashable {
+            var artist: String
+            var title: String
+            var date: Date
+            var artistKey: String
+            var titleKey: String
+        }
+
+        /// As typed in Settings: another name is another listener, and the
+        /// plays are asked for again.
+        var user: String
+        var fetched: Date
+        var plays: [Play]
+    }
+
     /// The files' own wrapper, so a later version can tell an older file.
     struct File<Value: Codable & Sendable>: Codable, Sendable {
         var version: Int
@@ -79,6 +106,8 @@ struct LastFMStore: Sendable {
     static let tracksFile = "lastfm-tracks.json"
     static let topTracksFile = "lastfm-top-tracks.json"
     static let graphFile = "lastfm-graph.json"
+    static let tagsFile = "lastfm-tags.json"
+    static let scrobblesFile = "lastfm-scrobbles.json"
     /// Song stations are started often and each asks about one song: the
     /// newest this many answers are kept. An answer of 100 similar songs is
     /// about 10 kB and the file is written whole after each new one, so 300
@@ -89,6 +118,10 @@ struct LastFMStore: Sendable {
     var artists: [String: ArtistAnswer] = [:]
     var tracks: [String: TrackAnswer] = [:]
     var top: [String: TopAnswer] = [:]
+    /// artist.gettoptags, by the library's artist key.
+    var tags: [String: TagAnswer] = [:]
+    /// user.getrecenttracks, of the one listener named in Settings.
+    var scrobbles: ScrobbleAnswer?
     /// The graph as last saved; used only when `artists` could not be read.
     var savedGraph: SimilarityGraph?
     /// Whether lastfm-artists.json was there and read.
@@ -125,6 +158,8 @@ struct LastFMStore: Sendable {
         }
         store.tracks = read(tracksFile, as: TrackAnswer.self) ?? [:]
         store.top = read(topTracksFile, as: TopAnswer.self) ?? [:]
+        store.tags = read(tagsFile, as: TagAnswer.self) ?? [:]
+        store.scrobbles = read(scrobblesFile, as: ScrobbleAnswer.self)?["listener"]
         if !store.hasArtistFile,
            let data = try? Data(contentsOf: directory.appendingPathComponent(graphFile)) {
             store.savedGraph = try? decoder.decode(SimilarityGraph.self, from: data)
@@ -144,6 +179,15 @@ struct LastFMStore: Sendable {
     mutating func saveTop(to directory: URL) {
         top = Self.newest(top, keep: Self.maxTopAnswers, date: \.fetched)
         Self.write(File(version: Self.version, answers: top), to: directory, name: Self.topTracksFile)
+    }
+
+    func saveTags(to directory: URL) {
+        Self.write(File(version: Self.version, answers: tags), to: directory, name: Self.tagsFile)
+    }
+
+    func saveScrobbles(to directory: URL) {
+        Self.write(File(version: Self.version, answers: scrobbles.map { ["listener": $0] } ?? [:]),
+                   to: directory, name: Self.scrobblesFile)
     }
 
     static func saveGraph(_ graph: SimilarityGraph, to directory: URL) {
