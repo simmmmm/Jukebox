@@ -170,8 +170,10 @@ struct HomeCardLink: View {
                 .controlSize(.mini)
                 .tint(Theme.accent)
         } else {
+            // The word says it; VoiceOver need not read "play" twice.
             Image(systemName: systemImage)
                 .imageScale(.small)
+                .accessibilityHidden(true)
         }
     }
 }
