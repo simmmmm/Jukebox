@@ -262,7 +262,11 @@ struct MainTabView: View {
                     .modifier(MiniPlayerBar())
                 }
             }
-            Tab(value: AppTab.search, role: .search) {
+            // A tab like the others, its field at the top of the page, not
+            // the search role's separate button: "van mij mag de search
+            // knop gewoon vast in de button bar komen te staan, vind het veel
+            // te fancy zo" (the photographer, 19 November 2026).
+            Tab("Search", systemImage: "magnifyingglass", value: AppTab.search) {
                 NavigationStack(path: navigator.path(for: .search)) {
                     SearchView().routeDestinations()
                 }
