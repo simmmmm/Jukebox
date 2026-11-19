@@ -43,12 +43,33 @@ jq -n --arg url "$base" --argjson answer "$answer" --argjson info "$info" \
 for shot in ${@:-1440x900-dark 1440x900-light 1920x1080-dark 760x900-dark 400x800-dark}; do
   size=${shot%-*} scheme=${shot#*-}
   rm -rf "$out/$shot"; mkdir -p "$out/$shot"
-  # A session bus of its own and no keyring on it; the history kept from
-  # one size to the next, so Home has its "Played lately".
-  env -u WAYLAND_DISPLAY GDK_BACKEND=x11 GSK_RENDERER=cairo ADW_DEBUG_COLOR_SCHEME=prefer-$scheme \
+  # A session bus of its own that starts nothing: without service folders
+  # nothing is activatable on it, so no keyring is asked for (a plain
+  # dbus-run-session read /usr/share/dbus-1/services and had systemd --user
+  # start the desktop's gnome-keyring, which asked to make a keyring, 19
+  # November 2026). A home, a runtime folder and settings of its own, and a
+  # display from :321 up, clear of the desktop's; the history kept from one
+  # size to the next, so Home has its "Played lately".
+  mkdir -p "$work/home" "$work/runtime"; chmod 700 "$work/runtime"
+  cat > "$work/bus.conf" <<BUS
+<!DOCTYPE busconfig PUBLIC "-//freedesktop//DTD D-Bus Bus Configuration 1.0//EN"
+ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
+<busconfig>
+  <type>session</type>
+  <listen>unix:dir=$work/runtime</listen>
+  <policy context="default">
+    <allow send_destination="*" eavesdrop="true"/>
+    <allow eavesdrop="true"/>
+    <allow own="*"/>
+  </policy>
+</busconfig>
+BUS
+  env -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS -u PULSE_SERVER -u SSH_AUTH_SOCK \
+    HOME="$work/home" XDG_RUNTIME_DIR="$work/runtime" GSETTINGS_BACKEND=memory GIO_USE_VFS=local \
+    GTK_USE_PORTAL=0 GDK_BACKEND=x11 GSK_RENDERER=cairo ADW_DEBUG_COLOR_SCHEME=prefer-$scheme \
     JUKEBOX_AUDIO_SINK=fakesink JUKEBOX_SHOTS="$out/$shot" JUKEBOX_WINDOW="$size" \
     XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" XDG_CACHE_HOME="$work/cache" \
-    timeout 300 dbus-run-session -- xvfb-run -a -s "-screen 0 ${size}x24" .build-linux/debug/Jukebox \
+    timeout 300 dbus-run-session --config-file="$work/bus.conf" -- xvfb-run -a -n 321 -s "-screen 0 ${size}x24" .build-linux/debug/Jukebox \
     >"$work/app-$shot.log" 2>&1 || { echo "$shot: the walk did not finish"; tail -5 "$work/app-$shot.log"; }
   echo "$shot: $(ls "$out/$shot" | wc -l) pictures"
 done
