@@ -8,6 +8,7 @@
 //   build/fake-jellyfin --port 8096 --data dev/demo
 //   build/fake-jellyfin --song-lengths    2:30–5:30 songs, for the pictures
 //   build/fake-jellyfin --slow-downloads  0.4–2 s a song downloaded, so its ring shows
+//   build/fake-jellyfin --handoff Studio  "Playing on Studio" offered on Home
 //
 // Foundation only, one file and the kit's MD5: Xcode's swiftc builds it on
 // the macOS runner, the image of dev/linux-build.sh on Linux. It was Python
@@ -1378,6 +1379,25 @@ func capabilities(_ request: Request, _ q: Query, _ groups: [String?]) throws ->
     return Response(status: 204)
 }
 
+/// --handoff NAME: another device, NAME, playing Quiet Rooms right now, as
+/// JukeboxKit's PlayState keeps it in a user's DisplayPreferences, so Home
+/// offers "Playing on NAME" and its card shows in the walks. Saved again
+/// at every look (always live); what the app saves is answered and dropped,
+/// so every walk, and every device of a round, sees the same offer.
+var handoffDevice: String?
+
+func displayPreferences(_ request: Request, _ q: Query, _ groups: [String?]) throws -> Response {
+    try require(request, q)
+    guard request.method == "GET" else { return Response(status: 204) }
+    guard let name = handoffDevice,
+          let album = lib.order.first(where: { text(lib.items[$0]?["Name"]) == "Quiet Rooms" && lib.type(lib.items[$0]!) == "MusicAlbum" }),
+          let tracks = lib.albumTracks[album], tracks.count > 1
+    else { return jsonResponse(["CustomPrefs": [String: String]()]) }
+    let state: Obj = ["deviceID": "fake-\(name)", "deviceName": name, "updatedAt": Double(nowMicro()) / 1_000_000,
+                      "isPlaying": true, "trackIDs": tracks, "index": 1, "position": 61, "title": "Quiet Rooms"]
+    return jsonResponse(["CustomPrefs": ["playState": String(decoding: json(state), as: UTF8.self)]])
+}
+
 func lyrics(_ request: Request, _ q: Query, _ groups: [String?]) throws -> Response {
     try require(request, q)
     guard let lyrics = lib.lyrics[norm(groups[0])] else { throw HTTPError(status: 404) }
@@ -1479,6 +1499,7 @@ let routeTable: [(String, String, Handler)] = [
     ("POST", "/Sessions/Playing", playing),
     ("POST", "/Sessions/Playing/(Progress|Stopped|Ping)", playing),
     ("POST", "/Sessions/Capabilities(?:/Full)?", capabilities),
+    ("GET POST", "/DisplayPreferences/[^/]+", displayPreferences),
     ("GET", "/Audio/" + idPattern + "/Lyrics", lyrics),
     ("GET", "/Audio/" + idPattern + "/(universal|stream)(?:\\.\\w+)?", audio),
     ("GET", "/Items/" + idPattern + "/Images/(\\w+)(?:/(\\d+))?", image),
@@ -1783,9 +1804,11 @@ enum FakeJellyfin {
             case "--clips-as-recorded": clipsAsRecorded = true
             // Each song downloaded (not streamed) takes 0.4 to 2 s, as from a real server.
             case "--slow-downloads": slowDownloads = true
+            // Another device playing, offered on Home (displayPreferences).
+            case "--handoff": handoffDevice = value(argument)
             case "-h", "--help":
                 print("fake-jellyfin [--host H] [--port 8096] [--data dev/demo] [--password test] [--seed 1]"
-                      + " [--song-lengths] [--clips-as-recorded] [--slow-downloads]")
+                      + " [--song-lengths] [--clips-as-recorded] [--slow-downloads] [--handoff NAME]")
                 exit(0)
             default:
                 FileHandle.standardError.write(Data("fake-jellyfin: unrecognized argument \(argument)\n".utf8))

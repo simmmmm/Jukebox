@@ -106,6 +106,11 @@ struct RadioEngine: Sendable {
     let rankedArtists: [Int]
     let rankedGenres: [Int]
     let maxSpecificity: Double
+    /// The clock (TasteData): by artist and genre number, λ · L near now,
+    /// and when now is. Only Your Station reads them.
+    let artistLift: [Double]
+    let genreLift: [Double]
+    let slot: TimeSlot
     /// By track number: the session's own order for tracks that score the
     /// same, from its random seed. Without it ties went by the library's
     /// order, and when nothing is known of the listener, ties are most of
@@ -205,6 +210,8 @@ struct RadioEngine: Sendable {
             heard = data.hoursSinceHeard
             artistAffinity = data.artistAffinity
             genreAffinity = data.genreAffinity
+            artistLift = data.artistLift
+            genreLift = data.genreLift
         } else {
             // A taste made from another snapshot (the library changed since):
             // the same numbers, looked up by id and key.
@@ -213,7 +220,10 @@ struct RadioEngine: Sendable {
             heard = snapshot.tracks.map { data.hoursSinceHeard(id: $0.id) }
             artistAffinity = index.artistKeys.map { taste.artistAffinity($0) }
             genreAffinity = index.genreKeys.map { taste.genreAffinity($0) }
+            artistLift = index.artistKeys.map { data.artistLift(key: $0) }
+            genreLift = index.genreKeys.map { data.genreLift(key: $0) }
         }
+        slot = data.slot
         // A song is as known and as lately heard as its most played
         // recording: the best-of's copy of a song heard twenty times is not
         // "New to you", nor fresh because that copy was never played.
@@ -305,7 +315,24 @@ struct RadioEngine: Sendable {
         }
         func personal() {
             a.kind = seed == .discovery ? .discovery : .personal
-            let liked = rankedArtists.filter { artistAffinity[$0] > 0 }.prefix(30)
+            // Your Station knows the clock: its artists, genres and songs
+            // chosen and weighted by affinity × e^(λ·L) (TasteData). Not
+            // Discovery: it is about what is new, not about when.
+            let clock = a.kind == .personal
+            func artistTime(_ x: Int) -> Double { clock ? exp(artistLift[x]) : 1 }
+            func genreTime(_ g: Int) -> Double { clock ? exp(genreLift[g]) : 1 }
+            func trackTime(_ t: Int) -> Double { clock ? exp(trackLift(t)) : 1 }
+            /// Re-ranked by the clock, the old order breaking ties: with no
+            /// lift, the same list as before.
+            func byClock(_ list: [Int], _ value: (Int) -> Double) -> [Int] {
+                guard clock else { return list }
+                return list.enumerated().map { ($0.offset, $0.element, value($0.element)) }
+                    .sorted { $0.2 != $1.2 ? $0.2 > $1.2 : $0.0 < $1.0 }
+                    .map(\.1)
+            }
+            let liked = byClock(rankedArtists.filter { artistAffinity[$0] > 0 }) {
+                artistAffinity[$0] * artistTime($0)
+            }.prefix(30)
             if liked.isEmpty {
                 // A listener Jukebox knows nothing of yet: the library's
                 // biggest artists and genres stand in for their taste.
@@ -319,17 +346,19 @@ struct RadioEngine: Sendable {
                 for artist in biggest where !index.artistOwnTracks[artist].isEmpty { setOwn(artist, 0.5) }
                 shareGenres(Array(0..<snapshot.tracks.count))
             } else {
-                for artist in liked { setOwn(artist, 0.45 + 0.4 * artistAffinity[artist]) }
+                for artist in liked { setOwn(artist, min(1, (0.45 + 0.4 * artistAffinity[artist]) * artistTime(artist))) }
                 var total = 0.0
-                for g in rankedGenres.prefix(12) where genreAffinity[g] > 0 {
-                    a.genreWeight[g] = genreAffinity[g]
-                    total += genreAffinity[g]
+                let genres = byClock(rankedGenres.filter { genreAffinity[$0] > 0 }) { genreAffinity[$0] * genreTime($0) }
+                for g in genres.prefix(12) {
+                    a.genreWeight[g] = genreAffinity[g] * genreTime(g)
+                    total += a.genreWeight[g]
                 }
                 if total > 0 { for g in a.genreWeight.indices { a.genreWeight[g] /= total } }
             }
             if a.kind == .personal {
-                for t in rankedTracks.prefix(300) where affinity[t] > 0.2 {
-                    a.trackWeight[t] = 0.45 + 0.4 * affinity[t]
+                let tracks = byClock(rankedTracks.filter { affinity[$0] > 0.2 }) { affinity[$0] * trackTime($0) }
+                for t in tracks.prefix(300) {
+                    a.trackWeight[t] = min(1, (0.45 + 0.4 * affinity[t]) * trackTime(t))
                     // "One of your favorites" for a heart or a song played a
                     // lot (affinity 0.6 is about eight recent plays).
                     if snapshot.tracks[t].isFavorite || affinity[t] >= 0.6 {
@@ -340,7 +369,7 @@ struct RadioEngine: Sendable {
                         a.trackReason[t] = .byArtist(index.artistRefs[own].name)
                     }
                 }
-                a.first = Array(rankedTracks.prefix(30))
+                a.first = Array(byClock(Array(rankedTracks.prefix(100))) { affinity[$0] * trackTime($0) }.prefix(30))
                 a.firstReason = .favorite
             }
         }
@@ -626,6 +655,7 @@ struct RadioEngine: Sendable {
 
         let gamma = Self.gamma(adv)
         let isDiscovery = anchor.kind == .discovery
+        let isPersonal = anchor.kind == .personal
         // Near the familiar end, a track must also sound like the station:
         // closeness is scaled by its genre fit, a track with none keeping 40%
         // at 0, 61% at 0.35, all at 1. Without this a guest spot linked an
@@ -703,6 +733,9 @@ struct RadioEngine: Sendable {
             closeness[i] = c
             channel[i] = won
             base[i] = c > Self.minCloseness ? Self.power(c, gamma) * personalFactor(i, adv: adv, discovery: isDiscovery) : 0
+            // Your Station: what the listener plays at this hour, × e^(λ·L)
+            // in the score too, as the profile's weights stop at 1.
+            if isPersonal { base[i] *= exp(trackLift(i)) }
             // A candidate from outside counts for more by its weight: up to
             // twice at weight 1.
             if let w = added[i] { base[i] *= 1 + w / 0.9 }
@@ -747,6 +780,15 @@ struct RadioEngine: Sendable {
         if hours.isFinite { f *= 1 - 0.75 * exp2(-hours / 48) }
         if isRediscovery(i), adv >= 0.2 { f *= 1.2 }
         return f.isFinite ? f : 0
+    }
+
+    /// The clock's lift for a track: its own artist's or its genres' on
+    /// average, the larger (each already shrunk by λ).
+    func trackLift(_ i: Int) -> Double {
+        let artist = index.trackArtists[i].first.map { artistLift[$0] } ?? 0
+        let genres = index.trackGenres[i]
+        let genre = genres.isEmpty ? 0 : genres.reduce(0) { $0 + genreLift[$1] } / Double(genres.count)
+        return max(artist, genre)
     }
 
     func isRediscovery(_ i: Int) -> Bool {
@@ -1108,7 +1150,8 @@ struct RadioEngine: Sendable {
                 }
             }
         }
-        let reason = anchor.firstReason ?? reason(for: chosen.track, inPool: true, likeStrength: 0, like: -1)
+        let reason = timeReason(chosen.track) ?? anchor.firstReason
+            ?? reason(for: chosen.track, inPool: true, likeStrength: 0, like: -1)
         return RadioPick(track: snapshot.tracks[chosen.track], reason: reason, score: chosen.score)
     }
 
@@ -1157,6 +1200,7 @@ struct RadioEngine: Sendable {
         if anchor.kind == .discovery, fam < 0.15 { return .discovery }
         if anchor.kind == .favorites, track.isFavorite { return .favorite }
         guard inPool else { return fallbackReason(i) }
+        if let r = timeReason(i) { return r }
         switch channel[i] {
         case .seedTrack:
             return .seed
@@ -1180,6 +1224,15 @@ struct RadioEngine: Sendable {
             return fallbackReason(i)
         }
     }
+
+    /// On Your Station, when the clock lifted the track by a third or more
+    /// (λ·L): "Often on weekday mornings", so the listener sees whether it
+    /// is right. Below that the lift only nudged, and the old reason holds.
+    func timeReason(_ i: Int) -> PickReason? {
+        anchor.kind == .personal && trackLift(i) >= Self.timeReasonLift ? .timeOfDay(slot) : nil
+    }
+
+    static let timeReasonLift = 0.3
 
     /// On Your Station, where taste is the point: favourite, not heard in
     /// a while, or new.

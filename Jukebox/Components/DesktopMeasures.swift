@@ -52,7 +52,17 @@ nonisolated enum DesktopMeasures {
         var margin: Int
         var tile: Int
         var columns: Int
+        /// Home's two cards, the music to go on with and Your Station, side
+        /// by side, each `homeCard` wide; else one above the other. From
+        /// 1000 there is room (920 between the margins): "kunnen die twee
+        /// tegels ook op dezelfde rij naast elkaar" (the photographer, 18
+        /// November 2026).
+        var pairsHomeCards = false
     }
+
+    /// A card of Home's in the row of two (Page.pairsHomeCards): 12, the
+    /// art 120 with its record, 24, the words, 12.
+    static let homeCard = 400
 
     /// The spec's table (§5), by the page's own width, not the window's: the
     /// panel opened beside a page keeps its proportions. Each row from the
@@ -60,8 +70,8 @@ nonisolated enum DesktopMeasures {
     static let pages: [(from: Int, page: Page)] = [
         (0, Page(margin: 24, tile: 160, columns: 1)),
         (720, Page(margin: 32, tile: 160, columns: 2)),
-        (1000, Page(margin: 40, tile: 176, columns: 2)),
-        (1600, Page(margin: 40, tile: 192, columns: 3)),
+        (1000, Page(margin: 40, tile: 176, columns: 2, pairsHomeCards: true)),
+        (1600, Page(margin: 40, tile: 192, columns: 3, pairsHomeCards: true)),
     ]
 
     static func page(width: Int) -> Page {

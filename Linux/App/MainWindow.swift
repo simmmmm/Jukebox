@@ -578,7 +578,7 @@ enum MainWindow {
             let current = adw_breakpoint_bin_get_current_breakpoint(ptr(bin))
             guard let page = zip(breakpoints, rows).first(where: { $0.0 == current })?.1.page else { return }
             // Told while the bin is allocated: the pages change after it.
-            Task { PageMeasure.shared.set(margin: Int32(page.margin), tile: Int32(page.tile), columns: page.columns) }
+            Task { PageMeasure.shared.set(page) }
         }
         return bin
     }

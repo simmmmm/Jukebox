@@ -56,6 +56,9 @@ struct HomeMeasures {
     var tile: CGFloat { page.map { CGFloat($0.tile) } ?? HomeLayout.tileWidth }
     /// Played lately's columns.
     var columns: Int { page?.columns ?? 1 }
+    /// The music to go on with and Your Station side by side (never on
+    /// the iPhone).
+    var pairsHomeCards: Bool { page?.pairsHomeCards ?? false }
     /// From a section's heading to what it heads.
     var belowHeading: CGFloat { isWide ? Theme.Space.l : Theme.Space.m }
     /// From one section to the next: 40 on a wide page (spec §5).
