@@ -80,21 +80,88 @@ final class AudioPlayer: PlayQueue {
     /// another device starts part-way).
     private var pendingSeek: TimeInterval?
 
+    /// The song's own level (gain, the sleep timer's fade, the crossfade),
+    /// in a `volume` of its own before the sink: not the desktop's business.
+    private let effects: UnsafeMutablePointer<GstElement>?
+    /// The listener's volume last told to the stream or heard from it, so
+    /// neither tells the other again what it just said.
+    private var streamLevel: Double = -1
+
     override init(settings: AppSettings, history: HistoryStore) {
         gst_init(nil, nil)
         // playbin3 since GStreamer 1.22 is the one that is looked after;
         // playbin where a distribution's is older.
         engine = gst_element_factory_make("playbin3", "player") ?? gst_element_factory_make("playbin", "player")!
+        effects = gst_element_factory_make("volume", "effects")
         super.init(settings: settings, history: history)
-        // Music only: a file with a cover as video would open a window.
-        jb_set_int(engine, "flags", 0x2 | 0x10 | 0x100)   // audio, soft-volume, buffering
-        // JUKEBOX_AUDIO_SINK=fakesink plays to nowhere, in time (the tests).
+        // Music only: a file with a cover as video would open a window. No
+        // soft-volume: playbin's volume is then the sink's stream volume,
+        // the one GNOME's sliders move. "op linux zijn deze twee volume
+        // sliders niet gesyncht hoort dat?" (the photographer, 19 November
+        // 2026).
+        jb_set_int(engine, "flags", 0x2 | 0x100)   // audio, buffering
+        if let effects { jb_set_object(engine, "audio-filter", effects) }
+        if let sink = Self.makeSink() { jb_set_object(engine, "audio-sink", sink) }
+        watchEngine()
+        convertVolumeOnce()
+        tellStream()
+    }
+
+    /// PulseAudio's sink, which PipeWire serves too, and the one socket the
+    /// Flatpak has (--socket=pulseaudio): one stream, named as the app, its
+    /// volume the per-app one in GNOME's sound settings and the shell. It
+    /// is what autoaudiosink would choose; made by name, it carries the
+    /// app's id and role. JUKEBOX_AUDIO_SINK=fakesink plays to nowhere, in
+    /// time (the tests).
+    private static func makeSink() -> UnsafeMutablePointer<GstElement>? {
         if let name = ProcessInfo.processInfo.environment["JUKEBOX_AUDIO_SINK"],
            let sink = gst_element_factory_make(name, "sink") {
             jb_set_bool(sink, "sync", 1)
-            jb_set_object(engine, "audio-sink", sink)
+            return sink
         }
-        watchEngine()
+        guard let sink = gst_element_factory_make("pulsesink", "sink") else { return nil }
+        jb_pulse_name(sink, "Jukebox", "com.tijmen.Jukebox")
+        return sink
+    }
+
+    /// Before the volume was the stream's, 10 % on the slider was a tenth
+    /// of the amplitude; GNOME's sliders are cubic, where the same loudness
+    /// is 46 %. Once, so what was heard is heard still.
+    private func convertVolumeOnce() {
+        let key = "volumeIsCubic"
+        guard !UserDefaults.standard.bool(forKey: key) else { return }
+        UserDefaults.standard.set(true, forKey: key)
+        volume = cbrt(volume)
+    }
+
+    /// The listener's volume is the stream's, playing or not: moved here,
+    /// GNOME's slider follows (and MPRIS's, Mpris.swift).
+    override var volume: Double {
+        didSet { tellStream() }
+    }
+
+    private func tellStream() {
+        guard abs(volume - streamLevel) > 0.001 else { return }
+        streamLevel = volume
+        // playbin's volume is linear, the slider cubic as GNOME's are.
+        jb_set_double(engine, "volume", volume * volume * volume)
+    }
+
+    /// The stream's volume, linear as playbin has it, and the song's own:
+    /// for the queue check, which moves the first as GNOME's slider does.
+    var streamVolume: Double {
+        get { jb_get_double(engine, "volume") }
+        set { jb_set_double(engine, "volume", newValue) }
+    }
+    var effectsVolume: Double { effects.map { jb_get_double($0, "volume") } ?? 1 }
+
+    /// The stream's volume moved: by GNOME's slider, or by the server
+    /// giving a new stream the app's last. Heard on the main loop.
+    fileprivate func streamVolumeChanged() {
+        let level = min(1, max(0, cbrt(jb_get_double(engine, "volume"))))
+        guard abs(level - streamLevel) > 0.002 else { return }
+        streamLevel = level
+        volume = level
     }
 
     override func stop() {
@@ -181,9 +248,12 @@ final class AudioPlayer: PlayQueue {
         isPlaying = false
     }
 
-    /// playbin's one volume: the listener's level times the song's.
+    /// The song's own level, in its `volume` before the sink; the
+    /// listener's is the stream's (`tellStream`), so what normalising
+    /// does never shows in GNOME's mixer.
     override func engineVolume(_ level: Double) {
-        jb_set_double(engine, "volume", level)
+        guard let effects, let playing else { return }
+        jb_set_double(effects, "volume", effectsLevel(for: playing.entry.track))
     }
 
     // MARK: What the engine says
@@ -199,6 +269,13 @@ final class AudioPlayer: PlayQueue {
             if let uri = handover.take() { jb_set_string(engine, "uri", uri) }
         } as @convention(c) (UnsafeMutableRawPointer?, UnsafeMutableRawPointer?) -> Void, to: GCallback.self),
                               handover, nil, GConnectFlags(rawValue: 0))
+        // GNOME's slider, or the server's, moved the stream's volume: told
+        // on GStreamer's thread, heard on the main loop.
+        jb_watch_volume(engine, { data in
+            guard let data else { return }
+            let player = Unmanaged<AudioPlayer>.fromOpaque(data).takeUnretainedValue()
+            MainActor.assumeIsolated { player.streamVolumeChanged() }
+        }, box)
         // Messages on the main loop: the player lives as long as the app.
         let bus = gst_element_get_bus(engine)
         gst_bus_add_watch(bus, { _, message, data in

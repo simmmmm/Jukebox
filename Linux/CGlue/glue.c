@@ -67,6 +67,45 @@ void jb_set_int(gpointer object, const char *name, int value) { g_object_set(obj
 void jb_set_bool(gpointer object, const char *name, gboolean value) { g_object_set(object, name, value, NULL); }
 void jb_set_object(gpointer object, const char *name, gpointer value) { g_object_set(object, name, value, NULL); }
 
+double jb_get_double(gpointer object, const char *name) {
+    double value = 0;
+    g_object_get(object, name, &value, NULL);
+    return value;
+}
+
+void jb_pulse_name(GstElement *sink, const char *name, const char *app_id) {
+    // media.role "music": as Rhythmbox's, so the desktop treats it as music.
+    GstStructure *properties = gst_structure_new("properties", "application.name", G_TYPE_STRING, name,
+                                                 "application.id", G_TYPE_STRING, app_id,
+                                                 "application.icon_name", G_TYPE_STRING, app_id,
+                                                 "media.role", G_TYPE_STRING, "music", NULL);
+    g_object_set(sink, "client-name", name, "stream-properties", properties, NULL);
+    gst_structure_free(properties);
+}
+
+typedef struct {
+    JbVolumeChanged changed;
+    gpointer data;
+} VolumeWatch;
+
+static gboolean volume_on_main(gpointer user_data) {
+    VolumeWatch *watch = user_data;
+    watch->changed(watch->data);
+    return G_SOURCE_REMOVE;
+}
+
+static void volume_notified(GObject *object, GParamSpec *spec, gpointer user_data) {
+    g_main_context_invoke(NULL, volume_on_main, user_data);
+}
+
+void jb_watch_volume(gpointer object, JbVolumeChanged changed, gpointer data) {
+    // Kept as long as the player, which is as long as the app.
+    VolumeWatch *watch = g_new(VolumeWatch, 1);
+    watch->changed = changed;
+    watch->data = data;
+    g_signal_connect(object, "notify::volume", G_CALLBACK(volume_notified), watch);
+}
+
 GstMessageType jb_message_type(GstMessage *message) { return GST_MESSAGE_TYPE(message); }
 gboolean jb_message_is_from(GstMessage *message, gpointer object) { return GST_MESSAGE_SRC(message) == GST_OBJECT_CAST(object); }
 

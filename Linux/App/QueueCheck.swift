@@ -3,10 +3,11 @@
 // dev/linux-errors.sh runs it after every build (JUKEBOX_CHECK=queue). Next
 // and previous, repeat, Play Next and Add to Queue with Up Next's "Then",
 // move and remove, shuffle and back, a station chosen again and trimmed,
-// the sleep timer, album gain.
+// the sleep timer, album gain; and Linux's volume, the stream's.
 // Nothing is sent (Stats off, no server) and nothing written (no song
 // plays, so none is finished into the history).
 
+import CGst
 import Foundation
 import JukeboxKit
 
@@ -291,6 +292,24 @@ enum QueueCheck {
         c.next()
         expect(heard.history.events.map(\.trackID) == (c.notCounted.isPrivate ? [] : ["t1"]), "nor kept in the history")
         c.stop()
+
+        // Linux's engine (AudioPlayer.swift): the listener's volume is the
+        // stream's, GNOME's per-app volume, both ways; the song's gain is
+        // in Jukebox's own `volume` element, never in the stream.
+        setenv("JUKEBOX_AUDIO_SINK", "fakesink", 1)
+        let engineSettings = AppSettings()
+        let player = AudioPlayer(settings: engineSettings, history: HistoryStore())
+        player.volume = 0.5
+        expect(abs(player.streamVolume - 0.125) < 0.0001, "the listener's volume is the stream's, cubic as GNOME's")
+        player.streamVolume = 0.027
+        while g_main_context_iteration(nil, 0) != 0 {}
+        expect(abs(player.volume - 0.3) < 0.001, "GNOME's slider moves the listener's volume")
+        engineSettings.normalizeVolume = true
+        player.begin(QueueEntry(track: Track(id: "g", name: "G", normalizationGain: -6)), at: 0, playSessionID: "c")
+        expect(abs(player.effectsVolume - 0.501) < 0.001, "the song's gain in Jukebox's own volume")
+        expect(abs(player.streamVolume - 0.027) < 0.0001 && abs(player.volume - 0.3) < 0.001,
+               "and never in the stream")
+        engineSettings.normalizeVolume = false
 
         for what in failed { print("queue check failed: \(what)") }
         print("queue rules: \(checks - failed.count) of \(checks) checks pass")

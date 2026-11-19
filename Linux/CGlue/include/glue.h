@@ -24,6 +24,16 @@ void jb_set_int(gpointer object, const char *name, int value);
 void jb_set_bool(gpointer object, const char *name, gboolean value);
 void jb_set_object(gpointer object, const char *name, gpointer value);
 
+double jb_get_double(gpointer object, const char *name);
+
+// pulsesink's stream named as the app: its name and id, the icon and the
+// role GNOME's sound settings and the shell show it by.
+void jb_pulse_name(GstElement *sink, const char *name, const char *app_id);
+// `changed` on the main loop whenever `object`'s "volume" changes, from
+// whichever thread GStreamer says it on.
+typedef void (*JbVolumeChanged)(gpointer data);
+void jb_watch_volume(gpointer object, JbVolumeChanged changed, gpointer data);
+
 // GStreamer's message macros.
 GstMessageType jb_message_type(GstMessage *message);
 gboolean jb_message_is_from(GstMessage *message, gpointer object);
@@ -111,7 +121,11 @@ typedef enum {
 } JbMprisCommand;
 // `microseconds`: for SEEK_BY the step, for SEEK_TO the place.
 typedef void (*JbMprisHandler)(JbMprisCommand command, gint64 microseconds);
-void jb_mpris_start(JbMprisHandler handler);
+// Volume set by a client (0...1, the listener's volume).
+typedef void (*JbMprisVolumeHandler)(double volume);
+void jb_mpris_start(JbMprisHandler handler, JbMprisVolumeHandler volume);
+// The listener's volume, told to clients when it changed.
+void jb_mpris_set_volume(double volume);
 // What plays now; NULL title for nothing. `position` in microseconds, as
 // MPRIS counts; asked for again whenever a client reads Position.
 void jb_mpris_update(const char *status, const char *track_id, const char *title, const char *artist,
