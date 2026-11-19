@@ -22,7 +22,9 @@ mac_gates=true
 # A [testflight] run uploads the Mac too: App Store Connect's Jukebox has
 # the macOS platform since 16 November 2026. False again uploads the
 # iPhone's build only.
-mac_upload=true
+# Off until the Mac runs on macOS 15 (branch macos-15): "cancel die macos
+# testflight build dan" (19 November 2026).
+mac_upload=false
 
 # Uploads and screenshots belong to main. On a work branch a commit
 # that happens to name the upload's token uploads nothing, and the job is the
