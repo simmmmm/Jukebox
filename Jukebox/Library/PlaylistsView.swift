@@ -329,7 +329,6 @@ struct PlaylistDetailView: View {
                                  removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) })
                     }
                     .buttonStyle(.plain)
-                    .picking { picks.click(i, $0) }
                     .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
                 }
                 .onDelete(perform: deleteAction(shown))

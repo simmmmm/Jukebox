@@ -534,7 +534,9 @@ extension View {
 }
 
 /// What the keys held make a click on a song's row (TrackPicks): on the
-/// Mac, read as the click comes, ⌘ one more, ⇧ a run; nil plays.
+/// Mac, read as the click comes, ⌘ one more, ⇧ a run; nil plays. Not on the
+/// iPad: iOS gives SwiftUI no keys held (onModifierKeysChanged and a
+/// gesture's `modifiers` are the Mac's only, CI, 19 November 2026).
 func heldPick() -> TrackPicks.Click? {
     #if os(macOS)
     let keys = NSEvent.modifierFlags
@@ -542,21 +544,6 @@ func heldPick() -> TrackPicks.Click? {
     if keys.contains(.shift) { return .extend }
     #endif
     return nil
-}
-
-extension View {
-    /// The iPad's way to the same, with a keyboard: a tap with ⌘ or ⇧ held
-    /// is a pick, before the row's button sees it (iOS has no
-    /// onModifierKeysChanged); any other tap is the button's.
-    func picking(_ pick: @escaping (TrackPicks.Click) -> Void) -> some View {
-        #if os(iOS)
-        self
-            .highPriorityGesture(TapGesture().modifiers(.command).onEnded { pick(.toggle) })
-            .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { pick(.extend) })
-        #else
-        self
-        #endif
-    }
 }
 
 extension EnvironmentValues {
@@ -591,7 +578,6 @@ struct PageTrackRows: View {
                              subtitle: subtitle(track))
                 }
                 .buttonStyle(.plain)
-                .picking { picks.click(i, $0) }
                 .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
             }
         }
