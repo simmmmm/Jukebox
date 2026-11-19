@@ -544,7 +544,7 @@ Control Center have one): it is doors into the music.
   mark is lit and says "On air". **Medium**: the same, and Home's first
   three mixes, each a Play. **The lock screen** (circular): the mark,
   Your Station's Play. A tap anywhere else opens the app. **A control**
-  (`YourStationControl`, iOS 18's `ControlWidget`): Your Station's Play in
+  (`YourStationControl`, `ControlWidget`): Your Station's Play in
   Control Center, on the iPhone's Lock Screen and on the Action Button,
   with the radio's waves for a symbol (a control draws no mark).
 - **The buttons** are `Intents/WidgetIntents.swift`'s, hidden from
@@ -591,8 +591,8 @@ Easier to start, with no button added to the app ("doe alles", 18 November
   (`RemoteCommands.swift`); CarPlay starts nothing by itself.
 - **A menu on the icon**: the Mac's Dock menu (while it runs), GNOME's
   launcher menu (the desktop entry's action, `jukebox --play-station`, also
-  with Jukebox closed). **The control** on the iPhone and the iPad (The
-  widget, below).
+  with Jukebox closed). **The control** on the iPhone, the iPad and the
+  Mac (The widget, above).
 - **Linux plays on with the window closed** while the music plays; the
   launcher or the media controls bring the window back. A Flatpak asks the
   background portal, so GNOME lists it under Background Apps.
