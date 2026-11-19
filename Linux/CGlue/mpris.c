@@ -1,6 +1,7 @@
 // org.mpris.MediaPlayer2 for Jukebox: the two interfaces GNOME Shell reads
 // (the specification: https://specifications.freedesktop.org/mpris-spec/).
 #include "glue.h"
+#include <math.h>
 
 static const char introspection[] =
     "<node>"
@@ -24,7 +25,7 @@ static const char introspection[] =
     "  <property name='PlaybackStatus' type='s' access='read'/>"
     "  <property name='Rate' type='d' access='read'/>"
     "  <property name='Metadata' type='a{sv}' access='read'/>"
-    "  <property name='Volume' type='d' access='read'/>"
+    "  <property name='Volume' type='d' access='readwrite'/>"
     "  <property name='Position' type='x' access='read'/>"
     "  <property name='MinimumRate' type='d' access='read'/>"
     "  <property name='MaximumRate' type='d' access='read'/>"
@@ -41,12 +42,14 @@ static const char introspection[] =
 #define PLAYER "org.mpris.MediaPlayer2.Player"
 
 static JbMprisHandler handler;
+static JbMprisVolumeHandler volume_handler;
 static GDBusConnection *bus;
 static struct {
     char *status, *track_id, *title, *artist, *album, *art_url;
     gint64 length, position;
     gboolean can_next, can_previous;
-} now = {0};
+    double volume;
+} now = {.volume = 1.0};
 
 static GVariant *metadata(void) {
     GVariantBuilder b;
@@ -79,9 +82,9 @@ static GVariant *property(GDBusConnection *c, const char *sender, const char *pa
     if (!g_strcmp0(name, "SupportedUriSchemes") || !g_strcmp0(name, "SupportedMimeTypes"))
         return g_variant_new_strv(NULL, 0);
     if (!g_strcmp0(name, "PlaybackStatus")) return g_variant_new_string(now.status ? now.status : "Stopped");
-    if (!g_strcmp0(name, "Rate") || !g_strcmp0(name, "MinimumRate") || !g_strcmp0(name, "MaximumRate") ||
-        !g_strcmp0(name, "Volume"))
+    if (!g_strcmp0(name, "Rate") || !g_strcmp0(name, "MinimumRate") || !g_strcmp0(name, "MaximumRate"))
         return g_variant_new_double(1.0);
+    if (!g_strcmp0(name, "Volume")) return g_variant_new_double(now.volume);
     if (!g_strcmp0(name, "Metadata")) return metadata();
     if (!g_strcmp0(name, "Position")) return g_variant_new_int64(now.position);
     if (!g_strcmp0(name, "CanGoNext")) return g_variant_new_boolean(has && now.can_next);
@@ -129,7 +132,21 @@ static void call(GDBusConnection *c, const char *sender, const char *path, const
     if (handler) handler(command, value);
 }
 
-static const GDBusInterfaceVTable vtable = {call, property, NULL, {0}};
+// Volume is the one property MPRIS lets a client write: the shell's and
+// its extensions' sliders. Read-only, a slider there moved nothing ("sterker
+// nog hij doet niets in die gnome extension", the photographer, 19 November
+// 2026). Out of range is clamped, as the specification asks.
+static gboolean set_property(GDBusConnection *c, const char *sender, const char *path, const char *interface,
+                             const char *name, GVariant *value, GError **error, gpointer data) {
+    if (g_strcmp0(name, "Volume") || !g_variant_is_of_type(value, G_VARIANT_TYPE_DOUBLE)) {
+        g_set_error(error, G_DBUS_ERROR, G_DBUS_ERROR_PROPERTY_READ_ONLY, "%s cannot be set", name);
+        return FALSE;
+    }
+    if (volume_handler) volume_handler(CLAMP(g_variant_get_double(value), 0.0, 1.0));
+    return TRUE;
+}
+
+static const GDBusInterfaceVTable vtable = {call, property, set_property, {0}};
 
 static void acquired(GDBusConnection *connection, const char *name, gpointer data) {
     GDBusNodeInfo *info = g_dbus_node_info_new_for_xml(introspection, NULL);
@@ -138,8 +155,20 @@ static void acquired(GDBusConnection *connection, const char *name, gpointer dat
         g_dbus_connection_register_object(connection, PATH, info->interfaces[i], &vtable, NULL, NULL, NULL);
 }
 
-void jb_mpris_start(JbMprisHandler h) {
+void jb_mpris_set_volume(double volume) {
+    if (fabs(volume - now.volume) < 0.0005) return;
+    now.volume = volume;
+    if (!bus) return;
+    GVariantBuilder changed;
+    g_variant_builder_init(&changed, G_VARIANT_TYPE("a{sv}"));
+    g_variant_builder_add(&changed, "{sv}", "Volume", g_variant_new_double(volume));
+    g_dbus_connection_emit_signal(bus, NULL, PATH, "org.freedesktop.DBus.Properties", "PropertiesChanged",
+                                  g_variant_new("(sa{sv}as)", PLAYER, &changed, NULL), NULL);
+}
+
+void jb_mpris_start(JbMprisHandler h, JbMprisVolumeHandler v) {
     handler = h;
+    volume_handler = v;
     g_bus_own_name(G_BUS_TYPE_SESSION, "org.mpris.MediaPlayer2.Jukebox", G_BUS_NAME_OWNER_FLAGS_NONE,
                    acquired, NULL, NULL, NULL, NULL);
 }

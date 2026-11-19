@@ -132,7 +132,9 @@ class PlayQueue {
     /// The listener's level, 0...1, kept across launches. Linux's and the
     /// Mac's sliders set it (VolumeControl); the iPhone's volume is the
     /// phone's own, so there it stays 1. It multiplies the song's loudness
-    /// (`level(for:)`), so normalising never undoes it.
+    /// (`level(for:)`), so normalising never undoes it. On Linux it is the
+    /// desktop's per-app volume as GNOME's sliders show it (cubic), both
+    /// ways (Linux/App/AudioPlayer.swift).
     var volume: Double = UserDefaults.standard.object(forKey: "volume") as? Double ?? 1 {
         didSet {
             // @Observable keeps this didSet on its own storage, so setting
@@ -813,9 +815,17 @@ class PlayQueue {
     /// server's ReplayGain), which is only ever softer, since an engine
     /// cannot go above 1.
     func level(for track: Track) -> Double {
-        let volume = volume * sleepFadeLevel * crossfadeLevel
-        guard settings.normalizeVolume, let gain = gain(for: track) else { return volume }
-        return volume * min(1, pow(10, gain / 20))
+        volume * effectsLevel(for: track)
+    }
+
+    /// `level(for:)` without the listener's volume: the song's gain, the
+    /// sleep timer's fade and the crossfade. Linux keeps these apart from
+    /// the listener's volume, which there is the desktop's own per-app
+    /// volume (Linux/App/AudioPlayer.swift): normalising is not the mixer's.
+    func effectsLevel(for track: Track) -> Double {
+        let level = sleepFadeLevel * crossfadeLevel
+        guard settings.normalizeVolume, let gain = gain(for: track) else { return level }
+        return level * min(1, pow(10, gain / 20))
     }
 
     /// The song's gain, or its album's while the album is heard as one: in
