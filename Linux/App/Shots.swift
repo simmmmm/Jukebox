@@ -165,6 +165,7 @@ enum Shots {
                 await scrolled(ptr(dialog), to: 1, "16b-preferences-downloads")
                 adw_dialog_force_close(dialog)
             }
+            await notCounted(albums)
             await pages()
             await stationClicks()
             MainWindow.showSignIn()
@@ -340,8 +341,9 @@ enum Shots {
         log += "New Playlist…: \(made.map { "“\($0.name)”, \($0.trackCount ?? 0) songs" } ?? "not made")\n"
         if let more = find(visiblePage(), { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "More" }),
            let menu = gtk_menu_button_get_popover(ptr(more)) {
-            // Start Radio, Play Next, Add to Queue, Delete Playlist.
-            gtk_widget_activate_action_variant(ptr(menu), "menu.item3", nil)
+            // Delete Playlist by its words: Don't Count Plays and Choose
+            // Picture… come before it, the second only once the server says.
+            gtk_widget_activate_action_variant(ptr(menu), menuAction(ptr(menu), "Delete Playlist") ?? "menu.none", nil)
             await step("08k-playlist-delete", wait: 1)
             if let delete = find(dialog(), { isA($0, gtk_button_get_type()) && label(of: $0) == "Delete Playlist" }) {
                 gtk_widget_activate(delete)
@@ -398,6 +400,20 @@ enum Shots {
         guard let shots = folder else { return }
         let file = "\(shots)/frames.txt"
         try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
+    }
+
+    /// The action of a popover menu's top-level item called `title`.
+    private static func menuAction(_ popover: Widget, _ title: String) -> String? {
+        guard let model = gtk_popover_menu_get_menu_model(ptr(popover)) else { return nil }
+        for index in 0..<g_menu_model_get_n_items(model) {
+            guard let label = g_menu_model_get_item_attribute_value(model, index, "label", nil) else { continue }
+            defer { g_variant_unref(label) }
+            guard String(cString: g_variant_get_string(label, nil)) == title,
+                  let action = g_menu_model_get_item_attribute_value(model, index, "action", nil) else { continue }
+            defer { g_variant_unref(action) }
+            return String(cString: g_variant_get_string(action, nil))
+        }
+        return nil
     }
 
     /// The dialog over the window, if one is up.
@@ -517,6 +533,40 @@ enum Shots {
         let line = "picked: \(tracks.map(\.name)), menu: \(menu)\n"
         try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + line).write(toFile: file, atomically: true, encoding: .utf8)
         picked.picks.clear()
+    }
+
+    /// Don't Count Plays and Private Listening (NotCounted.swift): an album
+    /// marked, its page with "Not counted" and the bar's sign, its ⋮ open
+    /// (a popover is its own surface: "30b-ready" in the folder says when,
+    /// for a picture of the screen from outside), Preferences' group. Then
+    /// both as they were.
+    private static func notCounted(_ albums: [Album]) async {
+        guard let folder, let album = albums.first else { return }
+        let store = app.player.notCounted
+        store.set(.album, id: album.id, name: album.name, counted: false)
+        store.privateListening = .untilRestart
+        Pages.open(album)
+        await step("30-album-not-counted", wait: 2)
+        let menu = albumMenu(album).map(\.0)
+        let line = "album menu: \(menu.map { $0.replacingOccurrences(of: "\u{1F}", with: "|") })\n"
+        let file = "\(folder)/frames.txt"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + line).write(toFile: file, atomically: true, encoding: .utf8)
+        if let more = find(visiblePage(), { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "More" }) {
+            gtk_menu_button_popup(ptr(more))
+            FileManager.default.createFile(atPath: "\(folder)/30b-ready", contents: nil)
+            try? await Task.sleep(for: .seconds(3))
+            gtk_menu_button_popdown(ptr(more))
+            try? FileManager.default.removeItem(atPath: "\(folder)/30b-ready")
+        }
+        Preferences.present()
+        try? await Task.sleep(for: .seconds(1))
+        if let dialog = dialog() {
+            await scrolled(dialog, to: 0.62, "30c-preferences-not-counted")
+            adw_dialog_force_close(ptr(dialog))
+        }
+        store.set(.album, id: album.id, name: album.name, counted: true)
+        store.privateListening = .off
+        try? await Task.sleep(for: .seconds(1))
     }
 
     /// Mini Player (Extras.swift): its window alone, then the big one again.

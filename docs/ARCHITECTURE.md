@@ -411,6 +411,41 @@ username, kept only once Last.fm shows their plays
 (`LastFMClient.validateUser`): the clock reads those scrobbles, and nothing
 is ever written to Last.fm (docs/RADIO.md, "Scrobbles").
 
+## Not counted
+
+Played, not counted (19 November 2026): "bijv voor kerstmuziek oid", and
+"een soort prive modus overall".
+
+- **What**: songs, albums and playlists marked Don't Count Plays (a check
+  item in their menus: TrackMenu, LibraryAlbumMenu, a playlist's "…"; on
+  Linux `NotCountedUI.items` in the same menus), and Private Listening:
+  Off, On (kept), Until Jukebox Restarts (never kept). The marks are per
+  account in UserDefaults (`notCounted.<account>`); the mode is the
+  device's. JukeboxKit's `NotCounted` holds the rule (tested,
+  `NotCountedTests`); `Player/NotCountedStore.swift` (shared) keeps it as
+  `player.notCounted`.
+- **One check**, `PlayQueue.counts`: a play that does not count sends the
+  server nothing (no `nowPlaying`, `played`, `progress`, `stopped`: no
+  play count, no scrobble, no Playback Reporting row, also not held for
+  later offline) and `deliver` keeps nothing (history, so the radio, the
+  clock, the mixes and Your Year; "Played lately"). Asked when the play
+  would count, so Private Listening turned on mid-song keeps that song out;
+  a song counted already stays counted. A song queued with Play Next into a
+  marked playlist's queue counts by its own marks.
+- **Kept working**: the queue, this session's Up Next, the handoff's saved
+  place ("Where you left off", a place to go on from, not a count), and
+  remote control's progress reports (Play On from another client needs
+  them; measured not to count a play). A Jellyfin client the queue is
+  handed to (Play On) reports its own plays: those are counted there.
+- **Where**: Settings' Not Counted (Linux: Preferences), with Count Again
+  for each; Private Listening also in the iPad's ≡ menu, the Mac's
+  Controls menu, the iPhone's Now Playing ⋮ and Linux's primary menu. A
+  marked album's or playlist's facts end in "Not counted". While Private
+  Listening is on, one quiet sign: a crossed eye in the wide bar (a click
+  turns it off), a line under Now Playing's title on the iPhone.
+- **Checked**: Linux's `QueueCheck` plays a marked song and finds it
+  neither reported nor in the history.
+
 ## Lyrics
 
 The photographer, 8 November 2026, from the TestFlight build: "Kun je ook
