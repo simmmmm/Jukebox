@@ -17,7 +17,7 @@ screen, and Now Playing with the station's thumbs. Siri plays any album,
 artist, playlist or station by name ("Play Blue in Jukebox"), and the same
 actions are in Shortcuts on the iPhone, the iPad and the Mac.
 
-The iPhone and the iPad need iOS 18 or later, the Mac macOS 26.
+The iPhone and the iPad need iOS 18 or later, the Mac macOS 15 Sequoia or later.
 
 <p align="center">
   <img src="docs/screenshots/linux-album.png" width="100%" alt="Jukebox on Linux, dark: an album open, the Now Playing panel with what plays next beside it, and the bar below with the song and its artist">

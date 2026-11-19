@@ -23,7 +23,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Path | What |
 |---|---|
 | `JukeboxKit/` | Swift package, Foundation only, Swift 6 strict. Jellyfin, Subsonic, Last.fm and LRCLIB clients, the library index, the radio, the mixes, the LRC parser. Built and tested on Linux (`dev/kit-test.sh`) against a real Jellyfin (`dev/jellyfin-test-server.sh`). |
-| `Jukebox/` | The SwiftUI app for the iPhone, the iPad and the Mac: iOS 18 and macOS 26, Swift 5 mode, MainActor default isolation (project.yml). The Mac is a native macOS destination of the same target, not Catalyst; `Components/Platform.swift` holds the few things the two spell differently (the image type, the device's name, the bar's placements, `\.isWide`). Compiled on GitHub's macOS (`ci/app.sh`) and, for a quick try, on the photographer's Mac (`docs/RELEASE.md`); not on the Linux machine, so read its Swift twice before pushing. |
+| `Jukebox/` | The SwiftUI app for the iPhone, the iPad and the Mac: iOS 18 and macOS 15, Swift 5 mode, MainActor default isolation (project.yml). The Mac is a native macOS destination of the same target, not Catalyst; `Components/Platform.swift` holds the few things the two spell differently (the image type, the device's name, the bar's placements, `\.isWide`). Compiled on GitHub's macOS (`ci/app.sh`) and, for a quick try, on the photographer's Mac (`docs/RELEASE.md`); not on the Linux machine, so read its Swift twice before pushing. |
 | `JukeboxWidget/` | The widget of the iPhone, the iPad and the Mac, one app extension (The widget, below). |
 | `Linux/` | The Linux client: `App/` (Swift on GTK 4, libadwaita, GStreamer), `CGlue/` (the C Swift cannot call as it is, and MPRIS), `data/` (icon, desktop entry). Built and run here: `dev/linux-build.sh`. `docs/LINUX.md`. |
 | `Package.swift` | The Linux client's package. Its `shared` list names the files of `Jukebox/` Linux compiles too (the stores, not the screens). A file that gains `import SwiftUI` leaves the list, or loses the import. |
@@ -46,12 +46,15 @@ Mac's, is Linux's window, 1:1 (below).
   LazyVGrid/LazyHStack, `.searchable`, `ContentUnavailableView`, `Menu`,
   `.contextMenu`, `.swipeActions`, `.refreshable`, `.toolbar`, sheets, SF
   Symbols. iOS 18 is the minimum ("kun je de app ook maken voor ios voor
-  26", 19 November 2026), the Mac's macOS 26. Use 18's APIs plainly (Tab,
+  26", 19 November 2026), the Mac's macOS 15 Sequoia ("ga dan naar macos
+  ook", the same day). Use 18's and 15's APIs plainly (Tab,
   `.sidebarAdaptable`); what is 26's alone goes behind
-  `if #available(iOS 26, *)` with 18's own form beside it, the 26 look
-  unchanged: the tab bar's accessory and its minimising
-  (`BottomAccessory` in `App/JukeboxApp.swift`), on 18 a bar on each
-  tab's foot (`MiniPlayerBar`). `glassEffect` only where Apple's own apps
+  `if #available(iOS 26, *)` or `macOS 26` with the older system's own
+  form beside it, the 26 look unchanged: the tab bar's accessory and its
+  minimising (`BottomAccessory` in `App/JukeboxApp.swift`), on 18 a bar on
+  each tab's foot (`MiniPlayerBar`); the title bar's head without glass
+  (`BrandHeadItem` in `App/WideShell.swift`), on 15 a bar that has none;
+  the widget's control, on Sequoia the widget alone. `glassEffect` only where Apple's own apps
   use glass, and gated. UIKit only where SwiftUI has nothing (MPVolumeView,
   AVRoutePickerView). The wide window is the one thing drawn by hand,
   1:1 with Linux's (below).
@@ -606,8 +609,8 @@ Control Center have one): it is doors into the music.
 - **The mark** is drawn from `Components/ArchShapes.swift` and
   `ArtMeasures.swift`, which the widget compiles too.
 - **On the Mac**: the same Small and Medium on the desktop and in
-  Notification Center, and the control in Control Center and the menu
-  bar; no lock screen family. The extension is sandboxed
+  Notification Center, and from macOS 26 the control in Control Center
+  and the menu bar (a Mac's controls are 26's); no lock screen family. The extension is sandboxed
   (`JukeboxWidget/JukeboxWidget-macOS.entitlements`) and the Mac's app
   carries the same group (`Jukebox/Jukebox-macOS.entitlements`), so its
   `WidgetDoors` writes the same snapshot. The buttons open the app, which
