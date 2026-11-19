@@ -105,6 +105,7 @@ struct SettingsView: View {
                 SettingsDownloadsSection()
                 SettingsLibrarySection()
                 SettingsHistorySection()
+                NotCountedSection()
                 SettingsAboutSection()
             } else {
                 SettingsAccountSection()
@@ -116,6 +117,7 @@ struct SettingsView: View {
                 SettingsPagesSection(hasSidebar: false)
                 SettingsLibrarySection()
                 SettingsHistorySection()
+                NotCountedSection()
                 SettingsPrivacySection()
                 SettingsAboutSection()
             }

@@ -30,6 +30,11 @@ struct JukeboxCommands: Commands {
                 .disabled(!app.player.hasTrack)
             // No key: a timer is set once an evening (SleepTimerMenu).
             Menu("Sleep Timer") { SleepTimerPicker(player: app.player) }
+            // Plays that count nothing while on (NotCountedViews.swift).
+            Menu("Private Listening") {
+                PrivateListeningPicker(store: app.player.notCounted)
+                    .pickerStyle(.inline)
+            }
             // The Mac's volume is the player's own, with its slider in the
             // bar. On the iPad it is the system's, the keyboard's own keys
             // turn it, and the player's stays 1 (AudioPlayer.volume).

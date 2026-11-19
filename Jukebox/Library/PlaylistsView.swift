@@ -300,7 +300,8 @@ struct PlaylistDetailView: View {
         return List {
             Group {
                 PageHead(page: page, title: shown.name,
-                         facts: LibraryText.length(count: count, duration: duration)) { size in
+                         facts: player.notCounted.fact(LibraryText.length(count: count, duration: duration),
+                                                       .playlist, shown.id)) { size in
                     cover(shown, tracks: tracks, size: size)
                 } actions: {
                     PagePlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
@@ -451,6 +452,9 @@ struct PlaylistDetailView: View {
             }
             .disabled(tracks.isEmpty)
         }
+        Section {
+            DontCountToggle(kind: .playlist, id: shown.id, name: shown.name)
+        }
         if picturesAllowed, !shown.isReadOnly {
             Section {
                 Button("Choose Picture…", systemImage: "photo") {
@@ -477,7 +481,7 @@ struct PlaylistDetailView: View {
                 .font(.serif(.title))
                 .multilineTextAlignment(.center)
                 .accessibilityAddTraits(.isHeader)
-            Text(LibraryText.summary(count: count, duration: duration))
+            Text(player.notCounted.fact(LibraryText.summary(count: count, duration: duration), .playlist, shown.id))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             // Start Radio is in the "…" above.

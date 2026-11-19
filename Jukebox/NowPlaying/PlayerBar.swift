@@ -350,6 +350,8 @@ struct PlayerBar: View {
     /// and the volume.
     private var tools: some View {
         HStack(spacing: Theme.Space.s) {
+            // The one sign of Private Listening, so it is not forgotten.
+            PrivateListeningSign()
             // Only where there are lyrics to be had (the server's, or
             // LRCLIB's when Settings allow it), as on the iPhone.
             if app.can(.lyrics) || settings.findLyricsOnline {
