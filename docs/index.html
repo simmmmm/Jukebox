@@ -148,5 +148,35 @@
 
   <footer>Made by Tijmen. Open source. <a href="https://github.com/simmmmm/Jukebox/blob/main/docs/PRIVACY.md">Privacy</a>.</footer>
 </main>
+<script>
+  // Visits, counted on his own OpenPanel (project "Jukebox site") with the
+  // names tijmen.me's track.js gives its events, and only under tijmen.me:
+  // a local copy and github.io's count nothing.
+  (function () {
+    if (!/(^|\.)tijmen\.me$/.test(location.hostname)) return;
+    var send = function (name, props) {
+      fetch("https://stats.numa.photo/api/track", {
+        method: "POST", keepalive: true, credentials: "omit",
+        headers: { "Content-Type": "application/json", "openpanel-client-id": "f51bb101-7668-4766-989c-479200ef7d01" },
+        body: JSON.stringify({ type: "track", payload: { name: name, properties: props } })
+      }).catch(function () {});
+    };
+    var host = function (u) { try { return new URL(u).hostname.replace(/^www\./, ""); } catch (e) { return ""; } };
+    var ref = host(document.referrer), w = innerWidth;
+    send("screen_view", {
+      __path: location.origin + location.pathname,
+      __title: document.title,
+      __referrer: ref && ref !== "tijmen.me" ? "https://" + ref : "",
+      path: location.pathname,
+      referrer: ref || "direct",
+      source: new URLSearchParams(location.search).get("utm_source") || "",
+      viewport: w < 640 ? "mobile" : w < 1024 ? "tablet" : "desktop"
+    });
+    document.addEventListener("click", function (e) {
+      var a = e.target.closest && e.target.closest("a[href]");
+      if (a) send("outbound_click", { host: host(a.href), path: location.pathname });
+    }, true);
+  })();
+</script>
 </body>
 </html>
