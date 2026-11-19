@@ -11,8 +11,9 @@ options:
     # accessory, its minimising) says `if #available(iOS 26, *)` and gives
     # 18 its own form; the 26 look is unchanged.
     iOS: "18.0"
-    # The Mac stays at 26: what it uses of 26 (the toolbar's glass, the
-    # window's look) would each need an 18-era twin, for no listener asked.
+    # The Mac stays at 26: lowering it to macOS 15 was not tried; at least
+    # the title bar's head (`sharedBackgroundVisibility`, WideShell.swift)
+    # is 26's alone.
     macOS: "26.0"
   developmentLanguage: en
   createIntermediateGroups: true

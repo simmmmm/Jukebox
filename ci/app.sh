@@ -54,6 +54,29 @@ xcodebuild -version | tee build/logs/xcode-version.txt
 command -v xcodegen >/dev/null || brew install xcodegen
 xcodegen generate
 
+# For now, on the iOS 18 branch: the SF Symbols the Swift names that are
+# younger than iOS 18 (2025 or later in the system's own list). They compile
+# at 18 but draw nothing there. A literal string that is no symbol is
+# skipped; a name built at run time is not seen.
+if [[ ${GITHUB_REF_NAME:-} == ios-18 ]]; then
+  # Never the job's verdict.
+  set +e
+  glyphs=/System/Library/CoreServices/CoreGlyphs.bundle/Contents/Resources/name_availability.plist
+  if [[ -f $glyphs ]]; then
+    plutil -convert json -o build/logs/symbols.json "$glyphs"
+    grep -rhoE '"[a-z0-9]+(\.[a-z0-9]+)*"' --include='*.swift' Jukebox JukeboxWidget | tr -d '"' | sort -u \
+      | jq -R . | jq -s . > build/logs/names.json
+    echo "SF Symbols younger than iOS 18:"
+    jq -r --slurpfile names build/logs/names.json \
+      '.symbols as $s | $names[0][] | select($s[.] != null and ($s[.] | tonumber) >= 2025) | "\(.) \($s[.])"' \
+      build/logs/symbols.json || true
+    echo "(end of the list)"
+  else
+    echo "No $glyphs on this runner."
+  fi
+  set -e
+fi
+
 # The errors, once each, without the runner's path, on the summary page.
 report() {
   local log=$1 title=$2
