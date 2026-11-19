@@ -300,6 +300,8 @@ private struct PlayOnList: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("AirPlay")
+        // The row is the picker's button: VoiceOver says so.
+        .accessibilityAddTraits(.isButton)
     }
 }
 

@@ -387,7 +387,7 @@ enum MainWindow {
     /// (Preferences › Pages, every page off) at the end of every page's,
     /// or Preferences could never be reached to bring them back.
     static func mainMenu() -> Widget {
-        let menu = gtk_menu_button_new()!.tooltip("Main Menu")
+        let menu = gtk_menu_button_new()!.named("Main Menu")
         gtk_menu_button_set_icon_name(ptr(menu), "open-menu-symbolic")
         gtk_menu_button_set_menu_model(ptr(menu), ptr(menuItems))
         gtk_menu_button_set_primary(ptr(menu), 1)
@@ -543,7 +543,7 @@ enum MainWindow {
     /// The places' button at the start of a place's header: shown while
     /// they are folded away, it lays them over the page.
     private static func sidebarButton() -> Widget {
-        let button = gtk_toggle_button_new()!.tooltip("Show Sidebar")
+        let button = gtk_toggle_button_new()!.named("Show Sidebar")
         gtk_button_set_icon_name(ptr(button), "sidebar-show-symbolic")
         // Only while they are folded away, and only while there are any.
         observe(button) { button.isVisible = fold.isCollapsed && app.settings.showsAnyPage }

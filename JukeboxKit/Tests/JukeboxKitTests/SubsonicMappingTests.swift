@@ -85,7 +85,7 @@ struct SubsonicMappingTests {
         let numbers = try #require(try Self.decode(SubsonicChild.self,
             #"{"id":123,"title":"x","albumId":45,"duration":5.6,"isDir":"false","replayGain":{"trackGain":-7.5,"albumGain":-6.1}}"#).asTrack())
         #expect(numbers.id == "123" && numbers.albumID == "45" && numbers.duration == 5.6)
-        #expect(numbers.normalizationGain == -7.5)
+        #expect(numbers.normalizationGain == -7.5 && numbers.albumNormalizationGain == -6.1)
         let albumGain = try Self.decode(SubsonicChild.self, #"{"id":"1","title":"x","replayGain":{"albumGain":-6.1}}"#).asTrack()
         #expect(albumGain?.normalizationGain == -6.1)
         let odd = try #require(try Self.decode(SubsonicChild.self, #"{"id":"1","title":["not text"],"year":"nineteen","starred":true}"#).asTrack())

@@ -223,7 +223,7 @@ enum Preferences {
                 adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
                 adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
                 if active?.isSameAccount(as: account) == true {
-                    let check = gtk_image_new_from_icon_name("object-select-symbolic")!.tooltip("Signed In")
+                    let check = gtk_image_new_from_icon_name("object-select-symbolic")!.named("Signed In")
                     adw_action_row_add_suffix(ptr(row), check)
                 } else {
                     gtk_list_box_row_set_activatable(ptr(row), 1)

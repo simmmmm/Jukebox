@@ -64,6 +64,8 @@ enum Shots {
                 await hovering([gridCell()], "06a-artists-hover")
                 Pages.open(artist)
                 await step("06-artist", wait: 2)
+                // Under the fold: Similar artists and About, as the Mac's.
+                await scrolled(visiblePage(), to: 1, "06b-artist-end")
             }
             MainWindow.select(5)
             await step("07-songs", wait: 2)
@@ -165,6 +167,19 @@ enum Shots {
             await stationClicks()
             MainWindow.showSignIn()
             await step("17-sign-in", wait: 2)
+            // Quick Connect shows once the address is left, only where the
+            // server says it is on: the fake Jellyfin's is off, so the walk
+            // can be pointed at one with it on (the test Jellyfin).
+            let quickServer = ProcessInfo.processInfo.environment["JUKEBOX_SHOTS_QUICK_CONNECT"]
+            gtk_editable_set_text(ptr(SignInPage.address), quickServer ?? app.credentials?.serverURL.absoluteString ?? "")
+            gtk_widget_grab_focus(SignInPage.address)
+            try? await Task.sleep(for: .milliseconds(300))
+            gtk_widget_grab_focus(SignInPage.user)
+            await step("17b-sign-in-address-left", wait: 3)
+            if SignInPage.quickConnect.isVisible {
+                _ = gtk_widget_activate(SignInPage.quickConnect)
+                await step("17c-quick-connect-code", wait: 3)
+            }
             gtk_window_close(ptr(MainWindow.window))
             exit(0)
         }

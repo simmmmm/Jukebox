@@ -132,7 +132,8 @@ enum UpNext {
         let player = app.player
         return UpNextList.items(current: player.current, upNext: player.upNext, context: player.context,
                                 currentIndex: player.currentIndex, added: player.addedIDs,
-                                autoplay: app.settings.autoplay, repeatMode: player.repeatMode)
+                                autoplay: app.settings.autoplay, repeatMode: player.repeatMode,
+                                played: player.played)
     }
 
     /// The panel's head, as UpNextList has it.
@@ -175,7 +176,7 @@ enum UpNext {
         // two ends and nothing else (tells.md 5).
         let dial = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.05)!.css("dial")
         gtk_scale_set_draw_value(ptr(dial), 0)
-        dial.tooltip("How adventurous the radio is")
+        dial.named("How adventurous the radio is")
         // Counted when the hand lets go (docs/STATS.md), not at every step.
         var counting: Task<Void, Never>?
         on(dial, "value-changed") {
@@ -227,6 +228,8 @@ final class UpNextRow {
     private let words = label("", "t13", "fact")
     private var entry: QueueEntry?
     private var isPlaying = false
+    /// In History: nothing to move or remove.
+    private var isPlayed = false
 
     init() {
         gtk_label_set_xalign(ptr(number), 1)
@@ -248,17 +251,19 @@ final class UpNextRow {
             words.isVisible = true
             switch item {
             case .then: setText(words, "Then")
+            case .history: setText(words, "History")
             case let .note(text), let .foot(text): setText(words, text)
             case .song: break
             }
             // "Then" and the foot 24 under the rows; the note right under "Then".
             if case .note = item { gtk_widget_set_margin_top(words, 0) } else { gtk_widget_set_margin_top(words, 24) }
-            gtk_widget_set_margin_bottom(words, { if case .then = item { 4 } else { 0 } }())
+            gtk_widget_set_margin_bottom(words, { switch item { case .then, .history: 4; default: 0 } }())
             entry = nil
             return
         }
         self.entry = entry
         isPlaying = playing
+        isPlayed = style == .played
         song.isVisible = true
         words.isVisible = false
         let track = entry.track
@@ -280,7 +285,7 @@ final class UpNextRow {
         setText(reason, why)
         reason.isVisible = !why.isEmpty
         setText(time, clock(track.duration))
-        for (name, on) in [("covered", style == .covered), ("station", style == .station)] {
+        for (name, on) in [("covered", style == .covered), ("station", style == .station), ("played", style == .played)] {
             if on { gtk_widget_add_css_class(song, name) } else { gtk_widget_remove_css_class(song, name) }
         }
     }
@@ -290,7 +295,7 @@ final class UpNextRow {
     private func menu() -> [(String, () -> Void)] {
         guard let entry else { return [] }
         let moves: [(String, () -> Void)]
-        if isPlaying {
+        if isPlaying || isPlayed {
             moves = []
         } else {
             let id = entry.id

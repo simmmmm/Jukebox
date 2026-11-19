@@ -286,3 +286,7 @@ void jb_drag_to_scroll(GtkWidget *scrolled) {
     gtk_widget_add_controller(scrolled, GTK_EVENT_CONTROLLER(drag));
     g_object_set_data_full(G_OBJECT(scrolled), "jb-drag", d, g_free);
 }
+
+void jb_accessible_label(GtkWidget *widget, const char *label) {
+    gtk_accessible_update_property(GTK_ACCESSIBLE(widget), GTK_ACCESSIBLE_PROPERTY_LABEL, label, -1);
+}

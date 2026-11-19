@@ -749,7 +749,8 @@ extension SubsonicChild {
             work: work,
             movement: movement,
             grouping: grouping,
-            rating: Subsonic.stars(userRating))
+            rating: Subsonic.stars(userRating),
+            albumNormalizationGain: albumGain)
     }
 
     /// The contributors by role, in Role's order: Navidrome lists them in

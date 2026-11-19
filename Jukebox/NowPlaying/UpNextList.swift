@@ -2,7 +2,8 @@
 // from at the top (an album, a playlist or a mix with its cover, or the
 // station), then the song playing and the ones to come, in the order they
 // play. Songs queued from elsewhere come after "Then"; the foot counts what
-// is left. Foundation only: Linux's panel (Linux/App/Panel.swift) and the
+// is left; under it the History of what played, dimmed, as the iPhone's
+// queue has it. Foundation only: Linux's panel (Linux/App/Panel.swift) and the
 // iPad's and the Mac's draw these rows, each in its own controls, from the
 // one queue both players are (PlayQueue). Values in, not a player.
 
@@ -29,12 +30,15 @@ enum UpNextList {
         case then
         case note(String)
         case foot(String)
+        /// "History": what played, under the foot.
+        case history
     }
 
     /// Numbered rows for an album or playlist; rows with their cover for
     /// songs queued from elsewhere; rows with the radio's reason on a
-    /// station, here and nowhere else (tells.md 5).
-    enum Style { case numbered, covered, station }
+    /// station, here and nowhere else (tells.md 5); dimmed with their cover
+    /// for what played (History).
+    enum Style { case numbered, covered, station, played }
 
     /// Nothing when nothing plays. `playing` stands in for a cover the
     /// library does not know.
@@ -65,12 +69,18 @@ enum UpNextList {
     /// The rows, in the order they play. `currentIndex` numbers them by
     /// place in the queue, as the album's own numbers when it was played
     /// from its start; `added` are the songs queued from elsewhere.
+    /// `played`, in play order, comes last, the latest first: a click plays
+    /// one again, as on the iPhone.
     static func items(current: QueueEntry?, upNext: [QueueEntry], context: QueueContext?, currentIndex: Int?,
-                      added: Set<UUID>, autoplay: Bool, repeatMode: RepeatMode) -> [Item] {
+                      added: Set<UUID>, autoplay: Bool, repeatMode: RepeatMode,
+                      played: [QueueEntry] = []) -> [Item] {
         guard let current else { return [] }
+        let history: [Item] = played.isEmpty ? [] : [.history]
+            + played.reversed().map { .song($0, number: nil, style: .played, playing: false, words: $0.track.artistLine) }
         if context?.isRadio == true {
             return [.song(current, number: nil, style: .station, playing: true, words: current.track.artistLine)]
                 + upNext.map { .song($0, number: nil, style: .station, playing: false, words: $0.track.artistLine) }
+                + history
         }
         // On an album only the artists who are not the album's follow the
         // title; elsewhere the artist does.
@@ -97,7 +107,7 @@ enum UpNextList {
         let minutes = Int((upNext.reduce(0) { $0 + $1.track.duration } / 60).rounded())
         let count = upNext.count == 1 ? "1 song" : "\(upNext.count) songs"
         items.append(.foot(upNext.isEmpty ? "Nothing after this song" : minutes > 0 ? "\(count) · \(minutes) min" : count))
-        return items
+        return items + history
     }
 
     /// The artists of a song that are not its album's ("MC Polder" on a
