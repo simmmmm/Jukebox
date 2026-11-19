@@ -34,6 +34,8 @@ if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "accounts" { exit(Acc
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "cast" { exit(CastCheck.run()) }
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "remote" { exit(RemoteCheck.run()) }
 watchMainQueue()
+// After it: the UPnP check awaits its speaker on the main actor.
+if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "upnp" { exit(UPnPCheck.run()) }
 DefaultsFile.load()
 let application = adw_application_new("com.tijmen.Jukebox", G_APPLICATION_DEFAULT_FLAGS)!
 on(raw(application), "activate") { MainWindow.present(in: application) }

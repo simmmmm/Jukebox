@@ -63,7 +63,7 @@ final class AvahiCastFinder: PlayOnFinder {
         }
         let box = Unmanaged.passRetained(self)
         self.box = box
-        avahi = jb_avahi_browse({ service, id, name, host, port, removed, data in
+        avahi = jb_avahi_browse("_googlecast._tcp", { service, id, name, host, port, removed, data in
             guard let data, let service else { return }
             let finder = Unmanaged<AvahiCastFinder>.fromOpaque(data).takeUnretainedValue()
             let key = String(cString: service)

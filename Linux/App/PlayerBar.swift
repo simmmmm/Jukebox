@@ -302,39 +302,60 @@ enum PlayerBar {
     /// photographer, 17 November 2026). The list looks only while it is
     /// open; the glyph is in the accent while the music plays elsewhere.
     private static func playOnButton() -> Widget {
-        let rows = vbox(spacing: 0)
-        let popover = gtk_popover_new()!
-        gtk_popover_set_child(ptr(popover), vbox(spacing: 8, [label("Play On", "heading").align(horizontal: GTK_ALIGN_START).margins(horizontal: 8), rows]).margins(8))
+        // A menu as libadwaita draws one ("dit staat niet netjes", the
+        // photographer, 19 November 2026): the popover's `menu` style, whose
+        // list rows are a menu's own (32 high, 12 in from the 6 around them,
+        // rounded, lit on hover), so the heading and every row's text start
+        // on one edge, 18 in, and the check sits at the row's end.
+        let rows = gtk_list_box_new()!
+        gtk_list_box_set_selection_mode(ptr(rows), GTK_SELECTION_NONE)
+        let heading = label("Play On", "heading").align(horizontal: GTK_ALIGN_START).margins(horizontal: 12, vertical: 6)
+        let popover = gtk_popover_new()!.css("menu")
+        gtk_popover_set_child(ptr(popover), vbox([heading, rows]).margins(6))
         let button = gtk_menu_button_new()!.css("flat").named("Play On")
         gtk_menu_button_set_icon_name(ptr(button), Glyphs.name("play-on"))
         gtk_menu_button_set_popover(ptr(button), popover)
         on(raw(popover), "show") { app.player.playOn.look() }
         on(raw(popover), "closed") { app.player.playOn.stopLooking() }
+        // Each row's device, by its place in the list.
+        var shown: [PlayOnDevice?] = []
+        // After the popover has closed: the choice remakes these rows, this
+        // one among them.
+        on(raw(rows), "row-activated", argument: { row in
+            guard let row else { return }
+            let index = Int(gtk_list_box_row_get_index(ptr(row)))
+            guard shown.indices.contains(index) else { return }
+            let device = shown[index]
+            gtk_popover_popdown(ptr(popover))
+            Task { app.player.playOn.choose(device) }
+        })
         // The rows change in the open popover, which stays open: a menu made
         // again would close under the pointer (the sleep timer's).
         observe(rows) {
-            clear(rows)
+            gtk_list_box_remove_all(ptr(rows))
             let player = app.player
             var devices = player.playOn.devices
             if let elsewhere = player.playsOn, !devices.contains(elsewhere) { devices.insert(elsewhere, at: 0) }
-            let choices: [(PlayOnDevice?, String, String?)] = [(nil, "This Computer", nil)] + devices.map { ($0, $0.name, $0.detail) }
-            for (device, name, detail) in choices {
+            shown = [nil] + devices
+            let choices: [(String, String?)] = [("This Computer", nil)] + devices.map { ($0.name, $0.detail) }
+            for (index, (name, detail)) in choices.enumerated() {
                 let check = gtk_image_new_from_icon_name("object-select-symbolic")!
-                gtk_widget_set_opacity(check, device?.id == player.playsOn?.id ? 1 : 0)
-                var lines = [label(name, "body").align(horizontal: GTK_ALIGN_START)]
+                gtk_widget_set_opacity(check, shown[index]?.id == player.playsOn?.id ? 1 : 0)
+                var lines = [label(name).align(horizontal: GTK_ALIGN_START)]
                 if let detail { lines.append(label(detail, "dim-label", "caption").align(horizontal: GTK_ALIGN_START)) }
-                let row = gtk_button_new()!.css("flat")
-                gtk_button_set_child(ptr(row), hbox(spacing: 12, [vbox(lines).expand(horizontal: true), check]))
-                // After the popover has closed: the choice remakes these rows,
-                // this one among them.
-                on(row, "clicked") {
-                    gtk_popover_popdown(ptr(popover))
-                    Task { app.player.playOn.choose(device) }
-                }
-                append(row, to: rows)
+                let row = gtk_list_box_row_new()!
+                gtk_list_box_row_set_child(ptr(row), hbox(spacing: 12, [
+                    vbox(lines).expand(horizontal: true).align(vertical: GTK_ALIGN_CENTER).margins(vertical: detail == nil ? 0 : 6),
+                    check,
+                ]))
+                gtk_list_box_append(ptr(rows), row)
             }
             if player.playOn.devices.isEmpty {
-                append(label("Looking for devices on this network", "dim-label", "caption").align(horizontal: GTK_ALIGN_START).margins(horizontal: 8, vertical: 4), to: rows)
+                // Said as a row is, on the same edge, but no choice.
+                let row = gtk_list_box_row_new()!
+                gtk_list_box_row_set_activatable(ptr(row), 0)
+                gtk_list_box_row_set_child(ptr(row), label("Looking for devices on this network", "dim-label").align(horizontal: GTK_ALIGN_START))
+                gtk_list_box_append(ptr(rows), row)
             }
         }
         observe(button) {
