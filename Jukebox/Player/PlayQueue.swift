@@ -191,6 +191,9 @@ class PlayQueue {
         /// ends. Changed only by `continueAsRadio`, whose station the song
         /// then belongs to.
         var stationID: String?
+        /// The playlist it was played from, kept as the station is; nil for
+        /// a song queued from elsewhere into the playlist's queue.
+        let playlistID: ItemID?
         /// Seconds actually heard: the clock runs only while the engine plays.
         var heard: TimeInterval = 0
         var playingSince: Date?
@@ -223,10 +226,14 @@ class PlayQueue {
         let track: Track
         let listened: TimeInterval
         let stationID: String?
+        /// False for a play not counted (`counts`): no history, no radio.
+        let counts: Bool
     }
 
     let settings: AppSettings
     private let history: HistoryStore
+    /// Don't Count Plays and Private Listening (`counts`).
+    let notCounted = NotCountedStore()
 
     /// The current entry's play; its clock runs as the engine says.
     @ObservationIgnored var playing: Playing?
@@ -695,7 +702,10 @@ class PlayQueue {
         // The song before, while `currentIndex` is still its.
         let before = currentTrack
         currentIndex = index
-        playing = Playing(entry: entry, playSessionID: playSessionID, stationID: context?.station?.id)
+        var playlistID: ItemID?
+        if case let .playlist(id) = context?.kind, !addedIDs.contains(entry.id) { playlistID = id }
+        playing = Playing(entry: entry, playSessionID: playSessionID, stationID: context?.station?.id,
+                          playlistID: playlistID)
         // Never on another device: its own player starts each song at its
         // own volume, and a fade begun there would follow it home.
         playing?.fadesIn = fadesIn && playingElsewhere == nil
@@ -915,7 +925,9 @@ class PlayQueue {
         guard playing.didPlay else { return nil }
         var track = playing.entry.track
         if track.duration <= 0, length > 0 { track.duration = length }
-        return Finished(track: track, listened: playing.heard, stationID: playing.stationID)
+        // Counted at the server already, it is counted here too.
+        return Finished(track: track, listened: playing.heard, stationID: playing.stationID,
+                        counts: playing.startReported || counts(playing))
     }
 
     func deliver(_ finished: Finished?) {
@@ -924,6 +936,7 @@ class PlayQueue {
         let outcome = PlayOutcome.of(listened: finished.listened, duration: finished.track.duration)
         // Heard to the end, partly, or skipped, and whether on a station (Stats).
         Stats.track(.trackEnded, ["outcome": outcome.rawValue, "station": finished.stationID != nil])
+        guard finished.counts else { return }
         history.record(PlayEvent(track: finished.track, date: now, listened: finished.listened,
                                  outcome: outcome, stationID: finished.stationID))
         if outcome == .completed {
@@ -1101,6 +1114,16 @@ class PlayQueue {
 
     // MARK: Telling the server
 
+    /// The one check of Don't Count Plays and Private Listening
+    /// (NotCountedStore): a play that does not count is never told to the
+    /// server (no `nowPlaying`, `played`, `progress` or `stopped`, so no
+    /// play count, no scrobble, no Playback Reporting row) nor kept in the
+    /// history. Asked at the moment it would count, so Private Listening
+    /// turned on mid-song keeps that song out too.
+    func counts(_ playing: Playing) -> Bool {
+        notCounted.counts(playing.entry.track, playlistID: playing.playlistID)
+    }
+
     /// The play counted (`played`), once the entry has played long enough
     /// not to be a skip by PlayOutcome's rule. Jellyfin counts the play at
     /// its start report (measured on 12.4, JellyfinClient.reportStart), a
@@ -1120,6 +1143,9 @@ class PlayQueue {
         var length = playing.entry.track.duration
         if length <= 0 { length = playingLength }
         guard PlayOutcome.of(listened: heard, duration: length) != .skipped else { return false }
+        // Not counted: `startReported` stays false, so no progress or stop
+        // follows either.
+        guard counts(playing) else { return false }
         playing.startReported = true
         playing.lastProgress = now
         self.playing = playing
@@ -1144,7 +1170,9 @@ class PlayQueue {
         guard var playing, !playing.nowPlayingReported else { return }
         playing.nowPlayingReported = true
         self.playing = playing
-        guard let server = reportingServer else { return }
+        // Navidrome passes "now playing" on to Last.fm; Plex's timeline
+        // counts a play of its own at the end.
+        guard counts(playing), let server = reportingServer else { return }
         if let offline, offline.holdsReports(of: playing.playSessionID) { return }
         let report = PlaybackReport(trackID: playing.entry.track.id, position: reportPosition, isPaused: false,
                                     playSessionID: playing.playSessionID)

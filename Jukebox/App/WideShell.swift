@@ -418,6 +418,7 @@ private struct MainMenu: View {
             Button("Settings…") {
                 navigator.isSettingsPresented = true
             }
+            PrivateListeningMenu(store: app.player.notCounted)
             Divider()
             AccountMenuItems(app: app)
         } label: {

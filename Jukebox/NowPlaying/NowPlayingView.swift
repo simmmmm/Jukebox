@@ -500,6 +500,7 @@ struct NowPlayingView: View {
                     Menu {
                         TrackMenu(track: track)
                         SleepTimerItem(player: player)
+                        Section { PrivateListeningMenu(store: player.notCounted) }
                     } label: {
                         MoreGlyph(player: player, font: .title3.weight(.semibold), ink: ink, side: 44)
                     }
@@ -607,6 +608,13 @@ struct NowPlayingView: View {
                     // (PlayOn.swift), as Linux's Full Player has it.
                     if let device = player.playsOn {
                         Text("Playing on \(device.name)")
+                            .font(.subheadline)
+                            .foregroundStyle(.tertiary)
+                            .lineLimit(1)
+                    }
+                    // Private Listening's sign, as quiet (NotCountedViews).
+                    if player.notCounted.isPrivate {
+                        Label("Private Listening", systemImage: "eye.slash")
                             .font(.subheadline)
                             .foregroundStyle(.tertiary)
                             .lineLimit(1)

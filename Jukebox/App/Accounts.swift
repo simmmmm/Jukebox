@@ -111,6 +111,11 @@ enum AccountFiles {
         "recentStations.\(name(account))"
     }
 
+    /// UserDefaults' notCounted.<account>: its Don't Count Plays marks.
+    static func notCountedKey(_ account: ServerCredentials) -> String {
+        "notCounted.\(name(account))"
+    }
+
     /// Caches/Jukebox/similarity-<account>/.
     static func similarity(_ account: ServerCredentials) -> URL {
         caches.appendingPathComponent("similarity-\(name(account))", isDirectory: true)
@@ -185,6 +190,7 @@ struct AccountStores {
     func open(_ server: any MusicServer) async {
         let account = server.credentials
         history.open(AccountFiles.history(account))
+        player.notCounted.open(AccountFiles.notCountedKey(account))
         radio.open(account)
         player.server = server
         radio.server = server
@@ -229,6 +235,7 @@ struct AccountStores {
         // Its last song is told to its own server and history.
         player.stop()
         player.server = nil
+        player.notCounted.close()
         if forgetting { radio.reset() } else { radio.close() }
         radio.server = nil
         history.close()

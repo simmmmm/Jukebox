@@ -400,6 +400,7 @@ struct TrackMenu: View {
             if library.can(.rating) {
                 RatingMenu(item: .track(track.id))
             }
+            DontCountToggle(kind: .song, id: track.id, name: track.name)
             CopyShareLinkButton(id: track.id, tracks: [track.id])
         }
         Section {

@@ -192,6 +192,9 @@ Each track's evidence, `e`:
   −0.8, liked +3, disliked −4, fading with a 21-day half-life (measured: a
   completion three weeks ago counts 0.51 of one today; the test allows
   0.45 … 0.55). A skip of a song the listener knows is "not now" (below).
+- a play not counted (Don't Count Plays, Private Listening;
+  ARCHITECTURE.md, "Not counted") leaves no event and no play count, so
+  taste, the clock and the station's own listening never hear of it.
 
 | | Formula |
 |---|---|

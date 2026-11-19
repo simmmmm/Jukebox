@@ -40,6 +40,7 @@ let shared = [
     "Jukebox/Offline/OfflineText.swift",
     "Jukebox/Player/HandoffStore.swift",
     "Jukebox/Player/HistoryStore.swift",
+    "Jukebox/Player/NotCountedStore.swift",
     "Jukebox/Player/PlayOn.swift",
     "Jukebox/Player/PlayQueue.swift",
     "Jukebox/Player/RemoteControl.swift",

@@ -70,6 +70,7 @@ enum Preferences {
             "Share Anonymous Usage", "Which screens and features are used. Never a title, an artist, a search or a server.",
             settings.shareUsage) { settings.shareUsage = $0 })
 
+        NotCountedUI.group(on: page)
         accounts(on: page, in: dialog)
         downloads(on: page)
 

@@ -190,7 +190,7 @@ struct AlbumDetailView: View {
     private func wide(_ shown: Album, tracks: [Track], discs: [Disc], isLoading: Bool, moreBy: Artist?) -> some View {
         WidePage(title: shown.name, hasHead: true) { page, _ in
             PageHead(page: page, title: shown.name, lead: shown.artistLine,
-                     leadAction: { goToArtist(shown) }, facts: Self.facts(shown, tracks: tracks)) { size in
+                     leadAction: { goToArtist(shown) }, facts: player.notCounted.fact(Self.facts(shown, tracks: tracks), .album, shown.id)) { size in
                 ArtworkView(shown.artwork, size: size)
             } actions: {
                 PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
@@ -338,7 +338,9 @@ struct AlbumDetailView: View {
             if let year = shown.year {
                 Text(String(year))
             }
-            Text(LibraryText.summary(count: tracks.count, duration: LibraryText.totalDuration(tracks)))
+            Text(player.notCounted.fact(LibraryText.summary(count: tracks.count,
+                                                            duration: LibraryText.totalDuration(tracks)),
+                                        .album, shown.id))
         }
         .font(.footnote)
         .foregroundStyle(.secondary)

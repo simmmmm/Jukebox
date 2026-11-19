@@ -272,6 +272,26 @@ enum QueueCheck {
         picks.clear()
         expect(picks.isEmpty && picks.tracks(at: 9, in: tracks).isEmpty, "cleared, and a row past the end is nothing")
 
+        // Don't Count Plays (NotCountedStore, PlayQueue.counts): a marked
+        // song plays, but its play is neither told to the server nor kept
+        // in the history. No account is open, so nothing is written.
+        let heard = HistoryStore()
+        let c = Bench(settings: AppSettings(), history: heard)
+        c.notCounted.set(.song, id: "t2", name: "Song 2", counted: false)
+        c.play(tracks, context: album)
+        c.engineRuns(true)
+        c.playing?.heard = 150
+        // Private Listening is the machine's own (UserDefaults): read, never
+        // set here. On, nothing counts.
+        expect(c.reportStartIfNeeded() != c.notCounted.isPrivate, "an unmarked song counts")
+        c.next()
+        c.engineRuns(true)
+        c.playing?.heard = 150
+        expect(c.current?.track.id == "t2" && !c.reportStartIfNeeded(), "a marked song plays, not told to the server")
+        c.next()
+        expect(heard.history.events.map(\.trackID) == (c.notCounted.isPrivate ? [] : ["t1"]), "nor kept in the history")
+        c.stop()
+
         for what in failed { print("queue check failed: \(what)") }
         print("queue rules: \(checks - failed.count) of \(checks) checks pass")
         return failed.isEmpty ? 0 : 1
