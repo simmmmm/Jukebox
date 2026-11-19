@@ -17,7 +17,9 @@
 //
 // Each platform brings its Chromecasts (`PlayOn.castFinder`, `castPlayer`):
 // every client speaks castv2 itself (JukeboxKit's CastSession over GIO's
-// TLS on Linux, Network's on Apple's), with no SDK of Google's.
+// TLS on Linux, Network's on Apple's), with no SDK of Google's. Linux
+// brings a Sonos and other UPnP renderers too (`rendererFinder`,
+// Linux/App/UPnP.swift), where Apple's have AirPlay.
 
 import Foundation
 import JukeboxKit
@@ -25,11 +27,12 @@ import Observation
 
 /// Somewhere the music can play other than here.
 struct PlayOnDevice: Identifiable, Hashable {
-    enum Kind: String, Hashable { case chromecast, jellyfin, subsonicJukebox }
+    enum Kind: String, Hashable { case chromecast, upnp, jellyfin, subsonicJukebox }
     let id: String
     let name: String
     let kind: Kind
-    /// A Chromecast's "host:port"; a Jellyfin session's id; the server's id
+    /// A Chromecast's "host:port"; a UPnP renderer's control addresses
+    /// (UPnPFinder on Linux); a Jellyfin session's id; the server's id
     /// for its jukebox.
     let address: String
     /// A second line where the name alone does not say it ("Jellyfin Web").
@@ -39,6 +42,7 @@ struct PlayOnDevice: Identifiable, Hashable {
     var statsTarget: String {
         switch kind {
         case .chromecast: "chromecast"
+        case .upnp: "upnp"
         case .jellyfin: "jellyfin"
         case .subsonicJukebox: "subsonic_jukebox"
         }
@@ -113,6 +117,10 @@ final class PlayOn {
     /// Chromecasts, by the platform (Linux: Avahi; Apple's: Bonjour).
     @ObservationIgnored var castFinder: (any PlayOnFinder)?
     @ObservationIgnored var castPlayer: ((PlayOnDevice) -> (any RemotePlayer)?)?
+    /// A Sonos and other UPnP renderers, where the platform speaks to them
+    /// itself (Linux: SSDP and Avahi); Apple's reach a Sonos by AirPlay.
+    @ObservationIgnored var rendererFinder: (any PlayOnFinder)?
+    @ObservationIgnored var rendererPlayer: ((PlayOnDevice) -> (any RemotePlayer)?)?
     @ObservationIgnored weak var player: PlayQueue?
     @ObservationIgnored private var finders: [any PlayOnFinder] = []
     @ObservationIgnored private var found: [ObjectIdentifier: [PlayOnDevice]] = [:]
@@ -123,6 +131,7 @@ final class PlayOn {
         stopLooking()
         var all: [any PlayOnFinder] = []
         if let castFinder { all.append(castFinder) }
+        if let rendererFinder { all.append(rendererFinder) }
         // Not offline: a device elsewhere plays from the server, not from
         // the songs on this one.
         if player?.offline?.isOffline != true, let server = player?.server {
@@ -170,15 +179,15 @@ final class PlayOn {
 
     private func remotePlayer(for device: PlayOnDevice, server: (any MusicServer)?) -> (any RemotePlayer)? {
         switch device.kind {
-        case .chromecast:
-            // The TV fetches the songs itself: it cannot reach a server on
-            // this computer's own loopback.
+        case .chromecast, .upnp:
+            // The TV (the speaker) fetches the songs itself: it cannot reach
+            // a server on this computer's own loopback.
             if let host = server?.credentials.serverURL.host?.lowercased(),
                host == "localhost" || host.hasPrefix("127.") || host == "::1" || host == "[::1]" {
                 player?.showError("\(device.name) cannot reach a server at \(host): use its address on this network.")
                 return nil
             }
-            return castPlayer?(device)
+            return device.kind == .chromecast ? castPlayer?(device) : rendererPlayer?(device)
         case .jellyfin:
             guard let jellyfin = server as? JellyfinServer else { return nil }
             return JellyfinSessionPlayer(device: device, client: jellyfin.client)
@@ -350,9 +359,11 @@ extension PlayQueue {
         let settling = Date() < remoteSettled
         if !settling, status.failed {
             entryFailed(reason: "network")
-            // A TV fetches the songs itself, and trusts only certificates it
-            // knows: a home server's own one it refuses, without a word.
-            if remote.device.kind == .chromecast, server?.credentials.serverURL.scheme == "https" {
+            // A TV or a speaker fetches the songs itself, and trusts only
+            // certificates it knows: a home server's own one it refuses,
+            // without a word.
+            if remote.device.kind == .chromecast || remote.device.kind == .upnp,
+               server?.credentials.serverURL.scheme == "https" {
                 showError("\(remote.device.name) could not play from the server: it needs the server's address on this network, with a certificate it trusts.")
             }
             return

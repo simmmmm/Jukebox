@@ -362,9 +362,10 @@ alleen er voor waken dat we niet 10000 knopen krijgen" (17 November 2026).
 So no new button: the AirPlay glyph where it always was (Now Playing, the
 wide bar) opens one list, and Linux has the same glyph in the same place of
 its bar. The list: this device, AirPlay (Apple: the system's own picker as
-a row), the Chromecasts on the network, the user's other Jellyfin or Emby
+a row), the Chromecasts on the network, on Linux the Sonos rooms and other
+UPnP renderers (Apple's reach those by AirPlay), the user's other Jellyfin or Emby
 clients that take remote control, a Subsonic server's jukebox where the
-user has it. On Plex, Chromecasts only (docs/SERVERS.md). It looks only while it is open: no local network prompt at launch.
+user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP speakers. It looks only while it is open: no local network prompt at launch.
 
 - **The queue stays the truth** (`Jukebox/Player/PlayOn.swift`, shared).
   A `RemotePlayer` is an engine elsewhere: it takes the current song and,
@@ -385,6 +386,16 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md). It looks only while it
   and the Mac over Network's TLS, found by Bonjour
   (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
   privacy answers stay as they are (`docs/STATS.md`).
+- **A Sonos on Linux** ("hij vind bijv ook mijn sonos niet", 19 November
+  2026): Linux has no AirPlay, so it speaks UPnP AV itself (JukeboxKit's
+  `Cast/UPnP.swift`, `Linux/App/UPnP.swift`). Found by Avahi
+  (`_sonos._tcp`) and SSDP (`Linux/CGlue/ssdp.c`, any MediaRenderer); a
+  host firewall drops SSDP's unicast answers (the photographer's ufw did),
+  mDNS still finds the Sonos. One row a Sonos group, named by its rooms
+  ("Living Room + Kitchen"), played through its coordinator; a bonded
+  surround or Sub is no row. One song at a time, as a Chromecast: the
+  `castURL`, DIDL-Lite for its title and cover, the end heard as STOPPED
+  after PLAYING. The level is the coordinator's own.
 - **Jukebox as the speaker** (18 November 2026, "net als bij spotify"):
   on Jellyfin and Emby (`.remoteControl`) every client keeps a websocket
   open (`Player/RemoteControl.swift`, shared; URLSession's on Apple's,
@@ -400,9 +411,10 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md). It looks only while it
   its song: the next is the queue's to give. CarPlay plays on the phone.
 - **Checked**: the kit's `PlayOnTests` and `JellyfinSessionsIntegrationTests`
   (a second client on the test Jellyfin over its websocket receives Play,
-  Playstate and SetVolume), `CastProtocolTests`; Linux's `JUKEBOX_CHECK=cast`
-  against a fake TLS receiver; Linux under Xvfb (`docs/LINUX.md`). No real
-  Chromecast yet.
+  Playstate and SetVolume), `CastProtocolTests`, `UPnPTests`; Linux's `JUKEBOX_CHECK=cast`
+  against a fake TLS receiver, `JUKEBOX_CHECK=upnp` against a fake Sonos
+  (`dev/fake-upnp-renderer.py`); Linux under Xvfb (`docs/LINUX.md`). No real
+  Chromecast yet; the real Sonos found (its room, "Living Room"), never played on.
 
 ## Scrobbling
 

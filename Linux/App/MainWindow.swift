@@ -180,6 +180,7 @@ enum MainWindow {
         // The drawings are made at the scale of the window's screen.
         Screen.follow(window)
         Shots.walk()
+        Shots.playOn()
     }
 
     /// A Flatpak asks the background portal once, the first time the

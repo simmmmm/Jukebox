@@ -153,10 +153,11 @@ void jb_cast_close(JbCast *cast) {
     cast_unref(cast);
 }
 
-// Finding Chromecasts: Avahi, the system's mDNS, over D-Bus on the system
-// bus, as GNOME's own apps find printers and shares. Jukebox sends no mDNS
-// itself. No system bus, or no Avahi on it (a container, a sandbox without
-// the talk-name): nothing is found, and nothing is said.
+// Finding Chromecasts (_googlecast._tcp) and Sonos speakers (_sonos._tcp,
+// UPnP.swift): Avahi, the system's mDNS, over D-Bus on the system bus, as
+// GNOME's own apps find printers and shares. Jukebox sends no mDNS itself.
+// No system bus, or no Avahi on it (a container, a sandbox without the
+// talk-name): nothing is found, and nothing is said.
 
 struct JbAvahi {
     gboolean stopped;
@@ -164,12 +165,13 @@ struct JbAvahi {
     GDBusConnection *bus;
     guint subscription;
     char *browser;
+    // Kept with the JbAvahi, which is never freed (jb_avahi_stop).
+    char *type;
     JbCastFound found;
     gpointer data;
 };
 
 #define AVAHI "org.freedesktop.Avahi"
-#define CAST_TYPE "_googlecast._tcp"
 
 typedef struct {
     JbAvahi *avahi;
@@ -237,7 +239,7 @@ static void avahi_resolve(Resolve *resolve) {
     // aprotocol 0 is IPv4: an address every TV answers on.
     g_dbus_connection_call(avahi->bus, AVAHI, "/", AVAHI ".Server", "ResolveService",
                            g_variant_new("(iisssiu)", resolve->interface, resolve->protocol, resolve->name,
-                                         CAST_TYPE, resolve->domain, resolve->anyProtocol ? -1 : 0, 0),
+                                         avahi->type, resolve->domain, resolve->anyProtocol ? -1 : 0, 0),
                            G_VARIANT_TYPE("(iissssisqaayu)"), G_DBUS_CALL_FLAGS_NONE, 10000, avahi->cancel,
                            avahi_resolved, resolve);
 }
@@ -252,7 +254,7 @@ static void avahi_signal(GDBusConnection *bus, const char *sender, const char *p
     gint32 iface = 0, protocol = 0;
     const char *name = NULL, *type = NULL, *domain = NULL;
     g_variant_get(parameters, "(ii&s&s&su)", &iface, &protocol, &name, &type, &domain, NULL);
-    if (g_strcmp0(type, CAST_TYPE) != 0) return;
+    if (g_strcmp0(type, avahi->type) != 0) return;
     if (g_strcmp0(member, "ItemRemove") == 0) {
         avahi->found(name, name, name, "", 0, TRUE, avahi->data);
     } else if (g_strcmp0(member, "ItemNew") == 0) {
@@ -294,13 +296,14 @@ static void avahi_bus(GObject *source, GAsyncResult *result, gpointer user) {
     avahi->subscription = g_dbus_connection_signal_subscribe(bus, NULL, AVAHI ".ServiceBrowser", NULL, NULL, NULL,
                                                              G_DBUS_SIGNAL_FLAGS_NONE, avahi_signal, avahi, NULL);
     g_dbus_connection_call(bus, AVAHI, "/", AVAHI ".Server", "ServiceBrowserNew",
-                           g_variant_new("(iissu)", -1, -1, CAST_TYPE, "local", 0), G_VARIANT_TYPE("(o)"),
+                           g_variant_new("(iissu)", -1, -1, avahi->type, "local", 0), G_VARIANT_TYPE("(o)"),
                            G_DBUS_CALL_FLAGS_NONE, 10000, avahi->cancel, avahi_browsing, avahi);
 }
 
-JbAvahi *jb_avahi_browse(JbCastFound found, gpointer data) {
+JbAvahi *jb_avahi_browse(const char *type, JbCastFound found, gpointer data) {
     JbAvahi *avahi = g_new0(JbAvahi, 1);
     avahi->cancel = g_cancellable_new();
+    avahi->type = g_strdup(type);
     avahi->found = found;
     avahi->data = data;
     g_bus_get(G_BUS_TYPE_SYSTEM, avahi->cancel, avahi_bus, avahi);

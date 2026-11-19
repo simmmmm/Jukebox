@@ -103,14 +103,23 @@ typedef void (*JbSocketReceived)(const char *text, gpointer data);
 JbSocket *jb_socket_connect(const char *url, JbSocketReceived received, gpointer data);
 void jb_socket_send(JbSocket *socket, const char *text);
 void jb_socket_close(JbSocket *socket);
-// Chromecasts on the network, through Avahi on the system bus. `service` is
-// the mDNS name, the key of a removal; `id` and `name` are the TXT record's
-// id= and fn= (else the service name). Nothing is called without Avahi.
+// Chromecasts (`type` "_googlecast._tcp") or Sonos speakers ("_sonos._tcp")
+// on the network, through Avahi on the system bus. `service` is the mDNS
+// name, the key of a removal; `id` and `name` are the TXT record's id= and
+// fn= (else the service name). Nothing is called without Avahi.
 typedef struct JbAvahi JbAvahi;
 typedef void (*JbCastFound)(const char *service, const char *id, const char *name, const char *host,
                             guint16 port, gboolean removed, gpointer data);
-JbAvahi *jb_avahi_browse(JbCastFound found, gpointer data);
+JbAvahi *jb_avahi_browse(const char *type, JbCastFound found, gpointer data);
 void jb_avahi_stop(JbAvahi *avahi);
+// SSDP (ssdp.c): M-SEARCHes to 239.255.255.250:1900 and every answer's text
+// to `received`, on the main loop. NULL without a socket. After
+// jb_ssdp_close nothing more is called.
+typedef struct JbSsdp JbSsdp;
+typedef void (*JbSsdpReceived)(const char *text, gpointer data);
+JbSsdp *jb_ssdp_open(JbSsdpReceived received, gpointer data);
+void jb_ssdp_search(JbSsdp *ssdp, const char *message);
+void jb_ssdp_close(JbSsdp *ssdp);
 
 // MPRIS: how GNOME's own media controls (the clock's menu, the lock
 // screen, the keyboard's media keys) see and steer a player. D-Bus by hand

@@ -73,6 +73,10 @@ final class AppModel {
             guard let (host, port) = AvahiCastFinder.split(device.address) else { return nil }
             return CastPlayer(device: device, socket: GioCastSocket(host: host, port: port))
         }
+        // A Sonos and other UPnP renderers: Avahi and SSDP find them, UPnP AV
+        // plays on them (UPnP.swift); where the Mac has AirPlay for them.
+        player.playOn.rendererFinder = UPnPFinder()
+        player.playOn.rendererPlayer = { UPnPPlayer(device: $0) }
         // Foundation's websocket has no libcurl support on Linux: libsoup's.
         remote.connect = { SoupCommandSocket(url: $0) }
     }

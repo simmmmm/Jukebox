@@ -590,6 +590,57 @@ enum Shots {
         try? await Task.sleep(for: .seconds(1))
     }
 
+    /// JUKEBOX_SHOTS_PLAY_ON=<file.png>: the bar's Play On open, as it is
+    /// after a few seconds of looking, its popover alone to the file; and
+    /// "<file>.ready" while it is open, for a picture of the screen from
+    /// outside. Then the app quits.
+    static func playOn() {
+        guard let path = ProcessInfo.processInfo.environment["JUKEBOX_SHOTS_PLAY_ON"] else { return }
+        Task {
+            // A song in the bar, paused: the bar shows with something in it.
+            for _ in 0..<40 where app.library.tracks.isEmpty { try? await Task.sleep(for: .milliseconds(250)) }
+            app.player.play(Array(app.library.tracks.prefix(5)), context: QueueContext(.other, title: "Shot"))
+            app.player.pause()
+            try? await Task.sleep(for: .seconds(3))
+            guard let button = find(MainWindow.window, { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "Play On" }),
+                  let popover = gtk_menu_button_get_popover(ptr(button)) else { exit(1) }
+            gtk_menu_button_popup(ptr(button))
+            try? await Task.sleep(for: .seconds(5))
+            let shown: Widget = ptr(popover)
+            // The last row as under the pointer: the menu's own hover.
+            if let list = find(shown, { isA($0, gtk_list_box_get_type()) }), let row = gtk_widget_get_last_child(list) {
+                gtk_widget_set_state_flags(row, GTK_STATE_FLAG_PRELIGHT, 0)
+                try? await Task.sleep(for: .milliseconds(300))
+            }
+            if let node = picture(shown) { write(node, to: path, of: shown) }
+            FileManager.default.createFile(atPath: path + ".ready", contents: nil)
+            try? await Task.sleep(for: .seconds(4))
+            try? FileManager.default.removeItem(atPath: path + ".ready")
+            // JUKEBOX_SHOTS_PLAY_ON_SECONDS: then the fake renderer of
+            // JUKEBOX_UPNP_DEVICE chosen (never a speaker in the house: the
+            // network is not asked then) and played on for so long, Next
+            // pressed 3 s into its first song, the queue's songs printed as
+            // they go.
+            if let seconds = ProcessInfo.processInfo.environment["JUKEBOX_SHOTS_PLAY_ON_SECONDS"].flatMap(Int.init),
+               UPnPFinder.testLocation != nil,
+               let device = app.player.playOn.devices.first(where: { $0.kind == .upnp }) {
+                app.player.playOn.choose(device)
+                gtk_menu_button_popdown(ptr(button))
+                app.player.resume()
+                for second in 0..<seconds {
+                    if second == 3 { app.player.next() }
+                    print("play on: \(app.player.playsOn?.name ?? "here") \(app.player.current?.track.name ?? "-") "
+                          + "\(Int(app.player.elapsed)) s \(app.player.isPlaying ? "playing" : "paused")")
+                    try? await Task.sleep(for: .seconds(1))
+                }
+                app.player.playOn.choose(nil)
+                try? await Task.sleep(for: .seconds(1))
+                print("play on: back \(app.player.playsOn?.name ?? "here") \(app.player.current?.track.name ?? "-")")
+            }
+            exit(0)
+        }
+    }
+
     private static func step(_ name: String, wait seconds: Double) async {
         try? await Task.sleep(for: .seconds(seconds))
         guard let folder, let node = picture(MainWindow.window) else { return }

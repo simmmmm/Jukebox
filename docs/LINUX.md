@@ -162,7 +162,12 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   device's and Full Player says where it plays. The Flatpak may talk to
   Avahi on the system bus for it (`--system-talk-name=org.freedesktop.Avahi`).
   `JUKEBOX_CAST_DEVICE="Name@host:port"` lists one Chromecast by hand
-  instead, for trying it against a fake one;
+  instead, for trying it against a fake one. The Sonos rooms and other
+  UPnP renderers are in it too (19 November 2026, `UPnP.swift`), found by
+  Avahi and SSDP; `JUKEBOX_UPNP_DEVICE=<description URL on 127.0.0.1>`
+  lists a fake one instead (`dev/fake-upnp-renderer.py`). The popover is a
+  libadwaita menu (`popover.menu` with a list): heading and rows on one
+  edge, the check at the row's end;
 - header capitals on buttons and rows;
 - a playlist of the listener's own edited in place, as on the Mac (since
   16 November 2026): a song's menu has Move Up, Move Down and, last,
@@ -312,6 +317,16 @@ computer where it was, and the TV switched off under it (back here, paused,
 "Lost the connection to Fake TV."). `JUKEBOX_CHECK=cast` runs the castv2
 conversation against that receiver. Not yet tried: a real Chromecast,
 Avahi on a real network, a Subsonic jukebox.
+
+A Sonos, 19 November 2026: `JUKEBOX_CHECK=upnp` with
+`JUKEBOX_UPNP_DEVICE` set found the fake Sonos as "Fake Room + Fake
+Kitchen" (its surround no row), loaded a song, paused, played, sought,
+set its level and heard its end. Without it, it only looks for 10 s: on
+the photographer's network Avahi found "Living Room" (a Sonos One SL);
+SSDP's answers did not come through his ufw, and came from a fake on the
+machine itself. The popover under Xvfb with that fake and a fake TV. Not
+yet tried: playing on a real Sonos (nothing was played on his), grouped
+rooms on real speakers, a real DLNA renderer.
 
 Not yet tried: a real Wayland session with sound, Navidrome in the app (its
 calls are tested in the kit), KDE, XFCE and Hyprland themselves; offline on
