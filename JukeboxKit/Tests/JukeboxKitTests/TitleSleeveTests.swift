@@ -66,8 +66,11 @@ struct TitleSleeveTests {
     @Test("A short title is set large, a long one smaller, on its words")
     func largestThatFits() {
         let short = layout("Blue")
-        #expect(short.titleSize == TitleSleeve.steps[0] * 200 * 0.84)
+        #expect(abs(short.titleSize - TitleSleeve.steps[0] * 200 * 0.84) < 0.001)
         #expect(short.lines == ["Blue"])
+        // Never filling the sleeve: "die tekst van 't album daar mag veel
+        // kleiner joh" (19 November 2026).
+        #expect(short.titleSize <= 0.18 * 200 * 0.84)
         let long = layout("Stories from the City, Stories from the Sea")
         #expect(long.titleSize < short.titleSize)
         #expect((2...4).contains(long.lines.count))
@@ -111,11 +114,17 @@ struct TitleSleeveTests {
 
     @Test("Thumbnails: no artist line; a long title becomes its first letter")
     func thumbnails() {
-        let blue = layout("Blue", side: 40)
+        // At 48 and under, every step is under 7 points: the first letter.
+        let blue = layout("blue", side: 40)
         #expect(blue.artist == nil)
-        #expect(blue.lines == ["Blue"])
-        #expect(!blue.isInitial)
-        let long = layout("stories from the City, Stories from the Sea", side: 40)
+        #expect(blue.isInitial)
+        #expect(blue.lines == ["B"])
+        // Just under 56, a short title still fits on its words.
+        let short = layout("Blue", side: 55)
+        #expect(short.artist == nil)
+        #expect(short.lines == ["Blue"])
+        #expect(!short.isInitial)
+        let long = layout("stories from the City, Stories from the Sea", side: 55)
         #expect(long.isInitial)
         #expect(long.lines == ["S"])
         // From 96 the artist shows; under it not.

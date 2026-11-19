@@ -19,10 +19,12 @@
 //      mostly differ. Flat grounds of the brand's own (Cabinet, Land, its
 //      grooves played, the raised paper, a card) with Glow, Copper, Paper or
 //      Ink as the ink; the same by day and by night, as a printed sleeve is.
-//   3. Inside a margin of 8% of the side, the title at the largest of eight
-//      steps (40% of the inner side down to 10.5%, none under 7 points) at
+//   3. Inside a margin of 8% of the side, the title at the largest of five
+//      steps (17% of the inner side down to 10.5%, none under 7 points) at
 //      which it wraps on its words into at most four lines and, with the
-//      artist under it, fits the square.
+//      artist under it, fits the square. It began at 40%, a short title
+//      filling the sleeve; the photographer, on Linux's album page the same
+//      day: "die tekst van 't album daar mag veel kleiner joh".
 //   4. None fits: the smallest step, words that are too wide broken between
 //      their characters (graphemes, so an emoji or an accent stays whole),
 //      and what is still too much cut short with an ellipsis.
@@ -30,8 +32,9 @@
 //      only on a sleeve of 96 points or more, at 7.5% of the inner side (8
 //      at least). Smaller, it would be a smudge.
 //   6. A thumbnail under 56 points (a row, the player's bar): the title
-//      alone, in at most two lines on its words; if it does not fit, its
-//      first letter, large.
+//      alone, in at most two lines on its words; if it does not fit, or its
+//      steps fall under 7 points (48 points and less), its first letter, at
+//      half the inner side.
 //
 // CJK has no spaces: a line may break before or after any ideograph or
 // kana, as those scripts break.
@@ -117,7 +120,7 @@ public enum TitleSleeve {
     /// The margin, a share of the side.
     public static let margin = 0.08
     /// The title's sizes, largest first, as shares of the inner side.
-    public static let steps: [Double] = [0.40, 0.33, 0.27, 0.22, 0.18, 0.15, 0.125, 0.105]
+    public static let steps: [Double] = [0.17, 0.15, 0.13, 0.115, 0.105]
     /// No title under this, in points.
     public static let leastTitle = 7.0
     public static let maxLines = 4
@@ -133,7 +136,7 @@ public enum TitleSleeve {
     public static let tinySide = 56.0
     public static let tinyLines = 2
     /// The first letter's size, of the inner side.
-    public static let initialShare = 0.75
+    public static let initialShare = 0.5
     /// Where a line's baseline is, of its size below the line's top: the
     /// capitals' tops a little under it, the descenders inside the line.
     public static let baseline = 0.8

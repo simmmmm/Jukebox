@@ -236,11 +236,14 @@ a printed, typographic sleeve, on every client and at every size:
 - One of five prints by the album's id, flat and the same by day and by
   night: Glow on Cabinet, Paper on Land and on its grooves played, Copper
   on the raised paper, Ink on a card. Every ink 4.5:1 or more.
-- The title in the serif as large as fits, at the margin, inside 8% of the
-  side: the largest of eight steps at which it wraps on its words into four
-  lines; else broken inside a word, then cut short. The artist under it in
-  the sans, one line, from 96 pt.
-- Under 56 pt (rows, the bar): the title alone, or its first letter.
+- The title in the serif, at the margin, inside 8% of the side: the
+  largest of five steps (17% of the inner side down to 10.5%) at which it
+  wraps on its words into four lines; else broken inside a word, then cut
+  short. Never filling the sleeve: "die tekst van 't album daar mag veel
+  kleiner joh" (19 November 2026). The artist under it in the sans, one
+  line, from 96 pt.
+- Under 56 pt (rows, the bar): the title alone, or its first letter at half
+  the inner side (always at 48 pt and less).
 - Only once the server has said it has no cover: a cover on its way shows
   the quiet square, not a sleeve.
 
