@@ -147,8 +147,12 @@ public struct TasteProfile: Sendable {
 
     /// - Parameter calendar: whose hours and days the clock reads (the
     ///   device's; the tests pass one of their own).
-    public init(snapshot: LibrarySnapshot, history: ListeningHistory, now: Date, calendar: Calendar = .current) {
-        data = TasteData(snapshot: snapshot, history: history, now: now, calendar: calendar)
+    /// - Parameter scrobbles: the listener's Last.fm plays of library songs
+    ///   (SimilarityService.scrobbles), older evidence for the clock than
+    ///   this device's own; none changes nothing.
+    public init(snapshot: LibrarySnapshot, history: ListeningHistory, scrobbles: ListeningHistory = ListeningHistory(),
+                now: Date, calendar: Calendar = .current) {
+        data = TasteData(snapshot: snapshot, history: history, scrobbles: scrobbles, now: now, calendar: calendar)
     }
 
     init(data: TasteData) {

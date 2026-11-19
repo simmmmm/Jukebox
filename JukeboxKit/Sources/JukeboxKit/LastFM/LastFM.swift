@@ -54,10 +54,38 @@ public struct LastFMClient: Sendable {
         }
     }
 
+    /// An artist's tag, as many listeners gave it: 100 for the artist's
+    /// strongest, the rest relative to it.
+    public struct Tag: Codable, Sendable, Hashable {
+        public var name: String
+        /// 0 … 100.
+        public var count: Int
+
+        public init(name: String, count: Int) {
+            self.name = name
+            self.count = count
+        }
+    }
+
+    /// A song the listener played elsewhere, as Last.fm has it.
+    public struct Scrobble: Codable, Sendable, Hashable {
+        public var artist: String
+        public var title: String
+        public var date: Date
+
+        public init(artist: String, title: String, date: Date) {
+            self.artist = artist
+            self.title = title
+            self.date = date
+        }
+    }
+
     public enum Failure: Error, Sendable, Equatable, LocalizedError {
         case invalidKey
         case rateLimited
         case notFound
+        /// The listener keeps their plays to themselves (error 17).
+        case hidden
         case other(String)
 
         public var errorDescription: String? {
@@ -65,6 +93,7 @@ public struct LastFMClient: Sendable {
             case .invalidKey: "Last.fm did not accept the API key."
             case .rateLimited: "Last.fm asks to wait a moment."
             case .notFound: "Last.fm does not know that."
+            case .hidden: "Last.fm keeps these plays private."
             case let .other(message): message
             }
         }
@@ -121,6 +150,82 @@ public struct LastFMClient: Sendable {
         return Array(tracks.prefix(max(0, limit)))
     }
 
+    /// artist.getTopTags: what listeners call the artist ("shoegaze",
+    /// "dream pop"), strongest first. The radio reads them as genres where a
+    /// library's own tags say little (docs/RADIO.md, "Last.fm's tags").
+    public func topTags(artist: String) async throws -> [Tag] {
+        let body = try await call("artist.gettoptags", [("artist", artist)])
+        let answer = try Self.decode(LastFMTopTagsAnswer.self, body)
+        let items = answer.toptags?.tag?.items ?? []
+        return items.compactMap { item -> Tag? in
+            guard let name = Self.clean(item.name?.value) else { return nil }
+            let count = item.count?.value.flatMap(Self.int) ?? 0
+            return Tag(name: name, count: min(100, max(0, count)))
+        }
+    }
+
+    /// user.getRecentTracks, one page, newest first: what the listener
+    /// played since `from`, for the clock (docs/RADIO.md, "Scrobbles").
+    /// The song playing now has no date yet and is left out. Read only:
+    /// nothing is ever written to Last.fm.
+    public func recentTracks(user: String, from: Date? = nil, page: Int = 1,
+                             limit: Int = 200) async throws -> (scrobbles: [Scrobble], pages: Int) {
+        var parameters = [("user", user), ("limit", String(min(200, max(1, limit)))), ("page", String(max(1, page)))]
+        if let from, from.timeIntervalSince1970.isFinite {
+            parameters.append(("from", String(Int(max(0, from.timeIntervalSince1970)))))
+        }
+        let body = try await call("user.getrecenttracks", parameters)
+        let answer = try Self.decode(LastFMRecentTracksAnswer.self, body)
+        let scrobbles = (answer.recenttracks?.track?.items ?? []).compactMap { item -> Scrobble? in
+            guard let title = Self.clean(item.name?.value), let artist = Self.clean(item.artist?.value),
+                  let uts = item.date?.uts?.value, uts.isFinite, uts > 0 else { return nil }
+            return Scrobble(artist: artist, title: title, date: Date(timeIntervalSince1970: uts))
+        }
+        let pages = answer.recenttracks?.attributes?.totalPages?.value.flatMap(Self.int) ?? 1
+        return (scrobbles, max(1, pages))
+    }
+
+    /// What Last.fm said of a username, in the same words on every client.
+    public enum UserCheck: Sendable, Equatable {
+        case accepted
+        case unknown
+        case hidden
+        /// The key itself was turned down.
+        case refusedKey
+        case unreachable
+
+        public var problem: String? {
+            switch self {
+            case .accepted: nil
+            case .unknown: "Last.fm has no listener by this name"
+            case .hidden: "This listener keeps their plays private on Last.fm"
+            case .refusedKey: "Last.fm did not accept the API key"
+            case .unreachable: "Could not reach Last.fm; try again"
+            }
+        }
+    }
+
+    /// Whether Last.fm shows this listener's plays (one cheap call, the one
+    /// the clock makes), for Settings.
+    public func validateUser(_ user: String) async -> UserCheck {
+        let name = user.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty, !name.contains(where: \.isWhitespace) else { return .unknown }
+        do {
+            _ = try await recentTracks(user: name, limit: 1)
+            return .accepted
+        } catch let failure as Failure {
+            switch failure {
+            case .rateLimited: return .accepted
+            case .notFound: return .unknown
+            case .hidden: return .hidden
+            case .invalidKey: return .refusedKey
+            case .other: return .unreachable
+            }
+        } catch {
+            return .unreachable
+        }
+    }
+
     /// What Last.fm said of a key: Settings keeps it only when accepted, and
     /// says why not otherwise, in the same words on every client.
     public enum KeyCheck: Sendable, Equatable {
@@ -148,7 +253,7 @@ public struct LastFMClient: Sendable {
         } catch let failure as Failure {
             switch failure {
             // Asked to wait, or "not found": Last.fm read the key and took it.
-            case .rateLimited, .notFound: return .accepted
+            case .rateLimited, .notFound, .hidden: return .accepted
             case .invalidKey: return .refused
             // A status of 500, an answer that cannot be read, "service
             // offline": Last.fm's trouble, the key may well be good.
@@ -220,6 +325,9 @@ public struct LastFMClient: Sendable {
         case 29: return .rateLimited
         // 6: "The artist you supplied could not be found", "Track not found".
         case 6: return .notFound
+        // 17: "Login: User required to be logged in", a listener who hides
+        // their recent plays.
+        case 17: return .hidden
         default: return .other(message.isEmpty ? "Last.fm error \(code)." : message)
         }
     }
@@ -282,11 +390,202 @@ public actor SimilarityService {
     private var libraryGraph: (index: LibrarySnapshot.Index, graph: SimilarityGraph)?
     private var merged: (index: LibrarySnapshot.Index, version: Int, lastFM: SimilarityGraph, graph: SimilarityGraph)?
 
+    /// The listener's Last.fm name, for their scrobbles; nil or empty: none.
+    let user: String?
+    /// An artist's tags change slowly: asked again after half a year.
+    var tagMaxAge: TimeInterval = 183 * 86_400
+    /// What a tag of strength 100 counts against a genre of the files' own
+    /// (1); weaker tags by their share of it. Measured in docs/RADIO.md
+    /// ("Last.fm's tags").
+    var tagWeight = 0.5
+    /// The scrobbles kept: the clock's 21-day fade leaves 5% of a play this
+    /// old.
+    var scrobbleDays = 90.0
+    /// At most this many pages of 200 a round.
+    var scrobblePages = 10
+    /// Asked again after this.
+    var scrobbleRefresh: TimeInterval = 6 * 3600
+    private var tagsVersion = 0
+    private var tagged: (index: LibrarySnapshot.Index, version: Int, snapshot: LibrarySnapshot)?
+
     /// - Parameter directory: where the graph and Last.fm's answers are kept
     ///   (the app's Caches).
-    public init(directory: URL, lastFM: LastFMClient?) {
+    /// - Parameter user: the listener's Last.fm name, whose scrobbles the
+    ///   clock reads (`scrobbles(for:)`); nothing is ever written to Last.fm.
+    public init(directory: URL, lastFM: LastFMClient?, user: String? = nil) {
         self.directory = directory
         self.lastFM = lastFM
+        self.user = LastFMClient.clean(user)
+    }
+
+    // MARK: - Last.fm's tags
+
+    /// The library as the radio reads it: with a key, each artist's Last.fm
+    /// tags on disk as extra genres (LibrarySnapshot.init(tracks:artistTags:));
+    /// without one, or with no tags yet, `snapshot` itself. Made once per
+    /// snapshot and set of tags.
+    public func radioSnapshot(for snapshot: LibrarySnapshot) -> LibrarySnapshot {
+        loadIfNeeded()
+        guard lastFM != nil, !store.tags.isEmpty else { return snapshot }
+        if let tagged, tagged.index === snapshot.index, tagged.version == tagsVersion { return tagged.snapshot }
+        var artistTags: [String: [LibrarySnapshot.GenreTag]] = [:]
+        for (key, answer) in store.tags where snapshot.index.artistByKey[key] != nil {
+            let tags = Self.genreTags(answer.tags, artist: answer.name, weight: tagWeight)
+            if !tags.isEmpty { artistTags[key] = tags }
+        }
+        let made = artistTags.isEmpty ? snapshot : LibrarySnapshot(tracks: snapshot.tracks, artistTags: artistTags)
+        tagged = (snapshot.index, tagsVersion, made)
+        return made
+    }
+
+    /// Asks Last.fm for the tags of up to `maxArtists` artists not asked
+    /// lately: the `priority` ones first (the most liked), then the rest of
+    /// the library, most songs first. Returns `radioSnapshot(for:)` with
+    /// them. Stops quietly on a network error.
+    public func enrichTags(snapshot: LibrarySnapshot, priority artistKeys: [String],
+                           maxArtists: Int = 150) async -> LibrarySnapshot {
+        loadIfNeeded()
+        guard lastFM != nil, !keyRejected, maxArtists > 0 else { return radioSnapshot(for: snapshot) }
+        let index = snapshot.index
+        let rest = index.artistKeys.indices
+            .sorted { x, y in
+                let cx = index.artistOwnTracks[x].count, cy = index.artistOwnTracks[y].count
+                return cx != cy ? cx > cy : index.artistKeys[x] < index.artistKeys[y]
+            }
+            .map { index.artistKeys[$0] }
+        var due: [(key: String, name: String)] = []
+        var seen = Set<String>()
+        for key in artistKeys + rest where seen.insert(key).inserted {
+            guard let ref = snapshot.artist(key: key), !LibrarySnapshot.Index.isVarious(ref.name),
+                  let name = LastFMClient.clean(ref.name) else { continue }
+            if let known = store.tags[key], isFresh(known.fetched, maxAge: tagMaxAge) { continue }
+            due.append((key, name))
+            if due.count == maxArtists { break }
+        }
+        var unsaved = 0
+        var failuresInARow = 0
+        asking: for (key, name) in due {
+            if Task.isCancelled { break }
+            if let known = store.tags[key], isFresh(known.fetched, maxAge: tagMaxAge) { continue }
+            switch await ask({ try await $0.topTags(artist: name) }) {
+            case let .answer(tags):
+                store.tags[key] = LastFMStore.TagAnswer(name: name, fetched: currentDate(), tags: tags)
+                failuresInARow = 0
+            case .notFound:
+                store.tags[key] = LastFMStore.TagAnswer(name: name, fetched: currentDate(), tags: [])
+                failuresInARow = 0
+            case .failed:
+                failuresInARow += 1
+                if failuresInARow >= 3 { break asking }
+                continue
+            case .unavailable, .rateLimited, .offline:
+                break asking
+            }
+            tagsVersion += 1
+            unsaved += 1
+            if unsaved >= 20 {
+                store.saveTags(to: directory)
+                unsaved = 0
+            }
+        }
+        if unsaved > 0 { store.saveTags(to: directory) }
+        return radioSnapshot(for: snapshot)
+    }
+
+    /// Tags that name no genre: "seen live", "favorites", where the artist
+    /// is from, who sings.
+    static let notGenres: Set<String> = [
+        "seen live", "favorites", "favourites", "favorite", "favourite", "my favorite", "favorite artists",
+        "love", "awesome", "beautiful", "amazing", "cool", "good", "albums i own", "spotify", "all",
+        "male vocalists", "female vocalists", "male vocalist", "female vocalist", "vocalists",
+        "american", "british", "english", "uk", "usa", "canadian", "australian", "german", "dutch",
+        "french", "swedish", "norwegian", "japanese", "icelandic", "irish", "scottish", "belgian",
+    ]
+
+    /// An artist's tags as genres: the five strongest that name one, at
+    /// `weight` × their strength. A decade ("80s") is left to the radio's
+    /// own eras; the artist's own name is no genre.
+    static func genreTags(_ tags: [LastFMClient.Tag], artist: String, weight: Double) -> [LibrarySnapshot.GenreTag] {
+        let own = NameKey.artist(artist)
+        var kept: [LibrarySnapshot.GenreTag] = []
+        var keys = Set<String>()
+        for tag in tags.sorted(by: { $0.count != $1.count ? $0.count > $1.count : $0.name < $1.name }) where tag.count >= 10 {
+            let name = tag.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            let lower = name.lowercased()
+            guard !lower.isEmpty, !notGenres.contains(lower), !lower.contains(where: \.isNumber),
+                  NameKey.artist(name) != own, keys.insert(NameKey.genre(name)).inserted else { continue }
+            // Last.fm writes tags in lower case; a genre the files have
+            // keeps the files' spelling (LibrarySnapshot).
+            kept.append(LibrarySnapshot.GenreTag(name: lower.capitalized, weight: weight * Double(tag.count) / 100))
+            if kept.count == 5 { break }
+        }
+        return kept
+    }
+
+    // MARK: - Scrobbles
+
+    /// The listener's Last.fm plays of the last `scrobbleDays` that are
+    /// library songs, as completed plays, oldest first: for the clock
+    /// (TasteProfile's `scrobbles`), never written anywhere. Asked again
+    /// after `scrobbleRefresh`, only what is newer. Empty without a key or a
+    /// name.
+    public func scrobbles(for snapshot: LibrarySnapshot) async -> ListeningHistory {
+        loadIfNeeded()
+        guard let user, lastFM != nil else { return ListeningHistory() }
+        // Another name is another listener.
+        if let kept = store.scrobbles, kept.user != user { store.scrobbles = nil }
+        let now = currentDate()
+        let window = now.addingTimeInterval(-scrobbleDays * 86_400)
+        if store.scrobbles.map({ !isFresh($0.fetched, maxAge: scrobbleRefresh) }) ?? true {
+            await fetchScrobbles(user: user, since: window)
+        }
+        guard let kept = store.scrobbles else { return ListeningHistory() }
+        var events: [PlayEvent] = []
+        for play in kept.plays.reversed() where play.date >= window {
+            guard let track = snapshot.matchKeyed(artist: play.artist, artistKey: play.artistKey, titleKey: play.titleKey) else { continue }
+            events.append(PlayEvent(trackID: track.id, date: play.date, listened: track.duration,
+                                    duration: track.duration, outcome: .completed))
+        }
+        return ListeningHistory(events: events)
+    }
+
+    /// The plays since the newest kept (or since `window`), all pages or
+    /// none: a page missing would leave a hole the next round never fills.
+    private func fetchScrobbles(user: String, since window: Date) async {
+        let old = store.scrobbles?.plays.filter { $0.date >= window } ?? []
+        let from = max(window, old.first.map { $0.date.addingTimeInterval(1) } ?? window)
+        var fresh: [LastFMClient.Scrobble] = []
+        var pages = 1
+        var page = 1
+        while page <= min(pages, scrobblePages) {
+            if Task.isCancelled { return }
+            let asking = page
+            switch await ask({ try await $0.recentTracks(user: user, from: from, page: asking) }) {
+            case let .answer(answer):
+                fresh += answer.scrobbles
+                pages = answer.pages
+            case .notFound:
+                // No such listener, or plays kept private: nothing, asked
+                // again later.
+                fresh = []
+                pages = 0
+            case .failed, .unavailable, .rateLimited, .offline:
+                return
+            }
+            page += 1
+        }
+        var seen = Set<String>()
+        var plays: [LastFMStore.ScrobbleAnswer.Play] = []
+        let made = fresh.map { s in
+            LastFMStore.ScrobbleAnswer.Play(artist: s.artist, title: s.title, date: s.date,
+                                            artistKey: NameKey.artist(s.artist), titleKey: NameKey.title(s.title))
+        }
+        for play in (made + old).sorted(by: { $0.date > $1.date })
+        where play.date >= window && seen.insert("\(play.date.timeIntervalSince1970)|\(play.artistKey)|\(play.titleKey)").inserted {
+            plays.append(play)
+        }
+        store.scrobbles = LastFMStore.ScrobbleAnswer(user: user, fetched: currentDate(), plays: plays)
+        store.saveScrobbles(to: directory)
     }
 
     /// The graph as it is now: the library's edges, plus what is on disk.
@@ -441,6 +740,11 @@ public actor SimilarityService {
         currentDate = date
     }
 
+    func setTagWeight(_ weight: Double) {
+        tagWeight = weight
+        tagsVersion += 1
+    }
+
     // MARK: - Inside
 
     /// What one request came to.
@@ -464,10 +768,10 @@ public actor SimilarityService {
         store = LastFMStore.load(from: directory)
     }
 
-    func isFresh(_ fetched: Date) -> Bool {
+    func isFresh(_ fetched: Date, maxAge: TimeInterval? = nil) -> Bool {
         let age = currentDate().timeIntervalSince(fetched)
         // A date well ahead of now (the clock was changed) is stale too.
-        return age >= -3600 && age < maxAge
+        return age >= -3600 && age < (maxAge ?? self.maxAge)
     }
 
     /// One request at Last.fm's pace, backing off when it asks to.
@@ -483,7 +787,7 @@ public actor SimilarityService {
                 case .invalidKey:
                     keyRejected = true
                     return .unavailable
-                case .notFound:
+                case .notFound, .hidden:
                     return .notFound
                 case .other:
                     return .failed

@@ -74,6 +74,11 @@ final class TasteData: Sendable {
     /// but the mornings; and by chance alone a listener with no pattern
     /// moved a cluster's share by up to 0.05 (measured, RadioClockTests).
     static let liftThreshold = log(1.6)
+    /// What a scrobble counts for the clock against one of this device's
+    /// plays: what was heard elsewhere (a phone in a pocket, someone else
+    /// at the speaker) says less of this listener here. Measured in
+    /// docs/RADIO.md ("Scrobbles").
+    static let scrobbleWeight = 0.5
     /// A gap this long between two events starts a new session.
     static let sessionGap = 45.0 * 60
 
@@ -93,10 +98,12 @@ final class TasteData: Sendable {
         }
     }
 
+    /// - Parameter scrobbles: Last.fm's plays of library songs, for the
+    ///   clock only (SimilarityService.scrobbles); none changes nothing.
     /// - Parameter timeAware: false is the radio as it was before the clock
     ///   (no lift, a skip counting everywhere), for the measurements.
-    init(snapshot: LibrarySnapshot, history: ListeningHistory, now: Date, calendar: Calendar = .current,
-         timeAware: Bool = true) {
+    init(snapshot: LibrarySnapshot, history: ListeningHistory, scrobbles: ListeningHistory = ListeningHistory(),
+         now: Date, calendar: Calendar = .current, timeAware: Bool = true) {
         let index = snapshot.index
         let tracks = snapshot.tracks
         let n = tracks.count
@@ -186,34 +193,68 @@ final class TasteData: Sendable {
         var totalNear = 0.0, totalAll = 0.0
         var sessions = 0.0, session = 0.0
         var sessionEnd = -Double.infinity
+        /// One event for the clock, oldest first: `weight` 1 for this
+        /// device's, `scrobbleWeight` for one of Last.fm's.
+        func countForClock(_ event: PlayEvent, track: Int?, date: Double, near: Double, decay: Double,
+                           value v: Double, weight: Double) {
+            // A session counts once, by its nearest event.
+            if date - sessionEnd > Self.sessionGap {
+                sessions += session
+                session = 0
+            }
+            sessionEnd = max(sessionEnd, date)
+            session = max(session, weight * near * decay)
+            guard v > 0 else { return }
+            let w = v * weight
+            totalAll += w
+            totalNear += w * near
+            if let t = track {
+                for a in index.trackArtists[t] {
+                    artistAll[a] += w
+                    artistNear[a] += w * near
+                }
+                for (j, g) in index.trackGenres[t].enumerated() {
+                    let gw = w * index.genreWeight(t, j)
+                    genreAll[g] += gw
+                    genreNear[g] += gw * near
+                }
+            } else {
+                for a in event.artistKeys.compactMap({ index.artistByKey[$0] }) {
+                    artistAll[a] += w
+                    artistNear[a] += w * near
+                }
+                for g in event.genreKeys.compactMap({ index.genreByKey[$0] }) {
+                    genreAll[g] += w
+                    genreNear[g] += w * near
+                }
+            }
+        }
+
+        // Last.fm's scrobbles (docs/RADIO.md, "Scrobbles"): weeks of when
+        // the listener plays what, on day one. Only those older than this
+        // device's first event, so a play this device also scrobbled (a
+        // Navidrome or a Jellyfin plugin sends them) is never counted twice;
+        // for the clock alone (Jellyfin's play counts already say what is
+        // liked), and below this device's own.
+        if timeAware, !scrobbles.events.isEmpty {
+            let firstOwn = history.events.lazy.map(\.date).min() ?? .distantFuture
+            for event in scrobbles.events.sorted(by: { $0.date < $1.date }) where event.date < firstOwn {
+                let date = event.date.timeIntervalSinceReferenceDate
+                guard date.isFinite else { continue }
+                let c = clock(event.date)
+                let near = Self.nearness(hours: c.hour - nowClock.hour, sameKindOfDay: c.weekend == nowClock.weekend)
+                let decay = exp2(-days(since: event.date) / Self.halfLifeDays)
+                countForClock(event, track: index.trackByID[event.trackID], date: date, near: near, decay: decay,
+                              value: decay, weight: Self.scrobbleWeight)
+            }
+        }
+
         for (k, event) in history.events.enumerated() {
             let decay = exp2(-days(since: event.date) / Self.halfLifeDays)
             var v = Self.value(of: event.outcome) * decay
             let date = event.date.timeIntervalSinceReferenceDate
             if timeAware, date.isFinite {
-                // A session counts once, by its nearest event.
-                if date - sessionEnd > Self.sessionGap {
-                    sessions += session
-                    session = 0
-                }
-                sessionEnd = max(sessionEnd, date)
-                session = max(session, near[k] * decay)
-                if v > 0 {
-                    let artists = at[k].map { index.trackArtists[$0] }
-                        ?? event.artistKeys.compactMap { index.artistByKey[$0] }
-                    let genres = at[k].map { index.trackGenres[$0] }
-                        ?? event.genreKeys.compactMap { index.genreByKey[$0] }
-                    totalAll += v
-                    totalNear += v * near[k]
-                    for a in artists {
-                        artistAll[a] += v
-                        artistNear[a] += v * near[k]
-                    }
-                    for g in genres {
-                        genreAll[g] += v
-                        genreNear[g] += v * near[k]
-                    }
-                }
+                countForClock(event, track: at[k], date: date, near: near[k], decay: decay, value: v, weight: 1)
                 // Not now: a song the listener knows, skipped, was not
                 // wanted then. Pandora's "tired of this track" against its
                 // thumbs down; the research's (docs/RADIO.md) "a skip of a
@@ -300,7 +341,7 @@ final class TasteData: Sendable {
             for (k, a) in index.trackArtists[i].enumerated() {
                 artistEvidence[a] += k == 0 ? signed : 0.5 * signed
             }
-            for g in index.trackGenres[i] { genreEvidence[g] += signed }
+            for (k, g) in index.trackGenres[i].enumerated() { genreEvidence[g] += signed * index.genreWeight(i, k) }
         }
         let artistScale = max(3, Self.percentile(artistEvidence.filter { $0 > 0 }, 0.9))
         let genreScale = max(3, Self.percentile(genreEvidence.filter { $0 > 0 }, 0.75))

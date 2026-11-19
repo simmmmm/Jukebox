@@ -302,7 +302,7 @@ struct RadioEngine: Sendable {
                 let genres = index.trackGenres[t]
                 guard !genres.isEmpty, w > 0 else { continue }
                 total += w
-                for g in genres { a.genreWeight[g] += w }
+                for (k, g) in genres.enumerated() { a.genreWeight[g] += w * index.genreWeight(t, k) }
             }
             if total > 0 { for g in a.genreWeight.indices { a.genreWeight[g] /= total } }
         }
@@ -452,8 +452,12 @@ struct RadioEngine: Sendable {
                     guard own.count >= 2 else { continue }
                     var share = 0.0
                     for part in genre.parts {
-                        let carrying = own.filter { index.trackGenres[$0].contains(part.genre) }.count
-                        share += part.weight * Double(carrying) / Double(own.count)
+                        // A Last.fm tag carries it at its weight.
+                        var carrying = 0.0
+                        for t in own {
+                            if let k = index.trackGenres[t].firstIndex(of: part.genre) { carrying += index.genreWeight(t, k) }
+                        }
+                        share += part.weight * carrying / Double(own.count)
                     }
                     if share >= 0.5 { sources.append((artist, 0.55 * share)) }
                 }
@@ -643,8 +647,8 @@ struct RadioEngine: Sendable {
         var bestCoverage = 0.0
         for i in 0..<n {
             var covered = 0.0, total = 0.0, off = 0.0
-            for g in index.trackGenres[i] {
-                let idf = index.genreIDF[g]
+            for (k, g) in index.trackGenres[i].enumerated() {
+                let idf = index.genreIDF[g] * index.genreWeight(i, k)
                 total += idf
                 if genreWeight[g] > 0 { covered += genreWeight[g] * idf } else { off += idf }
             }
@@ -758,8 +762,13 @@ struct RadioEngine: Sendable {
         var genreTaste = 0.0
         let genres = index.trackGenres[i]
         if !genres.isEmpty {
-            for g in genres { genreTaste += genreAffinity[g] }
-            genreTaste /= Double(genres.count)
+            var total = 0.0
+            for (k, g) in genres.enumerated() {
+                let w = index.genreWeight(i, k)
+                genreTaste += w * genreAffinity[g]
+                total += w
+            }
+            genreTaste /= total
         }
         let fam = familiarity[i]
         var exponent: Double
@@ -787,7 +796,16 @@ struct RadioEngine: Sendable {
     func trackLift(_ i: Int) -> Double {
         let artist = index.trackArtists[i].first.map { artistLift[$0] } ?? 0
         let genres = index.trackGenres[i]
-        let genre = genres.isEmpty ? 0 : genres.reduce(0) { $0 + genreLift[$1] } / Double(genres.count)
+        var genre = 0.0
+        if !genres.isEmpty {
+            var total = 0.0
+            for (k, g) in genres.enumerated() {
+                let w = index.genreWeight(i, k)
+                genre += w * genreLift[g]
+                total += w
+            }
+            genre /= total
+        }
         return max(artist, genre)
     }
 
@@ -798,8 +816,8 @@ struct RadioEngine: Sendable {
     /// The genre of the track that says most about why it fits.
     func tellingGenre(_ i: Int, _ weights: [Double]) -> Int {
         var best = -1, bestValue = -1.0
-        for g in index.trackGenres[i] {
-            let v = weights[g] * index.genreIDF[g]
+        for (k, g) in index.trackGenres[i].enumerated() {
+            let v = weights[g] * index.genreIDF[g] * index.genreWeight(i, k)
             if v > bestValue {
                 bestValue = v
                 best = g
