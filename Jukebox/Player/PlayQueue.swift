@@ -934,8 +934,12 @@ class PlayQueue {
         guard let finished else { return }
         let now = Date()
         let outcome = PlayOutcome.of(listened: finished.listened, duration: finished.track.duration)
-        // Heard to the end, partly, or skipped, and whether on a station (Stats).
-        Stats.track(.trackEnded, ["outcome": outcome.rawValue, "station": finished.stationID != nil])
+        // Heard to the end, partly, or skipped, and whether on a station
+        // (Stats). Not while Private Listening is on: then nothing leaves
+        // the device ("ja graag", the photographer, 19 November 2026).
+        if !notCounted.isPrivate {
+            Stats.track(.trackEnded, ["outcome": outcome.rawValue, "station": finished.stationID != nil])
+        }
         guard finished.counts else { return }
         history.record(PlayEvent(track: finished.track, date: now, listened: finished.listened,
                                  outcome: outcome, stationID: finished.stationID))
