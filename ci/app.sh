@@ -43,8 +43,11 @@ case ${GITHUB_REF_NAME:-main} in
   *) TESTFLIGHT=false; SCREENSHOTS=${SCREENSHOTS:-false} ;;
 esac
 
-# The newest released Xcode 26 the runner has.
-xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
+# The newest released Xcode the runner has, 26 or later: from April 2027
+# the store takes only builds made with the iOS 27 SDK (ITMS-90725, on
+# build 306 of 19 November 2026).
+ls -d /Applications/Xcode*.app 2>/dev/null || true
+xcode=$(ls -d /Applications/Xcode_2[6-9]*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
 if [[ -n $xcode ]]; then sudo xcode-select -s "$xcode"; fi
 xcodebuild -version | tee build/logs/xcode-version.txt
 
