@@ -211,7 +211,6 @@ struct PlaylistDetailView: View {
     @State private var isChoosingPicture = false
     /// Songs picked with ⌘ or ⇧ in the wide list (TrackPicks).
     @State private var picks = TrackPicks()
-    @State private var keys: EventModifiers = []
 
     var body: some View {
         let shown = library.playlists.first(where: { $0.id == playlist.id }) ?? playlist
@@ -321,8 +320,7 @@ struct PlaylistDetailView: View {
                 ForEach(entries) { entry in
                     let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
                     Button {
-                        if keys.contains(.command) { picks.click(i, .toggle); return }
-                        if keys.contains(.shift) { picks.click(i, .extend); return }
+                        if let kind = heldPick() { picks.click(i, kind); return }
                         picks.plain(i)
                         guard !player.refusesOffline(entry.track) else { return }
                         play(tracks, from: i, playlist: shown, shuffled: false)
@@ -331,6 +329,7 @@ struct PlaylistDetailView: View {
                                  removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) })
                     }
                     .buttonStyle(.plain)
+                    .picking { picks.click(i, $0) }
                     .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
                 }
                 .onDelete(perform: deleteAction(shown))
@@ -365,7 +364,6 @@ struct PlaylistDetailView: View {
             }
         }
         .listStyle(.plain)
-        .onModifierKeysChanged(mask: [.command, .shift]) { _, now in keys = now }
         .onChange(of: entries?.map(\.id)) { picks.clear() }
         .pageGround()
         .onPageWidth($width)

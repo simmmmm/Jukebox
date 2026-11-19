@@ -7,6 +7,9 @@
 
 import JukeboxKit
 import SwiftUI
+#if os(macOS)
+import AppKit
+#endif
 
 extension DesktopMeasures.Page {
     /// The page's margin, in points.
@@ -530,6 +533,32 @@ extension View {
     }
 }
 
+/// What the keys held make a click on a song's row (TrackPicks): on the
+/// Mac, read as the click comes, ⌘ one more, ⇧ a run; nil plays.
+func heldPick() -> TrackPicks.Click? {
+    #if os(macOS)
+    let keys = NSEvent.modifierFlags
+    if keys.contains(.command) { return .toggle }
+    if keys.contains(.shift) { return .extend }
+    #endif
+    return nil
+}
+
+extension View {
+    /// The iPad's way to the same, with a keyboard: a tap with ⌘ or ⇧ held
+    /// is a pick, before the row's button sees it (iOS has no
+    /// onModifierKeysChanged); any other tap is the button's.
+    func picking(_ pick: @escaping (TrackPicks.Click) -> Void) -> some View {
+        #if os(iOS)
+        self
+            .highPriorityGesture(TapGesture().modifiers(.command).onEnded { pick(.toggle) })
+            .highPriorityGesture(TapGesture().modifiers(.shift).onEnded { pick(.extend) })
+        #else
+        self
+        #endif
+    }
+}
+
 extension EnvironmentValues {
     /// The songs picked with a row's own (PageTrackRows), empty when it is
     /// not picked: its look and its menu (TrackRow, TrackMenu).
@@ -547,14 +576,12 @@ struct PageTrackRows: View {
     @Environment(AudioPlayer.self) private var player
     /// Songs picked with ⌘ or ⇧ (TrackPicks), for the menu on all of them.
     @State private var picks = TrackPicks()
-    @State private var keys: EventModifiers = []
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(Array(tracks.enumerated()), id: \.element.id) { i, track in
                 Button {
-                    if keys.contains(.command) { picks.click(i, .toggle); return }
-                    if keys.contains(.shift) { picks.click(i, .extend); return }
+                    if let kind = heldPick() { picks.click(i, kind); return }
                     picks.plain(i)
                     // Offline, a song not on the device says why rather than play.
                     guard !player.refusesOffline(track) else { return }
@@ -564,10 +591,10 @@ struct PageTrackRows: View {
                              subtitle: subtitle(track))
                 }
                 .buttonStyle(.plain)
+                .picking { picks.click(i, $0) }
                 .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
             }
         }
-        .onModifierKeysChanged(mask: [.command, .shift]) { _, now in keys = now }
         // Picked by place: another list forgets them.
         .onChange(of: tracks.map(\.id)) { picks.clear() }
     }
