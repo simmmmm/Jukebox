@@ -249,7 +249,13 @@ final class HandoffStore {
             }
         }
         let title = state.title ?? state.station?.title ?? String(localized: "Continued")
-        player.play(tracks, startingAt: index, context: QueueContext(.other, title: title), paused: !playing)
+        // The saved queue keeps only its title. One that is a playlist marked
+        // Don't Count Plays goes on as that playlist, so the Christmas music
+        // taken up after a restart is still not counted.
+        // ponytail: by name; a PlayState with the playlist's id if names clash.
+        let marked = player.notCounted.marks.items.first { $0.kind == .playlist && $0.name == title }
+        let context = marked.map { QueueContext(.playlist($0.id), title: title) } ?? QueueContext(.other, title: title)
+        player.play(tracks, startingAt: index, context: context, paused: !playing)
         // Offline, the player may have refused, or started another song (the
         // first one on the phone): then nothing was taken over.
         guard let entry = player.current, entry.track.id == tracks[index].id else { return false }

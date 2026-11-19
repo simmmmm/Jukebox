@@ -97,6 +97,14 @@ struct MiniPlayer: View {
                         Text(track.name)
                             .font(.subheadline.weight(.semibold))
                             .lineLimit(1)
+                        // Private Listening on (NotCountedViews): small, so
+                        // a mode kept for days is not forgotten.
+                        if player.notCounted.isPrivate {
+                            Image(systemName: "eye.slash")
+                                .font(.caption2)
+                                .foregroundStyle(.tertiary)
+                                .accessibilityLabel("Private Listening is on")
+                        }
                     }
                     if let shownError {
                         errorLine(shownError)

@@ -431,7 +431,10 @@ Played, not counted (19 November 2026): "bijv voor kerstmuziek oid", and
   clock, the mixes and Your Year; "Played lately"). Asked when the play
   would count, so Private Listening turned on mid-song keeps that song out;
   a song counted already stays counted. A song queued with Play Next into a
-  marked playlist's queue counts by its own marks.
+  marked playlist's queue counts by its own marks. A queue taken up again
+  (HandoffStore) keeps only its title, so one titled as a marked playlist
+  goes on as that playlist (by name: two playlists of one name both count
+  as the marked one there).
 - **Kept working**: the queue, this session's Up Next, the handoff's saved
   place ("Where you left off", a place to go on from, not a count), and
   remote control's progress reports (Play On from another client needs
@@ -442,7 +445,8 @@ Played, not counted (19 November 2026): "bijv voor kerstmuziek oid", and
   Controls menu, the iPhone's Now Playing ⋮ and Linux's primary menu. A
   marked album's or playlist's facts end in "Not counted". While Private
   Listening is on, one quiet sign: a crossed eye in the wide bar (a click
-  turns it off), a line under Now Playing's title on the iPhone.
+  turns it off), on the iPhone a small one after the mini player's title
+  and a line under Now Playing's.
 - **Checked**: Linux's `QueueCheck` plays a marked song and finds it
   neither reported nor in the history.
 

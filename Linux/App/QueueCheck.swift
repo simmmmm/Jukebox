@@ -281,13 +281,15 @@ enum QueueCheck {
         c.play(tracks, context: album)
         c.engineRuns(true)
         c.playing?.heard = 150
-        expect(c.reportStartIfNeeded(), "an unmarked song counts")
+        // Private Listening is the machine's own (UserDefaults): read, never
+        // set here. On, nothing counts.
+        expect(c.reportStartIfNeeded() != c.notCounted.isPrivate, "an unmarked song counts")
         c.next()
         c.engineRuns(true)
         c.playing?.heard = 150
         expect(c.current?.track.id == "t2" && !c.reportStartIfNeeded(), "a marked song plays, not told to the server")
         c.next()
-        expect(heard.history.events.map(\.trackID) == ["t1"], "nor kept in the history")
+        expect(heard.history.events.map(\.trackID) == (c.notCounted.isPrivate ? [] : ["t1"]), "nor kept in the history")
         c.stop()
 
         for what in failed { print("queue check failed: \(what)") }
