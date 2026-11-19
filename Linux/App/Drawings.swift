@@ -453,20 +453,69 @@ nonisolated enum Draw {
         }
     }
 
+    // MARK: The title sleeve
+
+    /// An album without a cover, as a printed sleeve (TitleSleeve, the rule
+    /// for both platforms; the iPhone's TitleSleeveFace): its print's flat
+    /// ground, the title in the serif, the artist under it in the sans, each
+    /// line set at TitleSleeve's baseline. Measured here with Pango as it is
+    /// drawn, unhinted, as the record's label.
+    static func titleSleeve(_ cr: OpaquePointer, side: Double, words: TitleSleeve.Words) {
+        let layout = pango_cairo_create_layout(cr)!
+        defer { g_object_unref(UnsafeMutableRawPointer(layout)) }
+        let options = cairo_font_options_create()
+        cairo_font_options_set_hint_metrics(options, CAIRO_HINT_METRICS_OFF)
+        cairo_font_options_set_hint_style(options, CAIRO_HINT_STYLE_NONE)
+        pango_cairo_context_set_font_options(pango_layout_get_context(layout), options)
+        cairo_font_options_destroy(options)
+        pango_layout_context_changed(layout)
+        let description = pango_font_description_new()
+        defer { pango_font_description_free(description) }
+        pango_font_description_set_weight(description, PANGO_WEIGHT_NORMAL)
+        let unit = Double(PANGO_SCALE)
+        func set(_ text: String, _ face: TitleSleeve.Face, _ size: Double) {
+            pango_font_description_set_family(description, face == .title ? serif : sans)
+            pango_font_description_set_absolute_size(description, size * unit)
+            pango_layout_set_font_description(layout, description)
+            pango_layout_set_text(layout, text, -1)
+        }
+        let sleeve = TitleSleeve.layout(words, side: side) { text, face, size in
+            set(text, face, size)
+            var logical = PangoRectangle()
+            pango_layout_get_extents(layout, nil, &logical)
+            return Double(logical.width) / unit
+        }
+        color(cr, sleeve.print.ground)
+        cairo_paint(cr)
+        func line(_ text: String, _ face: TitleSleeve.Face, _ size: Double, baseline: Double, ink: UInt32) {
+            set(text, face, size)
+            cairo_move_to(cr, sleeve.padding, baseline - Double(pango_layout_get_baseline(layout)) / unit)
+            color(cr, ink)
+            pango_cairo_show_layout(cr, layout)
+        }
+        for (index, text) in sleeve.lines.enumerated() {
+            line(text, .title, sleeve.titleSize, baseline: sleeve.lineBaseline(index), ink: sleeve.print.title)
+        }
+        if let artist = sleeve.artist {
+            line(artist, .artist, sleeve.artistSize, baseline: sleeve.artistBaseline, ink: sleeve.print.artist)
+        }
+    }
+
     // MARK: The sleeve and its record
 
     /// Now Playing's sleeve and record where `layout` puts them, from the
     /// bitmap's (x, y): the record, its shadows and its sheen, then the
     /// sleeve over it with its own. Shadows black at `strength` (1.5 on D2's
-    /// dark land).
+    /// dark land). No cover: the album's title sleeve, from `words`.
     static func sleeveAndRecord(_ cr: OpaquePointer, scale: Double, layout: SleeveLayout, x: Double, y: Double,
-                                cover: Cover?, bands: [Double], label: RecordLabel?, strength: Double) {
+                                cover: Cover?, words: TitleSleeve.Words? = nil, bands: [Double], label: RecordLabel?,
+                                strength: Double) {
         cairo_save(cr)
         cairo_translate(cr, x, y)
         record(cr, scale: scale, center: (layout.recordCenter.x, layout.recordCenter.y), diameter: layout.recordDiameter,
                bands: bands, label: label, tone: cover?.average, strength: strength)
         cairo_translate(cr, layout.sleeve.minX, layout.sleeve.minY)
-        sleeve(cr, scale: scale, side: layout.sleeve.width, cover: cover, strength: strength)
+        sleeve(cr, scale: scale, side: layout.sleeve.width, cover: cover, words: words, strength: strength)
         cairo_restore(cr)
     }
 
@@ -664,7 +713,8 @@ nonisolated enum Draw {
 
     /// SleeveCard at the origin: its thickness with four shadows, then the
     /// printed face.
-    private static func sleeve(_ cr: OpaquePointer, scale: Double, side: Double, cover: Cover?, strength: Double) {
+    private static func sleeve(_ cr: OpaquePointer, scale: Double, side: Double, cover: Cover?, words: TitleSleeve.Words?,
+                               strength: Double) {
         // The card's edge: the cover's colour with 45% black.
         let edge = cover.map { ($0.average.red * 0.55, $0.average.green * 0.55, $0.average.blue * 0.55) }
         let card: (OpaquePointer) -> Void = { roundedRect($0, 0, 0, side, side, 6) }
@@ -684,6 +734,8 @@ nonisolated enum Draw {
         cairo_clip(cr)
         if let cover {
             paint(cr, cover, x: 0, y: 0, side: side)
+        } else if let words {
+            titleSleeve(cr, side: side, words: words)
         } else {
             // No cover: Cabinet, as Now Playing has it (BRAND.md).
             color(cr, cabinet)

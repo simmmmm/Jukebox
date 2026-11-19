@@ -130,7 +130,7 @@ enum MiniPlayer {
         observe(column) {
             let player = app.player
             let track = player.currentTrack
-            art.show(track?.artwork)
+            art.show(track?.artwork, sleeve: track.map(TitleSleeve.Words.init(track:)))
             setText(title, track?.name ?? "")
             setText(artist, track?.artistLine ?? "")
             setIcon(play, player.isPlaying ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")

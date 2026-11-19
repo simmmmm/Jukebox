@@ -133,7 +133,10 @@ public enum TitleSleeve {
     public static let tinySide = 56.0
     public static let tinyLines = 2
     /// The first letter's size, of the inner side.
-    public static let initialShare = 0.6
+    public static let initialShare = 0.75
+    /// Where a line's baseline is, of its size below the line's top: the
+    /// capitals' tops a little under it, the descenders inside the line.
+    public static let baseline = 0.8
     public static let ellipsis = "\u{2026}"
 
     public enum Face: Sendable {
@@ -163,6 +166,10 @@ public enum TitleSleeve {
         public var isInitial: Bool
 
         public func lineTop(_ index: Int) -> Double { padding + Double(index) * lineHeight }
+
+        /// Where each client sets a title line's baseline, and the artist's.
+        public func lineBaseline(_ index: Int) -> Double { lineTop(index) + titleSize * TitleSleeve.baseline }
+        public var artistBaseline: Double { artistTop + artistSize * TitleSleeve.baseline }
     }
 
     public static func layout(_ words: Words, side: Double, measure: Measure) -> Layout {

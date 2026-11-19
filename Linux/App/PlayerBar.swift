@@ -176,7 +176,7 @@ enum PlayerBar {
             let player = app.player
             let track = player.currentTrack
             bar.isVisible = track != nil
-            art.show(track?.artwork)
+            art.show(track?.artwork, sleeve: track.map(TitleSleeve.Words.init(track:)))
             setText(title, track?.name ?? "")
             let line = track?.artistLine ?? ""
             setText(artist, line)

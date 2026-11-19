@@ -77,7 +77,7 @@ enum HomePage {
         let columns = PageMeasure.shared.columns
         for (index, (album, date)) in lately.enumerated() {
             let art = Art(48)
-            art.show(album.artwork)
+            art.show(album.artwork, sleeve: TitleSleeve.Words(album: album))
             let words = vbox(spacing: 0, [label(album.name, "t15"),
                                           label([album.artistLine, RelativeDay.standalone(date)].filter { !$0.isEmpty }.joined(separator: " · "), "t13", "fact")])
             let row = hbox(spacing: 16, [art.widget, words.expand(horizontal: true).align(vertical: GTK_ALIGN_CENTER)]).size(height: 64)
@@ -136,7 +136,7 @@ enum HomePage {
     /// artist, and Continue at the foot. The whole card goes on with it.
     private static func handoffCard(_ offer: HandoffStore.Offer, paired: Bool) -> Widget {
         let art = Art(120)
-        art.show(offer.track.artwork)
+        art.show(offer.track.artwork, sleeve: TitleSleeve.Words(track: offer.track))
         let words = vbox()
         append(cardLine(offer.heading, ["t13", "fact"], paired: paired), to: words)
         append(cardLine(offer.track.name, ["serif", "section-title"], paired: paired), to: words)
@@ -886,7 +886,7 @@ enum Pages {
         let tracks = app.library.tracks(inAlbum: album.id)
         let context = QueueContext(.album(album.id), title: album.name)
         let art = cover()
-        art.show(album.artwork)
+        art.show(album.artwork, sleeve: TitleSleeve.Words(album: album))
         let artist = album.primaryArtist.flatMap { app.library.artist($0) }
         let more: [(String, () -> Void)] = [("Start a Station", { app.radio.start(.album(album.id)) }),
                                              ("Play Next", { app.player.playNext(tracks) }),

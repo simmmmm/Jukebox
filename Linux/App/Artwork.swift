@@ -32,6 +32,11 @@ final class ArtworkLoader {
     private var memory: [URL: Texture] = [:]
     private var recent: [URL] = []
     private var loading: [URL: Task<Texture?, Never>] = [:]
+    /// Covers the server said it has not (an answer other than 200, or
+    /// bytes that are no picture), this session: their album gets its title
+    /// sleeve at once, not after asking again. A network that failed is not
+    /// in it: that cover is asked again next time.
+    private var missing: Set<URL> = []
     private let folder: URL
 
     init() {
@@ -42,6 +47,8 @@ final class ArtworkLoader {
     }
 
     func known(_ url: URL) -> Texture? { memory[url] }
+
+    func isMissing(_ url: URL) -> Bool { missing.contains(url) }
 
     /// The cover's file on disk, once it has been fetched: what GNOME's
     /// media controls show (MPRIS), without the server's token in an address.
@@ -73,23 +80,29 @@ final class ArtworkLoader {
         if let found = memory[url] { return found }
         if let task = loading[url] { return await task.value }
         let file = fileURL(for: url)
-        let task = Task.detached(priority: .utility) { () -> Texture? in
+        // The texture, or none and whether the server has none.
+        let fetch = Task.detached(priority: .utility) { () -> (Texture?, missing: Bool) in
             var data = try? Data(contentsOf: file)
             if data == nil {
-                guard let (fetched, response) = try? await URLSession.shared.data(from: url),
-                      (response as? HTTPURLResponse)?.statusCode == 200 else { return nil }
+                guard let (fetched, response) = try? await URLSession.shared.data(from: url) else { return (nil, false) }
+                guard (response as? HTTPURLResponse)?.statusCode == 200 else { return (nil, true) }
                 try? fetched.write(to: file, options: .atomic)
                 data = fetched
             }
-            guard let data else { return nil }
+            guard let data else { return (nil, false) }
             // Decoded here, off the main thread.
             let bytes = data.withUnsafeBytes { g_bytes_new($0.baseAddress, gsize($0.count)) }
             defer { g_bytes_unref(bytes) }
             guard let texture = gdk_texture_new_from_bytes(bytes, nil) else {
                 try? FileManager.default.removeItem(at: file)
-                return nil
+                return (nil, true)
             }
-            return Texture(owning: texture)
+            return (Texture(owning: texture), false)
+        }
+        let task = Task { () -> Texture? in
+            let (texture, missing) = await fetch.value
+            if missing { self.missing.insert(url) }
+            return texture
         }
         loading[url] = task
         let texture = await task.value
@@ -134,6 +147,10 @@ final class Art {
     private var size: Int32
     /// The collage shown, drawn again at a new size.
     private var collage: [Artwork]?
+    /// The words for a sleeve when the cover is missing (TitleSleeve), and
+    /// whether that sleeve is up, drawn again at a new size.
+    private var sleeve: TitleSleeve.Words?
+    private var showsSleeve = false
     /// The image has gone (its page was rebuilt) while a cover was on its
     /// way: nothing is left to show it in.
     private var isGone = false
@@ -171,28 +188,59 @@ final class Art {
         if let collage {
             wanted = nil
             show(collage: collage)
+        } else if showsSleeve {
+            showSleeve()
         }
     }
 
-    func show(_ artwork: Artwork?) {
+    /// The cover; with `sleeve`, when the server has none, a sleeve printed
+    /// with the album's title and artist (TitleSleeve) in place of the note.
+    func show(_ artwork: Artwork?, sleeve: TitleSleeve.Words? = nil) {
         collage = nil
         let url = artwork.flatMap { artwork in app.server?.artworkURL(artwork, maxPixelSize: coverPixels(Double(size))) }
-        guard url?.absoluteString != wanted else { return }
-        wanted = url?.absoluteString
+        let wish = url?.absoluteString ?? sleeve.map { "sleeve \($0.key) \($0.title) \($0.artist)" }
+        guard wish != wanted else { return }
+        wanted = wish
+        self.sleeve = sleeve
         guard let url else {
-            placeholder()
+            if sleeve != nil { showSleeve() } else { placeholder() }
             return
         }
         if let known = ArtworkLoader.shared.known(url) {
             set(known)
             return
         }
+        if sleeve != nil, ArtworkLoader.shared.isMissing(url) {
+            showSleeve()
+            return
+        }
         placeholder()
         Task {
             let texture = await ArtworkLoader.shared.texture(for: url)
             // The row may show another album by now.
-            guard !self.isGone, self.wanted == url.absoluteString, let texture else { return }
-            self.set(texture)
+            guard !self.isGone, self.wanted == url.absoluteString else { return }
+            if let texture {
+                self.set(texture)
+            } else if self.sleeve != nil, ArtworkLoader.shared.isMissing(url) {
+                self.showSleeve()
+            }
+        }
+    }
+
+    /// The title sleeve at this size, drawn once and kept.
+    private func showSleeve() {
+        guard let words = sleeve else { return }
+        let side = Double(size), scale = Screen.shared.scale, asked = wanted
+        let key = "title sleeve \(size) \(words.key) \(words.title) \(words.artist)"
+        if let done = DrawingCache.get(drawingKey(key, scale: scale)) { return set(done, sleeve: true) }
+        placeholder()
+        // Up already, as far as a new size goes: resize draws it again.
+        showsSleeve = true
+        Task {
+            guard let drawing = await drawn(key, width: side, height: side, scale: scale, { cr, _ in
+                Draw.titleSleeve(cr, side: side, words: words)
+            }), !self.isGone, self.wanted == asked, Double(self.size) == side else { return }
+            self.set(drawing, sleeve: true)
         }
     }
 
@@ -231,13 +279,15 @@ final class Art {
         }
     }
 
-    private func set(_ texture: Texture) {
+    private func set(_ texture: Texture, sleeve: Bool = false) {
+        showsSleeve = sleeve
         gtk_widget_remove_css_class(image, "artwork-empty")
         gtk_image_set_pixel_size(ptr(image), size)
         gtk_image_set_from_paintable(ptr(image), texture.pointer)
     }
 
     private func placeholder() {
+        showsSleeve = false
         gtk_image_set_from_icon_name(ptr(image), emptyIcon)
         gtk_image_set_pixel_size(ptr(image), max(16, grid(size / 3)))
         gtk_widget_add_css_class(image, "artwork-empty")
@@ -453,10 +503,14 @@ final class SleeveArt {
         Task {
             var covers: [Texture] = []
             if let url, let texture = await ArtworkLoader.shared.texture(for: url) { covers.append(texture) }
+            // No cover on the server: the album's title sleeve, as on its
+            // tile (TitleSleeve). A cover the network lost: Cabinet, as before.
+            let missing = url.map { ArtworkLoader.shared.isMissing($0) } ?? true
+            let words = missing ? TitleSleeve.Words(track: track) : nil
             guard self.wanted == named,
                   let drawing = await drawn(key, width: wide, height: high, scale: scale, covers: covers, { cr, covers in
                       Draw.sleeveAndRecord(cr, scale: scale, layout: layout, x: spill.left, y: spill.top, cover: covers.first,
-                                           bands: bands, label: label, strength: strength)
+                                           words: words, bands: bands, label: label, strength: strength)
                   }) else { return }
             set(drawing)
         }
