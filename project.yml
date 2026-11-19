@@ -11,10 +11,12 @@ options:
     # accessory, its minimising) says `if #available(iOS 26, *)` and gives
     # 18 its own form; the 26 look is unchanged.
     iOS: "18.0"
-    # The Mac stays at 26: lowering it to macOS 15 was not tried; at least
-    # the title bar's head (`sharedBackgroundVisibility`, WideShell.swift)
-    # is 26's alone.
-    macOS: "26.0"
+    # macOS 15 Sequoia too: "ga dan naar macos ook" (the photographer, 19
+    # November 2026). The same rule: what is 26's alone (the title bar's
+    # head without glass behind it, WideShell.swift's BrandHeadItem; the
+    # widget's control) says `if #available(macOS 26, *)` and 15 has its
+    # own form.
+    macOS: "15.0"
   developmentLanguage: en
   createIntermediateGroups: true
 settings:

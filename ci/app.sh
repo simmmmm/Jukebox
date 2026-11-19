@@ -22,9 +22,7 @@ mac_gates=true
 # A [testflight] run uploads the Mac too: App Store Connect's Jukebox has
 # the macOS platform since 16 November 2026. False again uploads the
 # iPhone's build only.
-# Off until the Mac runs on macOS 15 (branch macos-15): "cancel die macos
-# testflight build dan" (19 November 2026).
-mac_upload=false
+mac_upload=true
 
 # Uploads and screenshots belong to main. On a work branch a commit
 # that happens to name the upload's token uploads nothing, and the job is the
@@ -209,6 +207,12 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build-mac.log || true; } \
     | sed "s#$PWD/##g" | sort -u > build/logs/errors-mac.txt
   head -200 build/logs/errors-mac.txt
+  # The Mac's own warnings too, as the iPhone's: from macOS 15 an API
+  # younger than the minimum shows here.
+  { grep -E '^/.*\.swift:[0-9]+:[0-9]+: warning:' build/logs/build-mac.log || true; } | sed "s#$PWD/##g" | sort -u \
+    > build/logs/warnings-mac.txt
+  head -80 build/logs/warnings-mac.txt
+  echo "$(wc -l < build/logs/warnings-mac.txt | tr -d ' ') distinct Swift warnings, Mac"
   report build/logs/build-mac.log "Compile errors, Mac"
 
   # Only of an app that compiled; SCREENSHOTS=false leaves them out.
