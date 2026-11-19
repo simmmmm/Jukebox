@@ -302,7 +302,7 @@ nothing to anyone but the listener's own server and devices.
 1. The release build from main on TestFlight, played through on a phone:
    sign in to Jellyfin and to the Navidrome demo, a station, a download,
    airplane mode. Once the Mac uploads, the same on the Mac.
-2. `MARKETING_VERSION` (project.yml, 1.1 now); the build number is CI's run
+2. `MARKETING_VERSION` (project.yml, 1.2 now); the build number is CI's run
    number.
 3. In App Store Connect: the listing above, the screenshots, App Privacy,
    age rating, the review notes; "Manually release this version" so the
