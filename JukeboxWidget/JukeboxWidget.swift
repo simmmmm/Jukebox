@@ -34,7 +34,11 @@ import WidgetKit
 struct JukeboxWidgets: WidgetBundle {
     var body: some Widget {
         DoorsWidget()
-        YourStationControl()
+        // A Mac's controls are macOS 26's: on Sequoia the widget alone, and
+        // Your Station stays in the Dock's menu.
+        if #available(macOS 26, *) {
+            YourStationControl()
+        }
     }
 }
 
@@ -44,6 +48,7 @@ struct JukeboxWidgets: WidgetBundle {
 /// counted `from: widget`. A control shows a symbol, not a drawing, so the
 /// radio's waves stand in for the mark, as in Siri's Your Station shortcut
 /// (MusicIntents.swift). Asked by the listener's hand, never by a car.
+@available(macOS 26, *)
 struct YourStationControl: ControlWidget {
     var body: some ControlWidgetConfiguration {
         StaticControlConfiguration(kind: "com.tijmen.Jukebox.YourStation") {

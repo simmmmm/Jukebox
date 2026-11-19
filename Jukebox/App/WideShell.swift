@@ -250,10 +250,7 @@ struct WideShell: View {
             // vensterding zetten naast de stoplichten" (the photographer,
             // 14 November 2026). As wide as the places, so Back and the
             // title start over the page.
-            ToolbarItem(placement: .navigation) {
-                BrandHead(overPlaces: hasPlaces)
-            }
-            .sharedBackgroundVisibility(.hidden)
+            BrandHeadItem(overPlaces: hasPlaces)
             if folds && hasPlaces && navigator.widePath.isEmpty {
                 ToolbarItem(placement: .navigation) {
                     placesButton
@@ -500,6 +497,26 @@ private struct BrandHead: View {
     var body: some View {
         BrandMark()
             .frame(width: overPlaces ? CGFloat(DesktopMeasures.sidebar) - 92 : nil, alignment: .leading)
+    }
+}
+
+/// The head as the title bar's first item. macOS 26 puts glass behind each
+/// item, and the mark is no button, so its glass goes. Sequoia's title bar
+/// draws nothing behind an item: the mark stands on the bar as it is.
+private struct BrandHeadItem: ToolbarContent {
+    let overPlaces: Bool
+
+    var body: some ToolbarContent {
+        if #available(macOS 26, *) {
+            ToolbarItem(placement: .navigation) {
+                BrandHead(overPlaces: overPlaces)
+            }
+            .sharedBackgroundVisibility(.hidden)
+        } else {
+            ToolbarItem(placement: .navigation) {
+                BrandHead(overPlaces: overPlaces)
+            }
+        }
     }
 }
 #endif
