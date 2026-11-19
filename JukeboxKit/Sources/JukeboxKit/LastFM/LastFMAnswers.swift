@@ -158,3 +158,50 @@ struct LastFMTopTracksAnswer: Decodable, Sendable {
 
     let toptracks: Body?
 }
+
+/// artist.gettoptags:
+/// {"toptags": {"tag": [{"count": 100, "name": "shoegaze", "url": "…"}], "@attr": {"artist": "…"}}}
+struct LastFMTopTagsAnswer: Decodable, Sendable {
+    struct Body: Decodable, Sendable {
+        let tag: LastFMList<Item>?
+    }
+
+    struct Item: Decodable, Sendable {
+        let name: LastFMText?
+        let count: LastFMNumber?
+    }
+
+    let toptags: Body?
+}
+
+/// user.getrecenttracks: the newest first; the one playing now first of all,
+/// with "@attr": {"nowplaying": "true"} and no date.
+/// {"recenttracks": {"track": [{"artist": {"#text": "…"}, "name": "…", "date": {"uts": "1700000000"}}],
+///  "@attr": {"page": "1", "totalPages": "5"}}}
+struct LastFMRecentTracksAnswer: Decodable, Sendable {
+    struct Body: Decodable, Sendable {
+        struct Attributes: Decodable, Sendable {
+            let totalPages: LastFMNumber?
+        }
+
+        let track: LastFMList<Item>?
+        let attributes: Attributes?
+
+        enum CodingKeys: String, CodingKey {
+            case track
+            case attributes = "@attr"
+        }
+    }
+
+    struct Item: Decodable, Sendable {
+        struct When: Decodable, Sendable {
+            let uts: LastFMNumber?
+        }
+
+        let name: LastFMText?
+        let artist: LastFMArtistName?
+        let date: When?
+    }
+
+    let recenttracks: Body?
+}

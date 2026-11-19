@@ -117,6 +117,54 @@ server's 23 are like "Rock; Shoegaze", where the snapshot has "Rock" and
 With none of the parts in the library, it is Your Station under the seed's
 name. With one genre, every weight is 1 and it is the station it always was.
 
+### Last.fm's tags
+
+Tags are the radio's weakest link (`build/research/radio.md`, 4.4; "doe
+alles", the photographer, 18 November 2026). With a key,
+`SimilarityService.enrichTags` asks artist.getTopTags for 150 artists a
+round, the most liked first, then the rest by their number of songs. The
+answers are kept in `lastfm-tags.json` and asked again after half a year.
+
+`radioSnapshot(for:)` gives the library with them
+(`LibrarySnapshot(tracks:artistTags:)`):
+- each artist's five strongest tags that name a genre (count 10 or more;
+  not "seen live", "favorites", a country, a decade or their own name), on
+  the songs filed under them, after the files' own genres;
+- at 0.5 × the tag's count / 100 (so 0.5 at most); a genre of the files'
+  own counts 1, and a tag the files already have adds nothing;
+- the weight counts wherever genres are summed: the graph's genre
+  shares, the seed's profile, a track's genre fit, its genre taste, the
+  clock's genre lift, a genre station's own artists;
+- a genre keeps the files' spelling ("Shoegaze"; a tag-only one is
+  "Dream Pop"); a genre's own tracks, where its station opens, stay the
+  files'.
+
+The app reads it for the radio only. Genres, Home's mixes and offline keep
+the files' genres. Without a key, or with no tags yet, it is the library
+itself.
+
+Measured (`LastFMTagsTests`): RadioFixtures' library with poor tags, a
+third of the artists without a genre, the rest with only the broad one
+("Rock", never "Shoegaze"). Last.fm's answers (a recorded fixture in its
+documented shape) give the cluster and the sub-genres, with "seen live",
+a country and a decade. Every sixth artist also has a wrong genre, every
+fourth its own name, and every tenth is unknown to Last.fm.
+
+| | artist stations, in cluster | same sub-genre | genre stations, in cluster | Jazz at Tuesday 08:00, with the clock |
+|---|---|---|---|---|
+| poor tags | 0.847 | 0.259 | 0.995 | 0.170 → 0.422 |
+| + Last.fm at 0.25 | 0.970 | 0.276 | 0.999 | 0.178 → 0.412 |
+| + Last.fm at 0.5 | 0.977 | 0.317 | 0.993 | 0.168 → 0.413 |
+| + Last.fm at 1 | 0.956 | 0.323 | 0.953 | 0.180 → 0.428 |
+| the files' full tags | 0.962 | 0.383 | 0.943 | 0.177 → 0.398 |
+| full tags + Last.fm at 0.5 | 0.960 | 0.381 | 0.927 | 0.167 → 0.407 |
+
+At 0.5 an artist station stays in its cluster as well as with full tags,
+and gets about half the way to its sub-genre. At 1 the noise
+counts as much as the files: genre stations fell to 0.953. On a library
+already well tagged it changes little. Its ceiling is Last.fm's
+listeners: a tag says what they call an artist, not what each song is.
+
 The test server's 19 joined genres × 10 random seeds × 20 picks
 (RadioRealServerTests):
 
@@ -244,6 +292,43 @@ mean log-probability −1.464 time-blind, −1.414 with the clock (perplexity
 Its ceiling: tags, not sound; one device (the iPhone mixes walking and the
 car); slots of a few hours; an artist with morning and night songs is one
 artist. `TasteProfile` with 20 000 tracks and events: 26–31 ms (release).
+
+### Scrobbles
+
+A new device knows nothing of the hours. With a key and the listener's
+Last.fm username (Settings, one optional field, checked with Last.fm as
+the key is), `SimilarityService.scrobbles` reads user.getRecentTracks:
+- the last 90 days, at most 10 pages of 200, asked again after 6 hours
+  for what is newer only;
+- kept in `lastfm-scrobbles.json`, for that name alone (another name is
+  asked anew);
+- matched to the library by artist and title, as completed plays.
+
+Nothing is ever written to Last.fm.
+
+`TasteProfile(…, scrobbles:)` gives them to the clock alone: nearness,
+shares and sessions, at 0.5 of one of this device's plays. Jellyfin's play
+counts already say what is liked. Only scrobbles older than this device's
+first event count, so a play this device also scrobbled (Navidrome does,
+Jellyfin with a plugin) never counts twice. Without a name nothing changes;
+the test checks it to the bit.
+
+Measured (`LastFMScrobblesTests`): the clock's listener above, the last 7
+days on this device. The 7 weeks before are a recorded user.getRecentTracks
+fixture, with remastered titles, songs not in the library and the song
+playing now. 891 of them match, 0.96 of those sent.
+
+| | the device alone | + scrobbles at 0.25 | at 0.5 | at 1 | 8 weeks on the device |
+|---|---|---|---|---|---|
+| Jazz, Tuesday 08:00 (time-blind 0.117) | 0.243 (λ 0.25) | 0.295 (0.40) | 0.332 (0.50) | 0.350 (0.62) | 0.398 (0.62) |
+| Electronic, Saturday 23:00 (time-blind 0.430) | 0.487 (0.26) | 0.507 (0.33) | 0.558 (0.38) | 0.583 (0.47) | 0.558 (0.47) |
+| "Often on" (Jazz), the fact | 0, none | 59, none | 199, "Weekday mornings: Jazz and Vocal Jazz" | 210, the same | 239, the same |
+
+Wednesday 15:00 moves at most 0.027 from time-blind, and a listener with no
+pattern at most 0.027 (Tuesday and Saturday every 3 hours), with no "Often
+on" and no fact. At 0.5 a week-old device is about two thirds of the way
+to eight weeks of its own. At 1 it is nearer, but a phone in a pocket says
+less of this listener here than this device does.
 
 ## The similarity graph, from the library
 
@@ -694,6 +779,8 @@ Each round is in the test output of its time.
 | | … against the share at the other hours, only up, from ln 1.25 | Jazz × 2.25, but 0.098 apart at Wednesday 15:00 (Rock lifted as the mornings left it) and 0.065 without a pattern |
 | | … also the score × e^(λ·L), as the profile's weights stop at 1; from ln 1.6 | the table in The clock |
 | | a known song's skip × its nearness to now | the listening rows above moved by up to 0.022, and a mix's day-to-day overlap by 0.05 (Pop 0.27 → 0.32: the mixes' taste is at midnight, where a morning skip of a known song now counts little); the made-up history skips loved songs |
+| 12. Last.fm's tags | an artist's top tags as genres of their own songs, at a weight, on a library with poor tags | weight 0.25: in cluster 0.847 → 0.970, sub-genre 0.259 → 0.276; 1: genre stations 0.995 → 0.953, the noise counting as the files do; 0.5 kept (Last.fm's tags) |
+| 13. scrobbles | Last.fm's plays as the clock's older evidence, before this device's first event | weight 0.25: Jazz 0.295, no fact; 1: 0.350, but a scrobble is as sure as a play here; 0.5 kept (Scrobbles) |
 
 ## Building on it
 
@@ -715,7 +802,12 @@ Each round is in the test output of its time.
   - `addTrackEdge(from:to:weight:)` for similar tracks (`snapshot.match`);
   - merge onto `SimilarityGraph.fromLibrary(snapshot)`. Last.fm's `match` is
     0 … 1 and library edges are rarely above 0.8, so Last.fm's strong links
-    win.
+    win;
+  - `radioSnapshot(for:)` and `enrichTags` give the library with Last.fm's
+    tags: the radio's sessions, taste and graph all from that one
+    snapshot;
+  - `scrobbles(for:)` gives the listener's plays for
+    `TasteProfile(…, scrobbles:)`, kept apart from this device's history.
 - **The app** (`RadioController`):
   - after a skip or a thumbs: `record`, then `returnUnplayed(queued ids)`,
     then `next(n)`;

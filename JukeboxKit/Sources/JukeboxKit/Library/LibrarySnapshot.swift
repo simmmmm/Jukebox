@@ -26,7 +26,36 @@ public struct LibrarySnapshot: Sendable {
         self.index = Index(tracks: tracks)
     }
 
+    /// A genre an artist is known by elsewhere (Last.fm's tags), with how
+    /// much it counts against a genre of the files' own, which is 1.
+    public struct GenreTag: Codable, Sendable, Hashable {
+        public var name: String
+        /// 0 … 1.
+        public var weight: Double
+
+        public init(name: String, weight: Double) {
+            self.name = name
+            self.weight = weight
+        }
+    }
+
+    /// The library with more genres than its files have: each artist's
+    /// `artistTags` (by artist key) on the songs filed under them, after
+    /// their own, at the tag's weight, for the radio (docs/RADIO.md,
+    /// "Last.fm's tags"). A tag the files already have adds nothing. A
+    /// genre's own tracks (`tracks(genreKey:)`, where a genre station
+    /// opens) stay the files': its page lists those. Empty tags give the
+    /// library exactly as `init(tracks:)` does.
+    public init(tracks: [Track], artistTags: [String: [GenreTag]]) {
+        self.tracks = tracks
+        self.index = Index(tracks: tracks, artistTags: artistTags)
+    }
+
     public static let empty = LibrarySnapshot(tracks: [])
+
+    /// Made by the same `init`, not merely from the same tracks: whether
+    /// something worked out from `other` still holds for this one.
+    public func isSameSnapshot(as other: LibrarySnapshot) -> Bool { index === other.index }
 
     public var isEmpty: Bool { tracks.isEmpty }
 
@@ -220,6 +249,10 @@ extension LibrarySnapshot {
         /// Artist numbers, the one the track is filed under first.
         let trackArtists: [[Int]]
         let trackGenres: [[Int]]
+        /// How much each of `trackGenres` counts, by position: empty for a
+        /// track with only its files' genres (each 1), else one weight
+        /// each, the artist's tags (LibrarySnapshot.GenreTag) after those.
+        let trackGenreWeights: [[Double]]
         /// -1 when the track has no album.
         let trackAlbum: [Int]
         /// 0 when unknown.
@@ -274,13 +307,15 @@ extension LibrarySnapshot {
             var weight: Double
         }
 
-        init(tracks: [Track]) {
+        init(tracks: [Track], artistTags: [String: [GenreTag]] = [:]) {
             var trackByID: [ItemID: Int] = [:]
             trackByID.reserveCapacity(tracks.count)
             var trackArtists: [[Int]] = []
             trackArtists.reserveCapacity(tracks.count)
             var trackGenres: [[Int]] = []
             trackGenres.reserveCapacity(tracks.count)
+            var trackGenreWeights: [[Double]] = []
+            trackGenreWeights.reserveCapacity(tracks.count)
             var trackAlbum: [Int] = []
             trackAlbum.reserveCapacity(tracks.count)
             var trackYear: [Int] = []
@@ -356,6 +391,36 @@ extension LibrarySnapshot {
                 return a
             }
 
+            /// Whether a genre's name is a file's spelling, not a tag's.
+            var genreNamedByFile: [Bool] = []
+            /// A genre's number by its name, made the first time it is seen.
+            /// A file's spelling wins over a tag's ("Shoegaze", not
+            /// "shoegaze"), whichever came first.
+            func genreNumber(_ name: String, fromFile: Bool = true) -> Int? {
+                let key: String
+                if let known = genreKeyOf[name] {
+                    key = known
+                } else {
+                    key = NameKey.genre(name)
+                    genreKeyOf[name] = key
+                }
+                guard !key.isEmpty else { return nil }
+                if let known = genreByKey[key] {
+                    if fromFile, !genreNamedByFile[known] {
+                        genreNames[known] = name
+                        genreNamedByFile[known] = true
+                    }
+                    return known
+                }
+                let g = genreKeys.count
+                genreKeys.append(key)
+                genreByKey[key] = g
+                genreNames.append(name)
+                genreNamedByFile.append(fromFile)
+                genreTracks.append([])
+                return g
+            }
+
             for (i, track) in tracks.enumerated() {
                 trackByID[track.id] = i
 
@@ -409,31 +474,25 @@ extension LibrarySnapshot {
                         genrePartsOf[raw] = names
                     }
                     for name in names {
-                        let key: String
-                        if let known = genreKeyOf[name] {
-                            key = known
-                        } else {
-                            key = NameKey.genre(name)
-                            genreKeyOf[name] = key
-                        }
-                        guard !key.isEmpty else { continue }
-                        let g: Int
-                        if let known = genreByKey[key] {
-                            g = known
-                        } else {
-                            g = genreKeys.count
-                            genreKeys.append(key)
-                            genreByKey[key] = g
-                            genreNames.append(name)
-                            genreTracks.append([])
-                        }
-                        if !genres.contains(g) {
-                            genres.append(g)
-                            genreTracks[g].append(i)
-                        }
+                        guard let g = genreNumber(name), !genres.contains(g) else { continue }
+                        genres.append(g)
+                        genreTracks[g].append(i)
+                    }
+                }
+                // The artist's tags, after the files' own, on their own
+                // records only (a guest spot is someone else's record).
+                var weights: [Double] = []
+                if !artistTags.isEmpty, let first = own.first, let tags = artistTags[artistKeys[first]] {
+                    for tag in tags {
+                        let w = tag.weight.isFinite ? min(1, max(0, tag.weight)) : 0
+                        guard w > 0, let g = genreNumber(tag.name, fromFile: false), !genres.contains(g) else { continue }
+                        if weights.isEmpty { weights = [Double](repeating: 1, count: genres.count) }
+                        genres.append(g)
+                        weights.append(w)
                     }
                 }
                 trackGenres.append(genres)
+                trackGenreWeights.append(weights)
 
                 // Album.
                 if let albumID = track.albumID {
@@ -528,6 +587,7 @@ extension LibrarySnapshot {
             self.trackByID = trackByID
             self.trackArtists = trackArtists
             self.trackGenres = trackGenres
+            self.trackGenreWeights = trackGenreWeights
             self.trackAlbum = trackAlbum
             self.trackYear = trackYear
             self.trackSong = trackSong
@@ -555,6 +615,13 @@ extension LibrarySnapshot {
         var songCount: Int { songTracks.count }
         var artistCount: Int { artistKeys.count }
         var genreCount: Int { genreKeys.count }
+
+        /// The weight of the `k`th of track `t`'s genres: 1 for the files'
+        /// own, a tag's below that.
+        @inline(__always) func genreWeight(_ t: Int, _ k: Int) -> Double {
+            let weights = trackGenreWeights[t]
+            return k < weights.count ? weights[k] : 1
+        }
 
         // MARK: Names
 

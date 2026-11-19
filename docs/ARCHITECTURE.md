@@ -323,7 +323,8 @@ Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
   mixes are made again from those.
 - **Shared**: `AppSettings` (qualities, pages, downloads' limit, the
   switches) and the Last.fm API key, a key to Last.fm's catalogue rather
-  than anyone's Last.fm account (the servers scrobble).
+  than anyone's Last.fm account (the servers scrobble), and the listener's
+  Last.fm username, read only.
 - **A switch** (`AppModel.switchAccount`): the new account's server is asked
   first, with its own session (`AccountStores.reach`, 10 s at most); silent,
   the account signed in stays and the words say so, unless the new one has
@@ -402,9 +403,13 @@ Navidrome with its own Last.fm link, from the playback reports the app
 already sends (Jellyfin's start/progress/stopped; Subsonic's scrobble). The
 photographer, 8 November 2026: "Laat scrobblen lekker via de server lopen."
 One place for every client, and no song twice on Last.fm. The Last.fm key in
-Settings is only for the radio's similar artists and songs. Every client
-keeps it only once Last.fm accepted it (`LastFMClient.validateKey`), then
-shows it as dots with Change and Remove.
+Settings is only for the radio: similar artists and songs, the artists'
+tags. Every client keeps it only once Last.fm accepted it
+(`LastFMClient.validateKey`), then shows it as dots with Change and Remove.
+Under it, once a key is kept, one optional field for the listener's Last.fm
+username, kept only once Last.fm shows their plays
+(`LastFMClient.validateUser`): the clock reads those scrobbles, and nothing
+is ever written to Last.fm (docs/RADIO.md, "Scrobbles").
 
 ## Lyrics
 
