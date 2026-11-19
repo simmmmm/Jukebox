@@ -11,5 +11,12 @@ built=$?
 grep -E 'error:' -A4 "$log" | grep -v '^\[' | awk '!seen[$0]++' | head -${LINES_MAX:-120}
 tail -2 "$log"
 rm -f "$log"
+# A Texture holds its own reference (Artwork.swift): counted by hand, a
+# cover was freed under a station's arch and Your Station's Play crashed
+# (19 November 2026).
+if grep -nE 'g_object_(un)?ref\([^)]*\.pointer' Linux/App/*.swift; then
+  echo "A Texture's reference is its own: no g_object_ref or g_object_unref of its .pointer"
+  built=1
+fi
 [[ $built == 0 ]] && JUKEBOX_CHECK=queue ".build-linux/${1:-debug}/Jukebox" \
   && DBUS_SESSION_BUS_ADDRESS=disabled: JUKEBOX_CHECK=accounts ".build-linux/${1:-debug}/Jukebox"

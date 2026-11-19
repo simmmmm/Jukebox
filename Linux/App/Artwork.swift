@@ -11,9 +11,19 @@ import JukeboxKit
 import FoundationNetworking
 #endif
 
-/// A GdkTexture, to be handed between threads (it cannot change).
-nonisolated struct Texture: @unchecked Sendable {
+/// A GdkTexture, to be handed between threads (it cannot change), holding
+/// its own reference: whoever has a Texture keeps the picture alive. It was
+/// a bare pointer, and a station's arch kept the covers it was waiting on
+/// across awaits while ArtworkLoader let the oldest go: drawing them read
+/// freed covers, and Linux Jukebox crashed on Your Station's Play (19
+/// November 2026).
+nonisolated final class Texture: @unchecked Sendable {
     let pointer: OpaquePointer
+
+    /// Takes over a reference the caller owns (a texture just made).
+    init(owning pointer: OpaquePointer) { self.pointer = pointer }
+
+    deinit { g_object_unref(UnsafeMutableRawPointer(pointer)) }
 }
 
 final class ArtworkLoader {
@@ -66,7 +76,7 @@ final class ArtworkLoader {
                 try? FileManager.default.removeItem(at: file)
                 return nil
             }
-            return Texture(pointer: texture)
+            return Texture(owning: texture)
         }
         loading[url] = task
         let texture = await task.value
@@ -78,7 +88,8 @@ final class ArtworkLoader {
             // library of large covers proves that too many.
             if recent.count > 400, let oldest = recent.first {
                 recent.removeFirst()
-                if let dropped = memory.removeValue(forKey: oldest) { g_object_unref(raw(dropped.pointer)) }
+                // A drawing still waiting on it keeps it (Texture).
+                memory.removeValue(forKey: oldest)
             }
         }
         return texture
