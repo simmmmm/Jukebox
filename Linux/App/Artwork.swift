@@ -50,6 +50,19 @@ final class ArtworkLoader {
         return FileManager.default.fileExists(atPath: file.path) ? file : nil
     }
 
+    /// The cover's file on disk, fetched first if it is not there: the
+    /// media controls' size may be one no screen has shown yet.
+    func fetchFile(for url: URL) async -> URL? {
+        let file = fileURL(for: url)
+        if FileManager.default.fileExists(atPath: file.path) { return file }
+        let written = await Task.detached(priority: .utility) { () -> Bool in
+            guard let (data, response) = try? await URLSession.shared.data(from: url),
+                  (response as? HTTPURLResponse)?.statusCode == 200 else { return false }
+            return (try? data.write(to: file, options: .atomic)) != nil
+        }.value
+        return written ? file : nil
+    }
+
     /// The address holds a Subsonic server's token: the file is named by a
     /// number made of it, never by it.
     private nonisolated func fileURL(for url: URL) -> URL {

@@ -82,7 +82,7 @@ enum Mpris {
         if let cover, file == nil, fetching != cover {
             fetching = cover
             Task { @MainActor in
-                guard await ArtworkLoader.shared.texture(for: cover) != nil,
+                guard await ArtworkLoader.shared.fetchFile(for: cover) != nil,
                       app.player.current?.id == entry.id else { return }
                 publish()
             }
