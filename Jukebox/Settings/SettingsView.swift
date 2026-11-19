@@ -1,16 +1,21 @@
-// Settings, a sheet from Home and Radio: a Form as the system's own Settings
-// draws one, each section its own view so a change in one (the library's
-// progress, the Last.fm check) redraws only that one. The system's own
-// section headers, as the system's Settings has them; nothing of its own
-// (docs/design/tells.md, 4: no tracked uppercase labels of Jukebox's).
+// Settings, in pages: a short list, each row opening one page, as the
+// system's own Settings is laid out. The photographer, 19 November 2026,
+// looking at the iPhone's one long sheet: "Voor een volgende versie moeten
+// we ff de instellingen netjes opdelen in paginas, apple hig manier volgens
+// mij kan dat ook op de gnome hig manier op Linux". The same pages in the
+// same order as Linux's Preferences (Preferences.swift); on the Mac, its
+// Settings window's toolbar of tabs.
 //
-// In a wide window (the iPad, the Mac, the iPad app on a Mac) it is Linux's
-// Preferences (16-preferences.png), a sheet over the window opened from the
-// app itself: the groups in Linux's order and with its titles, bold and in
-// sentence case ("ik wil dat de linux app en de apple app 1:1 op elkaar
-// lijken", the photographer, 14 November 2026), then what only these have
-// (downloads, the library, the history). The Mac's ⌘, window can show the
-// same form (`asWindow`).
+// Each page a Form as the system's Settings draws one, each section its own
+// view so a change in one (the library's progress, the Last.fm check)
+// redraws only that one. A section's header only where it tells something
+// the page's title does not (docs/design/tells.md, 5); nothing of Jukebox's
+// own in them (4: no tracked uppercase labels).
+//
+// In a wide window (the iPad, the Mac, the iPad app on a Mac) the rows are
+// Linux's (16-preferences.png): 15 rather than 13, the groups' titles bold
+// and in sentence case ("ik wil dat de linux app en de apple app 1:1 op
+// elkaar lijken", the photographer, 14 November 2026).
 
 import JukeboxKit
 import SwiftUI
@@ -18,14 +23,52 @@ import SwiftUI
 import UIKit
 #endif
 
+/// Settings' pages, in their order on every client. Linux's Preferences has
+/// the same ones but About, which is its own About window there, as the
+/// Mac's is its app menu's About Jukebox.
+enum SettingsPage: String, CaseIterable, Hashable {
+    case accounts, playback, radio, library, downloads, privacy, about
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .accounts: "Accounts"
+        case .playback: "Playback"
+        case .radio: "Radio"
+        case .library: "Library"
+        case .downloads: "Downloads"
+        case .privacy: "Privacy"
+        case .about: "About"
+        }
+    }
+
+    /// The app's own symbols where it has one (Home's person for Settings,
+    /// Radio's waves and the Library's stack from the tabs), else the
+    /// system Settings' own.
+    var symbol: String {
+        switch self {
+        case .accounts: "person.crop.circle"
+        case .playback: "play.circle"
+        case .radio: "dot.radiowaves.left.and.right"
+        case .library: "square.stack"
+        case .downloads: "arrow.down.circle"
+        case .privacy: "hand.raised"
+        case .about: "info.circle"
+        }
+    }
+}
+
+extension EnvironmentValues {
+    /// Closes Settings from any page: in a page pushed on the sheet's
+    /// stack, a page's own `dismiss` would only go back to the list.
+    @Entry var closeSettings: DismissAction? = nil
+}
+
 struct SettingsView: View {
     /// The Mac's Settings window (⌘,) rather than a sheet: no Done, the
     /// window has its own close button.
     let asWindow: Bool
 
-    @Environment(AppSettings.self) private var settings
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.isWide) private var isWide
     #if os(iOS)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
@@ -36,95 +79,183 @@ struct SettingsView: View {
 
     var body: some View {
         #if os(macOS)
-        // A settings window's width, not a page's, as Linux's dialog is: the
-        // rows' words and their controls within one glance.
         Group {
             if asWindow {
-                form
+                tabs
                     .countsScreen("settings")
             } else {
                 sheet
+                    .frame(width: 560)
+                    .frame(minHeight: 400, idealHeight: 720)
             }
         }
-        .frame(width: 560)
-        .frame(minHeight: 400, idealHeight: 720)
+        .environment(\.closeSettings, dismiss)
         #else
         sheet
+            .environment(\.closeSettings, dismiss)
         #endif
     }
 
+    #if os(macOS)
+    /// The Mac's Settings window as its own apps have one: a toolbar of
+    /// tabs, a page each. About is the app menu's About Jukebox.
+    private var tabs: some View {
+        TabView {
+            ForEach(SettingsPage.allCases.filter { $0 != .about }, id: \.self) { page in
+                SettingsPageForm(page: page)
+                    // A settings window's width, not a page's, as Linux's
+                    // dialog is: the rows' words and their controls within
+                    // one glance.
+                    .frame(width: 560)
+                    .frame(minHeight: 360, idealHeight: 560)
+                    .tabItem { Label(page.title, systemImage: page.symbol) }
+                    .tag(page)
+            }
+        }
+    }
+    #endif
+
     private var sheet: some View {
         NavigationStack {
-            form
+            SettingsRoot()
                 .navigationTitle("Settings")
                 .inlineTitle()
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { dismiss() }
-                    }
+                .navigationDestination(for: SettingsPage.self) { page in
+                    SettingsPageForm(page: page)
+                        .navigationTitle(page.title)
+                        .inlineTitle()
+                        .modifier(SettingsDone())
                 }
+                .modifier(SettingsDone())
         }
         .countsScreen("settings")
         #if os(iOS)
         // A sheet on the iPad may call itself compact, being narrower than
         // the window: it is Linux's Preferences on every iPad all the same,
-        // so its sections are told wide.
-        .environment(\.horizontalSizeClass, isPad ? .regular : horizontalSizeClass)
+        // so its pages are told wide.
+        .environment(\.horizontalSizeClass, settingsOnPad ? .regular : horizontalSizeClass)
         #endif
     }
+}
 
-    private var isPad: Bool {
-        #if os(iOS)
-        return UIDevice.current.userInterfaceIdiom == .pad
-        #else
-        return false
-        #endif
-    }
+/// Done on the list and on every page: the sheet closes from anywhere.
+private struct SettingsDone: ViewModifier {
+    @Environment(\.closeSettings) private var closeSettings
 
-    @ViewBuilder private var form: some View {
-        if isWide || isPad {
-            // Linux's Preferences: the rows in 15, not the Mac's 13; the
-            // lines under them 13 (SettingsDetailLabel).
-            formRows
-                .desktopFont(15)
-        } else {
-            formRows
+    func body(content: Content) -> some View {
+        content.toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { closeSettings?.callAsFunction() }
+            }
         }
     }
+}
 
-    private var formRows: some View {
+private var settingsOnPad: Bool {
+    #if os(iOS)
+    return UIDevice.current.userInterfaceIdiom == .pad
+    #else
+    return false
+    #endif
+}
+
+/// The list of pages: each its symbol in the accent and its name, as the
+/// system's Settings lists its own, in three groups (whose music; how it
+/// plays and what is kept; what is told and who made it). Beside Accounts
+/// the server signed in to, as Settings shows the Wi-Fi joined.
+private struct SettingsRoot: View {
+    @Environment(AppModel.self) private var app
+
+    var body: some View {
         Form {
-            if isWide || isPad {
-                // Linux's order: what plays, the radio, privacy, the server.
+            Section {
+                row(.accounts, detail: app.credentials.map { ServerWords.name(of: $0) })
+            }
+            Section {
+                ForEach([SettingsPage.playback, .radio, .library, .downloads], id: \.self) { page in
+                    row(page)
+                }
+            }
+            Section {
+                row(.privacy)
+                row(.about)
+            }
+        }
+        .modifier(SettingsFormLook())
+    }
+
+    private func row(_ page: SettingsPage, detail: String? = nil) -> some View {
+        NavigationLink(value: page) {
+            LabeledContent {
+                if let detail {
+                    Text(verbatim: detail)
+                        .lineLimit(1)
+                }
+            } label: {
+                Label {
+                    Text(page.title)
+                } icon: {
+                    Image(systemName: page.symbol)
+                        .foregroundStyle(Theme.accent)
+                }
+            }
+        }
+        // The walk's way in (ScreenshotTests), whatever the row's words.
+        .accessibilityIdentifier("settings.page.\(page.rawValue)")
+    }
+}
+
+/// One page: its sections in the order the one long sheet had them.
+private struct SettingsPageForm: View {
+    let page: SettingsPage
+
+    @Environment(\.isWide) private var isWide
+
+    var body: some View {
+        Form {
+            switch page {
+            case .accounts:
+                SettingsAccountSection()
+            case .playback:
                 SettingsPlaybackSection()
+                // Wide, the lyrics' row is Playback's own, as on Linux.
+                if !isWide { SettingsLyricsSection() }
+            case .radio:
                 SettingsRadioSection()
                 SettingsLastFMSection()
-                SettingsPagesSection(hasSidebar: true)
-                SettingsPrivacySection()
-                SettingsAccountSection()
-                SettingsDownloadsSection()
+            case .library:
                 SettingsLibrarySection()
-                SettingsHistorySection()
-                NotCountedSection()
-                SettingsAboutSection()
-            } else {
-                SettingsAccountSection()
-                SettingsPlaybackSection()
+                SettingsPagesSection(hasSidebar: isWide || settingsOnPad)
+            case .downloads:
                 SettingsDownloadsSection()
-                SettingsRadioSection()
-                SettingsLastFMSection()
-                SettingsLyricsSection()
-                SettingsPagesSection(hasSidebar: false)
-                SettingsLibrarySection()
-                SettingsHistorySection()
+            case .privacy:
                 NotCountedSection()
+                SettingsHistorySection()
                 SettingsPrivacySection()
+            case .about:
                 SettingsAboutSection()
             }
         }
+        .modifier(SettingsFormLook())
+    }
+}
+
+/// Wide, Linux's Preferences: the rows in 15, not the Mac's 13; the lines
+/// under them 13 (SettingsDetailLabel). On the Mac libadwaita's boxed rows
+/// and switches are the Mac's own: the grouped form, as System Settings
+/// draws its panes.
+private struct SettingsFormLook: ViewModifier {
+    @Environment(\.isWide) private var isWide
+
+    func body(content: Content) -> some View {
+        Group {
+            if isWide || settingsOnPad {
+                content.desktopFont(15)
+            } else {
+                content
+            }
+        }
         #if os(macOS)
-        // Libadwaita's boxed rows and switches have the Mac's own: the
-        // grouped form, as System Settings draws its panes.
         .formStyle(.grouped)
         .toggleStyle(.switch)
         #endif
@@ -135,8 +266,7 @@ struct SettingsView: View {
 
 private struct SettingsAccountSection: View {
     @Environment(AppModel.self) private var app
-    @Environment(\.dismiss) private var dismiss
-    @Environment(\.isWide) private var isWide
+    @Environment(\.closeSettings) private var closeSettings
     @State private var isConfirmingSignOut = false
     /// Another saved account, asked about before it is signed out of.
     @State private var leaving: ServerCredentials?
@@ -209,14 +339,12 @@ private struct SettingsAccountSection: View {
                 Button("Sign Out", role: .destructive) {
                     // The sheet first, so it does not hang over the swap to
                     // the sign-in screen, or the next account's Home.
-                    dismiss()
+                    closeSettings?.callAsFunction()
                     Task { await app.signOut() }
                 }
             } message: {
                 Text(signOutMessage)
             }
-        } header: {
-            SettingsHeader(isWide ? "Server" : "Account")
         } footer: {
             if let switchProblem {
                 Text(switchProblem)
@@ -236,7 +364,7 @@ private struct SettingsAccountSection: View {
             Task {
                 switchProblem = await app.switchAccount(to: account)
                 // Switched: the next account's Home, with nothing over it.
-                if switchProblem == nil { dismiss() }
+                if switchProblem == nil { closeSettings?.callAsFunction() }
             }
         } label: {
             HStack {
@@ -361,8 +489,6 @@ private struct SettingsPlaybackSection: View {
                 SettingsDetailLabel(title: "Spin the Record",
                                     detail: "Now Playing's record turns, and its grooves move on with each song. Off, as in Low Power Mode and with Reduce Motion, it stands still on a wall of the cover's colours.")
             }
-        } header: {
-            SettingsHeader(isWide ? "Playing" : "Playback")
         } footer: {
             Text("Original plays your files as they are. The others have \(app.serverKindName) convert them to \(format) at that rate, which uses less data.")
         }
@@ -489,8 +615,6 @@ private struct SettingsDownloadsSection: View {
             } message: {
                 Text("Every downloaded album, playlist, mix and kept song goes, and Keep Songs I Play is turned off. They still play from your server.")
             }
-        } header: {
-            SettingsHeader("Downloads")
         } footer: {
             qualityFooter
         }
@@ -609,8 +733,6 @@ private struct SettingsRadioSection: View {
                 if !isDragging { radio.adventurousnessChanged() }
             }
             #endif
-        } header: {
-            SettingsHeader("Radio")
         } footer: {
             Text("Familiar stays close to where a station started and to songs you know. Adventurous goes further out and plays more that is new to you.")
         }
@@ -680,8 +802,9 @@ private struct SettingsLastFMSection: View {
     var body: some View {
         Section {
             if isEditing {
+                // The platform's own field, in the form's text as Username's
+                // below: in monospace its prompt stood out large on the iPhone.
                 TextField("API Key", text: $draft, prompt: Text("Paste your Last.fm API key"))
-                    .desktopFont(15, design: .monospaced, phone: .body.monospaced())
                     .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.done)
@@ -980,8 +1103,6 @@ private struct SettingsLibrarySection: View {
             }
             .disabled(isLoading)
             #endif
-        } header: {
-            SettingsHeader("Library")
         } footer: {
             if let failure {
                 Text(failure)
@@ -1086,8 +1207,6 @@ private struct SettingsPrivacySection: View {
         @Bindable var settings = settings
         Section {
             Toggle("Share Anonymous Usage", isOn: $settings.shareUsage)
-        } header: {
-            SettingsHeader("Privacy")
         } footer: {
             Text("Jukebox counts which screens and features are used — never titles, artists, searches, server addresses or names — on the developer's own server, without cookies or a device id. It helps decide what to improve.")
         }
@@ -1112,8 +1231,6 @@ private struct SettingsAboutSection: View {
             .padding(.vertical, Theme.Space.xs)
             .accessibilityElement(children: .combine)
             LabeledContent("Version", value: version)
-        } header: {
-            SettingsHeader("About")
         }
     }
 

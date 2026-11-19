@@ -139,6 +139,13 @@ final class ScreenshotTests: XCTestCase {
             walk.pause(1.5)
         }
         walk.picture("settings")
+        // Settings is a list of pages: one of them open, then back to it.
+        if settings, try walk.openSettingsPage("playback", "Playback") {
+            walk.picture("settings-playback")
+            // Its bar's first button: "Settings" is also Home's own, under the sheet.
+            try walk.tap(app.navigationBars["Playback"].buttons.element(boundBy: 0), "Settings › Playback: back", timeout: 2)
+            walk.pause(1)
+        }
         if settings { try walk.closeSheet(with: "Done") }
 
         _ = try walk.startYourStation()
@@ -327,12 +334,14 @@ final class ScreenshotTests: XCTestCase {
         let settings = try walk.openSettings()
         walk.picture("16-preferences")
         if settings {
-            // Down to Pages, as Linux's 16c scrolls its Preferences to them.
-            let pages = app.switches["Playlists in the Sidebar"].firstMatch
-            for _ in 0..<4 where !walk.onScreen(pages) {
-                try walk.swipe(up: true)
+            // The page with Pages, as Linux's 16c opens its Preferences' Library.
+            if try walk.openSettingsPage("library", "Library") {
+                let pages = app.switches["Playlists in the Sidebar"].firstMatch
+                for _ in 0..<2 where !walk.onScreen(pages) {
+                    try walk.swipe(up: true)
+                }
+                if !walk.onScreen(pages) { walk.note("Settings › Library: no Pages switches after two swipes") }
             }
-            if !walk.onScreen(pages) { walk.note("Settings: no Pages switches after four swipes") }
             walk.picture("16c-preferences-pages")
             try walk.closeSheet(with: "Done")
         }
@@ -1255,6 +1264,19 @@ final class Walk {
         }
         guard opened else { return false }
         _ = app.navigationBars["Settings"].firstMatch.waitForExistence(timeout: 8)
+        pause(1.5)
+        return true
+    }
+
+    /// One of Settings' pages, from its list: the row by its identifier
+    /// (SettingsView's `settings.page.<page>`), as "Radio" and "Library"
+    /// are the tabs' and the sidebar's names too. True once tapped.
+    func openSettingsPage(_ page: String, _ title: String) throws -> Bool {
+        let row = app.descendants(matching: .any).matching(identifier: "settings.page.\(page)").firstMatch
+        guard try tap(row, "Settings: \(title)", timeout: 4) else { return false }
+        if !app.navigationBars[title].firstMatch.waitForExistence(timeout: 6) {
+            note("Settings: \(title) has no navigation bar named \(title)")
+        }
         pause(1.5)
         return true
     }
