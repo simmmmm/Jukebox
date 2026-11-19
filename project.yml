@@ -6,9 +6,14 @@ name: Jukebox
 options:
   bundleIdPrefix: com.tijmen
   deploymentTarget:
-    iOS: "26.0"
-    # The Mac's year matches the iPhone's, so shared views need no
-    # `if #available`.
+    # iOS 18 too: "kun je de app ook maken voor ios voor 26" (the
+    # photographer, 19 November 2026). What is 26's alone (the tab bar's
+    # accessory, its minimising) says `if #available(iOS 26, *)` and gives
+    # 18 its own form; the 26 look is unchanged.
+    iOS: "18.0"
+    # The Mac stays at 26: lowering it to macOS 15 was not tried; at least
+    # the title bar's head (`sharedBackgroundVisibility`, WideShell.swift)
+    # is 26's alone.
     macOS: "26.0"
   developmentLanguage: en
   createIntermediateGroups: true
