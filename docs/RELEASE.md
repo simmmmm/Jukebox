@@ -248,6 +248,25 @@ Cloud signing then makes both store profiles. `widget_signed` in
 the widget in `PlugIns/`, and the App Group in the app's signature and the
 widget's. An upload without them stops.
 
+The Mac embeds the same extension (`Contents/PlugIns/`), sandboxed, with
+the same group (`Jukebox/Jukebox-macOS.entitlements`,
+`JukeboxWidget/JukeboxWidget-macOS.entitlements`). An App ID and an App
+Group serve every platform, so the three steps above are the Mac's too.
+**Open**, before the first `[testflight]` upload with it:
+
+1. Check that the three steps above are done. Without step 2 the Mac's
+   store profile lacks the group, and without step 3 there is no App ID
+   for the Mac's widget either.
+2. Identifiers › com.tijmen.Jukebox.Widget: if the portal asks for a
+   platform, have it cover macOS as well as iOS (the app's App ID does).
+3. Nothing else by hand: cloud signing makes the Mac's two Mac App Store
+   profiles at export, as it does the iPhone's.
+
+`widget_signed` checks the Mac's every push build, its archive and the pkg
+signed for the store: the widget in `Contents/PlugIns/`, the App Group in
+both signatures, and both sandboxed. A Mac upload without them stops
+before it is sent.
+
 ## Play On
 
 Chromecasts on the iPhone, the iPad and the Mac are spoken to by the app
