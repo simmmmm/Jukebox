@@ -560,8 +560,8 @@ in a menu that was there ("niet 10000 knopen"):
   the iPhone and the iPad, a file on the Mac and Linux), as a JPEG of 1200
   at most. Only on Jellyfin and Emby, and only for an administrator: 12.4
   answers 403 to anyone else (`Server/PlaylistCovers.swift`, measured).
-- **Songs picked together** in a wide list (Linux, the iPad's and the Mac's
-  window): Ctrl or ⌘ adds one, Shift a run; the menu on a pick has Play
+- **Songs picked together** in a desktop list (Linux and the Mac; not the
+  iPad, whose SwiftUI hears no keys held): Ctrl or ⌘ adds one, Shift a run; the menu on a pick has Play
   Next, Add to Queue (Play Last) and Add to Playlist… for all of them. A
   plain click plays as before and forgets them (`Library/TrackPicks.swift`,
   shared; checked in QueueCheck).

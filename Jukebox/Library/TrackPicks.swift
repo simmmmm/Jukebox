@@ -1,5 +1,5 @@
-// Several songs picked at once in a desktop list (Linux, the iPad's and the
-// Mac's wide window), for the menu's Play Next, Add to Queue and Add to
+// Several songs picked at once in a desktop list (Linux, the Mac's wide
+// window), for the menu's Play Next, Add to Queue and Add to
 // Playlist… on all of them: Ctrl (⌘) adds or takes away one, Shift picks
 // the run from the last one picked. No new buttons ("ik wil alleen er voor
 // waken dat we niet 10000 knopen krijgen. Alles is nu lekker clean", 18
