@@ -6,6 +6,8 @@
 // 204 for an administrator and 403 for any other user, whose own playlist
 // it is or not (Jellyfin's RequiresElevation; Emby's admin role, from which
 // it came). So the app offers it only to an administrator.
+// Emby 4.10 takes it the same way from its administrator (measured; its
+// test server has no other user to refuse).
 // Not offered: Navidrome and the other Subsonic servers (the Subsonic API
 // has no call to set an image), Plex (not tried: its test server would need
 // plex.tv).

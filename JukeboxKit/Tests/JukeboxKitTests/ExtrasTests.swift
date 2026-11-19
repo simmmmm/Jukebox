@@ -99,3 +99,24 @@ struct PlaylistCoverIntegrationTests {
         #expect(try await other.playlistCoversAllowed() == false)
     }
 }
+
+@Suite("Playlist covers: the real Emby", .serialized, .timeLimit(.minutes(1)), .enabled(if: EmbyTestServer.url != nil))
+struct EmbyPlaylistCoverIntegrationTests {
+    @Test("Emby's administrator sets a playlist's cover the same way")
+    func cover() async throws {
+        let url = try #require(EmbyTestServer.url)
+        let identity = EmbyTestServer.identity("covers")
+        let found = try await MusicServers.detect(url.absoluteString, identity: identity)
+        let credentials = try await MusicServers.signIn(to: found, identity: identity)
+            .signIn(username: EmbyTestServer.user, password: EmbyTestServer.password)
+        let server = try #require(MusicServers.open(credentials, identity: identity) as? any PlaylistCovers)
+        #expect(try await server.playlistCoversAllowed())
+        let id = try await server.createPlaylist(name: "Kit tests: cover", trackIDs: [])
+        var failure: (any Error)?
+        do { try await server.setPlaylistCover(playlistID: id, jpeg: PlaylistCoverIntegrationTests.jpeg) } catch { failure = error }
+        let playlist = try? await server.playlists().first { $0.id == id }
+        try await server.deletePlaylist(id: id)
+        if let failure { throw failure }
+        #expect(playlist?.imageTag != nil)
+    }
+}
