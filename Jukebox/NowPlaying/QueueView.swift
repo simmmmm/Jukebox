@@ -212,6 +212,12 @@ struct QueueView: View {
     /// Where it plays from: an album's, a playlist's or a mix's cover and
     /// title with its artist; or a station's mark (the one lit arch a
     /// screen is the hero's, so here it is flat), its name and its dial.
+    /// An album's head: its title sleeve when it has no cover, as Linux's.
+    private var albumSleeve: TitleSleeve.Words? {
+        guard case let .album(id)? = player.context?.kind, let album = library.album(id: id) else { return nil }
+        return TitleSleeve.Words(album: album)
+    }
+
     @ViewBuilder private func panelHead(_ head: UpNextList.Head) -> some View {
         switch head {
         case let .collection(title, line, cover, collage):
@@ -219,7 +225,7 @@ struct QueueView: View {
                 if let collage {
                     CollageArtwork(artworks: collage, size: 48)
                 } else {
-                    ArtworkView(cover, size: 48)
+                    ArtworkView(cover, size: 48, sleeve: albumSleeve)
                 }
                 // Linux's panel-head: the serif, 20; the line 13.
                 VStack(alignment: .leading, spacing: 0) {
@@ -625,7 +631,7 @@ private struct QueuePanelRow: View {
                 .desktopFont(15)
                 .frame(width: 24, alignment: .trailing)
             } else {
-                ArtworkView(track.artwork, size: 48)
+                ArtworkView(track.artwork, size: 48, sleeve: TitleSleeve.Words(track: track))
             }
 
             VStack(alignment: .leading, spacing: 0) {

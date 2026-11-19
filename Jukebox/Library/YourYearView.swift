@@ -73,7 +73,7 @@ struct YourYearView: View {
                             .foregroundStyle(.secondary)
                             .frame(width: 24, alignment: .trailing)
                         if artwork {
-                            ArtworkView(entry.track?.artwork, size: 40)
+                            ArtworkView(entry.track?.artwork, size: 40, sleeve: entry.track.map(TitleSleeve.Words.init(track:)))
                         }
                         VStack(alignment: .leading, spacing: 0) {
                             Text(verbatim: entry.name).lineLimit(1)

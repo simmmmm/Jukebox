@@ -106,7 +106,7 @@ private struct LibraryAddSongRow: View {
     var body: some View {
         Button(action: add) {
             HStack(spacing: Theme.Space.m) {
-                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
+                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(track: track))
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(track.name)
                         .desktopFont(15, phone: nil)

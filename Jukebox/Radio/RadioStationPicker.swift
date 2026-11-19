@@ -126,7 +126,7 @@ struct RadioStationPicker: View {
                 ForEach(found.tracks) { track in
                     RadioPickerRow(title: track.name, subtitle: track.artistLine,
                                    action: { showSeed(.track(track.id)) }) {
-                        ArtworkView(track.artwork, size: 40, cornerRadius: Theme.Radius.artwork)
+                        ArtworkView(track.artwork, size: 40, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(track: track))
                     }
                 }
             } header: {
@@ -138,7 +138,7 @@ struct RadioStationPicker: View {
                 ForEach(found.albums) { album in
                     RadioPickerRow(title: album.name, subtitle: album.artistLine,
                                    action: { showSeed(.album(album.id)) }) {
-                        ArtworkView(album.artwork, size: 40, cornerRadius: Theme.Radius.artwork)
+                        ArtworkView(album.artwork, size: 40, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(album: album))
                     }
                 }
             } header: {

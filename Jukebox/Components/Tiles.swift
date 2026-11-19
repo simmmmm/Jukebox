@@ -17,7 +17,7 @@ struct AlbumTile: View {
     var body: some View {
         if isWide {
             WideTile(name: album.name, line: showsArtist ? album.artistLine : album.year.map(String.init)) {
-                ArtworkView(album.artwork)
+                ArtworkView(album.artwork, sleeve: TitleSleeve.Words(album: album))
             }
         } else {
             compact
@@ -26,7 +26,7 @@ struct AlbumTile: View {
 
     private var compact: some View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
-            ArtworkView(album.artwork)
+            ArtworkView(album.artwork, sleeve: TitleSleeve.Words(album: album))
             Text(album.name)
                 .font(.subheadline.weight(.medium))
                 .foregroundStyle(.primary)

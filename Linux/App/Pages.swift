@@ -611,7 +611,7 @@ enum LibraryPages {
                 let tile = Tile()
                 return (tile.widget, tile)
             },
-            fill: { tile, album, _ in tile.show(album.artwork, album.name, album.artistLine) },
+            fill: { tile, album, _ in tile.show(album.artwork, album.name, album.artistLine, sleeve: TitleSleeve.Words(album: album)) },
             activate: { album, _, _ in Pages.open(album) })
         let sorts: [(String, LibraryAlbumSort)] = [("Title", .title), ("Artist", .artist), ("Year", .year), ("Recently Added", .recentlyAdded)]
         var sort = LibraryAlbumSort.artist
@@ -723,7 +723,7 @@ enum LibraryPages {
                 let tile = Tile()
                 return (tile.widget, tile)
             },
-            fill: { tile, album, _ in tile.show(album.artwork, album.name, album.artistLine) },
+            fill: { tile, album, _ in tile.show(album.artwork, album.name, album.artistLine, sleeve: TitleSleeve.Words(album: album)) },
             activate: { album, _, _ in Pages.open(album) })
         let empty = emptyLine("")
         observe(grid.widget) {

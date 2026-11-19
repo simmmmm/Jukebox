@@ -84,7 +84,8 @@ struct MiniPlayer: View {
         if player.currentTrack == nil, let station = startingStation {
             StationArtwork(station: station, size: 34, cornerRadius: Theme.Radius.artwork)
         } else {
-            ArtworkView(player.currentTrack?.artwork, size: 34, cornerRadius: Theme.Radius.artwork)
+            ArtworkView(player.currentTrack?.artwork, size: 34, cornerRadius: Theme.Radius.artwork,
+                        sleeve: player.currentTrack.map(TitleSleeve.Words.init(track:)))
         }
     }
 

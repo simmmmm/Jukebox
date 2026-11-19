@@ -94,7 +94,7 @@ struct PlayerBar: View {
                 // words as Linux's tile is. The artist's and the station's
                 // lines are buttons of their own over it, not inside it.
                 HStack(spacing: Theme.Space.m) {
-                    ArtworkView(track.artwork, size: 56, cornerRadius: Theme.Radius.artwork)
+                    ArtworkView(track.artwork, size: 56, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(track: track))
                         .allowsHitTesting(false)
                         .accessibilityHidden(true)
                     // Linux's bar-title, 15 medium, 20 tall; then 4, and the

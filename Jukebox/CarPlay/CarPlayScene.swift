@@ -321,7 +321,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
     }
 
     private func albumRow(_ album: Album) -> CPListItem {
-        let item = row(album.name, detail: album.artistLine, artwork: album.artwork) { [weak self] in
+        let item = row(album.name, detail: album.artistLine, artwork: album.artwork,
+                       sleeve: TitleSleeve.Words(album: album)) { [weak self] in
             guard let self else { return }
             let tracks = self.app.library.tracks(inAlbum: album.id)
             self.interface?.pushTemplate(self.songs(album.name, tracks, context: QueueContext(.album(album.id), title: album.name)),
@@ -345,7 +346,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     private func playlistRow(_ playlist: Playlist) -> CPListItem {
         let item = CPListItem(text: playlist.name, detailText: nil)
-        item.userInfo = playlist.artwork
+        item.userInfo = RowCover(artwork: playlist.artwork, sleeve: nil)
         // The row's spinner shows while the server sends the songs.
         item.handler = { [weak self] _, done in
             Task { @MainActor in
@@ -418,7 +419,8 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             },
         ]
         let rows = tracks.enumerated().map { index, track in
-            row(track.name, detail: track.artistLine, artwork: track.artwork) { [weak self] in
+            row(track.name, detail: track.artistLine, artwork: track.artwork,
+                sleeve: TitleSleeve.Words(track: track)) { [weak self] in
                 self?.play(tracks, from: index, context: context)
             }
         }
@@ -509,11 +511,13 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     // MARK: Rows
 
-    private func row(_ text: String, detail: String? = nil, artwork: Artwork? = nil, symbol: String? = nil,
-                     action: @escaping () -> Void) -> CPListItem {
+    /// `sleeve`: an album's or a song's words, for the album's title sleeve
+    /// when the server has no cover.
+    private func row(_ text: String, detail: String? = nil, artwork: Artwork? = nil, sleeve: TitleSleeve.Words? = nil,
+                     symbol: String? = nil, action: @escaping () -> Void) -> CPListItem {
         let item = CPListItem(text: text, detailText: detail, image: symbol.flatMap { glyph($0) })
         // Its cover, loaded by `fit` once the row is one the car shows.
-        item.userInfo = artwork
+        item.userInfo = RowCover(artwork: artwork, sleeve: sleeve)
         item.handler = { _, done in
             action()
             done()
@@ -532,18 +536,43 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
 
     /// Covers from the app's own image cache, as the phone's rows; set when
     /// they come.
-    private func setArtwork(_ artwork: Artwork?, on item: CPListItem) {
-        guard let artwork, let server = app.server else { return }
+    private func setArtwork(_ cover: RowCover?, on item: CPListItem) {
+        guard let cover else { return }
+        guard let artwork = cover.artwork, let server = app.server else {
+            if cover.artwork == nil, let sleeve = cover.sleeve { item.setImage(titleSleeve(sleeve)) }
+            return
+        }
         let url = server.artworkURL(artwork, maxPixelSize: 200)
         if let image = ImagePipeline.shared.cached(url) {
             item.setImage(image)
             return
         }
+        if let sleeve = cover.sleeve, ImagePipeline.shared.isMissing(url) {
+            item.setImage(titleSleeve(sleeve))
+            return
+        }
         // Until it comes, a quiet square in the car's own fill.
         item.setImage(rowPlaceholder)
         Task { @MainActor in
-            if let image = await ImagePipeline.shared.image(for: url) { item.setImage(image) }
+            if let image = await ImagePipeline.shared.image(for: url) {
+                item.setImage(image)
+            } else if let sleeve = cover.sleeve, ImagePipeline.shared.isMissing(url) {
+                // No cover on the server: the album's title sleeve, as on the phone.
+                item.setImage(self.titleSleeve(sleeve))
+            }
         }
+    }
+
+    /// An album's title sleeve at a row's size, for the car's scale: a
+    /// printed sleeve looks the same in the car's light and dark.
+    private func titleSleeve(_ words: TitleSleeve.Words) -> UIImage? {
+        let size = CPListItem.maximumImageSize
+        let side = min(size.width, size.height)
+        let renderer = ImageRenderer(content: TitleSleeveFace(words: words)
+            .frame(width: side, height: side)
+            .clipShape(.rect(cornerRadius: Theme.Radius.artwork)))
+        renderer.scale = carScale
+        return renderer.uiImage
     }
 
     /// Within what the car allows: so many sections, so many rows in all.
@@ -561,7 +590,7 @@ final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationSceneDelegat
             // Albums does not fetch hundreds at once; scrolling further
             // shows rows without one. Load on scroll if that is missed.
             for case let item as CPListItem in kept.prefix(max(0, covers)) {
-                setArtwork(item.userInfo as? Artwork, on: item)
+                setArtwork(item.userInfo as? RowCover, on: item)
             }
             covers -= kept.count
             result.append(CPListSection(items: kept, header: header, sectionIndexTitle: nil))
@@ -671,5 +700,12 @@ private struct CarStationMark: View {
             ArchLine(tube: 1, cut: cut).stroke(onAir ? Theme.Arch.innerTube : Theme.Arch.glow, style: line)
         }
     }
+}
+
+/// What a row's image is made of, kept on the row (`userInfo`) until the
+/// car shows it: its cover, and an album's words for its title sleeve.
+private struct RowCover {
+    let artwork: Artwork?
+    let sleeve: TitleSleeve.Words?
 }
 #endif

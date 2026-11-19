@@ -40,6 +40,8 @@ import SwiftUI
 /// is the face's.
 struct SleeveCard: View {
     let artwork: Artwork?
+    /// The album's words: its title sleeve when it has no cover.
+    let sleeve: TitleSleeve.Words?
     let side: CGFloat
     /// The card's edge: the cover's own colour, darker (sketch E: its
     /// average mixed with 45% black), so a cream sleeve has a light edge
@@ -50,8 +52,10 @@ struct SleeveCard: View {
     let shadow: Color
     let strength: Double
 
-    init(artwork: Artwork?, side: CGFloat, edge: Color, shadow: Color, strength: Double) {
+    init(artwork: Artwork?, sleeve: TitleSleeve.Words? = nil, side: CGFloat, edge: Color, shadow: Color,
+         strength: Double) {
         self.artwork = artwork
+        self.sleeve = sleeve
         self.side = side
         self.edge = edge
         self.shadow = shadow
@@ -91,7 +95,7 @@ struct SleeveCard: View {
     /// The printed face: the cover, ring wear, grain, the light on its top
     /// edge, the open edge a little in shade.
     private var face: some View {
-        ArtworkView(artwork, size: side)
+        ArtworkView(artwork, size: side, sleeve: sleeve)
             .overlay {
                 wear
             }

@@ -325,7 +325,7 @@ private struct HomeHandoffNotice: View {
     private func wide(_ offer: HandoffStore.Offer, action: String) -> some View {
         HStack(alignment: .center, spacing: Theme.Space.xl) {
             HomeCardRecord(side: 120) {
-                ArtworkView(offer.track.artwork, size: 120)
+                ArtworkView(offer.track.artwork, size: 120, sleeve: TitleSleeve.Words(track: offer.track))
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(offer.heading)
@@ -721,7 +721,7 @@ private struct HomePlayedRow: View {
         case let .album(album):
             NavigationLink(value: Route.album(album)) {
                 row(title: album.name, detail: album.artistLine) {
-                    ArtworkView(album.artwork, size: Self.artSide)
+                    ArtworkView(album.artwork, size: Self.artSide, sleeve: TitleSleeve.Words(album: album))
                 }
             }
             .buttonStyle(.plain)

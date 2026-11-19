@@ -207,7 +207,7 @@ enum DownloadedPage {
         observe(tile.widget) {
             let fact = app.offline.fact(of: collection)
             switch collection.item {
-            case let .album(album): tile.show(album.artwork, collection.title, fact)
+            case let .album(album): tile.show(album.artwork, collection.title, fact, sleeve: TitleSleeve.Words(album: album))
             case let .playlist(playlist): tile.show(playlist.artwork ?? collection.tracks.first?.artwork, collection.title, fact)
             case let .mix(mix): tile.show(collage: mix.artwork, collection.title, fact)
             }

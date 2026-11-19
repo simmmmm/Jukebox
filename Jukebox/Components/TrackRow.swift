@@ -75,7 +75,7 @@ struct TrackRow: View {
         return HStack(spacing: Theme.Space.m) {
             switch leading {
             case .artwork:
-                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
+                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(track: track))
                     .opacity(playable ? 1 : 0.5)
             case let .number(number):
                 Group {
@@ -174,7 +174,7 @@ struct TrackRow: View {
         return HStack(spacing: showsArtwork ? Theme.Space.m : Theme.Space.l) {
             switch leading {
             case .artwork:
-                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork)
+                ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(track: track))
                     .opacity(playable ? 1 : 0.5)
             case let .number(number):
                 Group {
@@ -276,7 +276,7 @@ private struct TrackPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.s) {
-            ArtworkView(track.artwork, size: 240)
+            ArtworkView(track.artwork, size: 240, sleeve: TitleSleeve.Words(track: track))
             Text(track.name).font(.headline).lineLimit(2)
             Text(track.artistLine).font(.subheadline).foregroundStyle(.secondary).lineLimit(1)
         }
