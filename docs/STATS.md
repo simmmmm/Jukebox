@@ -91,7 +91,7 @@ Buckets:
 | `library_loaded` | `tracks` (bucket), `from` (`cache`, `server`), `seconds` (bucket) | How large libraries are; how long a launch and a load take | LibraryStore |
 | `screen` | `name`: a tab (`home`, `radio`, `library`, `search`), a place in the wide window (`home`, `radio`, `search`, `playlist`, or a library kind: `albums`, `artists`, `songs`, `playlists`, `favorites`, `genres`, `recently_added`, `downloaded`), a pushed page's kind (`album`, `artist`, `playlist`, `genre`, `mix`, `station`, `artists`, `albums`, `songs`, `playlists`, `genres`, `favorites`, `recently_added`, `downloaded`), or `now_playing`, `lyrics`, `queue`, `settings`; `carplay` once each time the car connects. The wide window never sends `library`: its kinds are places there | Which screens are used, which never; is CarPlay used | MainTabView (tabs), CarPlaySceneDelegate (`carplay`), WideShell (the wide window's places, and Search from its field), `routeDestinations()` (pushes), the cover, panels and sheet |
 | `play_started` | `from` (`album`, `playlist`, `mix`, `songs`, `favorites`, `search`, `artist`, `genre`, `station`, `other`, `siri`, `widget`), `shuffled` (bool) | Where music is started from; is Shuffle used; is Siri; is the widget | `AudioPlayer.play`, `playRadio`; `siri` for what Siri or Shortcuts played, `widget` for a mix the widget played (`Stats.nextFrom`); a station they start counts `station` here and `siri` or `widget` in `station_started` |
-| `station_started` | `seed` (`track`, `artist`, `album`, `genre`, `decade`, `collection`, `personal`, `discovery`, `favorites`), `from` (`page`, `tile_menu`, `hero`, `menu`, `autoplay`, `search`, `carplay`, `siri`, `widget`; `picker` is reserved) | Which stations people play, and from where | each Start Radio, Play Station, Your Station's Play, a station's page, Autoplay |
+| `station_started` | `seed` (`track`, `artist`, `album`, `genre`, `decade`, `collection`, `personal`, `discovery`, `favorites`), `from` (`page`, `tile_menu`, `hero`, `menu`, `autoplay`, `search`, `carplay`, `siri`, `widget`, `play_key`, `dock`, `launcher`; `picker` is reserved) | Which stations people play, and from where | each Start Radio, Play Station, Your Station's Play, a station's page, Autoplay |
 | `station_page` | `action` (`opened`, `new_picks`, `row`, `play`) | Is the page looked at before playing; is New Picks used | StationDetailView |
 | `radio_feedback` | `kind` (`skip`, `like`, `dislike`, `undo`) | Does the radio get told what is liked | RadioController |
 | `dial_changed` | `value` (bucket) | Where people set the dial | the three dials, when let go |
@@ -146,7 +146,10 @@ always `jellyfin`, and `not_a_server` was `not_jellyfin`.
 | `search` | A Start Radio or a song in Search |
 | `carplay` | A station on CarPlay's Home or Radio |
 | `siri` | Siri or Shortcuts: Your Station, Start a Station, a genre, "Play … radio" |
-| `widget` | The widget's Play of Your Station |
+| `widget` | The widget's Play of Your Station, or its control (Control Center, the Lock Screen, the Action Button) |
+| `play_key` | Your Station from Play with nothing loaded: Space or the Play key on the Mac, Space or the Play key (MPRIS) on Linux, Space on an iPad's keyboard |
+| `dock` | The Mac's Dock menu, Play Your Station |
+| `launcher` | Linux's launcher menu (the desktop entry's action), Play Your Station |
 | `picker` | Reserved. Start a Station (the picker) opens the station's page since 8 November 2026, so what it starts counts as `page`; `picker` stays for a picker that would play at once. |
 
 ### Downloads

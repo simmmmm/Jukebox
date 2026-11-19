@@ -114,4 +114,9 @@ void jb_mpris_update(const char *status, const char *track_id, const char *title
                      gboolean can_previous);
 void jb_mpris_set_position(gint64 position, gboolean seeked);
 
+// The background portal's RequestBackground: a Flatpak asks to go on
+// without a window (the music after the window closed), so GNOME lists it
+// under Background Apps rather than ending it. Fire and forget.
+void jb_request_background(const char *reason);
+
 #endif

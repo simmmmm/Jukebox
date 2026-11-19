@@ -7,6 +7,8 @@
 // - Medium: the same, and beside it Home's first three mixes, each a
 //   Play by itself.
 // - The lock screen: the mark, Your Station's Play.
+// - A control (Control Center, the Lock Screen, the Action Button): Your
+//   Station's Play.
 //
 // The buttons are WidgetIntents.swift's, performed by the app; a tap
 // anywhere else opens the app. Everything shown comes from the snapshot
@@ -21,6 +23,31 @@ import UIKit
 import WidgetKit
 
 @main
+struct JukeboxWidgets: WidgetBundle {
+    var body: some Widget {
+        DoorsWidget()
+        YourStationControl()
+    }
+}
+
+/// Your Station as a control: in Control Center, on the Lock Screen (the
+/// iPhone's) and on the Action Button, which takes any control. The same
+/// door as the widget's Play, so the same intent, performed by the app and
+/// counted `from: widget`. A control shows a symbol, not a drawing, so the
+/// radio's waves stand in for the mark, as in Siri's Your Station shortcut
+/// (MusicIntents.swift). Asked by the listener's hand, never by a car.
+struct YourStationControl: ControlWidget {
+    var body: some ControlWidgetConfiguration {
+        StaticControlConfiguration(kind: "com.tijmen.Jukebox.YourStation") {
+            ControlWidgetButton(action: PlayYourStationFromWidget()) {
+                Label("Your Station", systemImage: "dot.radiowaves.left.and.right")
+            }
+        }
+        .displayName("Your Station")
+        .description("Plays Your Station.")
+    }
+}
+
 struct DoorsWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: "Doors", provider: DoorsProvider()) { entry in

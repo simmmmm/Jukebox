@@ -16,6 +16,9 @@ struct JukeboxApp: App {
     /// is not woken for them: its downloads go on while it runs.
     #if os(iOS)
     @UIApplicationDelegateAdaptor(JukeboxAppDelegate.self) private var appDelegate
+    #else
+    /// The Dock's menu, Play Your Station (DockMenu below).
+    @NSApplicationDelegateAdaptor(DockMenu.self) private var dockMenu
     #endif
     @State private var app = AppModel.shared
     /// The wide window's panel, open or closed and on what: one for the app.
@@ -56,6 +59,30 @@ struct JukeboxApp: App {
 }
 
 #if os(macOS)
+/// Play Your Station in the Dock's menu (a right-click on the icon), as
+/// Linux has it in GNOME's launcher: the station a click from anywhere,
+/// with no button added to the window. The Dock asks only while Jukebox
+/// runs; signed out there is nothing to play, so no item.
+final class DockMenu: NSObject, NSApplicationDelegate {
+    func applicationDockMenu(_ sender: NSApplication) -> NSMenu? {
+        guard AppModel.shared.phase == .signedIn else { return nil }
+        let menu = NSMenu()
+        let item = NSMenuItem(title: String(localized: "Play Your Station"), action: #selector(playYourStation),
+                              keyEquivalent: "")
+        item.target = self
+        menu.addItem(item)
+        return menu
+    }
+
+    @objc private func playYourStation() {
+        Task {
+            // The library may still be coming in just after a launch.
+            guard let app = await Voice.ready() else { return }
+            app.handoff.startYourStation(from: "dock")
+        }
+    }
+}
+
 /// The window of the Mac's screenshot walk (JukeboxUITests/
 /// MacScreenshotTests.swift). The App Store takes a Mac's picture at 1440 by
 /// 900 exactly and the picture is the window, so the walk launches with

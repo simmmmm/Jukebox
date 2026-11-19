@@ -9,3 +9,8 @@ Terminal=false
 Categories=GNOME;GTK;AudioVideo;Audio;Player;
 Keywords=music;radio;jellyfin;navidrome;subsonic;
 StartupNotify=true
+Actions=play-station;
+
+[Desktop Action play-station]
+Name=Play Your Station
+Exec=jukebox --play-station

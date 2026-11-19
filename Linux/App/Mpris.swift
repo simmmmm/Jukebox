@@ -18,9 +18,10 @@ enum Mpris {
                 switch command {
                 case JB_MPRIS_PLAY_PAUSE, JB_MPRIS_PLAY:
                     // Nothing loaded: the Play key goes on where this
-                    // computer, or another device, left off (HandoffStore).
+                    // computer, or another device, left off, else plays
+                    // Your Station (HandoffStore.playWithNothingLoaded).
                     if !player.hasTrack {
-                        app.handoff.continueHere()
+                        app.handoff.playWithNothingLoaded(from: "play_key")
                     } else if command == JB_MPRIS_PLAY {
                         player.resume()
                     } else {
@@ -32,7 +33,9 @@ enum Mpris {
                 case JB_MPRIS_SEEK_BY: player.seek(to: player.elapsed + seconds)
                 case JB_MPRIS_SEEK_TO: player.seek(to: seconds)
                 case JB_MPRIS_RAISE: gtk_window_present(ptr(MainWindow.window))
-                case JB_MPRIS_QUIT: gtk_window_close(ptr(MainWindow.window))
+                // Quit is quit, also while the window is hidden and the
+                // music plays on (MainWindow, hide on close).
+                case JB_MPRIS_QUIT: MainWindow.quit()
                 default: break
                 }
             }
