@@ -123,7 +123,15 @@ enum HomePage {
             offline.checkServer()
             Task { await app.library.refresh() }
         }
-        return vbox(spacing: 4, [label("\(why) \(still)", lines: 0).margins(horizontal: 8), again]).margins(horizontal: 4, vertical: 8)
+        // On a soft amber ground of its own, shaped as Home's cards, the
+        // glyph in the accent (Style.swift's home-card.notice;
+        // Theme.notice on the iPhone).
+        let glyph = gtk_image_new_from_icon_name(offline.hasNetwork ? "network-error-symbolic" : "network-offline-symbolic")!
+            .align(vertical: GTK_ALIGN_START)
+        gtk_widget_set_margin_top(glyph, 2)
+        let words = vbox(spacing: 4, [label("\(why) \(still)", lines: 0).margins(horizontal: 8), again])
+        gtk_widget_set_hexpand(words, 1)
+        return hbox(spacing: 12, [glyph, words]).css("home-card", "notice")
     }
 
     /// Music on another device, or this one's from last time, and the one

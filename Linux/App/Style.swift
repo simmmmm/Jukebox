@@ -38,6 +38,11 @@ enum Style {
         // one step up from raised; by day halfway back to the paper, as a
         // step past it would no longer read as a card. Theme.raisedLighter.
         let lighter = dark ? "#242120" : "#F1EDE6"
+        // The server out of reach: a soft warning in the Arch's amber, the
+        // mark core's at 16% on the paper, Glow at 12% on the night ("een
+        // warning dingetje met een zacht warning kleurtje in stijl van
+        // jukebox", 20 November 2026). Theme.notice.
+        let notice = dark ? "#2E2517" : "#F6E6D1"
         // libadwaita 1.5 reads its colours by name, 1.6 and later from
         // variables (which GTK before 4.16 cannot read, and says so).
         var css = """
@@ -144,6 +149,8 @@ enum Style {
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
         .home-card { background-color: \(raised); border-radius: 18px; padding: 12px 36px 12px 12px; }
+        .home-card.notice { background-color: \(notice); }
+        .home-card.notice > image { color: \(accent); }
         /* Each card one button (Pages.cardButton): its words as words,
            a little darker under the pointer, the word at its foot in the
            accent. */
