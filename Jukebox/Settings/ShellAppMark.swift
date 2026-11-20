@@ -55,6 +55,9 @@ struct WelcomeSleeve: View {
     var animatesIn = true
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    /// The page's own appearance, for the core while the arches stand on
+    /// the page without their sleeve.
+    @Environment(\.colorScheme) private var pageScheme
     /// How far it has come: 1 the outer band drawn, 2 the inner, 3 the core
     /// on, 4 drawn back to the whole sleeve, 5 the record out.
     @State private var stage = 0
@@ -82,16 +85,26 @@ struct WelcomeSleeve: View {
                       label: RecordLabel(title: "Jukebox", artist: "", disc: nil),
                       tone: AverageColor(red: 0xA8 / 255, green: 0x4A / 255, blue: 0x17 / 255))
                 .drawingGroup()
-                // Behind the sleeve, wholly, until it slides out.
+                // Behind the sleeve, wholly, until it slides out; not there
+                // before, so it never shows through the sleeve coming on.
+                .opacity(reached(5) ? 1 : 0)
                 .offset(x: (reached(5) ? 122 : 24) * unit, y: 14 * unit)
             sleeve(side: 180 * unit)
                 .offset(x: 20 * unit, y: 10 * unit)
         }
         .frame(width: width, height: 200 * unit, alignment: .topLeading)
         // Close: 2.4 times as large, the mark's crown at the picture's top
-        // and its legs running out below; the sleeve covers the picture.
+        // and its legs running out below, on the page's own ground, with no
+        // box round it.
         .scaleEffect(reached(4) ? 1 : 2.4, anchor: UnitPoint(x: 0.2714, y: 0.3536))
-        .clipShape(.rect(cornerRadius: Theme.Radius.artwork))
+        // Close, the legs run on below the picture: they fade out there
+        // rather than end on a line, which would read as a box again.
+        .mask {
+            LinearGradient(stops: [.init(color: .black, location: 0),
+                                   .init(color: .black, location: reached(4) ? 1 : 0.7),
+                                   .init(color: reached(4) ? .black : .clear, location: 1)],
+                           startPoint: .top, endPoint: .bottom)
+        }
         .accessibilityHidden(true)
         .task {
             guard animatesIn, !reduceMotion else { return }
@@ -133,13 +146,22 @@ struct WelcomeSleeve: View {
         .frame(width: size, height: size)
         .offset(y: side * 12 / 1024)
         .frame(width: side, height: side)
-        .background(Theme.Arch.cabinet)
-        .clipShape(.rect(cornerRadius: Theme.Radius.artwork))
-        .overlay {
+        // The sleeve comes only as the mark draws back: first the arches
+        // alone on the page, then the sleeve round them, then the record.
+        // "Het intro van de app speelt zich nu af in een soort container ik
+        // wil eerst die bogen zien dan pas dat er een hoes bijkomt en dan de
+        // plaat" (the photographer, 20 November 2026).
+        .background {
             RoundedRectangle(cornerRadius: Theme.Radius.artwork)
-                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                .fill(Theme.Arch.cabinet)
+                .overlay {
+                    RoundedRectangle(cornerRadius: Theme.Radius.artwork)
+                        .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                }
+                .opacity(reached(4) ? 1 : 0)
         }
-        // The core's warm white, as on Cabinet in either appearance.
-        .environment(\.colorScheme, .dark)
+        // On the sleeve the core's warm white, as on Cabinet in either
+        // appearance; before it, on the page, the page's own core.
+        .environment(\.colorScheme, reached(4) ? .dark : pageScheme)
     }
 }
