@@ -60,10 +60,14 @@ struct RecordMiniPlayer: View {
 
     /// The row's width, for whether next fits (showsNext).
     @State private var rowWidth: CGFloat = 0
-    /// The words' way along a swipe, and whether a drag is one: a drag
-    /// that went sideways first. Kept a moment past its end, so the tap
-    /// the same finger makes on its way up opens nothing.
-    @State private var drag: CGFloat = 0
+    /// The words' way along a swipe, nil while the drag is none (it went
+    /// up or down first). Gesture state, so a drag the system takes away
+    /// (the long press's menu, the app leaving) lets go of it too, and the
+    /// words spring back as they come home.
+    @GestureState(resetTransaction: Transaction(animation: .spring(response: 0.35, dampingFraction: 0.7)))
+    private var swipeAcross: CGFloat?
+    /// A swipe under way, kept a moment past its end, so the tap the same
+    /// finger makes on its way up opens nothing and presses nothing.
     @State private var isSwiping = false
     /// Counts the songs skipped by a swipe or by next, for the haptic and
     /// the glyph's bounce.
@@ -182,6 +186,16 @@ struct RecordMiniPlayer: View {
         // down is not a swipe, and the bar has no scroll of its own to
         // fight; the tab bar under it is the system's, apart.
         .simultaneousGesture(swipeGesture)
+        .onChange(of: swipeAcross != nil) { _, swiping in
+            if swiping {
+                isSwiping = true
+            } else {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(150))
+                    if swipeAcross == nil { isSwiping = false }
+                }
+            }
+        }
         .sensoryFeedback(.impact(weight: .light), trigger: skips)
         .background { ground }
         .onChange(of: player.errorMessage) { _, message in
@@ -243,7 +257,7 @@ struct RecordMiniPlayer: View {
         // Drawn past the ground's own edges, so its blur fades only along
         // the arch and never at the sides or the foot.
         .mask {
-            RecordGroundArch()
+            RecordGroundArch(crown: Self.lift - Self.crown, fall: Self.fall)
                 .fill(.black)
                 .padding(-RecordGroundArch.overhang)
                 .blur(radius: Self.softness)
@@ -258,6 +272,7 @@ struct RecordMiniPlayer: View {
     /// arch on the label, which means a station.
     private var recordButton: some View {
         Button {
+            guard !isSwiping else { return }
             player.togglePlayPause()
         } label: {
             ZStack {
@@ -443,38 +458,29 @@ struct RecordMiniPlayer: View {
     /// the song changing and the haptic say it.
     private var wordsOffset: CGFloat {
         guard !reduceMotion else { return 0 }
-        return max(-Self.slide, min(Self.slide, drag * Self.follow))
+        return max(-Self.slide, min(Self.slide, (swipeAcross ?? 0) * Self.follow))
     }
 
     /// Sideways only: a drag counts once it has gone half again as far
     /// across as up or down, and from then on follows to its end.
     private var swipeGesture: some Gesture {
         DragGesture(minimumDistance: 16)
-            .onChanged { value in
-                let across = value.translation.width
-                if !isSwiping {
-                    guard abs(across) > abs(value.translation.height) * 1.5 else { return }
-                    isSwiping = true
+            .updating($swipeAcross) { value, across, _ in
+                let width = value.translation.width
+                if across == nil {
+                    guard abs(width) > abs(value.translation.height) * 1.5 else { return }
                 }
-                drag = across
+                across = width
             }
             .onEnded { value in
-                if isSwiping, player.hasTrack {
-                    let across = value.translation.width
-                    let flung = value.predictedEndTranslation.width
-                    if across <= -Self.swipe || flung <= -Self.fling {
-                        skip(forward: true)
-                    } else if across >= Self.swipe || flung >= Self.fling {
-                        skip(forward: false)
-                    }
-                }
-                withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.7)) {
-                    drag = 0
-                }
-                // Past the tap the lifted finger may still make.
-                Task { @MainActor in
-                    try? await Task.sleep(for: .milliseconds(150))
-                    isSwiping = false
+                let across = value.translation.width
+                let sideways = isSwiping || abs(across) > abs(value.translation.height) * 1.5
+                guard sideways, player.hasTrack else { return }
+                let flung = value.predictedEndTranslation.width
+                if across <= -Self.swipe || flung <= -Self.fling {
+                    skip(forward: true)
+                } else if across >= Self.swipe || flung >= Self.fling {
+                    skip(forward: false)
                 }
             }
     }
@@ -614,10 +620,14 @@ struct RecordMiniPlayer: View {
 private struct RecordGroundArch: Shape {
     static let overhang: CGFloat = 64
 
+    /// The crown below the ground's top, and the fall to the edges: handed
+    /// in from RecordMiniPlayer's measures, as a Shape draws off the main
+    /// actor.
+    let crown: CGFloat
+    let fall: CGFloat
+
     func path(in rect: CGRect) -> Path {
         let ground = rect.insetBy(dx: Self.overhang, dy: Self.overhang)
-        let crown = RecordMiniPlayer.lift - RecordMiniPlayer.crown
-        let fall = RecordMiniPlayer.fall
         let middle = ground.midX
         let half = max(ground.width / 2, 1)
         var path = Path()
