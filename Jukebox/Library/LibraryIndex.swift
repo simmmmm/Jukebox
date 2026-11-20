@@ -76,6 +76,8 @@ nonisolated struct LibraryIndex: Sendable {
         albumArtistNames.reserveCapacity(albums.count)
         for (i, album) in albums.enumerated() {
             albumPosition[album.id] = i
+            // A part AlbumMerge put into this album finds it by its old id.
+            for other in album.mergedIDs ?? [] where albumPosition[other] == nil { albumPosition[other] = i }
             if album.isFavorite { favoriteIDs.insert(album.id) }
             for key in Set(album.artists.map(\.key)) { artistAlbums[key, default: []].append(i) }
             albumNames.append(Self.fold(album.name))
