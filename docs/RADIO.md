@@ -749,15 +749,21 @@ times (−11 dB), 12 songs of 108.
 |---|---|
 | Your Station on Office, the band's share of 40 (12 stations) | at 0: 0.025 before, 0 now (also without gains); at 0.35: 0.013 with gains, 0.046 without; at 1: 0.110 |
 | calm song to loud at 0, 12 × 40 picks | 12 before, 0 |
-| three Shoegaze skips on Rock Radio, the app's loop (48 runs), Shoegaze in the next 30 | 1 ahead 0.133, 4 ahead 0.147, 15 ahead 0.160; without the fade given back 0.157 and 0.179 |
+| three Shoegaze skips on Rock Radio, the app's loop (48 runs), Shoegaze in the next 30 | 1 ahead 0.133, 4 ahead 0.135, 15 ahead 0.130. Before (no fade given back, the skip told before the queue went back): 4 ahead 0.157, 15 ahead 0.179 |
+| the band tagged only "Rock", which one calm artist shares, no gains | 0.025 of 40 at 0, 0.048 at 0.35: the tags cannot tell it apart, only a gain can |
+| the made-up library with gains by album (3 or 8 dB apart), artist stations at 0 and 0.35 | in cluster, distinct artists and separation as without gains (0.969, 7.9 and 0 at 0; 0.961, 8.6 and 0 at 0.35) |
+| Your Station on Office at 0, distinct artists in 40 | 8.0 of the 8 calm |
 | one Shoegaze song taken out of 15 ahead (24 runs) | Shoegaze 0.486 → 0.354 of the next 30 (half of Rock Radio is Shoegaze here); ruled out with it 35 of 157 Shoegaze songs queued, 0 of 179 others |
 | a loud song taken out of Office's Your Station at 1 (24 runs), the band in the next 40 | 0.122 → 0.052 with gains, 0.133 → 0.070 without |
 | Don't Play This Artist on Rock Radio | 0 of their songs in the next 40, 12 stations |
 
-Before, a song the band had played three times was "One of your
-favorites": Your Station's own songs skipped the genre fit, and around the
-24th pick, the calm songs heard or held apart, one came (as "Anthem" came
-after Apparat on the photographer's Your Station, 20 November 2026). Every
+Before, on Office, a song the band had played three times was "One of
+your favorites": Your Station's own songs skipped the genre fit, and around
+the 24th pick, the calm songs heard or held apart, one came. That is one
+way "Anthem" (Bring Me The Horizon) could have come after Apparat on the
+photographer's Your Station at Familiar (20 November 2026); the reason under
+it in Up Next, its genre tags and whether his server sends a gain would say
+if it was this one. Every
 `RADIO-EVAL` and `RADIO-CRITIC` number above is unchanged: the fixtures
 have no gains, and the rest acts below 0.35.
 

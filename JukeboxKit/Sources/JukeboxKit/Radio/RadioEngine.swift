@@ -1110,9 +1110,9 @@ struct RadioEngine: Sendable {
     /// toward the familiar end the song before decides what fits next: a
     /// track with no genre in common with it keeps 25% at Familiar, 62% at
     /// 0.175, all from the default (0.35) on. Every other station has a
-    /// seed that holds it together. Without this a calm morning went from
-    /// Apparat to a metalcore song the listener had played three times
-    /// (RadioQueueTests). Not at the default: there it made Your Station
+    /// seed that holds it together. Without this, on RadioQueueTests'
+    /// calm library, a metalcore song played three times came after the
+    /// calm ones at Familiar. Not at the default: there it made Your Station
     /// a chain from its first song, and the clock's no-pattern listener
     /// moved by 0.073 of a cluster where the clock alone moves 0.027.
     func flow(_ i: Int, after previous: Int) -> Double {

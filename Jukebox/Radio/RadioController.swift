@@ -395,12 +395,18 @@ final class RadioController {
         case .completed:
             session?.record(.finished(track.id))
         case .skipped:
-            session?.record(.skipped(track.id, after: listened))
-            // A skip says "not this": what comes next is chosen again with
-            // that known, at once.
-            if !isHandlingFeedback { rechooseUpcoming(keepingNext: false) }
-            // The listener's skip, not the one a thumbs down made (counted as that).
-            if !isHandlingFeedback { Stats.track(.radioFeedback, ["kind": "skip"]) }
+            if isHandlingFeedback {
+                session?.record(.skipped(track.id, after: listened))
+            } else {
+                // A skip says "not this": what comes next is chosen again
+                // with that known, at once. Told once what was queued is
+                // back, so the skip is marked where the station then stands
+                // (with fifteen ahead, told first it kept 0.98^14 of what
+                // came before: RadioQueueTests).
+                rechooseUpcoming(keepingNext: false) { $0.record(.skipped(track.id, after: listened)) }
+                // The listener's skip, not the one a thumbs down made (counted as that).
+                Stats.track(.radioFeedback, ["kind": "skip"])
+            }
         case .partial:
             // Left halfway: the session weighs it by how long was heard; not
             // enough to throw away what is queued.
@@ -764,12 +770,17 @@ final class RadioController {
     /// started from its page has some twenty queued, and a skip says "not
     /// this" of what is ahead too. As many again, so the queue the listener
     /// saw keeps its length.
-    private func rechooseUpcoming(keepingNext: Bool) {
+    /// `learning`: what to tell the session once the queued are back.
+    private func rechooseUpcoming(keepingNext: Bool, learning: ((inout RadioSession) -> Void)? = nil) {
         // The listener's skip, thumbs or dial: the page's songs make way.
         if !keepingNext { keepsShownPicks = false }
-        guard session != nil, let station, player.context?.station?.id == station.id else { return }
+        guard session != nil, let station, player.context?.station?.id == station.id else {
+            if session != nil, let learning { learning(&session!) }
+            return
+        }
         let removed = player.removeUpcomingRadioPicks(keepingNext: keepingNext)
         session?.returnUnplayed(removed)
+        if session != nil, let learning { learning(&session!) }
         let picks = session?.next(max(removed.count, Self.ahead - player.upNext.count)) ?? []
         player.appendRadio(picks)
     }

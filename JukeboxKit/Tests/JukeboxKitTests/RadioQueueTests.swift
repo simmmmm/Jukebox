@@ -29,9 +29,9 @@ final class RadioQueueTests: XCTestCase {
         let graph: SimilarityGraph
         static let loudArtist = "Loud Horizon"
 
-        init(gains: Bool = true, loudPlays: Int = 3) {
+        init(gains: Bool = true, loudPlays: Int = 3, broad: Bool = false) {
             let calm: [(String, [String])] = [
-                ("Fontaine Rows", ["Post-Punk", "Indie"]),
+                ("Fontaine Rows", broad ? ["Post-Punk", "Rock"] : ["Post-Punk", "Indie"]),
                 ("Apparatus", ["Electronic", "Ambient"]),
                 ("June Hollow", ["Folk", "Indie"]),
                 ("Old Mill Road", ["Folk"]),
@@ -55,7 +55,7 @@ final class RadioQueueTests: XCTestCase {
                 }
             }
             for k in 0..<12 {
-                var t = RadioTestTracks.track("m\(k)", Self.loudArtist, album: "Loud \(k / 6)", genres: ["Metalcore", "Rock"],
+                var t = RadioTestTracks.track("m\(k)", Self.loudArtist, album: "Loud \(k / 6)", genres: broad ? ["Rock"] : ["Metalcore", "Rock"],
                                               year: 2015, number: k % 6 + 1, plays: k < 4 ? loudPlays : 0,
                                               lastPlayed: k < 4 ? now.addingTimeInterval(-86_400 * 20) : nil)
                 if gains { t.normalizationGain = -11 }
@@ -146,9 +146,11 @@ final class RadioQueueTests: XCTestCase {
                 let playing = queue.removeFirst()
                 steps += 1
                 if isShoegaze(playing, w) {
+                    // As RadioController: what is queued goes back first, so
+                    // the skip is marked where the station then stands.
+                    session.returnUnplayed(queue)
                     session.record(.skipped(playing, after: 8))
                     skips += 1
-                    session.returnUnplayed(queue)
                     queue = session.next(ahead).map(\.id)
                 } else {
                     session.record(.finished(playing))
@@ -260,5 +262,77 @@ final class RadioQueueTests: XCTestCase {
         }
         Self.line("Don't Play This Artist on Rock Radio: their songs in the next 40, \(left) in \(runs) stations")
         XCTAssertLessThanOrEqual(left, runs / 4)
+    }
+
+    // MARK: - What else the loudness and the flow move
+
+    /// The band tagged only "Rock", which one calm artist shares, and no
+    /// gains: what the tags alone can still do.
+    func testABroadlyTaggedLoudBand() {
+        let office = Office(gains: false, broad: true)
+        let familiar = loudShare(office, adventurousness: 0), standard = loudShare(office, adventurousness: 0.35)
+        Self.line(String(format: "the band tagged only Rock (shared with one calm artist), no gains: its share of 40 at 0 %.3f, at 0.35 %.3f", familiar, standard))
+        XCTAssertLessThan(familiar, 0.05)
+    }
+
+    /// Your Station at Familiar on Office: the flow keeps the calm songs
+    /// together; how many artists of the eight still come in 40.
+    func testFlowKeepsVariety() {
+        let office = Office(gains: true)
+        var artists = 0.0
+        for run in 0..<12 {
+            var session = office.session(adventurousness: 0, randomSeed: UInt64(2100 + run))
+            artists += Double(RadioMetrics.distinctArtists(session.next(40), snapshot: office.snapshot))
+        }
+        Self.line(String(format: "Your Station on Office at 0: distinct artists in 40, %.1f of 8 calm", artists / 12))
+        XCTAssertGreaterThan(artists / 12, 6)
+    }
+
+    /// The made-up library with gains as records have them, by album and
+    /// unrelated to the genre (the loudness war is by year and label, not
+    /// by style): artist stations at 0 and 0.35, against the same without
+    /// gains. The bell must not take the station's variety or its rules.
+    func testGainsDoNotNarrowStations() {
+        let library = RadioSyntheticLibrary()
+        for spread in [3.0, 8.0] {
+            var tracks = library.tracks
+            for k in tracks.indices {
+                var rng = SplitMix64(seed: SplitMix64.stableSeed(tracks[k].albumID ?? tracks[k].id))
+                tracks[k].normalizationGain = -7 + spread * (rng.nextUnit() - 0.5)
+            }
+            for adv in [0.0, 0.35] {
+                let plain = measure(library.tracks, library, adv)
+                let loud = measure(tracks, library, adv)
+                Self.line(String(format: "gains %.0f dB apart by album, artist stations at %.2f: in cluster %.3f -> %.3f, distinct artists in 50 %.1f -> %.1f, separation violations %d -> %d",
+                                 spread, adv, plain.cluster, loud.cluster, plain.artists, loud.artists, plain.violations, loud.violations))
+                XCTAssertEqual(loud.violations, 0)
+                XCTAssertGreaterThan(loud.artists, plain.artists * 0.85)
+                XCTAssertGreaterThan(loud.cluster, plain.cluster - 0.05)
+            }
+        }
+    }
+
+    func measure(_ tracks: [Track], _ library: RadioSyntheticLibrary, _ adv: Double)
+        -> (cluster: Double, artists: Double, violations: Int) {
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        let taste = TasteProfile(snapshot: snapshot, history: library.history, now: library.now)
+        let graph = SimilarityGraph.fromLibrary(snapshot)
+        var inCluster = 0.0, picksSeen = 0.0, artists = 0.0, stations = 0.0, violations = 0
+        for info in library.artists.prefix(16) {
+            for run in 0..<3 {
+                let seed = StationSeed.artist(key: info.key, name: info.name, id: info.id)
+                var session = RadioSession(station: Station(seed: seed, snapshot: snapshot), snapshot: snapshot, taste: taste,
+                                           graph: graph, settings: RadioSettings(adventurousness: adv), randomSeed: UInt64(40 + run))
+                let picks = session.next(50)
+                for pick in picks {
+                    picksSeen += 1
+                    if let key = snapshot.primaryArtistKey(of: pick.track), library.clusterOfArtist[key] == info.cluster { inCluster += 1 }
+                }
+                artists += Double(RadioMetrics.distinctArtists(picks, snapshot: snapshot))
+                violations += RadioMetrics.separationViolations(picks, snapshot: snapshot, separation: 3)
+                stations += 1
+            }
+        }
+        return (inCluster / picksSeen, artists / stations, violations)
     }
 }

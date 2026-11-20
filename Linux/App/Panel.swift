@@ -257,6 +257,14 @@ final class UpNextRow {
         widget = vbox([song, words])
         contextMenu(on: widget) { [weak self] in self?.menu() ?? [] }
         on(remove, "clicked") { [weak self] in self?.removeFromQueue() }
+        // Unseen, it takes no clicks either: a tap at a row's end on a
+        // touch screen plays the song, as the rest of the row does, rather
+        // than take it out unseen. The keys still reach it.
+        gtk_widget_set_can_target(remove, 0)
+        let pointer = gtk_event_controller_motion_new()!
+        on(pointer, "enter") { [remove] in gtk_widget_set_can_target(remove, 1) }
+        on(pointer, "leave") { [remove] in gtk_widget_set_can_target(remove, 0) }
+        gtk_widget_add_controller(song, ptr(pointer))
     }
 
     func show(_ item: UpNext.Item) {
