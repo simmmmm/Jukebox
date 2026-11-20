@@ -243,35 +243,29 @@ enum PlayerBar {
     /// The song's menu, the bar's right-click and Now Playing's ⋮: where it
     /// comes from, a station from it, and (`narrow`, below 900, where they
     /// leave the bar) the heart and, on a station, the thumbs.
+    /// In a song's sections (`trackMenu`): the station's lessons where the
+    /// queue has its own, then keeping it, where it is from, the rest.
     static func songMenu(narrow: Bool) -> [(String, () -> Void)] {
         guard let track = app.player.currentTrack else { return [] }
-        var items: [(String, () -> Void)] = []
-        if let albumID = track.albumID, let album = app.library.album(id: albumID) {
-            items.append(("Go to Album", { Pages.open(album) }))
-        }
-        if let ref = track.primaryArtist, let artist = app.library.artist(ref) {
-            items.append(("Go to Artist", { Pages.open(artist) }))
-        }
-        items.append(("Start a Station", { app.radio.start(.track(track.id)) }))
+        var station: [(String, () -> Void)] = []
         if app.player.context?.isRadio == true {
-            items.append((app.radio.liked.contains(track.id) ? "Liked" : "More Like This", { app.radio.like(track) }))
+            station.append((app.radio.liked.contains(track.id) ? "Liked" : "More Like This", { app.radio.like(track) }))
             if narrow {
-                items.append((app.radio.disliked.contains(track.id) ? "Not This (Undo)" : "Not This", { app.radio.dislike(track) }))
+                station.append((app.radio.disliked.contains(track.id) ? "Not This (Undo)" : "Not This", { app.radio.dislike(track) }))
             }
         }
+        var keep: [(String, () -> Void)] = []
         if narrow {
             let favorite = app.library.isFavorite(track.id)
-            items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
-                          { Task { await app.library.setFavorite(!favorite, item: .track(track.id)) } }))
+            keep.append((favorite ? "Remove from Favorites" : "Add to Favorites",
+                         { Task { await app.library.setFavorite(!favorite, item: .track(track.id)) } }))
         }
-        // Always, as the Mac's bar menu has it: a menu's entry, not a
-        // button on the bar.
-        items += ratingItems(.track(track.id))
-        items += NotCountedUI.items(.song, track.id, track.name)
-        // Who made it, where the server said: Full Player is where a song's
-        // details are.
-        items += creditItems(track)
-        return items
+        // Rating always, as the Mac's bar menu has it: a menu's entry, not
+        // a button on the bar.
+        keep += ratingItems(.track(track.id)) + [("Start Radio", { app.radio.start(.track(track.id)) })]
+        // Who made it (Credits), where the server said: Full Player is
+        // where a song's details are.
+        return menuSections(station, keep, goItems(track), NotCountedUI.items(.song, track.id, track.name))
     }
 
     /// The listener's level, 0 to 1, as the player keeps it.

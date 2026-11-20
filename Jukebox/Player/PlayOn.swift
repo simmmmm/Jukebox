@@ -17,9 +17,10 @@
 //
 // Each platform brings its Chromecasts (`PlayOn.castFinder`, `castPlayer`):
 // every client speaks castv2 itself (JukeboxKit's CastSession over GIO's
-// TLS on Linux, Network's on Apple's), with no SDK of Google's. Linux
-// brings a Sonos and other UPnP renderers too (`rendererFinder`,
-// Linux/App/UPnP.swift), where Apple's have AirPlay.
+// TLS on Linux, Network's on Apple's), with no SDK of Google's, and its
+// Sonos rooms (`rendererFinder`): every client plays them by UPnP AV
+// (UPnPPlay.swift), Linux finds other UPnP renderers too. Apple's list has
+// the system's AirPlay and Bluetooth picker as its last row.
 
 import Foundation
 import JukeboxKit
@@ -32,7 +33,7 @@ struct PlayOnDevice: Identifiable, Hashable {
     let name: String
     let kind: Kind
     /// A Chromecast's "host:port"; a UPnP renderer's control addresses
-    /// (UPnPFinder on Linux); a Jellyfin session's id; the server's id
+    /// (UPnPRooms); a Jellyfin session's id; the server's id
     /// for its jukebox.
     let address: String
     /// A second line where the name alone does not say it ("Jellyfin Web").
@@ -117,8 +118,8 @@ final class PlayOn {
     /// Chromecasts, by the platform (Linux: Avahi; Apple's: Bonjour).
     @ObservationIgnored var castFinder: (any PlayOnFinder)?
     @ObservationIgnored var castPlayer: ((PlayOnDevice) -> (any RemotePlayer)?)?
-    /// A Sonos and other UPnP renderers, where the platform speaks to them
-    /// itself (Linux: SSDP and Avahi); Apple's reach a Sonos by AirPlay.
+    /// A Sonos and other UPnP renderers (Linux: SSDP and Avahi; Apple's:
+    /// Bonjour, the Sonos rooms alone).
     @ObservationIgnored var rendererFinder: (any PlayOnFinder)?
     @ObservationIgnored var rendererPlayer: ((PlayOnDevice) -> (any RemotePlayer)?)?
     @ObservationIgnored weak var player: PlayQueue?

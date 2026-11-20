@@ -156,12 +156,7 @@ struct LibraryAlbumMenu: View {
     var body: some View {
         let songs = tracks ?? library.tracks(inAlbum: album.id)
         let favorite = library.isFavorite(album.id)
-        Section {
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": "album", "from": "menu"])
-                radio.start(.album(album.id))
-            }
-        }
+        // A song's groups (TrackMenu), as Linux's albumMenu.
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext(songs)
@@ -183,8 +178,10 @@ struct LibraryAlbumMenu: View {
             if library.can(.rating) {
                 RatingMenu(item: .album(album.id))
             }
-            DontCountToggle(kind: .album, id: album.id, name: album.name)
-            CopyShareLinkButton(id: album.id, tracks: songs.map(\.id))
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "album", "from": "menu"])
+                radio.start(.album(album.id))
+            }
         }
         if includesGoToArtist, let artist = albumArtist {
             Section {
@@ -193,7 +190,11 @@ struct LibraryAlbumMenu: View {
                 }
             }
         }
-        ShareMenuItem(item: .album(album))
+        Section {
+            CopyShareLinkButton(id: album.id, tracks: songs.map(\.id))
+            ShareMenuItem(item: .album(album))
+            DontCountToggle(kind: .album, id: album.id, name: album.name)
+        }
     }
 
     private var albumArtist: Artist? {

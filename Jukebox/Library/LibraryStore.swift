@@ -82,7 +82,9 @@ final class LibraryStore {
 
         let url = Self.cacheURL(for: credentials)
         let cached = await Task.detached(priority: .userInitiated) { () -> (CachedLibrary, LibraryIndex)? in
-            guard let library = LibraryCache.load(from: url) else { return nil }
+            guard var library = LibraryCache.load(from: url) else { return nil }
+            // A cache saved before AlbumMerge still holds the split albums.
+            (library.albums, library.tracks) = AlbumMerge.merge(albums: library.albums, tracks: library.tracks)
             let built = LibraryIndex(tracks: library.tracks, albums: library.albums,
                                      artists: library.artists, genres: library.genres)
             return (library, built)
@@ -197,7 +199,10 @@ final class LibraryStore {
     func track(id: ItemID) -> Track? { item(index.trackPosition[id], in: tracks) }
 
     /// In disc and track order.
-    func tracks(inAlbum albumID: ItemID) -> [Track] { items(index.albumTracks[albumID], in: tracks) }
+    func tracks(inAlbum albumID: ItemID) -> [Track] {
+        // By the album's own id: a merged part's id (AlbumMerge) gives the whole.
+        items(index.albumTracks[album(id: albumID)?.id ?? albumID], in: tracks)
+    }
 
     /// Newest first.
     func albums(by artist: Artist) -> [Album] { items(index.artistAlbums[artist.key], in: albums) }
@@ -558,13 +563,16 @@ private extension LibraryStore {
             // library's own split list (LibraryIndex): without them the
             // library still loads, with the ids the genres already had.
             async let fetchedGenres = try? await server.genres()
-            let (newTracks, newAlbums, newArtists, newPlaylists, newGenres) =
+            let (fetched, serverAlbums, newArtists, newPlaylists, newGenres) =
                 try await (fetchedTracks, fetchedAlbums, fetchedArtists, fetchedPlaylists, fetchedGenres)
             guard generation == self.generation else { return }
 
             let serverGenres = newGenres ?? genres
-            let built = await Task.detached(priority: .userInitiated) {
-                LibraryIndex(tracks: newTracks, albums: newAlbums, artists: newArtists, genres: serverGenres)
+            // An album the server splits by album-artist tags is one album
+            // here, on every client (AlbumMerge).
+            let (newAlbums, newTracks, built) = await Task.detached(priority: .userInitiated) {
+                let (albums, tracks) = AlbumMerge.merge(albums: serverAlbums, tracks: fetched)
+                return (albums, tracks, LibraryIndex(tracks: tracks, albums: albums, artists: newArtists, genres: serverGenres))
             }.value
             guard generation == self.generation else { return }
 

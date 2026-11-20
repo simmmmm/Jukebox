@@ -697,6 +697,10 @@ final class Walk {
     func tab(_ label: String) throws -> Bool {
         let byLabel = NSPredicate(format: "label == %@", label)
         let candidates = [
+            // With Spotify and Glas the iPhone's tabs are Jukebox's own row
+            // (TabRow), by these; a back button or the keyboard's key can
+            // have the same label. With Plaat, the system's tab bar.
+            app.buttons.matching(identifier: "tab.\(label.lowercased())").firstMatch,
             app.tabBars.buttons.matching(byLabel).firstMatch,
             app.buttons.matching(byLabel).firstMatch,
             app.cells.matching(byLabel).firstMatch,
@@ -872,6 +876,7 @@ final class Walk {
         // Signs of the tabs: Home's bar, its tab, or its card; the wide
         // window's Home in its sidebar.
         let home = [app.navigationBars["Home"].firstMatch, app.tabBars.buttons["Home"].firstMatch,
+                    app.buttons["tab.home"].firstMatch,
                     app.staticTexts["Your Station"].firstMatch,
                     app.descendants(matching: .any).matching(identifier: "place.home").firstMatch]
         let address = app.textFields.firstMatch
@@ -895,7 +900,7 @@ final class Walk {
         // The welcome's picture has settled: the mark on, the record out.
         pause(5)
         if takingPictures { picture(names[0]) }
-        try enter("localhost:8096", into: address, "Welcome: the server's address")
+        try enter(fakeServer, into: address, "Welcome: the server's address")
         if takingPictures { picture(names[1]) }
         pressReturn(in: address)
 
@@ -905,7 +910,7 @@ final class Walk {
             try tap(app.buttons["Continue"], "Welcome: Continue", timeout: 2)
         }
         guard password.waitForExistence(timeout: 30) else {
-            note("Welcome: no account step (is the fake Jellyfin answering on localhost:8096?)")
+            note("Welcome: no account step (is the fake Jellyfin answering on \(fakeServer)?)")
             picture("onboarding-server-error")
             return false
         }
@@ -1060,12 +1065,12 @@ final class Walk {
             pause(3)
             return true
         }
-        // The mini player's titles lie left of its play and next buttons
-        // (each 40 points wide); its own label is the song, unknown here.
-        let next = app.buttons["Next"].firstMatch
-        if next.waitForExistence(timeout: 3) {
+        // The mini player's titles: its own label is the song, unknown
+        // here, so by its identifier (NowPlaying/MiniPlayer*.swift).
+        let mini = app.buttons["mini-player"].firstMatch
+        if mini.waitForExistence(timeout: 3) {
             XCTExpectFailure("The mini player, for the screenshot walk", strict: false) {
-                next.coordinate(withNormalizedOffset: CGVector(dx: -3, dy: 0.5)).tap()
+                mini.tap()
             }
             try alive("the mini player")
             if close.waitForExistence(timeout: 8) {
@@ -1297,4 +1302,12 @@ final class Walk {
         return word ?? words.first ?? "a"
     }
 }
+
+/// The fake Jellyfin's address: localhost:8096, or the port ci/screenshots.sh
+/// gives a runner of the MacBook (JUKEBOX_SERVER), where two runners walk at
+/// once, each with a server of its own.
+let fakeServer: String = {
+    let given = ProcessInfo.processInfo.environment["JUKEBOX_SERVER"] ?? ""
+    return given.isEmpty ? "localhost:8096" : given
+}()
 #endif

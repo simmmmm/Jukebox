@@ -110,9 +110,18 @@ Mac's build was not played on a Mac before it went.
 - **Sizes**: iPhone 1206 × 2622 (the 17 Pro, the set App Store Connect
   requires; the Pro Max's 1320 × 2868 is an optional second set), iPad 13"
   2752 × 2064, Mac 1440 × 900. PNG without alpha, ten at most each.
-- **The round**: a push of the branch `store-walk` (`ci/app.sh`) walks the
-  Mac's own window (`MacScreenshotTests.swift`), an iPhone 17 Pro and the
-  13-inch iPad, against the made-up library, covers ours to use.
+- **While developing**: every push of main or of a branch ending in
+  "walk" runs on the MacBook and gives pictures for development: the
+  iPhone's and the iPad's walks in simulators, and the Mac's snapshots
+  (`JukeboxSnapshots/`), the main screens drawn offscreen, dark and light,
+  without the title bar and without touching the laptop's screen. On the
+  screenshots branch in `mac-snap/`.
+- **The store's round**, only when the photographer asks: a push of the
+  branch `store-walk` (`ci/app.sh`), on GitHub's Mac, walks the Mac's own
+  window (`MacScreenshotTests.swift`), an iPhone 17 Pro and the 13-inch
+  iPad, against the made-up library, covers ours to use. "Ok doe dat dan
+  voortaan voor tijdens developen en dan word de grote voor app store als
+  ik t vraag" (20 November 2026).
 - **The set**: `dev/store-shots.sh` picks it from that round into
   `build/appstore/{iphone,ipad,mac}/`, in the listing's order, and checks
   each size. Home with a station on the air first, then Now Playing, a

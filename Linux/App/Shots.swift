@@ -155,6 +155,7 @@ enum Shots {
             await step("13-radio-on-air", wait: 4)
             app.panel.toggle(.upNext)
             await step("14-radio-up-next", wait: 2)
+            await queueMenu()
             NowPlayingPage.open()
             await step("15-now-playing-station", wait: 3)
             await parity(albums)
@@ -407,10 +408,54 @@ enum Shots {
         try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)
     }
 
-    /// The action of a popover menu's top-level item called `title`.
+    /// A song's menu in Up next on a station, open (a popover is its own
+    /// surface: "14b-ready" in the folder says when, for a picture of the
+    /// screen from outside), its titles in frames.txt with "·" where a
+    /// section starts.
+    private static func queueMenu() async {
+        guard let folder else { return }
+        var rows: [Widget] = []
+        func collect(_ widget: Widget) {
+            if gtk_widget_has_css_class(widget, "queue-row") != 0, gtk_widget_has_css_class(widget, "station") != 0,
+               gtk_widget_get_mapped(widget) != 0 { rows.append(widget) }
+            var child = gtk_widget_get_first_child(widget)
+            while let next = child { collect(next); child = gtk_widget_get_next_sibling(next) }
+        }
+        if let window = MainWindow.window { collect(window) }
+        // The second: the first is the song on the air.
+        guard rows.count > 1, let owner = gtk_widget_get_parent(rows[1]),
+              let row: UpNextRow = kept(on: raw(owner)) else { return }
+        let items = row.menu()
+        let line = "queue menu: \(items.map { $0.0 == menuBreak.0 ? "·" : $0.0.replacingOccurrences(of: "\u{1F}", with: "|") })\n"
+        let file = "\(folder)/frames.txt"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + line).write(toFile: file, atomically: true, encoding: .utf8)
+        showMenu(at: owner, x: 120, y: Double(gtk_widget_get_height(owner)) / 2, items)
+        try? await Task.sleep(for: .seconds(1))
+        FileManager.default.createFile(atPath: "\(folder)/14b-ready", contents: nil)
+        try? await Task.sleep(for: .seconds(3))
+        try? FileManager.default.removeItem(atPath: "\(folder)/14b-ready")
+        var child = gtk_widget_get_first_child(owner)
+        while let next = child {
+            if isA(next, gtk_popover_get_type()) { gtk_popover_popdown(ptr(next)) }
+            child = gtk_widget_get_next_sibling(next)
+        }
+        try? await Task.sleep(for: .seconds(0.5))
+    }
+
+    /// The action of a popover menu's item called `title`, in any of its
+    /// sections.
     private static func menuAction(_ popover: Widget, _ title: String) -> String? {
         guard let model = gtk_popover_menu_get_menu_model(ptr(popover)) else { return nil }
+        return modelAction(model, title)
+    }
+
+    private static func modelAction(_ model: UnsafeMutablePointer<GMenuModel>, _ title: String) -> String? {
         for index in 0..<g_menu_model_get_n_items(model) {
+            if let section = g_menu_model_get_item_link(model, index, "section") {
+                defer { g_object_unref(raw(section)) }
+                if let found = modelAction(section, title) { return found }
+                continue
+            }
             guard let label = g_menu_model_get_item_attribute_value(model, index, "label", nil) else { continue }
             defer { g_variant_unref(label) }
             guard String(cString: g_variant_get_string(label, nil)) == title,

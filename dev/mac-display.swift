@@ -10,6 +10,11 @@
 //
 //   xcrun swiftc -O dev/mac-display.swift -o mac-display && ./mac-display
 //
+// On the photographer's MacBook, a runner of its own and his laptop, the
+// display is his: `./mac-display <file>` writes the mode it had into the
+// file before it changes it, and `./mac-display --restore <file>` sets that
+// mode again after the walk. A mode that fits already is left as it is.
+//
 // Exit 1 when no mode fits or the change was refused; the modes are printed
 // either way, so the log says what the display can do.
 
@@ -29,6 +34,41 @@ func scale(_ mode: CGDisplayMode) -> Int {
     mode.width > 0 ? mode.pixelWidth / mode.width : 1
 }
 
+func describe(_ mode: CGDisplayMode) -> String {
+    "\(mode.width) \(mode.height) \(mode.pixelWidth) \(mode.pixelHeight)"
+}
+
+func apply(_ mode: CGDisplayMode) -> CGError {
+    var config: CGDisplayConfigRef?
+    guard CGBeginDisplayConfiguration(&config) == .success else { return .failure }
+    CGConfigureDisplayWithDisplayMode(config, display, mode, nil)
+    return CGCompleteDisplayConfiguration(config, .permanently)
+}
+
+let arguments = CommandLine.arguments.dropFirst()
+if arguments.first == "--restore", let file = arguments.dropFirst().first {
+    let saved = (try? String(contentsOfFile: file, encoding: .utf8))?
+        .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+    guard let mode = modes.first(where: { describe($0) == saved }) else {
+        print("display: the saved mode \(saved.isEmpty ? "(none)" : saved) is not among the display's modes")
+        exit(saved.isEmpty ? 0 : 1)
+    }
+    if let current = CGDisplayCopyDisplayMode(display), describe(current) == saved {
+        print("display: still \(saved), as it was")
+        exit(0)
+    }
+    let result = apply(mode)
+    print("display: back to \(saved), " + (result == .success ? "set" : "refused (\(result.rawValue))"))
+    exit(result == .success ? 0 : 1)
+}
+if let current = CGDisplayCopyDisplayMode(display), current.width >= 1440, current.height >= 1000 {
+    print("display: \(current.width) x \(current.height) points already, left as it is")
+    exit(0)
+}
+if let file = arguments.first, let current = CGDisplayCopyDisplayMode(display) {
+    try? describe(current).write(toFile: file, atomically: true, encoding: .utf8)
+}
+
 // 1000 points high: the window's 900 and the menu bar above it.
 let fitting = modes.filter { $0.width >= 1440 && $0.height >= 1000 && $0.isUsableForDesktopGUI() }
 let sharpestThenSmallest = fitting.min { a, b in
@@ -39,13 +79,7 @@ guard let best = sharpestThenSmallest else {
     exit(1)
 }
 
-var config: CGDisplayConfigRef?
-guard CGBeginDisplayConfiguration(&config) == .success else {
-    print("display: no configuration to change")
-    exit(1)
-}
-CGConfigureDisplayWithDisplayMode(config, display, best, nil)
-let result = CGCompleteDisplayConfiguration(config, .permanently)
+let result = apply(best)
 print("display: \(best.width) x \(best.height) points, \(best.pixelWidth) x \(best.pixelHeight) px, "
       + (result == .success ? "set" : "refused (\(result.rawValue))"))
 exit(result == .success ? 0 : 1)

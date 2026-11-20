@@ -256,8 +256,18 @@ enum SignInPage {
             quick.isVisible = false
         }
 
+        // One centred column, as GNOME's own welcome and status pages
+        // (AdwStatusPage) and the iPhone have it: the mark, the name, the
+        // fact, the note and the buttons on one axis, the rows the
+        // column's width. Centred is what the platform does here (tells.md
+        // 8). The photographer, 20 November 2026: "weer parity, dit staat
+        // opeens voor de helft links uitgelijnd?".
         let title = label("Jukebox", "serif", "page-title")
         let fact = label("Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server.", "fact", lines: 0)
+        for line in [title, fact, message] {
+            gtk_label_set_xalign(ptr(line), 0.5)
+            gtk_label_set_justify(ptr(line), GTK_JUSTIFY_CENTER)
+        }
         let actions = vbox(spacing: 8, [signIn, quick, plex])
         let column = vbox(spacing: 24, [markTile(), title, fact, group, code, message, actions]).margins(24)
         gtk_widget_set_valign(column, GTK_ALIGN_CENTER)
@@ -302,15 +312,15 @@ enum SignInPage {
         }
     }
 
-    /// The mark on its tile, as the icon is shaped, before Jukebox's name,
-    /// as the iPhone's welcome has it (ShellAppMark): flat on Cabinet, never
+    /// The mark on its tile, as the icon is shaped, above Jukebox's name,
+    /// centred, as the iPhone's welcome has it (ShellAppMark): flat on Cabinet, never
     /// lit, as the welcome plays nothing. Still: the iPhone's warm-up, the
     /// bands coming on one by one, waits for motion on Linux.
     private static func markTile() -> Widget {
         let side: Int32 = 112
         let tile = gtk_image_new()!
         gtk_image_set_pixel_size(ptr(tile), side)
-        tile.size(width: side, height: side).align(horizontal: GTK_ALIGN_START)
+        tile.size(width: side, height: side).align(horizontal: GTK_ALIGN_CENTER)
         observe(tile) {
             let scale = Screen.shared.scale
             Task {

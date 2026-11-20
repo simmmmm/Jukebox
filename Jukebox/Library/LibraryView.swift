@@ -15,6 +15,7 @@ struct LibraryView: View {
     @Environment(LibraryStore.self) private var library
     @Environment(AppSettings.self) private var settings
     @Environment(\.isWide) private var isWide
+    @State private var isShowingSettings = false
 
     var body: some View {
         let recent = Array(library.recentlyAddedAlbums.prefix(isWide ? 16 : 12))
@@ -50,6 +51,24 @@ struct LibraryView: View {
         .background(Theme.ground)
         .navigationTitle("Library")
         .refreshable { await library.refresh() }
+        // The profile as on Home and Radio, so Settings is a tap away on
+        // every tab: "profiel mag ook gewoon op radio en library staan"
+        // (the photographer, 20 November 2026). A wide window has it in
+        // the sidebar's menu.
+        .toolbar {
+            if !isWide {
+                ToolbarItem(placement: .barTrailing) {
+                    Button {
+                        isShowingSettings = true
+                    } label: {
+                        Label("Settings", systemImage: "person.crop.circle")
+                    }
+                }
+            }
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            SettingsView()
+        }
     }
 
     /// The rows, in Music's order, each with its switch in Settings › Pages.

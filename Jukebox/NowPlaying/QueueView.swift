@@ -110,6 +110,10 @@ struct QueueView: View {
             Section {
                 ForEach(upNext) { entry in
                     row(entry)
+                        .contextMenu {
+                            upNextMenu(entry)
+                        }
+                        .modifier(RemoveSwipe { remove(entry) })
                         .queueRow()
                 }
                 .onMove { source, destination in
@@ -268,6 +272,9 @@ struct QueueView: View {
         case let .song(entry, number, style, playing, words):
             QueuePanelRow(entry: entry, number: number, style: style, playing: playing, words: words)
                 .contentShape(.rect)
+                // The iPad's list swipes as the iPhone's; on a Mac a
+                // trackpad's two fingers do.
+                .modifier(RemoveSwipe(isOn: !playing && style != .played) { remove(entry) })
                 .onTapGesture {
                     if !playing { player.skip(to: entry) }
                 }
@@ -329,11 +336,46 @@ struct QueueView: View {
                 }
                 .disabled(at == player.upNext.count - 1)
                 Button("Remove from Queue", systemImage: "minus.circle", role: .destructive) {
-                    if let at = upNextOffset(entry) { player.removeUpcoming(atOffsets: [at]) }
+                    remove(entry)
                 }
+                stationItems(entry)
             }
         }
         TrackMenu(track: entry.track)
+    }
+
+    /// The iPhone's long press on a song of Up Next: taken out, and on a
+    /// station what else the station should know, then what every song has.
+    @ViewBuilder private func upNextMenu(_ entry: QueueEntry) -> some View {
+        Section {
+            Button("Remove from Queue", systemImage: "minus.circle", role: .destructive) {
+                remove(entry)
+            }
+            stationItems(entry)
+        }
+        TrackMenu(track: entry.track)
+    }
+
+    /// A song the station chose, before it plays: as Spotify's and
+    /// Pandora's stations have it, "not this artist here" and "never this
+    /// song". Taking it out is already a lesson for the station
+    /// (PlayQueue.removeUpcoming); these say more.
+    @ViewBuilder private func stationItems(_ entry: QueueEntry) -> some View {
+        if entry.reason != nil, player.context?.station != nil {
+            if let artist = entry.track.artists.first?.name ?? entry.track.primaryArtist?.name {
+                Button("Don’t Play \(artist) Here", systemImage: "person.crop.circle.badge.xmark") {
+                    radio.removeArtistFromStation(of: entry.track)
+                }
+            }
+            Button("Dislike", systemImage: "hand.thumbsdown") {
+                radio.dislike(entry.track)
+            }
+        }
+    }
+
+    /// Found by id: the list may have moved since the row was drawn.
+    private func remove(_ entry: QueueEntry) {
+        if let at = upNextOffset(entry) { player.removeUpcoming(atOffsets: [at]) }
     }
 
     private func move(_ entry: QueueEntry, by step: Int) {
@@ -697,5 +739,32 @@ private struct QueuePanelRow: View {
             return String(localized: "From \(library.serverKind)’s mix")
         }
         return reason.text
+    }
+}
+
+/// A song of Up Next swiped out, all the way across, from either side:
+/// Music's queue takes a song out to the left (the trailing edge), and the
+/// photographer reaches for the right ("nummers naar rechts kunt slepen om
+/// ze er uit te halen", 20 November 2026), so both do it. Declared on both
+/// edges: a row with swipe actions of its own no longer gets the swipe
+/// `onDelete` gives, which Edit keeps.
+private struct RemoveSwipe: ViewModifier {
+    var isOn = true
+    let remove: () -> Void
+
+    func body(content: Content) -> some View {
+        content
+            .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                if isOn { button }
+            }
+            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                if isOn { button }
+            }
+    }
+
+    private var button: some View {
+        Button(role: .destructive, action: remove) {
+            Label("Remove", systemImage: "minus.circle")
+        }
     }
 }

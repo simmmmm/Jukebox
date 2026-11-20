@@ -1,15 +1,23 @@
-// The mini player: what plays, in iOS 26's bottom accessory above the tab
-// bar, as Music has it — the cover, the title (and under it the artist, or
-// the station after its mark, while the tab bar is full width), play or
-// pause, and next. A tap anywhere else opens
-// Now Playing. When the tab bar is minimised (scrolling down) the accessory
-// sits inline beside it and is narrow: the title and play or pause only.
+// The mini player, three ways in one build, to be tried on the phone: "Kun je
+// een soort debug versie maken met alle drie de versies: Spotify, glas en
+// plaat" (the photographer, 20 November 2026). Each is its design branch's,
+// as it was there:
 //
-// The player's error ("Could not play …", a station that finds nothing)
-// takes the artist's line for the five seconds the player keeps it: Now
-// Playing shows it as a banner, but most of the time Now Playing is closed,
-// and a song that silently does not play, or a station that silently does
-// not start, reads as a broken button.
+//   - Spotify (MiniPlayerSpotify.swift, mini-bar-spotify): a glass block
+//     with square corners, and under it Jukebox's own tabs on a fade and a
+//     blur from the screen's foot; the system's tab bar hidden.
+//   - Glas (MiniPlayerGlass.swift, mini-bar-inline): the player and the
+//     tabs as one piece of glass; the system's tab bar hidden. The default
+//     for a while (20 November 2026); worked on since on mini-bar-glas.
+//   - Plaat (MiniPlayerRecord.swift, mini-bar-free-b): the system's tab bar,
+//     the song above it on a ground of the cover's colour under an arch,
+//     the record on the tab bar's shoulder. The one he chose in the end,
+//     and so the default: "Denk dat ik btw toch voor de plaat wil gaan"
+//     (20 November 2026).
+//
+// Settings › Library › Player Bar (test) chooses, and the choice holds at
+// once, on every tab; `-miniBarVariant spotify|glas|plaat` at launch does
+// the same (UserDefaults' argument domain), for the walk.
 //
 // The tabs' alone (the iPhone, a narrow iPad window). The wide window, the
 // iPad's and the Mac's, has the player's bar across its foot instead, as
@@ -19,277 +27,279 @@ import JukeboxKit
 import SwiftUI
 
 #if os(iOS)
-struct MiniPlayer: View {
+/// Which of the three, in UserDefaults. Plaat until another is chosen: of
+/// the three tried on the phone, the one he chose in the end (20 November
+/// 2026), the other two kept for now to compare again. "glass" and "record" are read
+/// too, as "glas" and "plaat".
+enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
+    case spotify
+    case glass
+    case record
+
+    static let key = "miniBarVariant"
+    /// The one default, for every @AppStorage that reads the choice: the
+    /// foot, the system tab bar's hiding and the picker must agree, or the
+    /// system's bar shows under Glas's own tabs.
+    static let standard = MiniBarVariant.record
+
+    init?(rawValue: String) {
+        switch rawValue.lowercased() {
+        case "spotify": self = .spotify
+        case "glas", "glass": self = .glass
+        case "plaat", "record": self = .record
+        default: return nil
+        }
+    }
+
+    var rawValue: String {
+        switch self {
+        case .spotify: "spotify"
+        case .glass: "glas"
+        case .record: "plaat"
+        }
+    }
+
+    var id: Self { self }
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .spotify: "Spotify"
+        case .glass: "Glass"
+        case .record: "Record"
+        }
+    }
+
+    /// Plaat keeps the system's tab bar; the other two draw their own.
+    var hidesSystemTabBar: Bool {
+        self != .record
+    }
+}
+
+/// Each tab's foot: the chosen player, and with Spotify and Glas the tabs,
+/// in the page's safe area. One inset whatever is chosen, so a change swaps
+/// what is in it and never the page above (nor the Settings sheet that page
+/// shows, where the choice is made).
+struct MiniBarFoot: ViewModifier {
+    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .standard
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
-    @Environment(Navigator.self) private var navigator
-    /// Beside the minimised tab bar there is room for the title and one
-    /// button only (iOS 26's accessory, `AccessoryMiniPlayer`); iOS 18's
-    /// bar above the tabs is always full width.
-    private let isInline: Bool
 
-    init(isInline: Bool = false) {
-        self.isInline = isInline
-    }
+    /// The keyboard up (Search): Spotify's and Glas's tabs go, as the
+    /// system's bar went behind it. Here, not in the foot: Glas's is gone
+    /// altogether while the keyboard is up and nothing plays, and would not
+    /// hear it go down.
+    @State private var isKeyboardUp = false
 
-    var body: some View {
-        HStack(spacing: Theme.Space.xs) {
-            Button {
-                openNowPlaying()
-            } label: {
-                HStack(spacing: Theme.Space.m) {
-                    cover
-                    titles
-                    Spacer(minLength: 0)
-                }
-                .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .disabled(!player.hasTrack)
-            .accessibilityLabel(accessibilityTitle)
-            .accessibilityHint("Opens Now Playing")
-
-            playPauseButton
-            if !isInline {
-                nextButton
-            }
-        }
-        .padding(.leading, Theme.Space.s)
-        .padding(.trailing, Theme.Space.xs)
-        // The gaps between the buttons open Now Playing too.
-        .contentShape(.rect)
-        .onTapGesture {
-            openNowPlaying()
-        }
-        // The accessory's height is the system's: past this size the two
-        // lines would be cut off.
-        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-        .contextMenu {
-            if let track = player.currentTrack {
-                TrackMenu(track: track)
-            }
-        }
-        .onChange(of: player.errorMessage) { _, message in
-            // Shown on this line silently; VoiceOver is told. Not while Now
-            // Playing is open: it tells VoiceOver itself, and once is enough.
-            if let message, !navigator.isNowPlayingPresented {
-                AccessibilityNotification.Announcement(message).post()
-            }
-        }
-    }
-
-    // MARK: Parts
-
-    @ViewBuilder private var cover: some View {
-        if player.currentTrack == nil, let station = startingStation {
-            StationArtwork(station: station, size: 34, cornerRadius: Theme.Radius.artwork)
-        } else {
-            ArtworkView(player.currentTrack?.artwork, size: 34, cornerRadius: Theme.Radius.artwork,
-                        sleeve: player.currentTrack.map(TitleSleeve.Words.init(track:)))
-        }
-    }
-
-    @ViewBuilder private var titles: some View {
-        Group {
-            if let track = player.currentTrack {
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: Theme.Space.xs) {
-                        if isStation && isInline {
-                            // Beside the minimised tab bar there is no
-                            // second line: the mark before the title says
-                            // it is the radio.
-                            stationMark
-                        }
-                        Text(track.name)
-                            .font(.subheadline.weight(.semibold))
-                            .lineLimit(1)
-                        // Private Listening on (NotCountedViews): small, so
-                        // a mode kept for days is not forgotten.
-                        if player.notCounted.isPrivate {
-                            Image(systemName: "eye.slash")
-                                .font(.caption2)
-                                .foregroundStyle(.tertiary)
-                                .accessibilityLabel("Private Listening is on")
-                        }
-                    }
-                    if let shownError {
-                        errorLine(shownError)
-                    } else if let station = player.context?.station, !isInline {
-                        // A station plays: its mark in the accent and its
-                        // name, as sketch D has it, so the listener knows
-                        // it is the radio and that skips and thumbs teach it.
-                        HStack(spacing: Theme.Space.xs) {
-                            stationMark
-                            Text(station.title)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    } else if showsArtist {
-                        Text(track.artistLine)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-            } else if let station = startingStation {
-                // A station chosen while nothing played: its first track is a
-                // moment away.
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(station.title)
-                        .font(.subheadline.weight(.semibold))
-                        .lineLimit(1)
-                    if let shownError {
-                        errorLine(shownError)
-                    } else if !isInline {
-                        Text("Tuning in…")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-            } else {
-                // Nothing plays: a station that found nothing to play ends
-                // here, and says so under "Not Playing".
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Not Playing")
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                    if let shownError {
-                        errorLine(shownError)
-                    }
-                }
-            }
-        }
-        // The error comes and goes, after five seconds, as a crossfade.
-        .animation(.easeInOut(duration: 0.25), value: shownError)
-    }
-
-    /// The mark, small, flat, in the accent: the arch means a station.
-    private var stationMark: some View {
-        ArchMark(size: 11, style: .template)
-            .foregroundStyle(Theme.accent)
-    }
-
-    /// The error in the artist's place: as quiet as the artist, with the
-    /// warning sign Now Playing's banner has, so it does not read as a name.
-    private func errorLine(_ message: String) -> some View {
-        HStack(spacing: Theme.Space.xs) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .font(.caption2.weight(.semibold))
-            Text(verbatim: message)
-                .font(.caption)
-                .lineLimit(1)
-        }
-        .foregroundStyle(.secondary)
-    }
-
-    private var playPauseButton: some View {
-        Button {
-            player.togglePlayPause()
-        } label: {
-            Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
-                .font(.title3)
-                .contentTransition(.symbolEffect(.replace))
-                .frame(width: 40, height: 40)
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .disabled(!player.hasTrack)
-        .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
-    }
-
-    private var nextButton: some View {
-        Button {
-            player.next()
-        } label: {
-            Image(systemName: "forward.fill")
-                .font(.title3)
-                .frame(width: 40, height: 40)
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .disabled(!player.hasTrack)
-        .accessibilityLabel("Next")
-    }
-
-    // MARK: State
-
-    private var isStation: Bool {
-        player.context?.isRadio == true
-    }
-
-    private var showsArtist: Bool {
-        guard !isInline, let track = player.currentTrack else { return false }
-        return !track.artistLine.isEmpty
-    }
-
-    /// The player's error while it keeps it, on the second line. Not beside
-    /// the minimised tab bar, which has room for the title alone.
-    private var shownError: String? {
-        guard !isInline else { return nil }
-        return player.errorMessage
-    }
-
-    /// The station being started, when the radio is choosing its first
-    /// tracks.
-    private var startingStation: Station? {
-        radio.isStarting ? radio.station : nil
-    }
-
-    private var accessibilityTitle: String {
-        guard let track = player.currentTrack else {
-            let notPlaying = String(localized: "Not Playing")
-            if let error = player.errorMessage {
-                return "\(notPlaying), \(error)"
-            }
-            return notPlaying
-        }
-        // What the eyes read on the second line, the ears hear second.
-        if let error = player.errorMessage {
-            return "\(track.name), \(error)"
-        }
-        if let station = player.context?.station {
-            return "\(track.name), \(station.title)"
-        }
-        let artist = track.artistLine
-        return artist.isEmpty ? track.name : "\(track.name), \(artist)"
-    }
-
-    private func openNowPlaying() {
-        guard player.hasTrack else { return }
-        navigator.isNowPlayingPresented = true
-    }
-}
-
-/// iOS 26's accessory tells the player where it sits: the environment value
-/// is 26's alone, so it is read here and handed on.
-@available(iOS 26, *)
-struct AccessoryMiniPlayer: View {
-    @Environment(\.tabViewBottomAccessoryPlacement) private var placement
-
-    var body: some View {
-        MiniPlayer(isInline: placement == .inline)
-    }
-}
-
-/// iOS 18 has no bottom accessory: the player sits in a bar of its own on
-/// each tab's foot, just above the tab bar, in the bar's own material with a
-/// hairline over it, as Music had it before 26. Tapped, Now Playing as on 26.
-struct MiniPlayerBar: ViewModifier {
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content
-        } else {
-            content.safeAreaInset(edge: .bottom, spacing: 0) {
-                MiniPlayer()
-                    .padding(.horizontal, Theme.Space.s)
-                    .frame(height: 56)
-                    .background(.bar)
-                    .overlay(alignment: .top) { Hairline(inset: 0) }
+        content
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                switch variant {
+                case .spotify:
+                    SpotifyTabFoot(isKeyboardUp: isKeyboardUp)
+                case .glass:
+                    GlassTabFoot(isKeyboardUp: isKeyboardUp)
+                case .record:
+                    RecordMiniPlayerBar()
+                }
+            }
+            // Plaat's song comes and goes with the page making room for it.
+            .animation(.easeInOut(duration: 0.25), value: recordIsShown)
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+                isKeyboardUp = true
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+                isKeyboardUp = false
+            }
+    }
+
+    private var recordIsShown: Bool {
+        variant == .record && RecordMiniPlayerBar.isShown(player: player, radio: radio)
+    }
+}
+
+/// The tabs, Jukebox's own, for Spotify and Glas: the symbol over its name,
+/// the tab shown in the accent (Copper by day, Glow by night). Tapped again,
+/// Navigator.select: back to the tab's first page, and on Search's first
+/// page into its field.
+///
+/// On Spotify's fade the others are quiet (secondary). In Glas's glass
+/// (`onGlass`) they are as iOS 26's own tab bar has them: the others in the
+/// label's colour, the one shown in the accent on a pill of its own, its
+/// round the glass's less the 4 between them.
+struct TabRow: View {
+    @Environment(Navigator.self) private var navigator
+    @Environment(AppSettings.self) private var settings
+
+    var onGlass = false
+
+    private struct Item {
+        let tab: AppTab
+        let title: LocalizedStringKey
+        let symbol: String
+        /// The walk finds the tab by this (JukeboxUITests).
+        let id: String
+    }
+
+    private var items: [Item] {
+        [
+            Item(tab: .home, title: "Home", symbol: "house.fill", id: "tab.home"),
+            Item(tab: .radio, title: "Radio", symbol: "dot.radiowaves.left.and.right", id: "tab.radio"),
+            Item(tab: .library, title: "Library", symbol: "square.stack.fill", id: "tab.library"),
+            Item(tab: .search, title: "Search", symbol: "magnifyingglass", id: "tab.search"),
+        ]
+        .filter { MainTabView.shows($0.tab, settings: settings, navigator: navigator) }
+    }
+
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach(items, id: \.tab) { item in
+                button(item)
             }
         }
+        .padding(.horizontal, onGlass ? Theme.Space.xs : Theme.Space.s)
+        .padding(.vertical, onGlass ? Theme.Space.xs : 0)
+        // The two lines fit the row up to here, as the block's.
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
+    }
+
+    private func button(_ item: Item) -> some View {
+        let isShown = navigator.tab == item.tab
+        let others: AnyShapeStyle = onGlass ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)
+        return Button {
+            navigator.select(item.tab)
+        } label: {
+            VStack(spacing: 2) {
+                Image(systemName: item.symbol)
+                    .font(.title3)
+                    // One height for the four symbols, so the names line up.
+                    .frame(height: 26)
+                Text(item.title)
+                    .font(.caption2.weight(.medium))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isShown ? AnyShapeStyle(Theme.accent) : others)
+            .frame(maxWidth: .infinity,
+                   minHeight: onGlass ? GlassTabFoot.tabsHeight - 2 * Theme.Space.xs : 49)
+            .background {
+                if onGlass, isShown {
+                    Capsule().fill(Color.primary.opacity(0.08))
+                }
+            }
+            .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(Text(item.title))
+        .accessibilityAddTraits(isShown ? .isSelected : [])
+        .accessibilityIdentifier(item.id)
+    }
+}
+
+/// The cover as a record's label, turning while the song plays: a turn in
+/// 10 seconds as Now Playing's (RecordMotion), 20 frames a second and only
+/// the label redrawn, by one TimelineView that pauses while it stands;
+/// paused, and with Reduce Motion, it stands. It picks up where it stopped,
+/// not where the clock is. Glas's record and Plaat's: "En de album art
+/// draait niet rond" (the photographer, 20 November 2026, of Plaat's).
+struct TurningMiniPlayerCover: View {
+    let size: CGFloat
+
+    @Environment(AudioPlayer.self) private var player
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The label's angle when it last stopped, and since when it turns.
+    @State private var turned: Double = 0
+    @State private var since: Date?
+
+    private var turns: Bool {
+        player.isPlaying && !reduceMotion
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / RecordMotion.labelFrameRate, paused: !turns)) { context in
+            MiniPlayerCover(size: size, cornerRadius: 0)
+                .clipShape(.circle)
+                .rotationEffect(.degrees(angle(at: context.date)))
+        }
+        .frame(width: size, height: size)
+        .onAppear {
+            if turns { since = .now }
+        }
+        .onChange(of: turns) { _, nowTurns in
+            if nowTurns {
+                since = .now
+            } else {
+                turned = angle(at: .now)
+                since = nil
+            }
+        }
+    }
+
+    private func angle(at date: Date) -> Double {
+        guard let since else { return turned }
+        let degrees = turned + date.timeIntervalSince(since) * RecordMotion.labelDegreesPerSecond
+        return degrees.truncatingRemainder(dividingBy: 360)
+    }
+}
+
+/// The cover the three bars show, and the label on Glas's and Plaat's
+/// records. The song's own cover first; when it has none (no artwork, or the
+/// server answered without one) and it plays from a station or a mix, the
+/// artwork the app makes for that station or mix, as Home's On air card and
+/// Played lately show it; else the album's title sleeve. At 44 points a
+/// sleeve is its first letter, and that "S" was all the bar showed of a
+/// station: "het zelfgemaakte album art niet zichtbaar" (the photographer,
+/// 20 November 2026).
+struct MiniPlayerCover: View {
+    let size: CGFloat
+    var cornerRadius: CGFloat = Theme.Radius.artwork
+
+    @Environment(AppModel.self) private var app
+    @Environment(AudioPlayer.self) private var player
+    @Environment(RadioController.self) private var radio
+    @Environment(MixStore.self) private var mixes
+    @Environment(\.displayScale) private var displayScale
+
+    /// The url the server had no cover for, once asked.
+    @State private var missingURL: URL?
+
+    var body: some View {
+        Group {
+            if player.currentTrack == nil, radio.isStarting, let station = radio.station {
+                // A station chosen while nothing played.
+                StationArtwork(station: station, size: size, cornerRadius: cornerRadius)
+            } else if hasNoCover, let station = player.context?.station {
+                StationArtwork(station: station, size: size, cornerRadius: cornerRadius)
+            } else if hasNoCover, let mix {
+                CollageArtwork(artworks: mix.artwork, size: size, cornerRadius: cornerRadius)
+            } else {
+                ArtworkView(player.currentTrack?.artwork, size: size, cornerRadius: cornerRadius,
+                            sleeve: player.currentTrack.map(TitleSleeve.Words.init(track:)))
+            }
+        }
+        // The same download as ArtworkView's (ImagePipeline joins the two),
+        // to learn whether the server has a cover at all.
+        .task(id: url) {
+            guard let url else { return }
+            let image = await ImagePipeline.shared.image(for: url)
+            guard !Task.isCancelled else { return }
+            if image == nil, ImagePipeline.shared.isMissing(url) { missingURL = url }
+        }
+    }
+
+    private var url: URL? {
+        guard let artwork = player.currentTrack?.artwork, let server = app.server else { return nil }
+        return server.artworkURL(artwork, maxPixelSize: ImagePipeline.bucket(Int(size * displayScale)))
+    }
+
+    private var hasNoCover: Bool {
+        guard player.currentTrack != nil else { return false }
+        guard let url else { return true }
+        return missingURL == url || ImagePipeline.shared.isMissing(url)
+    }
+
+    private var mix: Mix? {
+        guard case let .mix(id)? = player.context?.kind else { return nil }
+        return mixes.mixes.first { $0.id == id }
     }
 }
 #endif

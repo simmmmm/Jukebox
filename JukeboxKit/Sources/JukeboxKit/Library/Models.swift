@@ -250,6 +250,10 @@ public struct Album: Identifiable, Hashable, Codable, Sendable {
     /// `Track.normalizationGain` (Jellyfin 10.9+'s NormalizationGain on a
     /// MusicAlbum, from its LUFS scan). Nil where the server gives none.
     public var normalizationGain: Double?
+    /// The ids of the other parts of an album the server split by its
+    /// album-artist tags (AlbumMerge), so a download, a station or a queue
+    /// that kept one of them still finds the album. Nil for most albums.
+    public var mergedIDs: [ItemID]?
 
     public init(id: ItemID, name: String, artists: [ArtistRef] = [], year: Int? = nil,
                 genres: [String] = [], imageTag: String? = nil, trackCount: Int? = nil,

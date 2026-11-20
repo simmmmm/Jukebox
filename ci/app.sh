@@ -14,6 +14,22 @@
 # reads without opening the log.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# On the MacBook (a self-hosted runner) the folder outlives a run: a run
+# cancelled by the next push may still have an xcodebuild writing in
+# build/, and the next run then broke on its build database ("disk I/O
+# error", run 44755707683). So first whatever still holds a file in build/
+# is stopped, then build/ goes, whole. Only this checkout's processes: the
+# Mac's other runners (Numa's) build in folders of their own.
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted && -d build ]]; then
+  pids=$(lsof -t +D build 2>/dev/null | sort -u || true)
+  if [[ -n $pids ]]; then
+    echo "Stopping what a run before left writing in build/: $pids"
+    kill $pids 2>/dev/null || true
+    sleep 3
+    kill -9 $pids 2>/dev/null || true
+  fi
+  rm -rf build
+fi
 mkdir -p build/logs
 
 # The Mac compiles (run 43621164893, 14 November 2026): its build is part of
@@ -125,15 +141,8 @@ screenshots() {
   return 0
 }
 
-# The iPhone's app signed ad hoc, as the Mac's archive is: no certificate,
-# no profile, but the signature carries the entitlements of
-# Jukebox/Jukebox-iOS.entitlements, CarPlay audio. The export reads the
-# entitlements from the archived app's signature and asks the store's profile
-# for them; an app built with CODE_SIGNING_ALLOWED=NO has no signature, and
-# its upload went without CarPlay. iOS allows ad hoc signing only when asked
-# (AD_HOC_CODE_SIGNING_ALLOWED; the Mac's default).
-ios_adhoc=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES
-           PROVISIONING_PROFILE_SPECIFIER="")
+# adhoc_sign, the apps signed ad hoc with their entitlements (ci/sign.sh).
+source ci/sign.sh
 
 # Whether the app's signature has CarPlay audio and Siri, true: the archive's, the
 # exported ipa's, and on every push the build's, signed as the archive is.
@@ -193,9 +202,12 @@ widget_signed() {
 if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
-    -destination 'generic/platform=iOS' -derivedDataPath build/derived "${ios_adhoc[@]}" \
+    -destination 'generic/platform=iOS' -derivedDataPath build/derived CODE_SIGNING_ALLOWED=NO \
     > build/logs/build.log 2>&1
   status=$?
+  if [[ $status == 0 ]]; then
+    adhoc_sign build/derived/Build/Products/Debug-iphoneos/Jukebox.app || status=1
+  fi
   if [[ $status == 0 ]]; then
     carplay_signed build/derived/Build/Products/Debug-iphoneos/Jukebox.app build
     status=$?
@@ -220,9 +232,12 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
     -destination 'generic/platform=macOS' -derivedDataPath build/derived-mac \
-    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+    CODE_SIGNING_ALLOWED=NO \
     > build/logs/build-mac.log 2>&1
   mac_status=$?
+  if [[ $mac_status == 0 ]]; then
+    adhoc_sign build/derived-mac/Build/Products/Debug/Jukebox.app || mac_status=1
+  fi
   if [[ $mac_status == 0 ]]; then
     widget_signed build/derived-mac/Build/Products/Debug/Jukebox.app "Mac build" || mac_status=1
   fi
@@ -242,6 +257,11 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   if [[ $status == 0 && ${SCREENSHOTS:-true} != false ]]; then
     screenshots
   fi
+  # The derived data and the screenshots' work (the clone of the
+  # screenshots branch alone is 3 GB), gigabytes, gone once the pictures
+  # are in build/logs: the MacBook, a runner of its own, keeps its work
+  # folder between runs.
+  rm -rf build/derived build/derived-mac build/screenshots
   if [[ $mac_status != 0 ]]; then
     echo "::warning::The Mac build failed (build/logs/errors-mac.txt)."
     if [[ $mac_gates == true && $status == 0 ]]; then status=$mac_status; fi
@@ -262,7 +282,7 @@ auth=(-allowProvisioningUpdates
       -authenticationKeyID "$ASC_KEY_ID"
       -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 
-# Archived signed ad hoc (ios_adhoc, above), so the entitlements are in the
+# Archived signed ad hoc (adhoc_sign, above), so the entitlements are in the
 # archive; signed for the store only at export, by Apple's cloud signing with
 # the API key, so the runner needs no certificate of its own. Signing the
 # archive with a development identity made a new Apple Development
@@ -272,9 +292,12 @@ auth=(-allowProvisioningUpdates
 set +e
 xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
   -destination 'generic/platform=iOS' -archivePath build/Jukebox.xcarchive \
-  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" "${ios_adhoc[@]}" \
+  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" CODE_SIGNING_ALLOWED=NO \
   > build/logs/archive.log 2>&1
 status=$?
+if [[ $status == 0 ]]; then
+  adhoc_sign build/Jukebox.xcarchive/Products/Applications/Jukebox.app || status=1
+fi
 set -e
 { grep -E 'error:|ARCHIVE (SUCCEEDED|FAILED)' build/logs/archive.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/archive-errors.txt
 head -200 build/logs/archive-errors.txt
@@ -349,9 +372,12 @@ else
   xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
     -destination 'generic/platform=macOS' -archivePath build/Jukebox-mac.xcarchive \
     DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" \
-    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" \
+    CODE_SIGNING_ALLOWED=NO \
     > build/logs/archive-mac.log 2>&1
   mac_status=$?
+  if [[ $mac_status == 0 ]]; then
+    adhoc_sign build/Jukebox-mac.xcarchive/Products/Applications/Jukebox.app || mac_status=1
+  fi
   if [[ $mac_status == 0 ]]; then
     widget_signed build/Jukebox-mac.xcarchive/Products/Applications/Jukebox.app "Mac archive" || mac_status=1
   fi

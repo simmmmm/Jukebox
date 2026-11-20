@@ -89,7 +89,8 @@ final class Navigator {
     var searchQuery = ""
     /// Return in that field: the search is kept as a recent one (SearchView).
     var searchSubmits = 0
-    /// ⌘F: the field asked for the keys (JukeboxCommands, WideShell).
+    /// ⌘F: the field asked for the keys (JukeboxCommands, WideShell); on
+    /// the tabs, Search tapped again (`select`, SearchView).
     var searchRequests = 0
 
     /// The Search place's own page, over Now Playing: the bar's field was
@@ -115,6 +116,28 @@ final class Navigator {
         case .radio: radioPath.append(route)
         case .library: libraryPath.append(route)
         case .search: searchPath.append(route)
+        }
+    }
+
+    /// A tab tapped, in the system's tab bar or Jukebox's own (TabRow).
+    /// Another tab: that tab, as it was left; but Search on its first page,
+    /// the recent searches and the genres, the keyboard down. The tab
+    /// shown, tapped again: back to its first page, and on Search's first
+    /// page into the field: "Ook zoeken; een tap opent de recente
+    /// zoekopdrachten met daaronder de genres, tweede tap focust het
+    /// zoekveld" (the photographer, 20 November 2026).
+    func select(_ chosen: AppTab) {
+        guard chosen == tab else {
+            if chosen == .search { searchPath = NavigationPath() }
+            tab = chosen
+            return
+        }
+        let path = path(for: chosen)
+        if !path.wrappedValue.isEmpty {
+            path.wrappedValue = NavigationPath()
+        } else if chosen == .search {
+            // SearchView's field, as ⌘F asks the wide window's.
+            searchRequests += 1
         }
     }
 

@@ -345,7 +345,11 @@ struct CreditsMenu: View {
     }
 }
 
-/// What can be done with a track, as Music orders it.
+/// What can be done with a track, in the groups Linux's menus have
+/// (trackMenu, "en ook bij linux die menutjes ff mooier structureren", 20
+/// November 2026): what its list does with it first (Remove from
+/// Playlist; the queue's own section, QueueView), then playing it, keeping
+/// it, where it is from, and last what is used least.
 struct TrackMenu: View {
     let track: Track
     /// A playlist's own song, on a wide page: Remove from Playlist.
@@ -377,16 +381,19 @@ struct TrackMenu: View {
     }
 
     @ViewBuilder private var single: some View {
+        if let removal {
+            Section {
+                Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive) {
+                    removal()
+                }
+            }
+        }
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext([track])
             }
             Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
                 player.addToQueue([track])
-            }
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": "track", "from": "menu"])
-                radio.start(.track(track.id))
             }
         }
         Section {
@@ -400,8 +407,10 @@ struct TrackMenu: View {
             if library.can(.rating) {
                 RatingMenu(item: .track(track.id))
             }
-            DontCountToggle(kind: .song, id: track.id, name: track.name)
-            CopyShareLinkButton(id: track.id, tracks: [track.id])
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "track", "from": "menu"])
+                radio.start(.track(track.id))
+            }
         }
         Section {
             if let albumID = track.albumID, let album = library.album(id: albumID) {
@@ -415,14 +424,11 @@ struct TrackMenu: View {
                 }
             }
             CreditsMenu(track: track)
-            ShareMenuItem(item: .track(track))
         }
-        if let removal {
-            Section {
-                Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive) {
-                    removal()
-                }
-            }
+        Section {
+            CopyShareLinkButton(id: track.id, tracks: [track.id])
+            ShareMenuItem(item: .track(track))
+            DontCountToggle(kind: .song, id: track.id, name: track.name)
         }
     }
 }

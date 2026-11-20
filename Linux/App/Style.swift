@@ -38,6 +38,11 @@ enum Style {
         // one step up from raised; by day halfway back to the paper, as a
         // step past it would no longer read as a card. Theme.raisedLighter.
         let lighter = dark ? "#242120" : "#F1EDE6"
+        // Menus and dialogs on Jukebox's own ground, not libadwaita's grey
+        // ("kunnen we de achtergrond kleur van deze popups gelijkmaken aan
+        // de kleuren van jukebox", 20 November 2026), lifted off the page:
+        // by night one step above raised, by day just lighter than the paper.
+        let lifted = dark ? lighter : "#FBF9F5"
         // The server out of reach: a soft warning in the Arch's amber, the
         // mark core's at 16% on the paper, Glow at 12% on the night ("een
         // warning dingetje met een zacht warning kleurtje in stijl van
@@ -46,6 +51,8 @@ enum Style {
         // libadwaita 1.5 reads its colours by name, 1.6 and later from
         // variables (which GTK before 4.16 cannot read, and says so).
         var css = """
+        @define-color popover_bg_color \(lifted);
+        @define-color dialog_bg_color \(lifted);
         @define-color accent_color \(accent);
         @define-color accent_bg_color \(accent);
         @define-color accent_fg_color \(onAccent);
@@ -66,6 +73,7 @@ enum Style {
               --sidebar-bg-color: \(raised); --sidebar-backdrop-color: \(raised);
               --secondary-sidebar-bg-color: \(raised); --secondary-sidebar-backdrop-color: \(raised);
               --headerbar-bg-color: \(raised); --headerbar-backdrop-color: \(raised);
+              --popover-bg-color: \(lifted); --dialog-bg-color: \(lifted);
             }
             """
         }
@@ -143,7 +151,9 @@ enum Style {
            ("buttons voelen ook erg groot", 18 November 2026); words for
            the rest. */
         button.page-button { min-height: 36px; min-width: 64px; padding: 0 16px; font-size: 15px; }
-        button.quiet { background-color: alpha(\(accent), 0.12); color: \(accent); box-shadow: none; }
+        /* The word a step darker than Copper by day, so it reads 4.9:1 on
+           its tint over the raised ground (Theme.quietInk). */
+        button.quiet { background-color: alpha(\(accent), 0.12); color: \(dark ? accent : "#953F12"); box-shadow: none; }
         button.quiet:hover { background-color: alpha(\(accent), 0.18); }
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
         /* Home's Your Station and the music to go on with, on a ground one
@@ -218,6 +228,9 @@ enum Style {
         listview.queue { padding: 12px 0 16px; }
         listview.queue > row { padding: 0 16px; }
         .queue-row { min-height: 48px; }
+        /* Remove: there while the pointer is over the row, or the keys on it. */
+        .queue-row .queue-remove { opacity: 0; transition: opacity 150ms ease-out; }
+        .queue-row:hover .queue-remove, .queue-row .queue-remove:focus-visible { opacity: 1; }
         .queue-row.covered { min-height: 64px; }
         .queue-row.station { min-height: 72px; }
         /* History: there, but quieter than what is to come (the iPhone's 50 %). */

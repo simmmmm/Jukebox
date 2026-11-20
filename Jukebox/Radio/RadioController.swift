@@ -1,7 +1,7 @@
 // CONTRACT — signatures fixed; bodies the player agent's (docs/ARCHITECTURE.md).
 //
 // The radio in the app: one RadioSession (JukeboxKit) for the station that
-// plays, fed into the player a few tracks ahead. A station starts within a
+// plays, fed into the player fifteen tracks ahead. A station starts within a
 // moment from the library alone; the server's mix (Jellyfin's Instant Mix, a
 // Subsonic server's similar songs), an artist's top songs where the server
 // has them (Subsonic's getTopSongs) and, with a key, Last.fm's similar
@@ -333,10 +333,57 @@ final class RadioController {
         player.refreshRemoteFeedback()
     }
 
+    /// How many songs a station keeps ahead: enough to see what is coming
+    /// and take one out before it plays ("ik wil dat de radio queue langer
+    /// wordt", the photographer, 20 November 2026), a screen of the queue
+    /// and a little more. Not more: each skip, thumb or turn of the dial
+    /// chooses them all again (`rechooseUpcoming`), and what is queued
+    /// counts as heard for the rules (an artist's three songs apart).
+    static let ahead = 15
+    /// Below this many ahead, the queue asks for more (PlayQueue), and gets
+    /// as many as make `ahead` again: five at a time rather than one.
+    static let refillBelow = 11
+
     /// The player is this many tracks from the end of a station's queue.
     func playerNeedsMore() {
         guard !isStarting, session != nil else { return }
-        let picks = session?.next(3) ?? []
+        let picks = session?.next(max(3, Self.ahead - player.upNext.count)) ?? []
+        if !picks.isEmpty { player.appendRadio(picks) }
+    }
+
+    /// The listener took songs the radio chose out of Up Next before they
+    /// played (PlayQueue.removeUpcoming: the swipe, the menu). The session
+    /// learns it as a strong skip of each (RadioFeedback.removed), so more
+    /// like them stays out; songs already queued that this now rules out go
+    /// too, and the rest stay where they are, as the listener is looking at
+    /// them. The queue is topped up at its end.
+    func removedFromUpcoming(_ ids: [ItemID]) {
+        guard session != nil, let station, player.context?.station?.id == station.id else { return }
+        Stats.track(.radioFeedback, ["kind": "remove"])
+        for id in ids { session?.record(.removed(id)) }
+        // Handed out and not heard: the rules count them no longer.
+        session?.returnUnplayed(ids)
+        let queued = player.upNext.filter { $0.reason != nil }.map(\.track.id)
+        let out = session?.ruledOut(queued) ?? []
+        let removed = player.removeUpcomingRadioPicks(Set(out))
+        session?.returnUnplayed(removed)
+        let picks = session?.next(max(0, Self.ahead - player.upNext.count)) ?? []
+        if !picks.isEmpty { player.appendRadio(picks) }
+    }
+
+    /// The listener's "Not This Artist" on a song of a station's Up Next:
+    /// that artist leaves this station (RadioFeedback.removedArtist), the
+    /// song and the others of theirs queued go, and the queue is topped up.
+    /// Only this station's: on another, or tomorrow, they are welcome.
+    func removeArtistFromStation(of track: Track) {
+        guard session != nil, let station, player.context?.station?.id == station.id else { return }
+        Stats.track(.radioFeedback, ["kind": "removeArtist"])
+        session?.record(.removedArtist(track.id))
+        let queued = player.upNext.filter { $0.reason != nil }.map(\.track.id)
+        let out = Set(session?.ruledOut(queued) ?? []).union([track.id])
+        let removed = player.removeUpcomingRadioPicks(out)
+        session?.returnUnplayed(removed)
+        let picks = session?.next(max(0, Self.ahead - player.upNext.count)) ?? []
         if !picks.isEmpty { player.appendRadio(picks) }
     }
 
@@ -348,12 +395,18 @@ final class RadioController {
         case .completed:
             session?.record(.finished(track.id))
         case .skipped:
-            session?.record(.skipped(track.id, after: listened))
-            // A skip says "not this": what comes next is chosen again with
-            // that known, at once.
-            if !isHandlingFeedback { rechooseUpcoming(keepingNext: false) }
-            // The listener's skip, not the one a thumbs down made (counted as that).
-            if !isHandlingFeedback { Stats.track(.radioFeedback, ["kind": "skip"]) }
+            if isHandlingFeedback {
+                session?.record(.skipped(track.id, after: listened))
+            } else {
+                // A skip says "not this": what comes next is chosen again
+                // with that known, at once. Told once what was queued is
+                // back, so the skip is marked where the station then stands
+                // (with fifteen ahead, told first it kept 0.98^14 of what
+                // came before: RadioQueueTests).
+                rechooseUpcoming(keepingNext: false) { $0.record(.skipped(track.id, after: listened)) }
+                // The listener's skip, not the one a thumbs down made (counted as that).
+                Stats.track(.radioFeedback, ["kind": "skip"])
+            }
         case .partial:
             // Left halfway: the session weighs it by how long was heard; not
             // enough to throw away what is queued.
@@ -717,13 +770,18 @@ final class RadioController {
     /// started from its page has some twenty queued, and a skip says "not
     /// this" of what is ahead too. As many again, so the queue the listener
     /// saw keeps its length.
-    private func rechooseUpcoming(keepingNext: Bool) {
+    /// `learning`: what to tell the session once the queued are back.
+    private func rechooseUpcoming(keepingNext: Bool, learning: ((inout RadioSession) -> Void)? = nil) {
         // The listener's skip, thumbs or dial: the page's songs make way.
         if !keepingNext { keepsShownPicks = false }
-        guard session != nil, let station, player.context?.station?.id == station.id else { return }
+        guard session != nil, let station, player.context?.station?.id == station.id else {
+            if session != nil, let learning { learning(&session!) }
+            return
+        }
         let removed = player.removeUpcomingRadioPicks(keepingNext: keepingNext)
         session?.returnUnplayed(removed)
-        let picks = session?.next(max(3, removed.count)) ?? []
+        if session != nil, let learning { learning(&session!) }
+        let picks = session?.next(max(removed.count, Self.ahead - player.upNext.count)) ?? []
         player.appendRadio(picks)
     }
 
@@ -793,7 +851,7 @@ final class RadioController {
             guard let self, self.generation == generation, self.station?.id == station.id else { return }
             var session = made
             let removed = self.player.removeUpcomingRadioPicks()
-            let picks = session.next(max(3, removed.count))
+            let picks = session.next(max(removed.count, Self.ahead - self.player.upNext.count))
             self.session = session
             self.player.appendRadio(picks)
             self.gatherSources(for: station, in: index, generation: generation)

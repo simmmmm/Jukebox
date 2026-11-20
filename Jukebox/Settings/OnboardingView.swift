@@ -315,6 +315,7 @@ private struct OnboardingAccountForm: View {
                 passwordForm
             }
         }
+        .multilineTextAlignment(isWide ? .center : .leading)
         .toolbar {
             ToolbarItem(placement: .barLeading) {
                 Button {
@@ -337,6 +338,11 @@ private struct OnboardingAccountForm: View {
 
     private var isQuickConnecting: Bool { quickConnectTask != nil }
 
+    /// Wide, the buttons and the notes under the rows on the column's axis,
+    /// as the first step and Linux have them; the iPhone's stay at the
+    /// margin under its full-width Sign In.
+    private var formAlignment: HorizontalAlignment { isWide ? .center : .leading }
+
     /// Quick Connect, where a Jellyfin has it turned on.
     private var quickConnect: (any QuickConnectSignIn)? {
         guard server.capabilities.contains(.quickConnect) else { return nil }
@@ -353,15 +359,16 @@ private struct OnboardingAccountForm: View {
     }
 
     private var header: some View {
-        VStack(alignment: isWide ? .leading : .center, spacing: Theme.Space.xs) {
+        // Centred on every width, as the welcome above it.
+        VStack(spacing: Theme.Space.xs) {
             Text("Signing in to \(server.name)")
                 .desktopFont(15, weight: .bold, phone: .headline)
             Text(verbatim: serverDetail)
                 .desktopFont(13, phone: .subheadline)
                 .foregroundStyle(.secondary)
         }
-        .multilineTextAlignment(isWide ? .leading : .center)
-        .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity)
         .padding(.bottom, Theme.Space.s)
         .accessibilityElement(children: .combine)
     }
@@ -388,7 +395,7 @@ private struct OnboardingAccountForm: View {
     // MARK: User name and password
 
     private var passwordForm: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.m) {
+        VStack(alignment: formAlignment, spacing: Theme.Space.m) {
             OnboardingFields {
                 TextField("User Name", text: $username)
                     .textContentType(.username)
@@ -485,7 +492,7 @@ private struct OnboardingAccountForm: View {
     /// plex.tv. A token, for a server reached without plex.tv, goes where
     /// an API key goes.
     private var plexForm: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.m) {
+        VStack(alignment: formAlignment, spacing: Theme.Space.m) {
             Text("Plex opens in your browser to sign in; Jukebox never sees your Plex password.")
                 .desktopFont(13, phone: .footnote)
                 .foregroundStyle(.secondary)
@@ -506,7 +513,7 @@ private struct OnboardingAccountForm: View {
     // MARK: An API key
 
     private var apiKeyForm: some View {
-        VStack(alignment: .leading, spacing: Theme.Space.m) {
+        VStack(alignment: formAlignment, spacing: Theme.Space.m) {
             OnboardingFields {
                 // Plex's own word for its key (X-Plex-Token).
                 SecureField(LocalizedStringKey(isPlex ? "Token" : "API Key"), text: $apiKey)
@@ -1170,14 +1177,15 @@ private struct OnboardingWelcome: View {
     @Environment(\.isWide) private var isWide
 
     var body: some View {
-        // Wide, Linux's column: 24 between the mark, the name and the fact.
-        VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.l) {
-            // 300 by 200 on the iPhone; wide, 240 by 160 at the column's edge.
+        // One centred column on every client, as GNOME's welcome and status
+        // pages and the iPhone have it. The photographer, 20 November 2026,
+        // of a page half left, half centred: "weer parity, dit staat
+        // opeens voor de helft links uitgelijnd?". Wide, Linux's column:
+        // 24 between the mark, the name and the fact.
+        VStack(spacing: isWide ? Theme.Space.xl : Theme.Space.l) {
+            // 300 by 200 on the iPhone; wide, 240 by 160.
             WelcomeSleeve(width: isWide ? 240 : 300, animatesIn: animatesIn)
-                // Wide, the sleeve's edge at the column's, where the words
-                // start: it stands 16 in from its picture's.
-                .offset(x: isWide ? -16 : 0)
-            VStack(alignment: isWide ? .leading : .center, spacing: isWide ? Theme.Space.xl : Theme.Space.s) {
+            VStack(spacing: isWide ? Theme.Space.xl : Theme.Space.s) {
                 // Wide, a page title's 40, as Linux's sign-in sets "Jukebox".
                 Text("Jukebox")
                     .desktopFont(40, design: .serif, phone: .serif(.largeTitle))
@@ -1185,13 +1193,13 @@ private struct OnboardingWelcome: View {
                 Text("Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server.")
                     .desktopFont(15, phone: .body)
                     .foregroundStyle(.secondary)
-                    .multilineTextAlignment(isWide ? .leading : .center)
+                    .multilineTextAlignment(.center)
                     // Two lines rather than cut short where the page is
                     // tight (the first two steps cut it at "other…").
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .frame(maxWidth: .infinity, alignment: isWide ? .leading : .center)
+        .frame(maxWidth: .infinity)
     }
 }
 
@@ -1258,6 +1266,8 @@ private struct OnboardingButtonLabel: View {
 private struct OnboardingErrorText: View {
     let message: String
 
+    @Environment(\.isWide) private var isWide
+
     var body: some View {
         Label {
             Text(verbatim: message)
@@ -1267,7 +1277,9 @@ private struct OnboardingErrorText: View {
         }
         .desktopFont(13, phone: .footnote)
         .foregroundStyle(.secondary)
-        .frame(maxWidth: .infinity, alignment: .leading)
+        // Wide, on the column's axis, as Linux's note under its rows.
+        .multilineTextAlignment(isWide ? .center : .leading)
+        .frame(maxWidth: .infinity, alignment: isWide ? .center : .leading)
     }
 }
 

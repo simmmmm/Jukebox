@@ -50,9 +50,7 @@ Mac's, is Linux's window, 1:1 (below).
   ook", the same day). Use 18's and 15's APIs plainly (Tab,
   `.sidebarAdaptable`); what is 26's alone goes behind
   `if #available(iOS 26, *)` or `macOS 26` with the older system's own
-  form beside it, the 26 look unchanged: the tab bar's accessory and its
-  minimising (`BottomAccessory` in `App/JukeboxApp.swift`), on 18 a bar on
-  each tab's foot (`MiniPlayerBar`); the title bar's head without glass
+  form beside it, the 26 look unchanged: the title bar's head without glass
   (`BrandHeadItem` in `App/WideShell.swift`), on 15 a bar that has none;
   the widget's control, on Sequoia the widget alone. `glassEffect` only where Apple's own apps
   use glass, and gated. UIKit only where SwiftUI has nothing (MPVolumeView,
@@ -103,7 +101,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Plex/*` (PlexServer, PlexSignIn), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
 | Kit: offline | `Offline/*` (OfflineManifest, KeepPolicy: the automatic keep, JellyfinClient.downloadURL), tests, `docs/OFFLINE.md` except "In the app" |
 | App: library | `Jukebox/Library/*`: LibraryStore, every library screen, AddToPlaylistSheet |
-| App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift`: AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, the radio's feeding. `PlayQueue` is the queue and its rules on both platforms (play, next and previous, shuffle, repeat, Up Next's edits and "Then", the radio's feed and trim, the playback reports); each AudioPlayer is that class with its engine (AVQueuePlayer; `Linux/App/AudioPlayer.swift`'s GStreamer), and `Linux/App/QueueCheck.swift` checks the rules after every Linux build |
+| App: player | `Jukebox/Player/*`, `Jukebox/Radio/RadioController.swift`: AudioPlayer, HistoryStore, Now Playing info, remote commands, audio session, the radio's feeding. `PlayQueue` is the queue and its rules on both platforms (play, next and previous, shuffle, repeat, Up Next's edits and "Then", the radio's feed and trim, the playback reports; a station's song taken out of Up Next is told to the radio, `RadioController.removedFromUpcoming`, so the station learns from it); each AudioPlayer is that class with its engine (AVQueuePlayer; `Linux/App/AudioPlayer.swift`'s GStreamer), and `Linux/App/QueueCheck.swift` checks the rules after every Linux build |
 | App: now playing | `Jukebox/NowPlaying/*`: MiniPlayer, NowPlayingView, SleeveRecord (the sleeve and its record in the cover's place), NowPlayingGround (the land, the wall), QueueView, LyricsView, AirPlay and volume; the wide window's PlayerBar and PanelView; UpNextList (Up Next's rows, shared with Linux) |
 | App: home and radio | `Jukebox/Home/*`, `Jukebox/Radio/*` except RadioController: MixStore, HomeView, MixDetailView, RadioView |
 | App: shell | `Jukebox/Settings/*`, `Jukebox/Search/*`: OnboardingView (sign in to any server: the address, then a password, Quick Connect or an API key), SettingsView, SearchView |
@@ -120,10 +118,11 @@ each must exist with exactly this initializer.
   `GenreDetailView(genre: Genre)`, `FavoritesView()`, `RecentlyAddedView()`,
   `AddToPlaylistSheet(tracks: [Track])`.
 - Offline: `DownloadedView()` (`Route.downloaded`, Library › Downloaded).
-- Now playing: on the iPhone `MiniPlayer()`, inside
-  `tabViewBottomAccessory`, reading
-  `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
-  expanded, and `NowPlayingView()` in a fullScreenCover. In the wide window
+- Now playing: on the iPhone, for now three player bars to try, chosen in
+  Settings › Library › Player Bar (Test) or with `-miniBarVariant
+  spotify|glas|plaat`: `MiniBarFoot` on each tab's foot holds Spotify's,
+  Glas's or Plaat's (`NowPlaying/MiniPlayer*.swift`), no bottom accessory;
+  and `NowPlayingView()` in a fullScreenCover. In the wide window
   `PlayerBar()`, `PanelView()`, and `NowPlayingView()` as the room.
 - Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
   `StationDetailView(station: Station)` (`Route.station(station)`).
@@ -361,9 +360,8 @@ Play On, on every client: "van mij mag chromecast er ook in hoor ik wil
 alleen er voor waken dat we niet 10000 knopen krijgen" (17 November 2026).
 So no new button: the AirPlay glyph where it always was (Now Playing, the
 wide bar) opens one list, and Linux has the same glyph in the same place of
-its bar. The list: this device, AirPlay (Apple: the system's own picker as
-a row), the Chromecasts on the network, on Linux the Sonos rooms and other
-UPnP renderers (Apple's reach those by AirPlay), the user's other Jellyfin or Emby
+its bar. The list: here, the Chromecasts and the Sonos rooms on the network
+(on Linux other UPnP renderers too), the user's other Jellyfin or Emby
 clients that take remote control, a Subsonic server's jukebox where the
 user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP speakers. It looks only while it is open: no local network prompt at launch.
 
@@ -386,9 +384,34 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP 
   and the Mac over Network's TLS, found by Bonjour
   (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
   privacy answers stay as they are (`docs/STATS.md`).
-- **A Sonos on Linux** ("hij vind bijv ook mijn sonos niet", 19 November
-  2026): Linux has no AirPlay, so it speaks UPnP AV itself (JukeboxKit's
-  `Cast/UPnP.swift`, `Linux/App/UPnP.swift`). Found by Avahi
+- **Here, by its name** ("AirPlay is verbonden maar er staat hier this
+  iPhone", 20 November 2026): on Apple's the first row is what the system
+  plays through now, read from the audio session's route and followed as
+  it changes ("Living Room", the AirPods; `SystemRoute` in
+  `NowPlaying/SystemControls.swift`), "This iPhone" only for its own
+  speaker. The last row, "AirPlay & Bluetooth…", is the system's own
+  picker. On the iPhone the list is a drawer ("Vind zon drawer wel prima
+  hoor"), on the iPad and the Mac a popover, Linux's menu in Apple's
+  controls. The Mac's row stays "This Mac": its picker routes one player,
+  with no route name to read.
+- **Why not the system's picker alone** ("kan je niet gewoon altijd dat
+  native menu tonen op ios en eventuele andere apparaten daar aan
+  toevoegen?"): AVRoutePickerView lists what the system reaches, and an
+  app adds to it only through a Media Device Discovery extension (AVRouting,
+  DeviceDiscoveryExtension): one extension a kind of device, with the
+  `com.apple.developer.media-device-discovery-extension` entitlement, meant
+  to come from the device's maker (Apple: "bundle your app with the device
+  discovery extension that the manufacturer provides"), the app then
+  streaming to it over `AVCustomRoutingController`. No such extension
+  from Google or Sonos was found (20 November 2026), and a Jellyfin client is a session on the server, not a device on
+  the network. So the list is ours, with the system's picker as a row.
+- **A Sonos** ("hij vind bijv ook mijn sonos niet", 19 November 2026; on
+  the iPhone "Huh daar staat wel weer mn sonos bij", 20 November): every
+  client speaks UPnP AV itself (JukeboxKit's `Cast/UPnP.swift`; the rows
+  and the player in `Player/UPnPPlay.swift`, shared). Apple's find the
+  rooms by Bonjour (`Player/SonosNetwork.swift`), no SSDP (multicast needs
+  Apple's entitlement); before, they had only AirPlay's own list. Linux
+  finds them in `Linux/App/UPnP.swift`, by Avahi
   (`_sonos._tcp`) and SSDP (`Linux/CGlue/ssdp.c`, any MediaRenderer); a
   host firewall drops SSDP's unicast answers (the photographer's ufw did),
   mDNS still finds the Sonos. One row a Sonos group, named by its rooms
@@ -406,9 +429,10 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP 
   `RemoteControlTests`, Linux's `JUKEBOX_CHECK=remote`.
 - **What it cannot do**: a server at localhost is refused at once (the TV
   fetches the songs itself); a TV that cannot play from an https server it
-  does not trust says so. A moment's silence between songs on a Chromecast.
-  On the iPhone, with the app suspended in the background, the TV ends with
-  its song: the next is the queue's to give. CarPlay plays on the phone.
+  does not trust says so (a Sonos too). A moment's silence between songs on
+  a Chromecast or a Sonos. On the iPhone, with the app suspended in the
+  background, the TV or the Sonos ends with its song: the next is the
+  queue's to give. CarPlay plays on the phone.
 - **Checked**: the kit's `PlayOnTests` and `JellyfinSessionsIntegrationTests`
   (a second client on the test Jellyfin over its websocket receives Play,
   Playstate and SetVolume), `CastProtocolTests`, `UPnPTests`; Linux's `JUKEBOX_CHECK=cast`
@@ -714,7 +738,7 @@ more; one `any MusicServer` goes where it did.
 | `AppModel` | `MusicServers.open(credentials)` at a launch and a sign-in; hands it to the player, the radio, the library and the offline store. Once a launch, in the background, `currentCapabilities()` (and the version, for a sign-in the Jellyfin-only app kept); a changed session is saved and every store goes on with it (`use`). Sign-out: `server.signOut()` (Jellyfin forgets its token; Subsonic has none, the keychain forgets). |
 | `Keychain` | One item as before, now `ServerCredentials`. The Jellyfin-only app's `Credentials` decodes as a Jellyfin session (JukeboxKit's `ServerCredentialsTests`), so the update signs nobody out. The library cache and the downloads' folder are named by the same server and user ids, so they stay too. |
 | `OnboardingView` | One address field. `MusicServers.detect` (through `app.detectServer`) asks every candidate both ways at once. The account step says "Signing in to Tijmen's Music", "Jellyfin 12.4.0 · music.example.com"; a Subsonic server has no name: "Signing in to nas.local", "Navidrome 0.64.2 · nas.local:4533". User name and password everywhere; Use Quick Connect where the kit's sign-in is a `QuickConnectSignIn` (a Jellyfin with it on); Use an API Key where it is an `APIKeySignIn`, and at once when a password sign-in throws `needsAPIKey` (with the server's help link). Errors in words: no server there, the password would go over plain http (`passwordNeedsHTTPS`), the account may not play (`notAllowed`). |
-| `LibraryStore` | `allTracks`, `allAlbums`, `allArtists`, `playlists`, `genres` (each server pages as suits it, in the kit); `setFavorite(_:item:)` with the `ItemRef` the heart knows (track, album, artist); the playlist calls; `MusicServerError`. |
+| `LibraryStore` | `allTracks`, `allAlbums`, `allArtists`, `playlists`, `genres` (each server pages as suits it, in the kit; an album split by album-artist tags is put back together on load by the kit's `AlbumMerge`, for every client); `setFavorite(_:item:)` with the `ItemRef` the heart knows (track, album, artist); the playlist calls; `MusicServerError`. |
 | `AudioPlayer` | `streamURL(for:quality:playSessionID:)`; `report(.nowPlaying)` when an entry first plays (Subsonic shows it as playing; Jellyfin is told nothing), `.played` when it is not a skip (PlayOutcome, where every server counts it), `.progress`, `.stopped`. |
 | `RadioController` | `instantMix(from: MixSeed)` where `.instantMix`: a playlist is `.playlist` when the library has it, a made-up mix starts from its first track, a genre the library split out has no id (Jellyfin then has nothing; Subsonic mixes by name). An artist's station: the server's `topSongs` where `.topSongs`, else (or when it had none) Last.fm as before. |
 | `LyricsFinder` | `lyrics(for: track)` where `.lyrics`; an `unsupported` or `notFound` answer counts as none, so LRCLIB is asked. |

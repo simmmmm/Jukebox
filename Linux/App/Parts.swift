@@ -248,13 +248,35 @@ func shareItems(_ id: ItemID, tracks: [ItemID]) -> [(String, () -> Void)] {
     })]
 }
 
-/// A menu of `items` as a popover; `prefix` names its actions apart from
-/// another menu's on the same widget.
+/// Where a menu's next section starts: GNOME's menus come in groups
+/// with a line between them ("en ook bij linux die menutjes ff mooier
+/// structureren", the photographer, 20 November 2026). A list of
+/// (title, action) still, so every menu is built as before.
+let menuBreak: (String, () -> Void) = ("\u{1E}", {})
+
+/// Groups as one menu, a break between each that has something.
+func menuSections(_ groups: [(String, () -> Void)]...) -> [(String, () -> Void)] {
+    groups.filter { !$0.isEmpty }.enumerated().flatMap { index, group in index == 0 ? group : [menuBreak] + group }
+}
+
+/// A menu of `items` as a popover, a section between breaks
+/// (`menuBreak`; an empty one is left out).
 func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
     let menu = g_menu_new()!
     let actions = g_simple_action_group_new()!
+    var section = g_menu_new()!
     var submenus: [String: OpaquePointer] = [:]
+    func close() {
+        if g_menu_model_get_n_items(ptr(section)) > 0 { g_menu_append_section(menu, nil, ptr(section)) }
+        g_object_unref(raw(section))
+    }
     for (index, (title, action)) in items.enumerated() {
+        if title == menuBreak.0 {
+            guard g_menu_model_get_n_items(ptr(section)) > 0 else { continue }
+            close()
+            section = g_menu_new()!
+            continue
+        }
         // A choice (`submenuChoice`) goes under its submenu, made where
         // its first choice is, with a check mark: an action with a state.
         let parts = title.split(separator: submenuMark, omittingEmptySubsequences: false).map(String.init)
@@ -267,17 +289,18 @@ func popoverMenu(_ items: [(String, () -> Void)]) -> Widget {
         on(raw(simple), "activate") { action() }
         g_action_map_add_action(ptr(actions), ptr(simple))
         guard isUnder, !parts[0].isEmpty else {
-            g_menu_append(menu, isUnder ? parts[1] : title, "menu.item\(index)")
+            g_menu_append(section, isUnder ? parts[1] : title, "menu.item\(index)")
             continue
         }
         let submenu = submenus[parts[0]] ?? {
             let made = g_menu_new()!
-            g_menu_append_submenu(menu, parts[0], ptr(made))
+            g_menu_append_submenu(section, parts[0], ptr(made))
             submenus[parts[0]] = made
             return made
         }()
         g_menu_append(submenu, parts[1], "menu.item\(index)")
     }
+    close()
     let popover = gtk_popover_menu_new_from_model(ptr(menu))!
     gtk_widget_insert_action_group(popover, "menu", ptr(actions))
     return popover
@@ -297,7 +320,7 @@ func contextMenu(on widget: Widget, _ items: @escaping () -> [(String, () -> Voi
 }
 
 func showMenu(at widget: Widget, x: Double, y: Double, _ items: [(String, () -> Void)]) {
-    guard !items.isEmpty else { return }
+    guard items.contains(where: { $0.0 != menuBreak.0 }) else { return }
     let popover = popoverMenu(items)
     gtk_popover_set_has_arrow(ptr(popover), 0)
     gtk_widget_set_halign(popover, GTK_ALIGN_START)
@@ -311,32 +334,46 @@ func showMenu(at widget: Widget, x: Double, y: Double, _ items: [(String, () -> 
     gtk_popover_popup(ptr(popover))
 }
 
-/// What can be done with songs wherever they are listed.
-func trackMenu(_ tracks: [Track]) -> [(String, () -> Void)] {
+/// What can be done with songs wherever they are listed, in GNOME's
+/// groups and the same order in every song's menu (and the Mac's
+/// TrackMenu): what the list it is in does with it (`place`: the queue's
+/// Move Up, Move Down, Remove from Queue and a station's lessons, a
+/// playlist's own), the most used, first; then playing it, keeping it,
+/// going to where it is from, and last what is used least.
+func trackMenu(_ tracks: [Track], place: [(String, () -> Void)] = []) -> [(String, () -> Void)] {
     guard let first = tracks.first else { return [] }
-    var items: [(String, () -> Void)] = [
+    let play: [(String, () -> Void)] = [
         ("Play Next", { app.player.playNext(tracks) }),
         ("Add to Queue", { app.player.addToQueue(tracks) }),
-        ("Add to Playlist…", { Playlists.add(tracks) }),
     ]
-    if tracks.count == 1 {
-        items.append(("Start Radio", { app.radio.start(.track(first.id)) }))
-        let favorite = app.library.isFavorite(first.id)
-        items.append((favorite ? "Remove from Favorites" : "Add to Favorites",
-                      { Task { await app.library.setFavorite(!favorite, item: .track(first.id)) } }))
-        items += ratingItems(.track(first.id))
-        items += NotCountedUI.items(.song, first.id, first.name)
-        items += shareItems(first.id, tracks: [first.id])
-        if let albumID = first.albumID, let album = app.library.album(id: albumID) {
-            items.append(("Go to Album", { Pages.open(album) }))
-        }
-        if let ref = first.primaryArtist, let artist = app.library.artist(ref) {
-            items.append(("Go to Artist", { Pages.open(artist) }))
-        }
-        items += creditItems(first)
-        items += publicShareItems(.track(first))
+    guard tracks.count == 1 else {
+        return menuSections(place, play, [("Add to Playlist…", { Playlists.add(tracks) })])
     }
-    return items
+    let favorite = app.library.isFavorite(first.id)
+    let keep: [(String, () -> Void)] = [
+        ("Add to Playlist…", { Playlists.add(tracks) }),
+        (favorite ? "Remove from Favorites" : "Add to Favorites",
+         { Task { await app.library.setFavorite(!favorite, item: .track(first.id)) } }),
+    ] + ratingItems(.track(first.id)) + [("Start Radio", { app.radio.start(.track(first.id)) })]
+    return menuSections(place, play, keep, goItems(first), rareItems(first))
+}
+
+/// Go to Album, Go to Artist and Credits: where a song is from.
+func goItems(_ track: Track) -> [(String, () -> Void)] {
+    var items: [(String, () -> Void)] = []
+    if let albumID = track.albumID, let album = app.library.album(id: albumID) {
+        items.append(("Go to Album", { Pages.open(album) }))
+    }
+    if let ref = track.primaryArtist, let artist = app.library.artist(ref) {
+        items.append(("Go to Artist", { Pages.open(artist) }))
+    }
+    return items + creditItems(track)
+}
+
+/// The song's links and Don't Count Plays: used least, so last.
+func rareItems(_ track: Track) -> [(String, () -> Void)] {
+    shareItems(track.id, tracks: [track.id]) + publicShareItems(.track(track))
+        + NotCountedUI.items(.song, track.id, track.name)
 }
 
 // MARK: Songs
@@ -359,10 +396,9 @@ final class TrackRow {
     /// The row's place in its list, as the list last filled it (a list
     /// reuses its rows).
     var position = 0
-    /// What a list adds to the song's own menu: before it (Move Up, Move
-    /// Down), and after it (Remove from Playlist, last, as on the Mac).
-    var firstItems: [(String, () -> Void)] = []
-    var lastItems: [(String, () -> Void)] = []
+    /// What its list does with the song (Move Up, Move Down, Remove from
+    /// Playlist): the menu's first section (`trackMenu`'s `place`).
+    var placeItems: [(String, () -> Void)] = []
     /// Its list's picked songs (TrackPicks), where the list has them.
     private let picked: PickedRows?
 
@@ -412,7 +448,7 @@ final class TrackRow {
             let tracks = picked.picks.tracks(at: position, in: picked.items())
             if tracks.count > 1 { return trackMenu(tracks) }
         }
-        return firstItems + trackMenu(menuTracks) + lastItems
+        return trackMenu(menuTracks, place: placeItems)
     }
 
     /// Picked: the list's own row (its padding included) lit as
@@ -474,12 +510,12 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
         fill: { row, track, index in
             row.position = index
             row.show(track, subtitle: subtitle?(track))
-            row.firstItems = []
+            row.placeItems = []
             if let move {
-                if index > 0 { row.firstItems.append(("Move Up", { move(index, index - 1) })) }
-                if index < (made?.items.count ?? 0) - 1 { row.firstItems.append(("Move Down", { move(index, index + 1) })) }
+                if index > 0 { row.placeItems.append(("Move Up", { move(index, index - 1) })) }
+                if index < (made?.items.count ?? 0) - 1 { row.placeItems.append(("Move Down", { move(index, index + 1) })) }
             }
-            row.lastItems = remove.map { remove in [("Remove from Playlist", { remove(index) })] } ?? []
+            if let remove { row.placeItems.append(("Remove from Playlist", { remove(index) })) }
             row.markPicked()
         },
         activate: { _, index, items in
@@ -637,18 +673,21 @@ func albumTile(_ album: Album, fact: String? = nil) -> Widget {
     return button
 }
 
-/// What can be done with an album from its tile or row.
-func albumMenu(_ album: Album) -> [(String, () -> Void)] {
+/// What can be done with an album from its tile or row, in a song's
+/// order (`trackMenu`); `play` false on its own page, which has Play.
+func albumMenu(_ album: Album, play: Bool = true) -> [(String, () -> Void)] {
     let tracks = app.library.tracks(inAlbum: album.id)
-    return [("Play", { app.player.play(tracks, context: QueueContext(.album(album.id), title: album.name)) }),
-            ("Play Next", { app.player.playNext(tracks) }),
-            ("Add to Queue", { app.player.addToQueue(tracks) }),
-            ("Add to Playlist…", { Playlists.add(tracks) }),
-            ("Start a Station", { app.radio.start(.album(album.id)) })]
-        + ratingItems(.album(album.id))
-        + NotCountedUI.items(.album, album.id, album.name)
-        + shareItems(album.id, tracks: tracks.map(\.id))
-        + publicShareItems(.album(album))
+    let artist = album.primaryArtist.flatMap { app.library.artist($0) }
+    let playItems: [(String, () -> Void)] = play
+        ? [("Play", { app.player.play(tracks, context: QueueContext(.album(album.id), title: album.name)) })] : []
+    return menuSections(
+        playItems + [("Play Next", { app.player.playNext(tracks) }),
+                     ("Add to Queue", { app.player.addToQueue(tracks) })],
+        [("Add to Playlist…", { Playlists.add(tracks) })] + ratingItems(.album(album.id))
+            + [("Start Radio", { app.radio.start(.album(album.id)) })],
+        artist.map { artist in [("Go to Artist", { Pages.open(artist) })] } ?? [],
+        shareItems(album.id, tracks: tracks.map(\.id)) + publicShareItems(.album(album))
+            + NotCountedUI.items(.album, album.id, album.name))
 }
 
 /// A station's tile: the arch at the page's tile size, its name and a fact.

@@ -18,6 +18,10 @@
 # The Mac's own window is walked when asked for (SHOTS_DEVICES has "mac":
 # the store's round, a push of `store-walk`, ci/app.sh), on the runner
 # itself, for the Mac App Store's pictures (MacScreenshotTests.swift).
+# On the photographer's MacBook, a runner of our own, the walk is left out
+# and the Mac's snapshots ("mac-snap", JukeboxSnapshots/Snapshots.swift) are
+# made instead, on every push: the main screens drawn offscreen, nothing on
+# the laptop's screen.
 #
 # Why: there is no Mac here, so nobody has seen the app. The photographer
 # asked for pictures ("Als je plaatjes hebt om te delen zie ik ze graag") and
@@ -36,15 +40,41 @@
 # SEARCH_TERM sets what the search types (else a word of the first artist).
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 0
+# adhoc_sign and adhoc_sign_tests, for the Mac's walk (ci/sign.sh).
+source ci/sign.sh
 
 start=$SECONDS
 budget=${SHOTS_BUDGET:-2400}
 # Walked in this order; the last is the first left out when time runs short.
 devices=${SHOTS_DEVICES:-iphone ipad ipad11}
+# The Mac's walk takes over the screen, the mouse and the keyboard; on a
+# runner of our own, the photographer's MacBook, it is left out: "Doe dan
+# maar via GitHub" (20 November 2026). The simulators' walks stay.
+# In its place, on every push, the snapshots: first, as they take a minute
+# and the walks after them many.
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
+  kept=
+  for kind in $devices; do [[ $kind == mac || $kind == mac-snap ]] || kept="${kept:+$kept }$kind"; done
+  if [[ " $devices " == *" mac "* ]]; then
+    echo "::notice::No Mac walk on a self-hosted runner: the store's Mac pictures come from GitHub's runner."
+  fi
+  devices="mac-snap${kept:+ $kept}"
+fi
 # The iPhone walked. The Pro's 1206 x 2622 is what App Store Connect
 # requires; "iPhone 17 Pro Max" gives the optional large set, 1320 x 2868
 # (docs/RELEASE.md, Screenshots).
 iphone=${SHOTS_IPHONE:-iPhone 17 Pro}
+# The fake Jellyfin's port, and the snapshots' own one up. On the MacBook
+# two runners walk at once (mac-5, mac-6): each its own pair, from its
+# name, so neither signs in to the other's server (run 44759219953: mac-6's
+# server held 8096, and this run's walks found nothing to sign in to). The
+# walks are told it (JUKEBOX_SERVER in the tests).
+port=8096
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
+  port=$(( 18000 + $(printf '%s' "${RUNNER_NAME:-local}" | cksum | cut -d' ' -f1) % 400 * 2 ))
+fi
+snap_port=$(( port + 1 ))
+export TEST_RUNNER_JUKEBOX_SERVER=localhost:$port
 out=build/logs/screenshots
 # Result bundles, exports, the derived data and the branch: not uploaded.
 work=build/screenshots
@@ -124,7 +154,7 @@ status_bar() {
 
 # --- The fake Jellyfin -------------------------------------------------------
 
-group "The fake Jellyfin on localhost:8096, and the contact sheet's tool"
+group "The fake Jellyfin on localhost:$port, and the contact sheet's tool"
 server=
 stop_server() {
   if [[ -n $server ]]; then
@@ -133,7 +163,51 @@ stop_server() {
   fi
   server=
 }
-trap stop_server EXIT
+# What the Mac's round changes on the runner, put back as it was: on
+# GitHub's machines it goes with the machine, but the MacBook is the
+# photographer's own laptop ("doe alles via m'n macbook joh, zeker
+# screenshots", 20 November 2026). Saved in mac_settings before the round.
+mac_saved=false
+wallpaper_store="$HOME/Library/Application Support/com.apple.wallpaper/Store/Index.plist"
+restore_mac() {
+  $mac_saved || return 0
+  mac_saved=false
+  echo "The Mac's own settings put back."
+  osascript -e "tell application \"System Events\" to tell appearance preferences to set dark mode to $saved_dark" \
+    > /dev/null 2>&1 || problem "the Mac's dark mode was not put back ($saved_dark)"
+  if [[ -f $work/wallpaper-Index.plist ]]; then
+    cp "$work/wallpaper-Index.plist" "$wallpaper_store" && killall WallpaperAgent 2> /dev/null
+  fi
+  if [[ -n $saved_scrollbars ]]; then
+    defaults write -g AppleShowScrollBars -string "$saved_scrollbars"
+  else
+    defaults delete -g AppleShowScrollBars 2> /dev/null
+  fi
+  if [[ $saved_autohide != 1 ]]; then
+    if [[ -n $saved_autohide ]]; then
+      defaults write com.apple.dock autohide -bool "$saved_autohide"
+    else
+      defaults delete com.apple.dock autohide 2> /dev/null
+    fi
+    killall Dock 2> /dev/null
+  fi
+  if [[ -x $work/mac-display && -s $work/display-mode.txt ]]; then
+    "$work/mac-display" --restore "$work/display-mode.txt" | grep '^display:' \
+      || problem "the Mac's display mode was not put back"
+  fi
+  return 0
+}
+mac_settings() {
+  saved_dark=$(osascript -e 'tell application "System Events" to tell appearance preferences to get dark mode' 2> /dev/null)
+  [[ $saved_dark == true ]] || saved_dark=false
+  saved_scrollbars=$(defaults read -g AppleShowScrollBars 2> /dev/null)
+  saved_autohide=$(defaults read com.apple.dock autohide 2> /dev/null)
+  if [[ -f $wallpaper_store ]]; then cp "$wallpaper_store" "$work/wallpaper-Index.plist"; fi
+  mac_saved=true
+}
+trap 'stop_server; restore_mac' EXIT
+# The watchdog's TERM (ci/app.sh) ends the round through the EXIT trap too.
+trap 'exit 143' TERM INT
 # jq reads simctl's and the results' JSON below; the runner has it.
 command -v jq > /dev/null || problem "no jq on this runner: no simulators, verdicts or pictures"
 # Built first, so a tool that does not compile shows at the top of the log,
@@ -161,12 +235,12 @@ if bounded "$(allow 300)" xcrun swiftc -O -parse-as-library dev/fake-jellyfin.sw
     *walk) handoff="--handoff Studio" ;;
   esac
   # shellcheck disable=SC2086 # two words, or none
-  "$work/fake-jellyfin" --port 8096 --data dev/demo --song-lengths $handoff \
+  "$work/fake-jellyfin" --port "$port" --data dev/demo --song-lengths $handoff \
     > "$out/fake-jellyfin.log" 2>&1 < /dev/null &
   server=$!
   answered=false
   for _ in $(seq 1 60); do
-    if curl -fsS -m 2 http://localhost:8096/System/Info/Public > "$work/public-info.json" 2>/dev/null; then
+    if curl -fsS -m 2 http://localhost:$port/System/Info/Public > "$work/public-info.json" 2>/dev/null; then
       answered=true
       break
     fi
@@ -178,13 +252,13 @@ if bounded "$(allow 300)" xcrun swiftc -O -parse-as-library dev/fake-jellyfin.sw
   if $answered && ! kill -0 "$server" 2>/dev/null; then
     # Something else holds the port (on a developer's machine, the real
     # Jellyfin of dev/jellyfin-test-server.sh), and the fake one has stopped.
-    problem "the fake Jellyfin stopped at once and something else answers on localhost:8096 (fake-jellyfin.log)"
+    problem "the fake Jellyfin stopped at once and something else answers on localhost:$port (fake-jellyfin.log)"
     tail -20 "$out/fake-jellyfin.log"
     server=
   elif $answered; then
     echo "It answers: $(head -c 300 "$work/public-info.json")"
   else
-    problem "the fake Jellyfin did not answer on localhost:8096, so the walks stop at sign-in (fake-jellyfin.log)"
+    problem "the fake Jellyfin did not answer on localhost:$port, so the walks stop at sign-in (fake-jellyfin.log)"
     tail -40 "$out/fake-jellyfin.log"
   fi
 else
@@ -237,9 +311,13 @@ pick() {
     . as $data
     | [.runtimes[]? | select(.isAvailable and ((.identifier // "") | contains("SimRuntime.iOS"))
         and (version[:1] >= [26]))]
-    | if length == 0 then error("no iOS 26 runtime") else sort_by(version) | last end
+    # Of one version, the runtime for every device: Xcode 27.2 has a second
+    # iOS 27.2 for one iPhone alone ("iPhone Duo", on the MacBook).
+    | if length == 0 then error("no iOS 26 runtime")
+      else sort_by([version, ((.supportedDeviceTypes // []) | length)]) | last end
     | . as $runtime
     | [$data.devices[$runtime.identifier][]? | select(.isAvailable)
+        | select(.name | contains("(runner ") | not)
         | {rank: (.name | rank), name, udid} | select(.rank != null)]
     | if length > 0 then
         max_by([.rank, .name, .udid]) | [.udid, .name, ($runtime.name // "iOS")] | @tsv
@@ -253,10 +331,44 @@ pick() {
       end'
 }
 
+# On the MacBook two runners (mac-5, mac-6) walk at once, so each walks a
+# device of its own and never boots the other's: "<device> (runner
+# <name>)", of the same kind and system as the walk's, made once and used
+# again on every later run (the disk has some 20 GB to spare; a device per
+# run would fill it). The original devices stay as they are. Its udid, from
+# the picked device's udid and name.
+own_device() {
+  local picked=$1 name="$2 (runner ${RUNNER_NAME:-local})" found type runtime_id
+  IFS=$'\t' read -r type runtime_id < <(jq -r --arg udid "$picked" '.devices | to_entries[]
+    | .key as $runtime | .value[] | select(.udid == $udid) | [.deviceTypeIdentifier, $runtime] | @tsv' \
+    "$work/simctl.json")
+  # Made just now by pick, so not in the list read before: that one.
+  if [[ -z $type || -z $runtime_id ]]; then
+    echo "$picked"
+    return 0
+  fi
+  # Of the same system: a newer Xcode's runtime gets a device of its own.
+  found=$(jq -r --arg name "$name" --arg runtime "$runtime_id" \
+    '[.devices[$runtime][]? | select(.isAvailable and .name == $name) | .udid][0] // empty' "$work/simctl.json")
+  if [[ -n $found ]]; then
+    echo "$found"
+    return 0
+  fi
+  echo "Making $name, once." >&2
+  sim create "$name" "$type" "$runtime_id"
+}
+
 ready=
 bounded 120 xcrun simctl list -j > "$work/simctl.json" 2> "$work/simctl.err" \
   || problem "xcrun simctl list failed: $(tail -1 "$work/simctl.err")"
 for kind in $devices; do
+  if [[ $kind == mac-snap ]]; then
+    mkdir -p "$out/mac-snap"
+    echo "$(sw_vers -productName) $(sw_vers -productVersion), offscreen" > "$out/mac-snap/device.txt"
+    echo "mac-snap: $(cat "$out/mac-snap/device.txt")"
+    ready="${ready:+$ready }mac-snap"
+    continue
+  fi
   if [[ $kind == mac ]]; then
     # The Mac's walk needs no simulator: the runner is the Mac. (The walk
     # itself says how large its screen is, with its first PICTURE line.)
@@ -278,6 +390,10 @@ for kind in $devices; do
       IFS=$'\t' read -r udid name runtime <<< "$line"
     fi
   fi
+  if [[ -n $udid && ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
+    udid=$(own_device "$udid" "$name" 2>> "$work/pick-$kind.err") || udid=
+    name="$name (runner ${RUNNER_NAME:-local})"
+  fi
   if [[ -n $udid ]]; then
     printf -v "udid_$kind" '%s' "$udid"
     mkdir -p "$out/$kind"
@@ -295,7 +411,8 @@ endgroup
 group "The app and its UI tests, built for the simulator"
 built=false
 [[ -d Jukebox.xcodeproj ]] || xcodegen generate
-sims=$(echo ${ready/mac/})
+sims=
+for kind in $ready; do [[ $kind == mac* ]] || sims="${sims:+$sims }$kind"; done
 if [[ -n $sims ]]; then
   first="udid_${sims%% *}"
   # For the first simulator's architecture only; the products serve the
@@ -309,20 +426,36 @@ if [[ -n $sims ]]; then
   fi
   grep -E 'error:|\*\* TEST BUILD' "$out/build-for-testing.log" | sed "s#$PWD/##g" | sort -u | head -60
 fi
-# The Mac's, in derived data of its own. Signed to run locally ("-"): macOS
-# starts a UI test's runner only when it is signed, and the app is then in
-# its sandbox, as the store's build is.
+# The Mac's, in derived data of its own. Built unsigned and signed ad hoc
+# after (ci/sign.sh), as ci/app.sh's builds are: macOS starts a UI test's
+# runner only when it is signed, and the app is then in its sandbox, as the
+# store's build is. Xcode's own ad hoc signing stops on the MacBook.
 built_mac=false
 if [[ " $ready " == *" mac "* ]]; then
+  products=$work/derived-mac/Build/Products/Debug
   if bounded "$(allow 1200)" xcodebuild build-for-testing -project Jukebox.xcodeproj -scheme Jukebox \
       -configuration Debug -destination 'platform=macOS' -derivedDataPath "$work/derived-mac" \
-      CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
-      > "$out/build-for-testing-mac.log" 2>&1; then
+      CODE_SIGNING_ALLOWED=NO > "$out/build-for-testing-mac.log" 2>&1 \
+      && adhoc_sign "$products/Jukebox.app" >> "$out/build-for-testing-mac.log" 2>&1 \
+      && adhoc_sign_tests "$products/JukeboxUITests-Runner.app" >> "$out/build-for-testing-mac.log" 2>&1; then
     built_mac=true
   else
     problem "the build for the Mac's walk failed (build-for-testing-mac.log)"
   fi
   grep -E 'error:|\*\* TEST BUILD' "$out/build-for-testing-mac.log" | sed "s#$PWD/##g" | sort -u | head -60
+fi
+# The snapshots' own Mac app, in derived data of its own. Signed by the
+# linker alone: it runs from the command line, not sandboxed.
+built_snap=false
+if [[ " $ready " == *" mac-snap "* ]]; then
+  if bounded "$(allow 600)" xcodebuild build -project Jukebox.xcodeproj -scheme JukeboxSnapshots \
+      -configuration Debug -destination 'platform=macOS' -derivedDataPath "$work/derived-snap" \
+      CODE_SIGNING_ALLOWED=NO > "$out/build-snapshots.log" 2>&1; then
+    built_snap=true
+  else
+    problem "the build of the Mac's snapshots failed (build-snapshots.log)"
+  fi
+  grep -E 'error:|\*\* BUILD' "$out/build-snapshots.log" | sed "s#$PWD/##g" | sort -u | head -60
 fi
 endgroup
 
@@ -491,6 +624,49 @@ walk_again() {
   fi
 }
 
+# The Mac's snapshots: the app's screens drawn offscreen against the fake
+# Jellyfin, dark and light, into mac-snap/. Its files go to a home of its
+# own (CFFIXED_USER_HOME), not the laptop's Application Support; what
+# UserDefaults keeps of it (an id) goes after.
+snapshots_round() {
+  local started=$SECONDS limit pictures
+  group "The Mac's snapshots: $(cat "$out/mac-snap/device.txt")"
+  limit=$(allow 240)
+  if (( limit < 60 )); then
+    problem "mac-snap: not made, no time left"
+    echo "mac-snap: not made (no time left)" >> "$out/mac-snap/verdict.txt"
+    endgroup
+    return
+  fi
+  mkdir -p "$work/snap-home"
+  # A fake Jellyfin of their own, one port up: what the snapshots make ready
+  # (a queue, this Mac as a device) never shows in the walks' pictures, a
+  # "Playing on" card for the laptop on the iPhone's Home.
+  local snap_server
+  # shellcheck disable=SC2086 # two words, or none
+  "$work/fake-jellyfin" --port "$snap_port" --data dev/demo --song-lengths $handoff \
+    > "$out/fake-jellyfin-snap.log" 2>&1 < /dev/null &
+  snap_server=$!
+  for _ in $(seq 1 40); do
+    curl -fsS -m 2 http://localhost:$snap_port/System/Info/Public > /dev/null 2>&1 && break
+    sleep 0.5
+  done
+  CFFIXED_USER_HOME="$PWD/$work/snap-home" bounded "$limit" \
+    "$work/derived-snap/Build/Products/Debug/JukeboxSnapshots.app/Contents/MacOS/JukeboxSnapshots" \
+    "$PWD/$out/mac-snap" "localhost:$snap_port" -deviceID snapshots > "$out/mac-snap.log" 2>&1
+  kill "$snap_server" 2> /dev/null
+  wait "$snap_server" 2> /dev/null
+  # Preferences ignore CFFIXED_USER_HOME: whatever a store wrote there goes.
+  defaults delete com.tijmen.Jukebox.Snapshots > /dev/null 2>&1
+  rm -f "$HOME/Library/Preferences/com.tijmen.Jukebox.Snapshots.plist"
+  grep -E 'PICTURE|SNAPSHOT' "$out/mac-snap.log"
+  pictures=$(ls "$out/mac-snap"/*.png 2> /dev/null | wc -l | tr -d " ")
+  echo "mac-snap: $pictures pictures in $(( SECONDS - started )) s" | tee -a "$out/mac-snap/verdict.txt"
+  if [[ -s $out/mac-snap/missed.txt ]]; then sed -i '' 's/^/mac-snap: /' "$out/mac-snap/missed.txt"; fi
+  (( pictures > 0 )) || problem "mac-snap: no pictures (mac-snap.log)"
+  endgroup
+}
+
 # A device's round: its simulator booted and made to look the same each time,
 # a first start of the app, then its walks.
 round() {
@@ -499,6 +675,7 @@ round() {
   local udid=${!udid_var}
   group "The $kind: $(cat "$out/$kind/device.txt")"
   if [[ $kind == mac ]]; then
+    mac_settings
     # The runner's desktop dark, and black behind the window: a window's
     # picture is its rectangle, and what lies behind its round corners
     # shows in them.
@@ -509,17 +686,19 @@ round() {
     # (the runner's is 1024 x 768), and no Dock taking its foot.
     if bounded "$(allow 300)" xcrun swiftc -O dev/mac-display.swift -o "$work/mac-display" \
         > "$work/mac-display-build.log" 2>&1; then
-      "$work/mac-display" || problem "the Mac's display stayed too small for a window of 1440 x 900"
+      "$work/mac-display" "$work/display-mode.txt" \
+        || problem "the Mac's display stayed too small for a window of 1440 x 900"
     else
       problem "dev/mac-display.swift did not build"
       tail -20 "$work/mac-display-build.log"
     fi
-    defaults write com.apple.dock autohide -bool true && killall Dock
+    if [[ $saved_autohide != 1 ]]; then defaults write com.apple.dock autohide -bool true && killall Dock; fi
     # Scroll bars only while scrolling, as with a trackpad: a Mac with a
     # mouse, the runner, shows them always, under every shelf.
     defaults write -g AppleShowScrollBars -string WhenScrolling
     sleep 3
     walk mac testMac mac-dark 720
+    restore_mac
     endgroup
     return
   fi
@@ -581,11 +760,24 @@ round() {
       ;;
   esac
   bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1 || true
+  # The runner's own device emptied again (some 2 to 5 GB each): two
+  # runners' devices kept booted-in filled the MacBook's disk (run
+  # 44761905189, "No space left on device"). Kept, so it is reused; its
+  # next boot is a first one, a minute slower.
+  if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
+    bounded 120 xcrun simctl erase "$udid" > /dev/null 2>&1 || problem "the $kind simulator was not emptied"
+  fi
   endgroup
 }
 
 for kind in $ready; do
-  if [[ $kind == mac ]]; then
+  if [[ $kind == mac-snap ]]; then
+    if $built_snap && [[ -n $server ]]; then
+      snapshots_round
+    elif $built_snap; then
+      problem "mac-snap: not made, the fake Jellyfin is not running"
+    fi
+  elif [[ $kind == mac ]]; then
     if $built_mac; then round mac; fi
   elif $built; then
     round "$kind"
@@ -612,6 +804,7 @@ title_of() {
     ipad) echo "iPad" ;;
     ipad11) echo "iPad, upright" ;;
     mac) echo "Mac" ;;
+    mac-snap) echo "Mac, drawn offscreen" ;;
     *) echo "$1" ;;
   esac
 }

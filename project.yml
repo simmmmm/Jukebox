@@ -98,9 +98,9 @@ targets:
         NSAppTransportSecurity:
           NSAllowsArbitraryLoads: true
         NSLocalNetworkUsageDescription: Jukebox plays music from your Jellyfin, Navidrome or other music server on this network, and on the speakers and TVs you choose in Play On.
-        # Chromecasts, looked for by Bonjour only while Play On's list is open
-        # (Player/CastNetwork.swift).
-        NSBonjourServices: [_googlecast._tcp]
+        # Chromecasts and the Sonos rooms, looked for by Bonjour only while
+        # Play On's list is open (Player/CastNetwork.swift, SonosNetwork.swift).
+        NSBonjourServices: [_googlecast._tcp, _sonos._tcp]
         # "Play <album> in Jukebox" by voice, in the car above all: SiriKit's
         # media intent, handled in the app (Intents/SiriMedia.swift). The Mac
         # has no media intents and ignores these.
@@ -207,6 +207,37 @@ targets:
         # platform; a Mac bundle keeps its frameworks one folder up, as
         # Xcode's own Mac UI test target says.
         "LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]": ["$(inherited)", "@executable_path/../Frameworks", "@loader_path/../Frameworks"]
+
+  # The Mac's snapshots (JukeboxSnapshots/Snapshots.swift): the app's own
+  # views and stores, drawn offscreen against the fake Jellyfin, for the
+  # MacBook's runs, where the Mac's walk does not run. A Mac app of its own
+  # and not the app with an argument: its own bundle ID keeps its files and
+  # settings out of the real app's container on the photographer's laptop.
+  # Not sandboxed and signed by the linker alone: it is run from the
+  # command line, never installed. Built only by ci/screenshots.sh.
+  JukeboxSnapshots:
+    type: application
+    platform: macOS
+    sources:
+      - path: Jukebox
+        excludes:
+          # Its @main and its windows; the snapshots have their own main.
+          - App/JukeboxApp.swift
+          - Info.plist
+          - "*.entitlements"
+      - path: JukeboxSnapshots
+    dependencies:
+      - package: JukeboxKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.tijmen.Jukebox.Snapshots
+        PRODUCT_NAME: JukeboxSnapshots
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_LSUIElement: YES
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_HARDENED_RUNTIME: NO
+        ENABLE_PREVIEWS: NO
+        CODE_SIGN_STYLE: Automatic
 schemes:
   Jukebox:
     build:
@@ -223,3 +254,9 @@ schemes:
       captureScreenshotsAutomatically: false
     archive:
       config: Release
+  JukeboxSnapshots:
+    build:
+      targets:
+        JukeboxSnapshots: all
+    run:
+      config: Debug

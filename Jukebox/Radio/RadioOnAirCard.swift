@@ -112,13 +112,17 @@ struct RadioOnAirCard: View {
             RadioDial()
                 .padding(.top, Theme.Space.s)
 
-            HStack(spacing: Theme.Space.xl) {
+            // The screen's one filled button and its twin, as on the wide
+            // card and the station page (tells.md 6): "die play stop zijn
+            // niet onze normale buttons zo of wel?" (the photographer, 20
+            // November 2026).
+            HStack(spacing: Theme.Space.m) {
                 Button {
                     player.togglePlayPause()
                 } label: {
                     Text(player.isPlaying ? "Pause" : "Play")
                 }
-                .buttonStyle(.secondary)
+                .buttonStyle(.action)
                 .disabled(radio.isStarting)
                 Button {
                     // The station first, so the song that stops is not taken
@@ -128,7 +132,7 @@ struct RadioOnAirCard: View {
                 } label: {
                     Text("Stop")
                 }
-                .buttonStyle(.secondary)
+                .buttonStyle(.quietAction)
                 Spacer(minLength: 0)
                 if let track = player.currentTrack {
                     RadioThumbs(track: track)
