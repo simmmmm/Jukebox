@@ -118,7 +118,7 @@ enum Style {
         /* A tile's content sits on the page's grid; its hover reaches 8
            past it, so the button's padding is given back as margin. Its
            corners concentric with the art's: 6 and 8. */
-        button.tile { padding: 8px; margin: -8px; border-radius: 14px; background: none; box-shadow: none; font-weight: inherit; }
+        button.tile { padding: 8px; margin: -8px; border-radius: \(Int(Tokens.Radius.tileHover))px; background: none; box-shadow: none; font-weight: inherit; }
         button.tile:hover { background-color: alpha(currentColor, 0.07); }
         overlay.shelf { margin: -8px 0 -8px -8px; }
         /* A shelf's ‹ and ›: 32 round on the raised ground, fading in
@@ -138,7 +138,7 @@ enum Style {
            arts; LibraryPages.listPage gives the 8 back at the edges. */
         gridview > child { padding: 0 8px 8px 0; background: none; }
         gridview > child:hover, gridview > child:selected { background: none; }
-        gridview > child > .grid-tile { padding: 8px; border-radius: 14px; }
+        gridview > child > .grid-tile { padding: 8px; border-radius: \(Int(Tokens.Radius.tileHover))px; }
         gridview > child:hover > .grid-tile { background-color: alpha(currentColor, 0.07); }
         flowboxchild { padding: 0; }
         /* Downloaded's line with its arrow: words on the ground. */
@@ -171,7 +171,7 @@ enum Style {
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
-        .home-card { background-color: \(raised); border-radius: 18px; padding: 12px 36px 12px 12px; }
+        .home-card { background-color: \(raised); border-radius: \(Int(Tokens.Radius.card))px; padding: 12px 36px 12px 12px; }
         .home-card.notice { background-color: \(notice); }
         .home-card.notice > image { color: \(accent); }
         /* Each card one button (Pages.cardButton): its words as words,

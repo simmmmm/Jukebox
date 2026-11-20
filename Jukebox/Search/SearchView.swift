@@ -489,7 +489,7 @@ private struct SearchBrowse: View {
         .overlay {
             if recents.isEmpty && library.genres.isEmpty {
                 ContentUnavailableView {
-                    Label("Search your music", systemImage: "magnifyingglass")
+                    Label("Search your library", systemImage: "magnifyingglass")
                 } description: {
                     Text("Find artists, albums, songs and playlists on your \(library.serverKind) server.")
                 }

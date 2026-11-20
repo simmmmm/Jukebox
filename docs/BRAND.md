@@ -123,8 +123,10 @@ Playing's ground) and font sizes are outside the grid; a line marked
 
 ## Colours
 
-`Jukebox/Components/Theme.swift` (`Theme.Arch`, `Theme.ground`); the
-accent pair is the asset catalog's `AccentColor`. Contrast is WCAG 2's.
+The values live in `Jukebox/Components/Tokens.swift`, one source for
+every client (`docs/design/SYSTEM.md`); `Theme.swift` and Linux's
+`Style.swift` read them. The asset catalog's `AccentColor` repeats the
+accent pair. Contrast is WCAG 2's.
 
 | Name | Hex | Use | Contrast |
 |---|---|---|---|
@@ -417,7 +419,7 @@ The same brand on GNOME, in GTK 4 and libadwaita's own controls
 
 | Piece | Code |
 |---|---|
-| Colours, grounds, type, radius, headings, buttons, hairlines | `Theme.swift` (`Theme.Arch`, `Theme.accent`, `Theme.onAccent`, `Theme.ground`, `Font.serif`, `SectionHeader`, `ListHeading`, `Eyebrow`, `Hairline`, `.prominent`, `.secondary`), `Assets.xcassets/AccentColor` |
+| Colours, grounds, type, radius, headings, buttons, hairlines | `Tokens.swift` (the values), `Theme.swift` (`Theme.Arch`, `Theme.accent`, `Theme.onAccent`, `Theme.ground`, `Font.serif`, `SectionHeader`, `ListHeading`, `Eyebrow`, `Hairline`, `.prominent`, `.secondary`), `Assets.xcassets/AccentColor` |
 | Facts in words | `Components/RelativeDay.swift`; a station's kind, `StationText` in `Home/HomeParts.swift`; last played, `HomeShelves.stationDates` |
 | The mark | `Components/ArchMark.swift` (`ArchMark`, `ArchMarkFace`, `ArchLine`, `ArchCore`, `ArchWindow`); its numbers, `ArchCut`, in `Components/ArtMeasures.swift` |
 | Station artwork | `Components/StationArtwork.swift`; cover colour in `ArtworkView.swift` (`ImagePipeline.averageColor`) |

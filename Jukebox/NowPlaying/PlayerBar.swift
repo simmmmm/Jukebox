@@ -120,7 +120,7 @@ struct PlayerBar: View {
                         navigator.isNowPlayingPresented = true
                     } label: {
                         // Concentric with the cover's 6, 8 past it: 14.
-                        RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: Tokens.Radius.tileHover)
                             // Dark over a link, as Linux's: that is its own target.
                             .fill(Color.primary.opacity(isSongHovered && !isLinkHovered ? 0.07 : 0))
                             .contentShape(.rect)

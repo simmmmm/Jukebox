@@ -18,9 +18,11 @@ client in the same round.
 One source: `Jukebox/Components/Tokens.swift` (Foundation only, in
 `Package.swift`'s `shared` and the widget's sources). `Theme.swift`,
 `JukeboxWidget.swift` and Linux's `Style.swift`, `Drawings.swift` read it.
-Change a value there and nowhere else. The asset catalog's `AccentColor` is
-the one copy left (Xcode reads it before any code runs): keep it equal to
-`Tokens.accent`.
+A colour changes there and nowhere else. Space, the button's measures and
+the radii are read by both; the type sizes and the durations by Linux's CSS
+so far (Apple's wide pages still pass the sizes as numbers, its animations
+their own durations: Open, below). The asset catalog's `AccentColor` is a
+copy Xcode reads before any code runs: keep it equal to `Tokens.accent`.
 
 ### Colour
 
@@ -34,7 +36,7 @@ the one copy left (Xcode reads it before any code runs): keep it equal to
 | `raisedLighter` | `#F1EDE6` | `#242120` | Home's music to go on with |
 | `lifted` | `#FBF9F5` | `#242120` | Menus, popovers, dialogs |
 | `notice` | `#F6E6D1` | `#2E2517` | A soft warning (server out of reach) |
-| quiet ink | secondary label | 60 % of the text | Facts (Apple's `.secondary`, Linux's `.fact`) |
+| facts | the system's secondary | the text at 60 % | Facts: Apple's `.secondary`, Linux's `.fact` |
 
 Art only, never text: Cabinet `#1E0A07`, the mark's core `#F7A136` /
 `#FFF1D6`, the lit tubes `#F07E36` and `#FFB44C` (`Tokens.Arch`). Now
@@ -60,7 +62,8 @@ the system's sans. Times and counts in tabular figures.
 - **Space**, the 4-point grid: 4, 8, 12, 16, 24, 32 (`Tokens.Space`). A
   page's margin is 20 on the iPhone, `DesktopMeasures` wide.
   `dev/grid-check.sh` walks both.
-- **Radius**: 6 for artwork and the filled button and its twin. What holds
+- **Radius**: 6 for artwork, and for the filled button and its twin on
+  Apple (GNOME's own button corners on Linux, which are 6 too). What holds
   them is concentric: a tile's hover 14 (6 + 8), Home's cards 18 (6 + 12).
   The system's own controls keep the system's shapes.
 - **Motion**: 0.15 s for what appears under the pointer, 0.2 s for fades
@@ -96,8 +99,9 @@ The song playing in the accent. Songs are picked with Ctrl and Shift wide.
 - GNOME: `TrackRow`, `trackList` (`Parts.swift`), `listview.rows`.
 
 ### Cards and the raised ground
-Only Home's Your Station, the music to go on with and the offline notice
-stand on a card: `raised`, flat, 18 corners at 12 in. No cards in cards.
+Your Station before it plays (Home, and Radio on the iPhone), the music to go
+on with and the offline notice stand on a card: `raised`, flat, 18 corners
+at 12 in. No cards in cards.
 - Apple: `HomeCardButtonStyle`, `HomeOfflineNotice` (`Home/HomeView.swift`).
 - GNOME: `.home-card`, `.home-card.notice` (`Style.swift`, `Pages.swift`).
 
@@ -128,16 +132,16 @@ Every song's menu in the same sections and order, on every client:
 6. what cannot be undone (Delete Playlist), alone, last.
 
 An album's, artist's, playlist's or mix's menu and "…" keep this order with
-what applies (Play first on a tile, as it has no button). Menus sit on
-`lifted`.
+what applies (Play first on a tile, as it has no button). Linux's menus
+sit on `lifted`; Apple's are the system's own.
 - Apple: `TrackMenu` (`Components/TrackRow.swift`), `Section`s; `.contextMenu`
   on the iPhone, a secondary click wide; `MoreMenu` (`WidePage.swift`).
 - GNOME: `trackMenu`, `albumMenu`, `menuSections`, `popoverMenu`,
   `moreButton` (`Parts.swift`): GMenu sections.
 
 ### Sheets, drawers and popovers
-- Apple: `.sheet` for a task (Add to Playlist, Settings), `.popover` wide
-  for a choice; Play On in AirPlay's own picker.
+- Apple: `.sheet` for a task (Add to Playlist, Settings), a `Menu` or
+  `.popover` for a choice.
 - GNOME: `AdwDialog` for a task (`Choosers.swift`), `GtkPopoverMenu` for a
   choice, the panel as a drawer under 1280 (`Panel.swift`). Toasts for a
   moment's news (`MainWindow.toast`).
@@ -152,11 +156,12 @@ in it: one plain line at the margin, where its content would start.
 
 ### The player bar and the mini player
 Wide: the bar, 88 across the window's foot, three zones from
-`DesktopMeasures`; Play 40, the rest 32. The iPhone: the system's tab
-accessory (the mini player), the arch before a station's name.
+`DesktopMeasures`; Play 40, the rest 32. The iPhone: the mini player above
+the tab bar, the arch before a station's name. The Mini Player window on the
+Mac and Linux.
 - Apple: `PlayerBar` (`NowPlaying/PlayerBar.swift`), `MiniPlayer`
-  (`NowPlaying/MiniPlayer.swift`).
-- GNOME: `PlayerBar.swift`, `.player-bar`.
+  (`NowPlaying/MiniPlayer.swift`), `MacMiniPlayer.swift`.
+- GNOME: `PlayerBar.swift`, `.player-bar`; the Mini Player in `Extras.swift`.
 
 ### Artwork and arch artwork
 Square, 6 corners, uncropped: albums, playlists, mixes (a collage of four).
@@ -182,7 +187,7 @@ in (Sign In with Plex, Use Quick Connect) as words in the accent under it.
 
 | Question | Jukebox decides | Why |
 |---|---|---|
-| Heading case | Sentence case for every heading and empty state, in the serif; Title Case for buttons and menu items | Headings are Jukebox's voice (tells 4); controls are the platform's |
+| Heading case | Sentence case for every heading and empty state; Title Case for buttons, tabs and menu items | Headings are Jukebox's voice (tells 4); controls are the platform's |
 | A song's queue word | "Play Last" on Apple, "Add to Queue" on GNOME; same place in the menu | Each platform's own music app's word |
 | The heart's word | "Favorite" / "Undo Favorite" on Apple, "Add to" / "Remove from Favorites" on GNOME | The same |
 | More | "…" on Apple, "⋮" on GNOME | Each platform's glyph |
@@ -190,8 +195,9 @@ in (Sign In with Plex, Use Quick Connect) as words in the accent under it.
 | Alignment | Left, on the margin; centred only where the platform centres (the transport, the iPhone's page head, a welcome) | Editorial (tells 8) |
 | Accent | Copper and Glow everywhere, never the system's blue or GNOME's | One app |
 | Grounds | Jukebox's flat grounds, menus `lifted`; the system's where it draws a list (Settings, Preferences) | Flat grounds (tells 2) |
-| Filled buttons | One a screen, plain, 6 corners; no GNOME pill, no Apple capsule | One radius (tells 6) |
-| Destructive items | Last, alone in their section; Apple's red role | GNOME's order, Apple's colour |
+| Filled buttons | One a screen, plain; 6 corners on Apple, GNOME's own on Linux; never a pill or capsule | One radius (tells 6) |
+| Menus' ground | Linux's on `lifted`; Apple's the system's | GNOME's grey popovers read as another app's; Apple's menus are glass, drawn by the system |
+| Destructive items | Remove from a list first, in its list's section; what cannot be undone (Delete) last and alone; Apple's red role on both | GNOME's order, Apple's colour |
 | Wide window | Linux's layout on the iPad and the Mac; native only where the OS has a place (menu bar, toolbar search, traffic lights) | "ik wil dat de linux app en de apple app 1:1 op elkaar lijken" |
 
 ## Parity checklist
@@ -212,9 +218,10 @@ Walk it before any screen ships, on every client.
 
 ## Audit, 20 November 2026
 
-Walked: Linux at 1440×900 dark and light and 400×800
-(`dev/linux-screens.sh`), and CI's screenshots of main 6b73549 (iPhone,
-iPad, Mac snapshots), with the menus read in the code.
+Walked: Linux at 1440×900 dark and light and 400×800 light
+(`dev/linux-screens.sh`) beside CI's screenshots of main 6b73549: the iPad's
+walk against Linux's twins, the Mac's light snapshots against Linux light,
+the iPhone against 400×800. The menus read in the code on both.
 
 ### Fixed
 
@@ -233,17 +240,33 @@ iPad, Mac snapshots), with the menus read in the code.
 - Linux's "No music yet" had no Check Again; the Mac's had (`Pages.swift`).
 - Linux's Sign In with Plex and Use Quick Connect were grey flat buttons;
   now words in the accent, as the Mac's (`SignInPage.swift`).
+- Linux's panel tab said "Now playing", the Mac's "Now Playing"; a control,
+  so header capitals (`Panel.swift`).
 
 ### Open, with a proposal
 
 - **Two filled buttons**: `.prominent` (40 wide, 44 on the iPhone, full
-  width) and `.action` (36). Proposal: one, 36, and Sign In compact on
-  every client.
+  width) and `.action` (36); on Linux Sign In and Try Again are a plain
+  `suggested-action` without `page-button`. Proposal: one, 36, and Sign In
+  compact on every client.
+- **The iPhone's album page**: the artist in the accent; wide and Linux
+  plain (`AlbumsView.swift`). Proposal: plain, as a link is elsewhere.
+- **Played lately on the iPhone**: the day at the row's end; wide and Linux
+  after the artist ("Clara Venn · Today") (`HomeView.swift`).
+- **Copy in empty states**: Apple's now say "your music" where they said
+  "Your Library" ("Could not load your music", "Loading your music"), as
+  Linux's; the photographer's to override.
 - **The welcome's mark**: a sleeve with its record on Apple, the icon's
   tile on Linux (`OnboardingView.swift`, `SignInPage.swift`). Proposal: the
   sleeve on both, drawn with `Draw` on Linux.
 - **The artist page**: Play alone wide, Play and Shuffle on the iPhone
   (`ArtistsView.swift`). Proposal: the pair everywhere.
+- **Album page "…"**: Favorite in it on Apple as well as the heart beside
+  it; Linux has the heart only (`AlbumsView.swift`, `Pages.swift`).
+- **Artist tiles and rows**: Start Radio and Share in one section on Apple,
+  two on Linux; Search's artist menu on Apple has no Share
+  (`ArtistsView.swift`, `SearchView.swift`).
+- **Genre tiles in Search**: Start Radio on Apple; no menu on Linux.
 - **Album menu on tiles**: Linux has Play and no heart, Apple the heart and
   no Play; Home's and Search's album menus on Apple are short
   (`HomeParts.swift` `HomeAlbumMenu`, `SearchView.swift`). Proposal: one
@@ -266,5 +289,10 @@ iPad, Mac snapshots), with the menus read in the code.
 - **In-page empty states**: Apple centres a `ContentUnavailableView`
   (Favorites, Downloaded, a playlist), Linux writes one line at the margin.
   Proposal: Linux's line on Apple too.
-- **Type sizes on Apple**: wide pages pass Linux's sizes as numbers to
-  `desktopFont`. Proposal: read `Tokens.Size`.
+- **Type sizes and durations on Apple**: wide pages pass Linux's sizes as
+  numbers to `desktopFont`; animations name their own durations (0.15 to
+  1.1 s). Proposal: read `Tokens.Size` and `Tokens.Motion`.
+- **Hex left outside the tokens**: `NowPlayingGround.roomGround` (Night),
+  `SleeveRecord`'s ink (Paper), `OnboardingView`'s card, `WideShell`'s room
+  shade. Proposal: Night and Paper from `Tokens.Arch`; the rest are the
+  record's and the room's own art.

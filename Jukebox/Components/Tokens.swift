@@ -34,7 +34,7 @@ nonisolated enum Tokens {
     /// dat ze goed zichtbaar zijn in dark en light mode" (20 November 2026).
     static let quietInk = ColorPair(light: 0x953F12, dark: Arch.glow)
     /// The ground the main screens stand on, flat: Paper and Night.
-    static let ground = ColorPair(light: 0xF6F3EE, dark: 0x121110)
+    static let ground = ColorPair(light: Arch.paper, dark: Arch.night)
     /// One step up: the wide window's sidebar, panel and bar; Home's cards.
     static let raised = ColorPair(light: 0xECE7DF, dark: 0x1B1918)
     /// A step lighter than raised: Home's music to go on with ("misschien in
