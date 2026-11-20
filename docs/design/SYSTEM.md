@@ -18,11 +18,11 @@ client in the same round.
 One source: `Jukebox/Components/Tokens.swift` (Foundation only, in
 `Package.swift`'s `shared` and the widget's sources). `Theme.swift`,
 `JukeboxWidget.swift` and Linux's `Style.swift`, `Drawings.swift` read it.
-A colour changes there and nowhere else. Space, the button's measures and
-the radii are read by both; the type sizes and the durations by Linux's CSS
-so far (Apple's wide pages still pass the sizes as numbers, its animations
-their own durations: Open, below). The asset catalog's `AccentColor` is a
-copy Xcode reads before any code runs: keep it equal to `Tokens.accent`.
+A colour, a size or a duration changes there and nowhere else; both
+clients read every group (the welcome's build-up keeps its own timing, as
+art). The asset catalog's `AccentColor` is a copy Xcode reads before any
+code runs: `dev/accent-check.sh` holds it equal to `Tokens.accent`, and
+`ci/app.sh` runs it.
 
 ### Colour
 
@@ -67,22 +67,27 @@ the system's sans. Times and counts in tabular figures.
   them is concentric: a tile's hover 14 (6 + 8), Home's cards 18 (6 + 12).
   The system's own controls keep the system's shapes.
 - **Motion**: 0.15 s for what appears under the pointer, 0.2 s for fades
-  and hovers, 0.3 s for lyrics' lines (`Tokens.Motion`).
+  and hovers, 0.25 s for a part of the window moving, 0.3 s for lyrics'
+  lines, up to 0.5 s for a cover's colours taking the room (`Tokens.Motion`).
+- **Drawn art**: the record, the sleeve and the room's own colours
+  (`Tokens.Art`), never for chrome.
 
 ## Components
 
 Each with its rule, its Apple form and its GNOME form.
 
 ### The filled button and its quiet twin
-One filled button a screen: Play, Sign In, Try Again. Beside it in a page's
-row, its twin: same size, on the accent at 12 %, `quietInk` (Shuffle, New
-Picks, Stop, Continue). 36 tall, 96 wide at the least, 15 bold, 6 corners.
-Play and its twin always as a pair, Play first.
+One filled button a screen: Play, Sign In, Try Again, one size everywhere,
+compact. Beside it in a page's row, its twin: same size, on the accent at
+12 %, `quietInk` (Shuffle, New Picks, Stop, Continue). 36 tall, 96 wide at
+the least, 15 bold, 6 corners. Play and its twin always as a pair, Play
+first, on every page that plays (an album's, an artist's, a playlist's, a
+mix's).
 - Apple: `.buttonStyle(.action)` / `.quietAction`, `PagePlayButtons`
-  (`Components/Theme.swift`). Sign In and Try Again: `.prominent`.
+  (`Components/Theme.swift`); `.prominent` is the same filled button.
 - GNOME: `playButton` / `quietButton` (`Linux/App/Parts.swift`), CSS
-  `button.page-button`, `button.quiet` (`Style.swift`). Sign In:
-  `suggested-action`.
+  `button.page-button`, `button.quiet` (`Style.swift`); Sign In and Try
+  Again `suggested-action page-button`.
 
 ### Text buttons and plain symbols
 Every other action is a word in the accent or a plain symbol. Never an
@@ -132,8 +137,15 @@ Every song's menu in the same sections and order, on every client:
 6. what cannot be undone (Delete Playlist), alone, last.
 
 An album's, artist's, playlist's or mix's menu and "…" keep this order with
-what applies (Play first on a tile, as it has no button). Linux's menus
-sit on `lifted`; Apple's are the system's own.
+what applies (Play first on a tile, as it has no button; Play and Shuffle
+on a mix's). A page's "…" leaves out what has a button beside it (the
+heart wide). A station's tile: Play Station (Show Full Player on the air) ·
+Go to Station. The song playing (the bar, Full Player): a song's menu with
+the station's lessons as its list's section. The primary menu: Private
+Listening, Settings or Preferences, the accounts, Add Account…, Sign Out…
+(the Mac's in Settings), and where the platform has them Mini Player,
+Keyboard Shortcuts, About. Linux's menus sit on `lifted`; Apple's are the
+system's own.
 - Apple: `TrackMenu` (`Components/TrackRow.swift`), `Section`s; `.contextMenu`
   on the iPhone, a secondary click wide; `MoreMenu` (`WidePage.swift`).
 - GNOME: `trackMenu`, `albumMenu`, `menuSections`, `popoverMenu`,
@@ -149,9 +161,10 @@ sit on `lifted`; Apple's are the system's own.
 ### Notices and empty states
 A whole window's state (loading, couldn't load, no music): the platform's
 status page, centred, sentence-case title, one action. A page with nothing
-in it: one plain line at the margin, where its content would start.
+in it: one plain line at the margin, where its content would start, in the
+same words on every client.
 - Apple: `ContentUnavailableView` (`Home/HomeParts.swift`,
-  `Library/LibraryParts.swift`).
+  `Library/LibraryParts.swift`); `EmptyLine` (`Theme.swift`).
 - GNOME: `emptyPage` (status page) and `emptyLine` (`Parts.swift`).
 
 ### The player bar and the mini player
@@ -177,11 +190,14 @@ shows the Search page. The iPhone: the tab bar's own Search tab.
 - GNOME: `Nav.searchField`, `Pages.swift`.
 
 ### The welcome and sign-in pages
-Centred, as a platform's welcome is: the mark, the name in the serif, one
-line of what it is, the fields in one group, Sign In filled, the other ways
-in (Sign In with Plex, Use Quick Connect) as words in the accent under it.
-- Apple: `OnboardingView` (`Settings/OnboardingView.swift`).
-- GNOME: `SignInPage.swift`.
+Centred, as a platform's welcome is: the mark on its sleeve with the record
+half out, the name in the serif, one line of what it is, the fields in one
+group, Sign In filled and compact, the other ways in (Sign In with Plex, Use
+Quick Connect) as words in the accent under it.
+- Apple: `OnboardingView` (`Settings/OnboardingView.swift`), `WelcomeSleeve`
+  (`ShellAppMark.swift`), built up as a jukebox switched on.
+- GNOME: `SignInPage.swift`, `Draw.welcomeSleeve` (`Drawings.swift`), at
+  rest.
 
 ## Where the HIGs differ
 
@@ -243,56 +259,54 @@ the iPhone against 400×800. The menus read in the code on both.
 - Linux's panel tab said "Now playing", the Mac's "Now Playing"; a control,
   so header capitals (`Panel.swift`).
 
-### Open, with a proposal
+### Fixed in the second round ("Los ze op", 20 November 2026)
 
-- **Two filled buttons**: `.prominent` (40 wide, 44 on the iPhone, full
-  width) and `.action` (36); on Linux Sign In and Try Again are a plain
-  `suggested-action` without `page-button`. Proposal: one, 36, and Sign In
-  compact on every client.
-- **The iPhone's album page**: the artist in the accent; wide and Linux
-  plain (`AlbumsView.swift`). Proposal: plain, as a link is elsewhere.
-- **Played lately on the iPhone**: the day at the row's end; wide and Linux
-  after the artist ("Clara Venn · Today") (`HomeView.swift`).
-- **Copy in empty states**: Apple's now say "your music" where they said
-  "Your Library" ("Could not load your music", "Loading your music"), as
-  Linux's; the photographer's to override.
-- **The welcome's mark**: a sleeve with its record on Apple, the icon's
-  tile on Linux (`OnboardingView.swift`, `SignInPage.swift`). Proposal: the
-  sleeve on both, drawn with `Draw` on Linux.
-- **The artist page**: Play alone wide, Play and Shuffle on the iPhone
-  (`ArtistsView.swift`). Proposal: the pair everywhere.
-- **Album page "…"**: Favorite in it on Apple as well as the heart beside
-  it; Linux has the heart only (`AlbumsView.swift`, `Pages.swift`).
-- **Artist tiles and rows**: Start Radio and Share in one section on Apple,
-  two on Linux; Search's artist menu on Apple has no Share
-  (`ArtistsView.swift`, `SearchView.swift`).
-- **Genre tiles in Search**: Start Radio on Apple; no menu on Linux.
-- **Album menu on tiles**: Linux has Play and no heart, Apple the heart and
-  no Play; Home's and Search's album menus on Apple are short
-  (`HomeParts.swift` `HomeAlbumMenu`, `SearchView.swift`). Proposal: one
-  `albumMenu` on Apple, Linux's items plus the heart.
-- **Playlist rows**: Linux has Move Up and Move Down, Apple only Remove
-  (`TrackRow.swift`). Proposal: add them to `TrackMenu`'s first section.
-- **Picked songs**: Linux keeps the list's section, Apple drops it.
-- **Mix and station tiles**: Apple has Shuffle, Play Next, Show Station;
-  Linux only Play (`HomeParts.swift`, `Pages.swift`). Proposal: Linux's tiles
-  take Apple's items.
-- **Mix "…"**: Save as Playlist… on Apple only.
-- **The bar's and Full Player's "…"**: Apple shows the whole `TrackMenu`;
-  Linux's `songMenu` has the station's lessons and no Play Next or links
-  (`PlayerBar.swift` on both). Proposal: `TrackMenu` with the station's
-  section first, on both.
-- **Primary menu**: Linux has Sign Out…, Mini Player, Keyboard Shortcuts,
-  About; the iPad's has Settings… and Private Listening
-  (`MainWindow.swift`, `WideShell.swift`).
-- **Recent searches**: Remove on Apple only.
-- **In-page empty states**: Apple centres a `ContentUnavailableView`
-  (Favorites, Downloaded, a playlist), Linux writes one line at the margin.
-  Proposal: Linux's line on Apple too.
-- **Type sizes and durations on Apple**: wide pages pass Linux's sizes as
-  numbers to `desktopFont`; animations name their own durations (0.15 to
-  1.1 s). Proposal: read `Tokens.Size` and `Tokens.Motion`.
-- **Hex left outside the tokens**: `NowPlayingGround.roomGround` (Night),
-  `SleeveRecord`'s ink (Paper), `OnboardingView`'s card, `WideShell`'s room
-  shade. Proposal: Night and Paper from `Tokens.Arch`; the rest are the
-  record's and the room's own art.
+- **One filled button**: `.prominent` is `.action`'s filled button, 36 and
+  compact (`Theme.swift`); Linux's Sign In and Try Again are `page-button`
+  (`SignInPage.swift`, `Pages.swift`).
+- **One welcome**: Linux draws the sleeve with its record
+  (`Draw.welcomeSleeve`, `SignInPage.swift`).
+- **The artist page**: Play and Shuffle everywhere (`ArtistsView.swift`,
+  `Pages.swift`).
+- **Album menus**: one on every tile and row, Linux's items plus the heart,
+  Play first (`LibraryAlbumMenu` for Home and Search too, `albumMenu`); the
+  album page's "…" without Play, and without the heart where it stands
+  beside it (`AlbumsView.swift`, `Pages.swift`).
+- **Artist tiles and rows**: Start Radio · Share in two sections; Search's
+  with Share (`ArtistsView.swift`, `SearchView.swift`).
+- **Genre tiles**: Start Radio on Linux's too (`Pages.swift`).
+- **Playlist rows**: Move Up and Move Down on Apple (`TrackRow.swift`,
+  `PlaylistsView.swift`). Picked songs: no "N Songs" heading on Apple.
+- **Mix and station tiles**: the same items on both (`HomeParts.swift`,
+  `Pages.swift`, `Parts.swift` `stationMenu`); "Go to Station" on both.
+- **Mix "…"**: Save as Playlist… on Linux too.
+- **The bar's and Full Player's "…"**: a song's menu with the station's
+  lessons first, on both (`TrackMenu`, Linux's `songMenu`).
+- **Primary menu**: Sign Out… in the iPad's ≡ (`AccountMenu.swift`,
+  `WideShell.swift`); Linux has Private Listening already.
+- **Recent searches**: Remove on Linux too (`Pages.swift`).
+- **In-page empty states**: one line at the margin on Apple too, Linux's
+  words (`EmptyLine`; Favorites, Downloaded, Playlists, a playlist, Genres,
+  Songs, Your Year, Lyrics).
+- **The iPhone's album page**: the artist plain. **Played lately**: "Artist
+  · Today" on every client (`AlbumsView.swift`, `HomeView.swift`).
+- **Tokens**: Apple's wide type sizes and durations, the drawn art's
+  colours on both, the welcome's field ground (`Tokens.Size`,
+  `Tokens.Motion`, `Tokens.Art`, `Tokens.field`).
+- **AccentColor**: checked against `Tokens.accent` (`dev/accent-check.sh`).
+
+### Still open
+
+- **Sign Out… on the Mac**: in Settings, not the Account menu
+  (`Commands.swift` has nowhere to ask first).
+- **Search's genres**: Apple's Search shows genres, Linux's has no genre
+  section.
+- **Several picked songs**: neither client offers Remove or Move for all of
+  them (`removal` is per song on both).
+- **The iPhone's mini players**: their song menu has no station section yet
+  (`MiniPlayer*.swift`).
+- **A station's lesson word**: "Dislike" on Apple, "Not This" on Linux.
+- **The welcome's build-up**: Apple's arches come on one by one; Linux's
+  picture stands still.
+- **Copy in empty states**: Apple's say "your music" where they said "Your
+  Library", as Linux's; the photographer's to override.
