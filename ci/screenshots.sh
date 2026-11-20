@@ -306,6 +306,7 @@ pick() {
       else sort_by([version, ((.supportedDeviceTypes // []) | length)]) | last end
     | . as $runtime
     | [$data.devices[$runtime.identifier][]? | select(.isAvailable)
+        | select(.name | contains("(runner ") | not)
         | {rank: (.name | rank), name, udid} | select(.rank != null)]
     | if length > 0 then
         max_by([.rank, .name, .udid]) | [.udid, .name, ($runtime.name // "iOS")] | @tsv
@@ -317,6 +318,33 @@ pick() {
         | max_by([.rank, .name, .identifier])
         | ["create", .name, .identifier, $runtime.identifier, ($runtime.name // "iOS")] | @tsv
       end'
+}
+
+# On the MacBook two runners (mac-5, mac-6) walk at once, so each walks a
+# device of its own and never boots the other's: "<device> (runner
+# <name>)", of the same kind and system as the walk's, made once and used
+# again on every later run (the disk has some 20 GB to spare; a device per
+# run would fill it). The original devices stay as they are. Its udid, from
+# the picked device's udid and name.
+own_device() {
+  local picked=$1 name="$2 (runner ${RUNNER_NAME:-local})" found type runtime_id
+  IFS=$'\t' read -r type runtime_id < <(jq -r --arg udid "$picked" '.devices | to_entries[]
+    | .key as $runtime | .value[] | select(.udid == $udid) | [.deviceTypeIdentifier, $runtime] | @tsv' \
+    "$work/simctl.json")
+  # Made just now by pick, so not in the list read before: that one.
+  if [[ -z $type || -z $runtime_id ]]; then
+    echo "$picked"
+    return 0
+  fi
+  # Of the same system: a newer Xcode's runtime gets a device of its own.
+  found=$(jq -r --arg name "$name" --arg runtime "$runtime_id" \
+    '[.devices[$runtime][]? | select(.isAvailable and .name == $name) | .udid][0] // empty' "$work/simctl.json")
+  if [[ -n $found ]]; then
+    echo "$found"
+    return 0
+  fi
+  echo "Making $name, once." >&2
+  sim create "$name" "$type" "$runtime_id"
 }
 
 ready=
@@ -350,6 +378,10 @@ for kind in $devices; do
     else
       IFS=$'\t' read -r udid name runtime <<< "$line"
     fi
+  fi
+  if [[ -n $udid && ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
+    udid=$(own_device "$udid" "$name" 2>> "$work/pick-$kind.err") || udid=
+    name="$name (runner ${RUNNER_NAME:-local})"
   fi
   if [[ -n $udid ]]; then
     printf -v "udid_$kind" '%s' "$udid"
