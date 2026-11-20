@@ -11,6 +11,22 @@ struct AlbumMergeTests {
     func artist(_ name: String) -> ArtistRef { ArtistRef(id: nil, name: name) }
     func day(_ n: Int) -> Date { Date(timeIntervalSince1970: Double(n) * 86_400) }
 
+    @Test("A second copy of the album: each song once, the numbered one kept")
+    func secondCopy() {
+        let tagged = Album(id: "a1", name: "Hold Your Breath", artists: [artist("Tash Sultana")], year: 2019)
+        let copy = Album(id: "a2", name: "Hold Your Breath", artists: [artist("Tash Sultana"), artist("Tash Sultana")], year: 2019)
+        let tracks = [Track(id: "c1", name: "bullet lovers", albumID: "a2", duration: 241),
+                      Track(id: "t1", name: "Bullet Lovers", albumID: "a1", trackNumber: 2, duration: 240),
+                      Track(id: "t2", name: "Hole", albumID: "a1", trackNumber: 6, duration: 200),
+                      Track(id: "c2", name: "Hole", albumID: "a2", duration: 201),
+                      Track(id: "c3", name: "Dirty Water", albumID: "a2", duration: 180)]
+        let (albums, kept) = AlbumMerge.merge(albums: [tagged, copy], tracks: tracks)
+        #expect(albums.count == 1)
+        // The numbered copies stay, the bare ones go; a song only the copy has stays.
+        #expect(kept.map(\.id) == ["t1", "t2", "c3"])
+        #expect(albums[0].trackCount == 3)
+    }
+
     @Test("Jack Johnson: the clean name, every track, the newest date")
     func jackJohnson() {
         let clean = Album(id: "a1", name: "From Here To Now To You", artists: [artist("Jack Johnson")],
@@ -24,7 +40,8 @@ struct AlbumMergeTests {
         #expect(albums.count == 1)
         #expect(albums[0].id == "a1")
         #expect(albums[0].artistLine == "Jack Johnson")
-        #expect(albums[0].trackCount == 12)
+        // Counted from the tracks the library has, after any copy went.
+        #expect(albums[0].trackCount == 2)
         #expect(albums[0].dateAdded == day(5))
         #expect(moved.map(\.albumID) == ["a1", "a1"])
         #expect(moved[1].albumImageTag == "t1")

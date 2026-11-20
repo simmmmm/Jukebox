@@ -48,18 +48,56 @@ public enum AlbumMerge {
         guard !replaced.isEmpty else { return (albums, tracks) }
         let coverTag = Dictionary(mergedAt.values.map { ($0.id, $0.imageTag) }, uniquingKeysWith: { a, _ in a })
 
-        var outAlbums: [Album] = []
-        outAlbums.reserveCapacity(albums.count - dropped.count)
-        for (i, album) in albums.enumerated() where !dropped.contains(i) {
-            outAlbums.append(mergedAt[i] ?? album)
-        }
-        let outTracks = tracks.map { track -> Track in
+        let moved = tracks.map { track -> Track in
             guard let id = track.albumID, let kept = replaced[id] else { return track }
             var moved = track
             moved.albumID = kept
             // The cover's tag goes with the album id it is asked under.
             moved.albumImageTag = coverTag[kept] ?? nil
             return moved
+        }
+        // A part is often the same songs again: a second copy of the album,
+        // untagged or tagged otherwise, which merged showed every song twice,
+        // the second time without its number ("waarom houd de telling opeens
+        // op bij sommige albums?", the photographer, 20 November 2026). In a
+        // merged album a song is kept once: same title, folded, and the same
+        // length within 5 s; the copy with a track number wins.
+        let mergedIDs = Set(mergedAt.values.map(\.id))
+        var seen: [ItemID: [(name: String, duration: TimeInterval)]] = [:]
+        var outTracks: [Track] = []
+        outTracks.reserveCapacity(moved.count)
+        let numberedFirst = moved.indices.sorted { a, b in
+            (moved[a].trackNumber == nil ? 1 : 0, a) < (moved[b].trackNumber == nil ? 1 : 0, b)
+        }
+        var keep = Set<Int>()
+        for i in numberedFirst {
+            let track = moved[i]
+            guard let id = track.albumID, mergedIDs.contains(id) else { keep.insert(i); continue }
+            let name = fold(track.name)
+            if seen[id, default: []].contains(where: { $0.name == name && abs($0.duration - track.duration) <= 5 }) {
+                continue
+            }
+            seen[id, default: []].append((name, track.duration))
+            keep.insert(i)
+        }
+        for i in moved.indices where keep.contains(i) { outTracks.append(moved[i]) }
+
+        var counted: [ItemID: (count: Int, duration: TimeInterval)] = [:]
+        for track in outTracks {
+            guard let id = track.albumID, mergedIDs.contains(id) else { continue }
+            counted[id, default: (0, 0)].count += 1
+            counted[id, default: (0, 0)].duration += track.duration
+        }
+        var outAlbums: [Album] = []
+        outAlbums.reserveCapacity(albums.count - dropped.count)
+        for (i, album) in albums.enumerated() where !dropped.contains(i) {
+            guard var whole = mergedAt[i] else { outAlbums.append(album); continue }
+            // Counted again after the copies went.
+            if let own = counted[whole.id] {
+                whole.trackCount = own.count
+                whole.duration = own.duration
+            }
+            outAlbums.append(whole)
         }
         return (outAlbums, outTracks)
     }
