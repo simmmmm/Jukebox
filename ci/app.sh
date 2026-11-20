@@ -125,22 +125,18 @@ screenshots() {
   return 0
 }
 
-# The iPhone's app signed ad hoc, as the Mac's archive is: no certificate,
-# no profile, but the signature carries the entitlements of
-# Jukebox/Jukebox-iOS.entitlements, CarPlay audio. The export reads the
-# entitlements from the archived app's signature and asks the store's profile
-# for them; an app built with CODE_SIGNING_ALLOWED=NO has no signature, and
-# its upload went without CarPlay. iOS allows ad hoc signing only when asked
-# (AD_HOC_CODE_SIGNING_ALLOWED; the Mac's default).
-ios_adhoc=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES
-           PROVISIONING_PROFILE_SPECIFIER="")
-
-# The build of every push, compiled unsigned (CODE_SIGNING_ALLOWED=NO) and
-# signed ad hoc here, with the same entitlements files. On the photographer's
-# MacBook (macOS 27) Xcode stops an ad hoc build whose entitlements need a
-# profile, App Groups, CarPlay, Siri, before it compiles: "requires a
-# provisioning profile", on Xcode 26.3 and 27.2 alike, where GitHub's
-# macOS 26 builds the same flags. Signed by codesign the app carries its
+# The apps signed ad hoc: no certificate, no profile, but the signature
+# carries the entitlements of the entitlements files, CarPlay audio, Siri,
+# the App Group, the Mac's sandbox. The export reads the entitlements from
+# the archived app's signature and asks the store's profile for them; an app
+# built with CODE_SIGNING_ALLOWED=NO and left so has no signature, and its
+# upload went without CarPlay. So the builds and the archives compile
+# unsigned (CODE_SIGNING_ALLOWED=NO) and are signed ad hoc here, with the
+# same entitlements files. Xcode's own ad hoc signing, as before, works on
+# GitHub's macOS 26 only: on the photographer's MacBook (macOS 27) Xcode
+# stops a build or an archive whose entitlements need a profile, App
+# Groups, CarPlay, Siri, before it compiles, "requires a provisioning
+# profile", on Xcode 26.3 and 27.2 alike. Signed by codesign the app carries its
 # entitlements as Xcode's own ad hoc signature did, so carplay_signed and
 # widget_signed read the same thing on both runners. Inside out, without
 # --deep, so the widget keeps its own entitlements.
@@ -295,7 +291,7 @@ auth=(-allowProvisioningUpdates
       -authenticationKeyID "$ASC_KEY_ID"
       -authenticationKeyIssuerID "$ASC_ISSUER_ID")
 
-# Archived signed ad hoc (ios_adhoc, above), so the entitlements are in the
+# Archived signed ad hoc (adhoc_sign, above), so the entitlements are in the
 # archive; signed for the store only at export, by Apple's cloud signing with
 # the API key, so the runner needs no certificate of its own. Signing the
 # archive with a development identity made a new Apple Development
@@ -305,9 +301,12 @@ auth=(-allowProvisioningUpdates
 set +e
 xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
   -destination 'generic/platform=iOS' -archivePath build/Jukebox.xcarchive \
-  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" "${ios_adhoc[@]}" \
+  DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" CODE_SIGNING_ALLOWED=NO \
   > build/logs/archive.log 2>&1
 status=$?
+if [[ $status == 0 ]]; then
+  adhoc_sign build/Jukebox.xcarchive/Products/Applications/Jukebox.app || status=1
+fi
 set -e
 { grep -E 'error:|ARCHIVE (SUCCEEDED|FAILED)' build/logs/archive.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/archive-errors.txt
 head -200 build/logs/archive-errors.txt
@@ -382,9 +381,12 @@ else
   xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
     -destination 'generic/platform=macOS' -archivePath build/Jukebox-mac.xcarchive \
     DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" \
-    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" \
+    CODE_SIGNING_ALLOWED=NO \
     > build/logs/archive-mac.log 2>&1
   mac_status=$?
+  if [[ $mac_status == 0 ]]; then
+    adhoc_sign build/Jukebox-mac.xcarchive/Products/Applications/Jukebox.app || mac_status=1
+  fi
   if [[ $mac_status == 0 ]]; then
     widget_signed build/Jukebox-mac.xcarchive/Products/Applications/Jukebox.app "Mac archive" || mac_status=1
   fi
