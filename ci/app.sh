@@ -14,6 +14,22 @@
 # reads without opening the log.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# On the MacBook (a self-hosted runner) the folder outlives a run: a run
+# cancelled by the next push may still have an xcodebuild writing in
+# build/, and the next run then broke on its build database ("disk I/O
+# error", run 44755707683). So first whatever still holds a file in build/
+# is stopped, then build/ goes, whole. Only this checkout's processes: the
+# Mac's other runners (Numa's) build in folders of their own.
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted && -d build ]]; then
+  pids=$(lsof -t +D build 2>/dev/null | sort -u || true)
+  if [[ -n $pids ]]; then
+    echo "Stopping what a run before left writing in build/: $pids"
+    kill $pids 2>/dev/null || true
+    sleep 3
+    kill -9 $pids 2>/dev/null || true
+  fi
+  rm -rf build
+fi
 mkdir -p build/logs
 
 # The Mac compiles (run 43621164893, 14 November 2026): its build is part of
