@@ -350,7 +350,10 @@ final class MacWalk {
             return false
         }
 
-        try enter("localhost:8096", into: "signIn.address")
+        // As the iPhone's walk has it (fakeServer, ScreenshotTests.swift,
+        // which is the iPhone's alone): localhost:8096 unless told.
+        let given = ProcessInfo.processInfo.environment["JUKEBOX_SERVER"] ?? ""
+        try enter(given.isEmpty ? "localhost:8096" : given, into: "signIn.address")
         try enter("test", into: "signIn.user")
         try enter("test", into: "signIn.password")
         XCTExpectFailure("Return in the screenshot walk", strict: false) {
