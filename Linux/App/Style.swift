@@ -211,6 +211,9 @@ enum Style {
         listview.queue { padding: 12px 0 16px; }
         listview.queue > row { padding: 0 16px; }
         .queue-row { min-height: 48px; }
+        /* Remove: there while the pointer is over the row, or the keys on it. */
+        .queue-row .queue-remove { opacity: 0; transition: opacity 150ms ease-out; }
+        .queue-row:hover .queue-remove, .queue-row .queue-remove:focus-visible { opacity: 1; }
         .queue-row.covered { min-height: 64px; }
         .queue-row.station { min-height: 72px; }
         /* History: there, but quieter than what is to come (the iPhone's 50 %). */

@@ -93,7 +93,7 @@ Buckets:
 | `play_started` | `from` (`album`, `playlist`, `mix`, `songs`, `favorites`, `search`, `artist`, `genre`, `station`, `other`, `siri`, `widget`), `shuffled` (bool) | Where music is started from; is Shuffle used; is Siri; is the widget | `AudioPlayer.play`, `playRadio`; `siri` for what Siri or Shortcuts played, `widget` for a mix the widget played (`Stats.nextFrom`); a station they start counts `station` here and `siri` or `widget` in `station_started` |
 | `station_started` | `seed` (`track`, `artist`, `album`, `genre`, `decade`, `collection`, `personal`, `discovery`, `favorites`), `from` (`page`, `tile_menu`, `hero`, `menu`, `autoplay`, `search`, `carplay`, `siri`, `widget`, `play_key`, `dock`, `launcher`; `picker` is reserved) | Which stations people play, and from where | each Start Radio, Play Station, Your Station's Play, a station's page, Autoplay |
 | `station_page` | `action` (`opened`, `new_picks`, `row`, `play`) | Is the page looked at before playing; is New Picks used | StationDetailView |
-| `radio_feedback` | `kind` (`skip`, `like`, `dislike`, `undo`) | Does the radio get told what is liked | RadioController |
+| `radio_feedback` | `kind` (`skip`, `like`, `dislike`, `undo`, `remove`, `removeArtist`) | Does the radio get told what is liked | RadioController |
 | `dial_changed` | `value` (bucket) | Where people set the dial | the three dials, when let go |
 | `track_ended` | `outcome` (`completed`, `partial`, `skipped`), `station` (bool) | How much is heard to the end, on the radio and off it | `AudioPlayer.deliver` |
 | `lyrics_shown` | `source` (`server`, `lrclib`, `none`, `failed`), `synced` (bool) | How often lyrics are there, and from where | LyricsView |

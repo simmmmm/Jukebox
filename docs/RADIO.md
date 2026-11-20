@@ -402,7 +402,9 @@ Near the familiar end a track must also sound like the station: closeness is
 scaled by its genre fit. A track with no fit keeps 40% at adventurousness 0,
 61% at 0.35, and all of it at 1. Instant Mix, Last.fm and similar-track
 candidates skip this and the era: they judge how a track sounds better than
-tags can.
+tags can. Your Station's and Loved's own songs (there for being liked, not
+for how they sound) skip it from 0.35 up, and below that keep the fit
+scaled down to it: all of it at 0.
 
 The winning channel is the reason under the track in Up Next:
 - artist: "More by X" (the seed's own) or "Sounds like X" (the artist it
@@ -448,6 +450,8 @@ What the session has learnt multiplies the base:
 | thumbs down | the artist × 0.02, a guest × 0.25; does not fade |
 | variety | ÷ (1 + 0.5 · the artist's tracks in the last 30). A just-liked artist is exempt; so is the seed artist on a track, artist or album station, as the cap holds it |
 | likes | × (1 + 1.5 · similarity to the liked track), fading by half every 15 tracks |
+| loudness | the server's gain (Jellyfin's LUFS scan, Subsonic's ReplayGain) against the station's, the median of its best 100, and the song before, half each. Free within 2 dB; past that e^(−½ (dB over / w)²), w = 1.2 + 4a for a louder song, twice that for a quieter one, the louder side ÷ (1 + 0.5 · loud pressure). 1 without a gain |
+| flow (Your Station, Loved, Discovery, below 0.35) | 1 − w + w · min(1, 2 · genres in common with the song before, IDF-weighted), w = 0.75 · (1 − a / 0.35): a song with nothing in common keeps 25% at 0 |
 
 Of the tracks the rules allow, the best K (8 + 52 · adventurousness: 8 …
 60) are drawn from at random in proportion to their score, never the
@@ -522,6 +526,16 @@ after a skip already reflects it.
   Radiohead's songs thumbed down on Radiohead Radio is about the song, and
   everyone near is reached through Radiohead (measured in "What it does
   when …").
+- **Taken out** (`.removed`: the listener took it out of Up Next before
+  it played): a skip at 1.5, so its artist, its genres and, louder than
+  the station, the loud side. Not told to the history: what does not fit
+  this station may fit another. `.removedArtist` ("Don't Play X Here"):
+  a skip and the artist × 0.02, on this station only.
+- `ruledOut(queued ids)`: of the songs queued, those the session has
+  learnt against since they were chosen (taken out, thumbed down, or
+  under half the standing they had), so the rest stay where they are.
+- `returnUnplayed` gives back the fade the returned songs cost: each
+  pressure is kept as set, and faded again by the songs still handed out.
 - `addCandidates(ids, weight:, reason:)`: Jellyfin's Instant Mix, Last.fm's
   similar tracks. In the order given, the first a little more.
 - `settings` can change at any time: the next `next` builds the profile
@@ -725,6 +739,28 @@ No Iron Meadow song of their own (one as a guest, at √0.02 of its score),
 and no pop: the slots where separation has blocked every rock artist in this
 library go to folk and indie through Glass Animals Club.
 
+### Up Next and loudness
+
+`RadioQueueTests.swift` (lines `RADIO-QUEUE`). "Office": eight calm
+artists played often (gain −4 … −7 dB) and a metalcore band played three
+times (−11 dB), 12 songs of 108.
+
+| | |
+|---|---|
+| Your Station on Office, the band's share of 40 (12 stations) | at 0: 0.025 before, 0 now (also without gains); at 0.35: 0.013 with gains, 0.046 without; at 1: 0.110 |
+| calm song to loud at 0, 12 × 40 picks | 12 before, 0 |
+| three Shoegaze skips on Rock Radio, the app's loop (48 runs), Shoegaze in the next 30 | 1 ahead 0.133, 4 ahead 0.147, 15 ahead 0.160; without the fade given back 0.157 and 0.179 |
+| one Shoegaze song taken out of 15 ahead (24 runs) | Shoegaze 0.486 → 0.354 of the next 30 (half of Rock Radio is Shoegaze here); ruled out with it 35 of 157 Shoegaze songs queued, 0 of 179 others |
+| a loud song taken out of Office's Your Station at 1 (24 runs), the band in the next 40 | 0.122 → 0.052 with gains, 0.133 → 0.070 without |
+| Don't Play This Artist on Rock Radio | 0 of their songs in the next 40, 12 stations |
+
+Before, a song the band had played three times was "One of your
+favorites": Your Station's own songs skipped the genre fit, and around the
+24th pick, the calm songs heard or held apart, one came (as "Anthem" came
+after Apparat on the photographer's Your Station, 20 November 2026). Every
+`RADIO-EVAL` and `RADIO-CRITIC` number above is unchanged: the fixtures
+have no gains, and the rest acts below 0.35.
+
 ## What it does when …
 
 `RadioCriticTests.swift` tries the radio the way a demanding listener would
@@ -812,8 +848,15 @@ Each round is in the test output of its time.
   - `scrobbles(for:)` gives the listener's plays for
     `TasteProfile(…, scrobbles:)`, kept apart from this device's history.
 - **The app** (`RadioController`):
+  - a station holds 15 ahead (`RadioController.ahead`), topped up below
+    11: enough to see what comes and take one out first ("ik wil dat de
+    radio queue langer wordt", the photographer, 20 November 2026);
   - after a skip or a thumbs: `record`, then `returnUnplayed(queued ids)`,
     then `next(n)`;
+  - after a song taken out of Up Next (`PlayQueue.removeUpcoming`):
+    `record(.removed)`, `returnUnplayed` of it, `ruledOut(queued)` out and
+    returned too, then `next` to 15 at the end: the rows the listener is
+    looking at stay;
   - after a song heard to the end: `record(.finished)`, nothing to return;
   - a session may hand out a song again after `noRepeatHours` of music (and
     sooner in a library that has run out), so the queue must allow an id

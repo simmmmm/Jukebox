@@ -231,6 +231,12 @@ final class UpNextRow {
     private let reason = label("", "t13", "faint")
     private let time = label("", "t13", "fact", "times")
     private let words = label("", "t13", "fact")
+    /// Takes a song to come out of the queue, shown as the pointer is
+    /// over its row (or the keys are on it): GNOME's way to a list's
+    /// remove, as a swipe is the iPhone's. A long press or a right click
+    /// opens the menu with the same and what a station should know.
+    private let remove = gtk_button_new_from_icon_name("list-remove-symbolic")!
+        .named("Remove from Queue").tooltip("Remove from Queue")
     private var entry: QueueEntry?
     private var isPlaying = false
     /// In History: nothing to move or remove.
@@ -245,9 +251,12 @@ final class UpNextRow {
         let line = hbox(spacing: 8, [title.align(vertical: GTK_ALIGN_BASELINE_FILL),
                                      guest.expand(horizontal: true).align(vertical: GTK_ALIGN_BASELINE_FILL)])
         let text = vbox(spacing: 0, [line, artist, reason]).expand(horizontal: true).align(vertical: GTK_ALIGN_CENTER)
-        song = hbox(spacing: 12, [mark, art.widget, text, time, endBars]).css("queue-row")
+        for name in ["flat", "circular", "queue-remove"] { gtk_widget_add_css_class(remove, name) }
+        remove.align(vertical: GTK_ALIGN_CENTER)
+        song = hbox(spacing: 12, [mark, art.widget, text, time, remove, endBars]).css("queue-row")
         widget = vbox([song, words])
         contextMenu(on: widget) { [weak self] in self?.menu() ?? [] }
+        on(remove, "clicked") { [weak self] in self?.removeFromQueue() }
     }
 
     func show(_ item: UpNext.Item) {
@@ -280,6 +289,7 @@ final class UpNextRow {
         bars.isVisible = playing
         endBars.isVisible = playing && style == .station
         time.isVisible = !(playing && style == .station)
+        remove.isVisible = !playing && style != .played
         setText(title, track.name)
         if playing { gtk_widget_add_css_class(title, "playing") } else { gtk_widget_remove_css_class(title, "playing") }
         setText(guest, line)
@@ -309,9 +319,30 @@ final class UpNextRow {
                 ("Move Up", { if let at = offset(), at > 0 { app.player.moveUpcoming(fromOffsets: [at], toOffset: at - 1) } }),
                 ("Move Down", { if let at = offset(), at < app.player.upNext.count - 1 { app.player.moveUpcoming(fromOffsets: [at], toOffset: at + 2) } }),
                 ("Remove from Queue", { if let at = offset() { app.player.removeUpcoming(atOffsets: [at]) } }),
-            ]
+            ] + stationItems(entry)
         }
         return moves + trackMenu([entry.track])
+    }
+
+    /// A song the station chose, before it plays, as on the iPhone
+    /// (QueueView): its artist off this station, or a thumbs down. Taking
+    /// it out (above) is already a lesson for the station
+    /// (PlayQueue.removeUpcoming).
+    private func stationItems(_ entry: QueueEntry) -> [(String, () -> Void)] {
+        guard entry.reason != nil, app.player.context?.station != nil else { return [] }
+        let track = entry.track
+        var items: [(String, () -> Void)] = []
+        if let artist = track.artists.first?.name ?? track.primaryArtist?.name {
+            items.append(("Don’t Play \(artist) Here", { app.radio.removeArtistFromStation(of: track) }))
+        }
+        items.append(("Dislike", { app.radio.dislike(track) }))
+        return items
+    }
+
+    /// Found by id: the row may show another song since it was drawn.
+    private func removeFromQueue() {
+        guard let id = entry?.id, let at = app.player.upNext.firstIndex(where: { $0.id == id }) else { return }
+        app.player.removeUpcoming(atOffsets: [at])
     }
 }
 

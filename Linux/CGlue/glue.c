@@ -152,6 +152,12 @@ static void point_free(gpointer user, GClosure *unused) {
     g_free(closure);
 }
 
+static void long_pressed(GtkGestureLongPress *gesture, double x, double y, gpointer user) {
+    PointClosure *closure = user;
+    gtk_gesture_set_state(GTK_GESTURE(gesture), GTK_EVENT_SEQUENCE_CLAIMED);
+    closure->handler(x, y, closure->data);
+}
+
 void jb_on_secondary_click(GtkWidget *widget, JbPointHandler handler, gpointer data, GDestroyNotify destroy) {
     PointClosure *closure = g_new0(PointClosure, 1);
     closure->handler = handler;
@@ -161,6 +167,12 @@ void jb_on_secondary_click(GtkWidget *widget, JbPointHandler handler, gpointer d
     gtk_gesture_single_set_button(GTK_GESTURE_SINGLE(click), GDK_BUTTON_SECONDARY);
     g_signal_connect_data(click, "pressed", G_CALLBACK(point_pressed), closure, point_free, 0);
     gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(click));
+    // A long press on a touch screen opens the same menu, as GNOME's lists
+    // do (Files, Music): the closure is the click's, freed with it.
+    GtkGesture *press = gtk_gesture_long_press_new();
+    gtk_gesture_single_set_touch_only(GTK_GESTURE_SINGLE(press), TRUE);
+    g_signal_connect(press, "pressed", G_CALLBACK(long_pressed), closure);
+    gtk_widget_add_controller(widget, GTK_EVENT_CONTROLLER(press));
 }
 
 // A click on a song's row, for picking songs (Jukebox/Library/TrackPicks.swift):

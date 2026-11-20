@@ -590,13 +590,40 @@ class PlayQueue {
 
     // MARK: Editing Up Next
 
-    /// Offsets into `upNext`.
+    /// Offsets into `upNext`. On a station, a song the radio chose and the
+    /// listener takes out before it plays is the station's to learn from
+    /// (RadioController.removedFromUpcoming): "dat ik bijvoorbeeld harde
+    /// metal uit een verder hele rustige kantoor approved radio kan halen
+    /// zonder dat iedereen zich de tering schrikt" (the photographer, 20
+    /// November 2026). The swipe, Edit's delete and the menus all come here.
     func removeUpcoming(atOffsets offsets: IndexSet) {
         let base = (currentIndex ?? -1) + 1
         let indices = offsets.map { base + $0 }.filter { queue.indices.contains($0) }.sorted(by: >)
         guard !indices.isEmpty else { return }
+        let picks = indices.map { queue[$0] }.filter { $0.reason != nil }.map(\.track.id)
         for index in indices { queue.remove(at: index) }
+        if context?.isRadio == true, !picks.isEmpty, let radio {
+            isAskingRadio = true
+            radio.removedFromUpcoming(picks)
+            isAskingRadio = false
+        }
         queueChanged()
+    }
+
+    /// The radio's picks with these ids, wherever they are after the
+    /// current one: what a removal rules out besides the song itself.
+    /// Returns those taken out, in their order.
+    @discardableResult
+    func removeUpcomingRadioPicks(_ ids: Set<ItemID>) -> [ItemID] {
+        guard let currentIndex, !ids.isEmpty else { return [] }
+        let start = currentIndex + 1
+        guard start < queue.count else { return [] }
+        let upcoming = queue[start...]
+        let removed = upcoming.filter { $0.reason != nil && ids.contains($0.track.id) }
+        guard !removed.isEmpty else { return [] }
+        queue = Array(queue[..<start]) + upcoming.filter { !($0.reason != nil && ids.contains($0.track.id)) }
+        preloadNext()
+        return removed.map(\.track.id)
     }
 
     /// Offsets into `upNext`, as List's onMove gives them.
@@ -889,11 +916,12 @@ class PlayQueue {
         checkRadioSupply()
     }
 
-    /// A station's queue keeps a few tracks ahead: at two or fewer, the
-    /// radio is asked for more.
+    /// A station's queue keeps some fifteen tracks ahead, so what is coming
+    /// can be seen, and taken out, before it plays: below
+    /// `RadioController.refillBelow`, the radio is asked for more.
     func checkRadioSupply() {
         guard context?.isRadio == true, !isAskingRadio, let currentIndex,
-              queue.count - currentIndex - 1 <= 2 else { return }
+              queue.count - currentIndex - 1 < RadioController.refillBelow else { return }
         isAskingRadio = true
         radio?.playerNeedsMore()
         isAskingRadio = false

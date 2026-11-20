@@ -419,6 +419,14 @@ public enum RadioFeedback: Hashable, Sendable {
     case liked(ItemID)
     /// Thumbs down: skip it now, and less like it from here.
     case disliked(ItemID)
+    /// Taken out of Up Next before it played: on this station not again,
+    /// and less like it (its artist, its genres, its loudness), more than a
+    /// skip. The history is not told: what does not fit this station may
+    /// be right for another ("kantoor approved radio", the photographer).
+    case removed(ItemID)
+    /// "Don't Play This Artist" on a song of Up Next: its artist, on this
+    /// station only, as gone as a thumbs down makes them.
+    case removedArtist(ItemID)
 }
 
 /// One station, playing. Hand-outs are remembered: `next` plays a song
@@ -471,6 +479,13 @@ public struct RadioSession: Sendable {
     /// again with what is known now.
     public mutating func returnUnplayed(_ ids: [ItemID]) {
         engine.returnUnplayed(ids)
+    }
+
+    /// Of these songs handed out and still queued, the ones that what the
+    /// session has learnt since (a removal, a skip, a thumb) now rules
+    /// out; the rest can stay where the listener sees them.
+    public mutating func ruledOut(_ ids: [ItemID]) -> [ItemID] {
+        engine.ruledOut(ids)
     }
 
     /// Every track handed out and not returned, in order.
