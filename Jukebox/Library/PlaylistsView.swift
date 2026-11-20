@@ -393,11 +393,11 @@ struct PlaylistDetailView: View {
 
                 if entries.isEmpty {
                     if shown.isReadOnly {
-                        ContentUnavailableView("No Songs Yet", systemImage: "music.note.list")
+                        ContentUnavailableView("No songs yet", systemImage: "music.note.list")
                             .listRowSeparator(.hidden)
                     } else {
                         ContentUnavailableView {
-                            Label("No Songs Yet", systemImage: "music.note.list")
+                            Label("No songs yet", systemImage: "music.note.list")
                         } description: {
                             Text("Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
                         } actions: {
@@ -412,7 +412,7 @@ struct PlaylistDetailView: View {
                 }
             } else if let loadError {
                 ContentUnavailableView {
-                    Label("Could Not Load the Playlist", systemImage: "exclamationmark.triangle")
+                    Label("Could not load the playlist", systemImage: "exclamationmark.triangle")
                 } description: {
                     Text(loadError)
                 } actions: {
@@ -435,13 +435,8 @@ struct PlaylistDetailView: View {
     /// The page's "…": in the toolbar on the iPhone, in the head when wide.
     @ViewBuilder
     private func moreItems(_ shown: Playlist, tracks: [Track]) -> some View {
-        Section {
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
-                radio.start(seed(for: shown, tracks: tracks))
-            }
-            .disabled(tracks.isEmpty)
-        }
+        // In a song's order and Linux's (SYSTEM.md, Menus): playing it,
+        // Start Radio, its picture and Don't Count Plays, Delete last.
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext(tracks)
@@ -453,14 +448,19 @@ struct PlaylistDetailView: View {
             .disabled(tracks.isEmpty)
         }
         Section {
-            DontCountToggle(kind: .playlist, id: shown.id, name: shown.name)
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
+                radio.start(seed(for: shown, tracks: tracks))
+            }
+            .disabled(tracks.isEmpty)
         }
-        if picturesAllowed, !shown.isReadOnly {
-            Section {
+        Section {
+            if picturesAllowed, !shown.isReadOnly {
                 Button("Choose Picture…", systemImage: "photo") {
                     isChoosingPicture = true
                 }
             }
+            DontCountToggle(kind: .playlist, id: shown.id, name: shown.name)
         }
         if !shown.isReadOnly {
             Section {

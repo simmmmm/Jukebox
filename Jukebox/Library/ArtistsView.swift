@@ -375,12 +375,8 @@ struct ArtistDetailView: View {
     private func menu(_ shown: Artist) -> some View {
         let favorite = library.isFavorite(shown.id)
         let tracks = library.tracks(by: shown)
-        Section {
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": "artist", "from": "menu"])
-                radio.start(seed(for: shown))
-            }
-        }
+        // In a song's order (SYSTEM.md, Menus): playing it, keeping it,
+        // its links; Linux's ⋮ the same.
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext(tracks)
@@ -394,6 +390,10 @@ struct ArtistDetailView: View {
         Section {
             Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
                 Task { await library.toggleFavorite(.artist(shown.id)) }
+            }
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "artist", "from": "menu"])
+                radio.start(seed(for: shown))
             }
         }
         ShareMenuItem(item: .artist(shown))

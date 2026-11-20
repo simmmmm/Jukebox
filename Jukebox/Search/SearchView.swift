@@ -197,7 +197,7 @@ private struct SearchResultsList: View {
                             if isFirstLoad {
                                 // Nothing found because nothing is here yet, not
                                 // because the library lacks it.
-                                ContentUnavailableView("Loading Your Library", systemImage: "square.stack",
+                                ContentUnavailableView("Loading your music", systemImage: "square.stack",
                                                        description: Text("Search finds your music once it has loaded."))
                             } else {
                                 ContentUnavailableView.search(text: term)
@@ -489,7 +489,7 @@ private struct SearchBrowse: View {
         .overlay {
             if recents.isEmpty && library.genres.isEmpty {
                 ContentUnavailableView {
-                    Label("Search Your Library", systemImage: "magnifyingglass")
+                    Label("Search your music", systemImage: "magnifyingglass")
                 } description: {
                     Text("Find artists, albums, songs and playlists on your \(library.serverKind) server.")
                 }

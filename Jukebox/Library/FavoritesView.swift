@@ -117,7 +117,7 @@ struct FavoritesView: View {
         .listStyle(.plain)
         .overlay {
             if favorites.isEmpty {
-                ContentUnavailableView("No Favorite Songs", systemImage: "heart",
+                ContentUnavailableView("No favorite songs", systemImage: "heart",
                                        description: Text("Touch and hold a song, then choose Favorite."))
             }
         }
@@ -131,7 +131,7 @@ struct FavoritesView: View {
         }
         .overlay {
             if favorites.isEmpty {
-                ContentUnavailableView("No Favorite Albums", systemImage: "heart",
+                ContentUnavailableView("No favorite albums", systemImage: "heart",
                                        description: Text("Touch and hold an album, then choose Favorite."))
             }
         }
@@ -149,7 +149,7 @@ struct FavoritesView: View {
         .listStyle(.plain)
         .overlay {
             if favorites.isEmpty {
-                ContentUnavailableView("No Favorite Artists", systemImage: "heart",
+                ContentUnavailableView("No favorite artists", systemImage: "heart",
                                        description: Text("On an artist’s page, choose Favorite in the … menu."))
             }
         }

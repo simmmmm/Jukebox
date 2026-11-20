@@ -140,7 +140,7 @@ struct HomeLibraryStatus: View {
             HomeLoadingView(progress: progress)
         case let .failed(message):
             ContentUnavailableView {
-                Label("Could Not Load Your Library", systemImage: "exclamationmark.triangle")
+                Label("Could not load your music", systemImage: "exclamationmark.triangle")
             } description: {
                 Text(message)
             } actions: {
@@ -152,7 +152,7 @@ struct HomeLibraryStatus: View {
             }
         case .loaded:
             ContentUnavailableView {
-                Label("No Music Yet", systemImage: "music.note")
+                Label("No music yet", systemImage: "music.note")
             } description: {
                 Text("Your \(library.serverKind) server has no music in its libraries yet. Add some there, then check again.")
             } actions: {

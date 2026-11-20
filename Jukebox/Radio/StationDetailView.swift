@@ -290,7 +290,7 @@ struct StationDetailView: View {
     private var previewRows: some View {
         if let picks, picks.isEmpty {
             ContentUnavailableView {
-                Label("Nothing to Play", systemImage: "dot.radiowaves.left.and.right")
+                Label("Nothing to play", systemImage: "dot.radiowaves.left.and.right")
             } description: {
                 Text("Nothing in your library fits this station yet.")
             }

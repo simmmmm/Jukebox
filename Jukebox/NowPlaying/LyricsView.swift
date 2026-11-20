@@ -65,14 +65,14 @@ struct LyricsView: View {
                 if inPanel {
                     quiet(Text("No lyrics for this song"))
                 } else {
-                    ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
+                    ContentUnavailableView("No lyrics", systemImage: "quote.bubble",
                                            description: unavailableDescription)
                 }
             case let .failed(server):
                 if inPanel {
                     quiet(failedDescription(server: server))
                 } else {
-                    ContentUnavailableView("No Lyrics", systemImage: "quote.bubble",
+                    ContentUnavailableView("No lyrics", systemImage: "quote.bubble",
                                            description: failedDescription(server: server))
                 }
             }

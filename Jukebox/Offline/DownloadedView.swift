@@ -31,7 +31,7 @@ struct DownloadedView: View {
                     .overlay {
                         if collections.isEmpty && kept.isEmpty {
                             ContentUnavailableView {
-                                Label("No Downloads", systemImage: "arrow.down.circle")
+                                Label("No downloads", systemImage: "arrow.down.circle")
                             } description: {
                                 Text("Download an album, a playlist or a mix with \(Image(systemName: "arrow.down.circle")) on its page. Keep Songs I Play, in Settings, keeps what you play often.")
                             }

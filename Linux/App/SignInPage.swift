@@ -166,7 +166,7 @@ enum SignInPage {
                 }
             }
         }
-        plex = button("Sign In with Plex", "flat") { signInWithPlex() }.align(horizontal: GTK_ALIGN_CENTER)
+        plex = button("Sign In with Plex", "flat", "accent", "word") { signInWithPlex() }.align(horizontal: GTK_ALIGN_CENTER)
 
         // Quick Connect: a code typed into another signed-in Jellyfin app,
         // so no password is typed here. Offered only where the server said
@@ -230,7 +230,7 @@ enum SignInPage {
                 }
             }
         }
-        quick = button("Use Quick Connect", "flat") { useQuickConnect() }.align(horizontal: GTK_ALIGN_CENTER)
+        quick = button("Use Quick Connect", "flat", "accent", "word") { useQuickConnect() }.align(horizontal: GTK_ALIGN_CENTER)
         Self.quickConnect = quick
         quick.isVisible = false
         // The address left: asked now, quietly (Sign In says what went

@@ -34,7 +34,7 @@ struct LibraryStatusView: View {
         switch library.state {
         case let .loading(progress):
             ContentUnavailableView {
-                Label("Loading Your Library", systemImage: "square.stack")
+                Label("Loading your music", systemImage: "square.stack")
             } description: {
                 if let name = library.serverName {
                     Text("Reading the music on \(name). Next time the library opens at once.")
@@ -57,7 +57,7 @@ struct LibraryStatusView: View {
             }
         case let .failed(message):
             ContentUnavailableView {
-                Label("Could Not Load Your Library", systemImage: "exclamationmark.triangle")
+                Label("Could not load your music", systemImage: "exclamationmark.triangle")
             } description: {
                 Text(message)
             } actions: {

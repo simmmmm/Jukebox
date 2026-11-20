@@ -157,12 +157,8 @@ struct MixDetailView: View {
     /// iPhone, the head's on a wide page.
     @ViewBuilder
     private var moreItems: some View {
-        Section {
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
-                radio.start(mix.stationSeed)
-            }
-        }
+        // In a song's order and Linux's (SYSTEM.md, Menus): playing it,
+        // then keeping it, Start Radio last of those.
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext(mix.tracks)
@@ -179,6 +175,10 @@ struct MixDetailView: View {
             .disabled(isSaving)
             Button("Add to Playlist…", systemImage: "text.badge.plus") {
                 navigator.addToPlaylist = AddToPlaylistRequest(tracks: mix.tracks)
+            }
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
+                radio.start(mix.stationSeed)
             }
         }
     }

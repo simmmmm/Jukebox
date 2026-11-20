@@ -99,7 +99,13 @@ enum HomePage {
             }.align(horizontal: GTK_ALIGN_CENTER))
             return page
         case .loaded:
-            return emptyPage("No music yet", "Music on your \(app.library.serverKind) server appears here.")
+            // The same words and Check Again as the iPhone's and the Mac's.
+            let page = emptyPage("No music yet",
+                                 "Your \(app.library.serverKind) server has no music in its libraries yet. Add some there, then check again.")
+            adw_status_page_set_child(ptr(page), wordButton("Check Again") {
+                Task { await app.library.refresh() }
+            }.align(horizontal: GTK_ALIGN_CENTER))
+            return page
         case .empty, .loading:
             let name = app.library.serverName.map { "Loading the music on \($0)" } ?? "Loading your music"
             let page = emptyPage(name, "")
@@ -948,7 +954,9 @@ enum Pages {
                           actions: [
             playButton { app.player.play(all, context: context, shuffled: true) },
             hbox(spacing: 8, [heartButton { .artist(artist.id) },
-                              moreButton(menuSections([("Start Radio", { app.radio.start(seed) })],
+                              moreButton(menuSections([("Play Next", { app.player.playNext(all) }),
+                                                       ("Add to Queue", { app.player.addToQueue(all) })],
+                                                      [("Start Radio", { app.radio.start(seed) })],
                                                       publicShareItems(.artist(artist))))]),
         ])
         keep(art, on: raw(top), as: "art")
@@ -1235,8 +1243,11 @@ enum Pages {
                 app.player.play(mix.tracks, context: context)
             },
             quietButton("Shuffle") { app.player.play(mix.tracks, context: context, shuffled: true) },
-            moreButton([("Add to Playlist…", { Playlists.add(mix.tracks) }),
-                        ("Start Radio", { app.radio.start(mix.stationSeed) })]),
+            // In a song's order, as the Mac's (SYSTEM.md, Menus).
+            moreButton(menuSections([("Play Next", { app.player.playNext(mix.tracks) }),
+                                     ("Add to Queue", { app.player.addToQueue(mix.tracks) })],
+                                    [("Add to Playlist…", { Playlists.add(mix.tracks) }),
+                                     ("Start Radio", { app.radio.start(mix.stationSeed) })])),
         ])
         keep(art, on: raw(top), as: "art")
         let list = trackList(mix.tracks, context: { context })
