@@ -445,16 +445,38 @@ final class RadioSessionTests: XCTestCase {
         XCTAssertLessThanOrEqual(next.filter { w.snapshot.artistKeys(of: $0.track).contains(artist) }.count, 1)
     }
 
-    func testInstantMixCandidatesJoin() {
+    /// The server's mix places nothing: metal the server put forward stays
+    /// off Jazz Radio at any weight, and jazz it put forward is lifted
+    /// toward Adventurous only, under its own reason (RadioServerMixTests
+    /// has the measurements). Until 20 November 2026 this test asked for
+    /// the opposite: metal on Jazz Radio as "From Jellyfin's mix".
+    func testTheServersMixLiftsAndNeverPlaces() {
         let w = world
+        let jazz = StationSeed.genre(key: "jazz", name: "Jazz")
         let metal = w.snapshot.tracks(genreKey: "metal").prefix(12).map(\.id)
-        var plain = w.session(.genre(key: "jazz", name: "Jazz"), randomSeed: 4)
-        var mixed = w.session(.genre(key: "jazz", name: "Jazz"), randomSeed: 4)
-        mixed.addCandidates(Array(metal) + ["not-in-library"], weight: 1, reason: .instantMix)
-        let without = plain.next(30).filter { metal.contains($0.track.id) }
-        let with = mixed.next(30).filter { metal.contains($0.track.id) }
-        XCTAssertLessThan(without.count, with.count)
-        XCTAssertTrue(with.contains { $0.reason == .instantMix })
+        for adv in [0.0, 0.35, 1.0] {
+            var plain = w.session(jazz, adventurousness: adv, randomSeed: 4)
+            var mixed = w.session(jazz, adventurousness: adv, randomSeed: 4)
+            mixed.addCandidates(Array(metal) + ["not-in-library"], weight: 1, reason: .instantMix)
+            let with = mixed.next(30)
+            XCTAssertEqual(with.filter { metal.contains($0.track.id) }.count,
+                           plain.next(30).filter { metal.contains($0.track.id) }.count, "at \(adv)")
+            XCTAssertFalse(with.contains { $0.reason == .instantMix }, "at \(adv)")
+        }
+        // Jazz the listener has not played, put forward by the server: as
+        // often as without it at Familiar, more often at Adventurous.
+        let quiet = w.snapshot.tracks(genreKey: "jazz").filter { $0.playCount == 0 }.prefix(40).map(\.id)
+        func picked(_ adv: Double, mix: Bool) -> Int {
+            var count = 0
+            for run in 0..<8 {
+                var session = w.session(jazz, adventurousness: adv, randomSeed: UInt64(60 + run))
+                if mix { session.addCandidates(Array(quiet), weight: 1, reason: .instantMix) }
+                count += session.next(30).filter { quiet.contains($0.track.id) }.count
+            }
+            return count
+        }
+        XCTAssertEqual(picked(0, mix: true), picked(0, mix: false))
+        XCTAssertGreaterThan(picked(1, mix: true), picked(1, mix: false))
     }
 
     func testSimilarTracksForASongStation() {
