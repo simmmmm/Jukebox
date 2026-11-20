@@ -24,6 +24,7 @@ let shared = [
     "Jukebox/Components/ArtMeasures.swift",
     "Jukebox/Components/DesktopMeasures.swift",
     "Jukebox/Components/RelativeDay.swift",
+    "Jukebox/Components/Tokens.swift",
     "Jukebox/Home/HomeShelves.swift",
     "Jukebox/Home/MixStore.swift",
     "Jukebox/Library/LibraryIndex.swift",

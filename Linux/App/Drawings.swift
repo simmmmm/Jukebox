@@ -110,12 +110,12 @@ nonisolated enum Draw {
         let average: AverageColor
     }
 
-    static let copper: UInt32 = 0xA84A17
-    static let glow: UInt32 = 0xFFB54D
-    static let cabinet: UInt32 = 0x1E0A07
-    static let outerTube: UInt32 = 0xF07E36
-    static let innerTube: UInt32 = 0xFFB44C
-    static let paper: UInt32 = 0xF6F3EE
+    static let copper = Tokens.Arch.copper
+    static let glow = Tokens.Arch.glow
+    static let cabinet = Tokens.Arch.cabinet
+    static let outerTube = Tokens.Arch.outerTube
+    static let innerTube = Tokens.Arch.innerTube
+    static let paper = Tokens.Arch.paper
     /// Titles as on sleeves (BRAND.md, "On Linux"); words in the system's sans.
     static let serif = "New York,Source Serif 4,Source Serif Pro,Noto Serif,DejaVu Serif"
     static let sans = "Adwaita Sans,Inter,Cantarell,sans-serif"
@@ -430,7 +430,7 @@ nonisolated enum Draw {
         let m = side * 0.7
         cairo_save(cr)
         cairo_translate(cr, (side - m) / 2, (side - m) / 2 + side * 12 / 1024)
-        mark(cr, size: m, outer: copper, inner: glow, core: 0xFFF1D6)
+        mark(cr, size: m, outer: copper, inner: glow, core: Tokens.Arch.markCore.dark)
         cairo_restore(cr)
         roundedRect(cr, 0.25, 0.25, side - 0.5, side - 0.5, radius - 0.25)
         cairo_set_source_rgba(cr, 1, 1, 1, 0.08)

@@ -25,29 +25,42 @@ enum Style {
         load()
     }
 
+    /// A token's colour (Tokens.swift) for the appearance, as CSS: "#A84A17".
+    private static func hex(_ pair: ColorPair, _ dark: Bool) -> String {
+        "#" + String(format: "%06X", pair.hex(dark: dark))
+    }
+
+    /// A size of the type scale as CSS: "font-size: 40px; line-height: 48px;".
+    private static func type(_ size: (size: Int, line: Int)) -> String {
+        "font-size: \(size.size)px; line-height: \(size.line)px;"
+    }
+
+    /// A duration as CSS: "200ms".
+    private static func ms(_ seconds: Double) -> String { "\(Int((seconds * 1000).rounded()))ms" }
+
     private static func load() {
         let dark = adw_style_manager_get_dark(adw_style_manager_get_default()) != 0
-        let accent = dark ? "#FFB54D" : "#A84A17"
-        let onAccent = dark ? "#2A1505" : "#FFFFFF"
-        let ground = dark ? "#121110" : "#F6F3EE"
+        let accent = hex(Tokens.accent, dark)
+        let onAccent = hex(Tokens.onAccent, dark)
+        let ground = hex(Tokens.ground, dark)
         // One step up, for the sidebar, the panel and the bar (the designer's
         // spec, §1).
-        let raised = dark ? "#1B1918" : "#ECE7DF"
+        let raised = hex(Tokens.raised, dark)
         // The music to go on with, beside Your Station: a step lighter
         // ("misschien in een lichtere tint", 18 November 2026). By night
         // one step up from raised; by day halfway back to the paper, as a
         // step past it would no longer read as a card. Theme.raisedLighter.
-        let lighter = dark ? "#242120" : "#F1EDE6"
+        let lighter = hex(Tokens.raisedLighter, dark)
         // Menus and dialogs on Jukebox's own ground, not libadwaita's grey
         // ("kunnen we de achtergrond kleur van deze popups gelijkmaken aan
         // de kleuren van jukebox", 20 November 2026), lifted off the page:
         // by night one step above raised, by day just lighter than the paper.
-        let lifted = dark ? lighter : "#FBF9F5"
+        let lifted = hex(Tokens.lifted, dark)
         // The server out of reach: a soft warning in the Arch's amber, the
         // mark core's at 16% on the paper, Glow at 12% on the night ("een
         // warning dingetje met een zacht warning kleurtje in stijl van
         // jukebox", 20 November 2026). Theme.notice.
-        let notice = dark ? "#2E2517" : "#F6E6D1"
+        let notice = hex(Tokens.notice, dark)
         // libadwaita 1.5 reads its colours by name, 1.6 and later from
         // variables (which GTK before 4.16 cannot read, and says so).
         var css = """
@@ -83,14 +96,14 @@ enum Style {
         /* Your Year's months: flat bars in the accent. */
         .year-bar { background-color: @accent_bg_color; }
         /* The type scale (the designer's spec, §7): size / line, in px. */
-        .page-title { font-size: 40px; line-height: 48px; }
-        .hero-title { font-size: 32px; line-height: 40px; }
-        .section-title { font-size: 24px; line-height: 32px; }
-        .panel-head { font-size: 20px; line-height: 28px; }
-        .brand-name { font-size: 18px; line-height: 24px; }
-        .t17 { font-size: 17px; line-height: 24px; }
-        .t15 { font-size: 15px; line-height: 20px; }
-        .t13, .bar-fact { font-size: 13px; line-height: 16px; }
+        .page-title { \(type(Tokens.Size.pageTitle)) }
+        .hero-title { \(type(Tokens.Size.heroTitle)) }
+        .section-title { \(type(Tokens.Size.sectionTitle)) }
+        .panel-head { \(type(Tokens.Size.panelHead)) }
+        .brand-name { \(type(Tokens.Size.brandName)) }
+        .t17 { \(type(Tokens.Size.body17)) }
+        .t15 { \(type(Tokens.Size.body15)) }
+        .t13, .bar-fact { \(type(Tokens.Size.fact13)) }
         .medium { font-weight: 500; }
         .fact { opacity: 0.6; }
         .faint { opacity: 0.4; }
@@ -113,7 +126,7 @@ enum Style {
         button.shelf-arrow {
           min-width: 32px; min-height: 32px; padding: 0; border-radius: 9999px;
           background-color: alpha(\(raised), 0.9); box-shadow: 0 1px 4px alpha(black, 0.24);
-          opacity: 0; transition: opacity 200ms ease-out;
+          opacity: 0; transition: opacity \(ms(Tokens.Motion.standard)) ease-out;
         }
         overlay.shelf:hover button.shelf-arrow.more { opacity: 1; }
         button.shelf-arrow:hover { background-color: \(raised); }
@@ -153,7 +166,7 @@ enum Style {
         button.page-button { min-height: 36px; min-width: 64px; padding: 0 16px; font-size: 15px; }
         /* The word a step darker than Copper by day, so it reads 4.9:1 on
            its tint over the raised ground (Theme.quietInk). */
-        button.quiet { background-color: alpha(\(accent), 0.12); color: \(dark ? accent : "#953F12"); box-shadow: none; }
+        button.quiet { background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(Tokens.quietInk, dark)); box-shadow: none; }
         button.quiet:hover { background-color: alpha(\(accent), 0.18); }
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
         /* Home's Your Station and the music to go on with, on a ground one
@@ -219,7 +232,7 @@ enum Style {
         .player-bar button.mode:not(.accent) { opacity: 0.6; }
         .player-bar button.mode:checked { background: none; }
         button.lyric { padding: 0; margin: 0; min-height: 0; background: none; box-shadow: none; }
-        button.lyric.timed > label { opacity: 0.4; transition: opacity 300ms ease-out; }
+        button.lyric.timed > label { opacity: 0.4; transition: opacity \(ms(Tokens.Motion.slow)) ease-out; }
         button.lyric.timed.break > label { opacity: 0.24; }
         button.lyric.timed.current > label { opacity: 1; }
         button.lyric.timed:hover > label { opacity: 0.7; }
@@ -229,7 +242,7 @@ enum Style {
         listview.queue > row { padding: 0 16px; }
         .queue-row { min-height: 48px; }
         /* Remove: there while the pointer is over the row, or the keys on it. */
-        .queue-row .queue-remove { opacity: 0; transition: opacity 150ms ease-out; }
+        .queue-row .queue-remove { opacity: 0; transition: opacity \(ms(Tokens.Motion.quick)) ease-out; }
         .queue-row:hover .queue-remove, .queue-row .queue-remove:focus-visible { opacity: 1; }
         .queue-row.covered { min-height: 64px; }
         .queue-row.station { min-height: 72px; }
@@ -247,7 +260,7 @@ enum Style {
         window.in-room toolbarview > .bottom-bar { background: none; box-shadow: none; }
         window.room-docked .panel-split > .sidebar-pane { background: none; }
         toolbarview > .bottom-bar, .panel-split > .sidebar-pane {
-          transition: background-color 200ms linear, box-shadow 200ms linear;
+          transition: background-color \(ms(Tokens.Motion.standard)) linear, box-shadow \(ms(Tokens.Motion.standard)) linear;
         }
         """
         gtk_css_provider_load_from_string(provider, css)

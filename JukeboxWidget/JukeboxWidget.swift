@@ -143,7 +143,7 @@ struct DoorsView: View {
 
     /// The page's ground (Theme.ground), flat.
     private var ground: Color {
-        Color(rgb: scheme == .dark ? 0x121110 : 0xF6F3EE)
+        Color(rgb: Tokens.ground.hex(dark: scheme == .dark))
     }
 
     private var signedIn: Bool { entry.snapshot?.signedIn == true }
@@ -188,7 +188,7 @@ struct DoorsView: View {
                     Button(intent: PlayYourStationFromWidget()) {
                         Image(systemName: "play.fill")
                             .font(.body)
-                            .foregroundStyle(Color(rgb: scheme == .dark ? 0x2A1505 : 0xFFFFFF))
+                            .foregroundStyle(Color(rgb: Tokens.onAccent.hex(dark: scheme == .dark)))
                             .frame(width: 36, height: 36)
                             .background(accent, in: .rect(cornerRadius: 6))
                     }
@@ -274,7 +274,7 @@ struct DoorsView: View {
 
     /// Copper by day, Glow by night (Theme.accent).
     private var accent: Color {
-        Color(rgb: scheme == .dark ? 0xFFB54D : 0xA84A17)
+        Color(rgb: Tokens.accent.hex(dark: scheme == .dark))
     }
 }
 
@@ -303,16 +303,16 @@ private struct ArchDrawing: View {
             } else {
                 if lit {
                     ZStack {
-                        outer.stroke(Color(rgb: 0xF07E36), style: StrokeStyle(lineWidth: width * 2.2, lineCap: .round))
-                        inner.stroke(Color(rgb: 0xFFB44C), style: StrokeStyle(lineWidth: width * 2.2, lineCap: .round))
+                        outer.stroke(Color(rgb: Tokens.Arch.outerTube), style: StrokeStyle(lineWidth: width * 2.2, lineCap: .round))
+                        inner.stroke(Color(rgb: Tokens.Arch.innerTube), style: StrokeStyle(lineWidth: width * 2.2, lineCap: .round))
                     }
                     .blur(radius: size / 16)
                     .opacity(0.42)
                 }
-                outer.stroke(Color(rgb: lit ? 0xF07E36 : 0xA84A17), style: line)
-                inner.stroke(Color(rgb: lit ? 0xFFB44C : 0xFFB54D), style: line)
+                outer.stroke(Color(rgb: lit ? Tokens.Arch.outerTube : Tokens.Arch.copper), style: line)
+                inner.stroke(Color(rgb: lit ? Tokens.Arch.innerTube : Tokens.Arch.glow), style: line)
                 // The mark's core: amber on the paper, a warm white by night.
-                ArchCore(cut: cut).fill(Color(rgb: scheme == .dark ? 0xFFF1D6 : 0xF7A136))
+                ArchCore(cut: cut).fill(Color(rgb: Tokens.Arch.markCore.hex(dark: scheme == .dark)))
             }
         }
         .frame(width: size, height: size)
