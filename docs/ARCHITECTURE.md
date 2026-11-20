@@ -403,8 +403,8 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP 
   `com.apple.developer.media-device-discovery-extension` entitlement, meant
   to come from the device's maker (Apple: "bundle your app with the device
   discovery extension that the manufacturer provides"), the app then
-  streaming to it over `AVCustomRoutingController`. Google and Sonos ship
-  none, and a Jellyfin client is a session on the server, not a device on
+  streaming to it over `AVCustomRoutingController`. No such extension
+  from Google or Sonos was found (20 November 2026), and a Jellyfin client is a session on the server, not a device on
   the network. So the list is ours, with the system's picker as a row.
 - **A Sonos** ("hij vind bijv ook mijn sonos niet", 19 November 2026; on
   the iPhone "Huh daar staat wel weer mn sonos bij", 20 November): every
@@ -430,9 +430,10 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP 
   `RemoteControlTests`, Linux's `JUKEBOX_CHECK=remote`.
 - **What it cannot do**: a server at localhost is refused at once (the TV
   fetches the songs itself); a TV that cannot play from an https server it
-  does not trust says so. A moment's silence between songs on a Chromecast.
-  On the iPhone, with the app suspended in the background, the TV ends with
-  its song: the next is the queue's to give. CarPlay plays on the phone.
+  does not trust says so (a Sonos too). A moment's silence between songs on
+  a Chromecast or a Sonos. On the iPhone, with the app suspended in the
+  background, the TV or the Sonos ends with its song: the next is the
+  queue's to give. CarPlay plays on the phone.
 - **Checked**: the kit's `PlayOnTests` and `JellyfinSessionsIntegrationTests`
   (a second client on the test Jellyfin over its websocket receives Play,
   Playstate and SetVolume), `CastProtocolTests`, `UPnPTests`; Linux's `JUKEBOX_CHECK=cast`

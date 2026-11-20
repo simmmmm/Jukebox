@@ -285,7 +285,8 @@ private struct PlayOnList: View {
             content
             ScrollView { content }
         }
-        .frame(minWidth: 300, alignment: .topLeading)
+        // From the top in the drawer, which would centre it.
+        .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear { player.playOn.look() }
         .onDisappear { player.playOn.stopLooking() }
     }
