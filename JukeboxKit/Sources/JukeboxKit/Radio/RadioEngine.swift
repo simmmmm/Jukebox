@@ -3,7 +3,9 @@
 // 1. The seed becomes a profile: artists with weights (the seed's own, then
 //    their neighbours in the graph, and at higher adventurousness the
 //    neighbours' neighbours), genres with weights, an era, and tracks with
-//    weights of their own (the seed track, similar tracks, Instant Mix).
+//    weights of their own (the seed track, Last.fm's similar tracks). The
+//    server's own mix is no part of it: it only lifts what the profile
+//    already holds (`mix`).
 // 2. Every track gets a closeness to that profile: the best of its
 //    channels (artist, genre, track, era) plus a quarter of the second
 //    best, times how near its year is. The channel that won is the reason.
@@ -192,6 +194,23 @@ struct RadioEngine: Sendable {
     var likes: [Like] = []
     var added: [Int: Double] = [:]
     var addedReason: [Int: PickReason] = [:]
+    /// The server's own mix for the seed (`addCandidates` with
+    /// `.instantMix`), by track number. Not evidence of how a song sounds:
+    /// Jellyfin's is the songs that share any genre with the seed, in
+    /// random order (MusicManager.GetInstantMixFromGenreIds), and from a
+    /// song without a genre the whole library. So it gives no closeness of
+    /// its own, and no reason: a song the station itself holds near is
+    /// lifted by it, by the dial (nothing at Familiar), and that is all.
+    /// Before, a mix song stood at up to 0.45 past the genre fit and the
+    /// era, as if Last.fm had named it: "er klopt toch nog steeds geen fuck
+    /// van deze radio zo? gorillaz?? cocteau twins?" (the photographer, 20
+    /// November 2026, of Moans Radio at Familiar; RadioServerMixTests).
+    /// Lifting its songs outside the neighbourhood too, for when a station
+    /// has run out of its own, was tried: with Jellyfin's mix and no key it
+    /// brought the three in a little more often (0.233 → 0.256 of picks),
+    /// and a mix that does know gained little (the piano artists 0.34 →
+    /// 0.40).
+    var mix: [Int: Double] = [:]
     var started = false
 
     static let minCloseness = 0.02
@@ -735,9 +754,10 @@ struct RadioEngine: Sendable {
             if case .genre = won, bestArtist >= 0, bestArtistWeight >= 0.75 * genreValue {
                 won = .artist(bestArtist)
             }
-            // When Instant Mix, Last.fm or the graph's similar tracks are what
-            // make a track close, they have judged how it sounds better than
-            // tags and years can: neither the genre fit nor the era scales it.
+            // When Last.fm's or the graph's similar tracks are what make a
+            // track close, they have judged how it sounds better than tags
+            // and years can: neither the genre fit nor the era scales it.
+            // The server's mix has judged nothing (`mix`).
             let judged = won == .track || won == .seedTrack
             if bestCoverage > 0, anchor.decade == nil, !judged {
                 c *= 1 - fitShare + fitShare * coverage[i] / bestCoverage
@@ -784,6 +804,9 @@ struct RadioEngine: Sendable {
             // A candidate from outside counts for more by its weight: up to
             // twice at weight 1.
             if let w = added[i] { base[i] *= 1 + w / 0.9 }
+            // The server's mix agrees with what the station holds: a lift
+            // by the dial, none at Familiar.
+            if let w = mix[i] { base[i] *= 1 + adv * w / 0.9 }
         }
 
         // Sorted in a local: the comparator reads `self`, which a sort of
@@ -1374,7 +1397,7 @@ struct RadioEngine: Sendable {
             return .seed
         case .track:
             if let r = addedReason[i], (added[i] ?? 0) >= (anchor.trackWeight[i] ?? 0) { return r }
-            return anchor.trackReason[i] ?? .instantMix
+            return anchor.trackReason[i] ?? fallbackReason(i)
         case let .artist(a):
             let via = a < artistViaNow.count ? artistViaNow[a] : -1
             if via >= 0 { return .similarArtist(index.artistRefs[via].name) }
@@ -1570,7 +1593,9 @@ struct RadioEngine: Sendable {
             guard let t = index.trackByID[id] else { continue }
             // At most 0.9: the seed track keeps 1.
             let value = 0.9 * w * (1 - 0.3 * Double(rank) / Double(max(1, ids.count)))
-            if value > (added[t] ?? 0) {
+            if reason == .instantMix {
+                mix[t] = max(value, mix[t] ?? 0)
+            } else if value > (added[t] ?? 0) {
                 added[t] = value
                 addedReason[t] = reason
             }

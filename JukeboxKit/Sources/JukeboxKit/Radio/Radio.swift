@@ -336,6 +336,9 @@ public enum PickReason: Hashable, Codable, Sendable {
     case rediscover
     case discovery
     case becauseYouLiked(String)
+    /// The server's own mix: how `addCandidates` is told it is one. No pick
+    /// has it for a reason since 20 November 2026, as the mix places
+    /// nothing; a queue kept from before may.
     case instantMix
     /// Your Station, when the hour decided it: "Often on weekday mornings".
     case timeOfDay(TimeSlot)
@@ -456,9 +459,11 @@ public struct RadioSession: Sendable {
                              settings: settings, recentlyPlayed: recentlyPlayed, randomSeed: randomSeed)
     }
 
-    /// Tracks from outside the library's own knowledge — Jellyfin's Instant
-    /// Mix for the seed, Last.fm's similar tracks — as candidates, raised by
-    /// `weight` (0 … 1).
+    /// Tracks from outside the library's own knowledge, raised by `weight`
+    /// (0 … 1). Last.fm's similar tracks and an artist's top songs are
+    /// candidates in their own right. The server's mix (`.instantMix`) is
+    /// not: it only lifts songs the station already holds near, by the dial
+    /// (docs/RADIO.md, "The server's mix").
     public mutating func addCandidates(_ ids: [ItemID], weight: Double, reason: PickReason) {
         engine.addCandidates(ids, weight: weight, reason: reason)
     }

@@ -717,8 +717,14 @@ final class RadioController {
         // Not asked of a server without one (a Subsonic server before API
         // 1.11): the library's own picks carry the station, as they do when
         // a mix comes back empty (Navidrome without its agents, a genre
-        // Jellyfin has no item for).
-        if let server, server.capabilities.contains(.instantMix), let seed = mixSeed(for: station.seed) {
+        // Jellyfin has no item for). Nor with a Last.fm key: then Last.fm's
+        // similar artists and songs lead, and on his library the server's
+        // mix moved a station by nothing at Familiar and under 0.02 at any
+        // dial (docs/RADIO.md, "The server's mix"). "er klopt toch nog steeds geen fuck van deze
+        // radio zo? gorillaz?? cocteau twins?" (the photographer, 20
+        // November 2026): all three were Jellyfin's mix, on a station
+        // Last.fm knew.
+        if !settings.hasLastFM, let server, server.capabilities.contains(.instantMix), let seed = mixSeed(for: station.seed) {
             sourceTasks.append(Task { [weak self] in
                 let tracks = (try? await server.instantMix(from: seed, limit: 100)) ?? []
                 guard let self, self.generation == generation, !tracks.isEmpty else { return }
