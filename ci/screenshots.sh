@@ -596,10 +596,26 @@ snapshots_round() {
     return
   fi
   mkdir -p "$work/snap-home"
+  # A fake Jellyfin of their own, on 8097: what the snapshots make ready
+  # (a queue, this Mac as a device) never shows in the walks' pictures, a
+  # "Playing on" card for the laptop on the iPhone's Home.
+  local snap_server
+  # shellcheck disable=SC2086 # two words, or none
+  "$work/fake-jellyfin" --port 8097 --data dev/demo --song-lengths $handoff \
+    > "$out/fake-jellyfin-snap.log" 2>&1 < /dev/null &
+  snap_server=$!
+  for _ in $(seq 1 40); do
+    curl -fsS -m 2 http://localhost:8097/System/Info/Public > /dev/null 2>&1 && break
+    sleep 0.5
+  done
   CFFIXED_USER_HOME="$PWD/$work/snap-home" bounded "$limit" \
     "$work/derived-snap/Build/Products/Debug/JukeboxSnapshots.app/Contents/MacOS/JukeboxSnapshots" \
-    "$PWD/$out/mac-snap" localhost:8096 > "$out/mac-snap.log" 2>&1
+    "$PWD/$out/mac-snap" localhost:8097 -deviceID snapshots > "$out/mac-snap.log" 2>&1
+  kill "$snap_server" 2> /dev/null
+  wait "$snap_server" 2> /dev/null
+  # Preferences ignore CFFIXED_USER_HOME: whatever a store wrote there goes.
   defaults delete com.tijmen.Jukebox.Snapshots > /dev/null 2>&1
+  rm -f "$HOME/Library/Preferences/com.tijmen.Jukebox.Snapshots.plist"
   grep -E 'PICTURE|SNAPSHOT' "$out/mac-snap.log"
   pictures=$(ls "$out/mac-snap"/*.png 2> /dev/null | wc -l | tr -d " ")
   echo "mac-snap: $pictures pictures in $(( SECONDS - started )) s" | tee -a "$out/mac-snap/verdict.txt"

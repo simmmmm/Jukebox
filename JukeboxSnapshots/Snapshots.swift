@@ -27,7 +27,9 @@ import SwiftUI
 @main
 enum Snapshots {
     static func main() {
-        let arguments = CommandLine.arguments.dropFirst().filter { !$0.hasPrefix("-") }
+        // The folder and the server first; then perhaps settings for the
+        // argument domain ("-deviceID snapshots"), read and never written.
+        let arguments = Array(CommandLine.arguments.dropFirst().prefix { !$0.hasPrefix("-") })
         let folder = URL(fileURLWithPath: arguments.first ?? "mac-snap", isDirectory: true)
         let address = arguments.dropFirst().first ?? "localhost:8096"
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
