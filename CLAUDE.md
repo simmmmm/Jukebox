@@ -29,6 +29,9 @@ radio chooses, with measurements; `docs/LINUX.md` is the Linux client.
   sleeves, flat grounds, light for the station on air.
 - A screen should feel made by someone with taste: `docs/design/tells.md`
   says what gives it that, with a checklist to walk before a screen ships.
+- One app on every client: `docs/design/SYSTEM.md` holds the tokens (one
+  source, `Jukebox/Components/Tokens.swift`), the components and the parity
+  checklist.
 - Guidance like this file says what to aim for: "niet 'minder ai' maar
   vooral meer ziel" (the photographer, 14 November 2026).
 - Comments say why; the photographer's words where they decided something.

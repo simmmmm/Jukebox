@@ -82,10 +82,13 @@ nonisolated enum Tokens {
 
     enum Radius {
         /// The one radius: artwork, and the one filled button and its twin.
+        // grid-ok: a radius, the brand's 6 and concentric with it, not a distance.
         static let artwork: CGFloat = 6
         /// A tile's hover, 8 past its art: concentric, 6 + 8.
+        // grid-ok: a radius, the brand's 6 and concentric with it, not a distance.
         static let tileHover: CGFloat = 14
         /// Home's cards, 12 in from their art: 6 + 12.
+        // grid-ok: a radius, the brand's 6 and concentric with it, not a distance.
         static let card: CGFloat = 18
     }
 

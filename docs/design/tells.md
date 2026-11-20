@@ -18,7 +18,7 @@ the app's own screenshots show them now.
 | 7 | The sleeve and its record, drawn: printed card with grain and a soft shadow from above, black vinyl with fine grooves, one faint pair of sheen wedges that do not turn, the label a flat colour printed in one ink. | A glossy 3D render: chrome arm, specular streaks, a spotlight. |
 | 8 | Left-aligned, editorial: titles, rows and Now Playing's text start at the margin. Shelves peek off the edge. Centre what the platform centres (the transport). | Centred symmetry everywhere. |
 
-Before a screen ships, walk it:
+Before a screen ships, walk it, then the parity checklist in `SYSTEM.md`, where these rules become tokens and components:
 - Is the only light the station on air?
 - Is every heading sentence case, with one small label at most?
 - Does every line tell something not already seen?
