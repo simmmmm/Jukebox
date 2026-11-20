@@ -760,6 +760,13 @@ round() {
       ;;
   esac
   bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1 || true
+  # The runner's own device emptied again (some 2 to 5 GB each): two
+  # runners' devices kept booted-in filled the MacBook's disk (run
+  # 44761905189, "No space left on device"). Kept, so it is reused; its
+  # next boot is a first one, a minute slower.
+  if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
+    bounded 120 xcrun simctl erase "$udid" > /dev/null 2>&1 || problem "the $kind simulator was not emptied"
+  fi
   endgroup
 }
 
