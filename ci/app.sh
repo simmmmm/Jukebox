@@ -53,10 +53,28 @@ esac
 # build 306 of 19 November 2026).
 ls -d /Applications/Xcode*.app 2>/dev/null || true
 xcode=$(ls -d /Applications/Xcode_2[6-9]*.app 2>/dev/null | grep -iv beta | sort -V | tail -1 || true)
-if [[ -n $xcode ]]; then sudo xcode-select -s "$xcode"; fi
+# DEVELOPER_DIR rather than `sudo xcode-select`: the same on GitHub's
+# machines, and no password asked on the photographer's MacBook, a runner
+# of its own ("kunnen we ook m'n laptop gaan gebruiken als runner", 20
+# November 2026), whose one Xcode is plain /Applications/Xcode.app.
+if [[ -n $xcode ]]; then export DEVELOPER_DIR="$xcode/Contents/Developer"; fi
 xcodebuild -version | tee build/logs/xcode-version.txt
 
-command -v xcodegen >/dev/null || brew install xcodegen
+# XcodeGen: brew's on GitHub's machines; the MacBook has no brew, so there
+# the release's own binary, once, kept beside the runner's work.
+if ! command -v xcodegen >/dev/null; then
+  if command -v brew >/dev/null; then
+    brew install xcodegen
+  else
+    tools="${RUNNER_TOOL_CACHE:-$HOME/.cache}/xcodegen"
+    if [[ ! -x $tools/xcodegen/bin/xcodegen ]]; then
+      mkdir -p "$tools"
+      curl -fsSL -o "$tools/xcodegen.zip" https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip
+      unzip -oq "$tools/xcodegen.zip" -d "$tools"
+    fi
+    export PATH="$tools/xcodegen/bin:$PATH"
+  fi
+fi
 xcodegen generate
 
 # The errors, once each, without the runner's path, on the summary page.

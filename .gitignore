@@ -5,3 +5,6 @@ xcuserdata/
 JukeboxKit/.build/
 JukeboxKit/.swiftpm/
 /.build-linux/
+
+# Local settings of this machine (the Mac to build on, keys): never in git.
+.env
