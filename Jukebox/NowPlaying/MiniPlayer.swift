@@ -7,12 +7,13 @@
 //     with square corners, and under it Jukebox's own tabs on a fade and a
 //     blur from the screen's foot; the system's tab bar hidden.
 //   - Glas (MiniPlayerGlass.swift, mini-bar-inline): the player and the
-//     tabs as one piece of glass; the system's tab bar hidden. The one he
-//     chose on the phone (20 November 2026), and so the default; worked on
-//     since on mini-bar-glas.
+//     tabs as one piece of glass; the system's tab bar hidden. The default
+//     for a while (20 November 2026); worked on since on mini-bar-glas.
 //   - Plaat (MiniPlayerRecord.swift, mini-bar-free-b): the system's tab bar,
 //     the song above it on a ground of the cover's colour under an arch,
-//     the record on the tab bar's shoulder.
+//     the record on the tab bar's shoulder. The one he chose in the end,
+//     and so the default: "Denk dat ik btw toch voor de plaat wil gaan"
+//     (20 November 2026).
 //
 // Settings › Library › Player Bar (test) chooses, and the choice holds at
 // once, on every tab; `-miniBarVariant spotify|glas|plaat` at launch does
@@ -26,9 +27,9 @@ import JukeboxKit
 import SwiftUI
 
 #if os(iOS)
-/// Which of the three, in UserDefaults. Glas until another is chosen: of
-/// the three tried on the phone, the one he chose (20 November 2026), the
-/// other two kept for now to compare again. "glass" and "record" are read
+/// Which of the three, in UserDefaults. Plaat until another is chosen: of
+/// the three tried on the phone, the one he chose in the end (20 November
+/// 2026), the other two kept for now to compare again. "glass" and "record" are read
 /// too, as "glas" and "plaat".
 enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
     case spotify
@@ -39,7 +40,7 @@ enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
     /// The one default, for every @AppStorage that reads the choice: the
     /// foot, the system tab bar's hiding and the picker must agree, or the
     /// system's bar shows under Glas's own tabs.
-    static let standard = MiniBarVariant.glass
+    static let standard = MiniBarVariant.record
 
     init?(rawValue: String) {
         switch rawValue.lowercased() {
@@ -190,6 +191,53 @@ struct TabRow: View {
         .accessibilityLabel(Text(item.title))
         .accessibilityAddTraits(isShown ? .isSelected : [])
         .accessibilityIdentifier(item.id)
+    }
+}
+
+/// The cover as a record's label, turning while the song plays: a turn in
+/// 10 seconds as Now Playing's (RecordMotion), 20 frames a second and only
+/// the label redrawn, by one TimelineView that pauses while it stands;
+/// paused, and with Reduce Motion, it stands. It picks up where it stopped,
+/// not where the clock is. Glas's record and Plaat's: "En de album art
+/// draait niet rond" (the photographer, 20 November 2026, of Plaat's).
+struct TurningMiniPlayerCover: View {
+    let size: CGFloat
+
+    @Environment(AudioPlayer.self) private var player
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    /// The label's angle when it last stopped, and since when it turns.
+    @State private var turned: Double = 0
+    @State private var since: Date?
+
+    private var turns: Bool {
+        player.isPlaying && !reduceMotion
+    }
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1 / RecordMotion.labelFrameRate, paused: !turns)) { context in
+            MiniPlayerCover(size: size, cornerRadius: 0)
+                .clipShape(.circle)
+                .rotationEffect(.degrees(angle(at: context.date)))
+        }
+        .frame(width: size, height: size)
+        .onAppear {
+            if turns { since = .now }
+        }
+        .onChange(of: turns) { _, nowTurns in
+            if nowTurns {
+                since = .now
+            } else {
+                turned = angle(at: .now)
+                since = nil
+            }
+        }
+    }
+
+    private func angle(at date: Date) -> Double {
+        guard let since else { return turned }
+        let degrees = turned + date.timeIntervalSince(since) * RecordMotion.labelDegreesPerSecond
+        return degrees.truncatingRemainder(dividingBy: 360)
     }
 }
 

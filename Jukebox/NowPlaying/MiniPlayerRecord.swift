@@ -12,10 +12,13 @@
 //
 //   - the title in the serif, as on the sleeve and in Now Playing, and under
 //     it the artist, or the station after its mark in the accent;
-//   - Play On, or on a station the thumb, a plain glyph;
+//   - the heart, Play On and next, plain glyphs. The heart on a station too,
+//     where the thumb was: "ipv thumbs down het hartje" (the photographer,
+//     20 November 2026); the station's thumb is Now Playing's and the
+//     song's menu's;
 //   - at the right, over the tab bar's end, the record itself, the cover as
-//     its label: tapped, play or pause; around it a ring in the accent for
-//     where the song is;
+//     its label, turning while it plays: tapped, play or pause; around it a
+//     ring in the accent for where the song is;
 //   - under it all the page's own ground, a touch of the cover's colour in
 //     it: "een lichtere achtergrond … van de albumcover bij dark mode en
 //     donker bij light mode? of niet echt donker en licht maar een beetje
@@ -25,7 +28,10 @@
 //     ietsje meer" (20 November 2026). So the words read over any cover
 //     scrolling under them.
 //
-// A tap on the words opens Now Playing; a long press, the song's menu.
+// A tap on the words opens Now Playing; a long press, the song's menu; a
+// swipe to the left the next song, to the right the one before, as Apple
+// Music's mini player: "sowieso swipe naar links rechts voor vorige
+// volgende" (the photographer, 20 November 2026).
 // Nothing playing, nothing is there: the page runs to the tab bar.
 //
 // The player's error ("Could not play …", a station that finds nothing)
@@ -49,6 +55,19 @@ struct RecordMiniPlayer: View {
     @Environment(Navigator.self) private var navigator
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    @Environment(LibraryStore.self) private var library
+
+    /// The row's width, for whether next fits (showsNext).
+    @State private var rowWidth: CGFloat = 0
+    /// The words' way along a swipe, and whether a drag is one: a drag
+    /// that went sideways first. Kept a moment past its end, so the tap
+    /// the same finger makes on its way up opens nothing.
+    @State private var drag: CGFloat = 0
+    @State private var isSwiping = false
+    /// Counts the songs skipped by a swipe or by next, for the haptic and
+    /// the glyph's bounce.
+    @State private var skips = 0
 
     /// The cover's colour as last worked out, with the cover it is from:
     /// kept while the next cover's loads, so the ground never flashes
@@ -65,8 +84,44 @@ struct RecordMiniPlayer: View {
     static let labelSide: CGFloat = 36
     static let spindle: CGFloat = 16
     /// How far the ground reaches above the row: room for the arch's
-    /// crown and its soft edge, the wider blur clear of the top.
-    static let lift: CGFloat = 96
+    /// crown and its soft edge, the wider blur clear of the top: the crown
+    /// (RecordGroundArch) `crown` above the row, and 56 above that.
+    static let lift: CGFloat = crown + 56
+    /// The arch's crown above the row, and its fall to the screen's edges:
+    /// low and flat, so it hugs the words and the record rather than rising
+    /// in the middle. "Denk dat de ronding ook iets minder mag waardoor het
+    /// rond de randen wat beter uitkomt waar de content staat en in het
+    /// midden niet zo hoog wordt" (the photographer, 20 November 2026); it
+    /// was 40 and 48, the edges then under the title's top.
+    static let crown: CGFloat = 28
+    static let fall: CGFloat = 22
+    /// The arch's soft edge, its blur's radius.
+    static let softness: CGFloat = 24
+    /// The room a page's end needs above the row to come out from under the
+    /// ground: the crown and the soft edge over it. In the bar's inset
+    /// (RecordMiniPlayerBar), so every page scrolls its last row clear:
+    /// "Hou ook rekening met de offset dat je onderaan ook kan zien" (the
+    /// photographer, 20 November 2026, of Home's last shelf under it).
+    static let clearance: CGFloat = crown + softness
+    /// A swipe skips once the words have gone this far, or once a quick
+    /// flick would carry them past `fling`: Apple Music's mini player asks
+    /// about as much, a deliberate sideways stroke rather than a nudge.
+    static let swipe: CGFloat = 56
+    static let fling: CGFloat = 140
+    /// The words follow the finger at this part of its way, and no further
+    /// than `slide`: they lean the way the song goes, and come back.
+    static let follow: CGFloat = 0.4
+    static let slide: CGFloat = 36
+    /// The glyphs' side, each: the heart, AirPlay, next.
+    static let glyph: CGFloat = 44
+    /// The least the title keeps before next gives way. At 375 points (the
+    /// iPhone SE, the 13 mini) the heart, AirPlay and the record leave the
+    /// words 167; next takes 44 of it, leaving 123, some fifteen letters of
+    /// the serif at the default size: still a title. Previous too would
+    /// leave 79, a word and a half, so previous is the swipe's and the
+    /// song's own, not a button (Now Playing has it). Past Large type next
+    /// goes as well: the letters grow and the 123 would hold eight or nine.
+    static let titleLeast: CGFloat = 120
     /// The tint at its fullest, over the material: the page always a little
     /// seen through it, "altijd net een beetje doorheen" (20 November 2026).
     static let fullest: Double = 0.85
@@ -77,6 +132,7 @@ struct RecordMiniPlayer: View {
                 openNowPlaying()
             } label: {
                 titles
+                    .offset(x: wordsOffset)
                     .frame(maxWidth: .infinity, minHeight: 44, alignment: .leading)
                     .contentShape(.rect)
             }
@@ -84,20 +140,30 @@ struct RecordMiniPlayer: View {
             .disabled(!player.hasTrack)
             .accessibilityLabel(accessibilityTitle)
             .accessibilityHint("Opens Now Playing")
+            // The swipe's two songs, for VoiceOver: in the actions rotor.
+            .accessibilityAction(named: "Next") { skip(forward: true) }
+            .accessibilityAction(named: "Previous") { skip(forward: false) }
             // The screenshot walk taps it by this (JukeboxUITests).
             .accessibilityIdentifier("mini-player")
 
-            if let track = player.currentTrack, isStation {
-                dislikeButton(track)
-            } else {
-                // The words' colour, dark by day and white by night, on the
-                // page's own ground: "het icoontje wit is van AirPlay" (the
-                // photographer, 20 November 2026), white on paper by day.
-                RoutePicker(followsAppearance: true)
-                    .frame(width: 44, height: 44)
+            if let track = player.currentTrack {
+                favoriteButton(track)
+            }
+            // The words' colour, dark by day and white by night, on the
+            // page's own ground: "het icoontje wit is van AirPlay" (the
+            // photographer, 20 November 2026), white on paper by day.
+            RoutePicker(followsAppearance: true)
+                .frame(width: Self.glyph, height: Self.glyph)
+            if showsNext {
+                nextButton
             }
             recordButton
                 .padding(.leading, Theme.Space.s)
+        }
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.width
+        } action: { width in
+            rowWidth = width
         }
         .padding(.leading, Theme.margin)
         // The ring's right edge on the tab bar's, 20 from the screen's.
@@ -112,6 +178,11 @@ struct RecordMiniPlayer: View {
                 TrackMenu(track: track)
             }
         }
+        // Beside the buttons' taps, not over them: a drag that goes up or
+        // down is not a swipe, and the bar has no scroll of its own to
+        // fight; the tab bar under it is the system's, apart.
+        .simultaneousGesture(swipeGesture)
+        .sensoryFeedback(.impact(weight: .light), trigger: skips)
         .background { ground }
         .onChange(of: player.errorMessage) { _, message in
             // Shown on this line silently; VoiceOver is told. Not while Now
@@ -175,7 +246,7 @@ struct RecordMiniPlayer: View {
             RecordGroundArch()
                 .fill(.black)
                 .padding(-RecordGroundArch.overhang)
-                .blur(radius: 24)
+                .blur(radius: Self.softness)
         }
         .padding(.top, -Self.lift)
         .ignoresSafeArea(edges: .bottom)
@@ -217,8 +288,9 @@ struct RecordMiniPlayer: View {
 
     @ViewBuilder private var recordLabel: some View {
         // The station's or the mix's own artwork for a song without a cover
-        // (MiniPlayerCover).
-        MiniPlayerCover(size: Self.labelSide, cornerRadius: 0)
+        // (MiniPlayerCover), turning with the song; the ring and its
+        // hairline stand.
+        TurningMiniPlayerCover(size: Self.labelSide)
     }
 
     @ViewBuilder private var titles: some View {
@@ -247,7 +319,7 @@ struct RecordMiniPlayer: View {
                         // The station after its mark, in the accent (Glow by
                         // night, Copper by day, where Glow could not be
                         // read), so the listener knows it is the radio and
-                        // that the thumb teaches it.
+                        // that the heart teaches it.
                         HStack(spacing: Theme.Space.xs) {
                             ArchMark(size: 11, style: .template)
                             Text(station.title)
@@ -311,25 +383,110 @@ struct RecordMiniPlayer: View {
         .foregroundStyle(.secondary)
     }
 
-    /// Less like this, as Now Playing's thumb (RadioController.dislike):
-    /// skips the song and keeps it, and songs like it, off the station.
-    /// Tapped again, taken back.
-    private func dislikeButton(_ track: Track) -> some View {
-        let disliked = radio.disliked.contains(track.id)
+    /// The heart, as Now Playing's: the song a favourite, filled in the
+    /// accent when it is one. Loved on a station it teaches the station too
+    /// (RadioController.like), the clearest "more like this" there is.
+    private func favoriteButton(_ track: Track) -> some View {
+        let favorite = library.isFavorite(track.id)
         return Button {
-            radio.dislike(track)
+            guard !isSwiping else { return }
+            let turningOn = !library.isFavorite(track.id)
+            // like() toggles: a song already thumbed up would lose its thumb.
+            if turningOn, isStation, !radio.liked.contains(track.id) {
+                radio.like(track)
+            }
+            Task { await library.toggleFavorite(.track(track.id)) }
         } label: {
-            Image(systemName: disliked ? "hand.thumbsdown.fill" : "hand.thumbsdown")
+            Image(systemName: favorite ? "heart.fill" : "heart")
                 .font(.title3)
-                .foregroundStyle(.primary)
-                .symbolEffect(.bounce, value: disliked)
-                .frame(width: 44, height: 44)
+                .foregroundStyle(favorite ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.primary))
+                .symbolEffect(.bounce, value: favorite)
+                .frame(width: Self.glyph, height: Self.glyph)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("Dislike")
-        .accessibilityHint("Skips this song and plays less like it")
-        .accessibilityAddTraits(disliked ? .isSelected : [])
+        .accessibilityLabel(favorite ? "Undo Favorite" : "Favorite")
+    }
+
+    /// Next, when the title keeps its room (titleLeast); else the swipe
+    /// alone has it.
+    private var nextButton: some View {
+        Button {
+            guard !isSwiping else { return }
+            skip(forward: true)
+        } label: {
+            Image(systemName: "forward.fill")
+                .font(.title3)
+                .foregroundStyle(.primary)
+                .symbolEffect(.bounce, value: skips)
+                .frame(width: Self.glyph, height: Self.glyph)
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .disabled(!player.hasTrack)
+        .accessibilityLabel("Next")
+    }
+
+    // MARK: The swipe
+
+    /// What the words have left with next in the row: the row (measured
+    /// inside the margins) less the record and its gap, and the three
+    /// glyphs.
+    private var showsNext: Bool {
+        guard dynamicTypeSize <= .large, rowWidth > 0 else { return false }
+        let taken = Self.ring + Theme.Space.s + 3 * Self.glyph
+        return rowWidth - taken >= Self.titleLeast
+    }
+
+    /// The words lean with the finger, a part of its way and no further
+    /// than `slide`, and spring back. With Reduce Motion they stay put;
+    /// the song changing and the haptic say it.
+    private var wordsOffset: CGFloat {
+        guard !reduceMotion else { return 0 }
+        return max(-Self.slide, min(Self.slide, drag * Self.follow))
+    }
+
+    /// Sideways only: a drag counts once it has gone half again as far
+    /// across as up or down, and from then on follows to its end.
+    private var swipeGesture: some Gesture {
+        DragGesture(minimumDistance: 16)
+            .onChanged { value in
+                let across = value.translation.width
+                if !isSwiping {
+                    guard abs(across) > abs(value.translation.height) * 1.5 else { return }
+                    isSwiping = true
+                }
+                drag = across
+            }
+            .onEnded { value in
+                if isSwiping, player.hasTrack {
+                    let across = value.translation.width
+                    let flung = value.predictedEndTranslation.width
+                    if across <= -Self.swipe || flung <= -Self.fling {
+                        skip(forward: true)
+                    } else if across >= Self.swipe || flung >= Self.fling {
+                        skip(forward: false)
+                    }
+                }
+                withAnimation(reduceMotion ? nil : .spring(response: 0.35, dampingFraction: 0.7)) {
+                    drag = 0
+                }
+                // Past the tap the lifted finger may still make.
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(150))
+                    isSwiping = false
+                }
+            }
+    }
+
+    /// The song after, or the one before: AudioPlayer.previous goes back to
+    /// the song's start past its first three seconds, as Now Playing's
+    /// button. On a station that is the same: the songs it played stay in
+    /// its queue, so before is the last one heard.
+    private func skip(forward: Bool) {
+        guard player.hasTrack else { return }
+        if forward { player.next() } else { player.previous() }
+        skips += 1
     }
 
     // MARK: The ground's colour
@@ -443,24 +600,24 @@ struct RecordMiniPlayer: View {
     }
 
     private func openNowPlaying() {
-        guard player.hasTrack else { return }
+        guard player.hasTrack, !isSwiping else { return }
         navigator.isNowPlayingPresented = true
     }
 }
 
 /// The ground's arched top: a flat parabola, its crown 56 below the top
-/// of the ground (40 above the row) in the middle, falling 48 to either
-/// edge of the screen, so its soft band clears the record's ring and the
-/// title's first letters, and runs on past both edges. Drawn in a frame
-/// `overhang` larger on every side than the ground, so the blur that
-/// softens it has shape to blur beyond the ground's edges.
+/// of the ground (RecordMiniPlayer.crown, 28, above the row) in the
+/// middle, falling `fall`, 22, to either edge of the screen, so it comes
+/// down near the title and the record and runs on past both edges. Drawn
+/// in a frame `overhang` larger on every side than the ground, so the blur
+/// that softens it has shape to blur beyond the ground's edges.
 private struct RecordGroundArch: Shape {
     static let overhang: CGFloat = 64
 
     func path(in rect: CGRect) -> Path {
         let ground = rect.insetBy(dx: Self.overhang, dy: Self.overhang)
-        let crown: CGFloat = 56
-        let fall: CGFloat = 48
+        let crown = RecordMiniPlayer.lift - RecordMiniPlayer.crown
+        let fall = RecordMiniPlayer.fall
         let middle = ground.midX
         let half = max(ground.width / 2, 1)
         var path = Path()
@@ -519,8 +676,17 @@ struct RecordMiniPlayerBar: View {
 
     var body: some View {
         if Self.isShown(player: player, radio: radio) {
-            RecordMiniPlayer()
-                .transition(.opacity)
+            VStack(spacing: 0) {
+                // Room in the inset for the arch over the row, so a page's
+                // last row scrolls clear of it; the page still runs on under
+                // it while it scrolls, and the room takes no taps.
+                Color.clear
+                    .frame(height: RecordMiniPlayer.clearance)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+                RecordMiniPlayer()
+            }
+            .transition(.opacity)
         }
     }
 }

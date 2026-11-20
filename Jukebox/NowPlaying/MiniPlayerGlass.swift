@@ -297,59 +297,24 @@ struct GlassMiniPlayer: View {
 /// The record in the glass's corner, the Plaat's soul small: black vinyl,
 /// the cover as its label (MiniPlayerCover: a station's or a mix's own
 /// artwork for a song without one), the spindle's hole. While it plays the
-/// label turns, a turn in 10 seconds as Now Playing's (RecordMotion), 20
-/// frames a second and only the label redrawn; paused, and with Reduce
-/// Motion, it stands. It picks up where it stopped, not where the clock is.
+/// label turns (TurningMiniPlayerCover, Plaat's too).
 private struct GlassRecord: View {
-    @Environment(AudioPlayer.self) private var player
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
     static let side: CGFloat = 44
     /// The cover on it, as on Plaat's (36 on 64).
     static let label: CGFloat = 24
     static let spindle: CGFloat = 5
 
-    /// The label's angle when it last stopped, and since when it turns.
-    @State private var turned: Double = 0
-    @State private var since: Date?
-
-    private var turns: Bool {
-        player.isPlaying && !reduceMotion
-    }
-
     var body: some View {
         ZStack {
             VinylDisc(diameter: Self.side, bands: [], label: nil, tone: nil)
                 .drawingGroup()
-            TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !turns)) { context in
-                MiniPlayerCover(size: Self.label, cornerRadius: 0)
-                    .clipShape(.circle)
-                    .rotationEffect(.degrees(angle(at: context.date)))
-            }
-            .frame(width: Self.label, height: Self.label)
+            TurningMiniPlayerCover(size: Self.label)
             Circle()
                 .fill(VinylDisc.vinyl)
                 .frame(width: Self.spindle, height: Self.spindle)
         }
         .frame(width: Self.side, height: Self.side)
         .accessibilityHidden(true)
-        .onAppear {
-            if turns { since = .now }
-        }
-        .onChange(of: turns) { _, nowTurns in
-            if nowTurns {
-                since = .now
-            } else {
-                turned = angle(at: .now)
-                since = nil
-            }
-        }
-    }
-
-    private func angle(at date: Date) -> Double {
-        guard let since else { return turned }
-        let degrees = turned + date.timeIntervalSince(since) * RecordMotion.labelDegreesPerSecond
-        return degrees.truncatingRemainder(dividingBy: 360)
     }
 }
 
