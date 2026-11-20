@@ -362,22 +362,27 @@ private struct HomeOfflineNotice: View {
 
     var body: some View {
         if isFailed || offline.isOffline {
-            VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                Label {
+            // On a soft amber ground of its own (Theme.notice), shaped as
+            // Home's cards: a warning, but a quiet one, in the Arch's
+            // colours, with the glyph in the accent.
+            HStack(alignment: .firstTextBaseline, spacing: Theme.Space.m) {
+                Image(systemName: offline.hasNetwork ? "wifi.exclamationmark" : "wifi.slash")
+                    .foregroundStyle(Theme.accent)
+                    .accessibilityHidden(true)
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(message)
                         .foregroundStyle(.primary)
                         .fixedSize(horizontal: false, vertical: true)
-                } icon: {
-                    Image(systemName: offline.hasNetwork ? "wifi.exclamationmark" : "wifi.slash")
-                        .foregroundStyle(.secondary)
+                    Button("Try Again") {
+                        offline.checkServer()
+                        Task { await library.refresh() }
+                    }
+                    .buttonStyle(.secondary)
                 }
-                .desktopFont(15, phone: .subheadline)
-                Button("Try Again") {
-                    offline.checkServer()
-                    Task { await library.refresh() }
-                }
-                .buttonStyle(.secondary)
             }
+            .desktopFont(15, phone: .subheadline)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .homeCard(Theme.notice)
             .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
             .accessibilityElement(children: .contain)
             .padding(.horizontal, margin)

@@ -73,6 +73,14 @@ enum Theme {
     /// step past it would no longer read as a card. Linux's `lighter`.
     static let raisedLighter = Color(light: 0xF1EDE6, dark: 0x242120)
 
+    /// Home's word that the server is out of reach: a soft warning, in the
+    /// Arch's own amber rather than the system's yellow ("een warning
+    /// dingetje met een zacht warning kleurtje in stijl van jukebox", the
+    /// photographer, 20 November 2026). The mark core's amber, #F7A136, at
+    /// 16% on the paper by day, #F6E6D1; Glow at 12% on the night by
+    /// night, #2E2517. Copper on it 5.1:1, Glow 8.6:1. Linux's `notice`.
+    static let notice = Color(light: 0xF6E6D1, dark: 0x2E2517)
+
     /// The Arch's own colours (docs/BRAND.md). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
     /// only — the station on the air, the icon — never for text.
