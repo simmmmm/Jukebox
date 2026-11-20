@@ -275,8 +275,8 @@ enum HomePage {
         tile.show(collage: mix.artwork, mix.title, mix.subtitle)
         let button = tileButton(tile.widget) { Pages.open(mix) }
         contextMenu(on: button) {
-            [("Play", { app.player.play(mix.tracks, context: QueueContext(.mix(mix.id), title: mix.title)) }),
-             ("Start Radio", { app.radio.start(mix.stationSeed) })]
+            menuSections([("Play", { app.player.play(mix.tracks, context: QueueContext(.mix(mix.id), title: mix.title)) })],
+                         [("Start Radio", { app.radio.start(mix.stationSeed) })])
         }
         return button
     }
@@ -776,8 +776,8 @@ enum LibraryPages {
         tile.show(artist.artwork, artist.name, "")
         let button = tileButton(tile.widget) { Pages.open(artist) }
         contextMenu(on: button) {
-            [("Start Radio", { app.radio.start(.artist(key: artist.key, name: artist.name, id: artist.id)) })]
-                + publicShareItems(.artist(artist))
+            menuSections([("Start Radio", { app.radio.start(.artist(key: artist.key, name: artist.name, id: artist.id)) })],
+                         publicShareItems(.artist(artist)))
         }
         return button
     }
@@ -888,19 +888,11 @@ enum Pages {
         let art = cover()
         art.show(album.artwork, sleeve: TitleSleeve.Words(album: album))
         let artist = album.primaryArtist.flatMap { app.library.artist($0) }
-        let more: [(String, () -> Void)] = [("Start a Station", { app.radio.start(.album(album.id)) }),
-                                             ("Play Next", { app.player.playNext(tracks) }),
-                                             ("Add to Queue", { app.player.addToQueue(tracks) }),
-                                             ("Add to Playlist…", { Playlists.add(tracks) })]
         let menuButton = moreButton([])
-        // Made again as the album's rating changes, so its tick is the
-        // server's.
+        // The tile's menu, without the Play the page has; made again as the
+        // album's rating changes, so its tick is the server's.
         observe(menuButton) {
-            let items = more + ratingItems(.album(album.id)) + NotCountedUI.items(.album, album.id, album.name)
-                + shareItems(album.id, tracks: tracks.map(\.id))
-                + (artist.map { artist in [("Go to Artist", { open(artist) })] } ?? [])
-                + publicShareItems(.album(album))
-            gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(items))
+            gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(albumMenu(album, play: false)))
         }
         // The first genre of a joined tag ("Folk; Acoustic" is Folk), as
         // Genres lists them and the Mac's head says it.
@@ -947,7 +939,9 @@ enum Pages {
                                         length(songs: all.count, seconds: 0)]),
                           actions: [
             playButton { app.player.play(all, context: context, shuffled: true) },
-            hbox(spacing: 8, [heartButton { .artist(artist.id) }, moreButton([("Start a Station", { app.radio.start(seed) })])]),
+            hbox(spacing: 8, [heartButton { .artist(artist.id) },
+                              moreButton(menuSections([("Start Radio", { app.radio.start(seed) })],
+                                                      publicShareItems(.artist(artist))))]),
         ])
         keep(art, on: raw(top), as: "art")
         let column = vbox([top])
@@ -1038,12 +1032,14 @@ enum Pages {
         // place of its own, Home.
         let gone = { if start != nil { MainWindow.select(0) } else { adw_navigation_view_pop(ptr(Nav.view)) } }
         var more: [(String, () -> Void)] = [
+            ("Play Next", { app.player.playNext(list.items) }),
+            ("Add to Queue", { app.player.addToQueue(list.items) }),
+        ]
+        let radio: [(String, () -> Void)] = [
             ("Start Radio", {
                 Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
                 app.radio.start(.collection(id: playlist.id, name: playlist.name, trackIDs: list.items.map(\.id)))
             }),
-            ("Play Next", { app.player.playNext(list.items) }),
-            ("Add to Queue", { app.player.addToQueue(list.items) }),
         ]
         let delete: [(String, () -> Void)] = own ? [("Delete Playlist", { Playlists.delete(playlist, then: gone) })] : []
         let moreMenu = moreButton([])
@@ -1051,7 +1047,8 @@ enum Pages {
         // menu made again as Don't Count Plays is ticked.
         var picture: [(String, () -> Void)] = []
         func makeMenu() {
-            let items = more + NotCountedUI.items(.playlist, playlist.id, playlist.name) + picture + delete
+            // Delete on its own, last, as GNOME keeps what cannot be undone.
+            let items = menuSections(more, radio, picture + NotCountedUI.items(.playlist, playlist.id, playlist.name), delete)
             gtk_menu_button_set_popover(ptr(moreMenu), popoverMenu(items))
         }
         observe(moreMenu) { makeMenu() }
@@ -1230,8 +1227,8 @@ enum Pages {
                 app.player.play(mix.tracks, context: context)
             },
             quietButton("Shuffle") { app.player.play(mix.tracks, context: context, shuffled: true) },
-            moreButton([("Start a Station", { app.radio.start(mix.stationSeed) }),
-                        ("Add to Playlist…", { Playlists.add(mix.tracks) })]),
+            moreButton([("Add to Playlist…", { Playlists.add(mix.tracks) }),
+                        ("Start Radio", { app.radio.start(mix.stationSeed) })]),
         ])
         keep(art, on: raw(top), as: "art")
         let list = trackList(mix.tracks, context: { context })

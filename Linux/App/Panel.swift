@@ -313,9 +313,11 @@ final class UpNextRow {
         }
     }
 
-    /// The song's menu, with moving and removing for the ones to come.
-    /// Found by id when chosen: the list may have moved since.
-    private func menu() -> [(String, () -> Void)] {
+    /// The song's menu, with moving and removing for the ones to come in
+    /// its first section, the station's lessons beside the one Remove from
+    /// Queue ("eigenlijk hadden we hier al remove from queue", 20 November
+    /// 2026). Found by id when chosen: the list may have moved since.
+    func menu() -> [(String, () -> Void)] {
         guard let entry else { return [] }
         let moves: [(String, () -> Void)]
         if isPlaying || isPlayed {
@@ -329,7 +331,7 @@ final class UpNextRow {
                 ("Remove from Queue", { if let at = offset() { app.player.removeUpcoming(atOffsets: [at]) } }),
             ] + stationItems(entry)
         }
-        return moves + trackMenu([entry.track])
+        return trackMenu([entry.track], place: moves)
     }
 
     /// A song the station chose, before it plays, as on the iPhone

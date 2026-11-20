@@ -38,9 +38,16 @@ enum Style {
         // one step up from raised; by day halfway back to the paper, as a
         // step past it would no longer read as a card. Theme.raisedLighter.
         let lighter = dark ? "#242120" : "#F1EDE6"
+        // Menus and dialogs on Jukebox's own ground, not libadwaita's grey
+        // ("kunnen we de achtergrond kleur van deze popups gelijkmaken aan
+        // de kleuren van jukebox", 20 November 2026), lifted off the page:
+        // by night one step above raised, by day just lighter than the paper.
+        let lifted = dark ? lighter : "#FBF9F5"
         // libadwaita 1.5 reads its colours by name, 1.6 and later from
         // variables (which GTK before 4.16 cannot read, and says so).
         var css = """
+        @define-color popover_bg_color \(lifted);
+        @define-color dialog_bg_color \(lifted);
         @define-color accent_color \(accent);
         @define-color accent_bg_color \(accent);
         @define-color accent_fg_color \(onAccent);
@@ -61,6 +68,7 @@ enum Style {
               --sidebar-bg-color: \(raised); --sidebar-backdrop-color: \(raised);
               --secondary-sidebar-bg-color: \(raised); --secondary-sidebar-backdrop-color: \(raised);
               --headerbar-bg-color: \(raised); --headerbar-backdrop-color: \(raised);
+              --popover-bg-color: \(lifted); --dialog-bg-color: \(lifted);
             }
             """
         }

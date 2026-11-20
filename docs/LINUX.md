@@ -140,10 +140,18 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   header's end, the same on every page: a click in it (or Ctrl+F) shows
   the Search page, which is not in the sidebar;
 - the primary menu (F10) with Preferences, Keyboard Shortcuts and About;
-- GNOME's own context menus; on a server with ratings a song's and an
-  album's menu (the album page's ⋮ too) have Rating, a submenu of None
-  and one to five stars with GNOME's check mark (`ratingItems`, as the
-  Mac's `RatingMenu`);
+- GNOME's own context menus, in sections with a line between them
+  (20 November 2026, `trackMenu`, `menuSections`), the same order in every
+  song's menu and the Mac's `TrackMenu`: what its list does with it (Move
+  Up, Move Down, Remove from Queue or Playlist, and on a station Don't
+  Play X Here and Dislike) · Play Next, Add to Queue · Add to Playlist…,
+  the heart, Rating, Start Radio · Go to Album, Go to Artist, Credits ·
+  the links and Don't Count Plays. An album's the same, with Play first
+  on its tile. Menus and dialogs sit on Jukebox's ground, a step lifted
+  (`popover_bg_color`, `dialog_bg_color` in `Style.swift`);
+- on a server with ratings a song's and an album's menu have Rating, a
+  submenu of None and one to five stars with GNOME's check mark
+  (`ratingItems`, as the Mac's `RatingMenu`);
 - toasts for a moment's news, a dialog before signing out;
 - more than one account (17 November 2026, `Jukebox/App/Accounts.swift`):
   with two or more, the primary menu lists them as radio items, the one
@@ -170,8 +178,8 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   edge, the check at the row's end;
 - header capitals on buttons and rows;
 - a playlist of the listener's own edited in place, as on the Mac (since
-  16 November 2026): a song's menu has Move Up, Move Down and, last,
-  Remove from Playlist; a song dragged onto another takes its place; the
+  16 November 2026): a song's menu has Move Up, Move Down and
+  Remove from Playlist in its first section; a song dragged onto another takes its place; the
   same calls as the Mac's (`LibraryStore.remove`, `move`). Moving only
   where the server can reorder, none of it on someone else's playlist.
 
