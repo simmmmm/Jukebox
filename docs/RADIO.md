@@ -10,8 +10,9 @@ a song heard to the end changes what comes next at once.
 Code: `JukeboxKit/Sources/JukeboxKit/Radio/` and
 `Library/LibrarySnapshot.swift`, Foundation only. Every number here is
 printed by a test in `JukeboxKit/Tests/JukeboxKitTests/Radio*.swift`
-(`dev/kit-test.sh --filter Radio`; lines starting `RADIO-EVAL`, and
-`RADIO-CRITIC` for "What it does when …").
+(`dev/kit-test.sh --filter Radio`; lines starting `RADIO-EVAL`,
+`RADIO-CRITIC` for "What it does when …", `RADIO-QUEUE` and `RADIO-MIX`).
+What could make it choose better, from open data: `radio-alternatives.md`.
 
 ## How a station picks the next song
 
@@ -400,9 +401,10 @@ plus a quarter of the second best, at most 1:
 
 Near the familiar end a track must also sound like the station: closeness is
 scaled by its genre fit. A track with no fit keeps 40% at adventurousness 0,
-61% at 0.35, and all of it at 1. Instant Mix, Last.fm and similar-track
-candidates skip this and the era: they judge how a track sounds better than
-tags can. Your Station's and Loved's own songs (there for being liked, not
+61% at 0.35, and all of it at 1. Last.fm's and the graph's similar tracks
+skip this and the era: they judge how a track sounds better than tags can.
+The server's own mix does not, and is no channel at all ("The server's
+mix"). Your Station's and Loved's own songs (there for being liked, not
 for how they sound) skip it from 0.35 up, and below that keep the fit
 scaled down to it: all of it at 0.
 
@@ -411,8 +413,7 @@ The winning channel is the reason under the track in Up Next:
   came through). An artist link three quarters as strong as the genre fit
   wins the reason, as who it is like says more than "More Rock";
 - genre: "More Shoegaze" (the track's most telling genre);
-- track: "Like “Song”", "From Jellyfin’s mix", or the reason given to
-  `addCandidates`;
+- track: "Like “Song”", or the reason given to `addCandidates`;
 - era: "From the 1990s".
 
 Taste gives the reason only where taste is the point:
@@ -426,6 +427,10 @@ Taste gives the reason only where taste is the point:
 A like that lifted a track by its artist (or a close neighbour, 0.55 or
 more) gives "Because you liked “Song”".
 
+"From Jellyfin’s mix" is no pick's reason any more: the server's mix
+places nothing ("The server's mix"). A queue kept from before may still
+show it.
+
 ### 3. The score
 
 `base = closeness^γ × e^(taste) × familiarity × freshness`
@@ -437,6 +442,7 @@ more) gives "Because you liked “Song”".
 | familiarity | e^(1.4 · (1 − 2a) · (familiarity − 0.35)): up to four times for a well-known song at 0, the other way round at 1. Discovery: e^(−(3 + 2a) · (familiarity − 0.35)), favourites × 0.15 |
 | freshness | 1 − 0.75 · 2^(−hours since heard / 48): heard half a day ago 0.37, a week ago 0.93. Known songs (familiarity 0.6 up) not heard for 120 days × 1.2 |
 | an `addCandidates` track | × (1 + weight) |
+| a song of the server's mix | × (1 + a · weight): nothing at Familiar |
 
 (`a` is adventurousness.)
 
@@ -536,8 +542,10 @@ after a skip already reflects it.
   under half the standing they had), so the rest stay where they are.
 - `returnUnplayed` gives back the fade the returned songs cost: each
   pressure is kept as set, and faded again by the songs still handed out.
-- `addCandidates(ids, weight:, reason:)`: Jellyfin's Instant Mix, Last.fm's
-  similar tracks. In the order given, the first a little more.
+- `addCandidates(ids, weight:, reason:)`: Last.fm's similar tracks, an
+  artist's top songs. In the order given, the first a little more. With
+  `.instantMix` it is the server's mix, which only lifts ("The server's
+  mix").
 - `settings` can change at any time: the next `next` builds the profile
   again for the new adventurousness.
 
@@ -767,6 +775,100 @@ if it was this one. Every
 `RADIO-EVAL` and `RADIO-CRITIC` number above is unchanged: the fixtures
 have no gains, and the rest acts below 0.35.
 
+### The server's mix
+
+"er klopt toch nog steeds geen fuck van deze radio zo? gorillaz?? cocteau
+twins?", then "angele" (the photographer, 20 November 2026): Moans Radio
+(Hania Rani) at Familiar, with a Last.fm key. Every misfit in Up Next said
+"From Jellyfin's mix"; every good line ("Sounds like Hania Rani") was
+Last.fm's.
+
+**The cause.** Jellyfin's InstantMix is the songs that share any genre with
+the seed, in random order (`MusicManager.GetInstantMixFromGenreIds`). From a
+song without a genre it is the whole library; "Moans" has none, as two
+thirds of his songs. The radio took each mix song as a candidate at up to
+0.45, past the genre fit and the era, with its score raised by half (round
+7): as if Last.fm had named it.
+
+**The rule.** The server's mix places nothing: no closeness of its own, no
+reason of its own.
+- A song the station itself holds near (by artist, by genre) is lifted,
+  × (1 + a · weight): nothing at Familiar, half as much again at
+  Adventurous with the app's weight. It keeps its own reason, and passes
+  the genre fit, the era and loudness as any song does.
+- With a Last.fm key the app does not ask for the mix: Last.fm's similar
+  artists and songs lead. On his library the mix then moved a station by
+  nothing at Familiar and 0.017 at most (below).
+- A refused key, or Last.fm out of reach, leaves a station with neither.
+
+Loudness already held every pick, and did not help here: his piano
+records run from −9 to +8 dB, and the three (medians −6 to −8) sat nearer
+the seed's −5.8 than Nils Frahm (+3.4) does. Flow is for Your Station, Loved and Discovery, which
+ask for no mix.
+
+**Measured** (`RadioServerMixTests`, lines `RADIO-MIX`). Moans Radio on a
+library in the shape of his: five piano artists without a file genre,
+Last.fm's tags and similar artists as his cache has them, the three
+misfits, twelve more artists, his gains. 12 stations × 30 picks, the mix
+at the app's weight:
+
+| dial | the three, before → now | "From Jellyfin's mix" | the piano artists |
+|---|---|---|---|
+| 0 (Familiar) | 0.103 → 0 | 0.167 → 0 | 0.833 → 1.000 |
+| 0.35 | 0.122 → 0 | 0.222 → 0 | 0.778 → 1.000 |
+| 0.7 | 0.117 → 0 | 0.342 → 0 | 0.658 → 1.000 |
+| 1 | 0.119 → 0 | 0.522 → 0 | 0.478 → 1.000 |
+
+At weight 1 the three were 108 of 360 picks at Familiar, now 0; the same
+when the mix arrives after the first fifteen were chosen.
+
+His own library and Last.fm answers (the app's cache on Linux, 3 780
+songs; not in the tests), Jellyfin's mix made up as its source has it, the
+share by Hania Rani and her five Last.fm neighbours:
+
+| dial | no mix | with the mix, before | now |
+|---|---|---|---|
+| 0 | 0.928 | 0.567 (the three 0.100, the mix 0.433 of picks) | 0.928 (0, 0) |
+| 0.35 | 0.908 | 0.586 (0.078, 0.414) | 0.903 (0, 0) |
+| 0.7 | 0.794 | 0.494 (0.072, 0.506) | 0.797 (0, 0) |
+| 1 | 0.678 | 0.292 (0.081, 0.708) | 0.661 (0, 0) |
+
+With a key the mix is no gain at any dial, so it is not asked for.
+
+**Without a key** the same station knows nothing of her: no genre in the
+files, no guests. Her own songs play every fifth, the rest is the library
+by taste, the three among it. The mix no longer adds to that.
+
+| Moans Radio at Familiar | with a key | without |
+|---|---|---|
+| the library in his shape, the piano artists | 1.000 | 0.342 (0.267 before) |
+| … the three | 0 | 0.233 (0.342 before) |
+| his library, the piano artists | 0.928 | 0.206 (0.214 before) |
+| … the three | 0 | 0.072 (0.139 before) |
+
+On a well-tagged library the key matters less: song stations on the
+made-up library (16 seeds × 3 × 30 picks), in cluster at 0, 0.35, 0.7, 1:
+
+| | no key | Last.fm-like edges |
+|---|---|---|
+| no mix | 0.953 0.942 0.926 0.793 | 0.974 0.961 0.933 0.783 |
+| Jellyfin's mix, before | 0.879 0.884 0.874 0.825 | 0.872 0.886 0.874 0.804 |
+| … now | 0.953 0.942 0.934 0.821 | 0.974 0.969 0.938 0.822 |
+| a mix that knows, before | 0.990 0.982 0.965 0.864 | 0.988 0.976 0.960 0.847 |
+| … now | 0.953 0.949 0.945 0.840 | 0.974 0.966 0.953 0.829 |
+
+Before, one pick in ten came from Jellyfin's mix from outside the cluster
+(0.081 … 0.117); now none. What it costs: a server whose mix does know
+(Navidrome with Last.fm, a sonic analysis) was worth 0.04 at Familiar
+without a key, and the kit cannot tell that mix from Jellyfin's. A server
+that proves it could be trusted again (`radio-alternatives.md`).
+
+Tried and left out: the mix's songs first when a station has run out of
+its own and looks wider. With Jellyfin's mix and no key the three came a
+little more often (0.233 → 0.256 on the library in his shape, 0.078 →
+0.114 at 0.7 on his own) and six picks in ten said "From Jellyfin's mix";
+a mix that knows raised the piano artists only from 0.342 to 0.397.
+
 ## What it does when …
 
 `RadioCriticTests.swift` tries the radio the way a demanding listener would
@@ -826,6 +928,7 @@ Each round is in the test output of its time.
 | | a known song's skip × its nearness to now | the listening rows above moved by up to 0.022, and a mix's day-to-day overlap by 0.05 (Pop 0.27 → 0.32: the mixes' taste is at midnight, where a morning skip of a known song now counts little); the made-up history skips loved songs |
 | 12. Last.fm's tags | an artist's top tags as genres of their own songs, at a weight, on a library with poor tags | weight 0.25: in cluster 0.847 → 0.970, sub-genre 0.259 → 0.276; 1: genre stations 0.995 → 0.953, the noise counting as the files do; 0.5 kept (Last.fm's tags) |
 | 13. scrobbles | Last.fm's plays as the clock's older evidence, before this device's first event | weight 0.25: Jazz 0.295, no fact; 1: 0.350, but a scrobble is as sure as a play here; 0.5 kept (Scrobbles) |
+| 14. the server's mix | round 7 undone: the mix judged nothing (Jellyfin's is any shared genre at random), so it places nothing and only lifts, by the dial; not asked for with a Last.fm key | The server's mix |
 
 ## Building on it
 
@@ -871,8 +974,9 @@ Each round is in the test output of its time.
     thumb back must leave an event too (a `.liked` does it), or the song
     stays off the radio for half a year;
   - pass `history.trackIDs(since: now − noRepeatHours)` as `recentlyPlayed`;
-  - Instant Mix at a weight of about 0.5, Last.fm's similar tracks about
-    0.8, both via `addCandidates`;
+  - Last.fm's similar tracks at a weight of about 0.8 via `addCandidates`;
+    the server's mix at 0.5 with `.instantMix`, and only without a Last.fm
+    key;
   - a session and its first tracks take about 5 ms on 20 000 tracks, fine
     on the main actor; build the snapshot and the graph (100–220 ms
     together, release) off it.
