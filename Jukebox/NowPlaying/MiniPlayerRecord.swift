@@ -116,14 +116,13 @@ struct RecordMiniPlayer: View {
     /// than `slide`: they lean the way the song goes, and come back.
     static let follow: CGFloat = 0.4
     static let slide: CGFloat = 36
-    /// The glyphs' side, each: the heart, AirPlay, next.
+    /// The glyphs' side, each: the heart, next.
     static let glyph: CGFloat = 44
     /// The least the title keeps before next gives way. At 375 points (the
-    /// iPhone SE, the 13 mini) the heart, AirPlay and the record leave the
-    /// words 167; next takes 44 of it, leaving 123, some fifteen letters of
-    /// the serif at the default size: still a title. Previous too would
-    /// leave 79, a word and a half, so previous is the swipe's and the
-    /// song's own, not a button (Now Playing has it). Past Large type next
+    /// iPhone SE, the 13 mini) the heart and the record leave the words
+    /// 211; next takes 44 of it, leaving 167, some twenty letters of the
+    /// serif at the default size: a title at ease. Previous is the swipe's
+    /// and Now Playing's, not a button. Past Large type next
     /// goes as well: the letters grow and the 123 would hold eight or nine.
     static let titleLeast: CGFloat = 120
     /// The tint at its fullest, over the material: the page always a little
@@ -153,11 +152,9 @@ struct RecordMiniPlayer: View {
             if let track = player.currentTrack {
                 favoriteButton(track)
             }
-            // The words' colour, dark by day and white by night, on the
-            // page's own ground: "het icoontje wit is van AirPlay" (the
-            // photographer, 20 November 2026), white on paper by day.
-            RoutePicker(followsAppearance: true)
-                .frame(width: Self.glyph, height: Self.glyph)
+            // No AirPlay here: Now Playing has it. "eigenlijk mag van mij
+            // het airplay icoontje hier er uit" (the photographer, 20
+            // November 2026).
             if showsNext {
                 nextButton
             }
@@ -445,11 +442,11 @@ struct RecordMiniPlayer: View {
     // MARK: The swipe
 
     /// What the words have left with next in the row: the row (measured
-    /// inside the margins) less the record and its gap, and the three
+    /// inside the margins) less the record and its gap, and the two
     /// glyphs.
     private var showsNext: Bool {
         guard dynamicTypeSize <= .large, rowWidth > 0 else { return false }
-        let taken = Self.ring + Theme.Space.s + 3 * Self.glyph
+        let taken = Self.ring + Theme.Space.s + 2 * Self.glyph
         return rowWidth - taken >= Self.titleLeast
     }
 
