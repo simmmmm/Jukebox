@@ -44,6 +44,7 @@ let shared = [
     "Jukebox/Player/PlayOn.swift",
     "Jukebox/Player/PlayQueue.swift",
     "Jukebox/Player/RemoteControl.swift",
+    "Jukebox/Player/UPnPPlay.swift",
     "Jukebox/Radio/RadioController.swift",
 ]
 

@@ -101,6 +101,10 @@ final class AppModel {
         player.playOn.castPlayer = { device in
             CastPlayer(device: device, socket: NetworkCastSocket(service: device.address))
         }
+        // The Sonos rooms, by Bonjour and UPnP AV as Linux plays them
+        // ("Huh daar staat wel weer mn sonos bij", 20 November 2026).
+        player.playOn.rendererFinder = BonjourSonosFinder()
+        player.playOn.rendererPlayer = { UPnPPlayer(device: $0) }
         remote.connect = { URLSessionCommandSocket(url: $0) }
     }
 
