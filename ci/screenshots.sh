@@ -64,6 +64,17 @@ fi
 # requires; "iPhone 17 Pro Max" gives the optional large set, 1320 x 2868
 # (docs/RELEASE.md, Screenshots).
 iphone=${SHOTS_IPHONE:-iPhone 17 Pro}
+# The fake Jellyfin's port, and the snapshots' own one up. On the MacBook
+# two runners walk at once (mac-5, mac-6): each its own pair, from its
+# name, so neither signs in to the other's server (run 44759219953: mac-6's
+# server held 8096, and this run's walks found nothing to sign in to). The
+# walks are told it (JUKEBOX_SERVER in the tests).
+port=8096
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
+  port=$(( 18000 + $(printf '%s' "${RUNNER_NAME:-local}" | cksum | cut -d' ' -f1) % 400 * 2 ))
+fi
+snap_port=$(( port + 1 ))
+export TEST_RUNNER_JUKEBOX_SERVER=localhost:$port
 out=build/logs/screenshots
 # Result bundles, exports, the derived data and the branch: not uploaded.
 work=build/screenshots
@@ -143,7 +154,7 @@ status_bar() {
 
 # --- The fake Jellyfin -------------------------------------------------------
 
-group "The fake Jellyfin on localhost:8096, and the contact sheet's tool"
+group "The fake Jellyfin on localhost:$port, and the contact sheet's tool"
 server=
 stop_server() {
   if [[ -n $server ]]; then
@@ -224,12 +235,12 @@ if bounded "$(allow 300)" xcrun swiftc -O -parse-as-library dev/fake-jellyfin.sw
     *walk) handoff="--handoff Studio" ;;
   esac
   # shellcheck disable=SC2086 # two words, or none
-  "$work/fake-jellyfin" --port 8096 --data dev/demo --song-lengths $handoff \
+  "$work/fake-jellyfin" --port "$port" --data dev/demo --song-lengths $handoff \
     > "$out/fake-jellyfin.log" 2>&1 < /dev/null &
   server=$!
   answered=false
   for _ in $(seq 1 60); do
-    if curl -fsS -m 2 http://localhost:8096/System/Info/Public > "$work/public-info.json" 2>/dev/null; then
+    if curl -fsS -m 2 http://localhost:$port/System/Info/Public > "$work/public-info.json" 2>/dev/null; then
       answered=true
       break
     fi
@@ -241,13 +252,13 @@ if bounded "$(allow 300)" xcrun swiftc -O -parse-as-library dev/fake-jellyfin.sw
   if $answered && ! kill -0 "$server" 2>/dev/null; then
     # Something else holds the port (on a developer's machine, the real
     # Jellyfin of dev/jellyfin-test-server.sh), and the fake one has stopped.
-    problem "the fake Jellyfin stopped at once and something else answers on localhost:8096 (fake-jellyfin.log)"
+    problem "the fake Jellyfin stopped at once and something else answers on localhost:$port (fake-jellyfin.log)"
     tail -20 "$out/fake-jellyfin.log"
     server=
   elif $answered; then
     echo "It answers: $(head -c 300 "$work/public-info.json")"
   else
-    problem "the fake Jellyfin did not answer on localhost:8096, so the walks stop at sign-in (fake-jellyfin.log)"
+    problem "the fake Jellyfin did not answer on localhost:$port, so the walks stop at sign-in (fake-jellyfin.log)"
     tail -40 "$out/fake-jellyfin.log"
   fi
 else
@@ -628,21 +639,21 @@ snapshots_round() {
     return
   fi
   mkdir -p "$work/snap-home"
-  # A fake Jellyfin of their own, on 8097: what the snapshots make ready
+  # A fake Jellyfin of their own, one port up: what the snapshots make ready
   # (a queue, this Mac as a device) never shows in the walks' pictures, a
   # "Playing on" card for the laptop on the iPhone's Home.
   local snap_server
   # shellcheck disable=SC2086 # two words, or none
-  "$work/fake-jellyfin" --port 8097 --data dev/demo --song-lengths $handoff \
+  "$work/fake-jellyfin" --port "$snap_port" --data dev/demo --song-lengths $handoff \
     > "$out/fake-jellyfin-snap.log" 2>&1 < /dev/null &
   snap_server=$!
   for _ in $(seq 1 40); do
-    curl -fsS -m 2 http://localhost:8097/System/Info/Public > /dev/null 2>&1 && break
+    curl -fsS -m 2 http://localhost:$snap_port/System/Info/Public > /dev/null 2>&1 && break
     sleep 0.5
   done
   CFFIXED_USER_HOME="$PWD/$work/snap-home" bounded "$limit" \
     "$work/derived-snap/Build/Products/Debug/JukeboxSnapshots.app/Contents/MacOS/JukeboxSnapshots" \
-    "$PWD/$out/mac-snap" localhost:8097 -deviceID snapshots > "$out/mac-snap.log" 2>&1
+    "$PWD/$out/mac-snap" "localhost:$snap_port" -deviceID snapshots > "$out/mac-snap.log" 2>&1
   kill "$snap_server" 2> /dev/null
   wait "$snap_server" 2> /dev/null
   # Preferences ignore CFFIXED_USER_HOME: whatever a store wrote there goes.

@@ -900,7 +900,7 @@ final class Walk {
         // The welcome's picture has settled: the mark on, the record out.
         pause(5)
         if takingPictures { picture(names[0]) }
-        try enter("localhost:8096", into: address, "Welcome: the server's address")
+        try enter(fakeServer, into: address, "Welcome: the server's address")
         if takingPictures { picture(names[1]) }
         pressReturn(in: address)
 
@@ -910,7 +910,7 @@ final class Walk {
             try tap(app.buttons["Continue"], "Welcome: Continue", timeout: 2)
         }
         guard password.waitForExistence(timeout: 30) else {
-            note("Welcome: no account step (is the fake Jellyfin answering on localhost:8096?)")
+            note("Welcome: no account step (is the fake Jellyfin answering on \(fakeServer)?)")
             picture("onboarding-server-error")
             return false
         }
@@ -1302,4 +1302,12 @@ final class Walk {
         return word ?? words.first ?? "a"
     }
 }
+
+/// The fake Jellyfin's address: localhost:8096, or the port ci/screenshots.sh
+/// gives a runner of the MacBook (JUKEBOX_SERVER), where two runners walk at
+/// once, each with a server of its own.
+let fakeServer: String = {
+    let given = ProcessInfo.processInfo.environment["JUKEBOX_SERVER"] ?? ""
+    return given.isEmpty ? "localhost:8096" : given
+}()
 #endif
