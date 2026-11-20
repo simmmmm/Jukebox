@@ -110,10 +110,9 @@ private struct Round {
                 app.navigator.searchQuery = app.library.artistsByName.first.map { String($0.name.prefix(4)) } ?? "a"
                 app.navigator.place = .search
             }
-            number += 1
-            await render(SettingsView(asWindow: true).snapshotEnvironment(app, panel: panel),
-                         size: CGSize(width: 720, height: 600), appearance: appearance, settle: 1,
-                         as: String(format: "%@%02d-settings", prefix, number))
+            // No Settings: its window's tabs live in a toolbar, which an
+            // offscreen window does not draw, so the picture came out broken.
+            // The store's walk on GitHub has it.
         }
         // What the system's Now Playing was told, cleared again.
         app.player.stop()
