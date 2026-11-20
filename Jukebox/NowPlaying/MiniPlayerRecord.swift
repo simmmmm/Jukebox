@@ -90,7 +90,10 @@ struct RecordMiniPlayer: View {
             if let track = player.currentTrack, isStation {
                 dislikeButton(track)
             } else {
-                RoutePicker()
+                // The words' colour, dark by day and white by night, on the
+                // page's own ground: "het icoontje wit is van AirPlay" (the
+                // photographer, 20 November 2026), white on paper by day.
+                RoutePicker(followsAppearance: true)
                     .frame(width: 44, height: 44)
             }
             recordButton
@@ -213,13 +216,9 @@ struct RecordMiniPlayer: View {
     }
 
     @ViewBuilder private var recordLabel: some View {
-        let side = Self.labelSide
-        if player.currentTrack == nil, let station = startingStation {
-            StationArtwork(station: station, size: side, cornerRadius: 0)
-        } else {
-            ArtworkView(player.currentTrack?.artwork, size: side, cornerRadius: 0,
-                        sleeve: player.currentTrack.map(TitleSleeve.Words.init(track:)))
-        }
+        // The station's or the mix's own artwork for a song without a cover
+        // (MiniPlayerCover).
+        MiniPlayerCover(size: Self.labelSide, cornerRadius: 0)
     }
 
     @ViewBuilder private var titles: some View {

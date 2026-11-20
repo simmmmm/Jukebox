@@ -1,38 +1,40 @@
-// Glas, one of the three player bars in the test build (MiniPlayer.swift).
+// Glas, the player bar he chose of the three in the test build
+// (MiniPlayer.swift), and the default.
 //
-// The mini player: what plays, in a block of the cover's colour just above
-// the tab bar. The photographer, 19 November 2026: "Die mag van mij qua vorm
-// meer zoals die van spotify maar dan in de kleur van de albumhoes", of
-// "dat balkje boven de knoppenbalk"; of the sketches he chose "A!", and
-// then "Met b" (build/nowplaying-sketch/minibar.svg):
+// The player and the tabs as one piece of glass, the player on top and the
+// tabs under it, as Claude's box to type in holds its buttons: "Kan je nog
+// 1x iets met glas proberen waarbij je het een soort inline boven de
+// buttons zet? Net als zoals de box waar ik min of meer nu in typ in ios
+// claude code?", and "Het moet er wel uitzien alsof het samen één object
+// is he" (the photographer, 20 November 2026). The system's tab bar cannot
+// share our glass, so it is hidden (MainTabView) and the tabs are ours
+// (GlassTabFoot, TabRow).
 //
-//   A: the block floats 8 points in from the screen's edges, flat in the
-//      cover's colour, by day and by night the same (the cover's, not the
-//      system's material). The cover small on the left, the title and the
-//      artist in white, Play On and play or pause on the right, and a line
-//      of 2 points along its foot for where the song is.
-//   B: while a station plays, the second line is the station after its
-//      mark, in Glow, and Dislike takes Play On's place: on the radio the
-//      thumb is what the hand wants.
+// Then, tried on his phone the same day, Glas it was, with notes:
 //
-// A tap anywhere but the buttons opens Now Playing.
+//   - "De glas voelt nog niet helemaal apples design maar dat kunnen we
+//     vast tweaken": so the system's own glass, untinted, in the shape and
+//     at the place of iOS 26's tab bar, which it stands in for, and in it
+//     the system's words: dark by day, white by night, what is chosen or on
+//     air in the accent.
+//   - The Plaat's soul, small: on the left a record, the cover as its
+//     label, turning while it plays as Now Playing's label turns.
+//   - "ik mis misschien ook nog vorige volgende knopjes": Next, at the
+//     right of play and pause, as Apple Music's player above its tabs.
+//     On a station the thumb keeps its place before them: on the radio it
+//     is what the hand wants, and Next only skips, where the thumb also
+//     teaches. Previous stays in Now Playing: a fourth button would leave
+//     the title some 100 points, a word or two, and going back is rarer
+//     than going on.
+//
+// A tap anywhere but the buttons opens Now Playing; a long press, the
+// song's menu.
 //
 // The player's error ("Could not play …", a station that finds nothing)
 // takes the second line for the five seconds the player keeps it: Now
 // Playing shows it as a banner, but most of the time Now Playing is closed,
 // and a song that silently does not play, or a station that silently does
 // not start, reads as a broken button.
-//
-// Then the player and the tabs as one piece of glass, the player on top and
-// the tabs under it, as Claude's box to type in holds its buttons: "Kan je
-// nog 1x iets met glas proberen waarbij je het een soort inline boven de
-// buttons zet? Net als zoals de box waar ik min of meer nu in typ in ios
-// claude code?", and "Het moet er wel uitzien alsof het samen één object
-// is he" (the photographer, 20 November 2026). The system's tab bar cannot
-// share our glass, so it is hidden (MainTabView) and the tabs are ours
-// (GlassTabFoot, TabRow). The glass is the system's by day and by night with a
-// breath of the cover's colour, so the words follow the system too: dark by
-// day, white by night, the station's line in the accent.
 //
 // The tabs' alone (the iPhone, a narrow iPad window). The wide window, the
 // iPad's and the Mac's, has the player's bar across its foot instead, as
@@ -43,16 +45,12 @@ import SwiftUI
 
 #if os(iOS)
 struct GlassMiniPlayer: View {
-    @Environment(AppModel.self) private var app
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// The block's colour as last worked out, with the cover it is from:
-    /// kept while the next cover's loads, so the bar never flashes neutral
-    /// between two songs.
-    @State private var shown: (url: URL?, color: Color)?
+    /// Taps on Next, for its bounce.
+    @State private var nextTaps = 0
 
     var body: some View {
         HStack(spacing: 0) {
@@ -60,7 +58,7 @@ struct GlassMiniPlayer: View {
                 openNowPlaying()
             } label: {
                 HStack(spacing: Theme.Space.m) {
-                    cover
+                    GlassRecord()
                     titles
                     Spacer(minLength: 0)
                 }
@@ -76,25 +74,24 @@ struct GlassMiniPlayer: View {
             if let track = player.currentTrack, isStation {
                 dislikeButton(track)
             } else {
+                // In the words' colour, never white on the light glass: "het
+                // icoontje wit is van AirPlay" (the photographer, 20
+                // November 2026).
                 RoutePicker(followsAppearance: true)
                     .frame(width: 44, height: 44)
             }
             playPauseButton
+            nextButton
         }
-        .padding(.leading, Theme.Space.m)
-        .padding(.trailing, Theme.Space.s)
-        .frame(minHeight: 64)
+        .frame(minHeight: GlassRecord.side)
         // The gaps between the buttons open Now Playing too.
         .contentShape(.rect)
         .onTapGesture {
             openNowPlaying()
         }
-        // Past this size the two lines no longer fit the block.
+        // Past this size the two lines no longer fit the glass.
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
-        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: GlassTabFoot.radius - Theme.Space.xs,
-                                                            style: .continuous))
-        // The glass around it takes a breath of this (GlassTabFoot).
-        .preference(key: GlassCoverTint.self, value: blockColor)
+        .contentShape(.contextMenuPreview, RoundedRectangle(cornerRadius: GlassRecord.side / 2, style: .continuous))
         .contextMenu {
             if let track = player.currentTrack {
                 TrackMenu(track: track)
@@ -107,29 +104,9 @@ struct GlassMiniPlayer: View {
                 AccessibilityNotification.Announcement(message).post()
             }
         }
-        // The cover's colour, once per cover (ImagePipeline keeps it), eased
-        // from the last song's over half a second, as Now Playing's.
-        .task(id: toneURL) {
-            guard let url = toneURL else {
-                setColor(nil, for: nil)
-                return
-            }
-            let found = await ImagePipeline.shared.accent(for: url)
-            guard !Task.isCancelled else { return }
-            setColor(found, for: url)
-        }
     }
 
     // MARK: Parts
-
-    @ViewBuilder private var cover: some View {
-        if player.currentTrack == nil, let station = startingStation {
-            StationArtwork(station: station, size: 44, cornerRadius: Theme.Radius.artwork)
-        } else {
-            ArtworkView(player.currentTrack?.artwork, size: 44, cornerRadius: Theme.Radius.artwork,
-                        sleeve: player.currentTrack.map(TitleSleeve.Words.init(track:)))
-        }
-    }
 
     @ViewBuilder private var titles: some View {
         Group {
@@ -146,17 +123,16 @@ struct GlassMiniPlayer: View {
                         if player.notCounted.isPrivate {
                             Image(systemName: "eye.slash")
                                 .font(.caption2)
-                                .foregroundStyle(Self.quiet)
+                                .foregroundStyle(.secondary)
                                 .accessibilityLabel("Private Listening is on")
                         }
                     }
                     if let shownError {
                         errorLine(shownError)
                     } else if let station = player.context?.station {
-                        // B: the station after its mark, in the accent, so
-                        // the listener knows it is the radio and that the
-                        // thumb teaches it: Glow by night, Copper on the
-                        // light glass by day.
+                        // The station after its mark, in the accent, so the
+                        // listener knows it is the radio and that the thumb
+                        // teaches it: Glow by night, Copper by day.
                         HStack(spacing: Theme.Space.xs) {
                             ArchMark(size: 11, style: .template)
                             Text(station.title)
@@ -167,7 +143,7 @@ struct GlassMiniPlayer: View {
                     } else if !track.artistLine.isEmpty {
                         Text(track.artistLine)
                             .font(.footnote)
-                            .foregroundStyle(Self.quiet)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
@@ -184,7 +160,7 @@ struct GlassMiniPlayer: View {
                     } else {
                         Text("Tuning in…")
                             .font(.footnote)
-                            .foregroundStyle(Self.quiet)
+                            .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
                 }
@@ -194,7 +170,7 @@ struct GlassMiniPlayer: View {
                 VStack(alignment: .leading, spacing: 1) {
                     Text("Not Playing")
                         .font(.subheadline.weight(.medium))
-                        .foregroundStyle(Self.quiet)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                     if let shownError {
                         errorLine(shownError)
@@ -217,7 +193,7 @@ struct GlassMiniPlayer: View {
                 .font(.footnote)
                 .lineLimit(1)
         }
-        .foregroundStyle(Self.quiet)
+        .foregroundStyle(.secondary)
     }
 
     /// Less like this, as Now Playing's thumb (RadioController.dislike):
@@ -257,54 +233,23 @@ struct GlassMiniPlayer: View {
         .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
     }
 
-    // MARK: The colour
-
-    /// The artist, the error, "Tuning in…": the system's second grey, on
-    /// glass that follows the system.
-    static let quiet = Color.secondary
-
-    /// The cover, small, for its colour: the 120 pixels Now Playing takes
-    /// its accent from, so the bar, the record's label and Now Playing are
-    /// one download and one colour.
-    private var toneURL: URL? {
-        guard let artwork = player.currentTrack?.artwork, let server = app.server else { return nil }
-        return server.artworkURL(artwork, maxPixelSize: 120)
-    }
-
-    /// The colour shown: the one worked out last, or, on a tab that has not
-    /// worked one out yet (each tab has its own bar), the one kept for this
-    /// cover, so a new tab opens in the colour the last one had.
-    private var blockColor: Color {
-        if let shown { return shown.color }
-        if let url = toneURL, case let .some(kept) = ImagePipeline.shared.cachedAccent(url) {
-            return Self.block(from: kept)
+    /// The next song, as Now Playing's Next (AudioPlayer.next): on a station
+    /// the next it chose.
+    private var nextButton: some View {
+        Button {
+            nextTaps += 1
+            player.next()
+        } label: {
+            Image(systemName: "forward.fill")
+                .font(.title3)
+                .foregroundStyle(Color.primary.opacity(player.hasTrack ? 1 : 0.4))
+                .symbolEffect(.bounce, value: nextTaps)
+                .frame(width: 44, height: 44)
+                .contentShape(.rect)
         }
-        return Theme.Arch.cabinet
-    }
-
-    private func setColor(_ accent: AccentColor?, for url: URL?) {
-        // No cover at all: the brand's neutral. A cover still loading keeps
-        // the last song's colour (the task waits on it).
-        let color = url == nil ? Theme.Arch.cabinet : Self.block(from: accent)
-        let first = shown == nil
-        withAnimation(first || reduceMotion ? nil : .easeInOut(duration: 0.5)) {
-            shown = (url: url, color: color)
-        }
-    }
-
-    /// The cover's colour, of which the glass takes a breath: Now Playing's accent (CoverAccent,
-    /// the cover's colour a person would point at), darkened step by step,
-    /// hue kept, until Glow on it is 4.5:1, the least for text. White, which
-    /// is lighter than Glow, then has more: 8:1 or so, and white at 70% for
-    /// the artist 4.8:1. The same colour on and off a station, so B's Glow
-    /// line never changes the bar. A cover with no colour of its own (black
-    /// and white, grey): Cabinet, the brand's own dark.
-    static func block(from accent: AccentColor?) -> Color {
-        guard var color = accent else { return Theme.Arch.cabinet }
-        while color.contrast(with: .glow) < 4.5, color.luminance > 0.001 {
-            color = AccentColor(red: color.red * 0.95, green: color.green * 0.95, blue: color.blue * 0.95)
-        }
-        return Color(red: color.red, green: color.green, blue: color.blue)
+        .buttonStyle(.plain)
+        .disabled(!player.hasTrack)
+        .accessibilityLabel("Next")
     }
 
     // MARK: State
@@ -349,10 +294,69 @@ struct GlassMiniPlayer: View {
     }
 }
 
+/// The record in the glass's corner, the Plaat's soul small: black vinyl,
+/// the cover as its label (MiniPlayerCover: a station's or a mix's own
+/// artwork for a song without one), the spindle's hole. While it plays the
+/// label turns, a turn in 10 seconds as Now Playing's (RecordMotion), 20
+/// frames a second and only the label redrawn; paused, and with Reduce
+/// Motion, it stands. It picks up where it stopped, not where the clock is.
+private struct GlassRecord: View {
+    @Environment(AudioPlayer.self) private var player
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    static let side: CGFloat = 44
+    /// The cover on it, as on Plaat's (36 on 64).
+    static let label: CGFloat = 24
+    static let spindle: CGFloat = 5
+
+    /// The label's angle when it last stopped, and since when it turns.
+    @State private var turned: Double = 0
+    @State private var since: Date?
+
+    private var turns: Bool {
+        player.isPlaying && !reduceMotion
+    }
+
+    var body: some View {
+        ZStack {
+            VinylDisc(diameter: Self.side, bands: [], label: nil, tone: nil)
+                .drawingGroup()
+            TimelineView(.animation(minimumInterval: 1.0 / 20, paused: !turns)) { context in
+                MiniPlayerCover(size: Self.label, cornerRadius: 0)
+                    .clipShape(.circle)
+                    .rotationEffect(.degrees(angle(at: context.date)))
+            }
+            .frame(width: Self.label, height: Self.label)
+            Circle()
+                .fill(VinylDisc.vinyl)
+                .frame(width: Self.spindle, height: Self.spindle)
+        }
+        .frame(width: Self.side, height: Self.side)
+        .accessibilityHidden(true)
+        .onAppear {
+            if turns { since = .now }
+        }
+        .onChange(of: turns) { _, nowTurns in
+            if nowTurns {
+                since = .now
+            } else {
+                turned = angle(at: .now)
+                since = nil
+            }
+        }
+    }
+
+    private func angle(at date: Date) -> Double {
+        guard let since else { return turned }
+        let degrees = turned + date.timeIntervalSince(since) * RecordMotion.labelDegreesPerSecond
+        return degrees.truncatingRemainder(dividingBy: 360)
+    }
+}
+
 /// Where the song is: a line of 2 points between the player and the tabs,
-/// the text's colour on itself at 15%. Apart from the player, as the clock
-/// ticks twice a second and the rest changes only with the song. Not for VoiceOver: Now Playing has
-/// the position, to be read and moved.
+/// the words' colour on itself at 15%. Apart from the player, as the clock
+/// ticks twice a second and the rest changes only with the song. Not for
+/// VoiceOver: Now Playing has the position, to be read and moved.
 private struct GlassMiniPlayerProgress: View {
     @Environment(AudioPlayer.self) private var player
 
@@ -374,20 +378,12 @@ private struct GlassMiniPlayerProgress: View {
     }
 }
 
-/// The cover's colour, from the player up to the glass that holds it.
-private struct GlassCoverTint: PreferenceKey {
-    static var defaultValue: Color? { nil }
-    static func reduce(value: inout Color?, nextValue: () -> Color?) {
-        value = value ?? nextValue()
-    }
-}
-
-/// Each tab's foot, on iOS 18 and 26 alike: one piece of glass floating
-/// above the home indicator, the player on top (while something plays or
+/// Each tab's foot, on iOS 18 and 26 alike: one piece of glass where iOS
+/// 26's tab bar would float, the player on top (while something plays or
 /// starts), the line of where the song is between, the tabs under it.
-/// Nothing playing, the glass holds the tabs alone. Not iOS 26's bottom
-/// accessory: its glass, its height and its layout are the system's, and the
-/// two would be two objects. Tapped, the player opens Now Playing.
+/// Nothing playing, the glass holds the tabs alone, and is then the
+/// system's tab bar to the eye. Not iOS 26's bottom accessory: its glass
+/// is a second object above the bar's.
 struct GlassTabFoot: View {
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
@@ -396,11 +392,19 @@ struct GlassTabFoot: View {
     /// behind it, and the player alone rides on it. Watched by MiniBarFoot,
     /// which stays when this is gone (the keyboard up, nothing playing).
     let isKeyboardUp: Bool
-    /// The cover's colour, from the player inside (GlassCoverTint).
-    @State private var tint: Color?
 
-    /// Round as iOS 26's own tab bar, which this stands in for.
-    static let radius: CGFloat = 28
+    /// iOS 26's tab bar on the iPhone: 21 from the screen's sides (measured
+    /// on the iPhone 17 Pro), and as far from its foot, round as the
+    /// display's corners are; 62 tall, a capsule. The height and the foot
+    /// are by eye from Apple's, not measured: to be checked on the phone.
+    static let inset: CGFloat = 21
+    static let tabsHeight: CGFloat = 62
+    /// The glass's round: the tab bar's, whatever the glass holds, so with
+    /// the player in it the corners are still the bar's.
+    static let radius: CGFloat = tabsHeight / 2
+    /// The record as far from the glass's top and left as makes it
+    /// concentric with the corner: the glass's round less the record's.
+    static let recordInset: CGFloat = radius - GlassRecord.side / 2
     private static let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
 
     private var showsPlayer: Bool {
@@ -417,39 +421,56 @@ struct GlassTabFoot: View {
         VStack(spacing: 0) {
             if showsPlayer {
                 GlassMiniPlayer()
-                    .padding(.top, Theme.Space.xs)
+                    .padding(.leading, Self.recordInset)
+                    .padding(.trailing, Theme.Space.xs)
+                    .padding(.top, Self.recordInset)
+                    .padding(.bottom, Theme.Space.s)
                 // Where the song is, between the player and the tabs, the
                 // whole width inside the corners' round.
                 GlassMiniPlayerProgress()
-                    .padding(.horizontal, Theme.Space.l)
-                    .padding(.bottom, isKeyboardUp ? Theme.Space.m : 0)
+                    .padding(.horizontal, Theme.margin)
+                    .padding(.bottom, isKeyboardUp ? Self.recordInset : 0)
             }
             if !isKeyboardUp {
-                TabRow()
-                    .padding(.vertical, Theme.Space.xs)
+                TabRow(onGlass: true)
             }
         }
-        .onPreferenceChange(GlassCoverTint.self) { tint = $0 }
-        .background { ground }
-        // The page's margin, so the glass lines up with what is above it.
-        .padding(.horizontal, Theme.margin)
-        .padding(.bottom, Theme.Space.xs)
+        .modifier(GlassGround(shape: Self.shape))
+        .padding(.horizontal, Self.inset)
+        // Its foot as far from the screen's as its sides, into the home
+        // indicator's room as the system's bar goes; on the keyboard, just
+        // above it.
+        .padding(.bottom, isKeyboardUp ? Theme.Space.s : max(0, Self.inset - Self.homeIndicator))
+        .offset(y: isKeyboardUp ? 0 : max(0, Self.homeIndicator - Self.inset))
         .animation(.easeInOut(duration: 0.25), value: showsPlayer)
     }
 
-    /// iOS 26: the system's regular glass, light by day and dark by night,
-    /// with a breath of the cover's colour: more would darken the light
-    /// glass under dark words. iOS 18: the system's material, the same
-    /// breath over it, and a soft shadow to lift it off the page.
-    @ViewBuilder private var ground: some View {
+    /// The room under the safe area at the screen's foot: 34 on an iPhone
+    /// without a home button, none with one.
+    private static var homeIndicator: CGFloat {
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        return scenes.first?.keyWindow?.safeAreaInsets.bottom ?? 0
+    }
+}
+
+/// iOS 26: the system's regular glass, interactive, with no tint of our
+/// own, light by day and dark by night as the system's tab bar is; one
+/// shape, so one object. iOS 18: the system's material and a soft shadow
+/// to lift it off the page.
+private struct GlassGround: ViewModifier {
+    let shape: RoundedRectangle
+
+    func body(content: Content) -> some View {
         if #available(iOS 26, *) {
-            Color.clear
-                .glassEffect(.regular.tint(tint?.opacity(0.25)), in: Self.shape)
+            content
+                .glassEffect(.regular.interactive(), in: shape)
         } else {
-            Self.shape
-                .fill(.regularMaterial)
-                .overlay(Self.shape.fill((tint ?? .clear).opacity(0.15)))
-                .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
+            content
+                .background {
+                    shape
+                        .fill(.regularMaterial)
+                        .shadow(color: .black.opacity(0.15), radius: 12, y: 4)
+                }
         }
     }
 }

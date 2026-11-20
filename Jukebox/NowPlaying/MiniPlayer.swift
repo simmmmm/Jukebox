@@ -7,7 +7,9 @@
 //     with square corners, and under it Jukebox's own tabs on a fade and a
 //     blur from the screen's foot; the system's tab bar hidden.
 //   - Glas (MiniPlayerGlass.swift, mini-bar-inline): the player and the
-//     tabs as one piece of glass; the system's tab bar hidden.
+//     tabs as one piece of glass; the system's tab bar hidden. The one he
+//     chose on the phone (20 November 2026), and so the default; worked on
+//     since on mini-bar-glas.
 //   - Plaat (MiniPlayerRecord.swift, mini-bar-free-b): the system's tab bar,
 //     the song above it on a ground of the cover's colour under an arch,
 //     the record on the tab bar's shoulder.
@@ -24,15 +26,20 @@ import JukeboxKit
 import SwiftUI
 
 #if os(iOS)
-/// Which of the three, in UserDefaults. Plaat until another is chosen: the
-/// one on main's way. "glass" and "record" are read too, as "glas" and
-/// "plaat".
+/// Which of the three, in UserDefaults. Glas until another is chosen: of
+/// the three tried on the phone, the one he chose (20 November 2026), the
+/// other two kept for now to compare again. "glass" and "record" are read
+/// too, as "glas" and "plaat".
 enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
     case spotify
     case glass
     case record
 
     static let key = "miniBarVariant"
+    /// The one default, for every @AppStorage that reads the choice: the
+    /// foot, the system tab bar's hiding and the picker must agree, or the
+    /// system's bar shows under Glas's own tabs.
+    static let standard = MiniBarVariant.glass
 
     init?(rawValue: String) {
         switch rawValue.lowercased() {
@@ -72,7 +79,7 @@ enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
 /// what is in it and never the page above (nor the Settings sheet that page
 /// shows, where the choice is made).
 struct MiniBarFoot: ViewModifier {
-    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .record
+    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .standard
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
 
@@ -110,12 +117,19 @@ struct MiniBarFoot: ViewModifier {
 }
 
 /// The tabs, Jukebox's own, for Spotify and Glas: the symbol over its name,
-/// the tab shown in the accent (Copper by day, Glow by night), the others
-/// quiet, on the fade or in the glass their foot gives them. Tapped again,
-/// the tab's page goes back to its first, as the system's tab bar does.
+/// the tab shown in the accent (Copper by day, Glow by night). Tapped again,
+/// Navigator.select: back to the tab's first page, and on Search's first
+/// page into its field.
+///
+/// On Spotify's fade the others are quiet (secondary). In Glas's glass
+/// (`onGlass`) they are as iOS 26's own tab bar has them: the others in the
+/// label's colour, the one shown in the accent on a pill of its own, its
+/// round the glass's less the 4 between them.
 struct TabRow: View {
     @Environment(Navigator.self) private var navigator
     @Environment(AppSettings.self) private var settings
+
+    var onGlass = false
 
     private struct Item {
         let tab: AppTab
@@ -141,19 +155,17 @@ struct TabRow: View {
                 button(item)
             }
         }
-        .padding(.horizontal, Theme.Space.s)
+        .padding(.horizontal, onGlass ? Theme.Space.xs : Theme.Space.s)
+        .padding(.vertical, onGlass ? Theme.Space.xs : 0)
         // The two lines fit the row up to here, as the block's.
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
     }
 
     private func button(_ item: Item) -> some View {
         let isShown = navigator.tab == item.tab
+        let others: AnyShapeStyle = onGlass ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary)
         return Button {
-            if isShown {
-                navigator.path(for: item.tab).wrappedValue = NavigationPath()
-            } else {
-                navigator.tab = item.tab
-            }
+            navigator.select(item.tab)
         } label: {
             VStack(spacing: 2) {
                 Image(systemName: item.symbol)
@@ -164,14 +176,82 @@ struct TabRow: View {
                     .font(.caption2.weight(.medium))
                     .lineLimit(1)
             }
-            .foregroundStyle(isShown ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.secondary))
-            .frame(maxWidth: .infinity, minHeight: 49)
+            .foregroundStyle(isShown ? AnyShapeStyle(Theme.accent) : others)
+            .frame(maxWidth: .infinity,
+                   minHeight: onGlass ? GlassTabFoot.tabsHeight - 2 * Theme.Space.xs : 49)
+            .background {
+                if onGlass, isShown {
+                    Capsule().fill(Color.primary.opacity(0.08))
+                }
+            }
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .accessibilityLabel(Text(item.title))
         .accessibilityAddTraits(isShown ? .isSelected : [])
         .accessibilityIdentifier(item.id)
+    }
+}
+
+/// The cover the three bars show, and the label on Glas's and Plaat's
+/// records. The song's own cover first; when it has none (no artwork, or the
+/// server answered without one) and it plays from a station or a mix, the
+/// artwork the app makes for that station or mix, as Home's On air card and
+/// Played lately show it; else the album's title sleeve. At 44 points a
+/// sleeve is its first letter, and that "S" was all the bar showed of a
+/// station: "het zelfgemaakte album art niet zichtbaar" (the photographer,
+/// 20 November 2026).
+struct MiniPlayerCover: View {
+    let size: CGFloat
+    var cornerRadius: CGFloat = Theme.Radius.artwork
+
+    @Environment(AppModel.self) private var app
+    @Environment(AudioPlayer.self) private var player
+    @Environment(RadioController.self) private var radio
+    @Environment(MixStore.self) private var mixes
+    @Environment(\.displayScale) private var displayScale
+
+    /// The url the server had no cover for, once asked.
+    @State private var missingURL: URL?
+
+    var body: some View {
+        Group {
+            if player.currentTrack == nil, radio.isStarting, let station = radio.station {
+                // A station chosen while nothing played.
+                StationArtwork(station: station, size: size, cornerRadius: cornerRadius)
+            } else if hasNoCover, let station = player.context?.station {
+                StationArtwork(station: station, size: size, cornerRadius: cornerRadius)
+            } else if hasNoCover, let mix {
+                CollageArtwork(artworks: mix.artwork, size: size, cornerRadius: cornerRadius)
+            } else {
+                ArtworkView(player.currentTrack?.artwork, size: size, cornerRadius: cornerRadius,
+                            sleeve: player.currentTrack.map(TitleSleeve.Words.init(track:)))
+            }
+        }
+        // The same download as ArtworkView's (ImagePipeline joins the two),
+        // to learn whether the server has a cover at all.
+        .task(id: url) {
+            guard let url else { return }
+            let image = await ImagePipeline.shared.image(for: url)
+            guard !Task.isCancelled else { return }
+            if image == nil, ImagePipeline.shared.isMissing(url) { missingURL = url }
+        }
+    }
+
+    private var url: URL? {
+        guard let artwork = player.currentTrack?.artwork, let server = app.server else { return nil }
+        return server.artworkURL(artwork, maxPixelSize: ImagePipeline.bucket(Int(size * displayScale)))
+    }
+
+    private var hasNoCover: Bool {
+        guard player.currentTrack != nil else { return false }
+        guard let url else { return true }
+        return missingURL == url || ImagePipeline.shared.isMissing(url)
+    }
+
+    private var mix: Mix? {
+        guard case let .mix(id)? = player.context?.kind else { return nil }
+        return mixes.mixes.first { $0.id == id }
     }
 }
 #endif

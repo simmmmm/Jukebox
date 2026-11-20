@@ -257,7 +257,9 @@ struct MainTabView: View {
 
     var body: some View {
         @Bindable var navigator = navigator
-        TabView(selection: $navigator.tab) {
+        // Through `select`, which the tab bar calls with the tab shown too
+        // when it is tapped again: Search's second tap is its field.
+        TabView(selection: Binding(get: { navigator.tab }, set: { navigator.select($0) })) {
             Tab("Home", systemImage: "house.fill", value: AppTab.home) {
                 NavigationStack(path: navigator.path(for: .home)) {
                     HomeView().routeDestinations(each: HidesSystemTabBar())
@@ -334,7 +336,7 @@ struct MainTabView: View {
 /// it back under Jukebox's (TabRow). With Plaat it stays. Read here, not
 /// handed in, so pages already pushed follow a change at once.
 private struct HidesSystemTabBar: ViewModifier {
-    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .record
+    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .standard
 
     func body(content: Content) -> some View {
         content.toolbarVisibility(variant.hidesSystemTabBar ? .hidden : .automatic, for: .tabBar)

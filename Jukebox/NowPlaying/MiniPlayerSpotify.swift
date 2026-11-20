@@ -99,6 +99,8 @@ struct SpotifyMiniPlayer: View {
             if let track = player.currentTrack, isStation {
                 dislikeButton(track)
             } else {
+                // White, as this block's words: its glass is the dark one by
+                // day too. On Glas and Plaat it follows the system's words.
                 RoutePicker()
                     .frame(width: 44, height: 44)
             }
@@ -153,12 +155,9 @@ struct SpotifyMiniPlayer: View {
     // MARK: Parts
 
     @ViewBuilder private var cover: some View {
-        if player.currentTrack == nil, let station = startingStation {
-            StationArtwork(station: station, size: 40, cornerRadius: Theme.Radius.artwork)
-        } else {
-            ArtworkView(player.currentTrack?.artwork, size: 40, cornerRadius: Theme.Radius.artwork,
-                        sleeve: player.currentTrack.map(TitleSleeve.Words.init(track:)))
-        }
+        // The station's or the mix's own artwork for a song without a cover
+        // (MiniPlayerCover).
+        MiniPlayerCover(size: 40)
     }
 
     @ViewBuilder private var titles: some View {

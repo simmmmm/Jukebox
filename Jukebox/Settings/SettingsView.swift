@@ -1024,7 +1024,7 @@ private struct SettingsLyricsSection: View {
 /// versies: Spotify, glas en plaat" (the photographer, 20 November 2026).
 /// Marked as a test, so it is not taken for a setting to keep.
 private struct SettingsMiniBarSection: View {
-    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .record
+    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .standard
 
     var body: some View {
         Section {
