@@ -135,6 +135,33 @@ screenshots() {
 ios_adhoc=(CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" AD_HOC_CODE_SIGNING_ALLOWED=YES
            PROVISIONING_PROFILE_SPECIFIER="")
 
+# The build of every push, compiled unsigned (CODE_SIGNING_ALLOWED=NO) and
+# signed ad hoc here, with the same entitlements files. On the photographer's
+# MacBook (macOS 27) Xcode stops an ad hoc build whose entitlements need a
+# profile, App Groups, CarPlay, Siri, before it compiles: "requires a
+# provisioning profile", on Xcode 26.3 and 27.2 alike, where GitHub's
+# macOS 26 builds the same flags. Signed by codesign the app carries its
+# entitlements as Xcode's own ad hoc signature did, so carplay_signed and
+# widget_signed read the same thing on both runners. Inside out, without
+# --deep, so the widget keeps its own entitlements.
+adhoc_sign() {
+  local app=$1 code plugins=$1/PlugIns app_entitlements=Jukebox/Jukebox-iOS.entitlements
+  local widget_entitlements=JukeboxWidget/JukeboxWidget.entitlements
+  if [[ -d $app/Contents ]]; then
+    plugins=$app/Contents/PlugIns
+    app_entitlements=Jukebox/Jukebox-macOS.entitlements
+    widget_entitlements=JukeboxWidget/JukeboxWidget-macOS.entitlements
+  fi
+  while IFS= read -r code; do
+    codesign --force --sign - --timestamp=none "$code" || return 1
+  done < <(find "$app" -name '*.framework' -prune -print -o -name '*.dylib' -print)
+  if [[ -d $plugins/JukeboxWidget.appex ]]; then
+    codesign --force --sign - --timestamp=none --entitlements "$widget_entitlements" \
+      "$plugins/JukeboxWidget.appex" || return 1
+  fi
+  codesign --force --sign - --timestamp=none --entitlements "$app_entitlements" "$app"
+}
+
 # Whether the app's signature has CarPlay audio and Siri, true: the archive's, the
 # exported ipa's, and on every push the build's, signed as the archive is.
 carplay_signed() {
@@ -193,9 +220,12 @@ widget_signed() {
 if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
-    -destination 'generic/platform=iOS' -derivedDataPath build/derived "${ios_adhoc[@]}" \
+    -destination 'generic/platform=iOS' -derivedDataPath build/derived CODE_SIGNING_ALLOWED=NO \
     > build/logs/build.log 2>&1
   status=$?
+  if [[ $status == 0 ]]; then
+    adhoc_sign build/derived/Build/Products/Debug-iphoneos/Jukebox.app || status=1
+  fi
   if [[ $status == 0 ]]; then
     carplay_signed build/derived/Build/Products/Debug-iphoneos/Jukebox.app build
     status=$?
@@ -220,9 +250,12 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
   xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
     -destination 'generic/platform=macOS' -derivedDataPath build/derived-mac \
-    CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="-" DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
+    CODE_SIGNING_ALLOWED=NO \
     > build/logs/build-mac.log 2>&1
   mac_status=$?
+  if [[ $mac_status == 0 ]]; then
+    adhoc_sign build/derived-mac/Build/Products/Debug/Jukebox.app || mac_status=1
+  fi
   if [[ $mac_status == 0 ]]; then
     widget_signed build/derived-mac/Build/Products/Debug/Jukebox.app "Mac build" || mac_status=1
   fi
