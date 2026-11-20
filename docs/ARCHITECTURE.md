@@ -361,9 +361,8 @@ Play On, on every client: "van mij mag chromecast er ook in hoor ik wil
 alleen er voor waken dat we niet 10000 knopen krijgen" (17 November 2026).
 So no new button: the AirPlay glyph where it always was (Now Playing, the
 wide bar) opens one list, and Linux has the same glyph in the same place of
-its bar. The list: this device, AirPlay (Apple: the system's own picker as
-a row), the Chromecasts on the network, on Linux the Sonos rooms and other
-UPnP renderers (Apple's reach those by AirPlay), the user's other Jellyfin or Emby
+its bar. The list: here, the Chromecasts and the Sonos rooms on the network
+(on Linux other UPnP renderers too), the user's other Jellyfin or Emby
 clients that take remote control, a Subsonic server's jukebox where the
 user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP speakers. It looks only while it is open: no local network prompt at launch.
 
@@ -386,9 +385,34 @@ user has it. On Plex, Chromecasts only (docs/SERVERS.md), and on Linux the UPnP 
   and the Mac over Network's TLS, found by Bonjour
   (`Player/CastNetwork.swift`). Nothing goes to Google, so the App Store's
   privacy answers stay as they are (`docs/STATS.md`).
-- **A Sonos on Linux** ("hij vind bijv ook mijn sonos niet", 19 November
-  2026): Linux has no AirPlay, so it speaks UPnP AV itself (JukeboxKit's
-  `Cast/UPnP.swift`, `Linux/App/UPnP.swift`). Found by Avahi
+- **Here, by its name** ("AirPlay is verbonden maar er staat hier this
+  iPhone", 20 November 2026): on Apple's the first row is what the system
+  plays through now, read from the audio session's route and followed as
+  it changes ("Living Room", the AirPods; `SystemRoute` in
+  `NowPlaying/SystemControls.swift`), "This iPhone" only for its own
+  speaker. The last row, "AirPlay & Bluetooth…", is the system's own
+  picker. On the iPhone the list is a drawer ("Vind zon drawer wel prima
+  hoor"), on the iPad and the Mac a popover, Linux's menu in Apple's
+  controls. The Mac's row stays "This Mac": its picker routes one player,
+  with no route name to read.
+- **Why not the system's picker alone** ("kan je niet gewoon altijd dat
+  native menu tonen op ios en eventuele andere apparaten daar aan
+  toevoegen?"): AVRoutePickerView lists what the system reaches, and an
+  app adds to it only through a Media Device Discovery extension (AVRouting,
+  DeviceDiscoveryExtension): one extension a kind of device, with the
+  `com.apple.developer.media-device-discovery-extension` entitlement, meant
+  to come from the device's maker (Apple: "bundle your app with the device
+  discovery extension that the manufacturer provides"), the app then
+  streaming to it over `AVCustomRoutingController`. Google and Sonos ship
+  none, and a Jellyfin client is a session on the server, not a device on
+  the network. So the list is ours, with the system's picker as a row.
+- **A Sonos** ("hij vind bijv ook mijn sonos niet", 19 November 2026; on
+  the iPhone "Huh daar staat wel weer mn sonos bij", 20 November): every
+  client speaks UPnP AV itself (JukeboxKit's `Cast/UPnP.swift`; the rows
+  and the player in `Player/UPnPPlay.swift`, shared). Apple's find the
+  rooms by Bonjour (`Player/SonosNetwork.swift`), no SSDP (multicast needs
+  Apple's entitlement); before, they had only AirPlay's own list. Linux
+  finds them in `Linux/App/UPnP.swift`, by Avahi
   (`_sonos._tcp`) and SSDP (`Linux/CGlue/ssdp.c`, any MediaRenderer); a
   host firewall drops SSDP's unicast answers (the photographer's ufw did),
   mDNS still finds the Sonos. One row a Sonos group, named by its rooms
