@@ -73,7 +73,7 @@ struct StationArtwork: View {
             guard let found = await ImagePipeline.shared.averageColor(for: toneURL) else { return }
             // A newer station has its own task; this colour is not its.
             guard !Task.isCancelled else { return }
-            withAnimation(.easeInOut(duration: 0.35)) {
+            withAnimation(.easeInOut(duration: Tokens.Motion.glide)) {
                 average = (url: toneURL, color: found)
             }
         }
@@ -264,7 +264,7 @@ private struct StationArtworkFace: View {
         // From the top of its half circle about the spring line to the sill.
         let coreHeight = (cut.base - cut.spring + cut.coreRadius) * u
         return ZStack(alignment: .bottom) {
-            Color(rgb: 0x220C07)
+            Color(rgb: Tokens.Art.stationRoom)
             if isOnAir {
                 Capsule(style: .circular)
                     .fill(LinearGradient(colors: [core.top, core.foot], startPoint: .top, endPoint: .bottom))

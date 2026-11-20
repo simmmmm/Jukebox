@@ -28,15 +28,6 @@ struct DownloadedView: View {
             } else {
                 list(albums: albums, playlists: playlists, mixes: mixes, kept: kept)
                     .navigationTitle("Downloaded")
-                    .overlay {
-                        if collections.isEmpty && kept.isEmpty {
-                            ContentUnavailableView {
-                                Label("No downloads", systemImage: "arrow.down.circle")
-                            } description: {
-                                Text("Download an album, a playlist or a mix with \(Image(systemName: "arrow.down.circle")) on its page. Keep Songs I Play, in Settings, keeps what you play often.")
-                            }
-                        }
-                    }
             }
         }
         .confirmationDialog(Text("Remove from this \(Device.model)?"), isPresented: isConfirmingRemoval,
@@ -115,6 +106,19 @@ struct DownloadedView: View {
     private func list(albums: [OfflineCollection], playlists: [OfflineCollection], mixes: [OfflineCollection],
                       kept: [Track]) -> some View {
         List {
+            // Nothing here: the wide page's line where the rows would start,
+            // as Linux's hint, not a notice in the middle: "Los ze op" (the
+            // photographer, 20 November 2026). EmptyLine's look by hand, as
+            // the symbol in it needs a localized key, not a String.
+            if offline.collections.isEmpty && kept.isEmpty {
+                Text("Download an album, a playlist or a mix with \(Image(systemName: "arrow.down.circle")) on its page. Keep Songs I Play, in Settings, keeps what you play often.")
+                    .desktopFont(Tokens.Size.body15.size, phone: .subheadline)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.top, Theme.Space.xl)
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
             if offline.songCount > 0 {
                 Button {
                     shuffleAll(kept: kept)

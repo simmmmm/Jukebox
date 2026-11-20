@@ -63,6 +63,13 @@ struct GenresView: View {
         let term = query.trimmingCharacters(in: .whitespacesAndNewlines)
         let genres = term.isEmpty ? library.genres : library.genres.filter { $0.name.localizedStandardContains(term) }
         return List {
+            // None: Linux's line where the rows would start, as the wide
+            // page's; the library loading, or not loaded, keeps its status.
+            if genres.isEmpty && term.isEmpty && settled {
+                EmptyLine("The genres in your music’s tags appear here.")
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
             ForEach(genres) { genre in
                 NavigationLink(value: Route.genre(genre)) {
                     LabeledContent {
@@ -77,12 +84,16 @@ struct GenresView: View {
         .navigationTitle("Genres")
         .searchable(text: $query, prompt: "Find in Genres")
         .overlay {
-            if genres.isEmpty {
-                LibraryEmptyState(query: query, emptyTitle: "No Genres", emptySymbol: "guitars",
-                                  emptyMessage: "The genres in your music’s tags appear here.")
+            if genres.isEmpty && (!term.isEmpty || !settled) {
+                LibraryEmptyState(query: query)
             }
         }
         .refreshable { await library.refresh() }
+    }
+
+    /// Loaded, or loaded with nothing: not loading and not failed.
+    private var settled: Bool {
+        library.state == .loaded || library.state == .empty
     }
 
     private func count(of genre: Genre) -> Int {

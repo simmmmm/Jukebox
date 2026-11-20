@@ -100,7 +100,7 @@ struct OnboardingView: View {
                     // Linux's: 420 with its margins of 24.
                     .frame(maxWidth: isWide ? 372 : 440)
                     // Wide, the fields and their words in Linux's 15.
-                    .desktopFont(15, phone: nil)
+                    .desktopFont(Tokens.Size.body15.size, phone: nil)
                     .padding(.horizontal, isWide ? Theme.Space.xl : Theme.margin)
                     .padding(.vertical, Theme.Space.xl)
                     // Centred in the screen while it fits, scrolling when the
@@ -141,7 +141,7 @@ struct OnboardingView: View {
                     .frame(minHeight: 52)
             }
             Text("The address you open your Jellyfin, Emby, Plex or Navidrome server at in a browser, such as music.example.com or 192.168.1.10:8096.")
-                .desktopFont(13, phone: .footnote)
+                .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let serverError {
                 OnboardingErrorText(message: serverError)
@@ -161,7 +161,7 @@ struct OnboardingView: View {
             PlexSignInButton(show: show)
                 .disabled(isConnecting)
             Text("For Plex, sign in at plex.tv in your browser instead; Jukebox never sees your Plex password.")
-                .desktopFont(13, phone: .footnote)
+                .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                 .foregroundStyle(.secondary)
         }
     }
@@ -194,7 +194,7 @@ struct OnboardingView: View {
                 // when it took a fallback, so the next one goes straight there.
                 OnboardingMemory.serverAddress = server.url == first ? typed : server.url.absoluteString
                 isConnecting = false
-                withAnimation(.easeInOut(duration: 0.25)) {
+                withAnimation(.easeInOut(duration: Tokens.Motion.move)) {
                     step = .account(server)
                 }
             } catch {
@@ -210,14 +210,14 @@ struct OnboardingView: View {
 
     private func changeServer() {
         startsQuickConnect = false
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(.easeInOut(duration: Tokens.Motion.move)) {
             step = .server
         }
     }
 
     private func quickConnect(on server: DetectedServer) {
         startsQuickConnect = true
-        withAnimation(.easeInOut(duration: 0.25)) {
+        withAnimation(.easeInOut(duration: Tokens.Motion.move)) {
             step = .account(server)
         }
     }
@@ -362,9 +362,9 @@ private struct OnboardingAccountForm: View {
         // Centred on every width, as the welcome above it.
         VStack(spacing: Theme.Space.xs) {
             Text("Signing in to \(server.name)")
-                .desktopFont(15, weight: .bold, phone: .headline)
+                .desktopFont(Tokens.Size.body15.size, weight: .bold, phone: .headline)
             Text(verbatim: serverDetail)
-                .desktopFont(13, phone: .subheadline)
+                .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                 .foregroundStyle(.secondary)
         }
         .multilineTextAlignment(.center)
@@ -437,7 +437,7 @@ private struct OnboardingAccountForm: View {
                 .buttonStyle(.secondary)
                 .disabled(isSigningIn)
                 Text("Sign in from another Jellyfin app that is already signed in, without typing your password here.")
-                    .desktopFont(13, phone: .footnote)
+                    .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                     .foregroundStyle(.secondary)
             }
             if apiKeySignIn != nil {
@@ -494,7 +494,7 @@ private struct OnboardingAccountForm: View {
     private var plexForm: some View {
         VStack(alignment: formAlignment, spacing: Theme.Space.m) {
             Text("Plex opens in your browser to sign in; Jukebox never sees your Plex password.")
-                .desktopFont(13, phone: .footnote)
+                .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                 .foregroundStyle(.secondary)
             if let errorMessage {
                 OnboardingErrorText(message: errorMessage)
@@ -531,7 +531,7 @@ private struct OnboardingAccountForm: View {
                     Text("A key made in the server’s own settings, for Jukebox alone: it can be taken back there without changing your password.")
                 }
             }
-            .desktopFont(13, phone: .footnote)
+            .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
             .foregroundStyle(.secondary)
             if let errorMessage {
                 OnboardingErrorText(message: errorMessage)
@@ -615,20 +615,20 @@ private struct OnboardingAccountForm: View {
                         // Read digit by digit, as it is typed.
                         .accessibilityLabel(Text(verbatim: code.map { String($0) }.joined(separator: " ")))
                     Text("Enter this code in another Jellyfin app: Settings › Quick Connect")
-                        .desktopFont(13, phone: .subheadline)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                     HStack(spacing: Theme.Space.s) {
                         ProgressView()
                         Text("Waiting…")
                     }
-                    .desktopFont(13, phone: .footnote)
+                    .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityElement(children: .combine)
                 } else {
                     ProgressView()
                     Text("Asking \(server.name) for a code…")
-                        .desktopFont(13, phone: .subheadline)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -1033,7 +1033,7 @@ private struct PlexSignInButton: View {
                         ProgressView()
                         Text("Waiting for Plex…")
                     }
-                    .desktopFont(13, phone: .footnote)
+                    .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                     .foregroundStyle(.secondary)
                     .accessibilityElement(children: .combine)
                     Button {
@@ -1188,10 +1188,10 @@ private struct OnboardingWelcome: View {
             VStack(spacing: isWide ? Theme.Space.xl : Theme.Space.s) {
                 // Wide, a page title's 40, as Linux's sign-in sets "Jukebox".
                 Text("Jukebox")
-                    .desktopFont(40, design: .serif, phone: .serif(.largeTitle))
+                    .desktopFont(Tokens.Size.pageTitle.size, design: .serif, phone: .serif(.largeTitle))
                     .accessibilityAddTraits(.isHeader)
                 Text("Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server.")
-                    .desktopFont(15, phone: .body)
+                    .desktopFont(Tokens.Size.body15.size, phone: .body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     // Two lines rather than cut short where the page is
@@ -1213,7 +1213,7 @@ private struct OnboardingFields<Content: View>: View {
     @Environment(\.isWide) private var isWide
 
     /// Computed: a generic type has no stored statics.
-    private static var card: Color { Color(light: 0xFFFFFF, dark: 0x252423) }
+    private static var card: Color { Color(Tokens.field) }
 
     init(@ViewBuilder content: () -> Content) {
         self.content = content()
@@ -1275,7 +1275,7 @@ private struct OnboardingErrorText: View {
             Image(systemName: "exclamationmark.circle.fill")
                 .foregroundStyle(.red)
         }
-        .desktopFont(13, phone: .footnote)
+        .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
         .foregroundStyle(.secondary)
         // Wide, on the column's axis, as Linux's note under its rows.
         .multilineTextAlignment(isWide ? .center : .leading)

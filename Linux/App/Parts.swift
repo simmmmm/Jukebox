@@ -674,16 +674,23 @@ func albumTile(_ album: Album, fact: String? = nil) -> Widget {
 }
 
 /// What can be done with an album from its tile or row, in a song's
-/// order (`trackMenu`); `play` false on its own page, which has Play.
-func albumMenu(_ album: Album, play: Bool = true) -> [(String, () -> Void)] {
+/// order (`trackMenu`); `play` false on its own page, which has Play,
+/// and `heart` false there too, as the heart sits beside its ⋮.
+func albumMenu(_ album: Album, play: Bool = true, heart: Bool = true) -> [(String, () -> Void)] {
     let tracks = app.library.tracks(inAlbum: album.id)
     let artist = album.primaryArtist.flatMap { app.library.artist($0) }
     let playItems: [(String, () -> Void)] = play
         ? [("Play", { app.player.play(tracks, context: QueueContext(.album(album.id), title: album.name)) })] : []
+    // The heart where a song's menu has it: the same order on every client
+    // ("Los ze op", the photographer, 20 November 2026).
+    let favorite = app.library.isFavorite(album.id)
+    let heartItems: [(String, () -> Void)] = heart
+        ? [(favorite ? "Remove from Favorites" : "Add to Favorites",
+            { Task { await app.library.setFavorite(!favorite, item: .album(album.id)) } })] : []
     return menuSections(
         playItems + [("Play Next", { app.player.playNext(tracks) }),
                      ("Add to Queue", { app.player.addToQueue(tracks) })],
-        [("Add to Playlist…", { Playlists.add(tracks) })] + ratingItems(.album(album.id))
+        [("Add to Playlist…", { Playlists.add(tracks) })] + heartItems + ratingItems(.album(album.id))
             + [("Start Radio", { app.radio.start(.album(album.id)) })],
         artist.map { artist in [("Go to Artist", { Pages.open(artist) })] } ?? [],
         shareItems(album.id, tracks: tracks.map(\.id)) + publicShareItems(.album(album))
@@ -710,8 +717,18 @@ func stationTile(_ station: Station, fact: String) -> Widget {
     let column = vbox(spacing: 0, [art.widget, name, line]).size(width: size)
     keep(art, on: raw(column), as: "art")
     let button = tileButton(column) { Pages.open(station) }
-    contextMenu(on: button) { [("Play Station", { app.radio.start(station) })] }
+    contextMenu(on: button) { stationMenu(station) }
     return button
+}
+
+/// A station's tile's and Your Station's menu: Play Station, or on the air
+/// Show Full Player, as the bar opens it; then its page. The same on every
+/// client ("Los ze op", the photographer, 20 November 2026).
+func stationMenu(_ station: Station) -> [(String, () -> Void)] {
+    let onAir = app.radio.stationOnAir(player: app.player)?.id == station.id
+    return menuSections([onAir ? ("Show Full Player", { NowPlayingPage.open() })
+                               : ("Play Station", { app.radio.start(station) })],
+                        [("Go to Station", { Pages.open(station) })])
 }
 
 /// A tile that can be clicked, and reached with Tab.

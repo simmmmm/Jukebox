@@ -1,6 +1,6 @@
 // Albums: the grid of covers, sorted as the listener chose (kept between
 // launches), and an album's page as Music draws it — the cover large, the
-// artist in the accent to go to them, Play and Shuffle, the album's station
+// artist under it to go to them, Play and Shuffle, the album's station
 // under them (as an artist's page has it: "ik vind vooral de radiofunctie
 // echt belangrijk"), the songs by disc, how long it all is, and More by the
 // artist at the end. Download in the bar puts it on the phone
@@ -51,7 +51,7 @@ struct AlbumsView: View {
                         Image(systemName: "chevron.down")
                             .desktopFont(11, weight: .bold)
                     }
-                    .desktopFont(15, weight: .bold)
+                    .desktopFont(Tokens.Size.body15.size, weight: .bold)
                     .foregroundStyle(.primary)
                     .padding(.horizontal, Theme.Space.m)
                     .frame(height: 32)
@@ -173,7 +173,7 @@ struct AlbumDetailView: View {
             if !isWide {
                 ToolbarItem(placement: .barTrailing) {
                     Menu {
-                        LibraryAlbumMenu(album: shown, tracks: tracks)
+                        LibraryAlbumMenu(album: shown, tracks: tracks, onPage: true)
                     } label: {
                         Label("More", systemImage: "ellipsis")
                     }
@@ -199,7 +199,7 @@ struct AlbumDetailView: View {
                 HStack(spacing: Theme.Space.s) {
                     HeartButton(item: .album(shown.id))
                     MoreMenu {
-                        LibraryAlbumMenu(album: shown, tracks: tracks)
+                        LibraryAlbumMenu(album: shown, tracks: tracks, onPage: true)
                     }
                 }
             }
@@ -300,9 +300,11 @@ struct AlbumDetailView: View {
                 Button {
                     goToArtist(shown)
                 } label: {
+                    // Plain, as wide and Linux show it, still a link:
+                    // "Los ze op" (the photographer, 20 November 2026).
                     Text(shown.artistLine)
                         .font(.title3)
-                        .foregroundStyle(Theme.accent)
+                        .foregroundStyle(.primary)
                         .multilineTextAlignment(.center)
                 }
                 .buttonStyle(.plain)

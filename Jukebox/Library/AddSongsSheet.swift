@@ -109,12 +109,12 @@ private struct LibraryAddSongRow: View {
                 ArtworkView(track.artwork, size: 48, cornerRadius: Theme.Radius.artwork, sleeve: TitleSleeve.Words(track: track))
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(track.name)
-                        .desktopFont(15, phone: nil)
+                        .desktopFont(Tokens.Size.body15.size, phone: nil)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     if !track.artistLine.isEmpty {
                         Text(track.artistLine)
-                            .desktopFont(13, phone: .subheadline)
+                            .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -132,14 +132,14 @@ private struct LibraryAddSongRow: View {
         switch state {
         case .add:
             Image(systemName: "plus.circle")
-                .desktopFont(20, phone: .title2)
+                .desktopFont(Tokens.Size.panelHead.size, phone: .title2)
                 .foregroundStyle(Theme.accent)
                 .accessibilityLabel("Add")
         case .adding:
             ProgressView()
         case .added:
             Image(systemName: "checkmark.circle.fill")
-                .desktopFont(20, phone: .title2)
+                .desktopFont(Tokens.Size.panelHead.size, phone: .title2)
                 .foregroundStyle(Theme.accent)
                 .accessibilityLabel("Added")
         }

@@ -205,12 +205,12 @@ private struct RadioPickerRow<Leading: View>: View {
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     // Wide, Linux's row: 15 and 13.
                     Text(title)
-                        .desktopFont(15, phone: nil)
+                        .desktopFont(Tokens.Size.body15.size, phone: nil)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                     if let subtitle, !subtitle.isEmpty {
                         Text(subtitle)
-                            .desktopFont(13, phone: .subheadline)
+                            .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -234,7 +234,7 @@ private struct RadioPickerGlyph: View {
 
     var body: some View {
         Image(systemName: systemImage)
-            .desktopFont(15, phone: .body)
+            .desktopFont(Tokens.Size.body15.size, phone: .body)
             .foregroundStyle(.secondary)
             .frame(width: 40, height: 40)
             .background(.quaternary, in: .rect(cornerRadius: Theme.Radius.artwork))

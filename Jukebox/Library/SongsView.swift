@@ -55,6 +55,13 @@ struct SongsView: View {
         let searching = !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         let shown = searching ? library.matchingTracks(query) : library.songsByTitle
         return List {
+            // None: Linux's line where the rows would start, as the wide
+            // page's; the library loading, or not loaded, keeps its status.
+            if shown.isEmpty && !searching && settled {
+                EmptyLine("Songs on your \(library.serverKind) server appear here.")
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+            }
             if !shown.isEmpty {
                 Button {
                     player.play(shown, context: context(searching: searching), shuffled: true)
@@ -79,12 +86,16 @@ struct SongsView: View {
         .navigationTitle("Songs")
         .searchable(text: $query, prompt: "Find in Songs")
         .overlay {
-            if shown.isEmpty {
-                LibraryEmptyState(query: query, emptyTitle: "No Songs", emptySymbol: "music.note",
-                                  emptyMessage: "Songs on your \(library.serverKind) server appear here.")
+            if shown.isEmpty && (searching || !settled) {
+                LibraryEmptyState(query: query)
             }
         }
         .refreshable { await library.refresh() }
+    }
+
+    /// Loaded, or loaded with nothing: not loading and not failed.
+    private var settled: Bool {
+        library.state == .loaded || library.state == .empty
     }
 
     private func context(searching: Bool) -> QueueContext {

@@ -26,6 +26,10 @@ struct TrackRow: View {
     /// A playlist's own song in a wide window: Remove in its menu, where
     /// the iPhone swipes it away.
     var removal: (() -> Void)?
+    /// Move Up and Move Down in its menu, where the playlist can be
+    /// reordered (TrackMenu).
+    var moveUp: (() -> Void)?
+    var moveDown: (() -> Void)?
 
     @Environment(AudioPlayer.self) private var player
     @Environment(LibraryStore.self) private var library
@@ -38,13 +42,16 @@ struct TrackRow: View {
     @State private var isHovered = false
 
     init(_ track: Track, leading: Leading = .artwork, subtitle: String? = nil, reason: PickReason? = nil,
-         showsMenu: Bool = true, removal: (() -> Void)? = nil) {
+         showsMenu: Bool = true, removal: (() -> Void)? = nil,
+         moveUp: (() -> Void)? = nil, moveDown: (() -> Void)? = nil) {
         self.track = track
         self.leading = leading
         self.subtitle = subtitle
         self.reason = reason
         self.showsMenu = showsMenu
         self.removal = removal
+        self.moveUp = moveUp
+        self.moveDown = moveDown
     }
 
     /// Why the radio chose it, in the kit's words but for the server's
@@ -189,7 +196,7 @@ struct TrackRow: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .desktopFont(15)
+                .desktopFont(Tokens.Size.body15.size)
                 .frame(width: 32, alignment: .trailing)
             case .none:
                 EmptyView()
@@ -200,14 +207,14 @@ struct TrackRow: View {
                     wideTitle(playable: playable)
                     if let words {
                         Text(words)
-                            .desktopFont(13)
+                            .desktopFont(Tokens.Size.fact13.size)
                             .foregroundStyle(playable ? HierarchicalShapeStyle.secondary : HierarchicalShapeStyle.tertiary)
                             .lineLimit(1)
                     }
                     if let reason {
                         // Linux's faint, 40 %.
                         Text(reasonText(reason))
-                            .desktopFont(13)
+                            .desktopFont(Tokens.Size.fact13.size)
                             .foregroundStyle(Color.primary.opacity(0.4))
                             .lineLimit(1)
                     }
@@ -218,7 +225,7 @@ struct TrackRow: View {
                         .layoutPriority(1)
                     if let words {
                         Text(words)
-                            .desktopFont(13)
+                            .desktopFont(Tokens.Size.fact13.size)
                             .foregroundStyle(playable ? HierarchicalShapeStyle.secondary : HierarchicalShapeStyle.tertiary)
                             .lineLimit(1)
                     }
@@ -228,7 +235,7 @@ struct TrackRow: View {
 
             Text(track.duration.clock)
                 .monospacedDigit()
-                .desktopFont(13)
+                .desktopFont(Tokens.Size.fact13.size)
                 .foregroundStyle(.secondary)
         }
         .frame(minHeight: showsArtwork ? (reason == nil ? 64 : 72) : 48)
@@ -243,7 +250,7 @@ struct TrackRow: View {
         }
         .onHover { isHovered = $0 }
         .contextMenu {
-            TrackMenu(track: track, removal: removal, picked: pickedTracks)
+            TrackMenu(track: track, removal: removal, picked: pickedTracks, moveUp: moveUp, moveDown: moveDown)
         } preview: {
             // As the iPhone's: the preview's hosting controller needs the
             // AppModel carried into it.
@@ -259,7 +266,7 @@ struct TrackRow: View {
             .lineLimit(1)
             .foregroundStyle(isCurrent ? AnyShapeStyle(Theme.accent)
                              : playable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))
-            .desktopFont(15)
+            .desktopFont(Tokens.Size.body15.size)
     }
 
     private var isCurrent: Bool { player.currentTrack?.id == track.id }
@@ -356,6 +363,13 @@ struct TrackMenu: View {
     var removal: (() -> Void)?
     /// Two or more picked with it (TrackPicks): the menu is theirs.
     var picked: [Track] = []
+    /// A playlist of one's own the server can reorder, on a wide page:
+    /// Move Up and Move Down, nil at its ends, as Linux's row has them.
+    var moveUp: (() -> Void)?
+    var moveDown: (() -> Void)?
+    /// The song playing (the bar's, Full Player's): on a station, the
+    /// station's lessons first, as Linux's songMenu.
+    var isPlaying = false
 
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
@@ -364,13 +378,18 @@ struct TrackMenu: View {
 
     var body: some View {
         if picked.count > 1 {
-            Section("\(picked.count) Songs") {
+            // No heading: the same sections as one song's, what the list
+            // does with them (none yet: Remove is one entry's) and then
+            // playing and keeping them.
+            Section {
                 Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                     player.playNext(picked)
                 }
                 Button("Play Last", systemImage: "text.line.last.and.arrowtriangle.forward") {
                     player.addToQueue(picked)
                 }
+            }
+            Section {
                 Button("Add to Playlist…", systemImage: "text.badge.plus") {
                     navigator.addToPlaylist = AddToPlaylistRequest(tracks: picked)
                 }
@@ -381,10 +400,32 @@ struct TrackMenu: View {
     }
 
     @ViewBuilder private var single: some View {
-        if let removal {
+        if isPlaying, player.context?.isRadio == true {
+            // Thumbs up teaches the station; Dislike (the queue's word,
+            // QueueView) skips the song and keeps it, and songs like it, off.
+            let liked = radio.liked.contains(track.id)
+            let disliked = radio.disliked.contains(track.id)
             Section {
-                Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive) {
-                    removal()
+                Button(liked ? "Liked" : "More Like This", systemImage: liked ? "hand.thumbsup.fill" : "hand.thumbsup") {
+                    radio.like(track)
+                }
+                Button(disliked ? "Undo Dislike" : "Dislike", systemImage: disliked ? "hand.thumbsdown.fill" : "hand.thumbsdown") {
+                    radio.dislike(track)
+                }
+            }
+        }
+        if moveUp != nil || moveDown != nil || removal != nil {
+            Section {
+                if let moveUp {
+                    Button("Move Up", systemImage: "arrow.up", action: moveUp)
+                }
+                if let moveDown {
+                    Button("Move Down", systemImage: "arrow.down", action: moveDown)
+                }
+                if let removal {
+                    Button("Remove from Playlist", systemImage: "minus.circle", role: .destructive) {
+                        removal()
+                    }
                 }
             }
         }

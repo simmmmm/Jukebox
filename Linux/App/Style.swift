@@ -31,8 +31,8 @@ enum Style {
     }
 
     /// A size of the type scale as CSS: "font-size: 40px; line-height: 48px;".
-    private static func type(_ size: (size: Int, line: Int)) -> String {
-        "font-size: \(size.size)px; line-height: \(size.line)px;"
+    private static func type(_ size: (size: CGFloat, line: CGFloat)) -> String {
+        "font-size: \(Int(size.size))px; line-height: \(Int(size.line))px;"
     }
 
     /// A duration as CSS: "200ms".

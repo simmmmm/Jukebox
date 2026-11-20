@@ -162,7 +162,7 @@ struct HomeCardLink: View {
             Text(title)
             if isTrailing { glyph }
         }
-        .desktopFont(15, phone: .subheadline)
+        .desktopFont(Tokens.Size.body15.size, phone: .subheadline)
         .foregroundStyle(Theme.accent)
     }
 
@@ -298,10 +298,10 @@ private struct HomeHandoffNotice: View {
                     // The iPhone's, as it was: words alone, on raised.
                     VStack(alignment: .leading, spacing: Theme.Space.xs) {
                         Text(offer.heading)
-                            .desktopFont(15, phone: .subheadline)
+                            .desktopFont(Tokens.Size.body15.size, phone: .subheadline)
                             .foregroundStyle(.secondary)
                         Text(line)
-                            .desktopFont(15, phone: nil)
+                            .desktopFont(Tokens.Size.body15.size, phone: nil)
                             .foregroundStyle(.primary)
                             .lineLimit(2)
                         HomeCardLink(title: action, systemImage: "chevron.forward", isTrailing: true)
@@ -329,13 +329,13 @@ private struct HomeHandoffNotice: View {
             }
             VStack(alignment: .leading, spacing: 0) {
                 Text(offer.heading)
-                    .desktopFont(13)
+                    .desktopFont(Tokens.Size.fact13.size)
                     .foregroundStyle(.secondary)
                 Text(offer.track.name)
-                    .desktopFont(24, design: .serif)
+                    .desktopFont(Tokens.Size.sectionTitle.size, design: .serif)
                     .foregroundStyle(.primary)
                 Text(offer.track.artistLine)
-                    .desktopFont(13)
+                    .desktopFont(Tokens.Size.fact13.size)
                     .foregroundStyle(.secondary)
                     .padding(.top, Theme.Space.s)
                 HomeCardLink(title: action, systemImage: "chevron.forward", isTrailing: true)
@@ -380,7 +380,7 @@ private struct HomeOfflineNotice: View {
                     .buttonStyle(.secondary)
                 }
             }
-            .desktopFont(15, phone: .subheadline)
+            .desktopFont(Tokens.Size.body15.size, phone: .subheadline)
             .frame(maxWidth: .infinity, alignment: .leading)
             .homeCard(Theme.notice)
             .frame(maxWidth: HomeLayout.heroWidth, alignment: .leading)
@@ -489,7 +489,7 @@ struct HomeStationHero: View {
         .accessibilityLabel(Text(verbatim: "\(shown.title), \(actionWord(onAir))"))
         .accessibilityHint(onAir == nil ? Text("Starts Your Station") : Text(verbatim: ""))
         // Its page, as the long press offers it.
-        .accessibilityAction(named: Text("Show Station")) {
+        .accessibilityAction(named: Text("Go to Station")) {
             navigator.open(.station(onAir ?? yourStation))
         }
     }
@@ -525,7 +525,7 @@ struct HomeStationHero: View {
                         Text("\(track.name) · \(track.artistLine)")
                     }
                 }
-                .desktopFont(13, phone: .subheadline)
+                .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                 .foregroundStyle(.secondary)
                 .lineLimit(2)
                 .padding(.top, measures.isWide ? Theme.Space.xs : 0)
@@ -537,7 +537,7 @@ struct HomeStationHero: View {
                 // played on this device. Wide, 8 under the name, as Linux's.
                 Text(radio.yourStationFact?.text
                      ?? RelativeDay.lastPlayed(HomeShelves.stationDates(events: history.history.events)[yourStation.id]))
-                    .desktopFont(13, phone: .subheadline)
+                    .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                     .foregroundStyle(.secondary)
                     .padding(.top, measures.isWide ? Theme.Space.xs : 0)
             }
@@ -559,7 +559,7 @@ struct HomeStationHero: View {
     @ViewBuilder
     private func name(_ title: String) -> some View {
         if measures.isWide {
-            Text(title).desktopFont(24, design: .serif)
+            Text(title).desktopFont(Tokens.Size.sectionTitle.size, design: .serif)
         } else {
             Text(title).font(.serif(.title2))
         }
@@ -717,8 +717,8 @@ private struct HomePlayedLatelySection: View {
 /// It opens the album or the station's page; a long press plays it.
 private struct HomePlayedRow: View {
     let item: HomePlayedItem
-    /// In a wide page's column: when it played after what it is ("Artist ·
-    /// Today"), the hairline the column's width; the grid gives the margin.
+    /// In a wide page's column: the hairline the column's width; the grid
+    /// gives the margin.
     var isWide = false
 
     var body: some View {
@@ -749,28 +749,25 @@ private struct HomePlayedRow: View {
     private static let artSide: CGFloat = 48
 
     private func row<Art: View>(title: String, detail: String, @ViewBuilder art: () -> Art) -> some View {
-        let when = RelativeDay.standalone(item.date)
-        let line = isWide ? [detail, when].filter { !$0.isEmpty }.joined(separator: " · ") : detail
+        // When it played after what it is ("Artist · Today"), on the iPhone
+        // as wide and on Linux: "Los ze op" (the photographer, 20 November
+        // 2026, of the parity deviations).
+        let line = [detail, RelativeDay.standalone(item.date)].filter { !$0.isEmpty }.joined(separator: " · ")
         return HStack(spacing: isWide ? Theme.Space.l : Theme.Space.m) {
             art()
             VStack(alignment: .leading, spacing: isWide ? 0 : Theme.Space.xs) {
                 Text(title)
-                    .desktopFont(15, phone: nil, wide: isWide)
+                    .desktopFont(Tokens.Size.body15.size, phone: nil, wide: isWide)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 if !line.isEmpty {
                     Text(line)
-                        .desktopFont(13, phone: .subheadline, wide: isWide)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .subheadline, wide: isWide)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
             }
             Spacer(minLength: Theme.Space.s)
-            if !isWide {
-                Text(when)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
         }
         .padding(.vertical, Theme.Space.s)
         .padding(.trailing, isWide ? 0 : Theme.margin)

@@ -108,19 +108,19 @@ nonisolated enum Tokens {
     /// styles these stand for, so Dynamic Type works.
     enum Size {
         /// A page's own title, serif (.largeTitle on the iPhone).
-        static let pageTitle = (size: 40, line: 48)
+        static let pageTitle: (size: CGFloat, line: CGFloat) = (40, 48)
         /// A hero's title, serif: a station's, an album's head.
-        static let heroTitle = (size: 32, line: 40)
+        static let heroTitle: (size: CGFloat, line: CGFloat) = (32, 40)
         /// A section's heading, serif (.title2).
-        static let sectionTitle = (size: 24, line: 32)
+        static let sectionTitle: (size: CGFloat, line: CGFloat) = (24, 32)
         /// The panel's head and a list's heading, serif (.title3).
-        static let panelHead = (size: 20, line: 28)
-        static let brandName = (size: 18, line: 24)
-        static let body17 = (size: 17, line: 24)
+        static let panelHead: (size: CGFloat, line: CGFloat) = (20, 28)
+        static let brandName: (size: CGFloat, line: CGFloat) = (18, 24)
+        static let body17: (size: CGFloat, line: CGFloat) = (17, 24)
         /// Rows and buttons (.body / .subheadline).
-        static let body15 = (size: 15, line: 20)
+        static let body15: (size: CGFloat, line: CGFloat) = (15, 20)
         /// Facts (.footnote).
-        static let fact13 = (size: 13, line: 16)
+        static let fact13: (size: CGFloat, line: CGFloat) = (13, 16)
     }
 
     // MARK: Motion
@@ -128,11 +128,52 @@ nonisolated enum Tokens {
     /// How long things take, in seconds. Short and plain: no springs on the
     /// chrome.
     enum Motion {
-        /// What appears under the pointer: a row's Remove.
+        /// What appears under the pointer: a row's Remove, a press.
         static let quick = 0.15
         /// A fade or a hover: shelf arrows, the bar over the room.
         static let standard = 0.2
+        /// A part of the window moving: the panel, the places, a sheet's
+        /// step, the mini player's record.
+        static let move = 0.25
         /// Lyrics' lines lighting up.
         static let slow = 0.3
+        /// A shelf's page, a station's art turning to its room.
+        static let glide = 0.35
+        /// Now Playing's ground settling, the download ring.
+        static let settle = 0.4
+        /// A cover's colours taking over the room, lyrics scrolling.
+        static let scene = 0.5
     }
+
+    // MARK: Drawn art
+
+    /// The record, the sleeve and the room as Now Playing draws them, the
+    /// same on every client (SleeveRecord.swift, NowPlayingGround.swift,
+    /// StationArtwork.swift; Linux's Drawings.swift). Art only.
+    enum Art {
+        /// The vinyl's black.
+        static let vinyl: UInt32 = 0x100D0C
+        /// The grooves' land.
+        static let land: UInt32 = 0x070505
+        /// The run-out groove.
+        static let runOut: UInt32 = 0x0C0A09
+        /// The spindle hole.
+        static let hole: UInt32 = 0x0A0807
+        /// A label without a cover's colour.
+        static let blankLabel: UInt32 = 0x1A1411
+        /// A sleeve's edge and the room before a cover's colour is known.
+        static let sleeveEdge: UInt32 = 0x16110A
+        /// A station's room until its colour is known.
+        static let stationRoom: UInt32 = 0x220C07
+        /// D2's land by night, and its grooves played.
+        static let landGround: UInt32 = 0x131010
+        static let landLit: UInt32 = 0x3F3127
+        /// Night under the room's shade, at 17 % black: the wide window's
+        /// sidebar while Full Player is up.
+        static let roomShade: UInt32 = 0x0F0E0D
+    }
+
+    /// The welcome's group of fields: white by day, white at 8 % on Night
+    /// by night.
+    static let field = ColorPair(light: 0xFFFFFF, dark: 0x252423)
 }

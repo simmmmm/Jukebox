@@ -231,7 +231,7 @@ struct SpotifyMiniPlayer: View {
             }
         }
         // The error comes and goes, after five seconds, as a crossfade.
-        .animation(.easeInOut(duration: 0.25), value: shownError)
+        .animation(.easeInOut(duration: Tokens.Motion.move), value: shownError)
     }
 
     /// The error in the second line's place: as quiet as the artist, with
@@ -315,7 +315,7 @@ struct SpotifyMiniPlayer: View {
         // the last song's colour (the task waits on it).
         let color = url == nil ? Theme.Arch.cabinet : Self.block(from: accent)
         let first = shown == nil
-        withAnimation(first || reduceMotion ? nil : .easeInOut(duration: 0.5)) {
+        withAnimation(first || reduceMotion ? nil : .easeInOut(duration: Tokens.Motion.scene)) {
             shown = (url: url, color: color)
         }
     }

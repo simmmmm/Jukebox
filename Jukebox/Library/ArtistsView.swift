@@ -50,11 +50,7 @@ struct ArtistsView: View {
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
-                        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                            Stats.track(.stationStarted, ["seed": "artist", "from": "menu"])
-                            radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
-                        }
-                        ShareMenuItem(item: .artist(artist))
+                        menu(artist)
                     }
                 }
                 .padding(.top, Theme.Space.xl)
@@ -99,6 +95,24 @@ struct ArtistsView: View {
     private func link(_ artist: Artist) -> some View {
         NavigationLink(value: Route.artist(artist)) {
             LibraryArtistRow(artist: artist)
+        }
+        .contextMenu {
+            menu(artist)
+        }
+    }
+
+    /// An artist's tile or row: their station, then their link, in a
+    /// song's sections (SYSTEM.md, Menus), as Linux's.
+    @ViewBuilder
+    private func menu(_ artist: Artist) -> some View {
+        Section {
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "artist", "from": "menu"])
+                radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
+            }
+        }
+        Section {
+            ShareMenuItem(item: .artist(artist))
         }
     }
 
@@ -187,8 +201,9 @@ struct ArtistDetailView: View {
             PageHead(page: page, title: shown.name, facts: facts) { size in
                 ArtworkView(shown.artwork, size: size, placeholder: "music.mic")
             } actions: {
-                // Play alone, all of them shuffled, as Linux's head has it.
-                PagePlayButtons(play: { playAll(shown, shuffled: true) })
+                // Play and Shuffle, as the iPhone's page and Linux's head.
+                PagePlayButtons(play: { playAll(shown, shuffled: false) },
+                                shuffle: { playAll(shown, shuffled: true) })
                     .disabled(songs == 0)
                 HStack(spacing: Theme.Space.s) {
                     HeartButton(item: .artist(shown.id))
@@ -232,7 +247,7 @@ struct ArtistDetailView: View {
                 VStack(alignment: .leading, spacing: Theme.Space.s) {
                     PageSectionTitle(String(localized: "About"), below: 0)
                     Text(overview)
-                        .desktopFont(15)
+                        .desktopFont(Tokens.Size.body15.size)
                         .foregroundStyle(.secondary)
                         .lineLimit(showsWholeOverview ? nil : 4)
                         .frame(maxWidth: 640, alignment: .leading)

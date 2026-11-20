@@ -98,12 +98,12 @@ struct PageTitle: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             Text(title)
-                .desktopFont(40, design: .serif)
+                .desktopFont(Tokens.Size.pageTitle.size, design: .serif)
                 .lineLimit(2)
                 .accessibilityAddTraits(.isHeader)
             if let fact, !fact.isEmpty {
                 Text(fact)
-                    .desktopFont(13)
+                    .desktopFont(Tokens.Size.fact13.size)
                     .foregroundStyle(.secondary)
             }
         }
@@ -131,11 +131,11 @@ struct PageSectionTitle: View {
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.Space.m) {
             Text(title)
-                .desktopFont(24, design: .serif)
+                .desktopFont(Tokens.Size.sectionTitle.size, design: .serif)
                 .accessibilityAddTraits(.isHeader)
             if let fact, !fact.isEmpty {
                 Text(fact)
-                    .desktopFont(13)
+                    .desktopFont(Tokens.Size.fact13.size)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
@@ -182,7 +182,7 @@ struct PagePlainLine: View {
 
     var body: some View {
         Text(text)
-            .desktopFont(15)
+            .desktopFont(Tokens.Size.body15.size)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.top, Theme.Space.xl)
@@ -237,7 +237,7 @@ struct PageHead<Art: View, Actions: View>: View {
                 .frame(width: page.cover, height: page.cover)
             VStack(alignment: .leading, spacing: 0) {
                 Text(title)
-                    .desktopFont(40, design: .serif)
+                    .desktopFont(Tokens.Size.pageTitle.size, design: .serif)
                     .lineLimit(3)
                     .accessibilityAddTraits(.isHeader)
                 if let lead, !lead.isEmpty {
@@ -252,13 +252,13 @@ struct PageHead<Art: View, Actions: View>: View {
                             Text(lead)
                         }
                     }
-                    .desktopFont(17)
+                    .desktopFont(Tokens.Size.body17.size)
                     .lineLimit(1)
                     .padding(.top, Theme.Space.xs)
                 }
                 if !facts.isEmpty {
                     Text(facts)
-                        .desktopFont(13)
+                        .desktopFont(Tokens.Size.fact13.size)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                         .padding(.top, Theme.Space.xs)
@@ -300,7 +300,7 @@ struct WordButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .desktopFont(15, weight: .bold)
+                .desktopFont(Tokens.Size.body15.size, weight: .bold)
         }
         .buttonStyle(.secondary)
         .fixedSize()
@@ -319,7 +319,7 @@ struct HeartButton: View {
             Task { await library.toggleFavorite(item) }
         } label: {
             Image(systemName: given ? "heart.fill" : "heart")
-                .desktopFont(15)
+                .desktopFont(Tokens.Size.body15.size)
                 .foregroundStyle(given ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.primary))
                 .frame(width: 32, height: 32)
                 .contentShape(.rect)
@@ -339,7 +339,7 @@ struct MoreMenu<Items: View>: View {
             items
         } label: {
             Image(systemName: "ellipsis")
-                .desktopFont(15, weight: .semibold)
+                .desktopFont(Tokens.Size.body15.size, weight: .semibold)
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
                 .contentShape(.rect)
@@ -365,12 +365,12 @@ struct WideTile<Art: View>: View {
             art
                 .padding(.bottom, Theme.Space.s)
             Text(name)
-                .desktopFont(15, weight: .medium)
+                .desktopFont(Tokens.Size.body15.size, weight: .medium)
                 .foregroundStyle(.primary)
                 .lineLimit(1)
             if let line, !line.isEmpty {
                 Text(line)
-                    .desktopFont(13)
+                    .desktopFont(Tokens.Size.fact13.size)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
             }

@@ -267,8 +267,8 @@ struct Shelf<Item: Identifiable, Tile: View>: View {
                     .padding(.horizontal, Theme.Space.s)
                     // On the middle of the art, the tile's square top.
                     .padding(.top, hover + width / 2 - 16)
-                    .animation(.easeInOut(duration: 0.15), value: isHovered)
-                    .animation(.easeInOut(duration: 0.15), value: reach)
+                    .animation(.easeInOut(duration: Tokens.Motion.quick), value: isHovered)
+                    .animation(.easeInOut(duration: Tokens.Motion.quick), value: reach)
                 }
             }
         }
@@ -280,7 +280,7 @@ struct Shelf<Item: Identifiable, Tile: View>: View {
     private func step(_ direction: Int, _ proxy: ScrollViewProxy) {
         guard !items.isEmpty else { return }
         let target = min(max(reach.first + direction * max(1, reach.shown - 1), 0), items.count - 1)
-        withAnimation(.easeInOut(duration: 0.35)) {
+        withAnimation(.easeInOut(duration: Tokens.Motion.glide)) {
             proxy.scrollTo(items[target].id, anchor: .leading)
         }
     }
@@ -289,7 +289,7 @@ struct Shelf<Item: Identifiable, Tile: View>: View {
     private func arrow(_ symbol: String, _ label: LocalizedStringKey, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
-                .desktopFont(13, weight: .semibold)
+                .desktopFont(Tokens.Size.fact13.size, weight: .semibold)
                 .foregroundStyle(.primary)
                 .frame(width: 32, height: 32)
                 .background {

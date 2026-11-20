@@ -55,26 +55,14 @@ struct LyricsView: View {
                 } else {
                     LyricsPlainText(lines: lyrics.lines, credit: credit(fromLRCLIB: fromLRCLIB), inPanel: inPanel)
                 }
+            // None, on the iPhone too: Linux's quiet line, not a status
+            // page: "Los ze op" (the photographer, 20 November 2026).
             case .instrumental:
-                if inPanel {
-                    quiet(Text("Instrumental"))
-                } else {
-                    ContentUnavailableView("Instrumental", systemImage: "pianokeys")
-                }
+                quiet(Text("Instrumental"))
             case .unavailable:
-                if inPanel {
-                    quiet(Text("No lyrics for this song"))
-                } else {
-                    ContentUnavailableView("No lyrics", systemImage: "quote.bubble",
-                                           description: unavailableDescription)
-                }
+                quiet(Text("No lyrics for this song"))
             case let .failed(server):
-                if inPanel {
-                    quiet(failedDescription(server: server))
-                } else {
-                    ContentUnavailableView("No lyrics", systemImage: "quote.bubble",
-                                           description: failedDescription(server: server))
-                }
+                quiet(failedDescription(server: server))
             }
         }
         // Settings, where LRCLIB is turned on and off, cannot open over Now
@@ -93,21 +81,14 @@ struct LyricsView: View {
         return inPanel ? app.serverKindName : nil
     }
 
-    /// The panel's line where there are no lyrics: quiet, at the top.
+    /// The line where there are no lyrics: quiet, at the top.
     private func quiet(_ text: Text) -> some View {
         text
-            // Linux's lyrics-quiet, 15.
-            .desktopFont(15)
+            // Linux's lyrics-quiet, 15; the iPhone's own size there.
+            .desktopFont(Tokens.Size.body15.size, phone: .subheadline, wide: inPanel)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .padding(Theme.Space.xl)
-    }
-
-    private var unavailableDescription: Text {
-        if settings.findLyricsOnline {
-            return Text("Neither your server nor LRCLIB has lyrics for this song.")
-        }
-        return Text("\(app.serverKindName) has no lyrics for this song.")
     }
 
     private func failedDescription(server: Bool) -> Text {
@@ -167,7 +148,7 @@ private struct LyricsCredit: View {
 
     var body: some View {
         Text("Lyrics from \(source)")
-            .desktopFont(13, phone: .footnote, wide: inPanel)
+            .desktopFont(Tokens.Size.fact13.size, phone: .footnote, wide: inPanel)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -218,7 +199,7 @@ private struct LyricsSyncedLines: View {
                 if reduceMotion {
                     proxy.scrollTo(line, anchor: Self.readingPlace)
                 } else {
-                    withAnimation(.easeInOut(duration: 0.5)) {
+                    withAnimation(.easeInOut(duration: Tokens.Motion.scene)) {
                         proxy.scrollTo(line, anchor: Self.readingPlace)
                     }
                 }
@@ -242,7 +223,7 @@ private struct LyricsSyncedLines: View {
             Text(line.text.isEmpty ? "♪" : line.text)
                 // The panel's as Linux's (600, 18 on 24), the line sung in
                 // full and the rest at 40 %.
-                .desktopFont(18, weight: .semibold, phone: .title.bold(), wide: inPanel)
+                .desktopFont(Tokens.Size.brandName.size, weight: .semibold, phone: .title.bold(), wide: inPanel)
                 .modifier(LinuxLyricLine(isOn: inPanel))
                 .multilineTextAlignment(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -250,7 +231,7 @@ private struct LyricsSyncedLines: View {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .animation(.easeInOut(duration: 0.3), value: isCurrent)
+        .animation(.easeInOut(duration: Tokens.Motion.slow), value: isCurrent)
         .accessibilityHint("Plays from this line")
     }
 
@@ -281,7 +262,7 @@ private struct LyricsPlainText: View {
                     VStack(alignment: .leading, spacing: Theme.Space.l + Theme.Space.xs) {
                         ForEach(Array(lines.enumerated()), id: \.offset) { _, line in
                             Text(line.text.isEmpty ? "♪" : line.text)
-                                .desktopFont(18, weight: .semibold)
+                                .desktopFont(Tokens.Size.brandName.size, weight: .semibold)
                                 .modifier(LinuxLyricLine(isOn: true))
                         }
                     }

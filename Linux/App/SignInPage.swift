@@ -100,7 +100,7 @@ enum SignInPage {
             }
         }
 
-        signIn = button("Sign In", "suggested-action") { submit() }.align(horizontal: GTK_ALIGN_CENTER)
+        signIn = button("Sign In", "suggested-action", "page-button") { submit() }.align(horizontal: GTK_ALIGN_CENTER)
         for row in [address, user, password] { on(raw(row), "entry-activated") { submit() } }
 
         // Sign In with Plex: plex.tv's page in the default browser, so the
@@ -312,25 +312,24 @@ enum SignInPage {
         }
     }
 
-    /// The mark on its tile, as the icon is shaped, above Jukebox's name,
-    /// centred, as the iPhone's welcome has it (ShellAppMark): flat on Cabinet, never
-    /// lit, as the welcome plays nothing. Still: the iPhone's warm-up, the
-    /// bands coming on one by one, waits for motion on Linux.
+    /// The welcome's picture above Jukebox's name, as the Mac's and the
+    /// iPhone's (WelcomeSleeve): the mark on its sleeve with the record half
+    /// out, 240 wide (Draw.welcomeSleeve), never lit, as the welcome plays
+    /// nothing. Still: the Apple welcome's warm-up, the bands coming on one
+    /// by one, waits for motion on Linux.
     private static func markTile() -> Widget {
-        let side: Int32 = 112
-        let tile = gtk_image_new()!
-        gtk_image_set_pixel_size(ptr(tile), side)
-        tile.size(width: side, height: side).align(horizontal: GTK_ALIGN_CENTER)
-        observe(tile) {
+        let width: Int32 = 240, height: Int32 = 160
+        let picture = gtk_picture_new()!.size(width: width, height: height).align(horizontal: GTK_ALIGN_CENTER)
+        observe(picture) {
             let scale = Screen.shared.scale
             Task {
-                let size = Double(side)
-                guard let drawing = await drawn("tile \(side)", width: size, height: size, scale: scale, { cr, _ in
-                    Draw.shellTile(cr, side: size)
+                guard let drawing = await drawn("welcome sleeve \(width)", width: Double(width), height: Double(height),
+                                                scale: scale, { cr, _ in
+                    Draw.welcomeSleeve(cr, scale: scale, width: Double(width))
                 }) else { return }
-                gtk_image_set_from_paintable(ptr(tile), drawing.pointer)
+                gtk_picture_set_paintable(ptr(picture), drawing.pointer)
             }
         }
-        return tile
+        return picture
     }
 }

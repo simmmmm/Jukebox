@@ -74,14 +74,14 @@ struct WideShell: View {
                     // In and out as a crossfade of 200 ms, as on Linux. The
                     // window keeps its own appearance: the room has its own
                     // dark ground.
-                    .animation(.easeInOut(duration: 0.2), value: navigator.isNowPlayingPresented)
+                    .animation(.easeInOut(duration: Tokens.Motion.standard), value: navigator.isNowPlayingPresented)
                     if panelShown && !overlaid {
                         // Beside the page its ground is the edge; over the
                         // room, where it has none, Linux's faint dark line.
                         // (#0F0E0D: the room's #121110 under black at 17 %,
                         // whatever the window's own appearance.)
                         Rectangle()
-                            .fill(navigator.isNowPlayingPresented ? Color(rgb: 0x0F0E0D) : .clear)
+                            .fill(navigator.isNowPlayingPresented ? Color(rgb: Tokens.Art.roomShade) : .clear)
                             // grid-ok: a line, as a hairline is
                             .frame(width: 1)
                         panelPane
@@ -106,8 +106,8 @@ struct WideShell: View {
                             .transition(.move(edge: .trailing))
                     }
                 }
-                .animation(.easeInOut(duration: 0.25), value: panelShown)
-                .animation(.easeInOut(duration: 0.25), value: showsPlaces)
+                .animation(.easeInOut(duration: Tokens.Motion.move), value: panelShown)
+                .animation(.easeInOut(duration: Tokens.Motion.move), value: showsPlaces)
 
                 // The bar across the window's whole foot, under the places,
                 // the page and the panel, as on Linux. Its hairline and its
@@ -397,7 +397,7 @@ private struct Places: View {
         if settings.shows(place: place) {
             PlaceRow(place: place, title: Text(title), chosen: chosen) {
                 Image(systemName: symbol)
-                    .desktopFont(15)
+                    .desktopFont(Tokens.Size.body15.size)
             }
         }
     }
@@ -409,6 +409,10 @@ private struct Places: View {
 private struct MainMenu: View {
     @Environment(Navigator.self) private var navigator
     @Environment(AppModel.self) private var app
+    @State private var isConfirmingSignOut = false
+
+    // Spelled out: the private state would make the memberwise one private.
+    init() {}
 
     var body: some View {
         Menu {
@@ -417,10 +421,11 @@ private struct MainMenu: View {
             }
             PrivateListeningMenu(store: app.player.notCounted)
             Divider()
-            AccountMenuItems(app: app)
+            // Sign Out… after the accounts, as Linux's primary menu.
+            AccountMenuItems(app: app, signOut: { isConfirmingSignOut = true })
         } label: {
             Image(systemName: "line.3.horizontal")
-                .desktopFont(15)
+                .desktopFont(Tokens.Size.body15.size)
                 .frame(width: 32, height: 32)
                 .contentShape(.rect)
         }
@@ -428,6 +433,7 @@ private struct MainMenu: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .accessibilityLabel("Main Menu")
+        .signOutConfirmation(isPresented: $isConfirmingSignOut, app: app)
     }
 }
 #endif
@@ -480,7 +486,7 @@ private struct BrandMark: View {
         HStack(spacing: Theme.Space.s) {
             ArchMark(size: 20)
             Text("Jukebox")
-                .desktopFont(18, design: .serif)
+                .desktopFont(Tokens.Size.brandName.size, design: .serif)
                 .accessibilityAddTraits(.isHeader)
         }
     }
@@ -547,7 +553,7 @@ private struct PlaceRow<Icon: View>: View {
                     .accessibilityHidden(true)
                 // GNOME's own row label, 15, as Linux's sidebar.
                 title
-                    .desktopFont(15)
+                    .desktopFont(Tokens.Size.body15.size)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
                 Spacer(minLength: 0)

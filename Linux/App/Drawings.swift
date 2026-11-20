@@ -334,7 +334,7 @@ nonisolated enum Draw {
         cairo_close_path(cr)
         cairo_clip(cr)
         if let core {
-            color(cr, 0x220C07)
+            color(cr, Tokens.Art.stationRoom)
             cairo_paint(cr)
             let rc = Double(cut.coreRadius)
             let height = Double(cut.base - cut.spring) + rc
@@ -436,6 +436,25 @@ nonisolated enum Draw {
         cairo_set_source_rgba(cr, 1, 1, 1, 0.08)
         cairo_set_line_width(cr, 0.5)
         cairo_stroke(cr)
+    }
+
+    /// The welcome's picture, the Mac's WelcomeSleeve at rest: the mark on
+    /// its Cabinet sleeve, the record half out with its Copper label, in
+    /// units of a 300th of `width` (the sleeve 180 square at (20, 10), the
+    /// record 172 across, its centre at (208, 100)); `width` by two thirds
+    /// of it. One welcome on every client ("Los ze op", 20 November 2026).
+    static func welcomeSleeve(_ cr: OpaquePointer, scale: Double, width: Double) {
+        let u = width / 300
+        record(cr, scale: scale, center: (208 * u, 100 * u), diameter: 172 * u, bands: [],
+               label: RecordLabel(title: "Jukebox", artist: "", disc: nil),
+               tone: AverageColor(red: 0xA8 / 255, green: 0x4A / 255, blue: 0x17 / 255), strength: 1)
+        let side = 180 * u, m = side * 0.7
+        cairo_save(cr)
+        cairo_translate(cr, 20 * u, 10 * u)
+        sleeve(cr, scale: scale, side: side, cover: nil, words: nil, strength: 1)
+        cairo_translate(cr, (side - m) / 2, (side - m) / 2 + side * 12 / 1024)
+        mark(cr, size: m, outer: copper, inner: glow, core: Tokens.Arch.markCore.dark)
+        cairo_restore(cr)
     }
 
     // MARK: The collage
@@ -547,7 +566,7 @@ nonisolated enum Draw {
             shadow(cr, scale: scale, width: d, height: d, shape: { cairo_arc($0, R, R, R, 0, 2 * .pi) },
                    hex: 0x000000, alpha: alpha * strength, radius: radius, dx: x0, dy: y0 + dy)
             cairo_arc(cr, center.0, center.1, R, 0, 2 * .pi)
-            color(cr, 0x100D0C)
+            color(cr, Tokens.Art.vinyl)
             cairo_fill(cr)
         }
         cairo_save(cr)
@@ -566,7 +585,7 @@ nonisolated enum Draw {
         let R = d / 2, c = R
         let outer = R * 0.955, inner = R * 0.40
         cairo_arc(cr, c, c, R, 0, 2 * .pi)
-        color(cr, 0x100D0C)
+        color(cr, Tokens.Art.vinyl)
         cairo_fill(cr)
         // The lead-in at the rim.
         cairo_arc(cr, c, c, R * 0.985, 0, 2 * .pi)
@@ -592,7 +611,7 @@ nonisolated enum Draw {
         let width = max(2.2, R * 0.022)
         let radii = bands.map { outer - (outer - inner) * $0 }
         circles(cr, c, c, radii)
-        color(cr, 0x070505)
+        color(cr, Tokens.Art.land)
         cairo_set_line_width(cr, width)
         cairo_stroke(cr)
         circles(cr, c, c, radii.map { $0 + width / 2 })
@@ -601,7 +620,7 @@ nonisolated enum Draw {
         cairo_stroke(cr)
         // The run-out, and its fine ring.
         cairo_arc(cr, c, c, inner, 0, 2 * .pi)
-        color(cr, 0x0C0A09)
+        color(cr, Tokens.Art.runOut)
         cairo_fill(cr)
         cairo_arc(cr, c, c, R * 0.37, 0, 2 * .pi)
         cairo_set_source_rgba(cr, 1, 1, 1, 0.06)
@@ -616,7 +635,7 @@ nonisolated enum Draw {
             let hsb = tone.hueSaturationBrightness
             color(cr, hue: hsb.hue, saturation: min(hsb.saturation, 0.45), brightness: 0.3)
         } else {
-            color(cr, 0x1A1411)
+            color(cr, Tokens.Art.blankLabel)
         }
         cairo_arc(cr, lr, lr, lr, 0, 2 * .pi)
         cairo_fill(cr)
@@ -643,7 +662,7 @@ nonisolated enum Draw {
             }
         }
         cairo_arc(cr, lr, lr, hole, 0, 2 * .pi)
-        color(cr, 0x0A0807)
+        color(cr, Tokens.Art.hole)
         cairo_fill(cr)
     }
 
@@ -724,7 +743,7 @@ nonisolated enum Draw {
             shadow(cr, scale: scale, width: side, height: side, shape: card, hex: 0x000000,
                    alpha: alpha * strength, radius: radius, dx: dx, dy: dy)
             card(cr)
-            if let edge { cairo_set_source_rgb(cr, edge.0, edge.1, edge.2) } else { color(cr, 0x16110A) }
+            if let edge { cairo_set_source_rgb(cr, edge.0, edge.1, edge.2) } else { color(cr, Tokens.Art.sleeveEdge) }
             cairo_fill(cr)
         }
         cairo_restore(cr)

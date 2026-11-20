@@ -176,9 +176,9 @@ struct HomeLoadingView: View {
             ArchMark(size: 48)
             VStack(spacing: Theme.Space.xs) {
                 Text("Loading your library…")
-                    .desktopFont(17, weight: .semibold, phone: .headline)
+                    .desktopFont(Tokens.Size.body17.size, weight: .semibold, phone: .headline)
                 Text("The first time takes a moment. After that, Jukebox opens at once.")
-                    .desktopFont(15, phone: .subheadline)
+                    .desktopFont(Tokens.Size.body15.size, phone: .subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
@@ -187,7 +187,7 @@ struct HomeLoadingView: View {
                     ProgressView(value: progress)
                         .frame(maxWidth: 240)
                     Text(progress, format: .percent.precision(.fractionLength(0)))
-                        .desktopFont(13, phone: .footnote)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                         .monospacedDigit()
                         .foregroundStyle(.secondary)
                 }
@@ -285,7 +285,10 @@ struct StationMenu: View {
                     radio.start(station)
                 }
             }
-            Button("Show Station", systemImage: "dot.radiowaves.left.and.right") {
+        }
+        Section {
+            // "Go to", as Go to Album and Linux's card.
+            Button("Go to Station", systemImage: "dot.radiowaves.left.and.right") {
                 navigator.open(.station(station))
             }
         }
@@ -317,9 +320,9 @@ struct HomePlaceholderShelf: View {
                     .fill(.quaternary)
                     .aspectRatio(1, contentMode: .fit)
                 Text("1990s Rock")
-                    .desktopFont(15, weight: .medium, phone: .subheadline.weight(.medium))
+                    .desktopFont(Tokens.Size.body15.size, weight: .medium, phone: .subheadline.weight(.medium))
                 Text("Artists you love and more")
-                    .desktopFont(13, phone: .subheadline)
+                    .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
             }
             .redacted(reason: .placeholder)
         }
@@ -348,7 +351,8 @@ struct HomeMixLink: View {
     }
 }
 
-/// What can be done with a mix, as Music orders it for a playlist.
+/// What can be done with a mix, in a song's sections (SYSTEM.md, Menus),
+/// as Linux's: Play and Shuffle first, as a tile has no buttons for them.
 struct HomeMixMenu: View {
     let mix: Mix
 
@@ -368,10 +372,6 @@ struct HomeMixMenu: View {
             Button("Shuffle", systemImage: "shuffle") {
                 player.playMix(mix, shuffled: true)
             }
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
-                radio.start(mix.stationSeed)
-            }
         }
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
@@ -385,11 +385,15 @@ struct HomeMixMenu: View {
             Button("Add to Playlist…", systemImage: "text.badge.plus") {
                 navigator.addToPlaylist = AddToPlaylistRequest(tracks: mix.tracks)
             }
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": Stats.seed(mix.stationSeed), "from": "menu"])
+                radio.start(mix.stationSeed)
+            }
         }
     }
 }
 
-/// An album's tile that opens it; a long press plays it or starts its station.
+/// An album's tile that opens it; a long press has the album's menu.
 struct HomeAlbumLink: View {
     let album: Album
 
@@ -409,35 +413,16 @@ struct HomeAlbumLink: View {
 }
 
 /// An album's long press, on a shelf's tile and on Played lately's row:
-/// play it, shuffle it, or start its station.
+/// the one album menu every tile and row has (LibraryAlbumMenu), as
+/// Linux's albumMenu everywhere.
 struct HomeAlbumMenu: View {
     let album: Album
-
-    @Environment(AudioPlayer.self) private var player
-    @Environment(RadioController.self) private var radio
-    @Environment(LibraryStore.self) private var library
 
     init(album: Album) {
         self.album = album
     }
 
     var body: some View {
-        Section {
-            Button("Play", systemImage: "play.fill") {
-                play(shuffled: false)
-            }
-            Button("Shuffle", systemImage: "shuffle") {
-                play(shuffled: true)
-            }
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": "album", "from": "menu"])
-                radio.start(.album(album.id))
-            }
-        }
-    }
-
-    private func play(shuffled: Bool) {
-        let tracks = library.tracks(inAlbum: album.id)
-        player.play(tracks, context: QueueContext(.album(album.id), title: album.name), shuffled: shuffled)
+        LibraryAlbumMenu(album: album)
     }
 }

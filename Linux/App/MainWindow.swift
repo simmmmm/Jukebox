@@ -632,7 +632,7 @@ enum MainWindow {
     /// the wider ones'.
     private static func breakpoints() {
         let overlaid: [(Widget, String, Bool)] = [(panel!, "collapsed", true)]
-        // Below 900 the heart and Not This go into the song's menu.
+        // Below 900 the heart and Not This leave the bar for the song's menu.
         let narrow = overlaid + [(split!, "collapsed", true), (PlayerBar.volume!, "visible", false),
                                  (PlayerBar.volumeButton!, "visible", true), (PlayerBar.songActions!, "visible", false)]
         // ponytail: below 600 the bar only loses its times and the volume

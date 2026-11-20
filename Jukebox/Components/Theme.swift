@@ -170,7 +170,7 @@ struct Eyebrow: View {
     var body: some View {
         Text(text)
             // Wide, Linux's: 13 in the accent.
-            .desktopFont(13, phone: Theme.label)
+            .desktopFont(Tokens.Size.fact13.size, phone: Theme.label)
             .foregroundStyle(Theme.accent)
             .accessibilityAddTraits(.isHeader)
     }
@@ -233,10 +233,32 @@ struct ListHeading: View {
 
     var body: some View {
         Text(title)
-            .desktopFont(20, design: .serif, phone: .serif(.title3))
+            .desktopFont(Tokens.Size.panelHead.size, design: .serif, phone: .serif(.title3))
             .foregroundStyle(.primary)
             .textCase(nil)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// What a page says when it has nothing to show: one plain line of what to
+/// do, in the facts' grey, on the margin where its content would start, 24
+/// under what is above it. Linux's `emptyLine`, 1:1 (docs/design/SYSTEM.md,
+/// Notices and empty states): "favourites heeft een vage empty state" (the
+/// photographer, 14 November 2026). A whole window's state (loading, could
+/// not load) stays the system's ContentUnavailableView.
+struct EmptyLine: View {
+    let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Text(text)
+            .desktopFont(Tokens.Size.body15.size, phone: .subheadline)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, Theme.Space.xl)
     }
 }
 
@@ -266,26 +288,6 @@ struct Hairline: View {
     }
 }
 
-/// The one filled button of a screen (Play, Sign In): a plain rectangle in
-/// the accent, 6 pt corners, its own ink on it. No glow, no shadow, and no
-/// icon unless the word needs one. Callers that want it compact give it
-/// `.fixedSize()`. Wide, Linux's page-button: 40 tall, 15 bold.
-struct ProminentButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.isWide) private var isWide
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .desktopFont(15, weight: .bold, phone: .body.weight(.semibold))
-            .foregroundStyle(Theme.onAccent)
-            .frame(maxWidth: .infinity, minHeight: isWide ? 40 : 44)
-            .padding(.horizontal, Theme.Space.xl)
-            .background(Theme.accent, in: .rect(cornerRadius: Theme.Radius.artwork))
-            .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
-            .contentShape(.rect)
-    }
-}
-
 /// Every other action (Shuffle, Stop, New Picks): a word in the accent, no
 /// ground under it — a text button, as the system's own are. Wide, Linux's
 /// word: 40 tall, 15 bold, 8 either side of the word, so beside Play it
@@ -296,7 +298,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .desktopFont(15, weight: .bold, phone: .body)
+            .desktopFont(Tokens.Size.body15.size, weight: .bold, phone: .body)
             .foregroundStyle(Theme.accent)
             .padding(.horizontal, isWide ? Theme.Space.s : 0)
             .frame(minHeight: isWide ? 40 : 44)
@@ -321,7 +323,7 @@ struct ActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .desktopFont(15, weight: .bold, phone: .subheadline.weight(.semibold))
+            .desktopFont(Tokens.Size.body15.size, weight: .bold, phone: .subheadline.weight(.semibold))
             .lineLimit(1)
             .foregroundStyle(isFilled ? Theme.onAccent : Theme.quietInk)
             .padding(.horizontal, Theme.Space.l)
@@ -335,9 +337,6 @@ struct ActionButtonStyle: ButtonStyle {
     }
 }
 
-extension ButtonStyle where Self == ProminentButtonStyle {
-    static var prominent: ProminentButtonStyle { ProminentButtonStyle() }
-}
 
 extension ButtonStyle where Self == SecondaryButtonStyle {
     static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
@@ -346,6 +345,11 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
 extension ButtonStyle where Self == ActionButtonStyle {
     /// Play, in a page's row of actions.
     static var action: ActionButtonStyle { ActionButtonStyle(isFilled: true) }
+    /// The one filled button of a screen that is not Play (Sign In, Try
+    /// Again): the same button, one size on every client, compact; Linux's
+    /// suggested-action page-button. It was 40 wide and 44 full-width on
+    /// the iPhone ("Los ze op", 20 November 2026).
+    static var prominent: ActionButtonStyle { ActionButtonStyle(isFilled: true) }
     /// The quieter one beside it.
     static var quietAction: ActionButtonStyle { ActionButtonStyle(isFilled: false) }
 }

@@ -32,7 +32,7 @@ struct FavoritesView: View {
             PageTitle("Favorites")
                 .padding(.horizontal, page.side)
             if artists.isEmpty && albums.isEmpty && tracks.isEmpty {
-                PageEmptyLine("Choose Favorite in a song’s, album’s or artist’s menu, and it appears here.")
+                PageEmptyLine(LocalizedStringKey(Self.emptyWords))
                     .padding(.horizontal, page.side)
             }
             if !artists.isEmpty {
@@ -95,7 +95,9 @@ struct FavoritesView: View {
     private var songs: some View {
         let favorites = library.favoriteTracks
         return List {
-            if !favorites.isEmpty {
+            if favorites.isEmpty {
+                emptyRow
+            } else {
                 Button {
                     player.play(favorites, context: context, shuffled: true)
                 } label: {
@@ -115,31 +117,26 @@ struct FavoritesView: View {
             }
         }
         .listStyle(.plain)
-        .overlay {
-            if favorites.isEmpty {
-                ContentUnavailableView("No favorite songs", systemImage: "heart",
-                                       description: Text("Touch and hold a song, then choose Favorite."))
-            }
-        }
     }
 
     private var albums: some View {
         let favorites = library.favoriteAlbums
         return ScrollView {
+            if favorites.isEmpty {
+                EmptyLine(Self.emptyWords)
+                    .padding(.horizontal, Theme.margin)
+            }
             LibraryAlbumGrid(albums: favorites)
                 .padding(.vertical, Theme.Space.l)
-        }
-        .overlay {
-            if favorites.isEmpty {
-                ContentUnavailableView("No favorite albums", systemImage: "heart",
-                                       description: Text("Touch and hold an album, then choose Favorite."))
-            }
         }
     }
 
     private var artists: some View {
         let favorites = library.favoriteArtists
         return List {
+            if favorites.isEmpty {
+                emptyRow
+            }
             ForEach(favorites) { artist in
                 NavigationLink(value: Route.artist(artist)) {
                     LibraryArtistRow(artist: artist)
@@ -147,12 +144,17 @@ struct FavoritesView: View {
             }
         }
         .listStyle(.plain)
-        .overlay {
-            if favorites.isEmpty {
-                ContentUnavailableView("No favorite artists", systemImage: "heart",
-                                       description: Text("On an artist’s page, choose Favorite in the … menu."))
-            }
-        }
+    }
+
+    /// Nothing hearted: Linux's one line, on the margin where the rows
+    /// would start, not a notice in the middle: "Los ze op" (the
+    /// photographer, 20 November 2026, of the parity deviations).
+    private static let emptyWords = "Mark a song, album or artist with ♡ and it appears here."
+
+    private var emptyRow: some View {
+        EmptyLine(Self.emptyWords)
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
     }
 
     private var context: QueueContext {

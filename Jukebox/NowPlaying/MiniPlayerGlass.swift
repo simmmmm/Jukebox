@@ -179,7 +179,7 @@ struct GlassMiniPlayer: View {
             }
         }
         // The error comes and goes, after five seconds, as a crossfade.
-        .animation(.easeInOut(duration: 0.25), value: shownError)
+        .animation(.easeInOut(duration: Tokens.Motion.move), value: shownError)
     }
 
     /// The error in the second line's place: as quiet as the artist, with
@@ -407,7 +407,7 @@ struct GlassTabFoot: View {
         // above it.
         .padding(.bottom, isKeyboardUp ? Theme.Space.s : max(0, Self.inset - Self.homeIndicator))
         .offset(y: isKeyboardUp ? 0 : max(0, Self.homeIndicator - Self.inset))
-        .animation(.easeInOut(duration: 0.25), value: showsPlayer)
+        .animation(.easeInOut(duration: Tokens.Motion.move), value: showsPlayer)
     }
 
     /// The room under the safe area at the screen's foot: 34 on an iPhone

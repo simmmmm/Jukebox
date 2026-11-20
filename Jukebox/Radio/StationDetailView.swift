@@ -513,9 +513,9 @@ private struct StationPlaceholderRows: View {
                     .frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("A song of the station")
-                        .desktopFont(15, phone: nil)
+                        .desktopFont(Tokens.Size.body15.size, phone: nil)
                     Text("Its artist")
-                        .desktopFont(13, phone: .subheadline)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                 }
                 Spacer(minLength: 0)
             }
