@@ -43,6 +43,15 @@ start=$SECONDS
 budget=${SHOTS_BUDGET:-2400}
 # Walked in this order; the last is the first left out when time runs short.
 devices=${SHOTS_DEVICES:-iphone ipad ipad11}
+# The Mac's walk takes over the screen, the mouse and the keyboard; on a
+# runner of our own, the photographer's MacBook, it is left out: "Doe dan
+# maar via GitHub" (20 November 2026). The simulators' walks stay.
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted && " $devices " == *" mac "* ]]; then
+  kept=
+  for kind in $devices; do [[ $kind == mac ]] || kept="${kept:+$kept }$kind"; done
+  devices=$kept
+  echo "::notice::No Mac walk on a self-hosted runner: the Mac's pictures come from GitHub's runner."
+fi
 # The iPhone walked. The Pro's 1206 x 2622 is what App Store Connect
 # requires; "iPhone 17 Pro Max" gives the optional large set, 1320 x 2868
 # (docs/RELEASE.md, Screenshots).
