@@ -50,9 +50,7 @@ Mac's, is Linux's window, 1:1 (below).
   ook", the same day). Use 18's and 15's APIs plainly (Tab,
   `.sidebarAdaptable`); what is 26's alone goes behind
   `if #available(iOS 26, *)` or `macOS 26` with the older system's own
-  form beside it, the 26 look unchanged: the tab bar's accessory and its
-  minimising (`BottomAccessory` in `App/JukeboxApp.swift`), on 18 a bar on
-  each tab's foot (`MiniPlayerBar`); the title bar's head without glass
+  form beside it, the 26 look unchanged: the title bar's head without glass
   (`BrandHeadItem` in `App/WideShell.swift`), on 15 a bar that has none;
   the widget's control, on Sequoia the widget alone. `glassEffect` only where Apple's own apps
   use glass, and gated. UIKit only where SwiftUI has nothing (MPVolumeView,
@@ -120,10 +118,11 @@ each must exist with exactly this initializer.
   `GenreDetailView(genre: Genre)`, `FavoritesView()`, `RecentlyAddedView()`,
   `AddToPlaylistSheet(tracks: [Track])`.
 - Offline: `DownloadedView()` (`Route.downloaded`, Library › Downloaded).
-- Now playing: on the iPhone `MiniPlayer()`, inside
-  `tabViewBottomAccessory`, reading
-  `@Environment(\.tabViewBottomAccessoryPlacement)` to draw inline or
-  expanded, and `NowPlayingView()` in a fullScreenCover. In the wide window
+- Now playing: on the iPhone, for now three player bars to try, chosen in
+  Settings › Library › Player Bar (Test) or with `-miniBarVariant
+  spotify|glas|plaat`: `MiniBarFoot` on each tab's foot holds Spotify's,
+  Glas's or Plaat's (`NowPlaying/MiniPlayer*.swift`), no bottom accessory;
+  and `NowPlayingView()` in a fullScreenCover. In the wide window
   `PlayerBar()`, `PanelView()`, and `NowPlayingView()` as the room.
 - Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
   `StationDetailView(station: Station)` (`Route.station(station)`).

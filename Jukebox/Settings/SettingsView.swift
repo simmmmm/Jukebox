@@ -226,6 +226,9 @@ private struct SettingsPageForm: View {
             case .library:
                 SettingsLibrarySection()
                 SettingsPagesSection(hasSidebar: isWide || settingsOnPad)
+                #if os(iOS)
+                SettingsMiniBarSection()
+                #endif
             case .downloads:
                 SettingsDownloadsSection()
             case .privacy:
@@ -1014,6 +1017,31 @@ private struct SettingsLyricsSection: View {
         }
     }
 }
+
+#if os(iOS)
+/// The test build's three player bars (NowPlaying/MiniPlayer.swift), to be
+/// tried on the phone: "Kun je een soort debug versie maken met alle drie de
+/// versies: Spotify, glas en plaat" (the photographer, 20 November 2026).
+/// Marked as a test, so it is not taken for a setting to keep.
+private struct SettingsMiniBarSection: View {
+    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .record
+
+    var body: some View {
+        Section {
+            Picker("Player Bar", selection: $variant) {
+                ForEach(MiniBarVariant.allCases) { choice in
+                    Text(choice.title).tag(choice)
+                }
+            }
+            .pickerStyle(.segmented)
+        } header: {
+            SettingsHeader("Player Bar (Test)")
+        } footer: {
+            Text("Which of the three player bars above the tabs this build shows. It changes at once.")
+        }
+    }
+}
+#endif
 
 // MARK: - Pages
 
