@@ -39,6 +39,11 @@ case ${GITHUB_REF_NAME:-main} in
   store-walk) TESTFLIGHT=false; export SHOTS_DEVICES="mac iphone ipad" ;;
   # The Mac's walk alone, to work on it: a quarter of the store's round.
   store-mac-walk) TESTFLIGHT=false; export SHOTS_DEVICES=mac ;;
+  # A design to hold in the hand before it goes on main: a branch ending
+  # in "-testflight" uploads as main does, when its commit says so. "hou de
+  # andere ook even ik wil het zelf testen" (the photographer, 20 November
+  # 2026), two versions of the iPhone's player side by side in TestFlight.
+  *-testflight) ;;
   *walk) TESTFLIGHT=false ;;
   *) TESTFLIGHT=false; SCREENSHOTS=${SCREENSHOTS:-false} ;;
 esac
