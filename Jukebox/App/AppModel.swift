@@ -246,6 +246,20 @@ final class AppModel {
         refreshServer(server)
     }
 
+    #if DEBUG && os(macOS)
+    /// The Mac's snapshots (JukeboxSnapshots/): signed in as `begin` does,
+    /// but past the list of accounts and the keychain, and without asking
+    /// the server again (refreshServer saves to the keychain). The snapshots
+    /// run on the photographer's own MacBook, whose keychain is his.
+    func openForSnapshots(_ credentials: ServerCredentials) async {
+        let server = MusicServers.open(credentials, identity: identity)
+        self.credentials = credentials
+        self.server = server
+        phase = .signedIn
+        await AccountStores(app: self).open(server)
+    }
+    #endif
+
     /// The account signed in, put away for another: everything of it stays
     /// on the device.
     private func putAway() {

@@ -18,6 +18,10 @@
 # The Mac's own window is walked when asked for (SHOTS_DEVICES has "mac":
 # the store's round, a push of `store-walk`, ci/app.sh), on the runner
 # itself, for the Mac App Store's pictures (MacScreenshotTests.swift).
+# On the photographer's MacBook, a runner of our own, the walk is left out
+# and the Mac's snapshots ("mac-snap", JukeboxSnapshots/Snapshots.swift) are
+# made instead, on every push: the main screens drawn offscreen, nothing on
+# the laptop's screen.
 #
 # Why: there is no Mac here, so nobody has seen the app. The photographer
 # asked for pictures ("Als je plaatjes hebt om te delen zie ik ze graag") and
@@ -46,11 +50,15 @@ devices=${SHOTS_DEVICES:-iphone ipad ipad11}
 # The Mac's walk takes over the screen, the mouse and the keyboard; on a
 # runner of our own, the photographer's MacBook, it is left out: "Doe dan
 # maar via GitHub" (20 November 2026). The simulators' walks stay.
-if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted && " $devices " == *" mac "* ]]; then
+# In its place, on every push, the snapshots: first, as they take a minute
+# and the walks after them many.
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted ]]; then
   kept=
-  for kind in $devices; do [[ $kind == mac ]] || kept="${kept:+$kept }$kind"; done
-  devices=$kept
-  echo "::notice::No Mac walk on a self-hosted runner: the Mac's pictures come from GitHub's runner."
+  for kind in $devices; do [[ $kind == mac || $kind == mac-snap ]] || kept="${kept:+$kept }$kind"; done
+  if [[ " $devices " == *" mac "* ]]; then
+    echo "::notice::No Mac walk on a self-hosted runner: the store's Mac pictures come from GitHub's runner."
+  fi
+  devices="mac-snap${kept:+ $kept}"
 fi
 # The iPhone walked. The Pro's 1206 x 2622 is what App Store Connect
 # requires; "iPhone 17 Pro Max" gives the optional large set, 1320 x 2868
@@ -315,6 +323,13 @@ ready=
 bounded 120 xcrun simctl list -j > "$work/simctl.json" 2> "$work/simctl.err" \
   || problem "xcrun simctl list failed: $(tail -1 "$work/simctl.err")"
 for kind in $devices; do
+  if [[ $kind == mac-snap ]]; then
+    mkdir -p "$out/mac-snap"
+    echo "$(sw_vers -productName) $(sw_vers -productVersion), offscreen" > "$out/mac-snap/device.txt"
+    echo "mac-snap: $(cat "$out/mac-snap/device.txt")"
+    ready="${ready:+$ready }mac-snap"
+    continue
+  fi
   if [[ $kind == mac ]]; then
     # The Mac's walk needs no simulator: the runner is the Mac. (The walk
     # itself says how large its screen is, with its first PICTURE line.)
@@ -353,7 +368,8 @@ endgroup
 group "The app and its UI tests, built for the simulator"
 built=false
 [[ -d Jukebox.xcodeproj ]] || xcodegen generate
-sims=$(echo ${ready/mac/})
+sims=
+for kind in $ready; do [[ $kind == mac* ]] || sims="${sims:+$sims }$kind"; done
 if [[ -n $sims ]]; then
   first="udid_${sims%% *}"
   # For the first simulator's architecture only; the products serve the
@@ -384,6 +400,19 @@ if [[ " $ready " == *" mac "* ]]; then
     problem "the build for the Mac's walk failed (build-for-testing-mac.log)"
   fi
   grep -E 'error:|\*\* TEST BUILD' "$out/build-for-testing-mac.log" | sed "s#$PWD/##g" | sort -u | head -60
+fi
+# The snapshots' own Mac app, in derived data of its own. Signed by the
+# linker alone: it runs from the command line, not sandboxed.
+built_snap=false
+if [[ " $ready " == *" mac-snap "* ]]; then
+  if bounded "$(allow 600)" xcodebuild build -project Jukebox.xcodeproj -scheme JukeboxSnapshots \
+      -configuration Debug -destination 'platform=macOS' -derivedDataPath "$work/derived-snap" \
+      CODE_SIGNING_ALLOWED=NO > "$out/build-snapshots.log" 2>&1; then
+    built_snap=true
+  else
+    problem "the build of the Mac's snapshots failed (build-snapshots.log)"
+  fi
+  grep -E 'error:|\*\* BUILD' "$out/build-snapshots.log" | sed "s#$PWD/##g" | sort -u | head -60
 fi
 endgroup
 
@@ -552,6 +581,33 @@ walk_again() {
   fi
 }
 
+# The Mac's snapshots: the app's screens drawn offscreen against the fake
+# Jellyfin, dark and light, into mac-snap/. Its files go to a home of its
+# own (CFFIXED_USER_HOME), not the laptop's Application Support; what
+# UserDefaults keeps of it (an id) goes after.
+snapshots_round() {
+  local started=$SECONDS limit pictures
+  group "The Mac's snapshots: $(cat "$out/mac-snap/device.txt")"
+  limit=$(allow 240)
+  if (( limit < 60 )); then
+    problem "mac-snap: not made, no time left"
+    echo "mac-snap: not made (no time left)" >> "$out/mac-snap/verdict.txt"
+    endgroup
+    return
+  fi
+  mkdir -p "$work/snap-home"
+  CFFIXED_USER_HOME="$PWD/$work/snap-home" bounded "$limit" \
+    "$work/derived-snap/Build/Products/Debug/JukeboxSnapshots.app/Contents/MacOS/JukeboxSnapshots" \
+    "$PWD/$out/mac-snap" localhost:8096 > "$out/mac-snap.log" 2>&1
+  defaults delete com.tijmen.Jukebox.Snapshots > /dev/null 2>&1
+  grep -E 'PICTURE|SNAPSHOT' "$out/mac-snap.log"
+  pictures=$(ls "$out/mac-snap"/*.png 2> /dev/null | wc -l | tr -d " ")
+  echo "mac-snap: $pictures pictures in $(( SECONDS - started )) s" | tee -a "$out/mac-snap/verdict.txt"
+  if [[ -s $out/mac-snap/missed.txt ]]; then sed -i '' 's/^/mac-snap: /' "$out/mac-snap/missed.txt"; fi
+  (( pictures > 0 )) || problem "mac-snap: no pictures (mac-snap.log)"
+  endgroup
+}
+
 # A device's round: its simulator booted and made to look the same each time,
 # a first start of the app, then its walks.
 round() {
@@ -649,7 +705,13 @@ round() {
 }
 
 for kind in $ready; do
-  if [[ $kind == mac ]]; then
+  if [[ $kind == mac-snap ]]; then
+    if $built_snap && [[ -n $server ]]; then
+      snapshots_round
+    elif $built_snap; then
+      problem "mac-snap: not made, the fake Jellyfin is not running"
+    fi
+  elif [[ $kind == mac ]]; then
     if $built_mac; then round mac; fi
   elif $built; then
     round "$kind"
@@ -676,6 +738,7 @@ title_of() {
     ipad) echo "iPad" ;;
     ipad11) echo "iPad, upright" ;;
     mac) echo "Mac" ;;
+    mac-snap) echo "Mac, drawn offscreen" ;;
     *) echo "$1" ;;
   esac
 }
