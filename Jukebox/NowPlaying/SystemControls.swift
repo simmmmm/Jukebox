@@ -137,30 +137,98 @@ final class NowPlayingSystemVolumeView: MPVolumeView {
 }
 #endif
 
+#if os(iOS)
+/// Where the system sends the sound while it plays here: the iPhone's own
+/// speaker, or what was chosen in AirPlay's list or Control Center ("Living
+/// Room", the AirPods, the car). Play On names it on top, under its own name:
+/// the list said "This iPhone" whatever played, "AirPlay is verbonden maar er
+/// staat hier this iPhone" (the photographer, 20 November 2026). One for the
+/// app, followed as the route changes; the mini player's button reads it too.
+@Observable
+final class SystemRoute {
+    static let shared = SystemRoute()
+
+    /// The output's own name, nil for the device's speaker or earpiece
+    /// (whose own names, "Speaker" and "Receiver", say nothing here).
+    private(set) var name: String?
+    private(set) var port: AVAudioSession.Port?
+    @ObservationIgnored private var token: NSObjectProtocol?
+
+    private init() {
+        read()
+        // Posted on a queue of the session's own: read on the main one.
+        token = NotificationCenter.default.addObserver(forName: AVAudioSession.routeChangeNotification,
+                                                       object: nil, queue: .main) { [weak self] _ in
+            MainActor.assumeIsolated { self?.read() }
+        }
+    }
+
+    private func read() {
+        let away = AVAudioSession.sharedInstance().currentRoute.outputs.first {
+            $0.portType != .builtInSpeaker && $0.portType != .builtInReceiver
+        }
+        name = away?.portName
+        port = away?.portType
+    }
+
+    /// AirPlay plays: the button is lit, as Music lights it.
+    var isAirPlay: Bool { port == .airPlay }
+
+    /// "Living Room", "Tijmen's AirPods", or "This iPhone".
+    var title: String { name ?? "This \(Device.model)" }
+
+    var symbol: String {
+        guard let port else { return Device.symbol }
+        switch port {
+        case .airPlay: return "airplay.audio"
+        case .bluetoothA2DP, .bluetoothLE, .bluetoothHFP, .headphones: return "headphones"
+        case .carAudio: return "car"
+        case .HDMI: return "tv"
+        default: return "hifispeaker"
+        }
+    }
+}
+#endif
+
+extension Device {
+    /// This device as a glyph, for the row that plays here.
+    static var symbol: String {
+        #if os(iOS)
+        if ProcessInfo.processInfo.isiOSAppOnMac { return "laptopcomputer" }
+        return UIDevice.current.userInterfaceIdiom == .pad ? "ipad" : "iphone"
+        #else
+        return "laptopcomputer"
+        #endif
+    }
+}
+
 /// Where the music plays: the AirPlay glyph in the place it always had,
-/// now opening one list (PlayOn.swift): this device, AirPlay (the system's
-/// own picker, as a row), the Chromecasts on the network, the user's other
-/// Jellyfin clients, the server's jukebox. No second button anywhere: "ik
-/// wil alleen er voor waken dat we niet 10000 knopen krijgen" (the
-/// photographer, 17 November 2026). Lit while the music plays elsewhere,
-/// as Music shows AirPlay. Our own button rather than AVRoutePickerView:
-/// the iPad app on a Mac, where build 68 crashed in Now Playing, gets the
-/// list without AirPlay's row.
+/// opening one list (PlayOn.swift): what plays here now under its own name,
+/// the Sonos rooms and Chromecasts on the network, the user's other Jellyfin
+/// clients, the server's jukebox, and at its foot the system's own AirPlay
+/// and Bluetooth picker as a row. No second button anywhere: "ik wil alleen
+/// er voor waken dat we niet 10000 knopen krijgen" (the photographer, 17
+/// November 2026). Lit while the music plays elsewhere, as Music shows
+/// AirPlay.
+///
+/// Always our list, never the system's picker alone: that one cannot hold
+/// another app's speakers (a Media Device Discovery extension could put them
+/// there, docs/ARCHITECTURE.md), and the list looks for ours only once it
+/// is open, so whether there are any is not known before. The mini player
+/// takes this same view (`RoutePicker(followsAppearance: true)`).
 struct RoutePicker: View {
-    /// On the app's own ground (the wide layout's bar), by day and by night,
-    /// rather than on Now Playing's dark.
+    /// On the app's own ground (the wide layout's bar, the mini player), by
+    /// day and by night, rather than on Now Playing's dark.
     let followsAppearance: Bool
 
     @Environment(AudioPlayer.self) private var player
     @State private var isOpen = false
-    @State private var airPlays = false
 
     init(followsAppearance: Bool = false) {
         self.followsAppearance = followsAppearance
     }
 
     var body: some View {
-        let elsewhere = player.playsOn != nil || airPlays
         Button {
             isOpen = true
         } label: {
@@ -173,16 +241,24 @@ struct RoutePicker: View {
         .buttonStyle(.plain)
         .help("Play On")
         .accessibilityLabel("Play On")
-        .accessibilityValue(player.playsOn?.name ?? "")
+        .accessibilityValue(PlayOnList.outputName(player))
         .popover(isPresented: $isOpen) {
             PlayOnList(isOpen: $isOpen)
-                .presentationCompactAdaptation(.popover)
+                // On the iPhone a drawer from the bottom ("Vind zon drawer wel
+                // prima hoor", the photographer, 20 November 2026); on the
+                // iPad and the Mac a popover by the button, as Linux's menu.
+                .presentationCompactAdaptation(.sheet)
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
+    }
+
+    private var elsewhere: Bool {
+        if player.playsOn != nil { return true }
         #if os(iOS)
-        .onAppear { airPlays = Self.routeIsAirPlay }
-        .onReceive(NotificationCenter.default.publisher(for: AVAudioSession.routeChangeNotification)) { _ in
-            airPlays = Self.routeIsAirPlay
-        }
+        return SystemRoute.shared.isAirPlay
+        #else
+        return false
         #endif
     }
 
@@ -192,45 +268,84 @@ struct RoutePicker: View {
         }
         return AnyShapeStyle(Color.white.opacity(lit ? 1 : 0.6))
     }
-
-    #if os(iOS)
-    private static var routeIsAirPlay: Bool {
-        AVAudioSession.sharedInstance().currentRoute.outputs.contains { $0.portType == .airPlay }
-    }
-    #endif
 }
 
-/// The list: looks only while it is open, so neither a launch nor the
-/// screenshot walk asks for the local network.
+/// The list, Linux's Play On menu in Apple's controls: the heading, one row
+/// a place the music can go, the one it goes to checked. It looks only
+/// while it is open, so neither a launch nor the screenshot walk asks for
+/// the local network.
 private struct PlayOnList: View {
     @Binding var isOpen: Bool
 
     @Environment(AudioPlayer.self) private var player
 
     var body: some View {
-        let playOn = player.playOn
+        // All of it where it fits (the popover sizes to it), else scrolled.
+        ViewThatFits(in: .vertical) {
+            content
+            ScrollView { content }
+        }
+        .frame(minWidth: 300, alignment: .topLeading)
+        .onAppear { player.playOn.look() }
+        .onDisappear { player.playOn.stopLooking() }
+    }
+
+    private var content: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Play On")
-                .font(.headline)
-                .padding(.horizontal, Theme.Space.m)
-                .padding(.vertical, Theme.Space.s)
-            row(nil, name: "This \(Device.model)", detail: nil)
-            if offersAirPlay { airPlayRow }
+                .font(.serif(.title3))
+                .padding(.horizontal, Theme.Space.l)
+                .padding(.top, Theme.Space.l)
+                .padding(.bottom, Theme.Space.s)
+            // Here first, under the name of what it plays through now.
+            row(nil, name: Self.hereName, symbol: Self.hereSymbol)
             ForEach(devices) { device in
-                row(device, name: device.name, detail: device.detail)
+                row(device, name: device.name, detail: device.detail, symbol: Self.symbol(of: device.kind))
             }
-            if playOn.devices.isEmpty {
+            if player.playOn.devices.isEmpty {
                 Text("Looking for devices on this network")
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-                    .padding(.horizontal, Theme.Space.m)
+                    .padding(.horizontal, Theme.Space.l)
                     .padding(.vertical, Theme.Space.s)
             }
+            if offersAirPlay {
+                Divider()
+                    .padding(.vertical, Theme.Space.xs)
+                airPlayRow
+            }
         }
-        .padding(.vertical, Theme.Space.s)
-        .frame(minWidth: 280, alignment: .leading)
-        .onAppear { playOn.look() }
-        .onDisappear { playOn.stopLooking() }
+        .padding(.bottom, Theme.Space.s)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// What plays the music now, for VoiceOver on the button.
+    static func outputName(_ player: AudioPlayer) -> String {
+        player.playsOn?.name ?? hereName
+    }
+
+    private static var hereName: String {
+        #if os(iOS)
+        SystemRoute.shared.title
+        #else
+        "This Mac"
+        #endif
+    }
+
+    private static var hereSymbol: String {
+        #if os(iOS)
+        SystemRoute.shared.symbol
+        #else
+        Device.symbol
+        #endif
+    }
+
+    private static func symbol(of kind: PlayOnDevice.Kind) -> String {
+        switch kind {
+        case .chromecast: "tv"
+        case .upnp, .subsonicJukebox: "hifispeaker"
+        case .jellyfin: "display"
+        }
     }
 
     /// Not in the iPad app on a Mac: AVRoutePickerView is a suspect of
@@ -250,58 +365,72 @@ private struct PlayOnList: View {
         return devices
     }
 
-    private func row(_ device: PlayOnDevice?, name: String, detail: String?) -> some View {
+    private func row(_ device: PlayOnDevice?, name: String, detail: String? = nil, symbol: String) -> some View {
         let chosen = device?.id == player.playsOn?.id
         return Button {
             isOpen = false
             player.playOn.choose(device)
         } label: {
-            HStack(spacing: Theme.Space.m) {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text(name)
-                    if let detail {
-                        Text(detail)
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-                Spacer(minLength: 0)
-                Image(systemName: "checkmark")
-                    .foregroundStyle(Theme.accent)
-                    .opacity(chosen ? 1 : 0)
-                    .accessibilityHidden(true)
-            }
-            .padding(.horizontal, Theme.Space.m)
-            .padding(.vertical, Theme.Space.s)
-            .contentShape(.rect)
+            label(name, detail: detail, symbol: symbol, checked: chosen)
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(chosen ? .isSelected : [])
     }
 
-    /// AirPlay is the system's to choose: its own picker lies over the row,
-    /// unseen, and takes the tap.
-    private var airPlayRow: some View {
+    private func label(_ name: String, detail: String?, symbol: String, checked: Bool) -> some View {
         HStack(spacing: Theme.Space.m) {
-            Text("AirPlay")
-            Spacer(minLength: 0)
-            Image(systemName: "airplay.audio")
-                .foregroundStyle(.secondary)
-        }
-        .padding(.horizontal, Theme.Space.m)
-        .padding(.vertical, Theme.Space.s)
-        .overlay {
-            SystemRoutePicker {
-                // The sound goes to AirPlay from here: what played
-                // elsewhere comes back first.
-                if player.playsOn != nil { player.playOn.choose(nil) }
-                player.playOn.airPlayOpened()
+            Image(systemName: symbol)
+                .foregroundStyle(checked ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(HierarchicalShapeStyle.secondary))
+                .frame(width: 28)
+                .accessibilityHidden(true)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(name)
+                if let detail {
+                    Text(detail)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
+            Spacer(minLength: 0)
+            Image(systemName: "checkmark")
+                .font(.body.weight(.semibold))
+                .foregroundStyle(Theme.accent)
+                .opacity(checked ? 1 : 0)
+                .accessibilityHidden(true)
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("AirPlay")
-        // The row is the picker's button: VoiceOver says so.
-        .accessibilityAddTraits(.isButton)
+        .padding(.horizontal, Theme.Space.l)
+        .frame(minHeight: 44)
+        .contentShape(.rect)
+    }
+
+    /// The system's own picker, for what only the system reaches: AirPlay
+    /// speakers and Bluetooth headphones. Its button lies over the row,
+    /// unseen, and takes the tap; what is chosen there comes back to the
+    /// row on top, by its name.
+    private var airPlayRow: some View {
+        label(Self.airPlayTitle, detail: nil, symbol: "airplay.audio", checked: false)
+            .overlay {
+                SystemRoutePicker {
+                    // The sound goes where the system sends it from here:
+                    // what played elsewhere comes back first.
+                    if player.playsOn != nil { player.playOn.choose(nil) }
+                    player.playOn.airPlayOpened()
+                }
+            }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel(Self.airPlayTitle)
+            // The row is the picker's button: VoiceOver says so.
+            .accessibilityAddTraits(.isButton)
+    }
+
+    /// The Mac's picker routes the player's sound to AirPlay; the iPhone's
+    /// to Bluetooth too.
+    private static var airPlayTitle: String {
+        #if os(iOS)
+        "AirPlay & Bluetooth…"
+        #else
+        "AirPlay…"
+        #endif
     }
 }
 
