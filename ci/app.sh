@@ -125,38 +125,8 @@ screenshots() {
   return 0
 }
 
-# The apps signed ad hoc: no certificate, no profile, but the signature
-# carries the entitlements of the entitlements files, CarPlay audio, Siri,
-# the App Group, the Mac's sandbox. The export reads the entitlements from
-# the archived app's signature and asks the store's profile for them; an app
-# built with CODE_SIGNING_ALLOWED=NO and left so has no signature, and its
-# upload went without CarPlay. So the builds and the archives compile
-# unsigned (CODE_SIGNING_ALLOWED=NO) and are signed ad hoc here, with the
-# same entitlements files. Xcode's own ad hoc signing, as before, works on
-# GitHub's macOS 26 only: on the photographer's MacBook (macOS 27) Xcode
-# stops a build or an archive whose entitlements need a profile, App
-# Groups, CarPlay, Siri, before it compiles, "requires a provisioning
-# profile", on Xcode 26.3 and 27.2 alike. Signed by codesign the app carries its
-# entitlements as Xcode's own ad hoc signature did, so carplay_signed and
-# widget_signed read the same thing on both runners. Inside out, without
-# --deep, so the widget keeps its own entitlements.
-adhoc_sign() {
-  local app=$1 code plugins=$1/PlugIns app_entitlements=Jukebox/Jukebox-iOS.entitlements
-  local widget_entitlements=JukeboxWidget/JukeboxWidget.entitlements
-  if [[ -d $app/Contents ]]; then
-    plugins=$app/Contents/PlugIns
-    app_entitlements=Jukebox/Jukebox-macOS.entitlements
-    widget_entitlements=JukeboxWidget/JukeboxWidget-macOS.entitlements
-  fi
-  while IFS= read -r code; do
-    codesign --force --sign - --timestamp=none "$code" || return 1
-  done < <(find "$app" -name '*.framework' -prune -print -o -name '*.dylib' -print)
-  if [[ -d $plugins/JukeboxWidget.appex ]]; then
-    codesign --force --sign - --timestamp=none --entitlements "$widget_entitlements" \
-      "$plugins/JukeboxWidget.appex" || return 1
-  fi
-  codesign --force --sign - --timestamp=none --entitlements "$app_entitlements" "$app"
-}
+# adhoc_sign, the apps signed ad hoc with their entitlements (ci/sign.sh).
+source ci/sign.sh
 
 # Whether the app's signature has CarPlay audio and Siri, true: the archive's, the
 # exported ipa's, and on every push the build's, signed as the archive is.
@@ -271,6 +241,9 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   if [[ $status == 0 && ${SCREENSHOTS:-true} != false ]]; then
     screenshots
   fi
+  # The derived data, gigabytes, gone once the pictures are: the MacBook,
+  # a runner of its own, keeps its work folder between runs.
+  rm -rf build/derived build/derived-mac build/screenshots/derived build/screenshots/derived-mac
   if [[ $mac_status != 0 ]]; then
     echo "::warning::The Mac build failed (build/logs/errors-mac.txt)."
     if [[ $mac_gates == true && $status == 0 ]]; then status=$mac_status; fi

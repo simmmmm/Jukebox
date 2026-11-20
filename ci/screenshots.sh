@@ -36,6 +36,8 @@
 # SEARCH_TERM sets what the search types (else a word of the first artist).
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 0
+# adhoc_sign and adhoc_sign_tests, for the Mac's walk (ci/sign.sh).
+source ci/sign.sh
 
 start=$SECONDS
 budget=${SHOTS_BUDGET:-2400}
@@ -133,7 +135,51 @@ stop_server() {
   fi
   server=
 }
-trap stop_server EXIT
+# What the Mac's round changes on the runner, put back as it was: on
+# GitHub's machines it goes with the machine, but the MacBook is the
+# photographer's own laptop ("doe alles via m'n macbook joh, zeker
+# screenshots", 20 November 2026). Saved in mac_settings before the round.
+mac_saved=false
+wallpaper_store="$HOME/Library/Application Support/com.apple.wallpaper/Store/Index.plist"
+restore_mac() {
+  $mac_saved || return 0
+  mac_saved=false
+  echo "The Mac's own settings put back."
+  osascript -e "tell application \"System Events\" to tell appearance preferences to set dark mode to $saved_dark" \
+    > /dev/null 2>&1 || problem "the Mac's dark mode was not put back ($saved_dark)"
+  if [[ -f $work/wallpaper-Index.plist ]]; then
+    cp "$work/wallpaper-Index.plist" "$wallpaper_store" && killall WallpaperAgent 2> /dev/null
+  fi
+  if [[ -n $saved_scrollbars ]]; then
+    defaults write -g AppleShowScrollBars -string "$saved_scrollbars"
+  else
+    defaults delete -g AppleShowScrollBars 2> /dev/null
+  fi
+  if [[ $saved_autohide != 1 ]]; then
+    if [[ -n $saved_autohide ]]; then
+      defaults write com.apple.dock autohide -bool "$saved_autohide"
+    else
+      defaults delete com.apple.dock autohide 2> /dev/null
+    fi
+    killall Dock 2> /dev/null
+  fi
+  if [[ -x $work/mac-display && -s $work/display-mode.txt ]]; then
+    "$work/mac-display" --restore "$work/display-mode.txt" | grep '^display:' \
+      || problem "the Mac's display mode was not put back"
+  fi
+  return 0
+}
+mac_settings() {
+  saved_dark=$(osascript -e 'tell application "System Events" to tell appearance preferences to get dark mode' 2> /dev/null)
+  [[ $saved_dark == true ]] || saved_dark=false
+  saved_scrollbars=$(defaults read -g AppleShowScrollBars 2> /dev/null)
+  saved_autohide=$(defaults read com.apple.dock autohide 2> /dev/null)
+  if [[ -f $wallpaper_store ]]; then cp "$wallpaper_store" "$work/wallpaper-Index.plist"; fi
+  mac_saved=true
+}
+trap 'stop_server; restore_mac' EXIT
+# The watchdog's TERM (ci/app.sh) ends the round through the EXIT trap too.
+trap 'exit 143' TERM INT
 # jq reads simctl's and the results' JSON below; the runner has it.
 command -v jq > /dev/null || problem "no jq on this runner: no simulators, verdicts or pictures"
 # Built first, so a tool that does not compile shows at the top of the log,
@@ -237,7 +283,10 @@ pick() {
     . as $data
     | [.runtimes[]? | select(.isAvailable and ((.identifier // "") | contains("SimRuntime.iOS"))
         and (version[:1] >= [26]))]
-    | if length == 0 then error("no iOS 26 runtime") else sort_by(version) | last end
+    # Of one version, the runtime for every device: Xcode 27.2 has a second
+    # iOS 27.2 for one iPhone alone ("iPhone Duo", on the MacBook).
+    | if length == 0 then error("no iOS 26 runtime")
+      else sort_by([version, ((.supportedDeviceTypes // []) | length)]) | last end
     | . as $runtime
     | [$data.devices[$runtime.identifier][]? | select(.isAvailable)
         | {rank: (.name | rank), name, udid} | select(.rank != null)]
@@ -309,15 +358,18 @@ if [[ -n $sims ]]; then
   fi
   grep -E 'error:|\*\* TEST BUILD' "$out/build-for-testing.log" | sed "s#$PWD/##g" | sort -u | head -60
 fi
-# The Mac's, in derived data of its own. Signed to run locally ("-"): macOS
-# starts a UI test's runner only when it is signed, and the app is then in
-# its sandbox, as the store's build is.
+# The Mac's, in derived data of its own. Built unsigned and signed ad hoc
+# after (ci/sign.sh), as ci/app.sh's builds are: macOS starts a UI test's
+# runner only when it is signed, and the app is then in its sandbox, as the
+# store's build is. Xcode's own ad hoc signing stops on the MacBook.
 built_mac=false
 if [[ " $ready " == *" mac "* ]]; then
+  products=$work/derived-mac/Build/Products/Debug
   if bounded "$(allow 1200)" xcodebuild build-for-testing -project Jukebox.xcodeproj -scheme Jukebox \
       -configuration Debug -destination 'platform=macOS' -derivedDataPath "$work/derived-mac" \
-      CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= \
-      > "$out/build-for-testing-mac.log" 2>&1; then
+      CODE_SIGNING_ALLOWED=NO > "$out/build-for-testing-mac.log" 2>&1 \
+      && adhoc_sign "$products/Jukebox.app" >> "$out/build-for-testing-mac.log" 2>&1 \
+      && adhoc_sign_tests "$products/JukeboxUITests-Runner.app" >> "$out/build-for-testing-mac.log" 2>&1; then
     built_mac=true
   else
     problem "the build for the Mac's walk failed (build-for-testing-mac.log)"
@@ -499,6 +551,7 @@ round() {
   local udid=${!udid_var}
   group "The $kind: $(cat "$out/$kind/device.txt")"
   if [[ $kind == mac ]]; then
+    mac_settings
     # The runner's desktop dark, and black behind the window: a window's
     # picture is its rectangle, and what lies behind its round corners
     # shows in them.
@@ -509,17 +562,19 @@ round() {
     # (the runner's is 1024 x 768), and no Dock taking its foot.
     if bounded "$(allow 300)" xcrun swiftc -O dev/mac-display.swift -o "$work/mac-display" \
         > "$work/mac-display-build.log" 2>&1; then
-      "$work/mac-display" || problem "the Mac's display stayed too small for a window of 1440 x 900"
+      "$work/mac-display" "$work/display-mode.txt" \
+        || problem "the Mac's display stayed too small for a window of 1440 x 900"
     else
       problem "dev/mac-display.swift did not build"
       tail -20 "$work/mac-display-build.log"
     fi
-    defaults write com.apple.dock autohide -bool true && killall Dock
+    if [[ $saved_autohide != 1 ]]; then defaults write com.apple.dock autohide -bool true && killall Dock; fi
     # Scroll bars only while scrolling, as with a trackpad: a Mac with a
     # mouse, the runner, shows them always, under every shelf.
     defaults write -g AppleShowScrollBars -string WhenScrolling
     sleep 3
     walk mac testMac mac-dark 720
+    restore_mac
     endgroup
     return
   fi
