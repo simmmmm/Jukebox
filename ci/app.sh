@@ -241,9 +241,11 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   if [[ $status == 0 && ${SCREENSHOTS:-true} != false ]]; then
     screenshots
   fi
-  # The derived data, gigabytes, gone once the pictures are: the MacBook,
-  # a runner of its own, keeps its work folder between runs.
-  rm -rf build/derived build/derived-mac build/screenshots/derived build/screenshots/derived-mac
+  # The derived data and the screenshots' work (the clone of the
+  # screenshots branch alone is 3 GB), gigabytes, gone once the pictures
+  # are in build/logs: the MacBook, a runner of its own, keeps its work
+  # folder between runs.
+  rm -rf build/derived build/derived-mac build/screenshots
   if [[ $mac_status != 0 ]]; then
     echo "::warning::The Mac build failed (build/logs/errors-mac.txt)."
     if [[ $mac_gates == true && $status == 0 ]]; then status=$mac_status; fi
