@@ -23,6 +23,7 @@ struct SearchView: View {
     /// The iPhone's field. Wide, the bar's: `navigator.searchQuery`.
     @State private var query = ""
     @State private var recents: [String] = []
+    @FocusState private var isFieldFocused: Bool
 
     init() {}
 
@@ -57,7 +58,22 @@ struct SearchView: View {
 
     private var compact: some View {
         content
+            #if os(iOS)
+            // Always shown under the title, not tucked away until the page
+            // is pulled down: "En het zoekveld moet wel meteen zichtbaar zijn
+            // nu moet je eerst een stukje omhoog scrollen" (the photographer,
+            // 20 November 2026).
+            .searchable(text: $query, placement: .navigationBarDrawer(displayMode: .always),
+                        prompt: "Artists, albums, songs")
+            #else
             .searchable(text: $query, prompt: "Artists, albums, songs")
+            #endif
+            // Search's tab tapped again on its first page (Navigator.select):
+            // the field, and the keyboard. The first tap leaves it down.
+            .searchFocused($isFieldFocused)
+            .onChange(of: navigator.searchRequests) { _, _ in
+                isFieldFocused = true
+            }
             .onSubmit(of: .search) { remember(query) }
             // A result opened (an artist, an album, a genre…): the search
             // was worth keeping. NavigationLinks say nothing when tapped;

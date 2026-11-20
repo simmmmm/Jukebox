@@ -228,38 +228,64 @@ struct RootView: View {
 
 #if os(iOS)
 /// The four tabs, Music's: Home, Radio, Library, Search. What plays sits
-/// above the tab bar; tapped, Now Playing covers everything. The iPhone's,
-/// and an iPad window's when it is narrow; the Mac's window is always wide.
+/// above them; tapped, Now Playing covers everything. The iPhone's, and an
+/// iPad window's when it is narrow; the Mac's window is always wide.
+///
+/// The TabView keeps each tab's stack and where it was. What sits at each
+/// tab's foot is one of three to try (MiniBarFoot, NowPlaying/MiniPlayer.swift):
+/// Plaat keeps the system's tab bar; Spotify and Glas hide it and draw
+/// Jukebox's own tabs (TabRow), "ik bedoelde ipv glas menu onderaan waar
+/// home radio library en search staat" (the photographer, 19 November 2026),
+/// and "Het moet er wel uitzien alsof het samen één object is he" (20
+/// November 2026). iOS 26's bar is glass, cannot be made flat and cannot
+/// share another view's glass.
 struct MainTabView: View {
     @Environment(Navigator.self) private var navigator
     @Environment(AppSettings.self) private var settings
 
+    /// Settings › Pages: Radio off, its tab goes; every library kind off,
+    /// the Library's. The tab shown stays until another is chosen: Settings
+    /// is a sheet from Radio, and would go with it. One rule for the TabView
+    /// and the row of tabs (TabRow).
+    static func shows(_ tab: AppTab, settings: AppSettings, navigator: Navigator) -> Bool {
+        switch tab {
+        case .home, .search: true
+        case .radio: settings.shows(.radio) || navigator.tab == .radio
+        case .library: settings.showsLibrary || navigator.tab == .library
+        }
+    }
+
     var body: some View {
         @Bindable var navigator = navigator
-        TabView(selection: $navigator.tab) {
+        // Through `select`, which the tab bar calls with the tab shown too
+        // when it is tapped again: Search's second tap is its field.
+        TabView(selection: Binding(get: { navigator.tab }, set: { navigator.select($0) })) {
             Tab("Home", systemImage: "house.fill", value: AppTab.home) {
                 NavigationStack(path: navigator.path(for: .home)) {
-                    HomeView().routeDestinations()
+                    HomeView().routeDestinations(each: HidesSystemTabBar())
+                        .modifier(HidesSystemTabBar())
                 }
-                .modifier(MiniPlayerBar())
+                .modifier(MiniBarFoot())
+                .modifier(HidesSystemTabBar())
             }
-            // Settings › Pages: Radio off, its tab goes; every library kind
-            // off, the Library's. The tab shown stays until another is
-            // chosen: Settings is a sheet from Radio, and would go with it.
-            if settings.shows(.radio) || navigator.tab == .radio {
+            if Self.shows(.radio, settings: settings, navigator: navigator) {
                 Tab("Radio", systemImage: "dot.radiowaves.left.and.right", value: AppTab.radio) {
                     NavigationStack(path: navigator.path(for: .radio)) {
-                        RadioView().routeDestinations()
+                        RadioView().routeDestinations(each: HidesSystemTabBar())
+                            .modifier(HidesSystemTabBar())
                     }
-                    .modifier(MiniPlayerBar())
+                    .modifier(MiniBarFoot())
+                    .modifier(HidesSystemTabBar())
                 }
             }
-            if settings.showsLibrary || navigator.tab == .library {
+            if Self.shows(.library, settings: settings, navigator: navigator) {
                 Tab("Library", systemImage: "square.stack.fill", value: AppTab.library) {
                     NavigationStack(path: navigator.path(for: .library)) {
-                        LibraryView().routeDestinations()
+                        LibraryView().routeDestinations(each: HidesSystemTabBar())
+                            .modifier(HidesSystemTabBar())
                     }
-                    .modifier(MiniPlayerBar())
+                    .modifier(MiniBarFoot())
+                    .modifier(HidesSystemTabBar())
                 }
             }
             // A tab like the others, its field at the top of the page, not
@@ -268,14 +294,22 @@ struct MainTabView: View {
             // te fancy zo" (the photographer, 19 November 2026).
             Tab("Search", systemImage: "magnifyingglass", value: AppTab.search) {
                 NavigationStack(path: navigator.path(for: .search)) {
-                    SearchView().routeDestinations()
+                    SearchView().routeDestinations(each: HidesSystemTabBar())
+                        .modifier(HidesSystemTabBar())
                 }
-                .modifier(MiniPlayerBar())
+                .modifier(MiniBarFoot())
+                .modifier(HidesSystemTabBar())
             }
         }
-        // The tab bar; a narrow iPad window has it too.
+        // The tab bar; a narrow iPad window has it too. Kept whichever player
+        // is chosen, hidden or not, so a change in Settings does not make a
+        // new TabView and close the sheet it was made in.
         .tabViewStyle(.sidebarAdaptable)
-        .modifier(BottomAccessory())
+        // No bottom accessory and no tab bar that shrinks on scroll, on iOS
+        // 26 either: the song is on each tab's foot (MiniBarFoot). With Plaat
+        // "zonder glas/balkje" (the photographer, 19 November 2026): the
+        // accessory is a glass capsule of its own, and a tab bar that shrank
+        // would leave the song hanging over the room it left.
         .fullScreenCover(isPresented: $navigator.isNowPlayingPresented) {
             NowPlayingView()
         }
@@ -297,20 +331,15 @@ struct MainTabView: View {
     }
 }
 
-/// iOS 26's tab bar: it shrinks as a page scrolls down, the player rides
-/// above it in the accessory. iOS 18 has neither; its player is each tab's
-/// own bar (`MiniPlayerBar`).
-private struct BottomAccessory: ViewModifier {
+/// The system's tab bar away with Spotify and Glas, on every page of a tab:
+/// its visibility is a page's own, so a page pushed without this would bring
+/// it back under Jukebox's (TabRow). With Plaat it stays. Read here, not
+/// handed in, so pages already pushed follow a change at once.
+private struct HidesSystemTabBar: ViewModifier {
+    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .standard
+
     func body(content: Content) -> some View {
-        if #available(iOS 26, *) {
-            content
-                .tabBarMinimizeBehavior(.onScrollDown)
-                .tabViewBottomAccessory {
-                    AccessoryMiniPlayer()
-                }
-        } else {
-            content
-        }
+        content.toolbarVisibility(variant.hidesSystemTabBar ? .hidden : .automatic, for: .tabBar)
     }
 }
 #endif
