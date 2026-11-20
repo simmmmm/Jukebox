@@ -53,6 +53,12 @@ enum Theme {
     /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
     /// (9.9:1). Glow is a light colour: white on it would all but vanish.
     static let onAccent = Color(light: 0xFFFFFF, dark: 0x2A1505)
+    /// The word on a quiet button's faint accent ground (ActionButtonStyle,
+    /// Linux's button.quiet): by day a step darker than Copper, as Copper
+    /// on its own 12 % tint read 4.0:1 on the raised ground; this reads 4.9
+    /// at the least. By night Glow, 7.8 and up. "zorg dat ze goed zichtbaar
+    /// zijn in dark en light mode" (the photographer, 20 November 2026).
+    static let quietInk = Color(light: 0x953F12, dark: 0xFFB54D)
 
     /// The ground the main screens stand on, flat (tells.md, 2): warm paper,
     /// #F6F3EE, by day, as a sleeve's card stock; #121110 by night, a black
@@ -317,7 +323,7 @@ struct ActionButtonStyle: ButtonStyle {
         configuration.label
             .desktopFont(15, weight: .bold, phone: .subheadline.weight(.semibold))
             .lineLimit(1)
-            .foregroundStyle(isFilled ? Theme.onAccent : Theme.accent)
+            .foregroundStyle(isFilled ? Theme.onAccent : Theme.quietInk)
             .padding(.horizontal, Theme.Space.l)
             .frame(minWidth: 96, minHeight: 36)
             .background(isFilled ? Theme.accent : Theme.accent.opacity(0.12),

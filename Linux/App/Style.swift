@@ -151,7 +151,9 @@ enum Style {
            ("buttons voelen ook erg groot", 18 November 2026); words for
            the rest. */
         button.page-button { min-height: 36px; min-width: 64px; padding: 0 16px; font-size: 15px; }
-        button.quiet { background-color: alpha(\(accent), 0.12); color: \(accent); box-shadow: none; }
+        /* The word a step darker than Copper by day, so it reads 4.9:1 on
+           its tint over the raised ground (Theme.quietInk). */
+        button.quiet { background-color: alpha(\(accent), 0.12); color: \(dark ? accent : "#953F12"); box-shadow: none; }
         button.quiet:hover { background-color: alpha(\(accent), 0.18); }
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
         /* Home's Your Station and the music to go on with, on a ground one
