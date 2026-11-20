@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v5
       - run: bash ci/kit.sh
   app:
-    runs-on: macos-26
+    runs-on: ${{ vars.APP_RUNNER || 'macos-26' }}
     timeout-minutes: 75
     steps:
       - uses: actions/checkout@v5
