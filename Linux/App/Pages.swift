@@ -1047,6 +1047,8 @@ enum Pages {
                     gtk_label_set_ellipsize(ptr(words), whole ? PANGO_ELLIPSIZE_NONE : PANGO_ELLIPSIZE_END)
                     gtk_button_set_label(ptr(more), whole ? "Less" : "More")
                 }
+                // Its word on the text's left edge, as the Mac's (WordButton inline).
+                gtk_widget_add_css_class(ptr(more), "inline")
                 append(more, to: about)
             }
             append(about, to: column)

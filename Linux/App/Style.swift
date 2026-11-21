@@ -186,6 +186,8 @@ enum Style {
         button.home-card.lighter:active { background-color: shade(\(lighter), 0.94); }
         .card-link { font-weight: 400; }
         button.word { min-height: 40px; padding: 0 8px; font-size: 15px; }
+        /* Under a paragraph: the word on the text's edge, no room before it. */
+        button.word.inline { padding: 0; margin-left: 0; }
         button.plain { padding: 0; min-height: 0; background: none; box-shadow: none; font-weight: inherit; }
         .playing { color: @accent_color; }
         /* The sidebar of places (spec §4): rows of 40 inset 8, padding 12,

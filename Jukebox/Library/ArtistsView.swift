@@ -251,7 +251,7 @@ struct ArtistDetailView: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(showsWholeOverview ? nil : 4)
                         .frame(maxWidth: 640, alignment: .leading)
-                    WordButton(showsWholeOverview ? "Less" : "More") {
+                    WordButton(showsWholeOverview ? "Less" : "More", inline: true) {
                         showsWholeOverview.toggle()
                     }
                 }

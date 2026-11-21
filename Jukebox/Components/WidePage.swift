@@ -290,10 +290,16 @@ struct PageRule: View {
 /// Every other action on a wide page: a word in the accent, 15 bold.
 struct WordButton: View {
     let title: LocalizedStringKey
+    /// Under a paragraph (an artist's About): the word's left edge on the
+    /// text's, not 8 in from it, as the wide word's hover room put it. "hier
+    /// zit nog het verkeerde more en less knopje op mac" (the photographer,
+    /// 21 November 2026).
+    var inline = false
     let action: () -> Void
 
-    init(_ title: LocalizedStringKey, action: @escaping () -> Void) {
+    init(_ title: LocalizedStringKey, inline: Bool = false, action: @escaping () -> Void) {
         self.title = title
+        self.inline = inline
         self.action = action
     }
 
@@ -304,6 +310,7 @@ struct WordButton: View {
         }
         .buttonStyle(.secondary)
         .fixedSize()
+        .padding(.leading, inline ? -Theme.Space.s : 0)
     }
 }
 
