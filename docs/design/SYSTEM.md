@@ -197,9 +197,21 @@ asked. Open on a song without, they give way to the sleeve or Up Next; no
 
 ### The player bar and the mini player
 Wide: the bar, 88 across the window's foot, three zones from
-`DesktopMeasures`; Play 40, the rest 32. The iPhone: the mini player above
-the tab bar, the arch before a station's name. The Mini Player window on the
+`DesktopMeasures`; Play 40, the rest 32. The Mini Player window on the
 Mac and Linux.
+
+The iPhone: Spotify's structure, Jukebox's soul (21 November 2026). A
+block 58 tall, 8 in from the screen's edges, 8 pt corners, in the cover's
+colour darkened until Glow on it is 4.5:1 (dark glass tinted with it on
+iOS 26). On the left a 44 pt record, the cover as its label, turning while
+it plays (still when paused and under Reduce Motion). The title in the
+serif, white; under it the artist at 70%, or the arch and the station's
+name in Glow. On the right the heart (filled in Glow), next and play or
+pause, 44 each; next gives way first when the title would keep less than
+120, and past Large type. A 2 pt Glow line on a faint track along the
+block's foot. Swipe left for next, right for previous. No AirPlay: Now
+Playing has it. Under it Jukebox's own tabs on a fade and a blur from the
+screen's foot; no system tab bar, so one glass, not two.
 - Apple: `PlayerBar` (`NowPlaying/PlayerBar.swift`), `MiniPlayer`
   (`NowPlaying/MiniPlayer.swift`), `MacMiniPlayer.swift`.
 - GNOME: `PlayerBar.swift`, `.player-bar`; the Mini Player in `Extras.swift`.
@@ -336,8 +348,8 @@ the iPhone against 400×800. The menus read in the code on both.
   section.
 - **Several picked songs**: neither client offers Remove or Move for all of
   them (`removal` is per song on both).
-- **The iPhone's mini players**: their song menu has no station section yet
-  (`MiniPlayer*.swift`).
+- **The iPhone's mini player**: its song menu has no station section yet
+  (`MiniPlayer.swift`).
 - **A station's lesson word**: "Dislike" on Apple, "Not This" on Linux.
 - **The welcome's build-up**: Apple's arches come on one by one; Linux's
   picture stands still.

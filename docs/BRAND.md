@@ -426,7 +426,7 @@ The same brand on GNOME, in GTK 4 and libadwaita's own controls
 | Home: "Tonight", Your Station, Mixes, Played lately | `Home/HomeView.swift` (`HomeStationHero`, also on Radio while nothing plays) |
 | Radio: on air, Stations, the dial | `Radio/RadioView.swift`; `Radio/RadioOnAirCard.swift` (`RadioOnAirCard`, `RadioThumbs`, `RadioDial`, also on a station's page and Now Playing) |
 | Now Playing | `NowPlaying/SleeveRecord.swift`, `NowPlaying/NowPlayingGround.swift`, `NowPlaying/TurntableMeasures.swift`, `NowPlaying/NowPlayingView.swift`; JukeboxKit's `Artwork/CoverWall.swift` |
-| Mini player's station (11 pt, template, accent) | `NowPlaying/MiniPlayer.swift` |
+| Mini player's station (11 pt, template, Glow) | `NowPlaying/MiniPlayer.swift` |
 | Welcome's sleeve and its mark coming on (`WelcomeSleeve`), About's mark | `Settings/ShellAppMark.swift`, `Settings/OnboardingView.swift`, `Settings/SettingsView.swift` |
 | Mixes: square, artists under them | `Components/Tiles.swift` (`MixCard`) |
 | Launch screen | `Assets.xcassets/LaunchBackground`, `RootView`'s launching phase |

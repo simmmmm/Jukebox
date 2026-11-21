@@ -231,14 +231,13 @@ struct RootView: View {
 /// above them; tapped, Now Playing covers everything. The iPhone's, and an
 /// iPad window's when it is narrow; the Mac's window is always wide.
 ///
-/// The TabView keeps each tab's stack and where it was. What sits at each
-/// tab's foot is one of three to try (MiniBarFoot, NowPlaying/MiniPlayer.swift):
-/// Plaat keeps the system's tab bar; Spotify and Glas hide it and draw
-/// Jukebox's own tabs (TabRow), "ik bedoelde ipv glas menu onderaan waar
+/// The TabView keeps each tab's stack and where it was. Its bar is hidden:
+/// at each tab's foot sit the mini player and Jukebox's own tabs (MiniBarFoot,
+/// NowPlaying/MiniPlayer.swift), "ik bedoelde ipv glas menu onderaan waar
 /// home radio library en search staat" (the photographer, 19 November 2026),
-/// and "Het moet er wel uitzien alsof het samen één object is he" (20
-/// November 2026). iOS 26's bar is glass, cannot be made flat and cannot
-/// share another view's glass.
+/// and no system glass under the block: "dan doen we niet het glas eronder
+/// dan krijg je zo twee dezelfde soort dingen" (21 November 2026). iOS 26's
+/// bar is glass and cannot be made flat.
 struct MainTabView: View {
     @Environment(Navigator.self) private var navigator
     @Environment(AppSettings.self) private var settings
@@ -301,15 +300,13 @@ struct MainTabView: View {
                 .modifier(HidesSystemTabBar())
             }
         }
-        // The tab bar; a narrow iPad window has it too. Kept whichever player
-        // is chosen, hidden or not, so a change in Settings does not make a
-        // new TabView and close the sheet it was made in.
+        // The sidebar in a wide iPad window; narrow, the tabs are TabRow.
         .tabViewStyle(.sidebarAdaptable)
         // No bottom accessory and no tab bar that shrinks on scroll, on iOS
-        // 26 either: the song is on each tab's foot (MiniBarFoot). With Plaat
-        // "zonder glas/balkje" (the photographer, 19 November 2026): the
-        // accessory is a glass capsule of its own, and a tab bar that shrank
-        // would leave the song hanging over the room it left.
+        // 26 either: the song is on each tab's foot (MiniBarFoot). The
+        // accessory is a glass capsule of its own, a second glass over the
+        // block's, and a tab bar that shrank would leave the song hanging
+        // over the room it left.
         .fullScreenCover(isPresented: $navigator.isNowPlayingPresented) {
             NowPlayingView()
         }
@@ -331,15 +328,12 @@ struct MainTabView: View {
     }
 }
 
-/// The system's tab bar away with Spotify and Glas, on every page of a tab:
-/// its visibility is a page's own, so a page pushed without this would bring
-/// it back under Jukebox's (TabRow). With Plaat it stays. Read here, not
-/// handed in, so pages already pushed follow a change at once.
+/// The system's tab bar away, on every page of a tab: its visibility is a
+/// page's own, so a page pushed without this would bring it back under
+/// Jukebox's (TabRow).
 private struct HidesSystemTabBar: ViewModifier {
-    @AppStorage(MiniBarVariant.key) private var variant: MiniBarVariant = .standard
-
     func body(content: Content) -> some View {
-        content.toolbarVisibility(variant.hidesSystemTabBar ? .hidden : .automatic, for: .tabBar)
+        content.toolbarVisibility(.hidden, for: .tabBar)
     }
 }
 #endif

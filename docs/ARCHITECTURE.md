@@ -118,11 +118,10 @@ each must exist with exactly this initializer.
   `GenreDetailView(genre: Genre)`, `FavoritesView()`, `RecentlyAddedView()`,
   `AddToPlaylistSheet(tracks: [Track])`.
 - Offline: `DownloadedView()` (`Route.downloaded`, Library › Downloaded).
-- Now playing: on the iPhone, for now three player bars to try, chosen in
-  Settings › Library › Player Bar (Test) or with `-miniBarVariant
-  spotify|glas|plaat`: `MiniBarFoot` on each tab's foot holds Spotify's,
-  Glas's or Plaat's (`NowPlaying/MiniPlayer*.swift`), no bottom accessory;
-  and `NowPlayingView()` in a fullScreenCover. In the wide window
+- Now playing: on the iPhone `MiniBarFoot` on each tab's foot holds the
+  mini player and Jukebox's own tabs, the system's tab bar hidden, no
+  bottom accessory (`NowPlaying/MiniPlayer.swift`); and `NowPlayingView()`
+  in a fullScreenCover. In the wide window
   `PlayerBar()`, `PanelView()`, and `NowPlayingView()` as the room.
 - Home and radio: `HomeView()`, `MixDetailView(mix: Mix)`, `RadioView()`,
   `StationDetailView(station: Station)` (`Route.station(station)`).
