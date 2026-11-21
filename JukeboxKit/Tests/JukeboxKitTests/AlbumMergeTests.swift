@@ -27,6 +27,17 @@ struct AlbumMergeTests {
         #expect(albums[0].trackCount == 3)
     }
 
+    @Test("Two discs as two parts: each part a disc, in the server's order")
+    func discsAsParts() {
+        let one = Album(id: "p1", name: "Pulse", artists: [artist("Pink Floyd")], year: 1995)
+        let two = Album(id: "p2", name: "Pulse", artists: [artist("Pink Floyd"), artist("Pink Floyd")], year: 1995)
+        let tracks = [Track(id: "a", name: "Shine On You Crazy Diamond", albumID: "p1", trackNumber: 1, duration: 811),
+                      Track(id: "b", name: "Speak to Me", albumID: "p2", trackNumber: 1, duration: 157),
+                      Track(id: "c", name: "Hey You", albumID: "p1", trackNumber: 7, duration: 280)]
+        let (_, kept) = AlbumMerge.merge(albums: [one, two], tracks: tracks)
+        #expect(kept.map(\.discNumber) == [1, 2, 1])
+    }
+
     @Test("Jack Johnson: the clean name, every track, the newest date")
     func jackJohnson() {
         let clean = Album(id: "a1", name: "From Here To Now To You", artists: [artist("Jack Johnson")],

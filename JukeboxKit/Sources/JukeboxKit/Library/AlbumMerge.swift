@@ -33,6 +33,9 @@ public enum AlbumMerge {
         }
 
         var replaced: [ItemID: ItemID] = [:]
+        /// Each part's place in its album, in the server's order: the disc
+        /// it becomes when the parts are an album's discs, unnumbered.
+        var partRank: [ItemID: Int] = [:]
         var mergedAt: [Int: Album] = [:]
         var dropped = Set<Int>()
         for key in order {
@@ -43,18 +46,40 @@ public enum AlbumMerge {
                 mergedAt[cluster[0]] = whole
                 for position in cluster.dropFirst() { dropped.insert(position) }
                 for part in parts where part.id != whole.id { replaced[part.id] = whole.id }
+                for (rank, part) in parts.enumerated() { partRank[part.id] = rank + 1 }
             }
         }
         guard !replaced.isEmpty else { return (albums, tracks) }
         let coverTag = Dictionary(mergedAt.values.map { ($0.id, $0.imageTag) }, uniquingKeysWith: { a, _ in a })
 
-        let moved = tracks.map { track -> Track in
+        var moved = tracks.map { track -> Track in
             guard let id = track.albumID, let kept = replaced[id] else { return track }
             var moved = track
             moved.albumID = kept
             // The cover's tag goes with the album id it is asked under.
             moved.albumImageTag = coverTag[kept] ?? nil
             return moved
+        }
+        // Parts that are an album's discs, each numbered from 1 and none
+        // with a disc number, read 6, 7, 7, 8, 8 merged (Pulse, the
+        // photographer, 21 November 2026: "Ook de nummers blijven vaag?").
+        // There each part becomes a disc, in the server's order.
+        // ponytail: which part is disc 1 is the server's order, not known;
+        // a folder name ("CD2") would tell, if a server ever gives it.
+        var numbersByAlbum: [ItemID: [Int: Set<ItemID>]] = [:]
+        for (i, track) in tracks.enumerated() {
+            guard let original = track.albumID, partRank[original] != nil,
+                  let kept = moved[i].albumID, let number = track.trackNumber else { continue }
+            numbersByAlbum[kept, default: [:]][number, default: []].insert(original)
+        }
+        let discsByPart = Set(numbersByAlbum.filter { _, numbers in
+            numbers.values.contains { $0.count > 1 }
+        }.keys)
+        for (i, track) in tracks.enumerated() {
+            guard let original = track.albumID, let rank = partRank[original],
+                  let kept = moved[i].albumID, discsByPart.contains(kept),
+                  track.discNumber == nil else { continue }
+            moved[i].discNumber = rank
         }
         // A part is often the same songs again: a second copy of the album,
         // untagged or tagged otherwise, which merged showed every song twice,
