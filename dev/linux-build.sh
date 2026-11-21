@@ -39,7 +39,7 @@ mkdir -p .build-linux
 # verstandiger is". Always written, empty without a key, so the build never
 # lacks the file; rewritten only when it changes, so it costs no rebuild.
 # Only its length is said.
-key=${LASTFM_APP_KEY:-$(sed -n 's/^LASTFM_APP_KEY=//p' .env 2>/dev/null | tail -1)}
+key=${LASTFM_APP_KEY:-$( { sed -n 's/^LASTFM_APP_KEY=//p' .env 2>/dev/null || true; } | tail -1)}
 [[ $key =~ ^[A-Za-z0-9]*$ ]] || { echo "LASTFM_APP_KEY: letters and digits only" >&2; exit 1; }
 keys="// Written by dev/linux-build.sh from .env; not in git.
 let lastFMAppKey = \"$key\""
