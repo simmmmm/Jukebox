@@ -22,7 +22,9 @@ What a server lacks is decided per item, not per app.
    reads the tag, strips it and asks the right one. Every store already
    holds `any MusicServer`, so most call sites do not change.
 3. With one account on, nothing is wrapped and nothing is tagged: today's
-   path, untouched.
+   path, untouched. Going from one to two tags every id in memory, so the
+   queue, the station on air and the open pages are retagged in place
+   (step 4); the music plays on.
 4. The same album on two servers becomes one album; each song keeps its
    copies and plays from the best one that answers.
 5. A capability is asked of the item's account: `library.can(.rating, for: id)`.
@@ -58,7 +60,7 @@ the rule. The rule is the account's own set.
 | Scrobbles to Last.fm (the server's job) | its plugin | ? | its own link | ? |
 | Your Year from the server | Playback Reporting plugin, asked M | the same route; only its 404 measured ? | no | history not used, not tried ? |
 | Quick Connect | when enabled M | no (404) M | no | no; Sign In with Plex, untested end to end |
-| API key or token sign-in | no | no | when listed C | a token M |
+| API key or token sign-in | no | no | when listed C | a token C |
 | Capped streaming | AAC over HLS M | the same M | MP3, `maxBitRate` and `format` M | one progressive MP3; FLAC and AAC not measured ? |
 | Downloads | Original, High, Normal; the user's policy asked M | the same M | `download`, or MP3 256 / 128; `downloadRole` M | the file, or MP3; always allowed C |
 | Handoff (play state kept on the server) | all of it, as JSON M | the same M | `savePlayQueue`: its own song ids and the place M | none |
@@ -115,9 +117,15 @@ row would be noise; hidden says the same.
 ## 3. Identity
 
 **Ids.** The tag is 8 hex digits, FNV-1a of server id and user id
-(`SavedAccounts.stableHash`, already there), then a colon. The same on every
-device, so a handoff can name another server's song. Fixed length, so
+(`SavedAccounts.stableHash`, already there), then a colon. Fixed length, so
 splitting never guesses, whatever a Subsonic id contains.
+
+The same on every device for Jellyfin, Emby and Plex (the server's own id,
+Plex's `machineIdentifier`). Not for a Subsonic server: its id is the address
+signed in at (`ServerAddress`), so a phone on the public address and a PC on
+the home one get two tags. A Plex account by pasted token is `token-` and
+its MD5, the same wherever that token is used. A handoff that names
+another server's song (section 6) works only where the tags agree.
 
 | Where an id is kept | Kept per account today | With several on |
 |---|---|---|
@@ -159,8 +167,9 @@ matched in the first round.
 | Rating | the first copy that has one |
 | Loudness, lyrics, credits, moods | the first copy that has them |
 
-**Two users of one server** are two people: their favourites and plays are
-each their own. Only one of them can be on.
+**Two users of one server** share every id, and each has their own
+favourites and plays. Proposed: only one of them on at a time (section 10,
+question 5).
 
 ## 4. Which copy plays
 
@@ -171,8 +180,8 @@ each their own. Only one of them can be on.
    (`OfflineStore.isOffline` is one flag today).
 3. The server is on this network (a private or `.local` address; Plex's
    `addresses` say local, remote, relay).
-4. At Original quality, a lossless container (flac, alac, wav) over a
-   lossy one.
+4. At Original quality, a lossless container (flac, wav) over a lossy
+   one. An m4a counts as unknown: no server says whether it is ALAC.
 5. The accounts' order in Settings.
 
 Later, once bitrate is read: it goes between 3 and 4.
@@ -225,7 +234,7 @@ Handoff and Play On take a queue, and a queue can now be mixed:
 
 | | A queue of one server | A mixed queue |
 |---|---|---|
-| Handoff, Jellyfin or Emby on | as today | kept whole on the first Jellyfin or Emby: its state is JSON and holds tagged ids. Its own songs stay bare, so an older build still reads those |
+| Handoff, Jellyfin or Emby on | as today | kept whole on the first Jellyfin or Emby: its state is JSON and holds tagged ids. Its own songs stay bare, so an older build still reads those. A Subsonic song in it is found only by a device signed in at the same address (section 3) |
 | Handoff, only Subsonic on | as today | each server keeps its own songs of the queue; the others fall out |
 | Handoff, only Plex | none, as today | none |
 | Play On: Chromecast, Sonos, UPnP | as today | works: one song at a time, each from its own server's `castURL` |
@@ -298,7 +307,7 @@ Each step ships alone. S is days, M a week or so, L more.
 | 1 | The kit: tagged ids and `MergedServer`, tested on two real servers | nothing | low: no app code calls it | S |
 | 2 | The kit: the cross-server merge (albums, songs, copies, merged counts), with the 50 000 test | nothing | medium: a wrong merge hides music, so the rule is strict and tested on the two test servers' same library | M |
 | 3 | The stores take a set of accounts: `LibraryStore` loads each cache and merges; history, downloads, recent stations and not-counted read and write per account; offline per account; the per-item `can` | nothing with one on. Behind a hidden setting, two on | high: every store. One account on stays on today's path | L |
-| 4 | The switches, on every client, with the facts lines and the playlist rules | several servers, one library | medium | M |
+| 4 | The switches, on every client, with the facts lines and the playlist rules; the queue, the station and the pages retagged when a second account comes on | several servers, one library | medium | M |
 | 5 | Which copy plays, and falling back when a server goes silent | a song plays from the other server | medium | M |
 | 6 | Your Year added up; handoff and Play On with a mixed queue; the widget | the edges | low | M |
 | 7 | Later: bitrate and MusicBrainz ids read, quality in the order of copies | better picks | low | M |
@@ -359,5 +368,6 @@ changed.
    dan bereikbaar, dan thuisnetwerk, dan lossless, dan jouw volgorde in
    Settings. Of wil je altijd de hoogste bitrate, ook als dat de server
    buiten de deur is?
-5. Een hartje op een nummer dat op twee servers staat: op allebei zetten
-   (voorstel), of alleen op de server waar het van speelt?
+5. Twee gebruikers van dezelfde server (jij en iemand anders) tegelijk
+   aan: voorstel is nee, want hartjes en plays zijn van één persoon. Of wil
+   je dat wel kunnen?
