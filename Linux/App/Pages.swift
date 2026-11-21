@@ -4,6 +4,7 @@
 // the iPhone.
 
 import CAdw
+import CGlue
 import Foundation
 import JukeboxKit
 import Observation
@@ -166,29 +167,28 @@ enum HomePage {
         return card
     }
 
-    /// The music to go on with and Your Station: side by side, each
-    /// DesktopMeasures.homeCard wide and as tall as the other, where the
-    /// page has room (Page.pairsHomeCards), 32 under the title; else one
-    /// above the other, each as wide as its words, as before.
+    /// The music to go on with and Your Station: side by side at any
+    /// width, the music to go on with first, each DesktopMeasures.homeCard
+    /// wide and as tall as the other, 32 under the title. "ik wil dit
+    /// gewoon zeker op desktop altijd naast elkaar hebben … continue eerst
+    /// dan your station … desnoods scrollt het" (the photographer, 21
+    /// November 2026): narrower than the pair, the row scrolls sideways,
+    /// dragged as a shelf is, and runs on to the page's edge as one does.
     private static func appendCards(to column: Widget) {
-        let paired = PageMeasure.shared.pairsHomeCards
         guard let offer = app.handoff.offer else {
             append(yourStation(paired: false), to: column)
             return
         }
-        let goOn = handoffCard(offer, paired: paired)
-        let station = yourStation(paired: paired)
-        guard paired else {
-            append(goOn.margins(vertical: 8), to: column)
-            append(station, to: column)
-            return
-        }
+        let goOn = handoffCard(offer, paired: true)
+        let station = yourStation(paired: true)
         gtk_widget_set_margin_top(station, 0)
         for card in [goOn, station] { card.align(horizontal: GTK_ALIGN_FILL).size(width: Int32(DesktopMeasures.homeCard)) }
         let row = hbox(spacing: 24, [goOn, station]).align(horizontal: GTK_ALIGN_START)
         gtk_box_set_homogeneous(ptr(row), 1)
-        gtk_widget_set_margin_top(row, 32)
-        append(row, to: column)
+        let scroller = scrolled(row, horizontal: true).css("card-row")
+        jb_drag_to_scroll(scroller)
+        gtk_widget_set_margin_top(scroller, 32)
+        append(scroller, to: column)
     }
 
     /// One line of a card's words, ending in "…". In the row its card is

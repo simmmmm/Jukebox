@@ -119,17 +119,24 @@ private struct HomeFeed: View {
     private func sections(_ measures: HomeMeasures) -> some View {
         VStack(alignment: .leading, spacing: measures.betweenSections) {
             HomeOfflineNotice(margin: measures.margin)
-            if measures.pairsHomeCards, handoff.offer != nil {
-                // Side by side where the page has room, each as tall as
-                // the other: "kunnen die twee tegels ook op dezelfde rij
-                // naast elkaar" (the photographer, 18 November 2026).
-                // Linux's HomePage.appendCards.
-                HStack(alignment: .top, spacing: Theme.Space.xl) {
-                    HomeHandoffNotice(margin: 0, isPaired: true)
-                    HomeStationHero(measures: measures, isPaired: true)
+            if measures.isWide, handoff.offer != nil {
+                // Side by side on every wide page, each as tall as the
+                // other, the music to go on with first: "kunnen die twee
+                // tegels ook op dezelfde rij naast elkaar" (18 November
+                // 2026), and "ik wil dit gewoon zeker op desktop altijd naast
+                // elkaar hebben … continue eerst dan your station … desnoods
+                // scrollt het" (21 November 2026). Where the page is narrower
+                // than the pair, the row scrolls sideways from the margin,
+                // as a shelf does. Linux's HomePage.appendCards.
+                ScrollView(.horizontal) {
+                    HStack(alignment: .top, spacing: Theme.Space.xl) {
+                        HomeHandoffNotice(margin: 0, isPaired: true)
+                        HomeStationHero(measures: measures, isPaired: true)
+                    }
+                    .fixedSize(horizontal: false, vertical: true)
                 }
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.horizontal, measures.margin)
+                .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+                .contentMargins(.horizontal, measures.margin, for: .scrollContent)
             } else {
                 HomeHandoffNotice(margin: measures.margin)
                 HomeStationHero(measures: measures)

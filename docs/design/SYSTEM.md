@@ -140,8 +140,17 @@ zeg maar?" (21 November 2026).
 Your Station before it plays (Home, and Radio on the iPhone), the music to go
 on with and the offline notice stand on a card: `raised`, flat, 18 corners
 at 12 in. No cards in cards.
-- Apple: `HomeCardButtonStyle`, `HomeOfflineNotice` (`Home/HomeView.swift`).
-- GNOME: `.home-card`, `.home-card.notice` (`Style.swift`, `Pages.swift`).
+
+Home's top, on every wide page (Mac, iPad, Linux): the music to go on with
+first, Your Station second, side by side at any width, each 400 wide and as
+tall as the other. Narrower than the pair, the row scrolls sideways from the
+margin, as a shelf does; it never stacks. "ik wil dit gewoon zeker op
+desktop altijd naast elkaar hebben … desnoods scrollt het" (21 November
+2026). The iPhone keeps them one above the other.
+- Apple: `HomeCardButtonStyle`, `HomeOfflineNotice`, `homeCardFrame`
+  (`Home/HomeView.swift`).
+- GNOME: `.home-card`, `.home-card.notice`, `appendCards`'s `card-row`
+  (`Style.swift`, `Pages.swift`).
 
 ### Section headings
 Sentence case, in the serif, a fact beside it ("Made at 06:00"), See All

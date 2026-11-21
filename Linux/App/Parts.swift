@@ -84,8 +84,6 @@ final class PageMeasure {
     private(set) var tile: Int32 = 176
     /// Played lately's columns.
     private(set) var columns = 2
-    /// Home's two cards side by side (DesktopMeasures.Page.pairsHomeCards).
-    private(set) var pairsHomeCards = true
     /// An album's cover: 160 under 720.
     var cover: Int32 { margin == 24 ? 160 : 224 }
 
@@ -93,7 +91,6 @@ final class PageMeasure {
         if Int32(page.margin) != margin { margin = Int32(page.margin) }
         if Int32(page.tile) != tile { tile = Int32(page.tile) }
         if page.columns != columns { columns = page.columns }
-        if page.pairsHomeCards != pairsHomeCards { pairsHomeCards = page.pairsHomeCards }
     }
 }
 
@@ -118,7 +115,9 @@ func measure(_ column: Widget) {
                 gtk_widget_set_margin_end(widget, 0)
                 ends(widget)
             } else {
-                gtk_widget_set_margin_end(widget, gtk_widget_has_css_class(widget, "shelf") != 0 ? 0 : margin)
+                // A shelf and Home's row of cards run on to the page's edge.
+                let runsOn = gtk_widget_has_css_class(widget, "shelf") != 0 || gtk_widget_has_css_class(widget, "card-row") != 0
+                gtk_widget_set_margin_end(widget, runsOn ? 0 : margin)
             }
             child = gtk_widget_get_next_sibling(widget)
         }
