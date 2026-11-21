@@ -44,9 +44,10 @@ and length. To turn it off: Settings › Find Lyrics Online.
 
 ## Last.fm
 
-Only when you enter your own Last.fm key in Settings: the radio then asks
-Last.fm which artists and songs are alike, with artist names and song
-titles. Without a key, nothing goes to Last.fm.
+The radio asks Last.fm which artists and songs are alike, with artist names
+and song titles, using Jukebox's own key or yours from Settings. With your
+Last.fm username in Settings, it also reads your scrobbles. Nothing is
+written to Last.fm.
 
 ## Questions
 

@@ -64,7 +64,9 @@ enum Preferences {
         let radio = group("Last.fm", on: radioPage)
         let saveTypedKey = lastFM(on: radio, in: dialog)
         adw_preferences_group_set_description(
-            ptr(radio), "With a Last.fm API key, the radio also knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Nothing is written to Last.fm.")
+            ptr(radio), AppSettings.appLastFMKey.isEmpty
+                ? "With a Last.fm API key, the radio also knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Nothing is written to Last.fm."
+                : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Nothing is written to Last.fm.")
 
         // Which places the sidebar shows (AppSettings.hiddenPages), in its
         // order; Home has no switch. The photographer, 15 November 2026:
@@ -105,9 +107,17 @@ enum Preferences {
     /// and only a key it accepted is kept, then shown as dots with Change and
     /// Remove. A typo never takes the radio's Last.fm away. Gives back what
     /// the dialog does on closing: a key typed and left without ✓ is checked
-    /// all the same (it was once lost), and kept only if accepted.
+    /// all the same (it was once lost), and kept only if accepted. Since 21
+    /// November 2026 the app has a key of its own ("Ik denk dat een eigen
+    /// last fm verstandiger is"): without the listener's, a row says
+    /// Jukebox's is in use, never showing it, and the entry is an optional
+    /// override; Remove goes back to Jukebox's. As the iPhone's and the Mac's.
     private static func lastFM(on group: Widget, in dialog: UnsafeMutablePointer<AdwDialog>) -> @MainActor () -> Void {
         let settings = app.settings
+        let builtIn = adw_action_row_new()!
+        adw_preferences_row_set_title(ptr(builtIn), "Last.fm API Key")
+        adw_action_row_set_subtitle(ptr(builtIn), "Jukebox's own")
+        gtk_widget_add_css_class(builtIn, "property")
         let entry = adw_entry_row_new()!
         adw_preferences_row_set_title(ptr(entry), "Last.fm API Key")
         adw_entry_row_set_show_apply_button(ptr(entry), 1)
@@ -136,6 +146,8 @@ enum Preferences {
         func editing(_ isEditing: Bool) {
             entry.isVisible = isEditing
             saved.isVisible = !isEditing
+            builtIn.isVisible = isEditing && settings.usesAppLastFMKey
+            adw_preferences_row_set_title(ptr(entry), settings.usesAppLastFMKey ? "Your Own Key (Optional)" : "Last.fm API Key")
             gtk_editable_set_text(ptr(entry), "")
             gtk_widget_remove_css_class(entry, "error")
         }
@@ -169,7 +181,7 @@ enum Preferences {
                 if key != settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines) {
                     settings.lastFMAPIKey = key
                     app.radio.lastFMKeyChanged()
-                    Stats.track(.lastFMKey, ["state": "added"])
+                    Stats.track(.lastFMKey, ["state": "added", "app_key": !AppSettings.appLastFMKey.isEmpty])
                 }
                 if !isClosed {
                     // A refusal of the key before it no longer stands.
@@ -195,7 +207,7 @@ enum Preferences {
             }
             isCheckingUser = true
             user.isSensitive = false
-            let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+            let key = settings.lastFMKey
             Task {
                 let check = await LastFMClient(apiKey: key).validateUser(name)
                 isCheckingUser = false
@@ -231,25 +243,26 @@ enum Preferences {
         let remove = button("Remove", "flat") {
             settings.lastFMAPIKey = ""
             app.radio.lastFMKeyChanged()
-            Stats.track(.lastFMKey, ["state": "removed"])
+            Stats.track(.lastFMKey, ["state": "removed", "app_key": !AppSettings.appLastFMKey.isEmpty])
             editing(true)
             cancel.isVisible = false
-            user.isVisible = false
+            user.isVisible = settings.hasLastFM
             say("Last.fm key removed")
         }.align(vertical: GTK_ALIGN_CENTER)
         adw_action_row_add_suffix(ptr(saved), change)
         adw_action_row_add_suffix(ptr(saved), remove)
+        adw_preferences_group_add(ptr(group), builtIn)
         adw_preferences_group_add(ptr(group), entry)
         adw_preferences_group_add(ptr(group), saved)
         adw_preferences_group_add(ptr(group), user)
-        editing(!settings.hasLastFM)
+        editing(!settings.hasOwnLastFMKey)
         cancel.isVisible = false
         user.isVisible = settings.hasLastFM
 
         // The saved key, asked about again each time Preferences opens, as
         // the iPhone's Settings does: a revoked key shows here rather than as
         // a quieter radio. Quietly; only a refusal is said, and the key stays.
-        if settings.hasLastFM {
+        if settings.hasOwnLastFMKey {
             let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
             Task {
                 let check = await LastFMClient(apiKey: key).validateKey()

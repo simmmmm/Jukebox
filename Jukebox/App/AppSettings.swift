@@ -39,11 +39,36 @@ final class AppSettings {
         }
     }
 
-    /// Empty: no Last.fm. Kept in UserDefaults, not the keychain: an API
-    /// key for public data, not a password.
+    /// The listener's own Last.fm key, optional: used in place of the app's
+    /// (`appLastFMKey`) when set. Empty: none. Kept in UserDefaults, not the
+    /// keychain: an API key for public data, not a password.
     var lastFMAPIKey: String {
         didSet { defaults.set(lastFMAPIKey, forKey: Keys.lastFMAPIKey) }
     }
+
+    /// Jukebox's own Last.fm key, built in, so the radio knows who sounds
+    /// like whom on every device without a key typed into each: "Ik denk dat
+    /// een eigen last fm verstandiger is" (the photographer, 21 November
+    /// 2026). Never in git: ci/app.sh puts it in the Info.plist from the
+    /// runner's file, dev/linux-build.sh in Linux/App/AppKeys.swift from
+    /// .env (docs/RADIO.md, Last.fm's key). Empty in a build without one.
+    #if os(Linux)
+    static let appLastFMKey = lastFMAppKey
+    #else
+    static let appLastFMKey = (Bundle.main.object(forInfoDictionaryKey: "LastFMAppKey") as? String ?? "")
+        .trimmingCharacters(in: .whitespacesAndNewlines)
+    #endif
+
+    /// The key the radio asks Last.fm with: the listener's, else the app's.
+    var lastFMKey: String {
+        let own = lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        return own.isEmpty ? Self.appLastFMKey : own
+    }
+
+    var hasOwnLastFMKey: Bool { !lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
+
+    /// The app's key in use: no key of the listener's, and the build has one.
+    var usesAppLastFMKey: Bool { !hasOwnLastFMKey && !Self.appLastFMKey.isEmpty }
 
     /// The listener's Last.fm name, optional: with it the radio's clock
     /// reads their scrobbles from day one (docs/RADIO.md, "Scrobbles").
@@ -245,7 +270,7 @@ final class AppSettings {
         hiddenPages = Set((defaults.stringArray(forKey: Keys.hiddenPages) ?? []).compactMap(Page.init(rawValue:)))
     }
 
-    var hasLastFM: Bool { !lastFMAPIKey.trimmingCharacters(in: .whitespaces).isEmpty }
+    var hasLastFM: Bool { !lastFMKey.isEmpty }
 
     private enum Keys {
         static let wifiQuality = "wifiQuality"

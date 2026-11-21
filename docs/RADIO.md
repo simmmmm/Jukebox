@@ -118,6 +118,16 @@ server's 23 are like "Rock; Shoegaze", where the snapshot has "Rock" and
 With none of the parts in the library, it is Your Station under the seed's
 name. With one genre, every weight is 1 and it is the station it always was.
 
+### Last.fm's key
+
+Jukebox ships its own key ("Ik denk dat een eigen last fm verstandiger is",
+21 November 2026); the listener's key in Settings is used instead when set
+(`AppSettings.lastFMKey`). It is never in git: the Apple builds read it from
+`~/.config/jukebox-ci/lastfm-app-key` on the runner (docs/RELEASE.md), Linux
+from `LASTFM_APP_KEY` in `.env` or the environment (`dev/linux-build.sh`
+writes the gitignored `Linux/App/AppKeys.swift`). A build without it has
+none, and the radio works from the library alone, as before.
+
 ### Last.fm's tags
 
 Tags are the radio's weakest link (`build/research/radio.md`, 4.4; "doe

@@ -890,11 +890,13 @@ final class RadioController {
 
     // MARK: The graph
 
-    /// None while no account is open (`open`).
+    /// None while no account is open (`open`). The listener's key, else the
+    /// app's (`AppSettings.lastFMKey`); a new service for each, so a key
+    /// Last.fm refused (`keyRejected`) stays that key's alone.
     private func makeService() -> SimilarityService? {
         guard let directory = similarityDirectory else { return nil }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-        let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = settings.lastFMKey
         return SimilarityService(directory: directory, lastFM: settings.hasLastFM ? LastFMClient(apiKey: key) : nil,
                                  user: settings.lastFMUser)
     }

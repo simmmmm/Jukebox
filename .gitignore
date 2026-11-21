@@ -8,3 +8,5 @@ JukeboxKit/.swiftpm/
 
 # Local settings of this machine (the Mac to build on, keys): never in git.
 .env
+# Jukebox's own Last.fm key for Linux, written from .env by dev/linux-build.sh.
+/Linux/App/AppKeys.swift
