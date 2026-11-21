@@ -39,6 +39,7 @@ struct TrackRow: View {
     /// The songs picked with this one in a wide list (TrackPicks), empty
     /// when it is not picked.
     @Environment(\.pickedTracks) private var pickedTracks
+    @Environment(\.hidesVersion) private var hidesVersion
     @State private var isHovered = false
 
     init(_ track: Track, leading: Leading = .artwork, subtitle: String? = nil, reason: PickReason? = nil,
@@ -66,6 +67,11 @@ struct TrackRow: View {
     /// Artwork, title, artist: the usual row.
     static func standard(_ track: Track) -> TrackRow {
         TrackRow(track, subtitle: track.artistLine)
+    }
+
+    /// The song's title; under a chosen version without its marker.
+    private var title: String {
+        hidesVersion ? TrackVersion.read(track.name).title : track.name
     }
 
     /// The artist (or a guest) or the radio's reason under the title.
@@ -109,7 +115,7 @@ struct TrackRow: View {
 
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 HStack(spacing: 4) {
-                    Text(track.name)
+                    Text(title)
                         .lineLimit(1)
                         .foregroundStyle(playable ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
                     if library.isFavorite(track.id) {
@@ -272,7 +278,7 @@ struct TrackRow: View {
     /// The title in 15, the playing song's in the accent. Nothing after
     /// it, as Linux's row: no heart, no arrow (the iPhone's are Music's).
     private func wideTitle(playable: Bool) -> some View {
-        Text(track.name)
+        Text(title)
             .lineLimit(1)
             .foregroundStyle(isCurrent ? AnyShapeStyle(Theme.accent)
                              : playable ? AnyShapeStyle(.primary) : AnyShapeStyle(.secondary))

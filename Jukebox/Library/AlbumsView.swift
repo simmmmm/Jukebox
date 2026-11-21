@@ -144,28 +144,37 @@ struct AlbumDetailView: View {
     /// indexed (found by search before the library has loaded).
     @State private var fetched: [Track]?
     @State private var isConfirmingRemoval = false
+    /// The version chosen above the songs (LibraryVersionPicker); nil is All.
+    @State private var version: TrackVersion?
 
     var body: some View {
         let shown = library.album(id: album.id) ?? album
         let found = shownSongs()
-        let tracks = found.tracks
+        let all = found.tracks
+        let kinds = TrackVersion.kinds(of: all)
+        // Play, Shuffle, the rows and the counts take the version's songs,
+        // in the album's order; the download and the "…" the whole album.
+        let tracks = TrackVersion.tracks(all, in: version)
         let isLoading = found.isLoading
         let discs = Self.splitIntoDiscs(tracks)
         let moreBy = isLoading ? nil : moreByArtist(shown)
 
         Group {
             if isWide {
-                wide(shown, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
+                wide(shown, all: all, kinds: kinds, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
             } else {
-                compact(shown, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
+                compact(shown, kinds: kinds, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
             }
         }
+        .environment(\.hidesVersion, version != nil)
+        // A version no song has any more is All again.
+        .onChange(of: kinds) { if let chosen = version, !kinds.contains(chosen) { version = nil } }
         .toolbar {
             // Not when the server does not let this account download,
             // unless the album is on the phone already, to remove it.
             if offline.offersDownload(for: .album(album.id)) {
                 ToolbarItem(placement: .barTrailing) {
-                    OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: tracks),
+                    OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: all),
                                           isConfirmingRemoval: $isConfirmingRemoval)
                 }
             }
@@ -173,7 +182,7 @@ struct AlbumDetailView: View {
             if !isWide {
                 ToolbarItem(placement: .barTrailing) {
                     Menu {
-                        LibraryAlbumMenu(album: shown, tracks: tracks, onPage: true)
+                        LibraryAlbumMenu(album: shown, tracks: all, onPage: true)
                     } label: {
                         Label("More", systemImage: "ellipsis")
                     }
@@ -187,7 +196,8 @@ struct AlbumDetailView: View {
     /// Linux's album page (05-album): the head, a hairline, the songs
     /// numbered (a guest artist after the title), then More by the artist
     /// in tiles. "Disc 2" over a second disc's songs.
-    private func wide(_ shown: Album, tracks: [Track], discs: [Disc], isLoading: Bool, moreBy: Artist?) -> some View {
+    private func wide(_ shown: Album, all: [Track], kinds: [TrackVersion], tracks: [Track], discs: [Disc],
+                      isLoading: Bool, moreBy: Artist?) -> some View {
         WidePage(title: shown.name, hasHead: true) { page, _ in
             PageHead(page: page, title: shown.name, lead: shown.artistLine,
                      leadAction: { goToArtist(shown) }, facts: player.notCounted.fact(Self.facts(shown, tracks: tracks), .album, shown.id)) { size in
@@ -199,11 +209,16 @@ struct AlbumDetailView: View {
                 HStack(spacing: Theme.Space.s) {
                     HeartButton(item: .album(shown.id))
                     MoreMenu {
-                        LibraryAlbumMenu(album: shown, tracks: tracks, onPage: true)
+                        LibraryAlbumMenu(album: shown, tracks: all, onPage: true)
                     }
                 }
             }
             PageRule(page: page)
+            if !kinds.isEmpty {
+                LibraryVersionPicker(kinds: kinds, chosen: $version)
+                    .padding(.horizontal, page.side)
+                    .padding(.bottom, Theme.Space.l)
+            }
             Group {
                 if isLoading {
                     ProgressView()
@@ -240,12 +255,20 @@ struct AlbumDetailView: View {
         }
     }
 
-    private func compact(_ shown: Album, tracks: [Track], discs: [Disc], isLoading: Bool, moreBy: Artist?) -> some View {
+    private func compact(_ shown: Album, kinds: [TrackVersion], tracks: [Track], discs: [Disc],
+                         isLoading: Bool, moreBy: Artist?) -> some View {
         List {
             header(shown, tracks: tracks)
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
                                           bottom: Theme.Space.l, trailing: Theme.margin))
                 .listRowSeparator(.hidden)
+
+            if !kinds.isEmpty {
+                LibraryVersionPicker(kinds: kinds, chosen: $version)
+                    .listRowInsets(EdgeInsets(top: 0, leading: Theme.margin,
+                                              bottom: Theme.Space.m, trailing: Theme.margin))
+                    .listRowSeparator(.hidden)
+            }
 
             if isLoading {
                 ProgressView()

@@ -557,6 +557,10 @@ extension EnvironmentValues {
     /// The songs picked with a row's own (PageTrackRows), empty when it is
     /// not picked: its look and its menu (TrackRow, TrackMenu).
     @Entry var pickedTracks: [Track] = []
+    /// A version chosen on an album's or a playlist's page (LibraryVersionPicker):
+    /// the rows leave out the marker every one of them would say,
+    /// "Cast No Shadow" under Unplugged.
+    @Entry var hidesVersion = false
 }
 
 /// Songs as rows on a wide page (TrackRow's wide form), on the margin the

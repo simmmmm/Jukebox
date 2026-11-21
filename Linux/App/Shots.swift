@@ -58,6 +58,17 @@ enum Shots {
                 Pages.open(album)
                 await step("05-album", wait: 2)
             }
+            // The version filter: the demo's album of remastered and
+            // unplugged songs without track numbers, as the photographer's
+            // Oasis album; all of them, then Unplugged alone.
+            if let versions = albums.first(where: { $0.name.hasPrefix("Lantern Hours") }) {
+                Pages.open(versions)
+                await step("05c-album-versions", wait: 2)
+                if let unplugged = find(visiblePage(), { isA($0, gtk_toggle_button_get_type()) && label(of: $0) == "Unplugged" }) {
+                    gtk_toggle_button_set_active(ptr(unplugged), 1)
+                    await step("05d-album-unplugged", wait: 1)
+                }
+            }
             if let artist = app.library.artistsByName.first {
                 MainWindow.select(4)
                 try? await Task.sleep(for: .seconds(2))

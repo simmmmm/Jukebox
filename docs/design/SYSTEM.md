@@ -117,6 +117,25 @@ touw vastknopen waarom de nummers allemaal verschillend zijn", 21 November
   put `.trackListRow()` on each song's row.
 - GNOME: `TrackRow`, `trackList` (`Parts.swift`), `listview.rows`.
 
+### The version filter
+On an album's or a playlist's page, between the hairline and the songs,
+when they hold two or more versions: All, then Original (if any), then the
+others by name ("All · Remastered · Unplugged"). The version is read from
+the title's end (`TrackVersion`, JukeboxKit): "(Unplugged)", "[Live]",
+"(Remastered 2014)", " - Live at Wembley"; "(feat. X)" and "(Part 2)" are
+none. The rows, the head's count and length, Play and Shuffle take the
+chosen version's songs, in the page's order; the "…", the download, Add
+Songs and Start Radio the whole. The rows leave out the marker every one
+would say. The page's own choice, not kept; All when opened. A playlist
+is not reordered under a version; Remove still works. "ik wil bijv alle
+unplugged nummers er uit kunnen filteren of alle remastered als ze er zijn
+zeg maar?" (21 November 2026).
+- Apple: `LibraryVersionPicker` (`Library/LibraryParts.swift`), a
+  segmented `Picker` for up to three kinds, a menu past that;
+  `\.hidesVersion` for the rows (`TrackRow`).
+- GNOME: `versionChoices` (`Parts.swift`), linked toggle buttons;
+  `trackList`'s `name` and `canMove`.
+
 ### Cards and the raised ground
 Your Station before it plays (Home, and Radio on the iPhone), the music to go
 on with and the offline notice stand on a card: `raised`, flat, 18 corners
@@ -256,6 +275,7 @@ Quick Connect) as words in the accent under it.
 | Menu icons | SF Symbols in Apple's menus; none in GNOME's | Each platform's menus as its own apps draw them |
 | Menu checks | A check on Apple; on GNOME only in a submenu (Rating), a toggle in the menu itself as words (Don't Count Plays, Count Plays Again) | GTK keeps a check's room before every item of a menu page that has one, which stood the whole menu in from GNOME's edge ("het lijkt wel of je rekening hebt gehouden met meer iconen qua padding", 21 November 2026) |
 | Destructive items | Remove from a list first, in its list's section; what cannot be undone (Delete) last and alone; Apple's red role on both | GNOME's order, Apple's colour |
+| A choice among a few (the version filter) | Apple's segmented control, a menu past three kinds; GNOME's linked toggle buttons (libadwaita 1.5 has no toggle group) | Each platform's own control for one of a few |
 | Wide window | Linux's layout on the iPad and the Mac; native only where the OS has a place (menu bar, toolbar search, traffic lights) | "ik wil dat de linux app en de apple app 1:1 op elkaar lijken" |
 
 ## Parity checklist
