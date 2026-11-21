@@ -175,6 +175,15 @@ system's own.
   choice, the panel as a drawer under 1280 (`Panel.swift`). Toasts for a
   moment's news (`MainWindow.toast`).
 
+### Settings and Preferences
+The same pages, rows, order, words and footers on every client; the table
+is `settings.md`. Facts as rows, a switch or a choice as the platform's
+own control. A section's actions at its end: on the Mac in one row,
+trailing, as the system's own push buttons, never the quiet twin; on the
+iPhone and the iPad each a row; on Linux a button under the group.
+- Apple: `Settings/SettingsView.swift` (`SettingsActions`, `systemButtons()`).
+- GNOME: `Preferences.swift`.
+
 ### Notices and empty states
 A whole window's state (loading, couldn't load, no music): the platform's
 status page, centred, sentence-case title, one action. A page with nothing

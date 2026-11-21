@@ -215,9 +215,10 @@ requirement" (14 November 2026).
   `library.can(.playlistReorder)` (`ServerCapability`).
 - Asked of the server, never from its name (docs/SERVERS.md,
   "Capabilities"): Copy Share Link in a song's and an album's menu
-  (`.share`, Navidrome); Your Year in Settings' server section, from
-  Playback Reporting (`.playbackReporting`) or else this device's history,
-  with a note there on Jellyfin and Emby saying which; moods and tempo
+  (`.share`, Navidrome); Your Year, a row of its own under the account in
+  Settings › Accounts (Linux: Preferences › Accounts), from Playback
+  Reporting (`.playbackReporting`) or else this device's history, with a
+  note under it on Jellyfin and Emby saying which; moods and tempo
   into the radio's graph where songs carry them (`MoodEdges`).
 - Words name the server by its kind: `library.serverKind` ("your Navidrome
   server").
@@ -345,8 +346,8 @@ Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
   is left. Add Account is the sign-in screen, in a sheet (Linux: over the
   window, with Cancel).
 - **Where**: Settings' account section (rows, the one signed in checked, a
-  tap switches, a swipe or a long press signs out of another; Add Account;
-  Sign Out); the iPad's ≡ menu and the Mac's Account menu
+  tap switches, a swipe or a long press signs out of another; Add
+  Account…; Sign Out…, trailing at the section's end on the Mac); the iPad's ≡ menu and the Mac's Account menu
   (`Settings/AccountMenu.swift`); Linux's primary menu and Preferences ›
   Accounts.
 - **Checked**: JukeboxKit's `SavedAccountsTests` (the migration, and the

@@ -65,9 +65,11 @@ extension View {
 
 /// Settings' words for signing out of the account signed in.
 enum SignOutWords {
+    /// The server and the user, as Linux asks: which of several accounts
+    /// goes is never a guess (docs/design/settings.md).
     static func title(_ app: AppModel) -> Text {
-        if let name = app.credentials?.serverName {
-            return Text("Sign out of \(name)?")
+        if let credentials = app.credentials {
+            return Text("Sign out of \(ServerWords.name(of: credentials)) as \(credentials.userName)?")
         }
         return Text("Sign out?")
     }

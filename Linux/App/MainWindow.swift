@@ -665,15 +665,17 @@ enum MainWindow {
         guard app.phase == .signedIn, let active = app.credentials else { return }
         let name = ServerWords.name(of: account)
         let others = app.accounts.saved.filter { !$0.isSameAccount(as: account) }
+        // The Mac's and the iPhone's words (docs/design/settings.md), with
+        // "computer" for their "Mac" or "iPhone".
         let body: String
-        if others.isEmpty {
-            body = "The library and the songs downloaded to this computer are removed. Your music and playlists stay on your server."
-        } else if account.isSameAccount(as: active), let next = others.first {
-            body = "Its library and the songs downloaded for it are removed from this computer, and Jukebox goes on with \(ServerWords.name(of: next)). Your music and playlists stay on the server."
+        if !account.isSameAccount(as: active) {
+            body = "Jukebox forgets its library, recent stations and downloaded songs on this computer. The music plays on."
+        } else if let next = others.first {
+            body = "Playback stops and Jukebox forgets this account’s library, recent stations and downloaded songs on this computer, then goes on with \(ServerWords.name(of: next)). Your music, playlists and favorites stay on the server."
         } else {
-            body = "Its library and the songs downloaded for it are removed from this computer. Your music and playlists stay on the server."
+            body = "Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this computer. Your music, playlists and favorites stay on the server."
         }
-        let dialog = adw_alert_dialog_new(others.isEmpty ? "Sign Out?" : "Sign Out of \(name) as \(account.userName)?", body)!
+        let dialog = adw_alert_dialog_new("Sign out of \(name) as \(account.userName)?", body)!
         adw_alert_dialog_add_response(ptr(dialog), "cancel", "Cancel")
         adw_alert_dialog_add_response(ptr(dialog), "sign-out", "Sign Out")
         adw_alert_dialog_set_response_appearance(ptr(dialog), "sign-out", ADW_RESPONSE_DESTRUCTIVE)

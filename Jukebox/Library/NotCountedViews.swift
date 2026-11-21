@@ -77,8 +77,13 @@ struct NotCountedSection: View {
                     Button("Count Again") {
                         store.set(item.kind, id: item.id, name: item.name, counted: true)
                     }
+                    #if os(macOS)
+                    // The Mac's settings form: a push button, as its others.
+                    .systemButtons()
+                    #else
                     .buttonStyle(.borderless)
                     .foregroundStyle(Theme.accent)
+                    #endif
                 }
             }
         } header: {
