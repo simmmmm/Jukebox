@@ -39,6 +39,10 @@ final class AudioPlayer: PlayQueue {
     private let network: NetworkCost
     private let nowPlaying: NowPlayingInfo
     private var remote: RemoteCommands?
+    /// Whether this player is the system's: Now Playing, the media keys,
+    /// the lock screen. False only in the Mac's snapshots, set before the
+    /// player is made (NowPlayingInfo.isOn says why).
+    static var claimsSystemControls = true
 
     /// The current entry's item: set before the queue begins it, so while
     /// an entry finishes (`stoppedPosition`) it is still that entry's.
@@ -69,8 +73,16 @@ final class AudioPlayer: PlayQueue {
         #endif
         observeEngine()
         observeNotifications()
-        remote = RemoteCommands(player: self)
+        nowPlaying.isOn = Self.claimsSystemControls
+        if Self.claimsSystemControls { remote = RemoteCommands(player: self) }
     }
+
+    #if os(macOS)
+    /// In front again: the Play key is Jukebox's (NowPlayingInfo.claim).
+    func claimNowPlaying() {
+        nowPlaying.claim()
+    }
+    #endif
 
     /// The playing entry's item; none while nothing plays.
     private var playingItem: AVPlayerItem? {
