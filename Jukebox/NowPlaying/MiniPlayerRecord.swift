@@ -1,4 +1,7 @@
-// Plaat, one of the three player bars in the test build (MiniPlayer.swift).
+// Plaat, one of the player bars in the test build (MiniPlayer.swift), and
+// Equalizer, its fourth: the same row in the same place, with play and pause
+// where the record was and the music's levels behind it in place of the
+// cover's tint (`Style`, EqualizerBars).
 //
 // The mini player: what plays, as the page's last lines just above the tab
 // bar, and its record on the tab bar's shoulder. Not a bar: no glass, no
@@ -49,6 +52,16 @@ import SwiftUI
 
 #if os(iOS)
 struct RecordMiniPlayer: View {
+    /// Plaat's record and tinted ground, or Equalizer's plain button and
+    /// bars. All the rest, the words, the heart, next, the swipe, the
+    /// inset, are one.
+    enum Style {
+        case record
+        case equalizer
+    }
+
+    var style: Style = .record
+
     @Environment(AppModel.self) private var app
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
@@ -158,8 +171,13 @@ struct RecordMiniPlayer: View {
             if showsNext {
                 nextButton
             }
-            recordButton
-                .padding(.leading, Theme.Space.s)
+            switch style {
+            case .record:
+                recordButton
+                    .padding(.leading, Theme.Space.s)
+            case .equalizer:
+                playButton
+            }
         }
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.width
@@ -240,8 +258,10 @@ struct RecordMiniPlayer: View {
             // through it: "Met zachter bedoel ik dat je er altijd net een
             // beetje doorheen kan kijken" (the photographer, 20 November
             // 2026).
+            // Equalizer's ground is the page's own, flat (tells.md, 2): the
+            // bars over it are the colour.
             Rectangle()
-                .fill(tint.opacity(Self.fullest))
+                .fill((style == .equalizer ? Theme.ground : tint).opacity(Self.fullest))
                 .mask {
                     VStack(spacing: 0) {
                         LinearGradient(colors: [.black.opacity(0.25), .black], startPoint: .top, endPoint: .bottom)
@@ -249,6 +269,9 @@ struct RecordMiniPlayer: View {
                         Color.black
                     }
                 }
+            if style == .equalizer {
+                EqualizerBars()
+            }
         }
         // The arch, coming in over some 48 to 56 points along its curve.
         // Drawn past the ground's own edges, so its blur fades only along
@@ -292,6 +315,25 @@ struct RecordMiniPlayer: View {
             }
             .frame(width: Self.ring, height: Self.ring)
             .contentShape(.circle)
+        }
+        .buttonStyle(.plain)
+        .disabled(!player.hasTrack)
+        .accessibilityLabel(player.isPlaying ? "Pause" : "Play")
+    }
+
+    /// Equalizer's play and pause: a plain glyph as the heart and next are,
+    /// a size up, as it is the one the thumb comes for.
+    private var playButton: some View {
+        Button {
+            guard !isSwiping else { return }
+            player.togglePlayPause()
+        } label: {
+            Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
+                .font(.title2)
+                .foregroundStyle(.primary)
+                .contentTransition(.symbolEffect(.replace))
+                .frame(width: Self.glyph, height: Self.glyph)
+                .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .disabled(!player.hasTrack)
@@ -446,7 +488,8 @@ struct RecordMiniPlayer: View {
     /// glyphs.
     private var showsNext: Bool {
         guard dynamicTypeSize <= .large, rowWidth > 0 else { return false }
-        let taken = Self.ring + Theme.Space.s + 2 * Self.glyph
+        let play = style == .record ? Self.ring + Theme.Space.s : Self.glyph
+        let taken = play + 2 * Self.glyph
         return rowWidth - taken >= Self.titleLeast
     }
 
@@ -672,6 +715,8 @@ private struct RecordMiniPlayerRing: View {
 /// Not iOS 26's bottom accessory: that is the glass capsule he did not want.
 /// The inset itself, and its ease in and out, are MiniBarFoot's.
 struct RecordMiniPlayerBar: View {
+    var style: RecordMiniPlayer.Style = .record
+
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
 
@@ -691,7 +736,7 @@ struct RecordMiniPlayerBar: View {
                     .frame(height: RecordMiniPlayer.clearance)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)
-                RecordMiniPlayer()
+                RecordMiniPlayer(style: style)
             }
             .transition(.opacity)
         }

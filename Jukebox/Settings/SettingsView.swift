@@ -1019,7 +1019,7 @@ private struct SettingsLyricsSection: View {
 }
 
 #if os(iOS)
-/// The test build's three player bars (NowPlaying/MiniPlayer.swift), to be
+/// The test build's four player bars (NowPlaying/MiniPlayer.swift), to be
 /// tried on the phone: "Kun je een soort debug versie maken met alle drie de
 /// versies: Spotify, glas en plaat" (the photographer, 20 November 2026).
 /// Marked as a test, so it is not taken for a setting to keep.
@@ -1037,7 +1037,7 @@ private struct SettingsMiniBarSection: View {
         } header: {
             SettingsHeader("Player Bar (Test)")
         } footer: {
-            Text("Which of the three player bars above the tabs this build shows. It changes at once.")
+            Text("Which of the four player bars above the tabs this build shows. It changes at once.")
         }
     }
 }

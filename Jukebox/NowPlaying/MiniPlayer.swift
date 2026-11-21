@@ -1,4 +1,4 @@
-// The mini player, three ways in one build, to be tried on the phone: "Kun je
+// The mini player, four ways in one build, to be tried on the phone: "Kun je
 // een soort debug versie maken met alle drie de versies: Spotify, glas en
 // plaat" (the photographer, 20 November 2026). Each is its design branch's,
 // as it was there:
@@ -14,9 +14,16 @@
 //     the record on the tab bar's shoulder. The one he chose in the end,
 //     and so the default: "Denk dat ik btw toch voor de plaat wil gaan"
 //     (20 November 2026).
+//   - Equalizer (MiniPlayerRecord.swift too, its `.equalizer` style):
+//     Plaat's row and place, a plain play and pause where the record was,
+//     and behind it the music's own levels as quiet bars (LevelMeter):
+//     "Denk dat ik toch nog een vierde wil waarbij we het meer jukeboxerig
+//     maken door ipv de gradient er een uhh van die equalizer bars er achter
+//     zetten die echt zijn wel en dan kan de plaat ook weg voor gewoon een
+//     play pause knop", and "houd t wel lekker rustig" (21 November 2026).
 //
 // Settings › Library › Player Bar (test) chooses, and the choice holds at
-// once, on every tab; `-miniBarVariant spotify|glas|plaat` at launch does
+// once, on every tab; `-miniBarVariant spotify|glas|plaat|equalizer` at launch does
 // the same (UserDefaults' argument domain), for the walk.
 //
 // The tabs' alone (the iPhone, a narrow iPad window). The wide window, the
@@ -27,7 +34,7 @@ import JukeboxKit
 import SwiftUI
 
 #if os(iOS)
-/// Which of the three, in UserDefaults. Plaat until another is chosen: of
+/// Which of the four, in UserDefaults. Plaat until another is chosen: of
 /// the three tried on the phone, the one he chose in the end (20 November
 /// 2026), the other two kept for now to compare again. "glass" and "record" are read
 /// too, as "glas" and "plaat".
@@ -35,6 +42,7 @@ enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
     case spotify
     case glass
     case record
+    case equalizer
 
     static let key = "miniBarVariant"
     /// The one default, for every @AppStorage that reads the choice: the
@@ -42,11 +50,17 @@ enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
     /// system's bar shows under Glas's own tabs.
     static let standard = MiniBarVariant.record
 
+    /// The one chosen now, for what is not a view (AudioPlayer's tap).
+    static var chosen: MiniBarVariant {
+        UserDefaults.standard.string(forKey: key).flatMap(MiniBarVariant.init(rawValue:)) ?? standard
+    }
+
     init?(rawValue: String) {
         switch rawValue.lowercased() {
         case "spotify": self = .spotify
         case "glas", "glass": self = .glass
         case "plaat", "record": self = .record
+        case "equalizer", "eq": self = .equalizer
         default: return nil
         }
     }
@@ -56,6 +70,7 @@ enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
         case .spotify: "spotify"
         case .glass: "glas"
         case .record: "plaat"
+        case .equalizer: "equalizer"
         }
     }
 
@@ -66,12 +81,14 @@ enum MiniBarVariant: RawRepresentable, CaseIterable, Identifiable {
         case .spotify: "Spotify"
         case .glass: "Glass"
         case .record: "Record"
+        case .equalizer: "Equalizer"
         }
     }
 
-    /// Plaat keeps the system's tab bar; the other two draw their own.
+    /// Plaat and Equalizer keep the system's tab bar; the other two draw
+    /// their own.
     var hidesSystemTabBar: Bool {
-        self != .record
+        self == .spotify || self == .glass
     }
 }
 
@@ -100,6 +117,8 @@ struct MiniBarFoot: ViewModifier {
                     GlassTabFoot(isKeyboardUp: isKeyboardUp)
                 case .record:
                     RecordMiniPlayerBar()
+                case .equalizer:
+                    RecordMiniPlayerBar(style: .equalizer)
                 }
             }
             // Plaat's song comes and goes with the page making room for it.
@@ -113,7 +132,7 @@ struct MiniBarFoot: ViewModifier {
     }
 
     private var recordIsShown: Bool {
-        variant == .record && RecordMiniPlayerBar.isShown(player: player, radio: radio)
+        !variant.hidesSystemTabBar && RecordMiniPlayerBar.isShown(player: player, radio: radio)
     }
 }
 

@@ -216,6 +216,11 @@ final class AudioPlayer: PlayQueue {
 
     private func makeLoaded(_ url: URL, entryID: UUID, playSessionID: String) -> Loaded {
         let item = AVPlayerItem(url: url)
+        #if os(iOS)
+        // The Equalizer bar's levels, only while it is the bar chosen
+        // (LevelMeter.swift): the other bars leave the audio path alone.
+        if MiniBarVariant.chosen == .equalizer { LevelMeter.shared.attach(to: item) }
+        #endif
         let itemID = ObjectIdentifier(item)
         let observation = PlayerSignals.observeStatus(of: item) { [weak self] in
             Task { @MainActor in self?.itemStatusChanged(itemID) }

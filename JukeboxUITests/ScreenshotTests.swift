@@ -523,6 +523,10 @@ final class Walk {
         // fake server while the walk goes, and the pictures would differ by
         // how far it got.
         app.launchArguments += ["-keepSongs", "NO"]
+        // mini-bar-eq-walk's pictures: the fourth player bar, Equalizer
+        // (MiniPlayer.swift). A line for that branch's walk; off it again
+        // before main.
+        app.launchArguments += ["-miniBarVariant", "equalizer"]
         app.launchArguments += extra
         app.launch()
         try alive("launch")
