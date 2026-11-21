@@ -318,13 +318,19 @@ enum SignInPage {
     /// nothing. Still: the Apple welcome's warm-up, the bands coming on one
     /// by one, waits for motion on Linux.
     private static func markTile() -> Widget {
-        let width: Int32 = 240, height: Int32 = 160
-        let picture = gtk_picture_new()!.size(width: width, height: height).align(horizontal: GTK_ALIGN_CENTER)
+        // Drawn with room around it for the sleeve's and the record's
+        // shadows, which the picture's own edge cut off square: "Je snijd
+        // nu de schaduw af bij t inlogscherm" (the photographer, 21
+        // November 2026).
+        let width: Int32 = 240, height: Int32 = 160, room: Int32 = 32
+        let picture = gtk_picture_new()!.size(width: width + 2 * room, height: height + 2 * room)
+            .align(horizontal: GTK_ALIGN_CENTER)
         observe(picture) {
             let scale = Screen.shared.scale
             Task {
-                guard let drawing = await drawn("welcome sleeve \(width)", width: Double(width), height: Double(height),
-                                                scale: scale, { cr, _ in
+                guard let drawing = await drawn("welcome sleeve \(width) \(room)", width: Double(width + 2 * room),
+                                                height: Double(height + 2 * room), scale: scale, { cr, _ in
+                    cairo_translate(cr, Double(room), Double(room))
                     Draw.welcomeSleeve(cr, scale: scale, width: Double(width))
                 }) else { return }
                 gtk_picture_set_paintable(ptr(picture), drawing.pointer)
