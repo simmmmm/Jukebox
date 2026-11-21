@@ -464,12 +464,14 @@ final class TrackRow {
     }
 
     /// `place`: the number a numbered row shows.
-    func show(_ track: Track, subtitle words: String? = nil, place: Int? = nil) {
+    /// `name` in place of the song's title: under a chosen version, the
+    /// title without the marker every row would say.
+    func show(_ track: Track, subtitle words: String? = nil, place: Int? = nil, name: String? = nil) {
         self.track = track
         menuTracks = [track]
         setText(number, place.map(String.init) ?? "")
         art.show(track.artwork, sleeve: TitleSleeve.Words(track: track))
-        setText(title, track.name)
+        setText(title, name ?? track.name)
         setText(subtitle, words ?? track.artistLine)
         subtitle.isVisible = !(words ?? track.artistLine).isEmpty
         setText(time, clock(track.duration))
@@ -493,16 +495,19 @@ func guests(_ track: Track, besides albumArtist: String? = nil) -> String {
 /// place: `remove` puts Remove from Playlist in a song's menu and on the
 /// Delete key, GNOME's key for removing the item with the focus; `move`
 /// puts Move Up and Move Down in it, for the keyboard, and lets a song be
-/// dragged onto another to take its place.
+/// dragged onto another to take its place, while `canMove` says so (not
+/// under a chosen version: a place among some songs is none in the playlist).
+/// `name` is what a row's title says, when not the song's own.
 func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () -> QueueContext,
-               subtitle: ((Track) -> String)? = nil,
-               remove: ((Int) -> Void)? = nil, move: ((Int, Int) -> Void)? = nil) -> ItemList<Track, TrackRow> {
+               subtitle: ((Track) -> String)? = nil, name: ((Track) -> String?)? = nil,
+               remove: ((Int) -> Void)? = nil, move: ((Int, Int) -> Void)? = nil,
+               canMove: @escaping () -> Bool = { true }) -> ItemList<Track, TrackRow> {
     weak var made: ItemList<Track, TrackRow>?
     let picked = PickedRows { made?.items ?? [] }
     let list = ItemList<Track, TrackRow>(
         make: {
             let row = TrackRow(numbered: numbered, picked: picked)
-            if let move { reorderable(row, move) }
+            if let move { reorderable(row) { if canMove() { move($0, $1) } } }
             return (row.widget, row)
         },
         fill: { row, track, index in
@@ -510,9 +515,10 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
             // Numbered by its place on its disc, not the file's tag
             // (LibraryIndex.placeOnDisc).
             row.show(track, subtitle: subtitle?(track),
-                     place: numbered ? LibraryIndex.placeOnDisc(at: index, in: made?.items ?? tracks) : nil)
+                     place: numbered ? LibraryIndex.placeOnDisc(at: index, in: made?.items ?? tracks) : nil,
+                     name: name?(track))
             row.placeItems = []
-            if let move {
+            if let move, canMove() {
                 if index > 0 { row.placeItems.append(("Move Up", { move(index, index - 1) })) }
                 if index < (made?.items.count ?? 0) - 1 { row.placeItems.append(("Move Down", { move(index, index + 1) })) }
             }
@@ -819,6 +825,28 @@ func playButton(_ title: String = "Play", action: @escaping @MainActor () -> Voi
 /// de buttons allemaal een beetje gek".
 func quietButton(_ title: String, action: @escaping @MainActor () -> Void) -> Widget {
     button(title, "quiet", "page-button", action: action).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
+}
+
+/// The version filter over an album's or a playlist's songs, above them
+/// (Apple's LibraryVersionPicker): All and each kind they hold
+/// (TrackVersion), GNOME's linked toggle buttons, one pressed. "ik wil bijv
+/// alle unplugged nummers er uit kunnen filteren of alle remastered als ze
+/// er zijn zeg maar?" (the photographer, 21 November 2026).
+func versionChoices(_ kinds: [TrackVersion], selected: TrackVersion?,
+                    chosen: @escaping @MainActor (TrackVersion?) -> Void) -> Widget {
+    let group = hbox().css("linked")
+    var first: Widget?
+    for kind in [nil] + kinds.map(Optional.some) {
+        let toggle = gtk_toggle_button_new_with_label(kind?.name ?? "All")!
+        if let first { gtk_toggle_button_set_group(ptr(toggle), ptr(first)) } else { first = toggle }
+        gtk_toggle_button_set_active(ptr(toggle), kind == selected ? 1 : 0)
+        on(toggle, "toggled") {
+            if gtk_toggle_button_get_active(ptr(toggle)) != 0 { chosen(kind) }
+        }
+        append(toggle, to: group)
+    }
+    gtk_widget_set_margin_bottom(group, 16)
+    return group.align(horizontal: GTK_ALIGN_START)
 }
 
 /// Every other action: a word in the accent.

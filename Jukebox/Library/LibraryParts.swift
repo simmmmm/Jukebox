@@ -77,6 +77,40 @@ struct LibraryStatusView: View {
     }
 }
 
+/// The version filter over an album's or a playlist's songs, above them:
+/// All, then each kind they hold (TrackVersion: Original first). Shown
+/// only when they hold two or more. The photographer, 21 November 2026:
+/// "ik wil bijv alle unplugged nummers er uit kunnen filteren of alle
+/// remastered als ze er zijn zeg maar?". The choice is the page's, not
+/// kept. Segmented while the choices fit (All and three kinds); a menu
+/// past that, as a segmented control of six reads as nothing on an iPhone.
+struct LibraryVersionPicker: View {
+    let kinds: [TrackVersion]
+    @Binding var chosen: TrackVersion?
+
+    var body: some View {
+        if kinds.count <= 3 {
+            picker
+                .pickerStyle(.segmented)
+                .fixedSize()
+        } else {
+            picker
+                .pickerStyle(.menu)
+                .fixedSize()
+        }
+    }
+
+    private var picker: some View {
+        Picker("Version", selection: $chosen) {
+            Text("All").tag(TrackVersion?.none)
+            ForEach(kinds, id: \.self) { kind in
+                Text(kind.name).tag(TrackVersion?.some(kind))
+            }
+        }
+        .labelsHidden()
+    }
+}
+
 /// A list's empty state: nothing found for the filter, or the library's status.
 struct LibraryEmptyState: View {
     let query: String

@@ -110,6 +110,12 @@ private struct Round {
                 app.navigator.searchQuery = app.library.artistsByName.first.map { String($0.name.prefix(4)) } ?? "a"
                 app.navigator.place = .search
             }
+            // The version filter over the demo's album of remastered and
+            // unplugged songs, as the photographer's Oasis album.
+            await shot("album-versions") {
+                app.navigator.place = .library(.albums)
+                if let album = album(named: "Lantern Hours (25th Anniversary)", in: app) { app.navigator.open(.album(album)) }
+            }
             // No Settings: its window's tabs live in a toolbar, which an
             // offscreen window does not draw, so the picture came out broken.
             // The store's walk on GitHub has it.
