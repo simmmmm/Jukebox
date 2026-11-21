@@ -39,6 +39,20 @@ final class AppSettings {
         }
     }
 
+    /// Enhance Radio with Last.fm: on, the radio asks Last.fm who sounds like
+    /// whom; off, it makes no call there at all, with no key, Jukebox's or
+    /// the listener's, and plays from the library alone, as a build without
+    /// a key does. "is het nodig? misschien iets van 'enhance radio with
+    /// last.fm' ?" (the photographer, 21 November 2026), once the app's own
+    /// key meant Last.fm was always asked. On by default. What Last.fm said
+    /// before stays on disk.
+    var useLastFM: Bool {
+        didSet {
+            defaults.set(useLastFM, forKey: Keys.useLastFM)
+            if useLastFM != oldValue { Stats.track(.settingChanged, ["name": "lastfm", "value": Stats.onOff(useLastFM)]) }
+        }
+    }
+
     /// The listener's own Last.fm key, optional: used in place of the app's
     /// (`appLastFMKey`) when set. Empty: none. Kept in UserDefaults, not the
     /// keychain: an API key for public data, not a password.
@@ -250,6 +264,7 @@ final class AppSettings {
         wifiQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.wifiQuality) ?? "") ?? .original
         cellularQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.cellularQuality) ?? "") ?? .normal
         normalizeVolume = defaults.object(forKey: Keys.normalizeVolume) as? Bool ?? true
+        useLastFM = defaults.object(forKey: Keys.useLastFM) as? Bool ?? true
         lastFMAPIKey = defaults.string(forKey: Keys.lastFMAPIKey) ?? ""
         lastFMUser = defaults.string(forKey: Keys.lastFMUser) ?? ""
         autoplay = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
@@ -270,12 +285,15 @@ final class AppSettings {
         hiddenPages = Set((defaults.stringArray(forKey: Keys.hiddenPages) ?? []).compactMap(Page.init(rawValue:)))
     }
 
-    var hasLastFM: Bool { !lastFMKey.isEmpty }
+    /// Last.fm is asked: switched on, and a key to ask with. Every call the
+    /// radio makes there goes through this (RadioController.makeService).
+    var hasLastFM: Bool { useLastFM && !lastFMKey.isEmpty }
 
     private enum Keys {
         static let wifiQuality = "wifiQuality"
         static let cellularQuality = "cellularQuality"
         static let normalizeVolume = "normalizeVolume"
+        static let useLastFM = "useLastFM"
         static let lastFMAPIKey = "lastFMAPIKey"
         static let lastFMUser = "lastFMUser"
         static let adventurousness = "adventurousness"

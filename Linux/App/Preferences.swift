@@ -61,7 +61,22 @@ enum Preferences {
             "Find Lyrics Online", "When your server has none for a song, ask LRCLIB (lrclib.net).",
             settings.findLyricsOnline) { settings.findLyricsOnline = $0 })
 
+        // Enhance Radio with Last.fm (AppSettings.useLastFM), as the iPhone's,
+        // the iPad's and the Mac's Settings › Radio: "is het nodig? misschien
+        // iets van 'enhance radio with last.fm' ?" (the photographer, 21
+        // November 2026). Off, the key and the username go from the page,
+        // and the radio plays from the library and what Last.fm said before.
+        let enhance = group(nil, on: radioPage)
         let radio = group("Last.fm", on: radioPage)
+        radio.isVisible = settings.useLastFM
+        adw_preferences_group_add(ptr(enhance), toggle(
+            "Enhance Radio with Last.fm",
+            "Artists and songs are looked up on Last.fm to find what sounds alike. Nothing about you is sent, unless you add your Last.fm username.",
+            settings.useLastFM) {
+            settings.useLastFM = $0
+            radio.isVisible = $0
+            app.radio.lastFMKeyChanged()
+        })
         let saveTypedKey = lastFM(on: radio, in: dialog)
         adw_preferences_group_set_description(
             ptr(radio), AppSettings.appLastFMKey.isEmpty
@@ -262,7 +277,7 @@ enum Preferences {
         // The saved key, asked about again each time Preferences opens, as
         // the iPhone's Settings does: a revoked key shows here rather than as
         // a quieter radio. Quietly; only a refusal is said, and the key stays.
-        if settings.hasOwnLastFMKey {
+        if settings.useLastFM, settings.hasOwnLastFMKey {
             let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
             Task {
                 let check = await LastFMClient(apiKey: key).validateKey()
@@ -274,6 +289,8 @@ enum Preferences {
         }
         return {
             isClosed = true
+            // Switched off, Last.fm is not asked, typed or not.
+            guard settings.useLastFM else { return }
             // Not one Last.fm already answered about.
             if entry.isVisible, !isChecking, gtk_widget_has_css_class(entry, "error") == 0 { save() }
             if user.isVisible, gtk_widget_has_css_class(user, "error") == 0 { saveUser() }

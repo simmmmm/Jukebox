@@ -487,9 +487,13 @@ final class RadioController {
         }
     }
 
-    /// Settings changed the Last.fm key, or the listener's Last.fm name.
-    /// Without a key the files' genres and this device's history alone.
+    /// Settings changed the Last.fm key, the listener's Last.fm name, or
+    /// Enhance Radio with Last.fm. Without a key, or switched off, the
+    /// files' genres and this device's history alone. Off, a station's
+    /// questions still waiting for their turn are dropped too, so no call
+    /// leaves after the switch (each waits for its slot, then checks).
     func lastFMKeyChanged() {
+        if !settings.hasLastFM { cancelSources() }
         enrichTask?.cancel()
         enrichTask = nil
         tagged = nil

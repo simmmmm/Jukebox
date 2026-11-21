@@ -128,6 +128,16 @@ from `LASTFM_APP_KEY` in `.env` or the environment (`dev/linux-build.sh`
 writes the gitignored `Linux/App/AppKeys.swift`). A build without it has
 none, and the radio works from the library alone, as before.
 
+Enhance Radio with Last.fm (Settings › Radio, Preferences › Radio on
+Linux; `AppSettings.useLastFM`, on by default) says no to all of it: "is
+het nodig? misschien iets van 'enhance radio with last.fm' ?" (the
+photographer, 21 November 2026). Off, `hasLastFM` is false whatever the
+key: the service has no client, so no new similar artists or songs, no
+tags, no scrobbles, the server's mix where it has one. Switched off
+mid-session, the questions still waiting are dropped
+(`RadioController.lastFMKeyChanged`). Last.fm's answers on disk stay
+and are still used.
+
 ### Last.fm's tags
 
 Tags are the radio's weakest link (`build/research/radio.md`, 4.4; "doe

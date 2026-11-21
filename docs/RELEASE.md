@@ -68,7 +68,8 @@ photographer, 16 November 2026).
 > turns that off. Lyrics your server does not have are looked up at LRCLIB
 > by the song's title, artist, album and length; Find Lyrics Online in
 > Settings turns that off too. The radio asks Last.fm which artists and
-> songs sound alike, by artist names and song titles.
+> songs sound alike, by artist names and song titles; Enhance Radio with
+> Last.fm in Settings turns that off.
 
 **Keywords** (100, comma-separated, no spaces needed):
 `jellyfin,navidrome,subsonic,music server,self-hosted,radio,flac,offline,library,player,nas,plex`
@@ -148,7 +149,8 @@ Published 16 November 2026.
   in the keychain; lyrics are looked up at LRCLIB with title, artist, album
   and length, and the radio asks Last.fm (with Jukebox's key, or the
   listener's) by artist names and song titles: neither is data about the
-  person.
+  person. Last.fm is on by default and Settings › Radio › Enhance Radio
+  with Last.fm turns it off (21 November 2026); the label is unchanged.
   Sign In with Plex (17 November 2026) asks plex.tv, the listener's own
   Plex account, for their servers; nothing of it reaches the developer, so
   the label is unchanged (docs/STATS.md, "The App Store").

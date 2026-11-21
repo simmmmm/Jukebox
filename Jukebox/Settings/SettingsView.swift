@@ -222,6 +222,7 @@ private struct SettingsPageForm: View {
                 if !isWide { SettingsLyricsSection() }
             case .radio:
                 SettingsRadioSection()
+                SettingsLastFMSwitchSection()
                 SettingsLastFMSection()
             case .library:
                 SettingsLibrarySection()
@@ -763,6 +764,42 @@ private struct SettingsRadioSection: View {
 
 // MARK: - Last.fm
 
+/// Enhance Radio with Last.fm (`AppSettings.useLastFM`): since the app has
+/// a key of its own, Last.fm was asked on every device with no way to say
+/// no. "is het nodig? misschien iets van 'enhance radio with last.fm' ?"
+/// (the photographer, 21 November 2026). Off, the key and the username go
+/// from the page, and the radio plays from the library and what Last.fm
+/// said before. As Linux's Preferences › Radio.
+private struct SettingsLastFMSwitchSection: View {
+    @Environment(AppSettings.self) private var settings
+    @Environment(RadioController.self) private var radio
+    @Environment(\.isWide) private var isWide
+
+    init() {}
+
+    private var detail: LocalizedStringKey {
+        "Artists and songs are looked up on Last.fm to find what sounds alike. Nothing about you is sent, unless you add your Last.fm username."
+    }
+
+    var body: some View {
+        @Bindable var settings = settings
+        Section {
+            // Wide, the line in the row, as Linux's subtitle and Playback's
+            // rows; on the iPhone the section's footer.
+            Toggle(isOn: $settings.useLastFM) {
+                if isWide {
+                    SettingsDetailLabel(title: "Enhance Radio with Last.fm", detail: detail)
+                } else {
+                    Text("Enhance Radio with Last.fm")
+                }
+            }
+            .onChange(of: settings.useLastFM) { _, _ in radio.lastFMKeyChanged() }
+        } footer: {
+            if !isWide { Text(detail) }
+        }
+    }
+}
+
 /// The listener's own Last.fm key — the photographer's choice (8 November
 /// 2026): the radio works without it, and knows who sounds like whom far
 /// better with it. A key is kept only once Last.fm has accepted it, so a
@@ -806,7 +843,12 @@ private struct SettingsLastFMSection: View {
 
     private var isEditing: Bool { !settings.hasOwnLastFMKey || isChanging }
 
-    var body: some View {
+    /// Off (Enhance Radio with Last.fm), none of it: no key, no name, no check.
+    @ViewBuilder var body: some View {
+        if settings.useLastFM { section }
+    }
+
+    private var section: some View {
         Section {
             if isEditing {
                 if settings.usesAppLastFMKey {
@@ -888,7 +930,8 @@ private struct SettingsLastFMSection: View {
     /// Last.fm asked; only a name it knows, with plays it shows, is kept.
     /// Emptied, the name goes: the clock then reads this device alone.
     private func saveUser() {
-        guard let typed = userDraft.map(Self.trimmed), userStatus != .checking else { return }
+        // The row leaves when Last.fm is switched off: nothing is asked then.
+        guard settings.useLastFM, let typed = userDraft.map(Self.trimmed), userStatus != .checking else { return }
         guard typed != Self.trimmed(settings.lastFMUser) else {
             userDraft = nil
             return
@@ -953,7 +996,7 @@ private struct SettingsLastFMSection: View {
     /// the typed key stays in the field to be put right.
     private func save() {
         let key = Self.trimmed(draft)
-        guard !key.isEmpty, status != .checking else { return }
+        guard settings.useLastFM, !key.isEmpty, status != .checking else { return }
         checkTask?.cancel()
         status = .checking
         checkTask = Task {
@@ -991,7 +1034,7 @@ private struct SettingsLastFMSection: View {
     /// radio. Quietly; only a refusal is said, and the key stays. The
     /// listener's alone: Jukebox's own is not theirs to put right.
     private func recheck() {
-        guard !didRecheck, settings.hasOwnLastFMKey else { return }
+        guard !didRecheck, settings.useLastFM, settings.hasOwnLastFMKey else { return }
         didRecheck = true
         let key = Self.trimmed(settings.lastFMAPIKey)
         checkTask = Task {

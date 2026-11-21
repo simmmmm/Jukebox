@@ -146,6 +146,12 @@ final class ScreenshotTests: XCTestCase {
             try walk.tap(app.navigationBars["Playback"].buttons.element(boundBy: 0), "Settings › Playback: back", timeout: 2)
             walk.pause(1)
         }
+        // Radio: the dial, Enhance Radio with Last.fm and Last.fm's key.
+        if settings, try walk.openSettingsPage("radio", "Radio") {
+            walk.picture("settings-radio")
+            try walk.tap(app.navigationBars["Radio"].buttons.element(boundBy: 0), "Settings › Radio: back", timeout: 2)
+            walk.pause(1)
+        }
         if settings { try walk.closeSheet(with: "Done") }
 
         _ = try walk.startYourStation()
