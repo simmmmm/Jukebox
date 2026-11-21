@@ -45,7 +45,7 @@ final class AppModel {
     let panel = PanelState()
 
     init() {
-        identity = ClientIdentity(clientName: "Jukebox", clientVersion: "1.1",
+        identity = ClientIdentity(clientName: "Jukebox", clientVersion: appVersion,
                                   deviceName: ProcessInfo.processInfo.hostName, deviceID: Self.deviceID())
         settings = AppSettings()
         library = LibraryStore()

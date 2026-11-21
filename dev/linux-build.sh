@@ -11,6 +11,15 @@
 # or newer.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+
+# One version on every client: Linux's (Linux/App/Version.swift) is the
+# Apple apps' (project.yml), or the build stops.
+apple=$(sed -n 's/^ *MARKETING_VERSION: "\(.*\)"$/\1/p' project.yml)
+linux=$(sed -n 's/^let appVersion = "\(.*\)"$/\1/p' Linux/App/Version.swift)
+if [[ $apple != "$linux" ]]; then
+  echo "Linux/App/Version.swift says $linux, project.yml says $apple: make them one." >&2
+  exit 1
+fi
 # Tagged by the Dockerfile itself: a package added there (libsoup, 18
 # November 2026) builds a new image rather than using the old one; the
 # plain name follows the newest, for dev/linux-screens.sh.
