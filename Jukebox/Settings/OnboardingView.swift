@@ -152,6 +152,8 @@ struct OnboardingView: View {
                 OnboardingButtonLabel(title: "Continue", isWorking: isConnecting)
             }
             .buttonStyle(.prominent)
+            // Centred under the fields, as the welcome above them and Linux's.
+            .frame(maxWidth: .infinity)
             .disabled(trimmedAddress.isEmpty)
             .accessibilityLabel(isConnecting ? Text("Connecting") : Text("Continue"))
             .padding(.top, Theme.Space.s)
@@ -422,7 +424,8 @@ private struct OnboardingAccountForm: View {
                 OnboardingButtonLabel(title: "Sign In", isWorking: isSigningIn)
             }
             .buttonStyle(.prominent)
-            .fixedSize(horizontal: isWide, vertical: false)
+            // Centred under the fields, as the welcome above them and Linux's.
+            .frame(maxWidth: .infinity)
             // A Jellyfin user may have no password: only the name is needed.
             .disabled(trimmedUsername.isEmpty)
             .accessibilityLabel(isSigningIn ? Text("Signing In") : Text("Sign In"))
@@ -435,6 +438,8 @@ private struct OnboardingAccountForm: View {
                     Text("Use Quick Connect")
                 }
                 .buttonStyle(.secondary)
+                // Centred under the fields, as the welcome above them and Linux's.
+                .frame(maxWidth: .infinity)
                 .disabled(isSigningIn)
                 Text("Sign in from another Jellyfin app that is already signed in, without typing your password here.")
                     .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
@@ -447,6 +452,8 @@ private struct OnboardingAccountForm: View {
                     Text("Use an API Key")
                 }
                 .buttonStyle(.secondary)
+                // Centred under the fields, as the welcome above them and Linux's.
+                .frame(maxWidth: .infinity)
                 .disabled(isSigningIn)
             }
         }
@@ -507,6 +514,8 @@ private struct OnboardingAccountForm: View {
                 Text("Use a Token")
             }
             .buttonStyle(.secondary)
+            // Centred under the fields, as the welcome above them and Linux's.
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -542,7 +551,8 @@ private struct OnboardingAccountForm: View {
                 OnboardingButtonLabel(title: "Sign In", isWorking: isSigningIn)
             }
             .buttonStyle(.prominent)
-            .fixedSize(horizontal: isWide, vertical: false)
+            // Centred under the fields, as the welcome above them and Linux's.
+            .frame(maxWidth: .infinity)
             .disabled(trimmedAPIKey.isEmpty)
             .accessibilityLabel(isSigningIn ? Text("Signing In") : Text("Sign In"))
             .padding(.top, Theme.Space.s)
@@ -554,6 +564,8 @@ private struct OnboardingAccountForm: View {
                     isPlex ? Text("How to Find a Token") : Text("How to Make a Key")
                 }
                 .buttonStyle(.secondary)
+                // Centred under the fields, as the welcome above them and Linux's.
+                .frame(maxWidth: .infinity)
             }
             Button {
                 usesAPIKey = false
@@ -562,6 +574,8 @@ private struct OnboardingAccountForm: View {
                 isPlex ? Text("Sign In with Plex Instead") : Text("Use a Password Instead")
             }
             .buttonStyle(.secondary)
+            // Centred under the fields, as the welcome above them and Linux's.
+            .frame(maxWidth: .infinity)
             .disabled(isSigningIn)
         }
     }
@@ -646,6 +660,8 @@ private struct OnboardingAccountForm: View {
                 Text("Cancel")
             }
             .buttonStyle(.secondary)
+            // Centred under the fields, as the welcome above them and Linux's.
+            .frame(maxWidth: .infinity)
         }
     }
 
@@ -831,6 +847,8 @@ private struct OnboardingWideForm: View {
                     OnboardingButtonLabel(title: "Sign In", isWorking: isWorking)
                 }
                 .buttonStyle(.prominent)
+                // Centred under the fields, as the welcome above them and Linux's.
+                .frame(maxWidth: .infinity)
                 .fixedSize()
                 .disabled(!canSignIn)
                 .accessibilityLabel(isWorking ? Text("Signing In") : Text("Sign In"))
@@ -842,6 +860,8 @@ private struct OnboardingWideForm: View {
                         Text("Use Quick Connect")
                     }
                     .buttonStyle(.secondary)
+                    // Centred under the fields, as the welcome above them and Linux's.
+                    .frame(maxWidth: .infinity)
                     .disabled(isWorking)
                 }
                 if (serverSignIn as? any APIKeySignIn) != nil {
@@ -854,6 +874,8 @@ private struct OnboardingWideForm: View {
                         usesAPIKey ? Text("Use a Password Instead") : Text("Use an API Key")
                     }
                     .buttonStyle(.secondary)
+                    // Centred under the fields, as the welcome above them and Linux's.
+                    .frame(maxWidth: .infinity)
                     .disabled(isWorking)
                 }
                 if usesAPIKey, let apiKeyHelp {
@@ -863,6 +885,8 @@ private struct OnboardingWideForm: View {
                         Text("How to Make a Key")
                     }
                     .buttonStyle(.secondary)
+                    // Centred under the fields, as the welcome above them and Linux's.
+                    .frame(maxWidth: .infinity)
                 }
                 // Where Quick Connect is, as on Linux: a Plex server found
                 // at the address is the one signed in to; with none, the
@@ -1043,6 +1067,8 @@ private struct PlexSignInButton: View {
                         Text("Cancel")
                     }
                     .buttonStyle(.secondary)
+                    // Centred under the fields, as the welcome above them and Linux's.
+                    .frame(maxWidth: .infinity)
                 }
                 .frame(maxWidth: .infinity)
             } else if prominent {
@@ -1052,6 +1078,8 @@ private struct PlexSignInButton: View {
                     Text("Sign In with Plex")
                 }
                 .buttonStyle(.prominent)
+                // Centred under the fields, as the welcome above them and Linux's.
+                .frame(maxWidth: .infinity)
             } else {
                 Button {
                     start()
@@ -1059,6 +1087,8 @@ private struct PlexSignInButton: View {
                     Text("Sign In with Plex")
                 }
                 .buttonStyle(.secondary)
+                // Centred under the fields, as the welcome above them and Linux's.
+                .frame(maxWidth: .infinity)
             }
         }
         .confirmationDialog("Which Plex Server?", isPresented: $isChoosing, titleVisibility: .visible) {

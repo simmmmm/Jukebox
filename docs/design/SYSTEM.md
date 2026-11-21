@@ -294,6 +294,9 @@ the iPhone against 400×800. The menus read in the code on both.
   colours on both, the welcome's field ground (`Tokens.Size`,
   `Tokens.Motion`, `Tokens.Art`, `Tokens.field`).
 - **AccentColor**: checked against `Tokens.accent` (`dev/accent-check.sh`).
+- **The iPhone's sign-in**: the compact Sign In stood at the left under a
+  centred welcome (walk of 3d172e5); its buttons and words are centred
+  under the fields now, as the iPad's and Linux's (`OnboardingView.swift`).
 
 ### Still open
 
