@@ -2,7 +2,7 @@
 
 Jukebox - Music player plays the music on your own server. It has no account
 of ours, no ads and no tracking. This page says what leaves your device, and
-where it goes. 16 November 2026.
+where it goes. 21 November 2026.
 
 ## Your music stays with your server
 
@@ -44,10 +44,16 @@ and length. To turn it off: Settings › Find Lyrics Online.
 
 ## Last.fm
 
-The radio asks Last.fm which artists and songs are alike, with artist names
-and song titles, using Jukebox's own key or yours from Settings. With your
-Last.fm username in Settings, it also reads your scrobbles. Nothing is
-written to Last.fm.
+The radio asks Last.fm (`ws.audioscrobbler.com`) which artists and songs
+are alike, with artist names and song titles, using Jukebox's own key or
+yours from Settings. Nothing else about you is sent with them, apart from
+your IP address, as with any request. With your Last.fm username in
+Settings, it also reads your scrobbles. Nothing is written to Last.fm.
+
+It is on by default. **To turn it off: Settings › Radio › Enhance Radio with
+Last.fm** (Preferences › Radio on Linux). Off, Jukebox makes no request to
+Last.fm at all, and the radio chooses from your library and from what
+Last.fm answered before, which stays on your device.
 
 ## Questions
 

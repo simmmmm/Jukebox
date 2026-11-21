@@ -162,7 +162,8 @@ private struct RadioFeed: View {
                 RadioStationShelf(title: "Artist stations", stations: artistStations, measures: measures)
                 RadioStationShelf(title: "Genre stations", stations: genreStations, measures: measures)
                 RadioStationShelf(title: "Decades", stations: decadeStations, measures: measures)
-                if !settings.hasLastFM {
+                // Not when the listener switched Last.fm off: theirs to say.
+                if settings.useLastFM, !settings.hasLastFM {
                     lastFMFooter
                         .padding(.horizontal, Theme.margin)
                 }
