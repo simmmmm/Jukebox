@@ -1,6 +1,6 @@
 # Several servers at once: one library
 
-A design, not built. The photographer, 21 November 2026, about one account
+A design; step 1 is built. The photographer, 21 November 2026, about one account
 being active at a time: "ik zou niet weten waarom we die beperking moeten
 hebben als er meer mogelijk zijn - we krijgen alleen het probleem dat
 verschillende libraries verschillende features gaan hebben dus we moeten dan
@@ -351,6 +351,19 @@ Navidrome test servers, which hold the same 358 songs:
 
 Done when the kit's tests pass and nothing in `Jukebox/` or `Linux/`
 changed.
+
+Built (branch `multi-server-1`). What the table left open, as decided there:
+
+| Case | What `MergedServer` does |
+|---|---|
+| `artist`, `playlistTracks` | by the id, as the rest |
+| An id of no member | the calls that throw: `notFound`; the URLs and `report`: the first member, as it is |
+| `addToPlaylist` with another account's songs | throws `unsupported`, as `createPlaylist` |
+| `createPlaylist` with no songs | the first member |
+| A genre mix without an id; top songs by name alone | the first member with `.instantMix`; each with `.topSongs` in order, the first that has songs |
+| `shareURL` | the item's account; another account's songs are left out of it |
+| `savePlayState`, `playState` | the first member's, its own ids bare, others' tagged (section 6) |
+| A collection station's own id | not tagged: it is a playlist's or a mix's, and the two cannot be told apart |
 
 ## 10. Open questions for him
 
