@@ -95,6 +95,34 @@ if ! command -v xcodegen >/dev/null; then
 fi
 xcodegen generate
 
+# Jukebox's own Last.fm key, so the radio knows who sounds like whom
+# without a key typed into each device: "Ik denk dat een eigen last fm
+# verstandiger is" (the photographer, 21 November 2026). From the runner's
+# file (docs/RELEASE.md, Last.fm's key), never from git: the repository is
+# public. Handed to the four builds below in their environment, which
+# project.yml's `$(LASTFM_APP_KEY)` reads, and not as an argument:
+# xcodebuild repeats its arguments at the top of the log, which is uploaded.
+# Not exported, so the screenshots' builds have none. GitHub's own runners
+# have no file, and build without a key.
+lastfm_file=$HOME/.config/jukebox-ci/lastfm-app-key
+lastfm_key=
+if [[ -r $lastfm_file ]]; then
+  lastfm_key=$(tr -d ' \t\r\n' < "$lastfm_file")
+  echo "::add-mask::$lastfm_key"
+fi
+# The key in a built app's Info.plist, by its length alone; when the runner
+# has one, an app without it is an error.
+lastfm_in() {
+  local plist=$1/Info.plist length
+  if [[ -d $1/Contents ]]; then plist=$1/Contents/Info.plist; fi
+  length=$(/usr/libexec/PlistBuddy -c "Print :LastFMAppKey" "$plist" 2> /dev/null | tr -d '\n' | wc -c | tr -d ' ')
+  echo "Last.fm app key in the $2: $length characters (the runner's: ${#lastfm_key})."
+  if [[ $length != "${#lastfm_key}" ]]; then
+    echo "::error::The $2 lacks the runner's Last.fm key (docs/RELEASE.md, Last.fm's key)."
+    return 1
+  fi
+}
+
 # The errors, once each, without the runner's path, on the summary page.
 report() {
   local log=$1 title=$2
@@ -203,7 +231,7 @@ widget_signed() {
 
 if [[ ${TESTFLIGHT:-false} != true ]]; then
   set +e
-  xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
+  LASTFM_APP_KEY=$lastfm_key xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
     -destination 'generic/platform=iOS' -derivedDataPath build/derived CODE_SIGNING_ALLOWED=NO \
     > build/logs/build.log 2>&1
   status=$?
@@ -214,6 +242,7 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
     carplay_signed build/derived/Build/Products/Debug-iphoneos/Jukebox.app build
     status=$?
     widget_signed build/derived/Build/Products/Debug-iphoneos/Jukebox.app build || status=1
+    lastfm_in build/derived/Build/Products/Debug-iphoneos/Jukebox.app build || status=1
   fi
   set -e
   { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build.log || true; } | sed "s#$PWD/##g" | sort -u > build/logs/errors.txt
@@ -232,7 +261,7 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   # Mac-only error never hides the iPhone's. Signed ad hoc, as its archive
   # is, so the signatures carry the entitlements widget_signed reads.
   set +e
-  xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
+  LASTFM_APP_KEY=$lastfm_key xcodebuild build -project Jukebox.xcodeproj -scheme Jukebox -configuration Debug \
     -destination 'generic/platform=macOS' -derivedDataPath build/derived-mac \
     CODE_SIGNING_ALLOWED=NO \
     > build/logs/build-mac.log 2>&1
@@ -242,6 +271,7 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
   fi
   if [[ $mac_status == 0 ]]; then
     widget_signed build/derived-mac/Build/Products/Debug/Jukebox.app "Mac build" || mac_status=1
+    lastfm_in build/derived-mac/Build/Products/Debug/Jukebox.app "Mac build" || mac_status=1
   fi
   set -e
   { grep -E 'error:|BUILD (SUCCEEDED|FAILED)' build/logs/build-mac.log || true; } \
@@ -292,7 +322,7 @@ auth=(-allowProvisioningUpdates
 # the account had as many as Apple allows: "Your account has reached the
 # maximum number of certificates" (run 28). Ad hoc needs no certificate.
 set +e
-xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
+LASTFM_APP_KEY=$lastfm_key xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
   -destination 'generic/platform=iOS' -archivePath build/Jukebox.xcarchive \
   DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" CODE_SIGNING_ALLOWED=NO \
   > build/logs/archive.log 2>&1
@@ -307,6 +337,7 @@ report build/logs/archive.log "Archive errors"
 [[ $status == 0 ]] || exit $status
 carplay_signed build/Jukebox.xcarchive/Products/Applications/Jukebox.app archive
 widget_signed build/Jukebox.xcarchive/Products/Applications/Jukebox.app archive
+lastfm_in build/Jukebox.xcarchive/Products/Applications/Jukebox.app archive
 
 # destination export leaves the ipa on the runner; upload sends it.
 export_options() {
@@ -371,7 +402,7 @@ else
   # that shows the portal's App Group (docs/RELEASE.md, The widget); a Mac
   # build without the widget and the group is never uploaded.
   set +e
-  xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
+  LASTFM_APP_KEY=$lastfm_key xcodebuild archive -project Jukebox.xcodeproj -scheme Jukebox -configuration Release \
     -destination 'generic/platform=macOS' -archivePath build/Jukebox-mac.xcarchive \
     DEVELOPMENT_TEAM="$APPLE_TEAM_ID" CURRENT_PROJECT_VERSION="${BUILD_NUMBER:-1}" \
     CODE_SIGNING_ALLOWED=NO \
@@ -382,6 +413,7 @@ else
   fi
   if [[ $mac_status == 0 ]]; then
     widget_signed build/Jukebox-mac.xcarchive/Products/Applications/Jukebox.app "Mac archive" || mac_status=1
+    lastfm_in build/Jukebox-mac.xcarchive/Products/Applications/Jukebox.app "Mac archive" || mac_status=1
   fi
   if [[ $mac_status == 0 ]]; then
     xcodebuild -exportArchive -archivePath build/Jukebox-mac.xcarchive \

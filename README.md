@@ -63,11 +63,12 @@ after the iPhone's (`mac_upload=true` in `ci/app.sh`).
 `docs/RELEASE.md` has the rest, and the quick loop on the photographer's
 Mac.
 
-## Last.fm (optional)
+## Last.fm
 
-The radio works from your library alone. Put a free Last.fm API key
-(last.fm/api/account/create) in Settings and it also knows which artists and
-songs sound alike, and the stations get much better. Only artist names and
+The radio asks Last.fm, with Jukebox's own key, which artists and songs
+sound alike, and the stations get much better; a build without the key works
+from your library alone. Your own free key (last.fm/api/account/create) in
+Settings is used instead when set. Only artist names and
 song titles are sent to Last.fm.
 
 ## Development

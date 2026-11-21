@@ -152,9 +152,11 @@ Later: the map's table, his own listening as a station's memory, the
 
 ## The Last.fm key, as it is today
 
-- Set per device: Settings, Last.fm, on the iPhone, the iPad and the Mac;
-  Preferences, Radio, Last.fm, on Linux. It is kept in that device's
-  settings and does not travel: a key on Linux is no key on the iPhone.
+- Jukebox's own, built into every client since 21 November 2026
+  (docs/RADIO.md, Last.fm's key), so no device needs one typed in.
+- The listener's own, optional, in place of it: Settings, Last.fm, on the
+  iPhone, the iPad and the Mac; Preferences, Radio, Last.fm, on Linux. It is
+  kept in that device's settings and does not travel.
 - A key Last.fm refuses later is dropped quietly for that run; only
   Settings says so, when opened.
 - An empty answer is kept for 30 days: "Moans" has no similar songs on

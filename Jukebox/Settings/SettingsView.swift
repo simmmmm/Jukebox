@@ -769,7 +769,11 @@ private struct SettingsRadioSection: View {
 /// typo never takes the radio's Last.fm away. The same flow as Linux's
 /// Preferences ("invullen opslaan bevestiging krijgen van de app", the
 /// photographer, 18 November 2026): paste, Save, Last.fm is asked, and the
-/// key it accepted is shown as dots, with Change and Remove.
+/// key it accepted is shown as dots, with Change and Remove. Since 21
+/// November 2026 the app has a key of its own ("Ik denk dat een eigen last
+/// fm verstandiger is"): without the listener's, the section says Jukebox's
+/// is in use, never showing it, and the field is an optional override;
+/// Remove goes back to Jukebox's.
 private struct SettingsLastFMSection: View {
     private enum KeyStatus: Equatable {
         case idle
@@ -800,14 +804,18 @@ private struct SettingsLastFMSection: View {
 
     init() {}
 
-    private var isEditing: Bool { !settings.hasLastFM || isChanging }
+    private var isEditing: Bool { !settings.hasOwnLastFMKey || isChanging }
 
     var body: some View {
         Section {
             if isEditing {
+                if settings.usesAppLastFMKey {
+                    LabeledContent("API Key", value: "Jukebox's own")
+                }
                 // The platform's own field, in the form's text as Username's
                 // below: in monospace its prompt stood out large on the iPhone.
-                TextField("API Key", text: $draft, prompt: Text("Paste your Last.fm API key"))
+                TextField(settings.usesAppLastFMKey ? "Your Key" : "API Key", text: $draft,
+                          prompt: Text(settings.usesAppLastFMKey ? "Optional" : "Paste your Last.fm API key"))
                     .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.done)
@@ -859,7 +867,9 @@ private struct SettingsLastFMSection: View {
         } header: {
             SettingsHeader("Last.fm")
         } footer: {
-            Text("With a key, the radio knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
+            Text(AppSettings.appLastFMKey.isEmpty
+                 ? "With a key, the radio knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm."
+                 : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
         }
         .onAppear(perform: recheck)
     }
@@ -890,7 +900,7 @@ private struct SettingsLastFMSection: View {
             userStatus = .idle
             return
         }
-        let key = Self.trimmed(settings.lastFMAPIKey)
+        let key = settings.lastFMKey
         userTask?.cancel()
         userStatus = .checking
         userTask = Task {
@@ -956,7 +966,7 @@ private struct SettingsLastFMSection: View {
             if key != Self.trimmed(settings.lastFMAPIKey) {
                 settings.lastFMAPIKey = key
                 radio.lastFMKeyChanged()
-                Stats.track(.lastFMKey, ["state": "added"])
+                Stats.track(.lastFMKey, ["state": "added", "app_key": !AppSettings.appLastFMKey.isEmpty])
             }
             draft = ""
             isChanging = false
@@ -971,16 +981,17 @@ private struct SettingsLastFMSection: View {
         userStatus = .idle
         settings.lastFMAPIKey = ""
         radio.lastFMKeyChanged()
-        Stats.track(.lastFMKey, ["state": "removed"])
+        Stats.track(.lastFMKey, ["state": "removed", "app_key": !AppSettings.appLastFMKey.isEmpty])
         draft = ""
         status = .idle
     }
 
     /// The saved key, asked about again once each time Settings opens, as
     /// before the dots: a revoked key shows here rather than as a quieter
-    /// radio. Quietly; only a refusal is said, and the key stays.
+    /// radio. Quietly; only a refusal is said, and the key stays. The
+    /// listener's alone: Jukebox's own is not theirs to put right.
     private func recheck() {
-        guard !didRecheck, settings.hasLastFM else { return }
+        guard !didRecheck, settings.hasOwnLastFMKey else { return }
         didRecheck = true
         let key = Self.trimmed(settings.lastFMAPIKey)
         checkTask = Task {

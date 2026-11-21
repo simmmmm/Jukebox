@@ -67,8 +67,8 @@ photographer, 16 November 2026).
 > (country and city) from the connection. Share Anonymous Usage in Settings
 > turns that off. Lyrics your server does not have are looked up at LRCLIB
 > by the song's title, artist, album and length; Find Lyrics Online in
-> Settings turns that off too. Last.fm is asked only with your own key, by
-> artist names and song titles.
+> Settings turns that off too. The radio asks Last.fm which artists and
+> songs sound alike, by artist names and song titles.
 
 **Keywords** (100, comma-separated, no spaces needed):
 `jellyfin,navidrome,subsonic,music server,self-hosted,radio,flac,offline,library,player,nas,plex`
@@ -146,8 +146,9 @@ Published 16 November 2026.
 - Everything else: **not collected.** The music, the server's address, the
   user name and the password go only to the listener's own server and stay
   in the keychain; lyrics are looked up at LRCLIB with title, artist, album
-  and length, and with the listener's own Last.fm key the radio asks Last.fm
-  by artist names and song titles: neither is data about the person.
+  and length, and the radio asks Last.fm (with Jukebox's key, or the
+  listener's) by artist names and song titles: neither is data about the
+  person.
   Sign In with Plex (17 November 2026) asks plex.tv, the listener's own
   Plex account, for their servers; nothing of it reaches the developer, so
   the label is unchanged (docs/STATS.md, "The App Store").
@@ -305,6 +306,12 @@ nothing to anyone but the listener's own server and devices.
   the keychain. Such a debug build has no provisioning profile, so it keeps
   the sign-in in the file-based keychain and stays signed in from one build
   to the next (`Jukebox/App/Keychain.swift`).
+- **Last.fm's key**: Jukebox's own (docs/RADIO.md) is read by `ci/app.sh`
+  from `~/.config/jukebox-ci/lastfm-app-key` on the runner, never from git.
+  A new runner gets it once: `mkdir -p ~/.config/jukebox-ci`, the key alone
+  in that file, `chmod 600` it. The log then says its length in each build,
+  and a runner with the file but an app without the key fails the run.
+  GitHub's own runners have no file and build without one.
 
 ## Before submitting
 

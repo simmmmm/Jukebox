@@ -107,6 +107,11 @@ targets:
         INIntentsSupported: [INPlayMediaIntent]
         INSupportedMediaCategories: [INMediaCategoryMusic]
         NSSiriUsageDescription: Siri plays the albums, artists, playlists and stations of your library when you ask for them by name.
+        # Jukebox's own Last.fm key (AppSettings.appLastFMKey), from the
+        # build's environment: ci/app.sh reads it from the runner's file.
+        # Empty without one. Never set in this file: the repository is
+        # public, and a setting here would beat the environment.
+        LastFMAppKey: $(LASTFM_APP_KEY)
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.tijmen.Jukebox
