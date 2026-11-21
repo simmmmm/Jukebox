@@ -1,6 +1,7 @@
-// Your Year on Linux: a subpage of Preferences, opened from the Accounts
-// group, as GNOME's Settings opens a detail (the iPhone's is a sheet from
-// Settings' server section). The year in the serif, the minutes and plays,
+// Your Year on Linux: a place in the sidebar, last, and the primary menu's
+// Your Year (MainWindow). It was a subpage of Preferences, and left it: the
+// year's music is content, not a setting (21 November 2026); the iPhone's
+// is a row in Library, the Mac's a place too. The year in the serif, the minutes and plays,
 // the months as bars, then the songs, artists, albums and genres, each a
 // group of rows. YourYearLoader (shared) has the sources and the words.
 
@@ -12,23 +13,27 @@ enum YourYearPage {
     /// The covers on the page, kept while it shows.
     private static var arts: [Art] = []
 
-    static func make() -> UnsafeMutablePointer<AdwNavigationPage> {
+    /// The page under the sidebar's header (MainWindow's sections).
+    static func make() -> Widget {
         let page = adw_preferences_page_new()!
-        let toolbar = adw_toolbar_view_new()!
-        adw_toolbar_view_add_top_bar(ptr(toolbar), adw_header_bar_new())
-        adw_toolbar_view_set_content(ptr(toolbar), page)
         let spinner = gtk_spinner_new()!.size(width: 32, height: 32).align(horizontal: GTK_ALIGN_CENTER)
         gtk_spinner_start(ptr(spinner))
         let waiting = adw_preferences_group_new()!
         adw_preferences_group_add(ptr(waiting), spinner)
         adw_preferences_page_add(ptr(page), ptr(waiting))
+        // Held while the year is read: the place is made anew each time it
+        // is chosen, so this one may have gone by the time it comes.
+        g_object_ref(raw(page))
         Task {
             let year = await YourYearLoader.load(year: YourYearLoader.year(), server: app.server,
                                                  history: app.history.history, library: app.library)
-            adw_preferences_page_remove(ptr(page), ptr(waiting))
-            fill(page, year)
+            if gtk_widget_get_parent(page) != nil {
+                adw_preferences_page_remove(ptr(page), ptr(waiting))
+                fill(page, year)
+            }
+            g_object_unref(raw(page))
         }
-        return adw_navigation_page_new(toolbar, "Your Year")!
+        return page
     }
 
     private static func fill(_ page: Widget, _ year: YourYear) {

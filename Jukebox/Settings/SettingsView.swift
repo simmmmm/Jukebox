@@ -283,50 +283,51 @@ private struct SettingsAccountSection: View {
     /// Another saved account, asked about before it is signed out of.
     @State private var leaving: ServerCredentials?
     @State private var isAdding = false
-    @State private var isShowingYear = false
-    /// Why the switch tapped here did not happen, under the rows.
-    @State private var switchProblem: String?
+    /// Why the switch to a card did not happen, under that card: its
+    /// folder's name and the words.
+    @State private var switchProblem: (account: String, words: String)?
 
     init() {}
 
-    /// Three sections, as Linux's Accounts page has them in its order: the
-    /// accounts kept, the one signed in with its actions at the end, and
-    /// Your Year with the note on how it counts.
+    /// Each account kept as a card, the cards a radio group: one is always
+    /// the one signed in. The photographer, 21 November 2026: "kun je op
+    /// alle versies een toegevoegde server als een soort card tonen die
+    /// werken als een soort radiobutton (er moet altijd 1 server actief
+    /// zijn)". Each card its own section, so the grouped form draws it as
+    /// one (no card of Jukebox's own in the system's: tells 6). Then Add
+    /// Account… and Sign Out… of the one signed in, as on Linux.
     var body: some View {
-        // More than one account kept: each a row, the one signed in
-        // checked, a tap switches (Home, afresh), a swipe or a long press
-        // signs out of that one (Accounts.swift).
-        if app.accounts.saved.count > 1 {
+        ForEach(cards, id: \.self) { account in
+            let isActive = app.credentials?.isSameAccount(as: account) == true
+            let key = OfflinePaths.account(for: account)
             Section {
-                ForEach(app.accounts.saved, id: \.self) { account in
-                    accountRow(account)
+                AccountCard(account: account, isActive: isActive, choose: { choose(account) }) {
+                    AccountRadio(isOn: isActive)
+                }
+                .disabled(app.isSwitching)
+                .swipeActions {
+                    if !isActive {
+                        Button("Sign Out", role: .destructive) { leaving = account }
+                    }
+                }
+                .contextMenu {
+                    if !isActive {
+                        Button("Sign Out", role: .destructive) { leaving = account }
+                    }
                 }
             } footer: {
-                // Why the switch clicked here did not happen, under the rows.
-                if let switchProblem { Text(switchProblem) }
+                // Why the switch to this one did not happen; under the one
+                // signed in, the server's own note (Your Year is in the
+                // library now; whether it counts every device is the
+                // server's doing).
+                if let switchProblem, switchProblem.account == key {
+                    Text(switchProblem.words)
+                } else if isActive, let note = ServerWords.playbackReportingNote(account) {
+                    Text(note)
+                }
             }
         }
         Section {
-            if let credentials = app.credentials {
-                // Its name, and under it which kind of server it is and its
-                // version ("Navidrome 0.64.2"): the sign-in screen's words.
-                LabeledContent {
-                    VStack(alignment: .trailing, spacing: Theme.Space.xs) {
-                        Text(verbatim: credentials.serverName)
-                        Text(verbatim: ServerWords.product(credentials.kind, version: credentials.serverVersion))
-                            .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
-                    }
-                } label: {
-                    Text("Server")
-                }
-                LabeledContent("User", value: credentials.userName)
-                LabeledContent("Address") {
-                    Text(verbatim: credentials.serverURL.absoluteString)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
-                }
-            }
             SettingsActions {
                 // Linux's words: "…", as each asks something before it acts.
                 Button("Add Account…") {
@@ -347,6 +348,8 @@ private struct SettingsAccountSection: View {
                 } message: {
                     Text("Jukebox forgets its library, recent stations and downloaded songs on this \(Device.model). The music plays on.")
                 }
+                // Of the card signed in: with others kept the next one is
+                // signed in to (AppModel.signOut), with none the welcome.
                 Button("Sign Out…", role: .destructive) {
                     isConfirmingSignOut = true
                 }
@@ -365,77 +368,28 @@ private struct SettingsAccountSection: View {
                 }
             }
         }
-        // The year's music, from the server's record where it keeps one:
-        // its own row, with the note on which under it, as Linux's Your
-        // Year row under the accounts. Not a fact of the account's, so not
-        // among them.
-        if let credentials = app.credentials {
-            Section {
-                yourYearRow
-                    .sheet(isPresented: $isShowingYear) { YourYearView() }
-            } footer: {
-                if let note = ServerWords.playbackReportingNote(credentials) {
-                    Text(note)
-                }
-            }
-        }
     }
 
-    /// An account kept: its server, the kind and the user under it.
-    private func accountRow(_ account: ServerCredentials) -> some View {
-        let isActive = app.credentials?.isSameAccount(as: account) == true
-        return Button {
-            guard !isActive else { return }
-            switchProblem = nil
-            Task {
-                switchProblem = await app.switchAccount(to: account)
-                // Switched: the next account's Home, with nothing over it.
-                if switchProblem == nil { closeSettings?.callAsFunction() }
-            }
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                    Text(verbatim: ServerWords.name(of: account))
-                        .foregroundStyle(.primary)
-                    Text(verbatim: "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
-                        .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if isActive {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(Theme.accent)
-                        .accessibilityLabel("Signed In")
-                }
-            }
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .disabled(app.isSwitching)
-        .swipeActions {
-            if !isActive {
-                Button("Sign Out", role: .destructive) { leaving = account }
-            }
-        }
-        .contextMenu {
-            if !isActive {
-                Button("Sign Out", role: .destructive) { leaving = account }
-            }
-        }
+    /// The accounts kept, in the order they were added; the session alone
+    /// before the list knows it (the Mac's snapshots sign in past it).
+    private var cards: [ServerCredentials] {
+        if app.accounts.saved.isEmpty, let credentials = app.credentials { return [credentials] }
+        return app.accounts.saved
     }
 
-    /// The Mac's row names it and opens it with Show…, as System Settings
-    /// opens what lives elsewhere; the iPhone's and the iPad's row is the
-    /// button itself.
-    @ViewBuilder private var yourYearRow: some View {
-        #if os(macOS)
-        LabeledContent("Your Year") {
-            Button("Show…") { isShowingYear = true }
-                .systemButtons()
+    /// Another card chosen: its server asked first (AppModel.switchAccount);
+    /// switched, its Home with nothing over it; not, the words under it and
+    /// the radio stays on the one signed in. There is no choosing none.
+    private func choose(_ account: ServerCredentials) {
+        guard app.credentials?.isSameAccount(as: account) != true, !app.isSwitching else { return }
+        switchProblem = nil
+        Task {
+            if let words = await app.switchAccount(to: account) {
+                switchProblem = (OfflinePaths.account(for: account), words)
+            } else {
+                closeSettings?.callAsFunction()
+            }
         }
-        #else
-        Button("Your Year") { isShowingYear = true }
-        #endif
     }
 
     /// The menus' words too (AccountMenu.swift's SignOutWords).

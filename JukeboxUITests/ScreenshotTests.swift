@@ -139,6 +139,12 @@ final class ScreenshotTests: XCTestCase {
             walk.pause(1.5)
         }
         walk.picture("settings")
+        // Accounts: each account kept a card, one signed in (the walk keeps one).
+        if settings, try walk.openSettingsPage("accounts", "Accounts") {
+            walk.picture("settings-accounts")
+            try walk.tap(app.navigationBars["Accounts"].buttons.element(boundBy: 0), "Settings › Accounts: back", timeout: 2)
+            walk.pause(1)
+        }
         // Settings is a list of pages: one of them open, then back to it.
         if settings, try walk.openSettingsPage("playback", "Playback") {
             walk.picture("settings-playback")

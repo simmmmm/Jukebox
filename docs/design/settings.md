@@ -25,15 +25,38 @@ Key: ✓ there · — not there, with the reason.
 
 ## Accounts
 
+Each account kept is a card, and the cards are a radio group: one is
+always the one signed in. The photographer, 21 November 2026: "kun je op
+alle versies een toegevoegde server als een soort card tonen die werken
+als een soort radiobutton (er moet altijd 1 server actief zijn)". A card
+holds, in this order:
+- the radio;
+- the kind's letter ("J", "E", "N", "P"), a round label in one ink, the
+  accent on the one signed in;
+- the server's name, in the serif;
+- the kind and version, then the user ("Jellyfin 10.11.0 · test");
+- the address.
+
+Choosing another card switches to it (`AppModel.switchAccount`). If its
+server does not answer, the radio stays where it was and the words say
+why: under that card on Apple, a toast on Linux. There is no choosing
+none.
+
 | # | Row | Mac | iPad | iPhone | Linux | Note |
 |---|---|---|---|---|---|---|
-| 1 | Each account kept, the one signed in checked; click to switch | ✓ (with 2 or more) | ✓ (2+) | ✓ (2+) | ✓ (always) | Sign out of another: its context menu or swipe (Apple), its Sign Out… (Linux) |
-| 2 | Server: name, then kind and version ("Jellyfin 10.11.0") | ✓ | ✓ | ✓ | ✓ in the account's row | |
-| 3 | User | ✓ | ✓ | ✓ | ✓ in the account's row | |
-| 4 | Address | ✓ | ✓ | ✓ | ✓ | Linux's added 21 November |
-| 5 | Add Account… | ✓ trailing | ✓ row | ✓ row | ✓ in the group's header | GNOME puts a group's action there |
-| 6 | Sign Out… | ✓ trailing | ✓ row | ✓ row | ✓ on each account | Asks first: "Sign out of Betsy as tijmen?" |
-| 7 | Your Year | ✓ own section, Show… | ✓ own section | ✓ own section | ✓ row, a subpage | Footer, from `ServerWords.playbackReportingNote`: "Playback Reporting is installed: Your Year counts every play, from every device." |
+| 1 | A card for each account, even one | ✓ a section each, the system's radio | ✓ a section each, ◉ in the accent | ✓ the same | ✓ boxed list, a check button in radio mode before each row | GNOME's Settings chooses a power mode the same way |
+| | *Footer of the card signed in*, from `ServerWords.playbackReportingNote` (Jellyfin and Emby only): "Playback Reporting is installed: Your Year counts every play, from every device." | ✓ | ✓ | ✓ | ✓ the group's note | About the server, so it stays here |
+| 2 | Add Account… | ✓ trailing | ✓ row | ✓ row | ✓ the list's last row | |
+| 3 | Sign Out…, of the one signed in | ✓ trailing | ✓ row | ✓ row | ✓ under the list | Asks first: "Sign out of Betsy as tijmen?" With others kept, the next is signed in to; with none, the welcome |
+
+Sign out of another account from its card's context menu: a secondary
+click or long press on Apple (or a swipe), a secondary click on Linux. So
+an account whose server no longer answers can still go.
+
+Code: `Jukebox/Settings/AccountCard.swift`, `Preferences.accountRow` on
+Linux. The radio is the card's one swappable part. If several servers
+ever play side by side, it becomes a toggle that keeps one on, and the
+card stays as it is.
 
 The sign-out dialog has the same words everywhere. Only the device's name
 changes: "Mac", "iPhone", "iPad", "computer".
@@ -129,6 +152,15 @@ Jukebox in the main menu, with the same line and version
 
 - **Play On** (AirPlay, Cast, UPnP): the bar's and Now Playing's picker on
   every client. There is nothing to set.
+- **Your Year**: content, not a setting, so it left Settings on 21
+  November 2026. Where it is now:
+  - the iPhone: a row in Library, last;
+  - the iPad and the Mac: a place in the sidebar, last, and Your Year in
+    the ≡ menu and in the Mac's Account menu;
+  - Linux: a place in the sidebar, last, and Your Year in the primary
+    menu.
+  It has no switch in Pages. Its note on Playback Reporting stays in
+  Accounts, under the server's card.
 
 ## Mismatches found on 21 November 2026, all fixed
 
@@ -136,8 +168,7 @@ Jukebox in the main menu, with the same line and version
   quiet style. They are now the system's push buttons, trailing, at the end
   of their section.
 - **Mac, iPad, iPhone**: Your Year was a button between Server and Address.
-  It now has its own section, with the Playback Reporting note as its
-  footer.
+  It had its own section for a while; now it is out of Settings (above).
 - **Mac, iPad, iPhone**: the quality footers sat under the whole section.
   Playback and Downloads now have two sections each, so each footer is under
   the rows it explains.

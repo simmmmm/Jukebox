@@ -47,7 +47,7 @@ struct JukeboxCommands: Commands {
             #endif
         }
         // Music's own Account menu: the accounts kept, the one signed in
-        // checked, and Add Account… (AccountMenu.swift).
+        // checked, and Add Account… (AccountMenu.swift); then Your Year.
         CommandMenu("Account") {
             AccountMenuItems(app: app)
         }

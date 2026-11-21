@@ -139,6 +139,16 @@ private struct Round {
             let detected = try await app.detectServer(at: address)
             let credentials = try await app.signIn(to: detected).signIn(username: "test", password: "test")
             await app.openForSnapshots(credentials)
+            // Accounts' cards with a second one beside it, made up, never
+            // asked: a Navidrome at home.
+            var second = credentials
+            second.kind = .subsonic(flavour: .navidrome)
+            second.serverID = "snapshots-betsy"
+            second.serverName = "Betsy"
+            second.serverVersion = "0.64.2"
+            second.userName = "anna"
+            second.serverURL = URL(string: "http://betsy.local:4533")!
+            app.accounts.showForSnapshots([credentials, second])
         } catch {
             note("no sign-in at \(address): \(error)")
             return false

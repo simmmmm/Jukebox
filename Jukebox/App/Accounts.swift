@@ -87,6 +87,14 @@ final class Accounts {
         saved = list.all
     }
 
+    #if DEBUG && os(macOS)
+    /// The Mac's snapshots: Settings › Accounts with these cards, past the
+    /// keychain (the photographer's own MacBook's).
+    func showForSnapshots(_ accounts: [ServerCredentials]) {
+        saved = accounts
+    }
+    #endif
+
     /// Signed out of; the account signed in after it (the first left, when
     /// it was the one signed in), or nil when none is left.
     func remove(_ account: ServerCredentials) -> ServerCredentials? {

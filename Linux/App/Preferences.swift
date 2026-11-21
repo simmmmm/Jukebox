@@ -334,20 +334,17 @@ enum Preferences {
         }
     }
 
-    /// Every account kept, as GNOME's Online Accounts lists them: the
-    /// server's name, its kind and version and the user under it, the one
-    /// signed in checked. A click on another switches to it (the dialog
-    /// closes on its Home); Sign Out… on a row signs out of that one alone.
-    /// Add Account… under them, as the iPhone's Settings has it.
+    /// Each account kept as a card, the cards a radio group: one is always
+    /// the one signed in. The photographer, 21 November 2026: "kun je op
+    /// alle versies een toegevoegde server als een soort card tonen die
+    /// werken als een soort radiobutton (er moet altijd 1 server actief
+    /// zijn)". GNOME's form for one choice of several: a boxed list, each
+    /// row a check button in radio mode before it, as GNOME's Settings
+    /// chooses a power mode. Then Add Account… as the list's last row, and
+    /// Sign Out… of the one signed in under it. The same order and words as
+    /// the Mac's cards (AccountCard.swift).
     private static func accounts(on page: Widget, in dialog: UnsafeMutablePointer<AdwDialog>) {
         let group = group(nil, on: page)
-        // In the group's header, where GNOME's Settings puts a group's own
-        // action.
-        let add = button("Add Account…", "flat") {
-            adw_dialog_close(ptr(dialog))
-            MainWindow.addAccount()
-        }.align(vertical: GTK_ALIGN_CENTER)
-        adw_preferences_group_set_header_suffix(ptr(group), add)
         var rows: [Widget] = []
         observe(group) {
             for row in rows { adw_preferences_group_remove(ptr(group), row) }
@@ -356,18 +353,21 @@ enum Preferences {
             let switching = app.isSwitching
             // Whether Playback Reporting answers, on Jellyfin and Emby: the
             // group's own description, where GNOME puts a group's note.
+            // About the server, so beside its cards; Your Year itself is in
+            // the sidebar now.
             adw_preferences_group_set_description(ptr(group), active.flatMap(ServerWords.playbackReportingNote))
-            for account in app.accounts.saved {
-                let row = adw_action_row_new()!
-                adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
-                adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
-                if active?.isSameAccount(as: account) == true {
-                    let check = gtk_image_new_from_icon_name("object-select-symbolic")!.named("Signed In")
-                    adw_action_row_add_suffix(ptr(row), check)
-                } else {
+            var radios: UnsafeMutablePointer<GtkCheckButton>?
+            let saved = app.accounts.saved.isEmpty ? (active.map { [$0] } ?? []) : app.accounts.saved
+            for account in saved {
+                let isActive = active?.isSameAccount(as: account) == true
+                let row = accountRow(account, isActive: isActive, group: &radios)
+                if !isActive {
                     gtk_list_box_row_set_activatable(ptr(row), 1)
                     // One switch at a time, while its server is asked.
                     row.isSensitive = !switching
+                    // Switched: the dialog closes on its Home. Not: the
+                    // words why, and the radio stays where it was, as it
+                    // follows the account signed in, never the click.
                     on(raw(row), "activated") {
                         Task {
                             if let problem = await app.switchAccount(to: account) {
@@ -377,35 +377,67 @@ enum Preferences {
                             }
                         }
                     }
+                    // Another one signed out of, on its secondary click, as
+                    // the Mac's context menu: one that no longer answers can
+                    // still go.
+                    contextMenu(on: row) { [("Sign Out…", { MainWindow.confirmSignOut(of: account) })] }
                 }
-                let out = button("Sign Out…", "flat") { MainWindow.confirmSignOut(of: account) }
-                    .align(vertical: GTK_ALIGN_CENTER)
-                adw_action_row_add_suffix(ptr(row), out)
                 adw_preferences_group_add(ptr(group), row)
                 rows.append(row)
             }
-            // Where the one signed in lives, as the Mac's Address row.
-            if let active {
-                let address = fact("Address")
-                adw_action_row_set_subtitle(ptr(address), active.serverURL.absoluteString)
-                adw_action_row_set_subtitle_selectable(ptr(address), 1)
-                adw_preferences_group_add(ptr(group), address)
-                rows.append(address)
+            // The list's last row, as GNOME's Online Accounts adds one.
+            let add = adw_action_row_new()!
+            adw_preferences_row_set_title(ptr(add), "Add Account…")
+            adw_action_row_add_prefix(ptr(add), gtk_image_new_from_icon_name("list-add-symbolic")!)
+            gtk_list_box_row_set_activatable(ptr(add), 1)
+            on(raw(add), "activated") {
+                adw_dialog_close(ptr(dialog))
+                MainWindow.addAccount()
             }
-            // The year's music, a subpage (YourYearPage): from the server's
-            // record where it keeps one, as the description above says.
-            if active != nil {
-                let year = adw_action_row_new()!
-                adw_preferences_row_set_title(ptr(year), "Your Year")
-                adw_action_row_add_suffix(ptr(year), gtk_image_new_from_icon_name("go-next-symbolic")!)
-                gtk_list_box_row_set_activatable(ptr(year), 1)
-                on(raw(year), "activated") {
-                    adw_preferences_dialog_push_subpage(ptr(dialog), YourYearPage.make())
-                }
-                adw_preferences_group_add(ptr(group), year)
-                rows.append(year)
+            add.isSensitive = active != nil
+            adw_preferences_group_add(ptr(group), add)
+            rows.append(add)
+            // Under the rows, as GNOME's Settings has its destructive
+            // buttons (libadwaita 1.5 has no button row). Of the one signed
+            // in: with others kept the next is signed in to, with none the
+            // welcome (AppModel.signOut).
+            if let active {
+                let out = button("Sign Out…", "destructive-action") { MainWindow.confirmSignOut(of: active) }
+                    .align(horizontal: GTK_ALIGN_START)
+                gtk_widget_set_margin_top(out, 12)
+                adw_preferences_group_add(ptr(group), out)
+                rows.append(out)
             }
         }
+    }
+
+    /// An account's card: the radio, its kind's letter, the server's name,
+    /// the kind and the user, the address. The radio is the card's one
+    /// swappable part: today one account is signed in at a time; should
+    /// several play side by side one day ("waarom we die beperking moeten
+    /// hebben", the photographer, 21 November 2026), it becomes a check
+    /// that keeps at least one on, and the row stays as it is. Its state is
+    /// the account signed in alone; a click is the row's, never the radio's.
+    private static func accountRow(_ account: ServerCredentials, isActive: Bool,
+                                   group: inout UnsafeMutablePointer<GtkCheckButton>?) -> Widget {
+        let row = adw_action_row_new()!.css("account-card")
+        if isActive { gtk_widget_add_css_class(row, "on") }
+        adw_preferences_row_set_use_markup(ptr(row), 0)
+        adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
+        adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)\n\(account.serverURL.absoluteString)")
+        let radio = gtk_check_button_new()!.named(isActive ? "Signed In" : "Switch to This Account")
+        let check = UnsafeMutablePointer<GtkCheckButton>(OpaquePointer(radio))
+        if let group { gtk_check_button_set_group(check, group) } else { group = check }
+        gtk_check_button_set_active(check, isActive ? 1 : 0)
+        gtk_widget_set_can_target(radio, 0)
+        gtk_widget_set_focusable(radio, 0)
+        let mark = label(ServerWords.mark(account.kind), "kind-mark", "serif").align(vertical: GTK_ALIGN_CENTER)
+        gtk_label_set_xalign(ptr(mark), 0.5)
+        // Each prefix goes before the last: the mark first, so the radio
+        // leads, as on the Mac.
+        adw_action_row_add_prefix(ptr(row), mark)
+        adw_action_row_add_prefix(ptr(row), radio.align(vertical: GTK_ALIGN_CENTER))
+        return row
     }
 
     /// Songs on this computer (OfflineStore), as the Mac's Settings ›

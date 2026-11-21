@@ -346,6 +346,9 @@ private struct Places: View {
                     glyphRow(.library(.genres), "Genres", symbol: "guitars")
                     glyphRow(.library(.recentlyAdded), "Recently Added", symbol: "clock")
                     glyphRow(.library(.downloaded), "Downloaded", symbol: "arrow.down.circle")
+                    // Out of Settings: the year's music is content, a page
+                    // of the library's, last, as on Linux. No switch.
+                    glyphRow(.library(.yourYear), "Your Year", symbol: "calendar")
                     if settings.shows(.sidebarPlaylists) && !library.playlists.isEmpty {
                         hair
                         ForEach(library.playlists) { playlist in

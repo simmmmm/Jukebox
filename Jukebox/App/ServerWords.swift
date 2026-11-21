@@ -56,6 +56,14 @@ enum ServerWords {
         return String(localized: "Playback Reporting was not found, or this account may not read it (it takes an administrator). With the plugin installed, Your Year counts every device; until then, only this one.")
     }
 
+    /// The letter on an account's card, its kind's mark: "J" for
+    /// Jellyfin, "E" for Emby, "N" for Navidrome, "P" for Plex. A letter
+    /// rather than the projects' own logos, which are theirs: printed in
+    /// one ink, as a record's label is (docs/design/tells.md, 7).
+    static func mark(_ kind: ServerKind) -> String {
+        kind.displayName.first.map { String($0).uppercased() } ?? "?"
+    }
+
     static func shortVersion(_ version: String) -> String {
         var shown = version.trimmingCharacters(in: .whitespacesAndNewlines)
         if let bracket = shown.firstIndex(of: "(") {

@@ -40,6 +40,13 @@ info=$(curl -fs "$base/System/Info/Public")
 jq -n --arg url "$base" --argjson answer "$answer" --argjson info "$info" \
   '{serverURL: $url, serverID: $info.Id, serverName: $info.ServerName, userID: $answer.User.Id,
     userName: "test", accessToken: $answer.AccessToken}' > "$work/data/Jukebox/credentials.json"
+# ACCOUNTS=2: a second account kept beside it, made up and never asked, so
+# Preferences › Accounts shows two cards.
+if [[ ${ACCOUNTS:-1} == 2 ]]; then
+  jq '[., . + {serverURL: "http://betsy.local:8096", serverID: "screens-betsy", serverName: "Betsy",
+              userID: "screens-anna", userName: "anna"}]' \
+    "$work/data/Jukebox/credentials.json" > "$work/data/Jukebox/accounts.json"
+fi
 
 for shot in ${@:-1440x900-dark 1440x900-light 1920x1080-dark 760x900-dark 400x800-dark}; do
   size=${shot%-*} scheme=${shot#*-}
