@@ -16,6 +16,15 @@
 // Linux's (16-preferences.png): 15 rather than 13, the groups' titles bold
 // and in sentence case ("ik wil dat de linux app en de apple app 1:1 op
 // elkaar lijken", the photographer, 14 November 2026).
+//
+// On the Mac a settings window as the Mac's own apps have one: "op mac zijn
+// de settings een beetje een tyfusbende geworden" (the photographer, 21
+// November 2026, Accounts' buttons each on a row of their own, tinted,
+// between the facts). So facts are LabeledContent rows; a section's actions
+// stand together at its end, trailing, in the system's own push buttons
+// (SettingsActions); each footer sits under the rows it speaks of. Every
+// row, its words, its order and its footer, on every client:
+// docs/design/settings.md.
 
 import JukeboxKit
 import SwiftUI
@@ -205,8 +214,10 @@ private struct SettingsRoot: View {
     }
 }
 
-/// One page: its sections in the order the one long sheet had them.
-private struct SettingsPageForm: View {
+/// One page: its sections in the order the one long sheet had them. Not
+/// private: the Mac's snapshots draw each page alone (Snapshots.swift), as
+/// an offscreen window has no toolbar for the tabs.
+struct SettingsPageForm: View {
     let page: SettingsPage
 
     @Environment(\.isWide) private var isWide
@@ -272,154 +283,124 @@ private struct SettingsAccountSection: View {
     /// Another saved account, asked about before it is signed out of.
     @State private var leaving: ServerCredentials?
     @State private var isAdding = false
-    @State private var isShowingYear = false
-    /// Why the switch tapped here did not happen, under the rows.
-    @State private var switchProblem: String?
+    /// Why the switch to a card did not happen, under that card: its
+    /// folder's name and the words.
+    @State private var switchProblem: (account: String, words: String)?
 
     init() {}
 
+    /// Each account kept as a card, the cards a radio group: one is always
+    /// the one signed in. The photographer, 21 November 2026: "kun je op
+    /// alle versies een toegevoegde server als een soort card tonen die
+    /// werken als een soort radiobutton (er moet altijd 1 server actief
+    /// zijn)". Each card its own section, so the grouped form draws it as
+    /// one (no card of Jukebox's own in the system's: tells 6). Then Add
+    /// Account… and Sign Out… of the one signed in, as on Linux.
     var body: some View {
-        Section {
-            // More than one account kept: each a row, the one signed in
-            // checked, a tap switches (Home, afresh), a swipe or a long
-            // press signs out of that one (Accounts.swift).
-            if app.accounts.saved.count > 1 {
-                ForEach(app.accounts.saved, id: \.self) { account in
-                    accountRow(account)
+        ForEach(cards, id: \.self) { account in
+            let isActive = app.credentials?.isSameAccount(as: account) == true
+            let key = OfflinePaths.account(for: account)
+            Section {
+                AccountCard(account: account, isActive: isActive, choose: { choose(account) }) {
+                    AccountRadio(isOn: isActive)
                 }
-            }
-            if let credentials = app.credentials {
-                // Its name, and under it which kind of server it is and its
-                // version ("Navidrome 0.64.2"): the sign-in screen's words.
-                LabeledContent {
-                    VStack(alignment: .trailing, spacing: Theme.Space.xs) {
-                        Text(verbatim: credentials.serverName)
-                        Text(verbatim: ServerWords.product(credentials.kind, version: credentials.serverVersion))
-                            .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
+                .disabled(app.isSwitching)
+                .swipeActions {
+                    if !isActive {
+                        Button("Sign Out", role: .destructive) { leaving = account }
                     }
-                } label: {
-                    Text("Server")
                 }
-                LabeledContent("User", value: credentials.userName)
-                // The year's music, from the server's record where it keeps
-                // one (the note under this section says which).
-                Button("Your Year") { isShowingYear = true }
-                    .sheet(isPresented: $isShowingYear) { YourYearView() }
-                LabeledContent("Address") {
-                    Text(verbatim: credentials.serverURL.absoluteString)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .textSelection(.enabled)
+                .contextMenu {
+                    if !isActive {
+                        Button("Sign Out", role: .destructive) { leaving = account }
+                    }
+                }
+            } footer: {
+                // Why the switch to this one did not happen; under the one
+                // signed in, the server's own note (Your Year is in the
+                // library now; whether it counts every device is the
+                // server's doing).
+                if let switchProblem, switchProblem.account == key {
+                    Text(switchProblem.words)
+                } else if isActive, let note = ServerWords.playbackReportingNote(account) {
+                    Text(note)
                 }
             }
-            Button("Add Account") {
-                isAdding = true
-            }
-            .disabled(app.credentials == nil)
-            .sheet(isPresented: $isAdding) {
-                OnboardingView(isAdding: true)
-            }
-            // A dialog of its own, on another row than Sign Out's: one
-            // view, one confirmation dialog.
-            .confirmationDialog(leavingTitle, isPresented: Binding(get: { leaving != nil },
-                                                                   set: { if !$0 { leaving = nil } }),
-                                titleVisibility: .visible) {
-                Button("Sign Out", role: .destructive) {
-                    if let leaving { Task { await app.signOut(leaving) } }
+        }
+        Section {
+            SettingsActions {
+                // Linux's words: "…", as each asks something before it acts.
+                Button("Add Account…") {
+                    isAdding = true
                 }
-            } message: {
-                Text("Jukebox forgets its library, recent stations and downloaded songs on this \(Device.model). The music plays on.")
-            }
-            Button("Sign Out", role: .destructive) {
-                isConfirmingSignOut = true
-            }
-            // The Mac's Settings window opens signed out too (⌘, from the
-            // sign-in screen): nothing to sign out of then.
-            .disabled(app.credentials == nil)
-            .confirmationDialog(signOutTitle, isPresented: $isConfirmingSignOut, titleVisibility: .visible) {
-                Button("Sign Out", role: .destructive) {
-                    // The sheet first, so it does not hang over the swap to
-                    // the sign-in screen, or the next account's Home.
-                    closeSettings?.callAsFunction()
-                    Task { await app.signOut() }
+                .disabled(app.credentials == nil)
+                .sheet(isPresented: $isAdding) {
+                    OnboardingView(isAdding: true)
                 }
-            } message: {
-                Text(signOutMessage)
-            }
-        } footer: {
-            if let switchProblem {
-                Text(switchProblem)
-            } else if let credentials = app.credentials,
-                      let note = ServerWords.playbackReportingNote(credentials) {
-                Text(note)
+                // A dialog of its own, on another button than Sign Out's:
+                // one view, one confirmation dialog.
+                .confirmationDialog(leavingTitle, isPresented: Binding(get: { leaving != nil },
+                                                                       set: { if !$0 { leaving = nil } }),
+                                    titleVisibility: .visible) {
+                    Button("Sign Out", role: .destructive) {
+                        if let leaving { Task { await app.signOut(leaving) } }
+                    }
+                } message: {
+                    Text("Jukebox forgets its library, recent stations and downloaded songs on this \(Device.model). The music plays on.")
+                }
+                // Of the card signed in: with others kept the next one is
+                // signed in to (AppModel.signOut), with none the welcome.
+                Button("Sign Out…", role: .destructive) {
+                    isConfirmingSignOut = true
+                }
+                // The Mac's Settings window opens signed out too (⌘, from the
+                // sign-in screen): nothing to sign out of then.
+                .disabled(app.credentials == nil)
+                .confirmationDialog(signOutTitle, isPresented: $isConfirmingSignOut, titleVisibility: .visible) {
+                    Button("Sign Out", role: .destructive) {
+                        // The sheet first, so it does not hang over the swap
+                        // to the sign-in screen, or the next account's Home.
+                        closeSettings?.callAsFunction()
+                        Task { await app.signOut() }
+                    }
+                } message: {
+                    Text(signOutMessage)
+                }
             }
         }
     }
 
-    /// An account kept: its server, the kind and the user under it.
-    private func accountRow(_ account: ServerCredentials) -> some View {
-        let isActive = app.credentials?.isSameAccount(as: account) == true
-        return Button {
-            guard !isActive else { return }
-            switchProblem = nil
-            Task {
-                switchProblem = await app.switchAccount(to: account)
-                // Switched: the next account's Home, with nothing over it.
-                if switchProblem == nil { closeSettings?.callAsFunction() }
-            }
-        } label: {
-            HStack {
-                VStack(alignment: .leading, spacing: Theme.Space.xs) {
-                    Text(verbatim: ServerWords.name(of: account))
-                        .foregroundStyle(.primary)
-                    Text(verbatim: "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
-                        .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
-                        .foregroundStyle(.secondary)
-                }
-                Spacer()
-                if isActive {
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(Theme.accent)
-                        .accessibilityLabel("Signed In")
-                }
-            }
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .disabled(app.isSwitching)
-        .swipeActions {
-            if !isActive {
-                Button("Sign Out", role: .destructive) { leaving = account }
-            }
-        }
-        .contextMenu {
-            if !isActive {
-                Button("Sign Out", role: .destructive) { leaving = account }
+    /// The accounts kept, in the order they were added; the session alone
+    /// before the list knows it (the Mac's snapshots sign in past it).
+    private var cards: [ServerCredentials] {
+        if app.accounts.saved.isEmpty, let credentials = app.credentials { return [credentials] }
+        return app.accounts.saved
+    }
+
+    /// Another card chosen: its server asked first (AppModel.switchAccount);
+    /// switched, its Home with nothing over it; not, the words under it and
+    /// the radio stays on the one signed in. There is no choosing none.
+    private func choose(_ account: ServerCredentials) {
+        guard app.credentials?.isSameAccount(as: account) != true, !app.isSwitching else { return }
+        switchProblem = nil
+        Task {
+            if let words = await app.switchAccount(to: account) {
+                switchProblem = (OfflinePaths.account(for: account), words)
+            } else {
+                closeSettings?.callAsFunction()
             }
         }
     }
 
-    private var signOutTitle: Text {
-        if let name = app.credentials?.serverName {
-            return Text("Sign out of \(name)?")
-        }
-        return Text("Sign out?")
-    }
+    /// The menus' words too (AccountMenu.swift's SignOutWords).
+    private var signOutTitle: Text { SignOutWords.title(app) }
 
     private var leavingTitle: Text {
         guard let leaving else { return Text("Sign out?") }
         return Text("Sign out of \(ServerWords.name(of: leaving)) as \(leaving.userName)?")
     }
 
-    /// What a sign-out of the account signed in does; with others kept, it
-    /// says which one Jukebox goes on with.
-    private var signOutMessage: String {
-        let others = app.accounts.saved.filter { app.credentials?.isSameAccount(as: $0) != true }
-        if let next = others.first {
-            return String(localized: "Playback stops and Jukebox forgets this account’s library, recent stations and downloaded songs on this \(Device.model), then goes on with \(ServerWords.name(of: next)). Your music, playlists and favorites stay on the server.")
-        }
-        return String(localized: "Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(Device.model). Your music, playlists and favorites stay on the server.")
-    }
+    private var signOutMessage: String { SignOutWords.message(app) }
 }
 
 // MARK: - Playback
@@ -453,12 +434,18 @@ private struct SettingsPlaybackSection: View {
                     qualityOptions
                 }
             }
+        } footer: {
+            // Under the pickers it explains, as Linux's Streaming Quality's.
+            Text("Original plays your files as they are. The others have \(app.serverKindName) convert them to \(format) at that rate, which uses less data.")
+        }
+        Section {
             if !isWide {
                 normalizeRow
             }
             Toggle(isOn: $settings.autoplay) {
+                // Linux's words: what it plays, not a promise.
                 SettingsDetailLabel(title: "Autoplay",
-                                    detail: "When an album or playlist ends, keep playing similar music")
+                                    detail: "When an album or a playlist ends, play on with a station from its last song.")
             }
             Picker(selection: $settings.crossfade) {
                 ForEach(AppSettings.crossfades, id: \.self) { seconds in
@@ -472,7 +459,7 @@ private struct SettingsPlaybackSection: View {
             // (HandoffStore).
             Toggle(isOn: $settings.resumeOnLaunch) {
                 SettingsDetailLabel(title: "Continue Where You Left Off",
-                                    detail: "When Jukebox opens, the song you last played, here or on another device, is ready to play")
+                                    detail: "When Jukebox opens, the song you last played, here or on another device, is ready to play.")
             }
             if isWide {
                 // Linux's order, and its lyrics row here rather than a
@@ -480,7 +467,7 @@ private struct SettingsPlaybackSection: View {
                 normalizeRow
                 Toggle(isOn: $settings.findLyricsOnline) {
                     SettingsDetailLabel(title: "Find Lyrics Online",
-                                        detail: "When your server has no lyrics for a song, ask LRCLIB (lrclib.net), with its title, artist, album and length")
+                                        detail: "When your server has no lyrics for a song, ask LRCLIB (lrclib.net), with its title, artist, album and length.")
                 }
             }
             // Now Playing's motion (NowPlayingGround.swift): off, the page
@@ -490,8 +477,6 @@ private struct SettingsPlaybackSection: View {
                 SettingsDetailLabel(title: "Spin the Record",
                                     detail: "Now Playing's record turns, and its grooves move on with each song. Off, as in Low Power Mode and with Reduce Motion, it stands still on a wall of the cover's colours.")
             }
-        } footer: {
-            Text("Original plays your files as they are. The others have \(app.serverKindName) convert them to \(format) at that rate, which uses less data.")
         }
     }
 
@@ -507,7 +492,7 @@ private struct SettingsPlaybackSection: View {
         } else {
             Toggle(isOn: .constant(false)) {
                 SettingsDetailLabel(title: "Normalize Volume",
-                                    detail: "\(app.serverKindName) doesn’t give songs a loudness, so each plays as it is")
+                                    detail: "\(app.serverKindName) doesn’t give songs a loudness, so each plays as it is.")
             }
             .disabled(true)
         }
@@ -522,9 +507,9 @@ private struct SettingsPlaybackSection: View {
     /// the files' ReplayGain tags say.
     private var normalizeDetail: LocalizedStringKey {
         if app.credentials?.kind.isSubsonic == true {
-            return "Play every song at the loudness its ReplayGain tags give, so loud and quiet records sit side by side"
+            return "Play every song at the loudness its ReplayGain tags give, so loud and quiet records sit side by side."
         }
-        return "Play every song at the loudness Jellyfin measured, so loud and quiet records sit side by side"
+        return "Play every song at the loudness Jellyfin measured, so loud and quiet records sit side by side."
     }
 
     private var qualityOptions: some View {
@@ -571,7 +556,7 @@ private struct SettingsDownloadsSection: View {
             }
             Toggle(isOn: $settings.keepSongs) {
                 SettingsDetailLabel(title: "Keep Songs I Play",
-                                    detail: "Songs you play often or lately stay on this \(Device.model), to play without a connection")
+                                    detail: "Songs you play often or lately stay on this \(Device.model), to play without a connection.")
             }
             if settings.keepSongs {
                 Picker("Up To", selection: $settings.keepLimitGB) {
@@ -593,6 +578,13 @@ private struct SettingsDownloadsSection: View {
                 // Music's words, as Cellular Streaming above.
                 Toggle("Download over Cellular", isOn: $settings.downloadOverCellular)
             }
+        } footer: {
+            // Under the choices it explains, as Linux's.
+            qualityFooter
+        }
+        // What the downloads take, and the button that frees it, in a
+        // section of their own, as Linux's.
+        Section {
             LabeledContent("Downloaded") {
                 Text(offline.chosenBytes, format: .byteCount(style: .file))
             }
@@ -604,20 +596,20 @@ private struct SettingsDownloadsSection: View {
                     Text(LibraryText.songs(offline.queuedCount))
                 }
             }
-            Button("Remove All Downloads", role: .destructive) {
-                isConfirmingRemoveAll = true
-            }
-            .disabled(offline.songCount == 0 && offline.queuedCount == 0)
-            .confirmationDialog("Remove all downloads from this \(Device.model)?",
-                                isPresented: $isConfirmingRemoveAll, titleVisibility: .visible) {
+            SettingsActions {
                 Button("Remove All Downloads", role: .destructive) {
-                    offline.removeAll()
+                    isConfirmingRemoveAll = true
                 }
-            } message: {
-                Text("Every downloaded album, playlist, mix and kept song goes, and Keep Songs I Play is turned off. They still play from your server.")
+                .disabled(offline.songCount == 0 && offline.queuedCount == 0)
+                .confirmationDialog("Remove all downloads from this \(Device.model)?",
+                                    isPresented: $isConfirmingRemoveAll, titleVisibility: .visible) {
+                    Button("Remove All Downloads", role: .destructive) {
+                        offline.removeAll()
+                    }
+                } message: {
+                    Text("Every downloaded album, playlist, mix and kept song goes, and Keep Songs I Play is turned off. They still play from your server.")
+                }
             }
-        } footer: {
-            qualityFooter
         }
     }
 
@@ -869,27 +861,17 @@ private struct SettingsLastFMSection: View {
                         // the same, and kept only if Last.fm accepts it.
                         if status == .idle { save() }
                     }
-                Button("Save", action: save)
-                    .disabled(Self.trimmed(draft).isEmpty || status == .checking)
-                if isChanging {
-                    Button("Cancel", role: .cancel) {
-                        checkTask?.cancel()
-                        draft = ""
-                        status = .idle
-                        isChanging = false
-                    }
-                }
+                #if !os(macOS)
+                keyButtons
+                #endif
             } else {
                 LabeledContent("API Key") {
                     Text(verbatim: "••••••••")
                         .accessibilityLabel("Saved")
                 }
-                Button("Change Key") {
-                    draft = ""
-                    status = .idle
-                    isChanging = true
-                }
-                Button("Remove Key", role: .destructive, action: remove)
+                #if !os(macOS)
+                keyButtons
+                #endif
             }
             statusRow(status, saved: "Last.fm accepted this key")
             if settings.hasLastFM {
@@ -902,7 +884,18 @@ private struct SettingsLastFMSection: View {
                     .onDisappear(perform: saveUser)
                 statusRow(userStatus, saved: "Last.fm knows this listener")
             }
+            #if os(macOS)
+            // The Mac's: the way to a key of one's own at the start, the
+            // key's buttons trailing, in one row at the section's end.
+            HStack(spacing: Theme.Space.s) {
+                Link("Get a Free API Key", destination: Self.createKeyURL)
+                Spacer(minLength: 0)
+                keyButtons
+                    .systemButtons()
+            }
+            #else
             Link("Get a Free API Key", destination: Self.createKeyURL)
+            #endif
         } header: {
             SettingsHeader("Last.fm")
         } footer: {
@@ -911,6 +904,30 @@ private struct SettingsLastFMSection: View {
                  : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
         }
         .onAppear(perform: recheck)
+    }
+
+    /// Save and Cancel while a key is typed; Change Key and Remove Key once
+    /// one is kept.
+    @ViewBuilder private var keyButtons: some View {
+        if isEditing {
+            if isChanging {
+                Button("Cancel", role: .cancel) {
+                    checkTask?.cancel()
+                    draft = ""
+                    status = .idle
+                    isChanging = false
+                }
+            }
+            Button("Save", action: save)
+                .disabled(Self.trimmed(draft).isEmpty || status == .checking)
+        } else {
+            Button("Change Key") {
+                draft = ""
+                status = .idle
+                isChanging = true
+            }
+            Button("Remove Key", role: .destructive, action: remove)
+        }
     }
 
     /// The field: the name saved until it is typed in.
@@ -1138,16 +1155,15 @@ private struct SettingsLibrarySection: View {
             }
             #if os(macOS)
             // The Mac's form draws a button as a push button: its progress
-            // sits beside it, not inside it.
-            HStack(spacing: Theme.Space.s) {
+            // sits before it, not inside it, at the section's end.
+            SettingsActions {
+                loadingProgress
                 Button {
                     Task { await library.refresh() }
                 } label: {
                     isLoading ? Text("Refreshing Library…") : Text("Refresh Library")
                 }
                 .disabled(isLoading)
-                Spacer(minLength: 0)
-                loadingProgress
             }
             #else
             Button {
@@ -1223,19 +1239,21 @@ private struct SettingsHistorySection: View {
         let count = history.history.events.count
         Section {
             LabeledContent("Plays Remembered") { Text(count, format: .number) }
-            Button("Clear Listening History", role: .destructive) {
-                isConfirmingClear = true
-            }
-            .disabled(count == 0)
-            .confirmationDialog("Clear your listening history?", isPresented: $isConfirmingClear,
-                                titleVisibility: .visible) {
+            SettingsActions {
                 Button("Clear Listening History", role: .destructive) {
-                    history.clear()
-                    // Today's mixes were made from what is now forgotten.
-                    Task { await mixes.rebuild(library: library, history: history, settings: settings) }
+                    isConfirmingClear = true
                 }
-            } message: {
-                Text("The radio and your mixes start learning your taste again from your library and favorites. Play counts on the server stay as they are.")
+                .disabled(count == 0)
+                .confirmationDialog("Clear your listening history?", isPresented: $isConfirmingClear,
+                                    titleVisibility: .visible) {
+                    Button("Clear Listening History", role: .destructive) {
+                        history.clear()
+                        // Today's mixes were made from what is now forgotten.
+                        Task { await mixes.rebuild(library: library, history: history, settings: settings) }
+                    }
+                } message: {
+                    Text("The radio and your mixes start learning your taste again from your library and favorites. Play counts on the server stay as they are.")
+                }
             }
         } header: {
             SettingsHeader("History")
@@ -1262,7 +1280,7 @@ private struct SettingsPrivacySection: View {
         Section {
             Toggle("Share Anonymous Usage", isOn: $settings.shareUsage)
         } footer: {
-            Text("Jukebox counts which screens and features are used — never titles, artists, searches, server addresses or names — on the developer's own server, without cookies or a device id. It helps decide what to improve.")
+            Text("Jukebox counts which screens and features are used, never titles, artists, searches, server addresses or names, on the developer's own server, without cookies or a device id. It helps decide what to improve.")
         }
     }
 }
@@ -1277,7 +1295,8 @@ private struct SettingsAboutSection: View {
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("Jukebox")
                         .desktopFont(Tokens.Size.body15.size, weight: .bold, phone: .headline)
-                    Text("Made for Jellyfin, Emby, Plex, Navidrome and other Subsonic servers")
+                    // Linux's About's words, and the Mac's About Jukebox's.
+                    Text("Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server, with a radio that plays on from anything.")
                         .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -1329,6 +1348,41 @@ private struct SettingsHeader: View {
         } else {
             Text(title)
         }
+    }
+}
+
+/// A section's actions, at its end. On the Mac in one row, trailing, as
+/// System Settings sets a group's buttons, in the system's own push buttons
+/// (docs/design/SYSTEM.md: the system's own controls keep the system's
+/// shapes); on the iPhone and the iPad each its own row, as their Settings
+/// has them.
+private struct SettingsActions<Content: View>: View {
+    @ViewBuilder var content: Content
+
+    var body: some View {
+        #if os(macOS)
+        HStack(spacing: Theme.Space.s) {
+            Spacer(minLength: 0)
+            content
+        }
+        .systemButtons()
+        #else
+        content
+        #endif
+    }
+}
+
+extension View {
+    /// On the Mac, the system's push buttons without the window's Copper
+    /// tint (JukeboxApp's appEnvironment), which drew them in Jukebox's
+    /// quiet tinted look in a settings form; switches and sliders keep it.
+    /// Elsewhere nothing.
+    @ViewBuilder func systemButtons() -> some View {
+        #if os(macOS)
+        buttonStyle(.bordered).tint(Color?.none)
+        #else
+        self
+        #endif
     }
 }
 

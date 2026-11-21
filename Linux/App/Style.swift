@@ -96,6 +96,13 @@ enum Style {
         .serif { font-family: serif; font-weight: 400; }
         /* Your Year's months: flat bars in the accent. */
         .year-bar { background-color: @accent_bg_color; }
+        /* Accounts' cards (Preferences.accountRow): the server's name in the
+           serif, its kind's letter a round label in one ink, the accent on
+           the one signed in, as the Mac's AccountCard. */
+        row.account-card label.title { font-family: serif; font-weight: 400; }
+        .kind-mark { min-width: 32px; min-height: 32px; border-radius: 9999px;
+                     color: alpha(currentColor, 0.6); background-color: alpha(currentColor, 0.08); }
+        row.account-card.on .kind-mark { color: @accent_color; background-color: alpha(@accent_color, 0.12); }
         /* The type scale (the designer's spec, §7): size / line, in px. */
         .page-title { \(type(Tokens.Size.pageTitle)) }
         .hero-title { \(type(Tokens.Size.heroTitle)) }

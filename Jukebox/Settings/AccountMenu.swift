@@ -37,6 +37,14 @@ struct AccountMenuItems: View {
             Button("Sign Out…", action: signOut)
                 .disabled(app.credentials == nil)
         }
+        // The account's year, out of Settings (it is content, not a
+        // setting): its place in the sidebar, as Linux's primary menu has
+        // Your Year. A menu bar has no Library menu; this is the one about
+        // the account.
+        Divider()
+        Button("Your Year") { app.navigator.place = .library(.yourYear) }
+            // The wide window's place; the iPhone's tabs have Library's row.
+            .disabled(!app.navigator.isWide || app.phase != .signedIn)
     }
 
     /// The account signed in, by its folder's name; set, the switch.
@@ -65,9 +73,11 @@ extension View {
 
 /// Settings' words for signing out of the account signed in.
 enum SignOutWords {
+    /// The server and the user, as Linux asks: which of several accounts
+    /// goes is never a guess (docs/design/settings.md).
     static func title(_ app: AppModel) -> Text {
-        if let name = app.credentials?.serverName {
-            return Text("Sign out of \(name)?")
+        if let credentials = app.credentials {
+            return Text("Sign out of \(ServerWords.name(of: credentials)) as \(credentials.userName)?")
         }
         return Text("Sign out?")
     }

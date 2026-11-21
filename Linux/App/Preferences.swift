@@ -8,7 +8,10 @@
 // op Linux" (the photographer, 19 November 2026). The pages and their order
 // are the iPhone's, the iPad's and the Mac's (SettingsView.swift's
 // SettingsPage); About is the main menu's About Jukebox. A group's title
-// only where it tells something the page's does not.
+// only where it tells something the page's does not. Every row, its words,
+// its order and its group's note, as the other clients have them:
+// docs/design/settings.md ("check het echt goed met de rest ook", the
+// photographer, 21 November 2026).
 
 import CAdw
 import Foundation
@@ -32,13 +35,18 @@ enum Preferences {
         let downloadsPage = page(.downloads, "Downloads", Glyphs.name("download"), in: dialog)
         let privacyPage = page(.privacy, "Privacy", "view-conceal-symbolic", in: dialog)
 
+        // The quality with its note under it, as the Mac's Settings has the
+        // footer by its pickers; then how songs follow each other.
+        let streaming = group(nil, on: playbackPage)
         let playing = group(nil, on: playbackPage)
         let qualities: [(String, StreamQuality)] = [("Original", .original), ("High (320 kbit/s)", .high),
                                                     ("Normal (256 kbit/s)", .normal), ("Low (128 kbit/s)", .low)]
-        adw_preferences_group_add(ptr(playing), combo("Streaming Quality", qualities.map { $0.0 },
-                                                      selected: qualities.firstIndex { $0.1 == settings.wifiQuality } ?? 0) {
+        adw_preferences_group_add(ptr(streaming), combo("Streaming Quality", qualities.map { $0.0 },
+                                                        selected: qualities.firstIndex { $0.1 == settings.wifiQuality } ?? 0) {
             settings.wifiQuality = qualities[$0].1
         })
+        adw_preferences_group_set_description(
+            ptr(streaming), "Original plays your files as they are. The others have \(app.library.serverKind) convert them to \(app.credentials?.kind.convertedFormat ?? "AAC") at that rate, which uses less data.")
         adw_preferences_group_add(ptr(playing), toggle(
             "Autoplay", "When an album or a playlist ends, play on with a station from its last song.",
             settings.autoplay) { settings.autoplay = $0 })
@@ -52,13 +60,22 @@ enum Preferences {
         adw_preferences_group_add(ptr(playing), toggle(
             "Continue Where You Left Off", "When Jukebox opens, the song you last played, here or on another device, is ready to play.",
             settings.resumeOnLaunch) { settings.resumeOnLaunch = $0 })
+        // Where the server gives songs no loudness the switch would do
+        // nothing: shown off and dimmed, saying why, as the Mac's.
         if app.can(.replayGain) {
             adw_preferences_group_add(ptr(playing), toggle(
-                "Normalize Volume", "Play every song at the loudness your server measured.",
+                "Normalize Volume", app.credentials?.kind.isSubsonic == true
+                    ? "Play every song at the loudness its ReplayGain tags give, so loud and quiet records sit side by side."
+                    : "Play every song at the loudness Jellyfin measured, so loud and quiet records sit side by side.",
                 settings.normalizeVolume) { settings.normalizeVolume = $0 })
+        } else {
+            let normalize = toggle("Normalize Volume", "\(app.library.serverKind) doesn’t give songs a loudness, so each plays as it is.",
+                                   false) { _ in }
+            gtk_widget_set_sensitive(normalize, 0)
+            adw_preferences_group_add(ptr(playing), normalize)
         }
         adw_preferences_group_add(ptr(playing), toggle(
-            "Find Lyrics Online", "When your server has none for a song, ask LRCLIB (lrclib.net).",
+            "Find Lyrics Online", "When your server has no lyrics for a song, ask LRCLIB (lrclib.net), with its title, artist, album and length.",
             settings.findLyricsOnline) { settings.findLyricsOnline = $0 })
 
         // Enhance Radio with Last.fm (AppSettings.useLastFM), as the iPhone's,
@@ -66,6 +83,7 @@ enum Preferences {
         // iets van 'enhance radio with last.fm' ?" (the photographer, 21
         // November 2026). Off, the key and the username go from the page,
         // and the radio plays from the library and what Last.fm said before.
+        dial(on: radioPage)
         let enhance = group(nil, on: radioPage)
         let radio = group("Last.fm", on: radioPage)
         radio.isVisible = settings.useLastFM
@@ -80,12 +98,13 @@ enum Preferences {
         let saveTypedKey = lastFM(on: radio, in: dialog)
         adw_preferences_group_set_description(
             ptr(radio), AppSettings.appLastFMKey.isEmpty
-                ? "With a Last.fm API key, the radio also knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Nothing is written to Last.fm."
-                : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Nothing is written to Last.fm.")
+                ? "With a key, the radio knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm."
+                : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
 
         // Which places the sidebar shows (AppSettings.hiddenPages), in its
         // order; Home has no switch. The photographer, 15 November 2026:
         // "kan je zelf bepalen hoe minimalistisch je alles wilt hebben".
+        library(on: libraryPage)
         let pages = group("Pages", on: libraryPage)
         adw_preferences_group_set_description(ptr(pages), "Home is always there. Pages that are off stay reachable from Home and Search.")
         let titles: [AppSettings.Page: String] = [
@@ -104,10 +123,16 @@ enum Preferences {
         // Not Counted first, as on the iPhone: what is kept from the server,
         // then what is told the developer.
         NotCountedUI.group(on: privacyPage)
+        history(on: privacyPage)
+        // The switch alone, and under the group what is counted and what
+        // never is, as the Mac's footer, word for word.
         let privacy = group(nil, on: privacyPage)
-        adw_preferences_group_add(ptr(privacy), toggle(
-            "Share Anonymous Usage", "Which screens and features are used. Never a title, an artist, a search or a server.",
-            settings.shareUsage) { settings.shareUsage = $0 })
+        let usage = adw_switch_row_new()!
+        adw_preferences_row_set_title(ptr(usage), "Share Anonymous Usage")
+        adw_switch_row_set_active(ptr(usage), settings.shareUsage ? 1 : 0)
+        on(usage, "notify::active") { settings.shareUsage = adw_switch_row_get_active(ptr(usage)) != 0 }
+        adw_preferences_group_add(ptr(privacy), usage)
+        adw_preferences_group_set_description(ptr(privacy), "Jukebox counts which screens and features are used, never titles, artists, searches, server addresses or names, on the developer's own server, without cookies or a device id. It helps decide what to improve.")
 
         accounts(on: accountsPage, in: dialog)
         downloads(on: downloadsPage)
@@ -130,17 +155,18 @@ enum Preferences {
     private static func lastFM(on group: Widget, in dialog: UnsafeMutablePointer<AdwDialog>) -> @MainActor () -> Void {
         let settings = app.settings
         let builtIn = adw_action_row_new()!
-        adw_preferences_row_set_title(ptr(builtIn), "Last.fm API Key")
+        // The group's title says Last.fm: the rows' words are the Mac's.
+        adw_preferences_row_set_title(ptr(builtIn), "API Key")
         adw_action_row_set_subtitle(ptr(builtIn), "Jukebox's own")
         gtk_widget_add_css_class(builtIn, "property")
         let entry = adw_entry_row_new()!
-        adw_preferences_row_set_title(ptr(entry), "Last.fm API Key")
+        adw_preferences_row_set_title(ptr(entry), "API Key")
         adw_entry_row_set_show_apply_button(ptr(entry), 1)
         let spinner = gtk_spinner_new()!
         spinner.isVisible = false
         adw_entry_row_add_suffix(ptr(entry), spinner)
         let saved = adw_action_row_new()!
-        adw_preferences_row_set_title(ptr(saved), "Last.fm API Key")
+        adw_preferences_row_set_title(ptr(saved), "API Key")
         adw_action_row_set_subtitle(ptr(saved), "••••••••")
         gtk_widget_add_css_class(saved, "property")
         // The listener's Last.fm name, optional, once a key is kept: one
@@ -148,7 +174,7 @@ enum Preferences {
         // it knows them), for the clock's scrobbles. Emptied, it is gone.
         // Not a secret, so shown as typed.
         let user = adw_entry_row_new()!
-        adw_preferences_row_set_title(ptr(user), "Last.fm Username")
+        adw_preferences_row_set_title(ptr(user), "Username (Optional)")
         adw_entry_row_set_show_apply_button(ptr(user), 1)
         gtk_editable_set_text(ptr(user), settings.lastFMUser)
         var isChecking = false
@@ -162,7 +188,7 @@ enum Preferences {
             entry.isVisible = isEditing
             saved.isVisible = !isEditing
             builtIn.isVisible = isEditing && settings.usesAppLastFMKey
-            adw_preferences_row_set_title(ptr(entry), settings.usesAppLastFMKey ? "Your Own Key (Optional)" : "Last.fm API Key")
+            adw_preferences_row_set_title(ptr(entry), settings.usesAppLastFMKey ? "Your Key (Optional)" : "API Key")
             gtk_editable_set_text(ptr(entry), "")
             gtk_widget_remove_css_class(entry, "error")
         }
@@ -250,12 +276,12 @@ enum Preferences {
 
         let cancel = button("Cancel", "flat") { editing(false) }.align(vertical: GTK_ALIGN_CENTER)
         adw_entry_row_add_suffix(ptr(entry), cancel)
-        let change = button("Change", "flat") {
+        let change = button("Change Key", "flat") {
             editing(true)
             cancel.isVisible = true
             gtk_widget_grab_focus(entry)
         }.align(vertical: GTK_ALIGN_CENTER)
-        let remove = button("Remove", "flat") {
+        let remove = button("Remove Key", "flat") {
             settings.lastFMAPIKey = ""
             app.radio.lastFMKeyChanged()
             Stats.track(.lastFMKey, ["state": "removed", "app_key": !AppSettings.appLastFMKey.isEmpty])
@@ -270,6 +296,17 @@ enum Preferences {
         adw_preferences_group_add(ptr(group), entry)
         adw_preferences_group_add(ptr(group), saved)
         adw_preferences_group_add(ptr(group), user)
+        // Last.fm's page for a key of one's own, as the Mac's link at the
+        // group's end: GNOME's way to a web page from a row.
+        let getKey = adw_action_row_new()!
+        adw_preferences_row_set_title(ptr(getKey), "Get a Free API Key")
+        adw_action_row_add_suffix(ptr(getKey), gtk_image_new_from_icon_name("adw-external-link-symbolic")!)
+        gtk_list_box_row_set_activatable(ptr(getKey), 1)
+        on(raw(getKey), "activated") {
+            let launcher = gtk_uri_launcher_new("https://www.last.fm/api/account/create")
+            gtk_uri_launcher_launch(launcher, ptr(MainWindow.window), nil, nil, nil)
+        }
+        adw_preferences_group_add(ptr(group), getKey)
         editing(!settings.hasOwnLastFMKey)
         cancel.isVisible = false
         user.isVisible = settings.hasLastFM
@@ -297,20 +334,17 @@ enum Preferences {
         }
     }
 
-    /// Every account kept, as GNOME's Online Accounts lists them: the
-    /// server's name, its kind and version and the user under it, the one
-    /// signed in checked. A click on another switches to it (the dialog
-    /// closes on its Home); Sign Out… on a row signs out of that one alone.
-    /// Add Account… under them, as the iPhone's Settings has it.
+    /// Each account kept as a card, the cards a radio group: one is always
+    /// the one signed in. The photographer, 21 November 2026: "kun je op
+    /// alle versies een toegevoegde server als een soort card tonen die
+    /// werken als een soort radiobutton (er moet altijd 1 server actief
+    /// zijn)". GNOME's form for one choice of several: a boxed list, each
+    /// row a check button in radio mode before it, as GNOME's Settings
+    /// chooses a power mode. Then Add Account… as the list's last row, and
+    /// Sign Out… of the one signed in under it. The same order and words as
+    /// the Mac's cards (AccountCard.swift).
     private static func accounts(on page: Widget, in dialog: UnsafeMutablePointer<AdwDialog>) {
         let group = group(nil, on: page)
-        // In the group's header, where GNOME's Settings puts a group's own
-        // action.
-        let add = button("Add Account…", "flat") {
-            adw_dialog_close(ptr(dialog))
-            MainWindow.addAccount()
-        }.align(vertical: GTK_ALIGN_CENTER)
-        adw_preferences_group_set_header_suffix(ptr(group), add)
         var rows: [Widget] = []
         observe(group) {
             for row in rows { adw_preferences_group_remove(ptr(group), row) }
@@ -319,18 +353,21 @@ enum Preferences {
             let switching = app.isSwitching
             // Whether Playback Reporting answers, on Jellyfin and Emby: the
             // group's own description, where GNOME puts a group's note.
+            // About the server, so beside its cards; Your Year itself is in
+            // the sidebar now.
             adw_preferences_group_set_description(ptr(group), active.flatMap(ServerWords.playbackReportingNote))
-            for account in app.accounts.saved {
-                let row = adw_action_row_new()!
-                adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
-                adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
-                if active?.isSameAccount(as: account) == true {
-                    let check = gtk_image_new_from_icon_name("object-select-symbolic")!.named("Signed In")
-                    adw_action_row_add_suffix(ptr(row), check)
-                } else {
+            var radios: UnsafeMutablePointer<GtkCheckButton>?
+            let saved = app.accounts.saved.isEmpty ? (active.map { [$0] } ?? []) : app.accounts.saved
+            for account in saved {
+                let isActive = active?.isSameAccount(as: account) == true
+                let row = accountRow(account, isActive: isActive, group: &radios)
+                if !isActive {
                     gtk_list_box_row_set_activatable(ptr(row), 1)
                     // One switch at a time, while its server is asked.
                     row.isSensitive = !switching
+                    // Switched: the dialog closes on its Home. Not: the
+                    // words why, and the radio stays where it was, as it
+                    // follows the account signed in, never the click.
                     on(raw(row), "activated") {
                         Task {
                             if let problem = await app.switchAccount(to: account) {
@@ -340,27 +377,67 @@ enum Preferences {
                             }
                         }
                     }
+                    // Another one signed out of, on its secondary click, as
+                    // the Mac's context menu: one that no longer answers can
+                    // still go.
+                    contextMenu(on: row) { [("Sign Out…", { MainWindow.confirmSignOut(of: account) })] }
                 }
-                let out = button("Sign Out…", "flat") { MainWindow.confirmSignOut(of: account) }
-                    .align(vertical: GTK_ALIGN_CENTER)
-                adw_action_row_add_suffix(ptr(row), out)
                 adw_preferences_group_add(ptr(group), row)
                 rows.append(row)
             }
-            // The year's music, a subpage (YourYearPage): from the server's
-            // record where it keeps one, as the description above says.
-            if active != nil {
-                let year = adw_action_row_new()!
-                adw_preferences_row_set_title(ptr(year), "Your Year")
-                adw_action_row_add_suffix(ptr(year), gtk_image_new_from_icon_name("go-next-symbolic")!)
-                gtk_list_box_row_set_activatable(ptr(year), 1)
-                on(raw(year), "activated") {
-                    adw_preferences_dialog_push_subpage(ptr(dialog), YourYearPage.make())
-                }
-                adw_preferences_group_add(ptr(group), year)
-                rows.append(year)
+            // The list's last row, as GNOME's Online Accounts adds one.
+            let add = adw_action_row_new()!
+            adw_preferences_row_set_title(ptr(add), "Add Account…")
+            adw_action_row_add_prefix(ptr(add), gtk_image_new_from_icon_name("list-add-symbolic")!)
+            gtk_list_box_row_set_activatable(ptr(add), 1)
+            on(raw(add), "activated") {
+                adw_dialog_close(ptr(dialog))
+                MainWindow.addAccount()
+            }
+            add.isSensitive = active != nil
+            adw_preferences_group_add(ptr(group), add)
+            rows.append(add)
+            // Under the rows, as GNOME's Settings has its destructive
+            // buttons (libadwaita 1.5 has no button row). Of the one signed
+            // in: with others kept the next is signed in to, with none the
+            // welcome (AppModel.signOut).
+            if let active {
+                let out = button("Sign Out…", "destructive-action") { MainWindow.confirmSignOut(of: active) }
+                    .align(horizontal: GTK_ALIGN_START)
+                gtk_widget_set_margin_top(out, 12)
+                adw_preferences_group_add(ptr(group), out)
+                rows.append(out)
             }
         }
+    }
+
+    /// An account's card: the radio, its kind's letter, the server's name,
+    /// the kind and the user, the address. The radio is the card's one
+    /// swappable part: today one account is signed in at a time; should
+    /// several play side by side one day ("waarom we die beperking moeten
+    /// hebben", the photographer, 21 November 2026), it becomes a check
+    /// that keeps at least one on, and the row stays as it is. Its state is
+    /// the account signed in alone; a click is the row's, never the radio's.
+    private static func accountRow(_ account: ServerCredentials, isActive: Bool,
+                                   group: inout UnsafeMutablePointer<GtkCheckButton>?) -> Widget {
+        let row = adw_action_row_new()!.css("account-card")
+        if isActive { gtk_widget_add_css_class(row, "on") }
+        adw_preferences_row_set_use_markup(ptr(row), 0)
+        adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
+        adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)\n\(account.serverURL.absoluteString)")
+        let radio = gtk_check_button_new()!.named(isActive ? "Signed In" : "Switch to This Account")
+        let check = UnsafeMutablePointer<GtkCheckButton>(OpaquePointer(radio))
+        if let group { gtk_check_button_set_group(check, group) } else { group = check }
+        gtk_check_button_set_active(check, isActive ? 1 : 0)
+        gtk_widget_set_can_target(radio, 0)
+        gtk_widget_set_focusable(radio, 0)
+        let mark = label(ServerWords.mark(account.kind), "kind-mark", "serif").align(vertical: GTK_ALIGN_CENTER)
+        gtk_label_set_xalign(ptr(mark), 0.5)
+        // Each prefix goes before the last: the mark first, so the radio
+        // leads, as on the Mac.
+        adw_action_row_add_prefix(ptr(row), mark)
+        adw_action_row_add_prefix(ptr(row), radio.align(vertical: GTK_ALIGN_CENTER))
+        return row
     }
 
     /// Songs on this computer (OfflineStore), as the Mac's Settings ›
@@ -372,7 +449,7 @@ enum Preferences {
         let settings = app.settings
         let offline = app.offline
         let group = group(nil, on: page)
-        let keep = toggle("Keep Songs I Play", "Songs you play often or lately stay on this computer, to play without a connection",
+        let keep = toggle("Keep Songs I Play", "Songs you play often or lately stay on this computer, to play without a connection.",
                           settings.keepSongs) { settings.keepSongs = $0 }
         adw_preferences_group_add(ptr(group), keep)
         let limits = AppSettings.keepLimits
@@ -397,7 +474,10 @@ enum Preferences {
         let chosen = fact("Downloaded")
         let kept = fact("Kept")
         let status = fact("Downloading")
-        for row in [chosen, kept, status] { adw_preferences_group_add(ptr(group), row) }
+        // What the downloads take, in a group of its own, as the Mac's: the
+        // choices above with their note, the space and the button here.
+        let space = Self.group(nil, on: page)
+        for row in [chosen, kept, status] { adw_preferences_group_add(ptr(space), row) }
         // Under the rows, as GNOME's Settings has its destructive buttons
         // (libadwaita 1.5 has no button row).
         let removeAll = button("Remove All Downloads", "destructive-action") {
@@ -417,7 +497,7 @@ enum Preferences {
             adw_dialog_present(ptr(dialog), MainWindow.window)
         }.align(horizontal: GTK_ALIGN_START)
         gtk_widget_set_margin_top(removeAll, 12)
-        adw_preferences_group_add(ptr(group), removeAll)
+        adw_preferences_group_add(ptr(space), removeAll)
         // MP3 from a Subsonic server or Plex, AAC from Jellyfin.
         let convertsToMP3 = app.credentials?.kind.convertedFormat == "MP3"
         let server = app.credentials.map { $0.serverName.isEmpty ? ($0.serverURL.host ?? "Your server") : $0.serverName } ?? "Your server"
@@ -446,6 +526,127 @@ enum Preferences {
                 : "Original is each file as it is, or AAC at 256 kbit/s when this computer cannot play it; High and Normal have \(app.library.serverKind) convert songs to AAC at that rate, so more of them fit. Kept songs wait while the power saver is on."
             adw_preferences_group_set_description(ptr(group), offline.downloadsAllowed
                 ? quality : "\(server) doesn’t allow downloads for this account. " + quality)
+        }
+    }
+
+    /// The radio's dial, as the Mac's Settings › Radio has it over Last.fm:
+    /// its name and its two ends, the panel's dial's twin (Panel.swift).
+    private static func dial(on page: Widget) {
+        let group = group(nil, on: page)
+        adw_preferences_group_set_description(ptr(group), "Familiar stays close to where a station started and to songs you know. Adventurous goes further out and plays more that is new to you.")
+        let dial = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 1, 0.05)!.css("dial")
+        gtk_scale_set_draw_value(ptr(dial), 0)
+        dial.named("Adventurousness")
+        gtk_range_set_value(ptr(dial), app.settings.adventurousness)
+        var counting: Task<Void, Never>?
+        on(dial, "value-changed") {
+            let value = gtk_range_get_value(ptr(dial))
+            guard abs(value - app.settings.adventurousness) > 0.001 else { return }
+            app.settings.adventurousness = value
+            app.radio.adventurousnessChanged()
+            // Counted when the hand lets go (docs/STATS.md), not at every step.
+            counting?.cancel()
+            counting = Task {
+                try? await Task.sleep(for: .seconds(1))
+                guard !Task.isCancelled else { return }
+                Stats.track(.dialChanged, ["value": Stats.dial(value)])
+            }
+        }
+        let title = label("Adventurousness")
+        gtk_label_set_xalign(ptr(title), 0)
+        let adventurous = label("Adventurous", "t13", "fact").expand(horizontal: true)
+        gtk_label_set_xalign(ptr(adventurous), 1)
+        let ends = hbox(spacing: 8, [label("Familiar", "t13", "fact"), adventurous])
+        let box = vbox(spacing: 8, [title, dial, ends])
+        gtk_widget_set_margin_top(box, 12)
+        gtk_widget_set_margin_bottom(box, 12)
+        gtk_widget_set_margin_start(box, 12)
+        gtk_widget_set_margin_end(box, 12)
+        let row = gtk_list_box_row_new()!
+        gtk_list_box_row_set_child(ptr(row), box)
+        gtk_list_box_row_set_activatable(ptr(row), 0)
+        adw_preferences_group_add(ptr(group), row)
+        // Moved in the panel meanwhile: this one follows.
+        observe(row) {
+            if abs(gtk_range_get_value(ptr(dial)) - app.settings.adventurousness) > 0.001 {
+                gtk_range_set_value(ptr(dial), app.settings.adventurousness)
+            }
+        }
+    }
+
+    /// The list of the music kept on this computer, as the Mac's Settings ›
+    /// Library: its counts, when it was last read, and Refresh Library.
+    private static func library(on page: Widget) {
+        let library = app.library
+        let group = group(nil, on: page)
+        let songs = fact("Songs")
+        let albums = fact("Albums")
+        let artists = fact("Artists")
+        let loaded = fact("Last Loaded")
+        for row in [songs, albums, artists, loaded] { adw_preferences_group_add(ptr(group), row) }
+        // Under the rows, as Remove All Downloads (libadwaita 1.5 has no
+        // button row).
+        let refresh = button("Refresh Library") { Task { await library.refresh() } }
+            .align(horizontal: GTK_ALIGN_START)
+        gtk_widget_set_margin_top(refresh, 12)
+        adw_preferences_group_add(ptr(group), refresh)
+        observe(group) {
+            adw_action_row_set_subtitle(ptr(songs), library.tracks.count.formatted())
+            adw_action_row_set_subtitle(ptr(albums), library.albums.count.formatted())
+            adw_action_row_set_subtitle(ptr(artists), library.artists.count.formatted())
+            loaded.isVisible = library.lastLoaded != nil
+            if let lastLoaded = library.lastLoaded {
+                adw_action_row_set_subtitle(ptr(loaded), lastLoaded.formatted(.relative(presentation: .named)))
+            }
+            var failure: String?
+            var isLoading = false
+            switch library.state {
+            case let .loading(progress):
+                isLoading = true
+                let percent = progress.map { " " + $0.formatted(.percent.precision(.fractionLength(0))) } ?? ""
+                gtk_button_set_label(ptr(refresh), "Refreshing Library…" + percent)
+            case let .failed(message):
+                failure = message
+            default:
+                break
+            }
+            if !isLoading { gtk_button_set_label(ptr(refresh), "Refresh Library") }
+            gtk_widget_set_sensitive(refresh, isLoading ? 0 : 1)
+            adw_preferences_group_set_description(ptr(group), failure ?? "Jukebox keeps a copy of the list of your music, so it opens at once. It reads the server again each time it starts.")
+        }
+    }
+
+    /// What the radio and the mixes learn from, as the Mac's Settings ›
+    /// Privacy › History: how many plays, and Clear Listening History,
+    /// asked first.
+    private static func history(on page: Widget) {
+        let history = app.history
+        let group = group("History", on: page)
+        adw_preferences_group_set_description(ptr(group), "What you play, skip and give a thumbs up or down to is how the radio and your mixes learn your taste. It stays on this computer.")
+        let count = fact("Plays Remembered")
+        adw_preferences_group_add(ptr(group), count)
+        let clear = button("Clear Listening History", "destructive-action") {
+            let dialog = adw_alert_dialog_new("Clear your listening history?",
+                                              "The radio and your mixes start learning your taste again from your library and favorites. Play counts on the server stay as they are.")!
+            adw_alert_dialog_add_response(ptr(dialog), "cancel", "Cancel")
+            adw_alert_dialog_add_response(ptr(dialog), "clear", "Clear Listening History")
+            adw_alert_dialog_set_response_appearance(ptr(dialog), "clear", ADW_RESPONSE_DESTRUCTIVE)
+            adw_alert_dialog_set_default_response(ptr(dialog), "cancel")
+            adw_alert_dialog_set_close_response(ptr(dialog), "cancel")
+            on(raw(dialog), "response", argument: { response in
+                guard let response, String(cString: response.assumingMemoryBound(to: CChar.self)) == "clear" else { return }
+                history.clear()
+                // Today's mixes were made from what is now forgotten.
+                Task { await app.mixes.rebuild(library: app.library, history: history, settings: app.settings) }
+            })
+            adw_dialog_present(ptr(dialog), MainWindow.window)
+        }.align(horizontal: GTK_ALIGN_START)
+        gtk_widget_set_margin_top(clear, 12)
+        adw_preferences_group_add(ptr(group), clear)
+        observe(group) {
+            let plays = history.history.events.count
+            adw_action_row_set_subtitle(ptr(count), plays.formatted())
+            gtk_widget_set_sensitive(clear, plays > 0 ? 1 : 0)
         }
     }
 

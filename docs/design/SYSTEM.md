@@ -203,6 +203,36 @@ system's own.
   choice, the panel as a drawer under 1280 (`Panel.swift`). Toasts for a
   moment's news (`MainWindow.toast`).
 
+### Settings and Preferences
+The same pages, rows, order, words and footers on every client; the table
+is `settings.md`. Facts as rows, a switch or a choice as the platform's
+own control. A section's actions at its end: on the Mac in one row,
+trailing, as the system's own push buttons, never the quiet twin; on the
+iPhone and the iPad each a row; on Linux a button under the group.
+- Apple: `Settings/SettingsView.swift` (`SettingsActions`, `systemButtons()`).
+- GNOME: `Preferences.swift`.
+
+### Account cards
+Each account kept, in Settings › Accounts and Preferences › Accounts, is a
+card. The cards are a radio group: one is always the one signed in. A card
+holds, in this order:
+- the radio;
+- the kind's letter, a round 32 label in one ink (the accent on the one
+  signed in, grey on the others; never the projects' own logos);
+- the server's name, in the serif;
+- the kind, version and user, then the address, both in the secondary ink.
+
+Add Account… comes after the cards and Sign Out… of the one signed in
+under them. The Playback Reporting note sits with the card signed in.
+The radio is the one part to swap: should several servers play at once,
+it becomes a toggle that keeps one on.
+- Apple: `AccountCard` with `AccountRadio` (`Settings/AccountCard.swift`),
+  a form section each. On the Mac the radio is the system's own
+  (`NSButton`); on the iPhone and the iPad it is ◉ / ○ in the accent.
+- GNOME: `Preferences.accountRow`, an `AdwActionRow` in a boxed list with
+  a `GtkCheckButton` in radio mode before it, CSS `row.account-card`,
+  `.kind-mark` (`Style.swift`).
+
 ### Notices and empty states
 A whole window's state (loading, couldn't load, no music): the platform's
 status page, centred, sentence-case title, one action. A page with nothing

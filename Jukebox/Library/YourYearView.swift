@@ -1,8 +1,11 @@
 // Your Year on the iPhone, the iPad and the Mac: the year in serif as on a
 // sleeve, the minutes and plays as a fact, where they come from, the months
 // as bars, then the songs, artists, albums and genres it was made of.
-// Opened from Settings' server section, in a sheet (YourYearLoader has the
-// why of the place and of the sources). Linux's is Preferences' subpage.
+// A page of the library's (Route.yourYear): a row in the iPhone's Library,
+// a place in the wide window's sidebar, the Mac's Account › Your Year. It
+// was a button in Settings, and left it: the year's music is content, not
+// a setting (21 November 2026). YourYearLoader has the sources. Linux's
+// is YourYearPage, in its sidebar and primary menu.
 
 import JukeboxKit
 import SwiftUI
@@ -11,26 +14,20 @@ struct YourYearView: View {
     @Environment(AppModel.self) private var app
     @Environment(LibraryStore.self) private var library
     @Environment(HistoryStore.self) private var history
-    @Environment(\.dismiss) private var dismiss
     @State private var year: YourYear?
 
     var body: some View {
-        NavigationStack {
-            content
-                .navigationTitle("Your Year")
-                #if os(iOS)
-                .navigationBarTitleDisplayMode(.inline)
-                #endif
-                .toolbar {
-                    ToolbarItem(placement: .confirmationAction) {
-                        Button("Done") { dismiss() }
-                    }
-                }
-        }
-        .task {
-            year = await YourYearLoader.load(year: YourYearLoader.year(), server: app.server,
-                                             history: history.history, library: library)
-        }
+        content
+            .navigationTitle("Your Year")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+            // Each time it shows: a page kept in the sidebar's stack would
+            // otherwise keep the morning's year all day.
+            .task {
+                year = await YourYearLoader.load(year: YourYearLoader.year(), server: app.server,
+                                                 history: history.history, library: library)
+            }
     }
 
     @ViewBuilder private var content: some View {

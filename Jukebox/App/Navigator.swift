@@ -48,6 +48,9 @@ enum Route: Hashable {
     case recentlyAdded
     /// What is on the phone (DownloadedView).
     case downloaded
+    /// The year's music (YourYearView): content, so the library's, not
+    /// Settings'. No switch in Settings › Pages: always there.
+    case yourYear
 }
 
 struct AddToPlaylistRequest: Identifiable {
@@ -205,6 +208,7 @@ struct RoutePage: View {
         case .favorites: FavoritesView()
         case .recentlyAdded: RecentlyAddedView()
         case .downloaded: DownloadedView()
+        case .yourYear: YourYearView()
         }
     }
 }
@@ -254,6 +258,7 @@ extension Route {
         case .favorites: return "favorites"
         case .recentlyAdded: return "recently_added"
         case .downloaded: return "downloaded"
+        case .yourYear: return "your_year"
         }
     }
 }

@@ -7,7 +7,7 @@
 // (20 November 2026). The store's pictures, with the real window and its
 // title bar, stay the walk's, on GitHub's Mac, when he asks (store-walk).
 //
-// The app's own views (WideShell, NowPlayingView, SettingsView) and stores,
+// The app's own views (WideShell, NowPlayingView, each Settings pane) and stores,
 // signed in to the fake Jellyfin ci/screenshots.sh starts on localhost:8096
 // (the walk's made-up library), drawn in a window that is never put on
 // screen, 1440 by 900 as the store's window, dark and then light. No title
@@ -54,6 +54,9 @@ private struct Round {
     let address: String
     /// The window's size in the store's pictures (docs/RELEASE.md).
     let size = CGSize(width: 1440, height: 900)
+    /// The Settings window's width (SettingsView's 560), and room for its
+    /// longest pane, Library with its Pages.
+    let settingsSize = CGSize(width: 560, height: 1000)
 
     func run() async {
         let started = Date()
@@ -119,9 +122,19 @@ private struct Round {
                 app.navigator.place = .library(.albums)
                 if let album = album(named: "Lantern Hours (25th Anniversary)", in: app) { app.navigator.open(.album(album)) }
             }
-            // No Settings: its window's tabs live in a toolbar, which an
-            // offscreen window does not draw, so the picture came out broken.
-            // The store's walk on GitHub has it.
+            // Settings: each pane's own form alone, at the window's width
+            // (SettingsView's tabs), as its toolbar of tabs is not drawn in
+            // an offscreen window and the whole window came out broken.
+            // Tall enough for the longest pane; the store's walk on GitHub
+            // has the real window.
+            for page in SettingsPage.allCases where page != .about {
+                number += 1
+                let view = SettingsPageForm(page: page)
+                    .frame(width: settingsSize.width, height: settingsSize.height)
+                    .snapshotEnvironment(app, panel: panel)
+                await render(view, size: settingsSize, appearance: appearance, settle: 1,
+                             as: String(format: "%@%02d-settings-%@", prefix, number, page.rawValue))
+            }
         }
         // The song made ready, let go again.
         app.player.stop()
@@ -135,6 +148,16 @@ private struct Round {
             let detected = try await app.detectServer(at: address)
             let credentials = try await app.signIn(to: detected).signIn(username: "test", password: "test")
             await app.openForSnapshots(credentials)
+            // Accounts' cards with a second one beside it, made up, never
+            // asked: a Navidrome at home.
+            var second = credentials
+            second.kind = .subsonic(flavour: .navidrome)
+            second.serverID = "snapshots-betsy"
+            second.serverName = "Betsy"
+            second.serverVersion = "0.64.2"
+            second.userName = "anna"
+            second.serverURL = URL(string: "http://betsy.local:4533")!
+            app.accounts.showForSnapshots([credentials, second])
         } catch {
             note("no sign-in at \(address): \(error)")
             return false

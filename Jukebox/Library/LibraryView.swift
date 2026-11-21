@@ -19,7 +19,7 @@ struct LibraryView: View {
 
     var body: some View {
         let recent = Array(library.recentlyAddedAlbums.prefix(isWide ? 16 : 12))
-        let kinds = Self.kinds.filter { settings.shows($0.page) }
+        let kinds = Self.kinds.filter { kind in kind.page.map { settings.shows($0) } ?? true }
         ScrollView {
             VStack(alignment: .leading, spacing: 0) {
                 if !kinds.isEmpty {
@@ -81,6 +81,9 @@ struct LibraryView: View {
         LibraryKind(title: "Favorites", symbol: "heart", route: .favorites, page: .favorites),
         // What is on the phone: what plays without a connection.
         LibraryKind(title: "Downloaded", symbol: "arrow.down.circle", route: .downloaded, page: .downloaded),
+        // The year's music, out of Settings: content, not a setting. No
+        // switch in Settings › Pages, as Home has none.
+        LibraryKind(title: "Your Year", symbol: "calendar", route: .yourYear, page: nil),
     ]
 
     /// Two columns on the iPhone, as Music has it; four where there is room.
@@ -94,7 +97,8 @@ private struct LibraryKind {
     let title: LocalizedStringKey
     let symbol: String
     let route: Route
-    let page: AppSettings.Page
+    /// Its switch in Settings › Pages; nil, always there.
+    let page: AppSettings.Page?
 }
 
 /// One of the Library's kinds: the accent symbol, the name, the chevron,
