@@ -170,6 +170,8 @@ struct RootView: View {
             // A Mac's window stays .active while another app is in front, so
             // coming back from the Finder with new music is AppKit's news.
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
+                // The Play key comes here, not to Music (NowPlayingInfo.claim).
+                app.player.claimNowPlaying()
                 app.radio.refreshYourStationFact()
                 if !app.offline.isOffline { Task { await app.library.refreshIfStale() } }
             }

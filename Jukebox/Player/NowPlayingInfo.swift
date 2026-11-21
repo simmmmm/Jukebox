@@ -15,6 +15,12 @@ final class NowPlayingInfo {
     private var artwork: Artwork?
     private var artworkImage: MPMediaItemArtwork?
     private var artworkTask: Task<Void, Never>?
+    /// Off in the Mac's snapshots (JukeboxSnapshots), which run on the
+    /// photographer's own laptop for every push: a second Jukebox telling
+    /// the system it is the one playing took the Play key from the real
+    /// app, and when it quit the key had no one left and opened Music
+    /// ("jukebox stond gewoon open en play opende apple music", 21 November 2026).
+    var isOn = true
 
     /// A new track, or the same one with its place in the queue changed.
     func show(_ entry: QueueEntry, index: Int, count: Int, elapsed: TimeInterval, duration: TimeInterval,
@@ -59,6 +65,7 @@ final class NowPlayingInfo {
     }
 
     func clear() {
+        guard isOn else { return }
         artworkTask?.cancel()
         artworkTask = nil
         info = [:]
@@ -67,11 +74,34 @@ final class NowPlayingInfo {
         artworkImage = nil
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
         #if os(macOS)
-        MPNowPlayingInfoCenter.default().playbackState = .stopped
+        // Paused, not stopped: the Mac's Play key with nothing loaded starts
+        // the music to go on with or Your Station (RemoteCommands), so
+        // Jukebox stays the player the key goes to.
+        MPNowPlayingInfoCenter.default().playbackState = .paused
         #endif
     }
 
+    #if os(macOS)
+    /// Jukebox the Mac's Now Playing app again, when it comes to the front.
+    /// macOS sends the Play key to the app that last told it so; one that
+    /// quit (another player, or the snapshots) leaves no one, and the key
+    /// opens Music. Told afresh, not the same again, which the system skips.
+    /// While it plays it is the one already.
+    func claim() {
+        guard isOn, (info[MPNowPlayingInfoPropertyPlaybackRate] as? Double ?? 0) == 0 else { return }
+        let center = MPNowPlayingInfoCenter.default()
+        center.nowPlayingInfo = nil
+        center.playbackState = .stopped
+        if entryID == nil {
+            center.playbackState = .paused
+        } else {
+            publish()
+        }
+    }
+    #endif
+
     private func publish() {
+        guard isOn else { return }
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
         #if os(macOS)
         // The Mac's Control Centre and media keys go by the state the app

@@ -37,6 +37,9 @@ enum Snapshots {
         // using it.
         let application = NSApplication.shared
         application.setActivationPolicy(.prohibited)
+        // Not the laptop's Now Playing: the real Jukebox open beside it keeps
+        // the Play key (NowPlayingInfo.isOn).
+        AudioPlayer.claimsSystemControls = false
         Task {
             await Round(folder: folder, address: address).run()
             exit(0)
@@ -114,7 +117,7 @@ private struct Round {
             // offscreen window does not draw, so the picture came out broken.
             // The store's walk on GitHub has it.
         }
-        // What the system's Now Playing was told, cleared again.
+        // The song made ready, let go again.
         app.player.stop()
         print("SNAPSHOTS: done in \(Int(Date().timeIntervalSince(started))) s")
     }
