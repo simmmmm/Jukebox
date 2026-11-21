@@ -36,8 +36,8 @@ struct EqualizerBars: View {
     @State private var isFalling = false
 
     static let columns = 18
-    /// The tallest bar's part of the ground's height: up to the row's top.
-    static let reach: CGFloat = 0.62
+    /// The tallest bar's part of its frame: the row and the crown over it.
+    static let reach: CGFloat = 1
     /// Where they rest, paused.
     static let rest: Float = 0.04
     static let nightOpacity = 0.24

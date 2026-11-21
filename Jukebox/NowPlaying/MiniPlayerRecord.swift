@@ -212,7 +212,19 @@ struct RecordMiniPlayer: View {
             }
         }
         .sensoryFeedback(.impact(weight: .light), trigger: skips)
-        .background { ground }
+        .background {
+            ZStack {
+                ground
+                // Equalizer's bars stand on the tab bar's shoulder and
+                // reach to the arch's crown, behind the words, not down
+                // under the tab bar's glass, where the first walk's hid.
+                if style == .equalizer {
+                    EqualizerBars()
+                        .padding(.top, -Self.crown)
+                        .allowsHitTesting(false)
+                }
+            }
+        }
         .onChange(of: player.errorMessage) { _, message in
             // Shown on this line silently; VoiceOver is told. Not while Now
             // Playing is open: it tells VoiceOver itself, and once is enough.
@@ -269,9 +281,6 @@ struct RecordMiniPlayer: View {
                         Color.black
                     }
                 }
-            if style == .equalizer {
-                EqualizerBars()
-            }
         }
         // The arch, coming in over some 48 to 56 points along its curve.
         // Drawn past the ground's own edges, so its blur fades only along
