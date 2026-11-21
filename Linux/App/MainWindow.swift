@@ -454,9 +454,12 @@ enum MainWindow {
         return items
     }()
 
-    /// The primary menu's accounts: with two or more, each a radio item
-    /// (its server and user), the one signed in chosen, a click switches;
-    /// then Add Account… and Sign Out… (of the one signed in).
+    /// The primary menu's accounts: with two or more, Account › each a
+    /// radio item (its server and user), the one signed in chosen, a click
+    /// switches, as the Mac's Account picker; then Add Account… and Sign
+    /// Out… (of the one signed in). The radio items on a page of their own:
+    /// on the menu's own page they kept a mark's room before Preferences
+    /// and every other item (SYSTEM.md, "Menu checks", 21 November 2026).
     private static func followAccounts(_ application: UnsafeMutablePointer<AdwApplication>) {
         let chosen = g_simple_action_new_stateful("account", g_variant_type_new("s"), g_variant_new_string(""))!
         on(raw(chosen), "activate", argument: { parameter in
@@ -471,13 +474,16 @@ enum MainWindow {
             let active = app.credentials
             g_menu_remove_all(accountItems)
             if saved.count > 1 {
+                let choices = g_menu_new()!
                 for account in saved {
                     let item = g_menu_item_new("\(ServerWords.name(of: account)) · \(account.userName)", nil)!
                     g_menu_item_set_action_and_target_value(item, "app.account",
                                                             g_variant_new_string(OfflinePaths.account(for: account)))
-                    g_menu_append_item(accountItems, item)
+                    g_menu_append_item(choices, item)
                     g_object_unref(raw(item))
                 }
+                g_menu_append_submenu(accountItems, "Account", ptr(choices))
+                g_object_unref(raw(choices))
             }
             g_menu_append(accountItems, "Add Account…", "app.add-account")
             // Of the account chosen above; its dialog names it.

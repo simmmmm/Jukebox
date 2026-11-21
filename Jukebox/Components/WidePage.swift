@@ -574,7 +574,9 @@ struct PageTrackRows: View {
                     guard !player.refusesOffline(track) else { return }
                     play(track)
                 } label: {
-                    TrackRow(track, leading: numbered ? .number(track.trackNumber) : .artwork,
+                    // Numbered by its place on its disc, not the file's tag
+                    // (LibraryIndex.placeOnDisc).
+                    TrackRow(track, leading: numbered ? .number(LibraryIndex.placeOnDisc(at: i, in: tracks)) : .artwork,
                              subtitle: subtitle(track))
                 }
                 .buttonStyle(.plain)

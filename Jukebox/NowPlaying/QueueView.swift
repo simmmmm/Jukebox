@@ -114,7 +114,7 @@ struct QueueView: View {
                             upNextMenu(entry)
                         }
                         .modifier(RemoveSwipe { remove(entry) })
-                        .queueRow()
+                        .queueRow(song: true)
                 }
                 .onMove { source, destination in
                     player.moveUpcoming(fromOffsets: source, toOffset: destination)
@@ -142,7 +142,7 @@ struct QueueView: View {
                         row(entry)
                             // Played: there, but quieter than what is to come.
                             .opacity(0.5)
-                            .queueRow()
+                            .queueRow(song: true)
                     }
                 }
             }
@@ -605,11 +605,14 @@ private struct QueueToggle: View {
 }
 
 private extension View {
-    /// A row on Now Playing's backdrop: no ground, no separator, the page's margins.
-    func queueRow() -> some View {
+    /// A row on Now Playing's backdrop: no ground, no separator, the page's
+    /// margins. A song's row (`song`) is as tall as TrackRow makes it, 60
+    /// (Tokens.Row), with nothing above and under it, as in every song list.
+    func queueRow(song: Bool = false) -> some View {
         listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: 6, leading: Theme.Space.xl, bottom: 6, trailing: Theme.Space.xl))
+            .listRowInsets(EdgeInsets(top: song ? 0 : 6, leading: Theme.Space.xl,
+                                      bottom: song ? 0 : 6, trailing: Theme.Space.xl))
     }
 
     /// A row of the panel: on its ground, no separator, 16 from its sides;

@@ -357,6 +357,15 @@ struct PlayerBar: View {
             // LRCLIB's when Settings allow it), as on the iPhone.
             if app.can(.lyrics) || settings.findLyricsOnline {
                 panelButton(.lyrics, symbol: "quote.bubble", label: "Lyrics", id: "bar.lyrics")
+                    // Off for a song with none, once that is known: "Kan je
+                    // t knoppie gewoon disablen toch?" (the photographer,
+                    // 21 November 2026). The song playing is asked for here,
+                    // so the button knows (LyricsFinder).
+                    .disabled(LyricsFinder.shared.hasNone(player.currentTrack, online: settings.findLyricsOnline))
+                    .task(id: player.currentTrack?.id) {
+                        guard let server = app.server else { return }
+                        LyricsFinder.shared.prefetch(player.currentTrack, server: server, online: settings.findLyricsOnline)
+                    }
             }
             // The panel is Now Playing ("moet up next niet trouwens gewoon
             // 'now playing' worden", the photographer, 15 November 2026).

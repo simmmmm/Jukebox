@@ -68,6 +68,11 @@ struct TrackRow: View {
         TrackRow(track, subtitle: track.artistLine)
     }
 
+    /// The artist (or a guest) or the radio's reason under the title.
+    private var hasSecondLine: Bool {
+        !(subtitle ?? "").isEmpty || reason != nil
+    }
+
     var body: some View {
         if isWide {
             wide
@@ -155,6 +160,11 @@ struct TrackRow: View {
                 .accessibilityLabel("More")
             }
         }
+        // Its own height, the list's insets none (`trackListRow`): 4 above
+        // and under what it holds, and 52 at the least for one line, 60 for
+        // two (Tokens.Row); taller with the radio's reason or Larger Text.
+        .padding(.vertical, Theme.Space.xs)
+        .frame(minHeight: hasSecondLine ? Tokens.Row.twoLines : Tokens.Row.oneLine)
         .contentShape(.rect)
         .contextMenu {
             TrackMenu(track: track)
@@ -238,7 +248,7 @@ struct TrackRow: View {
                 .desktopFont(Tokens.Size.fact13.size)
                 .foregroundStyle(.secondary)
         }
-        .frame(minHeight: showsArtwork ? (reason == nil ? 64 : 72) : 48)
+        .frame(minHeight: showsArtwork ? (reason == nil ? Tokens.Row.wideCovered : Tokens.Row.wideReason) : Tokens.Row.wideNumbered)
         .contentShape(.rect)
         // The pointer over it: the whole row lit, 8 past its ends.
         .background {
@@ -470,6 +480,23 @@ struct TrackMenu: View {
             CopyShareLinkButton(id: track.id, tracks: [track.id])
             ShareMenuItem(item: .track(track))
             DontCountToggle(kind: .song, id: track.id, name: track.name)
+        }
+    }
+}
+
+extension View {
+    /// A song's row in an iPhone's list: on the margin, with none of the
+    /// list's own insets above and under it, so the row's own height
+    /// (Tokens.Row, TrackRow) is the row's. The system's insets put some
+    /// 15 above and under the "…"'s 44: rows of 75 (21 November 2026).
+    /// On the row itself (the Button round a TrackRow), where the list
+    /// reads it; `compact` false leaves a wide page's rows to `pageRow`.
+    @ViewBuilder
+    func trackListRow(_ compact: Bool = true) -> some View {
+        if compact {
+            listRowInsets(EdgeInsets(top: 0, leading: Theme.margin, bottom: 0, trailing: Theme.margin))
+        } else {
+            self
         }
     }
 }

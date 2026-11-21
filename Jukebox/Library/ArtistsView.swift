@@ -304,7 +304,7 @@ struct ArtistDetailView: View {
                                     TrackRow(top[i], subtitle: top[i].albumName)
                                 }
                                 .buttonStyle(.plain)
-                                .padding(.vertical, Theme.Space.xs)
+                                // Its own 60 (Tokens.Row), nothing round it.
                                 if i < top.count - 1 {
                                     Divider().padding(.leading, 48 + Theme.Space.m)
                                 }

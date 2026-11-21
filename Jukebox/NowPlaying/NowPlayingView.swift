@@ -861,6 +861,10 @@ struct NowPlayingView: View {
         HStack {
             if offersLyrics {
                 panelToggle(.lyrics, symbol: "quote.bubble", onSymbol: "quote.bubble.fill", label: "Lyrics")
+                    // Off for a song with none, once that is known: "Kan
+                    // je t knoppie gewoon disablen toch?" (the
+                    // photographer, 21 November 2026).
+                    .disabled(songHasNoLyrics)
             } else {
                 // Its room kept, so AirPlay stays in the middle.
                 Color.clear
@@ -874,6 +878,20 @@ struct NowPlayingView: View {
             panelToggle(.queue, symbol: "list.bullet", onSymbol: "list.bullet", label: "Up Next")
         }
         .padding(.horizontal, Theme.Space.s)
+        // The song playing asked for, so its button knows (LyricsFinder).
+        .task(id: currentTrack?.id) {
+            guard offersLyrics, let server = app.server else { return }
+            LyricsFinder.shared.prefetch(currentTrack, server: server, online: settings.findLyricsOnline)
+        }
+        // The lyrics open on a song that turns out to have none: the
+        // sleeve back.
+        .onChange(of: songHasNoLyrics) {
+            if songHasNoLyrics && panel == .lyrics { show(.cover) }
+        }
+    }
+
+    private var songHasNoLyrics: Bool {
+        LyricsFinder.shared.hasNone(currentTrack, online: settings.findLyricsOnline)
     }
 
     /// No Lyrics button where none could come: a server without lyrics of

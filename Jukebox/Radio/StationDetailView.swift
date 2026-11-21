@@ -313,6 +313,7 @@ struct StationDetailView: View {
                         TrackRow(pick.track, subtitle: pick.track.artistLine)
                     }
                     .buttonStyle(.plain)
+                    .trackListRow(!isWide)
                     .accessibilityHint("Plays the station from this song")
                 }
                 .opacity(isDrawing ? 0.4 : 1)
@@ -339,6 +340,7 @@ struct StationDetailView: View {
                     TrackRow(current.track, subtitle: current.track.artistLine)
                 }
                 .buttonStyle(.plain)
+                .trackListRow(!isWide)
                 .accessibilityHint(navigator.isWide ? Text("Shows Full Player") : Text("Shows Now Playing"))
                 .listRowBackground(Color.clear)
             }
@@ -352,6 +354,7 @@ struct StationDetailView: View {
                         TrackRow(entry.track, subtitle: entry.track.artistLine)
                     }
                     .buttonStyle(.plain)
+                    .trackListRow(!isWide)
                     .accessibilityHint("Plays this song")
                 }
                 .listRowBackground(Color.clear)
@@ -519,11 +522,12 @@ private struct StationPlaceholderRows: View {
                 }
                 Spacer(minLength: 0)
             }
-            // Wide, as tall as the rows that come (TrackRow's 64).
-            .frame(minHeight: isWide ? 64 : nil)
+            // As tall as the rows that come (TrackRow's, Tokens.Row).
+            .frame(minHeight: isWide ? Tokens.Row.wideCovered : Tokens.Row.twoLines)
             .redacted(reason: .placeholder)
             .accessibilityHidden(true)
         }
+        .trackListRow(!isWide)
         .listRowSeparator(.hidden)
         .listRowBackground(Color.clear)
     }

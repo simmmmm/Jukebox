@@ -280,6 +280,24 @@ nonisolated struct LibraryIndex: Sendable {
 
     // MARK: Orders
 
+    /// The number an album's page shows for the song at `index` of its
+    /// songs, in their order (`inDiscOrder`): its place on its disc, 1, 2,
+    /// 3…, not the file's own tag, which only orders them. Tags read 2, 3,
+    /// 4, or 6, 7, 7, 8, 8, or nothing on a merged or ripped album: "Ik kan
+    /// geen touw vastknopen waarom de nummers allemaal verschillend zijn"
+    /// (the photographer, 21 November 2026).
+    static func placeOnDisc(at index: Int, in tracks: [Track]) -> Int {
+        guard tracks.indices.contains(index) else { return index + 1 }
+        let disc = tracks[index].discNumber ?? 1
+        var place = 1
+        var before = index - 1
+        while before >= 0, (tracks[before].discNumber ?? 1) == disc {
+            place += 1
+            before -= 1
+        }
+        return place
+    }
+
     static func inDiscOrder(_ a: Track, _ b: Track) -> Bool {
         let da = a.discNumber ?? 1, db = b.discNumber ?? 1
         if da != db { return da < db }

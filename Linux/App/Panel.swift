@@ -21,6 +21,13 @@ func lyricsToBeHad() -> Bool {
     app.can(.lyrics) || app.settings.findLyricsOnline
 }
 
+/// Whether the song playing is known to have no lyrics: the bar's Lyrics
+/// button and the panel's tab off, as on the iPhone and the Mac: "Kan je t
+/// knoppie gewoon disablen toch?" (the photographer, 21 November 2026).
+func songHasNoLyrics() -> Bool {
+    LyricsFinder.shared.hasNone(app.player.currentTrack, online: app.settings.findLyricsOnline)
+}
+
 enum Panel {
     /// The panel's own page: its header bar (48) with the two tabs at the
     /// start and the window's buttons at the end while it is open, over Up
@@ -47,10 +54,13 @@ enum Panel {
         adw_toolbar_view_add_top_bar(ptr(page), header)
         adw_toolbar_view_set_content(ptr(page), stack)
         observe(stack) {
-            // No lyrics to be had: Up next, and no Lyrics tab.
+            // No lyrics to be had: Up next, and no Lyrics tab. None for
+            // this song, once that is known: Up next, and the tab off.
             let available = lyricsToBeHad()
-            if !available && app.panel.content == .lyrics { app.panel.content = .upNext }
+            let none = songHasNoLyrics()
+            if (!available || none) && app.panel.content == .lyrics { app.panel.content = .upNext }
             lyrics.isVisible = available
+            gtk_widget_set_sensitive(lyrics, none ? 0 : 1)
             gtk_stack_set_visible_child_name(ptr(stack), app.panel.content.rawValue)
         }
         // Which is looked at (docs/STATS.md, `screen`), each time one is
@@ -358,7 +368,8 @@ final class UpNextRow {
 }
 
 /// The song's words (LyricsFinder: the server's, then LRCLIB's, the same as
-/// on the iPhone), asked only while they show. Timed lyrics follow the song
+/// on the iPhone), shown while they show; the bar asks for the song
+/// playing's, for its Lyrics button. Timed lyrics follow the song
 /// by the iPhone's rules (LyricsView), in the designer's measures (spec §3):
 /// the line being sung in the full text colour and every other line at 40 %,
 /// no colour; the view bringing it to 32 % of the panel's height; a click on
@@ -370,8 +381,8 @@ enum LyricsPanel {
     static func make() -> Widget {
         var lines = vbox(spacing: 8)
         let credit = label("", "fact", "bar-fact")
-        // None: a quiet line, not a status page ("Wat wij echter niet
-        // moeten doen is het een hele drukke app maken").
+        // A lookup that failed: a quiet line, not a status page ("Wat wij
+        // echter niet moeten doen is het een hele drukke app maken").
         let quiet = label("", "fact", "lyrics-quiet", lines: 0)
         let column = vbox(spacing: 24, [lines, credit, quiet]).margins(24)
         let scroller = scrolled(column).expand(vertical: true)
@@ -490,20 +501,17 @@ enum LyricsPanel {
                     timed = lyrics
                     Task { follow() }
                 }
-            case .instrumental:
-                setText(quiet, "Instrumental")
-                quiet.isVisible = true
-            case .notFound:
-                setText(quiet, "No lyrics for this song")
-                quiet.isVisible = true
+            // None: nothing, as the tab goes off and Up next comes back.
+            case .instrumental, .notFound:
+                break
             case let .failed(server):
                 setText(quiet, server ? "The lyrics could not be loaded from the server." : "The lyrics could not be loaded from LRCLIB.")
                 quiet.isVisible = true
             }
         }
 
-        // The song's lyrics, while they show: none are asked for a song
-        // while the panel is closed or on Up next.
+        // The song's lyrics, while they show (the bar asks for the song
+        // playing's in any case, for its button).
         var loaded: ItemID?
         var asking: Task<Void, Never>?
         observe(scroller) {

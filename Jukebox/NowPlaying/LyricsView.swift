@@ -55,12 +55,13 @@ struct LyricsView: View {
                 } else {
                     LyricsPlainText(lines: lyrics.lines, credit: credit(fromLRCLIB: fromLRCLIB), inPanel: inPanel)
                 }
-            // None, on the iPhone too: Linux's quiet line, not a status
-            // page: "Los ze op" (the photographer, 20 November 2026).
-            case .instrumental:
-                quiet(Text("Instrumental"))
-            case .unavailable:
-                quiet(Text("No lyrics for this song"))
+            // None: nothing here, as the Lyrics button goes off and Now
+            // Playing or Up Next takes its place again ("Kan je t knoppie
+            // gewoon disablen toch?", the photographer, 21 November 2026).
+            case .instrumental, .unavailable:
+                Color.clear
+            // A lookup that failed: Linux's quiet line, not a status page
+            // ("Los ze op", 20 November 2026).
             case let .failed(server):
                 quiet(failedDescription(server: server))
             }
@@ -114,8 +115,8 @@ struct LyricsView: View {
             show(answer)
         }
         // While the lyrics are open, the next song's too, so they are there
-        // the moment it starts. While they are closed nothing is asked: no
-        // traffic the listener did not ask for.
+        // the moment it starts. While they are closed only the song playing
+        // is asked, for its Lyrics button (LyricsFinder).
         guard !Task.isCancelled else { return }
         finder.prefetch(player.upNext.first?.track, server: server, online: online)
     }

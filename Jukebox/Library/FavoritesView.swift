@@ -114,6 +114,7 @@ struct FavoritesView: View {
                     TrackRow.standard(track)
                 }
                 .buttonStyle(.plain)
+                .trackListRow()
             }
         }
         .listStyle(.plain)
