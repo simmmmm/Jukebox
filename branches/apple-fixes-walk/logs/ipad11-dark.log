@@ -1,0 +1,58 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=65E439BE-B365-4ED5-AD53-88133BA3829C -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPadUpright" -resultBundlePath build/screenshots/ipad11-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 330 -maximum-test-execution-time-allowance 330
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad11-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:65E439BE-B365-4ED5-AD53-88133BA3829C, OS:26.5, name:iPad Pro 11-inch (M5) }
+{ platform:iOS Simulator, arch:x86_64, id:65E439BE-B365-4ED5-AD53-88133BA3829C, OS:26.5, name:iPad Pro 11-inch (M5) }
+2026-11-15 12:51:30.552645+0000 JukeboxUITests-Runner[58842:167336] [Default] Running tests...
+2026-11-15 12:51:30.661596+0000 JukeboxUITests-Runner[58842:167336] [UIKit App Config] Update the Info.plist: Launch screens will soon be required.
+2026-11-15 12:51:30.666700+0000 JukeboxUITests-Runner[58842:168020] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-15 12:51:30.711950+0000 JukeboxUITests-Runner[58842:168017] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+objc[58842]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x108164310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x108048398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+Test Suite 'Selected tests' started at 2026-11-15 12:51:57.746.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-15 12:51:57.747.
+Test Suite 'ScreenshotTests' started at 2026-11-15 12:51:57.748.
+Test Case '-[JukeboxUITests.ScreenshotTests testPadUpright]' started.
+    t =     0.00s Start Test at 2026-11-15 12:51:57.753
+    t =     0.01s Set Up
+    t =     0.01s Setting device orientation to Portrait
+    t =     0.03s     Device orientation changed to Portrait
+    t =     0.12s     Wait for com.apple.DocumentManager.DockFolderViewService to idle
+    t =     0.19s     Wait for com.apple.springboard to idle
+    t =     0.29s Open com.tijmen.Jukebox
+    t =     0.30s     Launch com.tijmen.Jukebox
+    t =     0.40s         Interface orientation changed to Portrait
+2026-11-15 12:53:01.615 xcodebuild[55197:158246] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-15 12:53:01.619 xcodebuild[55197:158246] [MT] IDELaunchParametersSnapshot: no debugger version
+/Users/runner/work/Jukebox/Jukebox/JukeboxUITests/ScreenshotTests.swift:484: error: -[JukeboxUITests.ScreenshotTests testPadUpright] : Failed to launch <XCUIApplicationImpl: 0x107d41d40 com.tijmen.Jukebox at /Users/runner/work/Jukebox/Jukebox/build/screenshots/derived/Build/Products/Debug-iphonesimulator/Jukebox.app> via Xcode: Timed out while launching application via Xcode.
+    t =    61.52s Tear Down
+Test Case '-[JukeboxUITests.ScreenshotTests testPadUpright]' failed (61.520 seconds).
+Test Suite 'ScreenshotTests' failed at 2026-11-15 12:52:59.274.
+	 Executed 1 test, with 1 failure (0 unexpected) in 61.520 (61.525) seconds
+Test Suite 'JukeboxUITests.xctest' failed at 2026-11-15 12:52:59.275.
+	 Executed 1 test, with 1 failure (0 unexpected) in 61.520 (61.528) seconds
+Test Suite 'Selected tests' failed at 2026-11-15 12:52:59.277.
+	 Executed 1 test, with 1 failure (0 unexpected) in 61.520 (61.531) seconds
+2026-11-15 12:53:23.821096+0000 JukeboxUITests-Runner[58842:171431] [Default] Xcode took 24.49 seconds to acknowledge that testing finished.
+2026-11-15 12:54:20.995 xcodebuild[55197:158246] [MT] IDETestOperationsObserverDebug: 280.332 elapsed -- Testing started completed.
+2026-11-15 12:54:20.995 xcodebuild[55197:158246] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-15 12:54:20.995 xcodebuild[55197:158246] [MT] IDETestOperationsObserverDebug: 280.332 sec, +280.332 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad11-dark.xcresult
+
+Failing tests:
+	ScreenshotTests.testPadUpright()
+
+** TEST EXECUTE FAILED **
+
+Testing started

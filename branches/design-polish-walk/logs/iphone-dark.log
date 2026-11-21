@@ -1,0 +1,246 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=CDC7077E-2206-4FEC-B03A-52EB15B2CAD4 -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPhone" -resultBundlePath build/screenshots/iphone-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 1050 -maximum-test-execution-time-allowance 1050
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:CDC7077E-2206-4FEC-B03A-52EB15B2CAD4, OS:26.5, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:CDC7077E-2206-4FEC-B03A-52EB15B2CAD4, OS:26.5, name:iPhone 17 Pro }
+2026-11-17 12:05:59.386069+0000 JukeboxUITests-Runner[16995:54128] [Default] Running tests...
+objc[16995]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x102fb4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x105ddc398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-17 12:06:08.374.
+2026-11-17 12:06:10.004 xcodebuild[15555:48198] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-17 12:06:10.004 xcodebuild[15555:48198] [MT] IDELaunchParametersSnapshot: no debugger version
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-17 12:06:08.375.
+Test Suite 'ScreenshotTests' started at 2026-11-17 12:06:08.375.
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' started.
+    t =     0.00s Start Test at 2026-11-17 12:06:08.380
+    t =     0.01s Set Up
+    t =     0.02s Open com.tijmen.Jukebox
+    t =     0.02s     Launch com.tijmen.Jukebox
+    t =     9.60s         Setting up automation session
+    t =    13.04s         Wait for com.tijmen.Jukebox to idle
+    t =    15.76s Checking existence of `"Home" NavigationBar`
+    t =    16.42s Checking existence of `"Home" Button`
+    t =    16.67s Checking existence of `"Your Station" StaticText`
+    t =    16.89s Checking existence of `"place.home" Any`
+    t =    17.28s Checking existence of `TextField (First Match)`
+    t =    20.38s Added attachment named '01-onboarding'
+PICTURE: 01-onboarding
+    t =    20.56s Waiting 10.0s for TextField (First Match) to exist
+    t =    21.63s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    21.63s         Checking existence of `TextField (First Match)`
+    t =    21.71s Find the TextField (First Match)
+    t =    21.81s Tap "music.example.com" TextField
+    t =    21.81s     Wait for com.tijmen.Jukebox to idle
+    t =    21.81s     Find the "music.example.com" TextField
+    t =    21.90s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    21.98s     Synthesize event
+    t =    22.43s     Wait for com.tijmen.Jukebox to idle
+    t =    25.81s Find the "music.example.com" TextField
+    t =    26.07s Type 'localhost:8096' into "music.example.com" TextField
+    t =    26.07s     Wait for com.tijmen.Jukebox to idle
+    t =    26.10s     Find the "music.example.com" TextField
+    t =    26.36s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    26.40s     Synthesize event
+    t =    26.87s     Wait for com.tijmen.Jukebox to idle
+    t =    27.23s Added attachment named '02-onboarding-server'
+PICTURE: 02-onboarding-server
+    t =    27.26s Type '
+' into TextField (First Match)
+    t =    27.26s     Wait for com.tijmen.Jukebox to idle
+    t =    27.27s     Find the TextField (First Match)
+    t =    27.46s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    27.51s     Synthesize event
+    t =    27.93s     Wait for com.tijmen.Jukebox to idle
+    t =    28.37s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    29.43s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    29.43s         Checking existence of `SecureTextField (First Match)`
+    t =    29.52s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    30.56s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    30.57s         Checking existence of `SecureTextField (First Match)`
+    t =    32.28s Checking existence of `"signIn.user" TextField`
+    t =    32.80s Waiting 10.0s for TextField (First Match) to exist
+    t =    33.89s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    33.89s         Checking existence of `TextField (First Match)`
+    t =    33.99s Find the TextField (First Match)
+    t =    34.11s Tap "User Name" TextField
+    t =    34.11s     Wait for com.tijmen.Jukebox to idle
+    t =    34.12s     Find the "User Name" TextField
+    t =    34.27s     Check for interrupting elements affecting "User Name" TextField
+    t =    34.43s     Synthesize event
+    t =    35.04s     Wait for com.tijmen.Jukebox to idle
+    t =    36.35s Find the "User Name" TextField
+    t =    36.80s Type 'test' into "User Name" TextField
+    t =    36.80s     Wait for com.tijmen.Jukebox to idle
+    t =    36.80s     Find the "User Name" TextField
+    t =    37.32s     Check for interrupting elements affecting "User Name" TextField
+    t =    37.43s     Synthesize event
+    t =    37.71s     Wait for com.tijmen.Jukebox to idle
+    t =    37.83s Type '
+' into TextField (First Match)
+    t =    37.83s     Wait for com.tijmen.Jukebox to idle
+    t =    37.92s     Find the TextField (First Match)
+    t =    38.94s     Check for interrupting elements affecting "User Name" TextField
+    t =    39.08s     Synthesize event
+    t =    39.35s     Wait for com.tijmen.Jukebox to idle
+    t =    40.96s Waiting 10.0s for SecureTextField (First Match) to exist
+    t =    41.98s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    41.98s         Checking existence of `SecureTextField (First Match)`
+    t =    42.49s Find the SecureTextField (First Match)
+    t =    42.76s Find the "Password" SecureTextField
+    t =    43.06s Type '<redacted>' into "Password" SecureTextField
+    t =    43.06s     Wait for com.tijmen.Jukebox to idle
+    t =    43.07s     Find the "Password" SecureTextField
+    t =    43.39s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    43.56s     Synthesize event
+    t =    43.85s     Wait for com.tijmen.Jukebox to idle
+    t =    43.90s Find the SecureTextField (First Match)
+    t =    45.20s Added attachment named '03-sign-in'
+PICTURE: 03-sign-in
+    t =    45.26s Type '<redacted>' into SecureTextField (First Match)
+    t =    45.26s     Wait for com.tijmen.Jukebox to idle
+    t =    45.27s     Find the SecureTextField (First Match)
+    t =    45.60s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    45.74s     Synthesize event
+    t =    46.09s     Wait for com.tijmen.Jukebox to idle
+    t =    46.36s Waiting 3.0s for "Not Now" Button to exist
+    t =    47.42s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    47.42s         Checking existence of `"Not Now" Button`
+    t =    49.67s         Capturing element debug description
+    t =    49.67s     Checking existence of `"Not Now" Button`
+    t =    52.83s Collecting debug information to assist test failure triage
+    t =    52.83s     Requesting snapshot of accessibility hierarchy for app with pid 18289
+    t =    53.23s Waiting 3.0s for "Not Now" Button to exist
+    t =    54.24s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    54.24s         Checking existence of `"Not Now" Button`
+    t =    54.59s         Capturing element debug description
+    t =    55.29s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    55.29s         Checking existence of `"Not Now" Button`
+    t =    55.46s         Capturing element debug description
+    t =    56.24s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    56.25s         Checking existence of `"Not Now" Button`
+    t =    56.44s         Capturing element debug description
+    t =    56.44s     Checking existence of `"Not Now" Button`
+    t =    56.68s Collecting debug information to assist test failure triage
+    t =    56.68s     Requesting snapshot of accessibility hierarchy for app with pid 12563
+    t =    56.99s Checking existence of `"Home" NavigationBar`
+    t =    58.00s Checking existence of `"Home" NavigationBar` (retry 1)
+    t =    59.01s Checking existence of `"Home" NavigationBar` (retry 2)
+    t =    59.01s Checking existence of `"Home" Button`
+    t =    60.02s Checking existence of `"Home" Button` (retry 1)
+    t =    61.03s Checking existence of `"Home" Button` (retry 2)
+    t =    61.03s Checking existence of `"Your Station" StaticText`
+    t =    62.04s Checking existence of `"Your Station" StaticText` (retry 1)
+    t =    63.06s Checking existence of `"Your Station" StaticText` (retry 2)
+    t =    63.08s Checking existence of `"place.home" Any`
+    t =    64.09s Checking existence of `"place.home" Any` (retry 1)
+    t =    65.10s Checking existence of `"place.home" Any` (retry 2)
+    t =    65.61s Checking existence of `"Home" NavigationBar`
+    t =    66.62s Checking existence of `"Home" NavigationBar` (retry 1)
+    t =    67.63s Checking existence of `"Home" NavigationBar` (retry 2)
+    t =    67.63s Checking existence of `"Home" Button`
+    t =    68.63s Checking existence of `"Home" Button` (retry 1)
+    t =    69.64s Checking existence of `"Home" Button` (retry 2)
+    t =    69.64s Checking existence of `"Your Station" StaticText`
+    t =    70.64s Checking existence of `"Your Station" StaticText` (retry 1)
+    t =    71.66s Checking existence of `"Your Station" StaticText` (retry 2)
+    t =    71.66s Checking existence of `"place.home" Any`
+    t =    72.67s Checking existence of `"place.home" Any` (retry 1)
+    t =    73.67s Checking existence of `"place.home" Any` (retry 2)
+    t =    74.18s Checking existence of `"Home" NavigationBar`
+    t =    75.19s Checking existence of `"Home" NavigationBar` (retry 1)
+    t =    76.20s Checking existence of `"Home" NavigationBar` (retry 2)
+    t =    76.20s Checking existence of `"Home" Button`
+    t =    77.21s Checking existence of `"Home" Button` (retry 1)
+    t =    78.22s Checking existence of `"Home" Button` (retry 2)
+    t =    78.22s Checking existence of `"Your Station" StaticText`
+    t =    79.23s Checking existence of `"Your Station" StaticText` (retry 1)
+    t =    80.24s Checking existence of `"Your Station" StaticText` (retry 2)
+    t =    80.24s Checking existence of `"place.home" Any`
+    t =    81.25s Checking existence of `"place.home" Any` (retry 1)
+    t =    82.30s Checking existence of `"place.home" Any` (retry 2)
+    t =    82.81s Checking existence of `"Home" NavigationBar`
+    t =    83.85s Checking existence of `"Home" NavigationBar` (retry 1)
+    t =    84.91s Checking existence of `"Home" NavigationBar` (retry 2)
+    t =    84.91s Checking existence of `"Home" Button`
+    t =    85.92s Checking existence of `"Home" Button` (retry 1)
+    t =    86.93s Checking existence of `"Home" Button` (retry 2)
+    t =    86.93s Checking existence of `"Your Station" StaticText`
+    t =    87.94s Checking existence of `"Your Station" StaticText` (retry 1)
+    t =    88.96s Checking existence of `"Your Station" StaticText` (retry 2)
+    t =    88.97s Checking existence of `"place.home" Any`
+    t =    89.98s Checking existence of `"place.home" Any` (retry 1)
+    t =    91.00s Checking existence of `"place.home" Any` (retry 2)
+    t =    91.50s Checking existence of `"Home" NavigationBar`
+    t =    92.51s Checking existence of `"Home" NavigationBar` (retry 1)
+    t =    93.52s Checking existence of `"Home" NavigationBar` (retry 2)
+    t =    93.52s Checking existence of `"Home" Button`
+    t =    94.53s Checking existence of `"Home" Button` (retry 1)
+    t =    95.53s Checking existence of `"Home" Button` (retry 2)
+    t =    95.54s Checking existence of `"Your Station" StaticText`
+    t =    96.54s Checking existence of `"Your Station" StaticText` (retry 1)
+    t =    97.55s Checking existence of `"Your Station" StaticText` (retry 2)
+    t =    97.55s Checking existence of `"place.home" Any`
+    t =    98.56s Checking existence of `"place.home" Any` (retry 1)
+    t =    99.57s Checking existence of `"place.home" Any` (retry 2)
+    t =   100.07s Checking existence of `"Home" NavigationBar`
+    t =   101.08s Checking existence of `"Home" NavigationBar` (retry 1)
+    t =   102.10s Checking existence of `"Home" NavigationBar` (retry 2)
+    t =   102.10s Checking existence of `"Home" Button`
+    t =   103.11s Checking existence of `"Home" Button` (retry 1)
+    t =   104.11s Checking existence of `"Home" Button` (retry 2)
+    t =   104.11s Checking existence of `"Your Station" StaticText`
+    t =   105.13s Checking existence of `"Your Station" StaticText` (retry 1)
+    t =   106.13s Checking existence of `"Your Station" StaticText` (retry 2)
+    t =   106.14s Checking existence of `"place.home" Any`
+    t =   107.18s Checking existence of `"place.home" Any` (retry 1)
+    t =   108.20s Checking existence of `"place.home" Any` (retry 2)
+MISSED: after 03-sign-in: Sign in: Return did not sign in within 45 s
+    t =   108.88s Waiting 2.0s for "Sign In" Button to exist
+    t =   109.97s     Checking `Expect predicate `existsNoRetry == 1` for object "Sign In" Button`
+    t =   109.99s         Checking existence of `"Sign In" Button`
+    t =   109.99s         Capturing element debug description
+    t =   110.96s     Checking `Expect predicate `existsNoRetry == 1` for object "Sign In" Button`
+    t =   110.97s         Checking existence of `"Sign In" Button`
+    t =   110.97s         Capturing element debug description
+    t =   110.97s     Checking existence of `"Sign In" Button`
+    t =   111.98s     Checking existence of `"Sign In" Button` (retry 1)
+    t =   113.07s     Checking existence of `"Sign In" Button` (retry 2)
+    t =   113.07s Collecting debug information to assist test failure triage
+MISSED: after 03-sign-in: Sign in: Sign In: not found within 2 s
+MISSED: after 03-sign-in: Jukebox stopped running at “Sign in: Sign In” (state 1)
+/Users/runner/work/Jukebox/Jukebox/JukeboxUITests/ScreenshotTests.swift:534: error: -[JukeboxUITests.ScreenshotTests testPhone] : failed - Jukebox stopped running at “Sign in: Sign In” (state 1)
+    t =   114.86s Added attachment named 'missed-phone'
+/Users/runner/work/Jukebox/Jukebox/JukeboxUITests/ScreenshotTests.swift:535: error: -[JukeboxUITests.ScreenshotTests testPhone] : failed: caught error: "Error Domain=ScreenshotTests Code=1 "Jukebox stopped running at “Sign in: Sign In” (state 1)" UserInfo={NSLocalizedDescription=Jukebox stopped running at “Sign in: Sign In” (state 1)}"
+    t =   115.00s Tear Down
+    t =   115.06s Checking for crash reports corresponding to unexpected termination of com.tijmen.Jukebox
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' failed (135.211 seconds).
+Test Suite 'ScreenshotTests' failed at 2026-11-17 12:08:23.591.
+	 Executed 1 test, with 2 failures (1 unexpected) in 135.211 (135.215) seconds
+Test Suite 'JukeboxUITests.xctest' failed at 2026-11-17 12:08:23.592.
+	 Executed 1 test, with 2 failures (1 unexpected) in 135.211 (135.217) seconds
+Test Suite 'Selected tests' failed at 2026-11-17 12:08:23.592.
+	 Executed 1 test, with 2 failures (1 unexpected) in 135.211 (135.218) seconds
+2026-11-17 12:09:32.918 xcodebuild[15555:48198] [MT] IDETestOperationsObserverDebug: 257.148 elapsed -- Testing started completed.
+2026-11-17 12:09:32.919 xcodebuild[15555:48198] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-17 12:09:32.919 xcodebuild[15555:48198] [MT] IDETestOperationsObserverDebug: 257.148 sec, +257.148 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+Failing tests:
+	ScreenshotTests.testPhone()
+	ScreenshotTests.testPhone()
+
+** TEST EXECUTE FAILED **
+
+Testing started

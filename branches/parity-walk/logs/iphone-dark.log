@@ -1,0 +1,1007 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=CDC7077E-2206-4FEC-B03A-52EB15B2CAD4 -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPhone" -resultBundlePath build/screenshots/iphone-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 1050 -maximum-test-execution-time-allowance 1050
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:CDC7077E-2206-4FEC-B03A-52EB15B2CAD4, OS:26.5, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:CDC7077E-2206-4FEC-B03A-52EB15B2CAD4, OS:26.5, name:iPhone 17 Pro }
+2026-11-18 19:43:14.356087+0000 JukeboxUITests-Runner[18975:57303] [Default] Running tests...
+2026-11-18 19:43:14.472753+0000 JukeboxUITests-Runner[18975:57872] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-18 19:43:14.515715+0000 JukeboxUITests-Runner[18975:57871] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+objc[18975]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x102ae0310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x102b88398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-18 19:43:26.435.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-18 19:43:26.454.
+Test Suite 'ScreenshotTests' started at 2026-11-18 19:43:26.454.
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' started.
+    t =     0.00s Start Test at 2026-11-18 19:43:26.455
+    t =     0.01s Set Up
+    t =     0.03s Open com.tijmen.Jukebox
+    t =     0.03s     Launch com.tijmen.Jukebox
+2026-11-18 19:43:29.132 xcodebuild[17420:53536] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-18 19:43:29.132 xcodebuild[17420:53536] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    12.57s         Setting up automation session
+    t =    16.25s         Wait for com.tijmen.Jukebox to idle
+    t =    20.68s Checking existence of `"Home" NavigationBar`
+    t =    21.46s Checking existence of `"Home" Button`
+    t =    21.75s Checking existence of `"Your Station" StaticText`
+    t =    23.98s Checking existence of `"place.home" Any`
+    t =    24.94s Checking existence of `TextField (First Match)`
+    t =    30.75s Added attachment named '01-onboarding'
+PICTURE: 01-onboarding
+    t =    30.80s Waiting 10.0s for TextField (First Match) to exist
+    t =    31.81s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    31.81s         Checking existence of `TextField (First Match)`
+    t =    31.90s Find the TextField (First Match)
+    t =    31.99s Tap "music.example.com" TextField
+    t =    31.99s     Wait for com.tijmen.Jukebox to idle
+    t =    31.99s     Find the "music.example.com" TextField
+    t =    32.09s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    32.22s     Synthesize event
+    t =    32.72s     Wait for com.tijmen.Jukebox to idle
+    t =    36.87s Find the "music.example.com" TextField
+    t =    37.21s Type 'localhost:8096' into "music.example.com" TextField
+    t =    37.22s     Wait for com.tijmen.Jukebox to idle
+    t =    37.23s     Find the "music.example.com" TextField
+    t =    37.56s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    37.70s     Synthesize event
+    t =    38.15s     Wait for com.tijmen.Jukebox to idle
+    t =    38.57s Added attachment named '02-onboarding-server'
+PICTURE: 02-onboarding-server
+    t =    38.63s Type '
+' into TextField (First Match)
+    t =    38.63s     Wait for com.tijmen.Jukebox to idle
+    t =    38.64s     Find the TextField (First Match)
+    t =    39.23s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    39.29s     Synthesize event
+    t =    39.81s     Wait for com.tijmen.Jukebox to idle
+    t =    39.94s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    40.98s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    40.98s         Checking existence of `SecureTextField (First Match)`
+    t =    41.15s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    42.23s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    42.24s         Checking existence of `SecureTextField (First Match)`
+    t =    46.92s Checking existence of `"signIn.user" TextField`
+    t =    47.02s Waiting 10.0s for TextField (First Match) to exist
+    t =    48.08s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    48.08s         Checking existence of `TextField (First Match)`
+    t =    48.52s Find the TextField (First Match)
+    t =    48.62s Tap "User Name" TextField
+    t =    48.62s     Wait for com.tijmen.Jukebox to idle
+    t =    48.63s     Find the "User Name" TextField
+    t =    48.75s     Check for interrupting elements affecting "User Name" TextField
+    t =    48.85s     Synthesize event
+    t =    49.19s     Wait for com.tijmen.Jukebox to idle
+    t =    50.79s Find the "User Name" TextField
+    t =    54.18s Type 'test' into "User Name" TextField
+    t =    54.18s     Wait for com.tijmen.Jukebox to idle
+    t =    54.28s     Find the "User Name" TextField
+    t =    54.60s     Check for interrupting elements affecting "User Name" TextField
+    t =    54.69s     Synthesize event
+    t =    55.00s     Wait for com.tijmen.Jukebox to idle
+    t =    55.11s Type '
+' into TextField (First Match)
+    t =    55.11s     Wait for com.tijmen.Jukebox to idle
+    t =    55.18s     Find the TextField (First Match)
+    t =    55.47s     Check for interrupting elements affecting "User Name" TextField
+    t =    55.54s     Synthesize event
+    t =    55.76s     Wait for com.tijmen.Jukebox to idle
+    t =    56.68s Waiting 10.0s for SecureTextField (First Match) to exist
+    t =    57.76s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    57.76s         Checking existence of `SecureTextField (First Match)`
+    t =    57.90s Find the SecureTextField (First Match)
+    t =    58.05s Find the "Password" SecureTextField
+    t =    58.30s Type '<redacted>' into "Password" SecureTextField
+    t =    58.30s     Wait for com.tijmen.Jukebox to idle
+    t =    58.30s     Find the "Password" SecureTextField
+    t =    58.55s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    58.69s     Synthesize event
+    t =    58.99s     Wait for com.tijmen.Jukebox to idle
+    t =    59.02s Find the SecureTextField (First Match)
+    t =    59.60s Added attachment named '03-sign-in'
+PICTURE: 03-sign-in
+    t =    59.64s Type '<redacted>' into SecureTextField (First Match)
+    t =    59.64s     Wait for com.tijmen.Jukebox to idle
+    t =    59.65s     Find the SecureTextField (First Match)
+    t =    59.77s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    59.85s     Synthesize event
+    t =    60.11s     Wait for com.tijmen.Jukebox to idle
+    t =    62.04s Waiting 3.0s for "Not Now" Button to exist
+    t =    63.12s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    63.12s         Checking existence of `"Not Now" Button`
+    t =    65.17s         Capturing element debug description
+    t =    65.17s     Checking existence of `"Not Now" Button`
+    t =    66.09s Collecting debug information to assist test failure triage
+    t =    66.09s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =    66.91s Waiting 3.0s for "Not Now" Button to exist
+    t =    67.94s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    67.94s         Checking existence of `"Not Now" Button`
+    t =    68.28s         Capturing element debug description
+    t =    68.91s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    68.91s         Checking existence of `"Not Now" Button`
+    t =    69.02s         Capturing element debug description
+    t =    69.91s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    69.91s         Checking existence of `"Not Now" Button`
+    t =    69.97s         Capturing element debug description
+    t =    69.97s     Checking existence of `"Not Now" Button`
+    t =    70.01s Collecting debug information to assist test failure triage
+    t =    70.01s     Requesting snapshot of accessibility hierarchy for app with pid 13183
+    t =    70.15s Checking existence of `"Home" NavigationBar`
+    t =    70.72s Checking existence of `"Home" Button`
+    t =    70.78s Checking existence of `"Home" NavigationBar`
+    t =    71.29s Checking existence of `"Home" Button`
+    t =    71.32s Checking existence of `"Your Station" StaticText`
+    t =    71.48s Checking existence of `Any (First Match)`
+    t =    72.12s Checking existence of `Any (First Match)`
+    t =    76.73s Waiting 0.5s for "Not Now" Button to exist
+    t =    77.24s     Checking existence of `"Not Now" Button`
+    t =    78.17s Collecting debug information to assist test failure triage
+    t =    78.17s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =    78.63s Waiting 0.5s for "Not Now" Button to exist
+    t =    79.13s     Checking existence of `"Not Now" Button`
+    t =    79.19s Collecting debug information to assist test failure triage
+    t =    79.19s     Requesting snapshot of accessibility hierarchy for app with pid 13183
+    t =    80.08s Added attachment named '04-home'
+PICTURE: 04-home
+    t =    80.21s Swipe up Target Application 'com.tijmen.Jukebox'
+    t =    80.21s     Wait for com.tijmen.Jukebox to idle
+    t =    80.22s     Find the Target Application 'com.tijmen.Jukebox'
+    t =    80.45s     Check for interrupting elements affecting "Jukebox" Application
+    t =    80.64s     Synthesize event
+    t =    81.13s     Wait for com.tijmen.Jukebox to idle
+    t =    83.84s Added attachment named '05-home-scrolled'
+PICTURE: 05-home-scrolled
+    t =    83.98s Swipe down Target Application 'com.tijmen.Jukebox'
+    t =    83.98s     Wait for com.tijmen.Jukebox to idle
+    t =    83.99s     Find the Target Application 'com.tijmen.Jukebox'
+    t =    84.21s     Check for interrupting elements affecting "Jukebox" Application
+    t =    84.34s     Synthesize event
+    t =    84.77s     Wait for com.tijmen.Jukebox to idle
+    t =    87.32s Waiting 5.0s for Button (First Match) to exist
+    t =    88.34s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    88.34s         Checking existence of `Button (First Match)`
+    t =    88.49s Checking existence of `Button (First Match)`
+    t =    88.88s Find the Button (First Match)
+    t =    90.16s Waiting 1.0s for Button (First Match) to exist
+    t =    91.16s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    91.16s         Checking existence of `Button (First Match)`
+    t =    91.43s         Capturing element debug description
+    t =    91.43s     Checking existence of `Button (First Match)`
+    t =    93.73s Checking existence of `Button (First Match)`
+    t =    94.38s Find the Button (First Match)
+    t =    95.13s Find the Target Application 'com.tijmen.Jukebox'
+    t =    95.49s Checking existence of `"dot.radiowaves.left.and.right" Button`
+    t =    95.85s Find the "dot.radiowaves.left.and.right" Button
+    t =    96.18s Find the Target Application 'com.tijmen.Jukebox'
+    t =    96.36s Find the "dot.radiowaves.left.and.right" Button
+    t =    96.57s Tap "dot.radiowaves.left.and.right" Button
+    t =    96.57s     Wait for com.tijmen.Jukebox to idle
+    t =    96.58s     Find the "dot.radiowaves.left.and.right" Button
+    t =    96.89s     Check for interrupting elements affecting "dot.radiowaves.left.and.right" Button
+    t =    97.10s     Synthesize event
+    t =    97.49s     Wait for com.tijmen.Jukebox to idle
+    t =   102.85s Added attachment named '06-radio'
+PICTURE: 06-radio
+    t =   102.93s Waiting 10.0s for Button (First Match) to exist
+    t =   103.94s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   103.94s         Checking existence of `Button (First Match)`
+    t =   105.28s Checking existence of `Button (First Match)`
+    t =   106.92s Find the Button (First Match)
+    t =   107.59s Find the Target Application 'com.tijmen.Jukebox'
+    t =   107.76s Checking existence of `"Discovery, Not played yet" Button`
+    t =   108.27s Find the "Discovery, Not played yet" Button
+    t =   108.54s Find the Target Application 'com.tijmen.Jukebox'
+    t =   108.63s Find the "Discovery, Not played yet" Button
+    t =   109.10s Tap "Discovery, Not played yet" Button
+    t =   109.10s     Wait for com.tijmen.Jukebox to idle
+    t =   109.11s     Find the "Discovery, Not played yet" Button
+    t =   109.50s     Check for interrupting elements affecting "Discovery, Not played yet" Button
+    t =   109.64s     Synthesize event
+    t =   109.98s     Wait for com.tijmen.Jukebox to idle
+    t =   111.00s Checking existence of `"New Picks" Button`
+    t =   115.93s Added attachment named '07-station-page'
+PICTURE: 07-station-page
+    t =   116.04s Swipe up Target Application 'com.tijmen.Jukebox'
+    t =   116.04s     Wait for com.tijmen.Jukebox to idle
+    t =   116.04s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   116.18s     Check for interrupting elements affecting "Jukebox" Application
+    t =   116.32s     Synthesize event
+    t =   116.78s     Wait for com.tijmen.Jukebox to idle
+    t =   122.07s Added attachment named '08-station-page-songs'
+PICTURE: 08-station-page-songs
+    t =   122.14s Waiting 3.0s for Button (First Match) to exist
+    t =   123.16s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   123.16s         Checking existence of `Button (First Match)`
+    t =   123.27s Waiting 1.0s for Button (First Match) to exist
+    t =   124.28s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   124.28s         Checking existence of `Button (First Match)`
+    t =   124.40s     Checking existence of `Button (First Match)`
+    t =   124.48s Checking existence of `Button (First Match)`
+    t =   124.58s Find the Button (First Match)
+    t =   124.66s Find the Target Application 'com.tijmen.Jukebox'
+    t =   124.82s Checking existence of `"BackButton" Button`
+    t =   124.97s Find the "BackButton" Button
+    t =   125.16s Find the Target Application 'com.tijmen.Jukebox'
+    t =   125.27s Find the "BackButton" Button
+    t =   125.41s Tap "BackButton" Button
+    t =   125.41s     Wait for com.tijmen.Jukebox to idle
+    t =   125.41s     Find the "BackButton" Button
+    t =   125.51s     Check for interrupting elements affecting "BackButton" Button
+    t =   125.64s     Synthesize event
+    t =   125.97s     Wait for com.tijmen.Jukebox to idle
+    t =   128.10s Waiting 10.0s for "Radio" NavigationBar to exist
+    t =   129.13s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   129.13s         Checking existence of `"Radio" NavigationBar`
+    t =   129.24s Waiting 10.0s for "Start a Station" Button to exist
+    t =   130.28s     Checking `Expect predicate `existsNoRetry == 1` for object "Start a Station" Button`
+    t =   130.28s         Checking existence of `"Start a Station" Button`
+    t =   130.44s Checking existence of `"Start a Station" Button`
+    t =   130.62s Find the "Start a Station" Button
+    t =   130.80s Find the Target Application 'com.tijmen.Jukebox'
+    t =   130.90s Checking existence of `"Start a Station" Button`
+    t =   131.04s Find the "Start a Station" Button
+    t =   131.20s Find the Target Application 'com.tijmen.Jukebox'
+    t =   131.30s Find the "Start a Station" Button
+    t =   131.49s Tap "Start a Station" Button
+    t =   131.49s     Wait for com.tijmen.Jukebox to idle
+    t =   131.49s     Find the "Start a Station" Button
+    t =   131.66s     Check for interrupting elements affecting "Start a Station" Button
+    t =   131.78s     Synthesize event
+    t =   132.13s     Wait for com.tijmen.Jukebox to idle
+    t =   136.88s Added attachment named '09-radio-start-a-station'
+PICTURE: 09-radio-start-a-station
+    t =   137.31s Waiting 10.0s for Button (First Match) to exist
+    t =   138.33s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   138.33s         Checking existence of `Button (First Match)`
+    t =   147.61s         Capturing element debug description
+    t =   147.62s     Checking existence of `Button (First Match)`
+    t =   178.85s     Checking existence of `Button (First Match)` (retry 1)
+    t =   210.27s     Checking existence of `Button (First Match)` (retry 2)
+    t =   232.49s Waiting 10.0s for Button (First Match) to exist
+    t =   233.54s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   233.55s         Checking existence of `Button (First Match)`
+    t =   235.63s Checking existence of `Button (First Match)`
+    t =   236.05s Find the Button (First Match)
+    t =   237.11s Find the Target Application 'com.tijmen.Jukebox'
+    t =   237.33s Checking existence of `"MC Polder Radio, MC Polder and artists like them" Button`
+    t =   237.94s Find the "MC Polder Radio, MC Polder and artists like them" Button
+    t =   238.41s Find the Target Application 'com.tijmen.Jukebox'
+    t =   238.59s Find the "MC Polder Radio, MC Polder and artists like them" Button
+    t =   239.21s Tap "MC Polder Radio, MC Polder and artists like them" Button
+    t =   239.21s     Wait for com.tijmen.Jukebox to idle
+    t =   239.22s     Find the "MC Polder Radio, MC Polder and artists like them" Button
+    t =   240.59s     Check for interrupting elements affecting "MC Polder Radio, MC Polder and artists like them" Button
+    t =   241.00s     Synthesize event
+    t =   241.58s     Wait for com.tijmen.Jukebox to idle
+    t =   243.60s Waiting 10.0s for "New Picks" Button to exist
+    t =   244.63s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   244.63s         Checking existence of `"New Picks" Button`
+    t =   245.80s         Capturing element debug description
+    t =   246.61s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   246.61s         Checking existence of `"New Picks" Button`
+    t =   247.30s         Capturing element debug description
+    t =   247.61s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   247.61s         Checking existence of `"New Picks" Button`
+    t =   248.41s         Capturing element debug description
+    t =   248.62s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   248.62s         Checking existence of `"New Picks" Button`
+    t =   249.39s         Capturing element debug description
+    t =   249.61s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   249.61s         Checking existence of `"New Picks" Button`
+    t =   250.47s         Capturing element debug description
+    t =   250.61s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   250.61s         Checking existence of `"New Picks" Button`
+    t =   251.46s         Capturing element debug description
+    t =   251.63s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   251.63s         Checking existence of `"New Picks" Button`
+    t =   252.47s         Capturing element debug description
+    t =   252.68s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   252.68s         Checking existence of `"New Picks" Button`
+    t =   253.44s         Capturing element debug description
+    t =   253.61s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   253.61s         Checking existence of `"New Picks" Button`
+    t =   253.91s         Capturing element debug description
+    t =   253.91s     Checking existence of `"New Picks" Button`
+    t =   255.07s Collecting debug information to assist test failure triage
+    t =   255.07s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+MISSED: after 09-radio-start-a-station: Start a Station: the chosen station's page: not found within 10 s
+    t =   256.32s Added attachment named '10-station-picked'
+PICTURE: 10-station-picked
+    t =   256.42s Checking existence of `"Cancel" Button`
+    t =   256.83s Waiting 4.0s for "Cancel" Button to exist
+    t =   257.88s     Checking `Expect predicate `existsNoRetry == 1` for object "Cancel" Button`
+    t =   257.88s         Checking existence of `"Cancel" Button`
+    t =   258.31s Checking existence of `"Cancel" Button`
+    t =   258.50s Find the "Cancel" Button
+    t =   258.75s Find the Target Application 'com.tijmen.Jukebox'
+    t =   258.97s Checking existence of `"Cancel" Button`
+    t =   259.16s Find the "Cancel" Button
+    t =   259.45s Find the Target Application 'com.tijmen.Jukebox'
+    t =   259.60s Find the "Cancel" Button
+    t =   259.79s Tap "Cancel" Button
+    t =   259.79s     Wait for com.tijmen.Jukebox to idle
+    t =   259.79s     Find the "Cancel" Button
+    t =   259.91s     Check for interrupting elements affecting "Cancel" Button
+    t =   260.16s     Synthesize event
+    t =   260.51s     Wait for com.tijmen.Jukebox to idle
+    t =   263.16s Waiting 3.0s for Button (First Match) to exist
+    t =   264.21s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   264.22s         Checking existence of `Button (First Match)`
+    t =   265.00s         Capturing element debug description
+    t =   265.21s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   265.21s         Checking existence of `Button (First Match)`
+    t =   266.10s         Capturing element debug description
+    t =   266.17s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   266.17s         Checking existence of `Button (First Match)`
+    t =   266.47s         Capturing element debug description
+    t =   266.47s     Checking existence of `Button (First Match)`
+    t =   267.00s Collecting debug information to assist test failure triage
+    t =   267.00s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =   267.13s Checking existence of `Button (Element at index 0)`
+    t =   267.20s Find the Button (Element at index 0)
+    t =   267.31s Find the "Start a Station" Button
+    t =   267.40s Find the Target Application 'com.tijmen.Jukebox'
+    t =   267.49s Press Target Application 'com.tijmen.Jukebox'[0.01, 0.50] for 0.1 seconds, then drag to Target Application 'com.tijmen.Jukebox'[0.85, 0.50] with velocity of 500.00 pixels per second, and then hold for 0.0 seconds 
+    t =   267.49s     Wait for com.tijmen.Jukebox to idle
+    t =   267.50s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   267.55s     Check for interrupting elements affecting "Jukebox" Application
+    t =   267.69s     Synthesize event
+    t =   267.69s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   267.79s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   267.97s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   268.03s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   268.11s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   269.17s     Wait for com.tijmen.Jukebox to idle
+    t =   271.99s Waiting 10.0s for "Radio" NavigationBar to exist
+    t =   273.03s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   273.03s         Checking existence of `"Radio" NavigationBar`
+    t =   273.47s         Capturing element debug description
+    t =   273.99s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   273.99s         Checking existence of `"Radio" NavigationBar`
+    t =   274.30s         Capturing element debug description
+    t =   274.99s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   275.00s         Checking existence of `"Radio" NavigationBar`
+    t =   275.62s         Capturing element debug description
+    t =   276.02s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   276.03s         Checking existence of `"Radio" NavigationBar`
+    t =   276.26s         Capturing element debug description
+    t =   277.00s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   277.00s         Checking existence of `"Radio" NavigationBar`
+    t =   277.99s         Capturing element debug description
+    t =   278.07s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   278.08s         Checking existence of `"Radio" NavigationBar`
+    t =   278.53s         Capturing element debug description
+    t =   279.05s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   279.05s         Checking existence of `"Radio" NavigationBar`
+    t =   279.94s         Capturing element debug description
+    t =   280.01s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   280.01s         Checking existence of `"Radio" NavigationBar`
+    t =   280.83s         Capturing element debug description
+    t =   281.01s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   281.01s         Checking existence of `"Radio" NavigationBar`
+    t =   281.67s         Capturing element debug description
+    t =   282.00s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   282.00s         Checking existence of `"Radio" NavigationBar`
+    t =   282.28s         Capturing element debug description
+    t =   282.28s     Checking existence of `"Radio" NavigationBar`
+    t =   283.02s Collecting debug information to assist test failure triage
+    t =   283.03s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =   283.26s Checking existence of `Button (First Match)`
+MISSED: after 10-station-picked: back to Radio: the page stayed, back once more
+    t =   283.39s Waiting 1.0s for Button (First Match) to exist
+    t =   284.40s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   284.40s         Checking existence of `Button (First Match)`
+    t =   284.50s     Checking existence of `Button (First Match)`
+    t =   284.62s Checking existence of `Button (First Match)`
+    t =   284.71s Find the Button (First Match)
+    t =   284.81s Find the Target Application 'com.tijmen.Jukebox'
+    t =   284.89s Checking existence of `"BackButton" Button`
+    t =   285.03s Find the "BackButton" Button
+    t =   285.11s Find the Target Application 'com.tijmen.Jukebox'
+    t =   285.20s Find the "BackButton" Button
+    t =   285.30s Tap "BackButton" Button
+    t =   285.30s     Wait for com.tijmen.Jukebox to idle
+    t =   285.31s     Find the "BackButton" Button
+    t =   285.42s     Check for interrupting elements affecting "BackButton" Button
+    t =   285.54s     Synthesize event
+    t =   285.92s     Wait for com.tijmen.Jukebox to idle
+    t =   288.33s Waiting 5.0s for Button (First Match) to exist
+    t =   289.39s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   289.39s         Checking existence of `Button (First Match)`
+    t =   289.92s         Capturing element debug description
+    t =   290.34s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   290.34s         Checking existence of `Button (First Match)`
+    t =   290.89s         Capturing element debug description
+    t =   291.34s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   291.34s         Checking existence of `Button (First Match)`
+    t =   292.76s         Capturing element debug description
+    t =   293.34s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   293.34s         Checking existence of `Button (First Match)`
+    t =   293.65s         Capturing element debug description
+    t =   293.65s     Checking existence of `Button (First Match)`
+    t =   294.82s Collecting debug information to assist test failure triage
+    t =   294.82s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =   295.01s Waiting 1.0s for Button (First Match) to exist
+    t =   296.02s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   296.03s         Checking existence of `Button (First Match)`
+    t =   296.28s         Capturing element debug description
+    t =   296.28s     Checking existence of `Button (First Match)`
+    t =   298.51s Collecting debug information to assist test failure triage
+    t =   298.51s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =   298.68s Waiting 1.0s for Cell (First Match) to exist
+    t =   299.69s     Checking `Expect predicate `existsNoRetry == 1` for object Cell (First Match)`
+    t =   299.69s         Checking existence of `Cell (First Match)`
+    t =   299.94s         Capturing element debug description
+    t =   299.94s     Checking existence of `Cell (First Match)`
+    t =   301.22s Collecting debug information to assist test failure triage
+    t =   301.22s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =   301.35s Swipe down Target Application 'com.tijmen.Jukebox'
+    t =   301.35s     Wait for com.tijmen.Jukebox to idle
+    t =   301.35s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   301.42s     Check for interrupting elements affecting "Jukebox" Application
+    t =   301.54s     Synthesize event
+    t =   302.00s     Wait for com.tijmen.Jukebox to idle
+    t =   305.36s Swipe down Target Application 'com.tijmen.Jukebox'
+    t =   305.36s     Wait for com.tijmen.Jukebox to idle
+    t =   305.37s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   305.54s     Check for interrupting elements affecting "Jukebox" Application
+    t =   305.73s     Synthesize event
+    t =   306.20s     Wait for com.tijmen.Jukebox to idle
+    t =   310.17s Waiting 1.0s for Button (First Match) to exist
+    t =   311.18s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   311.20s         Checking existence of `Button (First Match)`
+    t =   311.48s         Capturing element debug description
+    t =   311.48s     Checking existence of `Button (First Match)`
+    t =   311.69s Checking existence of `Button (First Match)`
+    t =   311.78s Find the Button (First Match)
+    t =   311.92s Waiting 1.0s for Button (First Match) to exist
+    t =   312.93s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   312.93s         Checking existence of `Button (First Match)`
+    t =   312.96s     Checking existence of `Button (First Match)`
+    t =   313.01s Checking existence of `Button (First Match)`
+    t =   313.05s Find the Button (First Match)
+    t =   313.10s Find the Target Application 'com.tijmen.Jukebox'
+    t =   313.19s Checking existence of `"square.stack.fill" Button`
+    t =   313.22s Find the "square.stack.fill" Button
+    t =   313.24s Find the Target Application 'com.tijmen.Jukebox'
+    t =   313.29s Find the "square.stack.fill" Button
+    t =   313.37s Tap "square.stack.fill" Button
+    t =   313.37s     Wait for com.tijmen.Jukebox to idle
+    t =   313.37s     Find the "square.stack.fill" Button
+    t =   313.41s     Check for interrupting elements affecting "square.stack.fill" Button
+    t =   313.50s     Synthesize event
+    t =   313.83s     Wait for com.tijmen.Jukebox to idle
+    t =   317.81s Added attachment named '11-library'
+PICTURE: 11-library
+    t =   317.87s Waiting 10.0s for "Albums" Button to exist
+    t =   318.95s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" Button`
+    t =   318.96s         Checking existence of `"Albums" Button`
+    t =   319.15s Checking existence of `"Albums" Button`
+    t =   319.39s Find the "Albums" Button
+    t =   319.55s Find the Target Application 'com.tijmen.Jukebox'
+    t =   319.60s Checking existence of `"Albums" Button`
+    t =   319.74s Find the "Albums" Button
+    t =   319.87s Find the Target Application 'com.tijmen.Jukebox'
+    t =   319.92s Find the "Albums" Button
+    t =   320.06s Tap "Albums" Button
+    t =   320.06s     Wait for com.tijmen.Jukebox to idle
+    t =   320.06s     Find the "Albums" Button
+    t =   320.19s     Check for interrupting elements affecting "Albums" Button
+    t =   320.27s     Synthesize event
+    t =   320.58s     Wait for com.tijmen.Jukebox to idle
+    t =   320.92s Waiting 8.0s for "Albums" NavigationBar to exist
+    t =   321.94s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" NavigationBar`
+    t =   321.94s         Checking existence of `"Albums" NavigationBar`
+    t =   324.68s Added attachment named '12-albums'
+PICTURE: 12-albums
+    t =   324.79s Waiting 15.0s for Button (First Match) to exist
+    t =   325.82s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   325.83s         Checking existence of `Button (First Match)`
+    t =   326.43s Checking existence of `NavigationBar (First Match)`
+    t =   326.85s Find the NavigationBar (First Match)
+    t =   327.09s Find the Target Application 'com.tijmen.Jukebox'
+    t =   327.16s Get number of matches for: Elements matching predicate 'NOT identifier BEGINSWITH "place."'
+    t =   327.23s Checking existence of `Button (Element at index 0)`
+    t =   327.30s Find the Button (Element at index 0)
+    t =   327.41s Find the "Dust Parades, Hexagon Lights" Button
+    t =   327.56s Find the "Dust Parades, Hexagon Lights" Button
+    t =   327.90s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =   327.99s Find the "Dust Parades, Hexagon Lights" Button
+    t =   328.16s Find the Target Application 'com.tijmen.Jukebox'
+    t =   328.27s Waiting 10.0s for Button (First Match) to exist
+    t =   329.29s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   329.29s         Checking existence of `Button (First Match)`
+    t =   329.83s Checking existence of `Button (First Match)`
+    t =   330.12s Find the Button (First Match)
+    t =   330.36s Find the Target Application 'com.tijmen.Jukebox'
+    t =   330.44s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =   330.65s Find the "Dust Parades, Hexagon Lights" Button
+    t =   330.85s Find the Target Application 'com.tijmen.Jukebox'
+    t =   330.91s Find the "Dust Parades, Hexagon Lights" Button
+    t =   331.10s Tap "Dust Parades, Hexagon Lights" Button
+    t =   331.10s     Wait for com.tijmen.Jukebox to idle
+    t =   331.10s     Find the "Dust Parades, Hexagon Lights" Button
+    t =   331.23s     Check for interrupting elements affecting "Dust Parades, Hexagon Lights" Button
+    t =   331.33s     Synthesize event
+    t =   331.64s     Wait for com.tijmen.Jukebox to idle
+    t =   336.16s Added attachment named '13-album'
+PICTURE: 13-album
+    t =   336.56s Waiting 3.0s for Button (First Match) to exist
+    t =   337.61s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   337.62s         Checking existence of `Button (First Match)`
+    t =   337.83s Waiting 1.0s for Button (First Match) to exist
+    t =   338.83s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   338.83s         Checking existence of `Button (First Match)`
+    t =   339.03s     Checking existence of `Button (First Match)`
+    t =   339.12s Checking existence of `Button (First Match)`
+    t =   339.22s Find the Button (First Match)
+    t =   339.38s Find the Target Application 'com.tijmen.Jukebox'
+    t =   339.62s Checking existence of `"BackButton" Button`
+    t =   339.70s Find the "BackButton" Button
+    t =   339.77s Find the Target Application 'com.tijmen.Jukebox'
+    t =   339.83s Find the "BackButton" Button
+    t =   339.95s Tap "BackButton" Button
+    t =   339.95s     Wait for com.tijmen.Jukebox to idle
+    t =   339.96s     Find the "BackButton" Button
+    t =   340.04s     Check for interrupting elements affecting "BackButton" Button
+    t =   340.12s     Synthesize event
+    t =   340.43s     Wait for com.tijmen.Jukebox to idle
+    t =   342.44s Waiting 10.0s for "Albums" NavigationBar to exist
+    t =   343.47s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" NavigationBar`
+    t =   343.47s         Checking existence of `"Albums" NavigationBar`
+    t =   343.56s Waiting 3.0s for Button (First Match) to exist
+    t =   344.56s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   344.56s         Checking existence of `Button (First Match)`
+    t =   344.68s Waiting 1.0s for Button (First Match) to exist
+    t =   345.68s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   345.68s         Checking existence of `Button (First Match)`
+    t =   345.76s     Checking existence of `Button (First Match)`
+    t =   345.89s Checking existence of `Button (First Match)`
+    t =   346.01s Find the Button (First Match)
+    t =   346.12s Find the Target Application 'com.tijmen.Jukebox'
+    t =   346.20s Checking existence of `"BackButton" Button`
+    t =   346.30s Find the "BackButton" Button
+    t =   346.40s Find the Target Application 'com.tijmen.Jukebox'
+    t =   346.45s Find the "BackButton" Button
+    t =   346.58s Tap "BackButton" Button
+    t =   346.58s     Wait for com.tijmen.Jukebox to idle
+    t =   346.59s     Find the "BackButton" Button
+    t =   346.68s     Check for interrupting elements affecting "BackButton" Button
+    t =   346.74s     Synthesize event
+    t =   347.06s     Wait for com.tijmen.Jukebox to idle
+    t =   349.05s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   350.07s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   350.07s         Checking existence of `"Library" NavigationBar`
+    t =   350.22s Waiting 10.0s for "Artists" Button to exist
+    t =   351.23s     Checking `Expect predicate `existsNoRetry == 1` for object "Artists" Button`
+    t =   351.23s         Checking existence of `"Artists" Button`
+    t =   351.82s Checking existence of `"Artists" Button`
+    t =   352.03s Find the "Artists" Button
+    t =   352.29s Find the Target Application 'com.tijmen.Jukebox'
+    t =   352.35s Checking existence of `"Artists" Button`
+    t =   352.60s Find the "Artists" Button
+    t =   352.93s Find the Target Application 'com.tijmen.Jukebox'
+    t =   352.98s Find the "Artists" Button
+    t =   353.20s Tap "Artists" Button
+    t =   353.20s     Wait for com.tijmen.Jukebox to idle
+    t =   353.20s     Find the "Artists" Button
+    t =   353.45s     Check for interrupting elements affecting "Artists" Button
+    t =   353.53s     Synthesize event
+    t =   353.86s     Wait for com.tijmen.Jukebox to idle
+    t =   354.89s Waiting 8.0s for "Artists" NavigationBar to exist
+    t =   355.91s     Checking `Expect predicate `existsNoRetry == 1` for object "Artists" NavigationBar`
+    t =   355.91s         Checking existence of `"Artists" NavigationBar`
+    t =   358.40s Added attachment named '14-artists'
+PICTURE: 14-artists
+    t =   358.45s Waiting 15.0s for Cell (First Match) to exist
+    t =   359.48s     Checking `Expect predicate `existsNoRetry == 1` for object Cell (First Match)`
+    t =   359.48s         Checking existence of `Cell (First Match)`
+    t =   359.79s Checking existence of `NavigationBar (First Match)`
+    t =   359.90s Find the NavigationBar (First Match)
+    t =   360.02s Find the Target Application 'com.tijmen.Jukebox'
+    t =   360.10s Get number of matches for: Descendants matching type Cell
+    t =   360.19s Checking existence of `Cell (Element at index 0)`
+    t =   360.28s Find the Cell (Element at index 0)
+    t =   360.38s Find the Cell
+    t =   360.49s Find the Cell
+    t =   360.59s Checking existence of `Cell (Element at index 1)`
+    t =   360.67s Find the Cell (Element at index 1)
+    t =   360.81s Find the Cell
+    t =   360.93s Find the Cell
+    t =   361.04s Checking existence of `Cell at {{0.0, 208.3}, {402.0, 74.0}}`
+    t =   361.15s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   361.25s Find the Target Application 'com.tijmen.Jukebox'
+    t =   361.37s Checking existence of `Cell at {{0.0, 208.3}, {402.0, 74.0}}`
+    t =   361.46s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   361.56s Checking existence of `StaticText (First Match)`
+    t =   361.68s Find the StaticText (First Match)
+    t =   361.81s Waiting 10.0s for Cell (First Match) to exist
+    t =   362.88s     Checking `Expect predicate `existsNoRetry == 1` for object Cell (First Match)`
+    t =   362.88s         Checking existence of `Cell (First Match)`
+    t =   363.25s Checking existence of `Cell (First Match)`
+    t =   363.51s Find the Cell (First Match)
+    t =   363.73s Find the Target Application 'com.tijmen.Jukebox'
+    t =   363.86s Checking existence of `Cell at {{0.0, 208.3}, {402.0, 74.0}}`
+    t =   364.05s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   364.24s Find the Target Application 'com.tijmen.Jukebox'
+    t =   364.32s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   364.65s Tap Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   364.65s     Wait for com.tijmen.Jukebox to idle
+    t =   364.66s     Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   364.90s     Check for interrupting elements affecting Cell
+    t =   365.05s     Synthesize event
+    t =   365.37s     Wait for com.tijmen.Jukebox to idle
+    t =   369.13s Added attachment named '15-artist'
+PICTURE: 15-artist
+    t =   369.21s Waiting 3.0s for Button (First Match) to exist
+    t =   370.25s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   370.25s         Checking existence of `Button (First Match)`
+    t =   370.53s Waiting 1.0s for Button (First Match) to exist
+    t =   371.54s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   371.54s         Checking existence of `Button (First Match)`
+    t =   371.81s         Capturing element debug description
+    t =   371.81s     Checking existence of `Button (First Match)`
+    t =   372.17s Checking existence of `Button (First Match)`
+    t =   372.47s Find the Button (First Match)
+    t =   372.70s Find the Target Application 'com.tijmen.Jukebox'
+    t =   372.88s Checking existence of `"BackButton" Button`
+    t =   373.09s Find the "BackButton" Button
+    t =   373.24s Find the Target Application 'com.tijmen.Jukebox'
+    t =   373.38s Find the "BackButton" Button
+    t =   373.62s Tap "BackButton" Button
+    t =   373.62s     Wait for com.tijmen.Jukebox to idle
+    t =   373.63s     Find the "BackButton" Button
+    t =   373.84s     Check for interrupting elements affecting "BackButton" Button
+    t =   374.00s     Synthesize event
+    t =   374.37s     Wait for com.tijmen.Jukebox to idle
+    t =   376.61s Waiting 10.0s for "Artists" NavigationBar to exist
+    t =   377.63s     Checking `Expect predicate `existsNoRetry == 1` for object "Artists" NavigationBar`
+    t =   377.63s         Checking existence of `"Artists" NavigationBar`
+    t =   377.84s Waiting 3.0s for Button (First Match) to exist
+    t =   378.87s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   378.88s         Checking existence of `Button (First Match)`
+    t =   379.01s Waiting 1.0s for Button (First Match) to exist
+    t =   380.02s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   380.02s         Checking existence of `Button (First Match)`
+    t =   380.17s     Checking existence of `Button (First Match)`
+    t =   380.30s Checking existence of `Button (First Match)`
+    t =   380.44s Find the Button (First Match)
+    t =   380.60s Find the Target Application 'com.tijmen.Jukebox'
+    t =   380.74s Checking existence of `"BackButton" Button`
+    t =   380.84s Find the "BackButton" Button
+    t =   381.00s Find the Target Application 'com.tijmen.Jukebox'
+    t =   381.13s Find the "BackButton" Button
+    t =   381.40s Tap "BackButton" Button
+    t =   381.40s     Wait for com.tijmen.Jukebox to idle
+    t =   381.41s     Find the "BackButton" Button
+    t =   381.58s     Check for interrupting elements affecting "BackButton" Button
+    t =   381.69s     Synthesize event
+    t =   382.01s     Wait for com.tijmen.Jukebox to idle
+    t =   384.20s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   385.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   385.21s         Checking existence of `"Library" NavigationBar`
+    t =   385.36s Waiting 10.0s for "Playlists" Button to exist
+    t =   386.39s     Checking `Expect predicate `existsNoRetry == 1` for object "Playlists" Button`
+    t =   386.39s         Checking existence of `"Playlists" Button`
+    t =   387.15s Checking existence of `"Playlists" Button`
+    t =   388.27s Find the "Playlists" Button
+    t =   389.13s Find the Target Application 'com.tijmen.Jukebox'
+    t =   389.23s Checking existence of `"Playlists" Button`
+    t =   390.14s Find the "Playlists" Button
+    t =   391.06s Find the Target Application 'com.tijmen.Jukebox'
+    t =   391.24s Find the "Playlists" Button
+    t =   392.63s Tap "Playlists" Button
+    t =   392.63s     Wait for com.tijmen.Jukebox to idle
+    t =   392.64s     Find the "Playlists" Button
+    t =   393.74s     Check for interrupting elements affecting "Playlists" Button
+    t =   394.01s     Synthesize event
+    t =   394.37s     Wait for com.tijmen.Jukebox to idle
+    t =   394.59s Waiting 8.0s for "Playlists" NavigationBar to exist
+    t =   395.61s     Checking `Expect predicate `existsNoRetry == 1` for object "Playlists" NavigationBar`
+    t =   395.61s         Checking existence of `"Playlists" NavigationBar`
+    t =   398.70s Added attachment named '16-playlists'
+PICTURE: 16-playlists
+    t =   398.75s Waiting 3.0s for Button (First Match) to exist
+    t =   399.77s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   399.77s         Checking existence of `Button (First Match)`
+    t =   399.90s Waiting 1.0s for Button (First Match) to exist
+    t =   400.91s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   400.91s         Checking existence of `Button (First Match)`
+    t =   401.02s     Checking existence of `Button (First Match)`
+    t =   401.15s Checking existence of `Button (First Match)`
+    t =   401.25s Find the Button (First Match)
+    t =   401.35s Find the Target Application 'com.tijmen.Jukebox'
+    t =   401.49s Checking existence of `"BackButton" Button`
+    t =   401.56s Find the "BackButton" Button
+    t =   401.63s Find the Target Application 'com.tijmen.Jukebox'
+    t =   401.71s Find the "BackButton" Button
+    t =   401.87s Tap "BackButton" Button
+    t =   401.87s     Wait for com.tijmen.Jukebox to idle
+    t =   401.88s     Find the "BackButton" Button
+    t =   401.98s     Check for interrupting elements affecting "BackButton" Button
+    t =   402.11s     Synthesize event
+    t =   402.43s     Wait for com.tijmen.Jukebox to idle
+    t =   404.53s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   405.61s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   405.61s         Checking existence of `"Library" NavigationBar`
+    t =   406.14s Waiting 5.0s for Button (First Match) to exist
+    t =   407.21s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   407.21s         Checking existence of `Button (First Match)`
+    t =   407.38s Checking existence of `Button (First Match)`
+    t =   407.47s Find the Button (First Match)
+    t =   407.77s Waiting 1.0s for Button (First Match) to exist
+    t =   408.77s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   408.77s         Checking existence of `Button (First Match)`
+    t =   408.85s     Checking existence of `Button (First Match)`
+    t =   408.90s Checking existence of `Button (First Match)`
+    t =   408.97s Find the Button (First Match)
+    t =   409.08s Find the Target Application 'com.tijmen.Jukebox'
+    t =   409.15s Checking existence of `"house.fill" Button`
+    t =   409.24s Find the "house.fill" Button
+    t =   409.41s Find the Target Application 'com.tijmen.Jukebox'
+    t =   409.49s Find the "house.fill" Button
+    t =   409.68s Tap "house.fill" Button
+    t =   409.68s     Wait for com.tijmen.Jukebox to idle
+    t =   409.69s     Find the "house.fill" Button
+    t =   409.82s     Check for interrupting elements affecting "house.fill" Button
+    t =   409.94s     Synthesize event
+    t =   410.28s     Wait for com.tijmen.Jukebox to idle
+    t =   413.35s Waiting 10.0s for "Settings" Button to exist
+    t =   414.41s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" Button`
+    t =   414.41s         Checking existence of `"Settings" Button`
+    t =   414.77s Checking existence of `"Settings" Button`
+    t =   415.20s Find the "Settings" Button
+    t =   415.47s Find the Target Application 'com.tijmen.Jukebox'
+    t =   415.58s Checking existence of `"Settings" Button`
+    t =   415.84s Find the "Settings" Button
+    t =   416.06s Find the Target Application 'com.tijmen.Jukebox'
+    t =   416.17s Find the "Settings" Button
+    t =   416.72s Tap "Settings" Button
+    t =   416.72s     Wait for com.tijmen.Jukebox to idle
+    t =   416.73s     Find the "Settings" Button
+    t =   417.13s     Check for interrupting elements affecting "Settings" Button
+    t =   417.28s     Synthesize event
+    t =   417.62s     Wait for com.tijmen.Jukebox to idle
+    t =   418.56s Waiting 8.0s for "Settings" NavigationBar to exist
+    t =   419.61s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" NavigationBar`
+    t =   419.61s         Checking existence of `"Settings" NavigationBar`
+    t =   421.76s Added attachment named '17-settings'
+PICTURE: 17-settings
+    t =   421.81s Waiting 4.0s for "Done" Button to exist
+    t =   422.87s     Checking `Expect predicate `existsNoRetry == 1` for object "Done" Button`
+    t =   422.88s         Checking existence of `"Done" Button`
+    t =   423.04s Checking existence of `"Done" Button`
+    t =   423.20s Find the "Done" Button
+    t =   423.30s Find the Target Application 'com.tijmen.Jukebox'
+    t =   423.59s Checking existence of `"Done" Button`
+    t =   423.76s Find the "Done" Button
+    t =   423.93s Find the Target Application 'com.tijmen.Jukebox'
+    t =   424.14s Find the "Done" Button
+    t =   424.30s Tap "Done" Button
+    t =   424.30s     Wait for com.tijmen.Jukebox to idle
+    t =   424.30s     Find the "Done" Button
+    t =   424.40s     Check for interrupting elements affecting "Done" Button
+    t =   424.65s     Synthesize event
+    t =   424.98s     Wait for com.tijmen.Jukebox to idle
+    t =   427.34s Waiting 15.0s for "Your Station" StaticText to exist
+    t =   428.39s     Checking `Expect predicate `existsNoRetry == 1` for object "Your Station" StaticText`
+    t =   428.39s         Checking existence of `"Your Station" StaticText`
+    t =   428.76s Checking existence of `"Your Station" StaticText`
+    t =   429.14s Find the "Your Station" StaticText
+    t =   429.43s Find the Target Application 'com.tijmen.Jukebox'
+    t =   429.55s Get number of matches for: Elements matching predicate 'label == "Play"'
+    t =   429.85s Checking existence of `Button (Element at index 0)`
+    t =   430.02s Find the Button (Element at index 0)
+MISSED: after 17-settings: Home: Your Station's Play: no enabled Play
+    t =   430.75s Added attachment named '18-home-playing'
+PICTURE: 18-home-playing
+    t =   430.86s Waiting 5.0s for StaticText (First Match) to exist
+    t =   431.89s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =   431.89s         Checking existence of `StaticText (First Match)`
+    t =   432.70s         Capturing element debug description
+    t =   432.87s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =   432.88s         Checking existence of `StaticText (First Match)`
+    t =   434.64s         Capturing element debug description
+    t =   434.87s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =   434.88s         Checking existence of `StaticText (First Match)`
+    t =   435.80s         Capturing element debug description
+    t =   435.86s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =   435.86s         Checking existence of `StaticText (First Match)`
+    t =   436.14s         Capturing element debug description
+    t =   436.14s     Checking existence of `StaticText (First Match)`
+    t =   436.77s Collecting debug information to assist test failure triage
+    t =   436.77s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+    t =   437.13s Waiting 3.0s for "Next" Button to exist
+    t =   438.14s     Checking `Expect predicate `existsNoRetry == 1` for object "Next" Button`
+    t =   438.14s         Checking existence of `"Next" Button`
+    t =   438.20s Tap "Next" Button[-3.00, 0.50]
+    t =   438.20s     Wait for com.tijmen.Jukebox to idle
+    t =   438.21s     Find the "Next" Button
+    t =   438.33s     Check for interrupting elements affecting "forward.fill" Button
+    t =   438.49s     Synthesize event
+    t =   438.49s         Find the "forward.fill" Button
+    t =   438.56s         Find the "forward.fill" Button
+    t =   438.64s         Find the "forward.fill" Button
+    t =   439.00s     Wait for com.tijmen.Jukebox to idle
+    t =   439.72s Waiting 8.0s for "Close" Button to exist
+    t =   440.78s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   440.78s         Checking existence of `"Close" Button`
+    t =   441.29s         Capturing element debug description
+    t =   441.73s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   441.75s         Checking existence of `"Close" Button`
+    t =   443.13s         Capturing element debug description
+    t =   443.76s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   443.76s         Checking existence of `"Close" Button`
+    t =   444.50s         Capturing element debug description
+    t =   444.81s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   444.81s         Checking existence of `"Close" Button`
+    t =   445.35s         Capturing element debug description
+    t =   445.77s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   445.77s         Checking existence of `"Close" Button`
+    t =   446.68s         Capturing element debug description
+    t =   446.76s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   446.76s         Checking existence of `"Close" Button`
+    t =   447.39s         Capturing element debug description
+    t =   447.72s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   447.72s         Checking existence of `"Close" Button`
+    t =   448.01s         Capturing element debug description
+    t =   448.01s     Checking existence of `"Close" Button`
+    t =   449.14s Collecting debug information to assist test failure triage
+    t =   449.14s     Requesting snapshot of accessibility hierarchy for app with pid 19507
+MISSED: after 18-home-playing: Now Playing did not open, from Home's card nor from the mini player
+    t =   450.06s Added attachment named '19-now-playing'
+PICTURE: 19-now-playing
+    t =   450.65s Added attachment named '20-lyrics'
+PICTURE: 20-lyrics
+    t =   451.35s Added attachment named '21-queue'
+PICTURE: 21-queue
+    t =   451.49s Waiting 5.0s for Button (First Match) to exist
+    t =   452.49s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   452.49s         Checking existence of `Button (First Match)`
+    t =   452.59s Checking existence of `Button (First Match)`
+    t =   452.65s Find the Button (First Match)
+    t =   452.75s Waiting 1.0s for Button (First Match) to exist
+    t =   453.76s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   453.76s         Checking existence of `Button (First Match)`
+    t =   453.88s     Checking existence of `Button (First Match)`
+    t =   454.01s Checking existence of `Button (First Match)`
+    t =   454.23s Find the Button (First Match)
+    t =   454.31s Find the Target Application 'com.tijmen.Jukebox'
+    t =   454.49s Checking existence of `"square.stack.fill" Button`
+    t =   454.66s Find the "square.stack.fill" Button
+    t =   454.81s Find the Target Application 'com.tijmen.Jukebox'
+    t =   454.93s Find the "square.stack.fill" Button
+    t =   455.04s Tap "square.stack.fill" Button
+    t =   455.04s     Wait for com.tijmen.Jukebox to idle
+    t =   455.05s     Find the "square.stack.fill" Button
+    t =   455.18s     Check for interrupting elements affecting "square.stack.fill" Button
+    t =   455.34s     Synthesize event
+    t =   455.70s     Wait for com.tijmen.Jukebox to idle
+    t =   459.03s Added attachment named '22-mini-player'
+PICTURE: 22-mini-player
+    t =   459.09s Waiting 5.0s for Button (First Match) to exist
+    t =   460.09s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   460.09s         Checking existence of `Button (First Match)`
+    t =   460.25s Checking existence of `Button (First Match)`
+    t =   460.38s Find the Button (First Match)
+    t =   460.59s Waiting 1.0s for Button (First Match) to exist
+    t =   461.60s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   461.60s         Checking existence of `Button (First Match)`
+    t =   461.73s     Checking existence of `Button (First Match)`
+    t =   461.87s Checking existence of `Button (First Match)`
+    t =   462.03s Find the Button (First Match)
+    t =   462.10s Find the Target Application 'com.tijmen.Jukebox'
+    t =   462.23s Checking existence of `"dot.radiowaves.left.and.right" Button`
+    t =   462.46s Find the "dot.radiowaves.left.and.right" Button
+    t =   462.59s Find the Target Application 'com.tijmen.Jukebox'
+    t =   462.69s Find the "dot.radiowaves.left.and.right" Button
+    t =   462.84s Tap "dot.radiowaves.left.and.right" Button
+    t =   462.84s     Wait for com.tijmen.Jukebox to idle
+    t =   462.87s     Find the "dot.radiowaves.left.and.right" Button
+    t =   463.11s     Check for interrupting elements affecting "dot.radiowaves.left.and.right" Button
+    t =   465.44s     Synthesize event
+    t =   465.80s     Wait for com.tijmen.Jukebox to idle
+    t =   469.19s Added attachment named '23-radio-on-air'
+PICTURE: 23-radio-on-air
+    t =   469.32s Waiting 10.0s for Button (First Match) to exist
+    t =   470.34s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   470.34s         Checking existence of `Button (First Match)`
+    t =   470.51s Checking existence of `Button (First Match)`
+    t =   470.90s Find the Button (First Match)
+    t =   471.08s Find the Target Application 'com.tijmen.Jukebox'
+    t =   471.15s Checking existence of `"Your Station, Play" Button`
+    t =   471.29s Find the "Your Station, Play" Button
+    t =   471.43s Find the Target Application 'com.tijmen.Jukebox'
+    t =   471.49s Find the "Your Station, Play" Button
+    t =   471.68s Tap "Your Station, Play" Button
+    t =   471.68s     Wait for com.tijmen.Jukebox to idle
+    t =   471.68s     Find the "Your Station, Play" Button
+    t =   471.86s     Check for interrupting elements affecting "Your Station, Play" Button
+    t =   471.96s     Synthesize event
+    t =   472.29s     Wait for com.tijmen.Jukebox to idle
+    t =   472.30s Checking existence of `"New Picks" Button`
+    t =   473.57s Checking existence of `StaticText (First Match)`
+    t =   475.12s Checking existence of `"New Picks" Button`
+    t =   476.36s Checking existence of `StaticText (First Match)`
+    t =   477.14s Checking existence of `"New Picks" Button`
+    t =   477.41s Checking existence of `StaticText (First Match)`
+    t =   478.22s Checking existence of `"New Picks" Button`
+    t =   478.75s Checking existence of `StaticText (First Match)`
+    t =   479.75s Checking existence of `"New Picks" Button`
+    t =   481.37s Checking existence of `StaticText (First Match)`
+    t =   482.28s Checking existence of `"New Picks" Button`
+    t =   482.65s Checking existence of `StaticText (First Match)`
+MISSED: after 23-radio-on-air: Radio: the Your Station station's page did not open (no New Picks, no Up Next)
+    t =   484.03s Added attachment named '24-station-on-air'
+PICTURE: 24-station-on-air
+    t =   484.11s Waiting 5.0s for Button (First Match) to exist
+    t =   485.11s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   485.11s         Checking existence of `Button (First Match)`
+    t =   485.27s Checking existence of `Button (First Match)`
+    t =   485.47s Find the Button (First Match)
+    t =   485.79s Waiting 1.0s for Button (First Match) to exist
+    t =   486.80s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   486.80s         Checking existence of `Button (First Match)`
+    t =   486.85s     Checking existence of `Button (First Match)`
+    t =   486.88s Checking existence of `Button (First Match)`
+    t =   486.92s Find the Button (First Match)
+    t =   486.99s Find the Target Application 'com.tijmen.Jukebox'
+    t =   487.09s Checking existence of `"magnifyingglass" Button`
+    t =   487.13s Find the "magnifyingglass" Button
+    t =   487.18s Find the Target Application 'com.tijmen.Jukebox'
+    t =   487.27s Find the "magnifyingglass" Button
+    t =   487.36s Tap "magnifyingglass" Button
+    t =   487.36s     Wait for com.tijmen.Jukebox to idle
+    t =   487.36s     Find the "magnifyingglass" Button
+    t =   487.41s     Check for interrupting elements affecting "magnifyingglass" Button
+    t =   487.52s     Synthesize event
+    t =   487.83s     Wait for com.tijmen.Jukebox to idle
+    t =   491.73s Waiting 8.0s for SearchField (First Match) to exist
+    t =   492.77s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =   492.77s         Checking existence of `SearchField (First Match)`
+    t =   492.88s Waiting 10.0s for SearchField (First Match) to exist
+    t =   493.91s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =   493.91s         Checking existence of `SearchField (First Match)`
+    t =   494.06s Find the SearchField (First Match)
+    t =   494.12s Tap "Artists, albums, songs" SearchField
+    t =   494.12s     Wait for com.tijmen.Jukebox to idle
+    t =   494.12s     Find the "Artists, albums, songs" SearchField
+    t =   494.23s     Check for interrupting elements affecting "Artists, albums, songs" SearchField
+    t =   494.34s     Synthesize event
+    t =   494.67s     Wait for com.tijmen.Jukebox to idle
+    t =   497.55s Find the "Artists, albums, songs" SearchField
+    t =   497.71s Type 'Amsterdam' into "Artists, albums, songs" SearchField
+    t =   497.71s     Wait for com.tijmen.Jukebox to idle
+    t =   497.72s     Find the "Artists, albums, songs" SearchField
+    t =   497.82s     Check for interrupting elements affecting "Artists, albums, songs" SearchField
+    t =   497.90s     Synthesize event
+    t =   498.25s     Wait for com.tijmen.Jukebox to idle
+    t =   501.38s Added attachment named '25-search'
+PICTURE: 25-search
+    t =   501.41s Added attachment named 'missed-phone'
+    t =   501.55s Tear Down
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' passed (501.760 seconds).
+Test Suite 'ScreenshotTests' passed at 2026-11-18 19:51:48.217.
+	 Executed 1 test, with 0 failures (0 unexpected) in 501.760 (501.763) seconds
+Test Suite 'JukeboxUITests.xctest' passed at 2026-11-18 19:51:48.217.
+	 Executed 1 test, with 0 failures (0 unexpected) in 501.760 (501.764) seconds
+Test Suite 'Selected tests' passed at 2026-11-18 19:51:48.218.
+	 Executed 1 test, with 0 failures (0 unexpected) in 501.760 (501.783) seconds
+2026-11-18 19:51:51.753 xcodebuild[17420:53536] [MT] IDETestOperationsObserverDebug: 539.998 elapsed -- Testing started completed.
+2026-11-18 19:51:51.753 xcodebuild[17420:53536] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-18 19:51:51.753 xcodebuild[17420:53536] [MT] IDETestOperationsObserverDebug: 539.998 sec, +539.998 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

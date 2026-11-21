@@ -1,0 +1,153 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=4B0C3615-AC60-4C5E-BAB2-78EE93DB5774 -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPad" -resultBundlePath build/screenshots/ipad-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 930 -maximum-test-execution-time-allowance 930
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:4B0C3615-AC60-4C5E-BAB2-78EE93DB5774, OS:26.5, name:iPad Pro 13-inch (M5) }
+{ platform:iOS Simulator, arch:x86_64, id:4B0C3615-AC60-4C5E-BAB2-78EE93DB5774, OS:26.5, name:iPad Pro 13-inch (M5) }
+2026-11-17 12:17:58.721232+0000 JukeboxUITests-Runner[40019:115366] [Default] Running tests...
+2026-11-17 12:17:58.893102+0000 JukeboxUITests-Runner[40019:115366] [UIKit App Config] Update the Info.plist: Launch screens will soon be required.
+objc[40019]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x10ac3c310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x10aba0398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+Test Suite 'Selected tests' started at 2026-11-17 12:18:22.622.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-17 12:18:22.625.
+Test Suite 'ScreenshotTests' started at 2026-11-17 12:18:22.625.
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' started.
+    t =     0.00s Start Test at 2026-11-17 12:18:22.628
+    t =     0.01s Set Up
+    t =     0.02s Setting device orientation to Landscape Left
+    t =     0.04s     Device orientation changed to Landscape Left
+    t =     1.22s     Interface orientation changed to Landscape Right
+    t =     1.25s     Wait for com.apple.DocumentManager.DockFolderViewService to idle
+    t =     1.64s     Wait for com.apple.springboard to idle
+    t =     1.84s Open com.tijmen.Jukebox
+    t =     1.84s     Launch com.tijmen.Jukebox
+2026-11-17 12:18:39.161 xcodebuild[36260:105326] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-17 12:18:39.163 xcodebuild[36260:105326] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    25.70s         Setting up automation session
+    t =    29.34s         Wait for com.tijmen.Jukebox to idle
+    t =    34.52s Checking existence of `"Home" NavigationBar`
+    t =    36.36s Checking existence of `"Home" Button`
+    t =    42.03s Checking existence of `"Your Station" StaticText`
+    t =    45.13s Checking existence of `"place.home" Any`
+    t =    51.72s Checking existence of `TextField (First Match)`
+    t =    55.75s Added attachment named '17-sign-in'
+PICTURE: 17-sign-in
+    t =    55.80s Waiting 10.0s for TextField (First Match) to exist
+    t =    56.84s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    56.85s         Checking existence of `TextField (First Match)`
+    t =    57.17s Find the TextField (First Match)
+    t =    57.92s Tap "signIn.address" TextField
+    t =    57.92s     Wait for com.tijmen.Jukebox to idle
+    t =    57.93s     Find the "signIn.address" TextField
+    t =    58.24s     Check for interrupting elements affecting "signIn.address" TextField
+    t =    58.60s         Wait for com.apple.springboard to idle
+    t =    58.77s     Synthesize event
+    t =    59.30s     Wait for com.tijmen.Jukebox to idle
+    t =    60.11s Find the "signIn.address" TextField
+    t =    62.10s Type 'localhost:8096' into "signIn.address" TextField
+    t =    62.11s     Wait for com.tijmen.Jukebox to idle
+    t =    62.17s     Find the "signIn.address" TextField
+    t =    65.12s     Check for interrupting elements affecting "signIn.address" TextField
+    t =    65.42s         Wait for com.apple.springboard to idle
+    t =    65.50s     Synthesize event
+    t =    66.25s     Wait for com.tijmen.Jukebox to idle
+    t =    67.59s Added attachment named '17b-sign-in-address'
+PICTURE: 17b-sign-in-address
+    t =    67.66s Type '
+' into TextField (First Match)
+    t =    67.67s     Wait for com.tijmen.Jukebox to idle
+    t =    67.68s     Find the TextField (First Match)
+    t =    68.76s     Check for interrupting elements affecting "signIn.address" TextField
+    t =    68.84s         Wait for com.apple.springboard to idle
+    t =    68.89s     Synthesize event
+    t =    69.14s     Wait for com.tijmen.Jukebox to idle
+    t =    69.88s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    70.90s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    70.90s         Checking existence of `SecureTextField (First Match)`
+    t =    71.75s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    72.79s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    72.79s         Checking existence of `SecureTextField (First Match)`
+    t =    74.48s Checking existence of `"signIn.user" TextField`
+    t =    74.85s Waiting 10.0s for "signIn.user" TextField to exist
+    t =    75.86s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.user" TextField`
+    t =    75.87s         Checking existence of `"signIn.user" TextField`
+    t =    76.16s Find the "signIn.user" TextField
+    t =    77.47s Tap "signIn.user" TextField
+    t =    77.47s     Wait for com.tijmen.Jukebox to idle
+    t =    77.48s     Find the "signIn.user" TextField
+    t =    78.97s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    79.22s         Wait for com.apple.springboard to idle
+    t =    79.31s     Synthesize event
+    t =    79.76s     Wait for com.tijmen.Jukebox to idle
+    t =    80.58s Type 'test' into "signIn.user" TextField
+    t =    80.58s     Wait for com.tijmen.Jukebox to idle
+    t =    80.59s     Find the "signIn.user" TextField
+    t =    82.01s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    82.16s         Wait for com.apple.springboard to idle
+    t =    82.22s     Synthesize event
+    t =    82.52s     Wait for com.tijmen.Jukebox to idle
+    t =    82.68s Type '
+' into "signIn.user" TextField
+    t =    82.68s     Wait for com.tijmen.Jukebox to idle
+    t =    82.73s     Find the "signIn.user" TextField
+    t =    84.13s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    84.29s         Wait for com.apple.springboard to idle
+    t =    84.36s     Synthesize event
+    t =    84.61s     Wait for com.tijmen.Jukebox to idle
+    t =    85.71s Waiting 10.0s for SecureTextField (First Match) to exist
+    t =    86.75s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    86.75s         Checking existence of `SecureTextField (First Match)`
+    t =    87.43s Find the SecureTextField (First Match)
+    t =    88.21s Find the "signIn.password" SecureTextField
+    t =    89.19s Type '<redacted>' into "signIn.password" SecureTextField
+    t =    89.20s     Wait for com.tijmen.Jukebox to idle
+    t =    89.21s     Find the "signIn.password" SecureTextField
+    t =    90.13s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =    90.28s         Wait for com.apple.springboard to idle
+    t =    90.35s     Synthesize event
+    t =    90.68s     Wait for com.tijmen.Jukebox to idle
+    t =    90.79s Find the SecureTextField (First Match)
+    t =    93.06s Added attachment named '17c-sign-in-filled'
+PICTURE: 17c-sign-in-filled
+    t =    93.12s Type '<redacted>' into SecureTextField (First Match)
+    t =    93.12s     Wait for com.tijmen.Jukebox to idle
+    t =    93.13s     Find the SecureTextField (First Match)
+    t =    94.05s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =    94.15s         Wait for com.apple.springboard to idle
+    t =    94.21s     Synthesize event
+    t =    94.56s     Wait for com.tijmen.Jukebox to idle
+    t =    95.79s Waiting 3.0s for "Not Now" Button to exist
+    t =    96.86s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    96.86s         Checking existence of `"Not Now" Button`
+/Users/runner/work/Jukebox/Jukebox/JukeboxUITests/ScreenshotTests.swift:949: error: -[JukeboxUITests.ScreenshotTests testPad] : Failed to get matching snapshots: Lost connection to the application (pid 41177). (Underlying Error: Couldn’t communicate with a helper application. Try your operation again. If that fails, quit and relaunch the application and try again. connection to service created from an endpoint)
+    t =   100.87s         Capturing element debug description
+    t =   100.88s Tear Down
+    t =   100.88s     Checking for crash reports corresponding to unexpected termination of com.tijmen.Jukebox
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' failed (116.884 seconds).
+Test Suite 'ScreenshotTests' failed at 2026-11-17 12:20:19.514.
+	 Executed 1 test, with 1 failure (0 unexpected) in 116.884 (116.888) seconds
+Test Suite 'JukeboxUITests.xctest' failed at 2026-11-17 12:20:19.514.
+	 Executed 1 test, with 1 failure (0 unexpected) in 116.884 (116.889) seconds
+Test Suite 'Selected tests' failed at 2026-11-17 12:20:19.515.
+	 Executed 1 test, with 1 failure (0 unexpected) in 116.884 (116.893) seconds
+2026-11-17 12:21:05.892 xcodebuild[36260:105326] [MT] IDETestOperationsObserverDebug: 316.288 elapsed -- Testing started completed.
+2026-11-17 12:21:05.893 xcodebuild[36260:105326] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-17 12:21:05.893 xcodebuild[36260:105326] [MT] IDETestOperationsObserverDebug: 316.288 sec, +316.288 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+Failing tests:
+	ScreenshotTests.testPad()
+
+** TEST EXECUTE FAILED **
+
+Testing started

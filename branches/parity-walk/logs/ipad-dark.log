@@ -1,0 +1,72 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=4B0C3615-AC60-4C5E-BAB2-78EE93DB5774 -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPad" -resultBundlePath build/screenshots/ipad-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 930 -maximum-test-execution-time-allowance 930
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:4B0C3615-AC60-4C5E-BAB2-78EE93DB5774, OS:26.5, name:iPad Pro 13-inch (M5) }
+{ platform:iOS Simulator, arch:x86_64, id:4B0C3615-AC60-4C5E-BAB2-78EE93DB5774, OS:26.5, name:iPad Pro 13-inch (M5) }
+2026-11-18 19:59:41.720354+0000 JukeboxUITests-Runner[45750:128216] [Default] Running tests...
+2026-11-18 19:59:41.875349+0000 JukeboxUITests-Runner[45750:128216] [UIKit App Config] Update the Info.plist: Launch screens will soon be required.
+objc[45750]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1057b4310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x105c48398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-18 19:59:51.401.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-18 19:59:51.404.
+Test Suite 'ScreenshotTests' started at 2026-11-18 19:59:51.404.
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' started.
+    t =     0.01s Start Test at 2026-11-18 19:59:51.410
+    t =     0.01s Set Up
+    t =     0.02s Setting device orientation to Landscape Left
+    t =     0.05s     Device orientation changed to Landscape Left
+    t =     0.49s     Interface orientation changed to Landscape Right
+    t =     1.92s     Wait for com.apple.DocumentManager.DockFolderViewService to idle
+    t =     2.01s     Wait for com.apple.springboard to idle
+    t =     2.19s Open com.tijmen.Jukebox
+    t =     2.19s     Launch com.tijmen.Jukebox
+2026-11-18 19:59:56.201 xcodebuild[43500:122519] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-18 19:59:56.201 xcodebuild[43500:122519] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    12.66s         Setting up automation session
+    t =    14.69s         Wait for com.tijmen.Jukebox to idle
+    t =    22.06s Checking existence of `"Home" NavigationBar`
+    t =    31.56s Checking existence of `"Home" Button`
+    t =    35.41s Checking existence of `"Your Station" StaticText`
+    t =    38.28s Checking existence of `"place.home" Any`
+    t =    43.02s Checking existence of `TextField (First Match)`
+    t =    54.04s Added attachment named '17-sign-in'
+PICTURE: 17-sign-in
+    t =    54.76s Waiting 10.0s for TextField (First Match) to exist
+    t =    55.85s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    55.90s         Checking existence of `TextField (First Match)`
+    t =    65.06s         Capturing element debug description
+    t =    65.07s     Checking existence of `TextField (First Match)`
+    t =    96.49s     Checking existence of `TextField (First Match)` (retry 1)
+    t =   127.62s     Checking existence of `TextField (First Match)` (retry 2)
+/Users/runner/work/Jukebox/Jukebox/JukeboxUITests/ScreenshotTests.swift:637: error: -[JukeboxUITests.ScreenshotTests testPad] : Failed to get matching snapshots: Timed out while evaluating UI query.
+    t =   191.07s Tear Down
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' failed (191.278 seconds).
+Test Suite 'ScreenshotTests' failed at 2026-11-18 20:03:02.688.
+	 Executed 1 test, with 1 failure (0 unexpected) in 191.278 (191.283) seconds
+Test Suite 'JukeboxUITests.xctest' failed at 2026-11-18 20:03:02.689.
+	 Executed 1 test, with 1 failure (0 unexpected) in 191.278 (191.285) seconds
+Test Suite 'Selected tests' failed at 2026-11-18 20:03:02.689.
+	 Executed 1 test, with 1 failure (0 unexpected) in 191.278 (191.288) seconds
+2026-11-18 20:04:56.323 xcodebuild[43500:122519] [MT] IDETestOperationsObserverDebug: 345.052 elapsed -- Testing started completed.
+2026-11-18 20:04:56.324 xcodebuild[43500:122519] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-18 20:04:56.324 xcodebuild[43500:122519] [MT] IDETestOperationsObserverDebug: 345.052 sec, +345.052 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+Failing tests:
+	ScreenshotTests.testPad()
+
+** TEST EXECUTE FAILED **
+
+Testing started

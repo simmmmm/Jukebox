@@ -1,0 +1,493 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=9F9B4A17-4195-40F0-8B46-728F6A6AA8EB -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPad" -resultBundlePath build/screenshots/ipad-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 930 -maximum-test-execution-time-allowance 930
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:9F9B4A17-4195-40F0-8B46-728F6A6AA8EB, OS:26.5, name:iPad Pro 13-inch (M5) }
+{ platform:iOS Simulator, arch:x86_64, id:9F9B4A17-4195-40F0-8B46-728F6A6AA8EB, OS:26.5, name:iPad Pro 13-inch (M5) }
+2026-11-14 23:38:03.459119+0000 JukeboxUITests-Runner[40092:114806] [Default] Running tests...
+2026-11-14 23:38:03.624830+0000 JukeboxUITests-Runner[40092:114806] [UIKit App Config] Update the Info.plist: Launch screens will soon be required.
+2026-11-14 23:38:03.636170+0000 JukeboxUITests-Runner[40092:115006] [General] Failed to send CA Event for app launch measurements for ca_event_type: 0 event_name: com.apple.app_launch_measurement.FirstFramePresentationMetric
+2026-11-14 23:38:03.680129+0000 JukeboxUITests-Runner[40092:115008] [General] Failed to send CA Event for app launch measurements for ca_event_type: 1 event_name: com.apple.app_launch_measurement.ExtendedLaunchMetrics
+objc[40092]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1097ec310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x1083dc398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+Test Suite 'Selected tests' started at 2026-11-14 23:38:14.727.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-14 23:38:14.729.
+Test Suite 'ScreenshotTests' started at 2026-11-14 23:38:14.729.
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' started.
+    t =     0.00s Start Test at 2026-11-14 23:38:14.730
+    t =     0.00s Set Up
+    t =     0.01s Setting device orientation to Landscape Left
+    t =     0.03s     Device orientation changed to Landscape Left
+    t =     1.06s     Interface orientation changed to Landscape Right
+    t =     1.19s     Wait for com.apple.DocumentManager.DockFolderViewService to idle
+    t =     1.77s     Wait for com.apple.springboard to idle
+    t =     2.49s Open com.tijmen.Jukebox
+    t =     2.49s     Launch com.tijmen.Jukebox
+2026-11-14 23:38:22.889 xcodebuild[37897:109419] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-14 23:38:22.890 xcodebuild[37897:109419] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =    18.73s         Setting up automation session
+    t =    22.02s         Wait for com.tijmen.Jukebox to idle
+    t =    24.60s Checking existence of `"Home" NavigationBar`
+    t =    26.08s Checking existence of `"Home" Button`
+    t =    26.79s Checking existence of `"Your Station" StaticText`
+    t =    27.35s Checking existence of `"place.home" Any`
+    t =    28.33s Checking existence of `TextField (First Match)`
+    t =    32.44s Added attachment named '17-sign-in'
+PICTURE: 17-sign-in
+    t =    32.54s Waiting 10.0s for TextField (First Match) to exist
+    t =    33.59s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    33.59s         Checking existence of `TextField (First Match)`
+    t =    33.74s Find the TextField (First Match)
+    t =    34.19s Tap "music.example.com" TextField
+    t =    34.19s     Wait for com.tijmen.Jukebox to idle
+    t =    34.20s     Find the "music.example.com" TextField
+    t =    34.49s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    34.70s         Wait for com.apple.springboard to idle
+    t =    34.83s     Synthesize event
+    t =    35.40s     Wait for com.tijmen.Jukebox to idle
+    t =    39.66s Find the "music.example.com" TextField
+    t =    45.08s Type 'localhost:8096' into "music.example.com" TextField
+    t =    45.08s     Wait for com.tijmen.Jukebox to idle
+    t =    45.08s     Find the "music.example.com" TextField
+    t =    51.46s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    51.76s         Wait for com.apple.springboard to idle
+    t =    51.83s     Synthesize event
+    t =    53.02s     Wait for com.tijmen.Jukebox to idle
+    t =    54.17s Added attachment named '17b-sign-in-address'
+PICTURE: 17b-sign-in-address
+    t =    54.24s Type '
+' into TextField (First Match)
+    t =    54.24s     Wait for com.tijmen.Jukebox to idle
+    t =    54.24s     Find the TextField (First Match)
+    t =    54.70s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    54.78s         Wait for com.apple.springboard to idle
+    t =    54.86s     Synthesize event
+    t =    55.30s     Wait for com.tijmen.Jukebox to idle
+    t =    55.53s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    56.58s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    56.59s         Checking existence of `SecureTextField (First Match)`
+    t =    56.91s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    57.93s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    57.93s         Checking existence of `SecureTextField (First Match)`
+    t =    59.54s Checking existence of `"signIn.user" TextField`
+    t =    59.60s Waiting 10.0s for TextField (First Match) to exist
+    t =    60.62s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    60.62s         Checking existence of `TextField (First Match)`
+    t =    60.68s Find the TextField (First Match)
+    t =    60.74s Tap "User Name" TextField
+    t =    60.74s     Wait for com.tijmen.Jukebox to idle
+    t =    60.74s     Find the "User Name" TextField
+    t =    60.82s     Check for interrupting elements affecting "User Name" TextField
+    t =    60.87s         Wait for com.apple.springboard to idle
+    t =    60.93s     Synthesize event
+    t =    61.38s     Wait for com.tijmen.Jukebox to idle
+    t =    62.63s Find the "User Name" TextField
+    t =    63.01s Type 'test' into "User Name" TextField
+    t =    63.01s     Wait for com.tijmen.Jukebox to idle
+    t =    63.02s     Find the "User Name" TextField
+    t =    63.39s     Check for interrupting elements affecting "User Name" TextField
+    t =    63.53s         Wait for com.apple.springboard to idle
+    t =    63.66s     Synthesize event
+    t =    63.94s     Wait for com.tijmen.Jukebox to idle
+    t =    64.02s Type '
+' into TextField (First Match)
+    t =    64.02s     Wait for com.tijmen.Jukebox to idle
+    t =    64.02s     Find the TextField (First Match)
+    t =    64.32s     Check for interrupting elements affecting "User Name" TextField
+    t =    64.42s         Wait for com.apple.springboard to idle
+    t =    64.48s     Synthesize event
+    t =    64.71s     Wait for com.tijmen.Jukebox to idle
+    t =    65.86s Waiting 10.0s for SecureTextField (First Match) to exist
+    t =    66.91s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    66.91s         Checking existence of `SecureTextField (First Match)`
+    t =    67.11s Find the SecureTextField (First Match)
+    t =    67.31s Find the "Password" SecureTextField
+    t =    67.44s Type '<redacted>' into "Password" SecureTextField
+    t =    67.44s     Wait for com.tijmen.Jukebox to idle
+    t =    67.45s     Find the "Password" SecureTextField
+    t =    67.70s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    67.78s         Wait for com.apple.springboard to idle
+    t =    67.83s     Synthesize event
+    t =    68.10s     Wait for com.tijmen.Jukebox to idle
+    t =    68.12s Find the SecureTextField (First Match)
+    t =    69.17s Added attachment named '17c-sign-in-filled'
+PICTURE: 17c-sign-in-filled
+    t =    69.26s Type '<redacted>' into SecureTextField (First Match)
+    t =    69.26s     Wait for com.tijmen.Jukebox to idle
+    t =    69.27s     Find the SecureTextField (First Match)
+    t =    69.73s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    69.87s         Wait for com.apple.springboard to idle
+    t =    69.95s     Synthesize event
+    t =    70.19s     Wait for com.tijmen.Jukebox to idle
+    t =    72.39s Waiting 3.0s for "Not Now" Button to exist
+    t =    73.39s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    73.39s         Checking existence of `"Not Now" Button`
+    t =    75.65s         Capturing element debug description
+    t =    75.65s     Checking existence of `"Not Now" Button`
+    t =    77.12s Collecting debug information to assist test failure triage
+    t =    77.12s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+    t =    79.71s Waiting 3.0s for "Not Now" Button to exist
+    t =    80.77s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    80.78s         Checking existence of `"Not Now" Button`
+    t =    80.95s         Capturing element debug description
+    t =    81.74s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    81.74s         Checking existence of `"Not Now" Button`
+    t =    81.84s         Capturing element debug description
+    t =    82.71s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    82.71s         Checking existence of `"Not Now" Button`
+    t =    82.81s         Capturing element debug description
+    t =    82.81s     Checking existence of `"Not Now" Button`
+    t =    82.90s Collecting debug information to assist test failure triage
+    t =    82.90s     Requesting snapshot of accessibility hierarchy for app with pid 36413
+    t =    83.05s Checking existence of `"Home" NavigationBar`
+    t =    85.09s Checking existence of `"Home" Button`
+    t =    86.47s Checking existence of `"Your Station" StaticText`
+    t =    86.69s Checking existence of `"Home" NavigationBar`
+    t =    87.75s Checking existence of `"Home" Button`
+    t =    88.83s Checking existence of `"Your Station" StaticText`
+    t =    89.24s Checking existence of `"Your Station" StaticText`
+    t =    89.52s Checking existence of `Any (First Match)`
+    t =    90.62s Checking existence of `Any (First Match)`
+    t =    95.51s Waiting 0.5s for "Not Now" Button to exist
+    t =    96.02s     Checking existence of `"Not Now" Button`
+    t =    96.96s Collecting debug information to assist test failure triage
+    t =    96.96s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+    t =    97.30s Waiting 0.5s for "Not Now" Button to exist
+    t =    97.81s     Checking existence of `"Not Now" Button`
+    t =    97.86s Collecting debug information to assist test failure triage
+    t =    97.86s     Requesting snapshot of accessibility hierarchy for app with pid 36413
+    t =    98.93s Added attachment named '01-home'
+PICTURE: 01-home
+    t =    99.07s Getting device orientation
+    t =    99.08s Waiting 3.0s for "place.radio" Any to exist
+    t =   100.09s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   100.09s         Checking existence of `"place.radio" Any`
+    t =   102.38s         Capturing element debug description
+    t =   102.38s     Checking existence of `"place.radio" Any`
+    t =   103.74s Collecting debug information to assist test failure triage
+    t =   103.74s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 01-home: skipped: no place.radio within 3 s
+    t =   104.80s Added attachment named '02-radio'
+PICTURE: 02-radio
+    t =   105.78s Added attachment named '03-station'
+PICTURE: 03-station
+    t =   105.90s Getting device orientation
+    t =   105.90s Waiting 3.0s for "place.albums" Any to exist
+    t =   106.96s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   106.96s         Checking existence of `"place.albums" Any`
+    t =   108.80s         Capturing element debug description
+    t =   108.91s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   108.91s         Checking existence of `"place.albums" Any`
+    t =   109.16s         Capturing element debug description
+    t =   109.16s     Checking existence of `"place.albums" Any`
+    t =   111.64s Collecting debug information to assist test failure triage
+    t =   111.64s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 03-station: skipped: no place.albums within 3 s
+    t =   113.02s Added attachment named '04-albums'
+PICTURE: 04-albums
+    t =   113.81s Added attachment named '05-album'
+PICTURE: 05-album
+    t =   113.92s Getting device orientation
+    t =   113.93s Waiting 3.0s for "place.artists" Any to exist
+    t =   114.98s     Checking `Expect predicate `existsNoRetry == 1` for object "place.artists" Any`
+    t =   114.98s         Checking existence of `"place.artists" Any`
+    t =   116.92s         Capturing element debug description
+    t =   116.93s     Checking existence of `"place.artists" Any`
+    t =   119.09s Collecting debug information to assist test failure triage
+    t =   119.09s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 05-album: skipped: no place.artists within 3 s
+    t =   120.38s Added attachment named '06-artist'
+PICTURE: 06-artist
+    t =   120.53s Getting device orientation
+    t =   120.53s Waiting 3.0s for "place.songs" Any to exist
+    t =   121.57s     Checking `Expect predicate `existsNoRetry == 1` for object "place.songs" Any`
+    t =   121.57s         Checking existence of `"place.songs" Any`
+    t =   123.83s         Capturing element debug description
+    t =   123.83s     Checking existence of `"place.songs" Any`
+    t =   126.21s Collecting debug information to assist test failure triage
+    t =   126.21s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 06-artist: skipped: no place.songs within 3 s
+    t =   129.11s Added attachment named '07-songs'
+PICTURE: 07-songs
+    t =   129.69s Getting device orientation
+    t =   129.70s Waiting 3.0s for "place.playlists" Any to exist
+    t =   130.79s     Checking `Expect predicate `existsNoRetry == 1` for object "place.playlists" Any`
+    t =   130.79s         Checking existence of `"place.playlists" Any`
+    t =   133.01s         Capturing element debug description
+    t =   133.01s     Checking existence of `"place.playlists" Any`
+    t =   141.10s Collecting debug information to assist test failure triage
+    t =   141.10s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 07-songs: skipped: no place.playlists within 3 s
+    t =   142.34s Added attachment named '08-playlists'
+PICTURE: 08-playlists
+    t =   142.53s Getting device orientation
+    t =   142.53s Waiting 3.0s for "place.albums" Any to exist
+    t =   143.58s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   143.58s         Checking existence of `"place.albums" Any`
+    t =   145.54s         Capturing element debug description
+    t =   145.54s     Checking existence of `"place.albums" Any`
+    t =   149.06s Collecting debug information to assist test failure triage
+    t =   149.06s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 08-playlists: skipped: no place.albums within 3 s
+    t =   149.51s Getting device orientation
+    t =   149.51s Waiting 3.0s for "place.home" Any to exist
+    t =   150.57s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   150.57s         Checking existence of `"place.home" Any`
+    t =   152.81s         Capturing element debug description
+    t =   152.81s     Checking existence of `"place.home" Any`
+    t =   155.87s Collecting debug information to assist test failure triage
+    t =   155.87s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 08-playlists: skipped: no place.home within 3 s
+    t =   158.01s Added attachment named '09-home-playing'
+PICTURE: 09-home-playing
+    t =   158.24s Waiting 4.0s for "bar.upNext" Any to exist
+    t =   159.32s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   159.33s         Checking existence of `"bar.upNext" Any`
+    t =   161.68s         Capturing element debug description
+    t =   162.26s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   162.26s         Checking existence of `"bar.upNext" Any`
+    t =   162.58s         Capturing element debug description
+    t =   162.58s     Checking existence of `"bar.upNext" Any`
+    t =   165.91s Collecting debug information to assist test failure triage
+    t =   165.91s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 09-home-playing: skipped: no bar.upNext within 4 s
+    t =   166.30s Getting device orientation
+    t =   166.30s Waiting 3.0s for "place.albums" Any to exist
+    t =   167.32s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   167.32s         Checking existence of `"place.albums" Any`
+    t =   169.44s         Capturing element debug description
+    t =   169.44s     Checking existence of `"place.albums" Any`
+    t =   170.56s Collecting debug information to assist test failure triage
+    t =   170.57s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 09-home-playing: skipped: no place.albums within 3 s
+    t =   171.95s Added attachment named '10a-albums-panel'
+PICTURE: 10a-albums-panel
+    t =   172.85s Added attachment named '10-album-up-next'
+PICTURE: 10-album-up-next
+    t =   172.96s Waiting 4.0s for "bar.song" Any to exist
+    t =   173.99s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   173.99s         Checking existence of `"bar.song" Any`
+    t =   175.79s         Capturing element debug description
+    t =   175.99s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   175.99s         Checking existence of `"bar.song" Any`
+    t =   177.23s         Capturing element debug description
+    t =   177.23s     Checking existence of `"bar.song" Any`
+    t =   180.00s Collecting debug information to assist test failure triage
+    t =   180.00s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 10-album-up-next: skipped: no bar.song within 4 s
+    t =   181.52s Added attachment named '10b-now-playing'
+PICTURE: 10b-now-playing
+    t =   181.67s Getting device orientation
+    t =   181.67s Waiting 3.0s for "place.albums" Any to exist
+    t =   182.70s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   182.70s         Checking existence of `"place.albums" Any`
+    t =   185.00s         Capturing element debug description
+    t =   185.00s     Checking existence of `"place.albums" Any`
+    t =   189.65s Collecting debug information to assist test failure triage
+    t =   189.65s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 10b-now-playing: skipped: no place.albums within 3 s
+    t =   189.94s Waiting 4.0s for "bar.lyrics" Any to exist
+    t =   190.99s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   190.99s         Checking existence of `"bar.lyrics" Any`
+    t =   193.76s         Capturing element debug description
+    t =   193.94s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   193.94s         Checking existence of `"bar.lyrics" Any`
+    t =   194.25s         Capturing element debug description
+    t =   194.25s     Checking existence of `"bar.lyrics" Any`
+    t =   198.29s Collecting debug information to assist test failure triage
+    t =   198.29s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 10b-now-playing: skipped: no bar.lyrics within 4 s
+    t =   199.80s Added attachment named '11-album-lyrics'
+PICTURE: 11-album-lyrics
+    t =   199.93s Waiting 4.0s for "bar.song" Any to exist
+    t =   200.94s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   200.95s         Checking existence of `"bar.song" Any`
+    t =   204.19s         Capturing element debug description
+    t =   204.19s     Checking existence of `"bar.song" Any`
+    t =   206.92s Collecting debug information to assist test failure triage
+    t =   206.92s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 11-album-lyrics: skipped: no bar.song within 4 s
+    t =   208.26s Added attachment named '12-now-playing-lyrics'
+PICTURE: 12-now-playing-lyrics
+    t =   208.41s Checking existence of `"bar.upNext" Any`
+    t =   210.79s Checking existence of `"bar.lyrics" Any`
+    t =   213.00s Getting device orientation
+    t =   213.00s Waiting 3.0s for "place.home" Any to exist
+    t =   214.06s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   214.06s         Checking existence of `"place.home" Any`
+    t =   215.94s         Capturing element debug description
+    t =   216.01s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   216.01s         Checking existence of `"place.home" Any`
+    t =   216.33s         Capturing element debug description
+    t =   216.33s     Checking existence of `"place.home" Any`
+    t =   219.57s Collecting debug information to assist test failure triage
+    t =   219.57s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 12-now-playing-lyrics: skipped: no place.home within 3 s
+    t =   219.91s Waiting 15.0s for "Your Station" StaticText to exist
+    t =   220.94s     Checking `Expect predicate `existsNoRetry == 1` for object "Your Station" StaticText`
+    t =   220.94s         Checking existence of `"Your Station" StaticText`
+    t =   221.24s Checking existence of `"Your Station" StaticText`
+    t =   221.42s Find the "Your Station" StaticText
+    t =   221.63s Find the Target Application 'com.tijmen.Jukebox'
+    t =   221.81s Get number of matches for: Elements matching predicate 'label == "Play"'
+    t =   221.97s Checking existence of `Button (Element at index 0)`
+    t =   222.15s Find the Button (Element at index 0)
+    t =   222.32s Checking existence of `Button (Element at index 1)`
+    t =   222.50s Find the Button (Element at index 1)
+    t =   222.69s Find the "Play" Button
+    t =   222.91s Waiting 10.0s for Button (First Match) to exist
+    t =   223.91s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   223.92s         Checking existence of `Button (First Match)`
+    t =   224.19s Checking existence of `Button (First Match)`
+    t =   224.45s Find the Button (First Match)
+    t =   224.68s Find the Target Application 'com.tijmen.Jukebox'
+    t =   224.88s Checking existence of `"Play" Button`
+    t =   225.12s Find the "Play" Button
+    t =   225.44s Find the Target Application 'com.tijmen.Jukebox'
+    t =   225.57s Find the "Play" Button
+    t =   225.89s Tap "Play" Button
+    t =   225.89s     Wait for com.tijmen.Jukebox to idle
+    t =   225.90s     Find the "Play" Button
+    t =   226.09s     Check for interrupting elements affecting "Play" Button
+    t =   226.33s         Wait for com.apple.springboard to idle
+    t =   226.45s     Synthesize event
+    t =   226.79s     Wait for com.tijmen.Jukebox to idle
+    t =   227.03s Waiting 45.0s for "Pause" Button to exist
+    t =   228.08s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =   228.09s         Checking existence of `"Pause" Button`
+    t =   231.60s Getting device orientation
+    t =   231.61s Waiting 3.0s for "place.radio" Any to exist
+    t =   232.62s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   232.62s         Checking existence of `"place.radio" Any`
+    t =   234.51s         Capturing element debug description
+    t =   234.61s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   234.61s         Checking existence of `"place.radio" Any`
+    t =   234.86s         Capturing element debug description
+    t =   234.86s     Checking existence of `"place.radio" Any`
+    t =   246.47s Collecting debug information to assist test failure triage
+    t =   246.48s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 12-now-playing-lyrics: skipped: no place.radio within 3 s
+    t =   248.81s Added attachment named '13-radio-on-air'
+PICTURE: 13-radio-on-air
+    t =   249.02s Waiting 4.0s for "bar.upNext" Any to exist
+    t =   250.05s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   250.05s         Checking existence of `"bar.upNext" Any`
+    t =   252.88s         Capturing element debug description
+    t =   253.03s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   253.03s         Checking existence of `"bar.upNext" Any`
+    t =   253.34s         Capturing element debug description
+    t =   253.34s     Checking existence of `"bar.upNext" Any`
+    t =   256.09s Collecting debug information to assist test failure triage
+    t =   256.09s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 13-radio-on-air: skipped: no bar.upNext within 4 s
+    t =   257.15s Added attachment named '14-radio-up-next'
+PICTURE: 14-radio-up-next
+    t =   257.27s Waiting 4.0s for "bar.song" Any to exist
+    t =   258.32s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   258.33s         Checking existence of `"bar.song" Any`
+    t =   260.25s         Capturing element debug description
+    t =   260.34s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   260.34s         Checking existence of `"bar.song" Any`
+    t =   261.60s         Capturing element debug description
+    t =   261.60s     Checking existence of `"bar.song" Any`
+    t =   265.67s Collecting debug information to assist test failure triage
+    t =   265.67s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 14-radio-up-next: skipped: no bar.song within 4 s
+    t =   267.06s Added attachment named '15-now-playing-station'
+PICTURE: 15-now-playing-station
+    t =   267.15s Getting device orientation
+    t =   267.17s Waiting 3.0s for "place.home" Any to exist
+    t =   268.25s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   268.25s         Checking existence of `"place.home" Any`
+    t =   270.43s         Capturing element debug description
+    t =   270.43s     Checking existence of `"place.home" Any`
+    t =   277.97s Collecting debug information to assist test failure triage
+    t =   277.97s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 15-now-playing-station: skipped: no place.home within 3 s
+    t =   278.25s Waiting 3.0s for "Main Menu" Button to exist
+    t =   279.29s     Checking `Expect predicate `existsNoRetry == 1` for object "Main Menu" Button`
+    t =   279.29s         Checking existence of `"Main Menu" Button`
+    t =   279.92s         Capturing element debug description
+    t =   280.25s     Checking `Expect predicate `existsNoRetry == 1` for object "Main Menu" Button`
+    t =   280.25s         Checking existence of `"Main Menu" Button`
+    t =   281.54s         Capturing element debug description
+    t =   281.54s     Checking existence of `"Main Menu" Button`
+    t =   283.14s Collecting debug information to assist test failure triage
+    t =   283.14s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+    t =   283.36s Waiting 4.0s for "Settings" Button to exist
+    t =   284.41s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" Button`
+    t =   284.41s         Checking existence of `"Settings" Button`
+    t =   284.74s Checking existence of `"Settings" Button`
+    t =   285.08s Find the "Settings" Button
+    t =   285.36s Find the Target Application 'com.tijmen.Jukebox'
+    t =   285.93s Checking existence of `"Settings" Button`
+    t =   286.40s Find the "Settings" Button
+    t =   286.65s Find the Target Application 'com.tijmen.Jukebox'
+    t =   286.80s Find the "Settings" Button
+    t =   287.32s Tap "Settings" Button
+    t =   287.32s     Wait for com.tijmen.Jukebox to idle
+    t =   287.36s     Find the "Settings" Button
+    t =   287.69s     Check for interrupting elements affecting "Settings" Button
+    t =   288.06s         Wait for com.apple.springboard to idle
+    t =   288.16s     Synthesize event
+    t =   288.59s     Wait for com.tijmen.Jukebox to idle
+    t =   290.35s Waiting 8.0s for "Settings" NavigationBar to exist
+    t =   291.43s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" NavigationBar`
+    t =   291.43s         Checking existence of `"Settings" NavigationBar`
+    t =   295.30s Added attachment named '16-preferences'
+PICTURE: 16-preferences
+    t =   295.37s Waiting 4.0s for "Done" Button to exist
+    t =   296.41s     Checking `Expect predicate `existsNoRetry == 1` for object "Done" Button`
+    t =   296.41s         Checking existence of `"Done" Button`
+    t =   296.69s Checking existence of `"Done" Button`
+    t =   297.06s Find the "Done" Button
+    t =   297.33s Find the Target Application 'com.tijmen.Jukebox'
+    t =   297.53s Checking existence of `"Done" Button`
+    t =   297.79s Find the "Done" Button
+    t =   298.05s Find the Target Application 'com.tijmen.Jukebox'
+    t =   298.20s Find the "Done" Button
+    t =   298.49s Tap "Done" Button
+    t =   298.49s     Wait for com.tijmen.Jukebox to idle
+    t =   298.52s     Find the "Done" Button
+    t =   298.83s     Check for interrupting elements affecting "Done" Button
+    t =   299.04s         Wait for com.apple.springboard to idle
+    t =   299.09s     Synthesize event
+    t =   299.75s     Wait for com.tijmen.Jukebox to idle
+    t =   302.23s Getting device orientation
+    t =   302.23s Waiting 3.0s for "place.search" Any to exist
+    t =   303.24s     Checking `Expect predicate `existsNoRetry == 1` for object "place.search" Any`
+    t =   303.24s         Checking existence of `"place.search" Any`
+    t =   305.49s         Capturing element debug description
+    t =   305.49s     Checking existence of `"place.search" Any`
+    t =   307.36s Collecting debug information to assist test failure triage
+    t =   307.36s     Requesting snapshot of accessibility hierarchy for app with pid 40369
+MISSED: after 16-preferences: skipped: no place.search within 3 s
+    t =   308.33s Added attachment named '18-search'
+PICTURE: 18-search
+    t =   308.41s Added attachment named 'missed-pad'
+    t =   308.45s Tear Down
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' passed (308.659 seconds).
+Test Suite 'ScreenshotTests' passed at 2026-11-14 23:43:23.390.
+	 Executed 1 test, with 0 failures (0 unexpected) in 308.659 (308.661) seconds
+Test Suite 'JukeboxUITests.xctest' passed at 2026-11-14 23:43:23.390.
+	 Executed 1 test, with 0 failures (0 unexpected) in 308.659 (308.662) seconds
+Test Suite 'Selected tests' passed at 2026-11-14 23:43:23.391.
+	 Executed 1 test, with 0 failures (0 unexpected) in 308.659 (308.663) seconds
+2026-11-14 23:43:26.013 xcodebuild[37897:109419] [MT] IDETestOperationsObserverDebug: 350.738 elapsed -- Testing started completed.
+2026-11-14 23:43:26.015 xcodebuild[37897:109419] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-14 23:43:26.015 xcodebuild[37897:109419] [MT] IDETestOperationsObserverDebug: 350.738 sec, +350.738 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

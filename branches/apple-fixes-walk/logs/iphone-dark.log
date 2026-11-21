@@ -1,0 +1,51 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=FCC5F673-7BEC-4A7D-8F2A-4DC35E2668EC -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPhone" -resultBundlePath build/screenshots/iphone-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 1050 -maximum-test-execution-time-allowance 1050
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:iOS Simulator, arch:arm64, id:FCC5F673-7BEC-4A7D-8F2A-4DC35E2668EC, OS:26.5, name:iPhone 17 Pro }
+{ platform:iOS Simulator, arch:x86_64, id:FCC5F673-7BEC-4A7D-8F2A-4DC35E2668EC, OS:26.5, name:iPhone 17 Pro }
+2026-11-15 12:26:03.507249+0000 JukeboxUITests-Runner[22449:65379] [Default] Running tests...
+objc[22449]: Class UIAccessibilityLoaderWebShared is implemented in both /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x106564310) and /Library/Developer/CoreSimulator/Volumes/iOS_23F77/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 26.5.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x106448398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-15 12:26:47.446.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-15 12:26:47.446.
+Test Suite 'ScreenshotTests' started at 2026-11-15 12:26:47.447.
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' started.
+    t =     0.09s Start Test at 2026-11-15 12:26:47.535
+    t =     0.09s Set Up
+    t =     0.15s Open com.tijmen.Jukebox
+    t =     0.15s     Launch com.tijmen.Jukebox
+2026-11-15 12:28:01.300 xcodebuild[19367:57389] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-15 12:28:01.302 xcodebuild[19367:57389] [MT] IDELaunchParametersSnapshot: no debugger version
+/Users/runner/work/Jukebox/Jukebox/JukeboxUITests/ScreenshotTests.swift:484: error: -[JukeboxUITests.ScreenshotTests testPhone] : Failed to launch <XCUIApplicationImpl: 0x106002440 com.tijmen.Jukebox at /Users/runner/work/Jukebox/Jukebox/build/screenshots/derived/Build/Products/Debug-iphonesimulator/Jukebox.app> via Xcode: Timed out while launching application via Xcode.
+    t =    61.00s Tear Down
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' failed (60.913 seconds).
+Test Suite 'ScreenshotTests' failed at 2026-11-15 12:27:48.448.
+	 Executed 1 test, with 1 failure (0 unexpected) in 60.913 (61.001) seconds
+Test Suite 'JukeboxUITests.xctest' failed at 2026-11-15 12:27:48.448.
+	 Executed 1 test, with 1 failure (0 unexpected) in 60.913 (61.002) seconds
+Test Suite 'Selected tests' failed at 2026-11-15 12:27:48.448.
+	 Executed 1 test, with 1 failure (0 unexpected) in 60.913 (61.003) seconds
+2026-11-15 12:28:08.197028+0000 JukeboxUITests-Runner[22449:66698] [Default] Xcode took 19.72 seconds to acknowledge that testing finished.
+2026-11-15 12:28:58.996 xcodebuild[19367:57389] [MT] IDETestOperationsObserverDebug: 246.528 elapsed -- Testing started completed.
+2026-11-15 12:28:58.996 xcodebuild[19367:57389] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-15 12:28:58.996 xcodebuild[19367:57389] [MT] IDETestOperationsObserverDebug: 246.529 sec, +246.529 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+Failing tests:
+	ScreenshotTests.testPhone()
+
+** TEST EXECUTE FAILED **
+
+Testing started

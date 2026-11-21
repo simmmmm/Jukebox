@@ -1,0 +1,600 @@
+2026-11-20 17:22:41.267 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.267 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.267 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.267 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.267 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.267 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTElementQuery: set data source for rootElementSnapshot to <XCTAutomationSession: 0x107234a80>
+2026-11-20 17:22:41.267 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Finding all matches with input Application, pid: 30361 using transformers 
+↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7
+2026-11-20 17:22:41.269 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] [Match All] applied transformer `Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7` to input {(
+    Application, pid: 30361
+)}, found {(
+)}
+2026-11-20 17:22:41.269 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] [Match All] setting out related elements in early return {(
+)}
+2026-11-20 17:22:41.272 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Current tree:
+Application, 0x121590280, pid: 30361 <App element pid: 30361>
+  Window (Main), 0x121591680 <AX element pid: 30361, elementOrHash.elementID: 4402511872.5>
+    Other, 0x121593840 <AX element pid: 30361, elementOrHash.elementID: 4414553088.8>
+      Other, 0x121590dc0 <AX element pid: 30361, elementOrHash.elementID: 4413492352.11>
+        Other, 0x121591e00 <AX element pid: 30361, elementOrHash.elementID: 4402579968.15>
+          Other, 0x121593200 <AX element pid: 30361, elementOrHash.elementID: 4674266016.20>
+            Other, 0x121592080 <AX element pid: 30361, elementOrHash.elementID: 4414125568.306>
+              NavigationBar, 0x121590640, identifier: '_TtGC7SwiftUI32NavigationStackHosting' <AX element pid: 30361, elementOrHash.elementID: 4690902016.311>
+                SearchField, 0x121590000 <AX element pid: 30361, elementOrHash.elementID: 4402571776.317>
+                  Image, 0x121592a80, identifier: 'magnifyingglass' <AX element pid: 30361, elementOrHash.elementID: 4643129856.323>
+              Other, 0x1215912c0 <AX element pid: 30361, elementOrHash.elementID: 4675937472.312>
+                Other, 0x121591b80 <AX element pid: 30361, elementOrHash.elementID: 4414031872.318>
+                  Other, 0x121590780 <AX element pid: 30361, elementOrHash.elementID: 4674113536.324>
+                    Other, 0x1215917c0 <AX element pid: 30361, elementOrHash.elementID: 4854312832.330>
+                      ScrollView, 0x121593480 <AX element pid: 30361, elementOrHash.elementID: 4768307200.341>
+                        Other, 0x121590500 <AX element pid: 30361, elementOrHash.elementID: 4646838592.342>
+                          Other, 0x1215921c0 <AX element pid: 30361, elementOrHash.elementID: 4523642816.346>
+                        Other, 0x121592440 <AX element pid: 30361, elementOrHash.elementID: 4646844864.343>
+                        Other, 0x121593340 <AX element pid: 30361, elementOrHash.elementID: 4523210496.344>
+                          StaticText, 0x121592e40 <AX element pid: 30361, elementOrHash.elementID: 4768080320.347>
+                          Button, 0x121591f40 <AX element pid: 30361, elementOrHash.elementID: 4768085280.348>
+                            Image, 0x121590140 <AX element pid: 30361, elementOrHash.elementID: 4768078880.362>
+                            Other, 0x121591040 <AX element pid: 30361, elementOrHash.elementID: 4768076000.363>
+                            StaticText, 0x121590f00 <AX element pid: 30361, elementOrHash.elementID: 4768084640.364>
+                            StaticText, 0x121593d40 <AX element pid: 30361, elementOrHash.elementID: 4768079200.365>
+                            StaticText, 0x121592300 <AX element pid: 30361, elementOrHash.elementID: 4768084800.366>
+                            StaticText, 0x121593980 <AX element pid: 30361, elementOrHash.elementID: 4768084960.367>
+                            Image, 0x121593700, identifier: 'chevron.forward' <AX element pid: 30361, elementOrHash.elementID: 4768085120.368>
+                          Button, 0x121591900 <AX element pid: 30361, elementOrHash.elementID: 4768086880.349>
+                            Image, 0x121591cc0 <AX element pid: 30361, elementOrHash.elementID: 4768085600.369>
+                            Other, 0x121593c00 <AX element pid: 30361, elementOrHash.elementID: 4768085440.370>
+                            Image, 0x121591a40 <AX element pid: 30361, elementOrHash.elementID: 4768085760.371>
+                            StaticText, 0x121590b40 <AX element pid: 30361, elementOrHash.elementID: 4768086240.372>
+                            Image, 0x1215930c0 <AX element pid: 30361, elementOrHash.elementID: 4768085920.373>
+                            Image, 0x1215908c0 <AX element pid: 30361, elementOrHash.elementID: 4768086080.374>
+                            StaticText, 0x121592d00 <AX element pid: 30361, elementOrHash.elementID: 4768086400.375>
+                            Image, 0x121591180, identifier: 'play.fill' <AX element pid: 30361, elementOrHash.elementID: 4768086560.376>
+                            StaticText, 0x121592800 <AX element pid: 30361, elementOrHash.elementID: 4768086720.377>
+                          StaticText, 0x121592580 <AX element pid: 30361, elementOrHash.elementID: 4768087040.350>
+                          StaticText, 0x121591400 <AX element pid: 30361, elementOrHash.elementID: 4768087200.351>
+                          ScrollView, 0x121593ac0 <AX element pid: 30361, elementOrHash.elementID: 4523831296.352>
+                            Other, 0x1215935c0 <AX element pid: 30361, elementOrHash.elementID: 4414546688.378>
+                              Other, 0x121593e80 <AX element pid: 30361, elementOrHash.elementID: 4645222144.392>
+                                Button, 0x1215903c0 <AX element pid: 30361, elementOrHash.elementID: 4646801792.436>
+                                  Image, 0x121592f80 <AX element pid: 30361, elementOrHash.elementID: 4768087360.480>
+                                  Image, 0x121590a00 <AX element pid: 30361, elementOrHash.elementID: 4768087520.481>
+                                  Image, 0x1215926c0 <AX element pid: 30361, elementOrHash.elementID: 4768087680.482>
+                                  Image, 0x121592940 <AX element pid: 30361, elementOrHash.elementID: 4768087840.483>
+                                  StaticText, 0x121591540 <AX element pid: 30361, elementOrHash.elementID: 4646801952.484>
+                                  StaticText, 0x10d864a00 <AX element pid: 30361, elementOrHash.elementID: 4646806272.485>
+                                Button, 0x117a4a6c0 <AX element pid: 30361, elementOrHash.elementID: 4723685600.437>
+                                  Image, 0x116b7f0c0 <AX element pid: 30361, elementOrHash.elementID: 4646810912.486>
+                                  Image, 0x116b7e080 <AX element pid: 30361, elementOrHash.elementID: 4646800192.487>
+                                  Image, 0x116b7f340 <AX element pid: 30361, elementOrHash.elementID: 4723684960.488>
+                                  Image, 0x116b7f5c0 <AX element pid: 30361, elementOrHash.elementID: 4723685120.489>
+                                  StaticText, 0x116b7d2c0 <AX element pid: 30361, elementOrHash.elementID: 4723685440.490>
+                                  StaticText, 0x116b7e440 <AX element pid: 30361, elementOrHash.elementID: 4723685760.491>
+                                Button, 0x116b7f980 <AX element pid: 30361, elementOrHash.elementID: 4723683840.438>
+                                  Image, 0x116b7fe80 <AX element pid: 30361, elementOrHash.elementID: 4723685920.492>
+                                  Image, 0x116b7e1c0 <AX element pid: 30361, elementOrHash.elementID: 4723680160.493>
+                                  Image, 0x116b7e800 <AX element pid: 30361, elementOrHash.elementID: 4723684160.494>
+                                  Image, 0x116b7f840 <AX element pid: 30361, elementOrHash.elementID: 4723684000.495>
+                                  StaticText, 0x116b7c280 <AX element pid: 30361, elementOrHash.elementID: 4723684320.496>
+                                  StaticText, 0x116b7f200 <AX element pid: 30361, elementOrHash.elementID: 4723678240.497>
+                                Button, 0x116b7e6c0 <AX element pid: 30361, elementOrHash.elementID: 4723683360.439>
+                                  Image, 0x116b7cc80 <AX element pid: 30361, elementOrHash.elementID: 4723682400.498>
+                                  Image, 0x116b7c8c0 <AX element pid: 30361, elementOrHash.elementID: 4723682720.499>
+                                  Image, 0x116b7ee40 <AX element pid: 30361, elementOrHash.elementID: 4723682560.500>
+                                  Image, 0x116b7ebc0 <AX element pid: 30361, elementOrHash.elementID: 4723677120.501>
+                                  StaticText, 0x116b7d7c0 <AX element pid: 30361, elementOrHash.elementID: 4723681920.502>
+                                  StaticText, 0x116b7df40 <AX element pid: 30361, elementOrHash.elementID: 4723683040.503>
+                                Button, 0x116b7c000 <AX element pid: 30361, elementOrHash.elementID: 4723684640.440>
+                                  Image, 0x116b7d400 <AX element pid: 30361, elementOrHash.elementID: 4723683200.504>
+                                  Image, 0x116b7d540 <AX element pid: 30361, elementOrHash.elementID: 4723682880.505>
+                                  Image, 0x116b7db80 <AX element pid: 30361, elementOrHash.elementID: 4723680000.506>
+                                  Image, 0x116b7d180 <AX element pid: 30361, elementOrHash.elementID: 4723682080.507>
+                                  StaticText, 0x116b7e940 <AX element pid: 30361, elementOrHash.elementID: 4723679040.508>
+                                  StaticText, 0x116b7d900 <AX element pid: 30361, elementOrHash.elementID: 4723676960.509>
+                                Button, 0x116b7c3c0 <AX element pid: 30361, elementOrHash.elementID: 4401725056.441>
+                                  Image, 0x114f99540 <AX element pid: 30361, elementOrHash.elementID: 4401724736.510>
+                                  Image, 0x114f9a580 <AX element pid: 30361, elementOrHash.elementID: 4401723776.511>
+                                  Image, 0x114f98b40 <AX element pid: 30361, elementOrHash.elementID: 4401711936.512>
+                                  Image, 0x114f9bac0 <AX element pid: 30361, elementOrHash.elementID: 4401724416.513>
+                                  StaticText, 0x114f997c0 <AX element pid: 30361, elementOrHash.elementID: 4401723936.514>
+                                  StaticText, 0x114f99f40 <AX element pid: 30361, elementOrHash.elementID: 4401724096.515>
+                                Button, 0x114f9bc00 <AX element pid: 30361, elementOrHash.elementID: 4412566624.442>
+                                  Image, 0x114f98780 <AX element pid: 30361, elementOrHash.elementID: 4401724256.516>
+                                  Image, 0x114f988c0 <AX element pid: 30361, elementOrHash.elementID: 4401724576.517>
+                                  Image, 0x114f98dc0 <AX element pid: 30361, elementOrHash.elementID: 4412566144.518>
+                                  Image, 0x114f98280 <AX element pid: 30361, elementOrHash.elementID: 4412566464.519>
+                                  StaticText, 0x114f9ad00 <AX element pid: 30361, elementOrHash.elementID: 4412564064.520>
+                                  StaticText, 0x114f99180 <AX element pid: 30361, elementOrHash.elementID: 4412565984.521>
+                                Button, 0x114f9a1c0 <AX element pid: 30361, elementOrHash.elementID: 4412560864.443>
+                                  Image, 0x114f9b340 <AX element pid: 30361, elementOrHash.elementID: 4412564864.522>
+                                  Image, 0x114f992c0 <AX element pid: 30361, elementOrHash.elementID: 4412565344.523>
+                                  Image, 0x114f98f00 <AX element pid: 30361, elementOrHash.elementID: 4412566944.524>
+                                  Image, 0x114f9a440 <AX element pid: 30361, elementOrHash.elementID: 4412565184.525>
+                                  StaticText, 0x114f9a800 <AX element pid: 30361, elementOrHash.elementID: 4412565504.526>
+                                  StaticText, 0x114f99040 <AX element pid: 30361, elementOrHash.elementID: 4412571424.527>
+                                Button, 0x116b9be80 <AX element pid: 30361, elementOrHash.elementID: 4674268896.444>
+                                  Image, 0x116b992c0 <AX element pid: 30361, elementOrHash.elementID: 4412556704.528>
+                                  Image, 0x116b983c0 <AX element pid: 30361, elementOrHash.elementID: 4674262176.529>
+                                  Image, 0x116b99180 <AX element pid: 30361, elementOrHash.elementID: 4674262496.530>
+                                  Image, 0x116b9aa80 <AX element pid: 30361, elementOrHash.elementID: 4674271936.531>
+                                  StaticText, 0x116b98b40 <AX element pid: 30361, elementOrHash.elementID: 4674257216.532>
+                                  StaticText, 0x116b98780 <AX element pid: 30361, elementOrHash.elementID: 4674260416.533>
+                                Button, 0x116b9b700 <AX element pid: 30361, elementOrHash.elementID: 4674267616.445>
+                                  Image, 0x116b9af80 <AX element pid: 30361, elementOrHash.elementID: 4674269536.534>
+                                  Image, 0x116b99040 <AX element pid: 30361, elementOrHash.elementID: 4674265216.535>
+                                  Image, 0x116b9bc00 <AX element pid: 30361, elementOrHash.elementID: 4674265696.536>
+                                  Image, 0x116b9b340 <AX element pid: 30361, elementOrHash.elementID: 4674269856.537>
+                                  StaticText, 0x116b98c80 <AX element pid: 30361, elementOrHash.elementID: 4674267296.538>
+                                  StaticText, 0x116b98dc0 <AX element pid: 30361, elementOrHash.elementID: 4674269376.539>
+                                Button, 0x116b98640 <AX element pid: 30361, elementOrHash.elementID: 4645209984.446>
+                                  Image, 0x116b98f00 <AX element pid: 30361, elementOrHash.elementID: 4674256896.540>
+                                  Image, 0x116b988c0 <AX element pid: 30361, elementOrHash.elementID: 4674263776.541>
+                                  Image, 0x116b9bd40 <AX element pid: 30361, elementOrHash.elementID: 4674269696.542>
+                                  Image, 0x116b98500 <AX element pid: 30361, elementOrHash.elementID: 4674262336.543>
+                                  StaticText, 0x116b9a1c0 <AX element pid: 30361, elementOrHash.elementID: 4674265376.544>
+                                  StaticText, 0x116b9ae40 <AX element pid: 30361, elementOrHash.elementID: 4674259136.545>
+                          StaticText, 0x116b98a00 <AX element pid: 30361, elementOrHash.elementID: 4645220384.353>
+                          Other, 0x116b9a440 <AX element pid: 30361, elementOrHash.elementID: 4854289888.354>
+                            Button, 0x116b9b840 <AX element pid: 30361, elementOrHash.elementID: 4522150080.379>
+                              Image, 0x116b9b0c0 <AX element pid: 30361, elementOrHash.elementID: 4690851264.393>
+                              StaticText, 0x116b99680 <AX element pid: 30361, elementOrHash.elementID: 4522152960.394>
+                              StaticText, 0x116be7d40 <AX element pid: 30361, elementOrHash.elementID: 4522150880.395>
+                              Other, 0x116be4780 <AX element pid: 30361, elementOrHash.elementID: 4522157600.396>
+                            Button, 0x116be5e00 <AX element pid: 30361, elementOrHash.elementID: 4522148640.380>
+                              Image, 0x116be4280 <AX element pid: 30361, elementOrHash.elementID: 4522154240.397>
+                              StaticText, 0x116be4b40 <AX element pid: 30361, elementOrHash.elementID: 4522152320.398>
+                              StaticText, 0x116be7200 <AX element pid: 30361, elementOrHash.elementID: 4522147840.399>
+                              Other, 0x116be4500 <AX element pid: 30361, elementOrHash.elementID: 4522151840.400>
+                            Button, 0x116be70c0 <AX element pid: 30361, elementOrHash.elementID: 4522154080.381>
+                              Image, 0x116be4f00 <AX element pid: 30361, elementOrHash.elementID: 4522152160.401>
+                              StaticText, 0x116be7480 <AX element pid: 30361, elementOrHash.elementID: 4522150720.402>
+                              StaticText, 0x116be7c00 <AX element pid: 30361, elementOrHash.elementID: 4522150560.403>
+                              Other, 0x116be5400 <AX element pid: 30361, elementOrHash.elementID: 4522152000.404>
+                            Button, 0x116be5a40 <AX element pid: 30361, elementOrHash.elementID: 4854284928.382>
+                              Image, 0x116be4140 <AX element pid: 30361, elementOrHash.elementID: 4854284288.405>
+                              StaticText, 0x116be4000 <AX element pid: 30361, elementOrHash.elementID: 4854284448.406>
+                              StaticText, 0x116be48c0 <AX element pid: 30361, elementOrHash.elementID: 4854284608.407>
+                              Other, 0x116be5040 <AX element pid: 30361, elementOrHash.elementID: 4854284768.408>
+                            Button, 0x116be5b80 <AX element pid: 30361, elementOrHash.elementID: 4854285728.383>
+                              Image, 0x116be5180 <AX element pid: 30361, elementOrHash.elementID: 4854285088.409>
+                              StaticText, 0x116be6800 <AX element pid: 30361, elementOrHash.elementID: 4854285248.410>
+                              StaticText, 0x116be4c80 <AX element pid: 30361, elementOrHash.elementID: 4854285408.411>
+                              Other, 0x116be4a00 <AX element pid: 30361, elementOrHash.elementID: 4854285568.412>
+                            Button, 0x116be75c0 <AX element pid: 30361, elementOrHash.elementID: 4854286528.384>
+                              Image, 0x116be6f80 <AX element pid: 30361, elementOrHash.elementID: 4854285888.413>
+                              StaticText, 0x116be5f40 <AX element pid: 30361, elementOrHash.elementID: 4854286048.414>
+                              StaticText, 0x116be5680 <AX element pid: 30361, elementOrHash.elementID: 4854286208.415>
+                              Other, 0x116be4dc0 <AX element pid: 30361, elementOrHash.elementID: 4854286368.416>
+                            Button, 0x116be5cc0 <AX element pid: 30361, elementOrHash.elementID: 4854287328.385>
+                              Image, 0x116be6940 <AX element pid: 30361, elementOrHash.elementID: 4854286688.417>
+                              StaticText, 0x116be7980 <AX element pid: 30361, elementOrHash.elementID: 4854286848.418>
+                              StaticText, 0x116be5900 <AX element pid: 30361, elementOrHash.elementID: 4854287008.419>
+                              Other, 0x116b4c500 <AX element pid: 30361, elementOrHash.elementID: 4854287168.420>
+                            Button, 0x10c1f2800 <AX element pid: 30361, elementOrHash.elementID: 4854288128.386>
+                              Image, 0x10c1f0140 <AX element pid: 30361, elementOrHash.elementID: 4854287488.421>
+                              StaticText, 0x10c1f35c0 <AX element pid: 30361, elementOrHash.elementID: 4854287648.422>
+                              StaticText, 0x10c1f0f00 <AX element pid: 30361, elementOrHash.elementID: 4854287808.423>
+                              Other, 0x10d8d9cc0 <AX element pid: 30361, elementOrHash.elementID: 4854287968.424>
+                            Button, 0x10d8d92c0 <AX element pid: 30361, elementOrHash.elementID: 4854288928.387>
+                              Image, 0x10d8daf80 <AX element pid: 30361, elementOrHash.elementID: 4854288288.425>
+                              StaticText, 0x10d8db980 <AX element pid: 30361, elementOrHash.elementID: 4854288448.426>
+                              StaticText, 0x10d8db700 <AX element pid: 30361, elementOrHash.elementID: 4854288608.427>
+                              Other, 0x10d8d88c0 <AX element pid: 30361, elementOrHash.elementID: 4854288768.428>
+                            Button, 0x10d8d9a40 <AX element pid: 30361, elementOrHash.elementID: 4854289728.388>
+                              Image, 0x10d8d9680 <AX element pid: 30361, elementOrHash.elementID: 4854289088.429>
+                              StaticText, 0x10d8d8f00 <AX element pid: 30361, elementOrHash.elementID: 4854289248.430>
+                              StaticText, 0x10d8da440 <AX element pid: 30361, elementOrHash.elementID: 4854289408.431>
+                              Other, 0x10d8d8640 <AX element pid: 30361, elementOrHash.elementID: 4854289568.432>
+                          StaticText, 0x10d8da1c0 <AX element pid: 30361, elementOrHash.elementID: 4854290048.355>
+                          ScrollView, 0x10d8d9540 <AX element pid: 30361, elementOrHash.elementID: 4402534400.356>
+                            Other, 0x10d8db480 <AX element pid: 30361, elementOrHash.elementID: 4414545408.389>
+                              Other, 0x10d8dae40 <AX element pid: 30361, elementOrHash.elementID: 4854297248.433>
+                                Button, 0x10d8da800 <AX element pid: 30361, elementOrHash.elementID: 4854290688.447>
+                                  Image, 0x10d8d8c80 <AX element pid: 30361, elementOrHash.elementID: 4854290208.546>
+                                  StaticText, 0x10d8d8dc0 <AX element pid: 30361, elementOrHash.elementID: 4854290368.547>
+                                  StaticText, 0x10d8da080 <AX element pid: 30361, elementOrHash.elementID: 4854290528.548>
+                                Button, 0x10d8dbe80 <AX element pid: 30361, elementOrHash.elementID: 4854291328.448>
+                                  Image, 0x10d8d8a00 <AX element pid: 30361, elementOrHash.elementID: 4854290848.549>
+                                  StaticText, 0x10d8d9b80 <AX element pid: 30361, elementOrHash.elementID: 4854291008.550>
+                                  StaticText, 0x10d8d9e00 <AX element pid: 30361, elementOrHash.elementID: 4854291168.551>
+                                Button, 0x10d8da940 <AX element pid: 30361, elementOrHash.elementID: 4854291968.449>
+                                  Image, 0x10d8da580 <AX element pid: 30361, elementOrHash.elementID: 4854291488.552>
+                                  StaticText, 0x10d8da300 <AX element pid: 30361, elementOrHash.elementID: 4854291648.553>
+                                  StaticText, 0x10d8da6c0 <AX element pid: 30361, elementOrHash.elementID: 4854291808.554>
+                                Button, 0x10d8dabc0 <AX element pid: 30361, elementOrHash.elementID: 4854292608.450>
+                                  Image, 0x10d8d8780 <AX element pid: 30361, elementOrHash.elementID: 4854292128.555>
+                                  StaticText, 0x10d8d8b40 <AX element pid: 30361, elementOrHash.elementID: 4854292288.556>
+                                  StaticText, 0x10d8daa80 <AX element pid: 30361, elementOrHash.elementID: 4854292448.557>
+                                Button, 0x10d8db840 <AX element pid: 30361, elementOrHash.elementID: 4854293248.451>
+                                  Image, 0x10d8dbac0 <AX element pid: 30361, elementOrHash.elementID: 4854292768.558>
+                                  StaticText, 0x10d8db340 <AX element pid: 30361, elementOrHash.elementID: 4854292928.559>
+                                  StaticText, 0x10d8dbc00 <AX element pid: 30361, elementOrHash.elementID: 4854293088.560>
+                                Button, 0x10d8d9f40 <AX element pid: 30361, elementOrHash.elementID: 4854293888.452>
+                                  Image, 0x10d8db0c0 <AX element pid: 30361, elementOrHash.elementID: 4854293408.561>
+                                  StaticText, 0x10d8dbd40 <AX element pid: 30361, elementOrHash.elementID: 4854293568.562>
+                                  StaticText, 0x1199235c0 <AX element pid: 30361, elementOrHash.elementID: 4854293728.563>
+                                Button, 0x1199226c0 <AX element pid: 30361, elementOrHash.elementID: 4854294528.453>
+                                  Image, 0x119921f40 <AX element pid: 30361, elementOrHash.elementID: 4854294048.564>
+                                  StaticText, 0x119922d00 <AX element pid: 30361, elementOrHash.elementID: 4854294208.565>
+                                  StaticText, 0x119920000 <AX element pid: 30361, elementOrHash.elementID: 4854294368.566>
+                                Button, 0x119923200 <AX element pid: 30361, elementOrHash.elementID: 4854295168.454>
+                                  Image, 0x119921680 <AX element pid: 30361, elementOrHash.elementID: 4854294688.567>
+                                  StaticText, 0x119922580 <AX element pid: 30361, elementOrHash.elementID: 4854294848.568>
+                                  StaticText, 0x1199203c0 <AX element pid: 30361, elementOrHash.elementID: 4854295008.569>
+                                Button, 0x119921900 <AX element pid: 30361, elementOrHash.elementID: 4854295808.455>
+                                  Image, 0x119920640 <AX element pid: 30361, elementOrHash.elementID: 4854295328.570>
+                                  StaticText, 0x119920b40 <AX element pid: 30361, elementOrHash.elementID: 4854295488.571>
+                                  StaticText, 0x119921a40 <AX element pid: 30361, elementOrHash.elementID: 4854295648.572>
+                                Button, 0x119922940 <AX element pid: 30361, elementOrHash.elementID: 4854296448.456>
+                                  Image, 0x119920a00 <AX element pid: 30361, elementOrHash.elementID: 4854295968.573>
+                                  StaticText, 0x119920280 <AX element pid: 30361, elementOrHash.elementID: 4854296128.574>
+                                  StaticText, 0x1199212c0 <AX element pid: 30361, elementOrHash.elementID: 4854296288.575>
+                                Button, 0x1199221c0 <AX element pid: 30361, elementOrHash.elementID: 4854297088.457>
+                                  Image, 0x1199230c0 <AX element pid: 30361, elementOrHash.elementID: 4854296608.576>
+                                  StaticText, 0x119921cc0 <AX element pid: 30361, elementOrHash.elementID: 4854296768.577>
+                                  StaticText, 0x119920780 <AX element pid: 30361, elementOrHash.elementID: 4854296928.578>
+                          StaticText, 0x119923340 <AX element pid: 30361, elementOrHash.elementID: 4854297568.357>
+                          ScrollView, 0x119923ac0 <AX element pid: 30361, elementOrHash.elementID: 4768301056.358>
+                            Other, 0x119922a80 <AX element pid: 30361, elementOrHash.elementID: 4523209856.390>
+                              Other, 0x119920140 <AX element pid: 30361, elementOrHash.elementID: 4854304832.434>
+                                Button, 0x119921e00 <AX element pid: 30361, elementOrHash.elementID: 4854298208.458>
+                                  Image, 0x119923e80 <AX element pid: 30361, elementOrHash.elementID: 4854297728.579>
+                                  StaticText, 0x119921b80 <AX element pid: 30361, elementOrHash.elementID: 4854297888.580>
+                                  StaticText, 0x1199217c0 <AX element pid: 30361, elementOrHash.elementID: 4854298048.581>
+                                Button, 0x119923700 <AX element pid: 30361, elementOrHash.elementID: 4854298848.459>
+                                  Image, 0x119923980 <AX element pid: 30361, elementOrHash.elementID: 4854298368.582>
+                                  StaticText, 0x119922f80 <AX element pid: 30361, elementOrHash.elementID: 4854298528.583>
+                                  StaticText, 0x1199208c0 <AX element pid: 30361, elementOrHash.elementID: 4854298688.584>
+                                Button, 0x119922800 <AX element pid: 30361, elementOrHash.elementID: 4854299488.460>
+                                  Image, 0x119922e40 <AX element pid: 30361, elementOrHash.elementID: 4854299008.585>
+                                  StaticText, 0x119922300 <AX element pid: 30361, elementOrHash.elementID: 4854299168.586>
+                                  StaticText, 0x119922440 <AX element pid: 30361, elementOrHash.elementID: 4854299328.587>
+                                Button, 0x119923d40 <AX element pid: 30361, elementOrHash.elementID: 4854300128.461>
+                                  Image, 0x119921180 <AX element pid: 30361, elementOrHash.elementID: 4854299648.588>
+                                  StaticText, 0x119920500 <AX element pid: 30361, elementOrHash.elementID: 4854299808.589>
+                                  StaticText, 0x119923840 <AX element pid: 30361, elementOrHash.elementID: 4854299968.590>
+                                Button, 0x119921540 <AX element pid: 30361, elementOrHash.elementID: 4854300832.462>
+                                  Image, 0x119923c00 <AX element pid: 30361, elementOrHash.elementID: 4854300288.591>
+                                  StaticText, 0x119921400 <AX element pid: 30361, elementOrHash.elementID: 4854300448.592>
+                                  StaticText, 0x114e0a440 <AX element pid: 30361, elementOrHash.elementID: 4854300672.593>
+                                Button, 0x114e09900 <AX element pid: 30361, elementOrHash.elementID: 4854301472.463>
+                                  Image, 0x114e0be80 <AX element pid: 30361, elementOrHash.elementID: 4854300992.594>
+                                  StaticText, 0x114e0b980 <AX element pid: 30361, elementOrHash.elementID: 4854301152.595>
+                                  StaticText, 0x114e0a080 <AX element pid: 30361, elementOrHash.elementID: 4854301312.596>
+                                Button, 0x114e08780 <AX element pid: 30361, elementOrHash.elementID: 4854302112.464>
+                                  Image, 0x114e097c0 <AX element pid: 30361, elementOrHash.elementID: 4854301632.597>
+                                  StaticText, 0x114e0bd40 <AX element pid: 30361, elementOrHash.elementID: 4854301792.598>
+                                  StaticText, 0x114e09a40 <AX element pid: 30361, elementOrHash.elementID: 4854301952.599>
+                                Button, 0x119b75b80 <AX element pid: 30361, elementOrHash.elementID: 4854302752.465>
+                                  Image, 0x119b743c0 <AX element pid: 30361, elementOrHash.elementID: 4854302272.600>
+                                  StaticText, 0x119b75a40 <AX element pid: 30361, elementOrHash.elementID: 4854302432.601>
+                                  StaticText, 0x119b77980 <AX element pid: 30361, elementOrHash.elementID: 4854302592.602>
+                                Button, 0x119b77e80 <AX element pid: 30361, elementOrHash.elementID: 4854303392.466>
+                                  Image, 0x119b77c00 <AX element pid: 30361, elementOrHash.elementID: 4854302912.603>
+                                  StaticText, 0x119b74640 <AX element pid: 30361, elementOrHash.elementID: 4854303072.604>
+                                  StaticText, 0x119b76080 <AX element pid: 30361, elementOrHash.elementID: 4854303232.605>
+                                Button, 0x119b74500 <AX element pid: 30361, elementOrHash.elementID: 4854304032.467>
+                                  Image, 0x116bd8640 <AX element pid: 30361, elementOrHash.elementID: 4854303552.606>
+                                  StaticText, 0x116bdb5c0 <AX element pid: 30361, elementOrHash.elementID: 4854303712.607>
+                                  StaticText, 0x116bd9040 <AX element pid: 30361, elementOrHash.elementID: 4854303872.608>
+                                Button, 0x116bdabc0 <AX element pid: 30361, elementOrHash.elementID: 4854304672.468>
+                                  Image, 0x116bd88c0 <AX element pid: 30361, elementOrHash.elementID: 4854304192.609>
+                                  StaticText, 0x116bda080 <AX element pid: 30361, elementOrHash.elementID: 4854304352.610>
+                                  StaticText, 0x116bd9540 <AX element pid: 30361, elementOrHash.elementID: 4854304512.611>
+                          StaticText, 0x116bda1c0 <AX element pid: 30361, elementOrHash.elementID: 4854305152.359>
+                          ScrollView, 0x116bd8780 <AX element pid: 30361, elementOrHash.elementID: 4768304128.360>
+                            Other, 0x116bd9cc0 <AX element pid: 30361, elementOrHash.elementID: 4523208576.391>
+                              Other, 0x116bda580 <AX element pid: 30361, elementOrHash.elementID: 4854312352.435>
+                                Button, 0x116bdbc00 <AX element pid: 30361, elementOrHash.elementID: 4854305792.469>
+                                  Image, 0x116bdaf80 <AX element pid: 30361, elementOrHash.elementID: 4854305312.612>
+                                  StaticText, 0x116bdb980 <AX element pid: 30361, elementOrHash.elementID: 4854305472.613>
+                                  StaticText, 0x116bd9680 <AX element pid: 30361, elementOrHash.elementID: 4854305632.614>
+                                Button, 0x116bd8140 <AX element pid: 30361, elementOrHash.elementID: 4854306432.470>
+                                  Image, 0x116bda440 <AX element pid: 30361, elementOrHash.elementID: 4854305952.615>
+                                  StaticText, 0x116bd9900 <AX element pid: 30361, elementOrHash.elementID: 4854306112.616>
+                       <…>
+2026-11-20 17:22:41.277 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Query ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7 found matching snapshots: {(
+)} (error: (null))
+2026-11-20 17:22:41.277 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Replying to query ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7 with results: <XCTElementQueryResults: 0x119933c90> (error: (null))
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4522164000.321. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4522164000.321
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 0;
+    "XC_kAXXCAttributeElementBaseType" = NSObject;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityLazyLayoutNode";
+    "XC_kAXXCAttributeTraits" = 8589934592;
+}
+2026-11-20 17:22:41.291 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4524965888.315. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.291 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.292 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.292 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4524965888.315
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.292 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 0;
+    "XC_kAXXCAttributeElementBaseType" = UIView;
+    "XC_kAXXCAttributeElementType" = "_TtCC7SwiftUI17HostingScrollView22PlatformGroupContainer";
+    "XC_kAXXCAttributeTraits" = 8589934592;
+}
+2026-11-20 17:22:41.292 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4402540544.310. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.292 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4402540544.310
+2026-11-20 17:22:41.293 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.293 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 46;
+    "XC_kAXXCAttributeElementBaseType" = UIScrollView;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.HostingScrollView";
+    "XC_kAXXCAttributeTraits" = 8589934592;
+}
+2026-11-20 17:22:41.293 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4674266016.20. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.293 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.293 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.293 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.293 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.293 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.293 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4674266016.20
+2026-11-20 17:22:41.293 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.293 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 0;
+    "XC_kAXXCAttributeElementBaseType" = NSObject;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934592;
+}
+2026-11-20 17:22:41.294 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4402579968.15. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4402579968.15
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.294 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 0;
+    "XC_kAXXCAttributeElementBaseType" = UIView;
+    "XC_kAXXCAttributeElementType" = "_TtGC7SwiftUI14_UIHostingViewGVS_15ModifiedContentGVS_8LazyViewGS1_GS1_GS1_GS1_GS1_GS1_GS1_GS1_GS1_GS1_GS1_GS1_GS1_GS1_V7Jukebox8RootViewGVS_30_EnvironmentKeyWritingModifierGSqCS3_8AppModel___GS5_GSqCS3_9Navigator___GS5_GSqCS3_11AppSettings___GS5_GSqCS3_12LibraryStore___GS5_GSqCS3_12HistoryStore___GS5_GSqCS3_11AudioPlayer___GS5_GSqCS3_15RadioController___GS5_GSqCS3_8MixStore___GS5_GSqCS3_12OfflineStore___GS5_GSqCS3_12HandoffStore___GS5_GSqCS3_10PanelState___GS5_GSqVS_13AnyShapeStyle___VS_14_TaskModifier2_GVS_19_TaskValueModifier2GSqV10Foundation4Date____VS_12RootModifier__";
+    "XC_kAXXCAttributeTraits" = 8589934592;
+}
+2026-11-20 17:22:41.295 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4413492352.11. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.295 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.295 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.295 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.295 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.295 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.295 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4413492352.11
+2026-11-20 17:22:41.295 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.295 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 0;
+    "XC_kAXXCAttributeElementBaseType" = UIDropShadowView;
+    "XC_kAXXCAttributeElementType" = UIDropShadowView;
+    "XC_kAXXCAttributeTraits" = 0;
+}
+2026-11-20 17:22:41.296 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4414553088.8. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.296 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.296 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.296 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.296 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.296 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.296 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4414553088.8
+2026-11-20 17:22:41.296 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.296 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 0;
+    "XC_kAXXCAttributeElementBaseType" = UITransitionView;
+    "XC_kAXXCAttributeElementType" = UITransitionView;
+    "XC_kAXXCAttributeTraits" = 0;
+}
+2026-11-20 17:22:41.297 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4402511872.5. Attributes: (
+    "XC_kAXXCAttributeElementType",
+    "XC_kAXXCAttributeElementBaseType",
+    "XC_kAXXCAttributeTraits",
+    "XC_kAXXCAttributeAutomationType"
+)
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 30361, elementOrHash.elementID: 4402511872.5
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.297 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeAutomationType" = 2;
+    "XC_kAXXCAttributeElementBaseType" = UIWindow;
+    "XC_kAXXCAttributeElementType" = UIWindow;
+    "XC_kAXXCAttributeTraits" = 0;
+}
+2026-11-20 17:22:41.298 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Received attributes request for element: App element pid: 30361. Attributes: (
+    "XC_kAXXCAttributeWindowDisplayId"
+)
+2026-11-20 17:22:41.298 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.298 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.298 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.298 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.298 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.298 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeWindowDisplayId for App element pid: 30361
+2026-11-20 17:22:41.298 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.298 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-11-20 17:22:41.299 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4690853344.326. Attributes: (
+    "XC_kAXXCAttributeVisiblePoint"
+)
+2026-11-20 17:22:41.299 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.299 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.299 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.299 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.299 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.300 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeVisiblePoint for AX element pid: 30361, elementOrHash.elementID: 4690853344.326
+2026-11-20 17:22:41.301 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.301 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeVisiblePoint" =     {
+        X = 120;
+        Y = 164;
+    };
+}
+2026-11-20 17:22:41.302 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4690853344.326. Attributes: (
+    "XC_kAXXCAttributeSystemAutomationProperties"
+)
+2026-11-20 17:22:41.302 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.302 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.302 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.302 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.302 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.302 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeSystemAutomationProperties for AX element pid: 30361, elementOrHash.elementID: 4690853344.326
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.303 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Replying with attribute values: {
+}
+2026-11-20 17:22:41.303 Df Jukebox[30361:148871e] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 30361, elementOrHash.elementID: 4402511872.5. Attributes: (
+    "XC_kAXXCAttributeFrame",
+    "XC_kAXXCAttributeWindowDisplayId",
+    "XC_kAXXCAttributeWindowContextId"
+)
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeFrame, XC_kAXXCAttributeWindowDisplayId, XC_kAXXCAttributeWindowContextId for AX element pid: 30361, elementOrHash.elementID: 4402511872.5
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 17:22:41.303 Df Jukebox[30361:1488b9c] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeFrame" =     {
+        Height = 1032;
+        Width = 1376;
+        X = 0;
+        Y = 0;
+    };
+    "XC_kAXXCAttributeWindowContextId" = 3089074983;
+    "XC_kAXXCAttributeWindowDisplayId" = 1;
+}
+2026-11-20 17:22:41.313 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 1; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 17:22:41.313 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Sending UIEvent type: 0; subtype: 0; to windows: 1; dispatchLevel: 1
+2026-11-20 17:22:41.313 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Sending UIEvent type: 0; subtype: 0; to window: <UIWindow: 0x106690000>; contextId: 0xB81F8B27
+2026-11-20 17:22:41.318 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 17:22:41.334 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 17:22:41.351 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 17:22:41.368 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 17:22:41.384 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 17:22:41.386 A  Jukebox[30361:1488b9c] (RunningBoardServices) observedProcessStatesDidChange
+2026-11-20 17:22:41.386 Df Jukebox[30361:1488b9c] [com.apple.runningboard:monitor] Received state update for 28506 (osservice<com.apple.InputUI>, running-active-NotVisible
+2026-11-20 17:22:41.386 Df Jukebox[30361:1488653] [com.apple.Accessibility:AXSupportCommon] BSI-DIAG: _AXSBrailleScreenInputEnabled()->false (VO off), thread=com.apple.main-thread
+2026-11-20 17:22:41.386 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 1; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 17:22:41.386 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Sending UIEvent type: 0; subtype: 0; to windows: 1; dispatchLevel: 1
+2026-11-20 17:22:41.386 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Sending UIEvent type: 0; subtype: 0; to window: <UIWindow: 0x106690000>; contextId: 0xB81F8B27
+2026-11-20 17:22:41.387 A  Jukebox[30361:1488653] (UIKitCore) send gesture actions
+2026-11-20 17:22:41.388 A  Jukebox[30361:1488653] (UIKitCore) send gesture actions
+2026-11-20 17:22:41.490 A  Jukebox[30361:1488b9c] (RunningBoardServices) observedProcessStatesDidChange
+2026-11-20 17:22:41.490 Df Jukebox[30361:1488b9c] [com.apple.runningboard:monitor] Received state update for 28506 (osservice<com.apple.InputUI>, running-active-NotVisible
+2026-11-20 17:22:41.500 Df Jukebox[30361:1488653] [com.apple.Accessibility:AXSupportCommon] BSI-DIAG: _AXSBrailleScreenInputEnabled()->false (VO off), thread=com.apple.main-thread
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488653] [com.apple.UIKit:KeyboardFocusAssistant] requestKeyboardFocusWithProvenance:<BKSHIDEventSimpleProvenance: 0x119930240> (token:<uq: 1; UIKit-localContainer>)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488ba7] [com.apple.CFNetwork:Default] Task <B547C7CD-3D41-4124-BDBC-614F4570E142>.<55> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488b9b] [com.apple.CFNetwork:Default] Task <561C16B4-F98C-4266-9E37-6E834559CDBC>.<56> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488b9c] [com.apple.CFNetwork:Default] Task <FA95CEFD-F0A6-48B7-90FF-688CDDC7EA91>.<54> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488ed1] [com.apple.CFNetwork:Default] Task <A7DA7FA3-7465-44F4-B68E-E95F22E24963>.<57> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488f0c] [com.apple.CFNetwork:Default] Task <E703F16E-F1C2-4342-811A-52A5A96C7044>.<58> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488f0d] [com.apple.CFNetwork:Default] Task <C11905F2-9883-4853-B598-1025B292A46C>.<59> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488f0e] [com.apple.CFNetwork:Default] Task <4CA09246-87EF-489D-A119-A7966ACFF375>.<60> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488f0f] [com.apple.CFNetwork:Default] Task <3C7641FD-7BDD-4582-A1F5-B04638D850E3>.<61> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488b9b] [com.apple.CFNetwork:Default] Task <9AC67CE5-E3ED-41E3-865C-2341053E26FB>.<62> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488f0d] [com.apple.CFNetwork:Default] Task <CFF78992-8B67-4FB9-A49E-35302420EB16>.<63> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488f11] [com.apple.CFNetwork:Default] Task <CDFCE1A6-087E-42FB-B8A1-3F6058C750AC>.<64> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488f10] [com.apple.CFNetwork:Default] Task <AB87D445-6E26-479D-9BED-E58728CECF1A>.<65> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 17:22:41.501 Df Jukebox[30361:1488653] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x10c1a8900; type: 0; subtype: 0; backing type: 11; tagged context: 0xB81F8B27; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 1
+2026-11-20 17:22:41.503 A  Jukebox[30361:1488ba7] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.503 Df Jukebox[30361:1488ba7] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.503 A  Jukebox[30361:1488ba7] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.503 Df Jukebox[30361:1488ba7] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.504 A  Jukebox[30361:1488b9b] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.504 Df Jukebox[30361:1488b9b] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.504 A  Jukebox[30361:1488ba7] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.504 Df Jukebox[30361:1488ba7] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.504 A  Jukebox[30361:1488ba7] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.504 Df Jukebox[30361:1488ba7] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.505 A  Jukebox[30361:1488b9b] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.505 Df Jukebox[30361:1488b9b] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.505 A  Jukebox[30361:1488b9b] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.505 Df Jukebox[30361:1488b9b] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.505 A  Jukebox[30361:1488b9b] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.505 Df Jukebox[30361:1488b9b] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.505 A  Jukebox[30361:1488b9b] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.505 Df Jukebox[30361:1488b9b] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.505 A  Jukebox[30361:1488f0c] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.505 Df Jukebox[30361:1488f0c] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.505 A  Jukebox[30361:1488b9b] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.505 Df Jukebox[30361:1488b9b] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.505 A  Jukebox[30361:1488f0c] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <561C16B4-F98C-4266-9E37-6E834559CDBC>.<56> summary for task success {transaction_duration_ms=4, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <561C16B4-F98C-4266-9E37-6E834559CDBC>.<56> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f0c] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <C11905F2-9883-4853-B598-1025B292A46C>.<59> summary for task success {transaction_duration_ms=3, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <C11905F2-9883-4853-B598-1025B292A46C>.<59> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <CDFCE1A6-087E-42FB-B8A1-3F6058C750AC>.<64> summary for task success {transaction_duration_ms=3, response_status=404, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <CDFCE1A6-087E-42FB-B8A1-3F6058C750AC>.<64> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <3C7641FD-7BDD-4582-A1F5-B04638D850E3>.<61> summary for task success {transaction_duration_ms=2, response_status=404, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <3C7641FD-7BDD-4582-A1F5-B04638D850E3>.<61> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <AB87D445-6E26-479D-9BED-E58728CECF1A>.<65> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <AB87D445-6E26-479D-9BED-E58728CECF1A>.<65> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <4CA09246-87EF-489D-A119-A7966ACFF375>.<60> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <4CA09246-87EF-489D-A119-A7966ACFF375>.<60> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <A7DA7FA3-7465-44F4-B68E-E95F22E24963>.<57> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <A7DA7FA3-7465-44F4-B68E-E95F22E24963>.<57> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <FA95CEFD-F0A6-48B7-90FF-688CDDC7EA91>.<54> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <FA95CEFD-F0A6-48B7-90FF-688CDDC7EA91>.<54> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <B547C7CD-3D41-4124-BDBC-614F4570E142>.<55> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <B547C7CD-3D41-4124-BDBC-614F4570E142>.<55> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <CFF78992-8B67-4FB9-A49E-35302420EB16>.<63> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <CFF78992-8B67-4FB9-A49E-35302420EB16>.<63> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <E703F16E-F1C2-4342-811A-52A5A96C7044>.<58> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <E703F16E-F1C2-4342-811A-52A5A96C7044>.<58> finished successfully
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Summary] Task <9AC67CE5-E3ED-41E3-865C-2341053E26FB>.<62> summary for task success {transaction_duration_ms=2, response_status=200, cache_hit=true}
+2026-11-20 17:22:41.506 Df Jukebox[30361:1488f13] [com.apple.CFNetwork:Default] Task <9AC67CE5-E3ED-41E3-865C-2341053E26FB>.<62> finished successfully
+2026-11-20 17:22:41.586 Df Jukebox[30361:1488b9b] [com.apple.dt.xctest:Default] Received request to notify when the main run loop is idle
+2026-11-20 17:22:41.586 Df Jukebox[30361:1488b9b] [com.apple.dt.xctest:Default] Idle notifier finished setting up run loop observer
+2026-11-20 17:22:41.586 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Idle notifier run loop observer fired
+2026-11-20 17:22:41.586 Df Jukebox[30361:1488653] [com.apple.dt.xctest:Default] Sending main run loop idle reply
+2026-11-20 17:22:41.586 Df Jukebox[30361:1488b9b] [com.apple.dt.xctest:Default] Received request to notify when animations are idle
+2026-11-20 17:22:41.586 Df Jukebox[30361:1488b9b] [com.apple.dt.xctest:Default] Sending animations idle reply with error: (null)

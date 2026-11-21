@@ -1,0 +1,600 @@
+          Button, 0x11bc1abc0, identifier: 'dictation' <AX element pid: 18633, elementOrHash.elementID: 4537983744.2364>
+            StaticText, 0x11bc1a580 <AX element pid: 18633, elementOrHash.elementID: 4537984640.2367>
+2026-11-20 00:25:55.053 Df Jukebox[18633:14754] [com.apple.dt.xctest:Default] Query ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7 found matching snapshots: {(
+)} (error: (null))
+2026-11-20 00:25:55.054 Df Jukebox[18633:14754] [com.apple.dt.xctest:Default] Replying to query ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7 with results: <XCTElementQueryResults: 0x11e387a80> (error: (null))
+2026-11-20 00:25:55.060 Df Jukebox[18633:14754] [com.apple.dt.xctest:Default] Received attributes request for element: App element pid: 18633. Attributes: (
+    "XC_kAXXCAttributeWindowDisplayId"
+)
+2026-11-20 00:25:55.060 Df Jukebox[18633:14754] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 00:25:55.060 Df Jukebox[18633:14754] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 00:25:55.060 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 00:25:55.060 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 00:25:55.060 Df Jukebox[18633:14754] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 00:25:55.060 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeWindowDisplayId for App element pid: 18633
+2026-11-20 00:25:55.061 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 00:25:55.061 Df Jukebox[18633:14754] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-11-20 00:25:55.068 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 18633, elementOrHash.elementID: 4761368320.2309. Attributes: (
+    "XC_kAXXCAttributeSystemAutomationProperties"
+)
+2026-11-20 00:25:55.068 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 00:25:55.068 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 00:25:55.069 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 00:25:55.069 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 00:25:55.069 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeSystemAutomationProperties for AX element pid: 18633, elementOrHash.elementID: 4761368320.2309
+2026-11-20 00:25:55.069 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 00:25:55.069 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 00:25:55.071 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] Replying with attribute values: {
+}
+2026-11-20 00:25:55.074 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 18633, elementOrHash.elementID: 4406528000.3. Attributes: (
+    "XC_kAXXCAttributeFrame",
+    "XC_kAXXCAttributeWindowDisplayId",
+    "XC_kAXXCAttributeWindowContextId"
+)
+2026-11-20 00:25:55.074 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-20 00:25:55.075 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-20 00:25:55.075 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-20 00:25:55.075 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-20 00:25:55.075 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-20 00:25:55.075 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeFrame, XC_kAXXCAttributeWindowDisplayId, XC_kAXXCAttributeWindowContextId for AX element pid: 18633, elementOrHash.elementID: 4406528000.3
+2026-11-20 00:25:55.075 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-20 00:25:55.075 Df Jukebox[18633:1662a] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeFrame" =     {
+        Height = 874;
+        Width = 402;
+        X = 0;
+        Y = 0;
+    };
+    "XC_kAXXCAttributeWindowContextId" = 1010208521;
+    "XC_kAXXCAttributeWindowDisplayId" = 1;
+}
+2026-11-20 00:25:55.097 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.101 Df Jukebox[18633:e00c] [com.apple.KeyboardArbiter:Client] TX setWindowContextID:1814424092 windowState:Enabled level:5.0
+    focusContext:<contextID:1010208521 sceneID:com.tijmen.Jukebox-E7978DE2-5CC7-41E5-BD18-DEF5161E73F9>
+2026-11-20 00:25:55.103 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f95980>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <UIWindowScene: 0x1075aa000; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: E7978DE2-5CC7-41E5-BD18-DEF5161E73F9; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.105 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.106 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardArbiterClientLog] -[_UIRemoteKeyboards prepareToMoveKeyboard:withIAV:isIAVRelevant:showing:notifyRemote:forScene:] position: {{0, 0}, {402, 335}} visible: 1; notifyRemote: 1; isMinimized: NO
+2026-11-20 00:25:55.107 Df Jukebox[18633:e00c] [com.apple.KeyboardArbiter:Client] prepareToMoveKeyboard: set currentKeyboard:Y
+2026-11-20 00:25:55.108 Df Jukebox[18633:e00c] [com.apple.KeyboardArbiter:Client] TX signalKeyboardChanged
+2026-11-20 00:25:55.108 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardArbiterClientLog] -[_UIRemoteKeyboards signalToProxyKeyboardChanged:onCompletion:]  Signaling keyboard changed <<<_UIKeyboardChangedInformation: 0x125e00d80>; appId (null) bundleId (null) animation fence <BKSAnimationFenceHandle:0x129ae9910 -> <CAFenceHandle:0x12c64b170 name=44 fence=33e900000022 usable=YES>>; position {{0, 539}, {402, 335}}; animated YES; on screen YES; tracking NO; resizing NO; local NO, dock state: Unknown, hasValidNotif: NO>; source canvas com.apple.frontboard.systemappservices/FBSceneManager:sceneID%3Acom.tijmen.Jukebox-E7978DE2-5CC7-41E5-BD18-DEF5161E73F9; source display Main; source bundle com.tijmen.Jukebox; host bundle (null); animation fence <BKSAnimationFenceHandle:0x129ae9910 -> <CAFenceHandle:0x12c64b170 name=44 fence=33e900000022 usable=YES>>; position {{0, 539}, {402, 335}} (with IAV same); floating 0; on screen YES;  intersectable YES; snapshot YES>
+2026-11-20 00:25:55.110 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardVisualMode] Show keyboard with visual mode windowed (0)
+2026-11-20 00:25:55.111 Df Jukebox[18633:e00c] [com.apple.UIKit:InputWindowController] Setting input views: <<UIInputViewSet: 0x125f96280>; keyboard = [uninitialized]; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  >
+2026-11-20 00:25:55.113 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.114 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.114 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.114 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.114 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.115 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.116 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.117 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.119 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.119 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.121 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.122 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.122 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.123 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.123 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.123 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.124 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.124 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.125 Df Jukebox[18633:e00c] [com.apple.UIKit:InputWindowController] Moving from placement: <UIInputViewSetPlacementOnScreen> to placement: <UIInputViewSetPlacementOnScreen> (currentPlacement: <UIInputViewSetPlacementOnScreen>)
+2026-11-20 00:25:55.125 Df Jukebox[18633:e00c] [com.apple.UIKit:InputWindowController] Change from input view set: <<UIInputViewSet: 0x125f97d80>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  >
+2026-11-20 00:25:55.125 Df Jukebox[18633:e00c] [com.apple.UIKit:InputWindowController] Change to input view set: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  >
+2026-11-20 00:25:55.127 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.128 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.128 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.129 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.129 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.129 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.129 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.129 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.136 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardArbiterClientLog] -[_UIRemoteKeyboardPlaceholderView refreshPlaceholder]  refreshPlaceholder: size={402, 335} [previous size={402, 335}]
+2026-11-20 00:25:55.137 Df Jukebox[18633:e00c] [com.apple.UIKit:InputWindowController] chainPlacementsIfNecessaryFrom, from: <UIInputViewSetPlacementOnScreen>, to: <UIInputViewSetPlacementOnScreen> transition: <UIInputViewPlacementTransition: 0x11d02f160>
+2026-11-20 00:25:55.137 Df Jukebox[18633:e00c] [com.apple.UIKit:InputWindowController] updatePlacementWithPlacement: <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.137 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.138 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.138 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.139 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.139 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.140 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.140 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.140 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.142 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardArbiterClientLog] -[_UIRemoteKeyboardPlaceholderView refreshPlaceholder]  refreshPlaceholder: size={402, 335} [previous size={402, 335}]
+2026-11-20 00:25:55.142 Df Jukebox[18633:e00c] [com.apple.UIKit:InputWindowController] Tracking provider: moveFromPlacement: <UIInputViewSetPlacementOnScreen> toPlacement: <UIInputViewSetPlacementOnScreen> update to: {{0, 539}, {402, 335}}
+2026-11-20 00:25:55.142 Df Jukebox[18633:e00c] [com.apple.TextInputUI:KeyboardTrackingCoordinator] Updating tracking clients for start <TUIKeyboardTrackingCoordinator:0x11bc412c0 state=<TUIKeyboardState: 0x11d127440 State: onscreen with input view; is docked>; frame={{0, 539}, {402, 335}}; animation=<TUIKeyboardAnimationInfo: 0x10e7d7a80, duration: 0.00, from local keyboard, is not rotating, should not animate, type: 0, notificationInfo: {
+    UIKeyboardAnimationCurveUserInfoKey = 7;
+    UIKeyboardAnimationDurationUserInfoKey = 0;
+    UIKeyboardBoundsUserInfoKey = "NSRect: {{0, 0}, {402, 335}}";
+    UIKeyboardCenterBeginUserInfoKey = "NSPoint: {201, 706.5}";
+    UIKeyboardCenterEndUserInfoKey = "NSPoint: {201, 706.5}";
+    UIKeyboardFrameBeginUserInfoKey = "NSRect: {{0, 539}, {402, 335}}";
+    UIKeyboardFrameEndUserInfoKey = "NSRect: {{0, 539}, {402, 335}}";
+    UIKeyboardIsLocalUserInfoKey = 1;
+}notificationsDebug: >>
+2026-11-20 00:25:55.143 Df Jukebox[18633:e00c] [com.apple.UIKit:TrackingElementWindowController] Setting tracking element input views: <<UIInputViewSet: 0x125f95500>; keyboard = [uninitialized]; usesKeyClicks = NO;  >
+2026-11-20 00:25:55.143 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardArbiterClientLog] -[_UIRemoteKeyboardPlaceholderView refreshPlaceholder]  refreshPlaceholder: size={402, 335} [previous size={402, 335}]
+2026-11-20 00:25:55.144 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f95500>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; usesKeyClicks = NO;  > windowScene: <UIWindowScene: 0x1075aa000; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: E7978DE2-5CC7-41E5-BD18-DEF5161E73F9; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.144 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.144 Df Jukebox[18633:e00c] [com.apple.UIKit:TrackingElementWindowController] Moving from placement: <UIInputViewSetPlacementOnScreen> to placement: <UIInputViewSetPlacementOnScreen> (currentPlacement: <UIInputViewSetPlacementOnScreen>)
+2026-11-20 00:25:55.145 Df Jukebox[18633:e00c] [com.apple.UIKit:TrackingElementWindowController] Change from input view set: <<UIInputViewSet: 0x125f96dc0>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; usesKeyClicks = NO;  >
+2026-11-20 00:25:55.146 Df Jukebox[18633:e00c] [com.apple.UIKit:TrackingElementWindowController] Change to input view set: <<UIInputViewSet: 0x125f95500>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; usesKeyClicks = NO;  >
+2026-11-20 00:25:55.149 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardArbiterClientLog] -[_UIRemoteKeyboardPlaceholderView refreshPlaceholder]  refreshPlaceholder: size={402, 335} [previous size={402, 0}]
+2026-11-20 00:25:55.149 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f95500>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; usesKeyClicks = NO;  > windowScene: <UIWindowScene: 0x1075aa000; role: UIWindowSceneSessionRoleApplication; persistentIdentifier: E7978DE2-5CC7-41E5-BD18-DEF5161E73F9; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.150 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.152 Df Jukebox[18633:e00c] [com.apple.UIKit:TrackingElementWindowController] updatePlacementWithPlacement: <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.156 Df Jukebox[18633:e00c] [com.apple.TextInputUI:KeyboardTrackingCoordinator] Posted notification willShow with {
+    UIKeyboardAnimationCurveUserInfoKey = 7;
+    UIKeyboardAnimationDurationUserInfoKey = 0;
+    UIKeyboardBoundsUserInfoKey = "NSRect: {{0, 0}, {402, 335}}";
+    UIKeyboardCenterBeginUserInfoKey = "NSPoint: {201, 706.5}";
+    UIKeyboardCenterEndUserInfoKey = "NSPoint: {201, 706.5}";
+    UIKeyboardFrameBeginUserInfoKey = "NSRect: {{0, 539}, {402, 335}}";
+    UIKeyboardFrameEndUserInfoKey = "NSRect: {{0, 539}, {402, 335}}";
+    UIKeyboardIsLocalUserInfoKey = 1;
+} (null)
+2026-11-20 00:25:55.158 Df Jukebox[18633:e00c] [com.apple.TextInputUI:KeyboardTrackingCoordinator] Posted notification didShow with {
+    UIKeyboardAnimationCurveUserInfoKey = 7;
+    UIKeyboardAnimationDurationUserInfoKey = 0;
+    UIKeyboardBoundsUserInfoKey = "NSRect: {{0, 0}, {402, 335}}";
+    UIKeyboardCenterBeginUserInfoKey = "NSPoint: {201, 706.5}";
+    UIKeyboardCenterEndUserInfoKey = "NSPoint: {201, 706.5}";
+    UIKeyboardFrameBeginUserInfoKey = "NSRect: {{0, 539}, {402, 335}}";
+    UIKeyboardFrameEndUserInfoKey = "NSRect: {{0, 539}, {402, 335}}";
+    UIKeyboardIsLocalUserInfoKey = 1;
+} (null)
+2026-11-20 00:25:55.159 Df Jukebox[18633:e00c] [com.apple.KeyboardArbiter:Client] TX setWindowContextID:1814424092 windowState:Enabled level:5.0
+    focusContext:<contextID:1010208521 sceneID:com.tijmen.Jukebox-E7978DE2-5CC7-41E5-BD18-DEF5161E73F9>
+2026-11-20 00:25:55.159 Df Jukebox[18633:e00c] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: -[_UIKBFeedbackGenerator activateWithCompletionBlock:]
+2026-11-20 00:25:55.159 Df Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Releasing engine and players.
+2026-11-20 00:25:55.159 Df Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Recreating engine with reason -[_UIKBFeedbackGenerator activateWithCompletionBlock:]_block_invoke.
+2026-11-20 00:25:55.161 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.161 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.161 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.161 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.161 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.162 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.162 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.163 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.163 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.163 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet: <<UIInputViewSet: 0x125f96280>; keyboard = <UIKeyboardAutomatic: 0x10e73a580; frame = (0 0; 402 233); opaque = NO; layer = <CALayer: 0x10e6c9140>>%; assistant = <TUISystemInputAssistantView: 0x10c88ea00; frame = (0 0; 402 44); >; usesKeyClicks = NO;  > windowScene: <_UIKeyboardWindowScene: 0x11bc11b80; role: _UIScreenBasedSceneSession; persistentIdentifier: B07BA921-A937-4D18-BD76-1C18A7B03CC2; activationState: UISceneActivationStateForegroundActive>
+2026-11-20 00:25:55.163 Df Jukebox[18633:e00c] [com.apple.UIKit:UIPeripheralHost] endPlacementForInputViewSet, returning -> <UIInputViewSetPlacementOnScreen>
+2026-11-20 00:25:55.181 Df Jukebox[18633:e00c] [com.apple.BackBoard:Keyboard] currently observing: YES
+2026-11-20 00:25:55.182 Df Jukebox[18633:e00c] [com.apple.BackBoard:Keyboard] connected: (
+    "<BKSHIDKeyboardDevice: 0x11d1269c0> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-11-20 00:25:55.182 Df Jukebox[18633:e00c] [com.apple.BackBoard:Keyboard] currently observing: NO
+2026-11-20 00:25:55.183 Df Jukebox[18633:e00c] [com.apple.BackBoard:Keyboard] disconnected: (
+    "<BKSHIDKeyboardDevice: 0x11d1269c0> {\134n    senderID: 0xACEFADE00000003;\134n    transport: <nil>;\134n    language: <nil>;\134n    layout: US;\134n    countryCode: 0;\134n    standardType: 4294967295;\134n    subinterfaceID: 0;\134n    capsLockKeyHasLanguageSwitchLabel: NO;\134n    globeKeyLabelHasGlobeSymbol: NO;\134n}"
+)
+2026-11-20 00:25:55.193 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:55.198 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:55.209 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.209 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.211 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.211 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.213 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.213 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:55.214 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.214 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.215 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.216 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.217 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.220 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.221 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.225 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.226 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.230 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384750 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.230 E  Jukebox[18633:1662a] (CoreHaptics)        CHHapticPattern.mm:487   +[CHHapticPattern patternForKey:error:]: Failed to read pattern library data: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.230 E  Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Error creating CHHapticPattern: Error Domain=NSCocoaErrorDomain Code=260 "The file “hapticpatternlibrary.plist” couldn’t be opened because there is no such file." UserInfo={NSFilePath=/Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSURL=file:///Library/Audio/Tunings/Generic/Haptics/Library/hapticpatternlibrary.plist, NSUnderlyingError=0x11e384ea0 {Error Domain=NSPOSIXErrorDomain Code=2 "No such file or directory"}}
+2026-11-20 00:25:55.230 Df Jukebox[18633:1662a] [com.apple.coremedia:] -AVSystemController- +[AVSystemController sharedInstance]: Failed to allocate AVSystemController, numberOfAttempts=1
+2026-11-20 00:25:55.230 Df Jukebox[18633:1662a] [com.apple.coremedia:] -AVSystemController- +[AVSystemController sharedInstance]: Failed to allocate AVSystemController, numberOfAttempts=2
+2026-11-20 00:25:55.230 Df Jukebox[18633:1662a] [com.apple.coremedia:] -AVSystemController- +[AVSystemController sharedInstance]: Failed to allocate AVSystemController, numberOfAttempts=3
+2026-11-20 00:25:55.230 Df Jukebox[18633:1662a] [com.apple.UIKit:UIKBFeedbackGenerator] <_UIKBFeedbackGenerator: 0x10c837cc0>: Preheating CoreHaptics.
+2026-11-20 00:25:55.372 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardArbiterClientLog] -[_UIRemoteKeyboardPlaceholderView refreshPlaceholder]  refreshPlaceholder: size={402, 335} [previous size={402, 335}]
+2026-11-20 00:25:55.454 Df Jukebox[18633:16395] [com.apple.dt.xctest:Default] Received request to notify when the main run loop is idle
+2026-11-20 00:25:55.454 Df Jukebox[18633:16395] [com.apple.dt.xctest:Default] Idle notifier finished setting up run loop observer
+2026-11-20 00:25:55.456 Df Jukebox[18633:16395] [com.apple.dt.xctest:Default] Received request to notify when animations are idle
+2026-11-20 00:25:55.457 Df Jukebox[18633:16395] [com.apple.dt.xctest:Default] Sending animations idle reply with error: (null)
+2026-11-20 00:25:55.519 A  Jukebox[18633:16395] (Metal) Metal Compiling Shader
+2026-11-20 00:25:55.561 A  Jukebox[18633:1662a] (Metal) Metal Compiling Shader
+2026-11-20 00:25:55.603 A  Jukebox[18633:16395] (Metal) Metal Compiling Shader
+2026-11-20 00:25:55.619 A  Jukebox[18633:1662a] (Metal) Metal Compiling Shader
+2026-11-20 00:25:55.677 A  Jukebox[18633:16395] (Metal) Metal Compiling Shader
+2026-11-20 00:25:55.682 A  Jukebox[18633:1662a] (Metal) Metal Compiling Shader
+2026-11-20 00:25:55.705 Df Jukebox[18633:e00c] [com.apple.KeyboardArbiter:Client] RX keyboardArbiterClientHandle:Y
+2026-11-20 00:25:55.707 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.708 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.708 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.708 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard receives keyEvent type: 4; subtype: 0
+2026-11-20 00:25:55.709 Df Jukebox[18633:e00c] [com.apple.UIKit:EventDispatch] Evaluating dispatch of UIEvent: 0x11bc42e40; type: 4; subtype: 0; backing type: 30; shouldSend: 0; ignoreInteractionEvents: 0, systemGestureStateChange: 0
+2026-11-20 00:25:55.719 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Idle notifier run loop observer fired
+2026-11-20 00:25:55.720 Df Jukebox[18633:e00c] [com.apple.dt.xctest:Default] Sending main run loop idle reply
+2026-11-20 00:25:55.727 Df Jukebox[18633:16395] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:55.728 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:55.734 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:55.735 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:55.735 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:55.735 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:55.735 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:55.771 A  Jukebox[18633:15f69] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:55.778 Df Jukebox[18633:15f69] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:55.778 A  Jukebox[18633:15f69] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:55.778 Df Jukebox[18633:15f69] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:55.778 A  Jukebox[18633:15f69] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:55.779 Df Jukebox[18633:15f69] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:55.779 A  Jukebox[18633:15f69] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:55.779 Df Jukebox[18633:15f69] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:55.779 A  Jukebox[18633:15f69] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:55.780 Df Jukebox[18633:15f69] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:55.780 A  Jukebox[18633:15f69] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:55.781 Df Jukebox[18633:15f69] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:55.781 A  Jukebox[18633:15f69] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:55.782 Df Jukebox[18633:15f69] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:55.786 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:55.789 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:55.790 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:55.790 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> not allowed to create a new connection (existing Connection 35)
+2026-11-20 00:25:55.790 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 35: starting, TC(0x0)
+2026-11-20 00:25:55.793 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35 243D85E2-2F0F-4DA2-A682-62221C6F49CC localhost:8096 tcp, url: http://localhost:8096/Items/cc1fc8736ef7988874ec146bd16fddd4/Images/Primary, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{60359A9A-CB0B-48FE-BF4E-7E5830D6A7BD}{(null)}{Y}{2}{0x0} (private), proc: 8FB0A8B9-EA7D-39E1-BD2E-66662AC24779, delegated upid: 0] start
+2026-11-20 00:25:55.793 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35 localhost:8096 initial parent-flow ((null))] event: path:start @0.000s
+2026-11-20 00:25:55.793 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35 localhost:8096 waiting parent-flow (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.000s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.794 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_connect @0.001s
+2026-11-20 00:25:55.794 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C35] reporting state preparing
+2026-11-20 00:25:55.795 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_child @0.001s
+2026-11-20 00:25:55.795 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1 localhost:8096 initial path ((null))] event: path:start @0.001s
+2026-11-20 00:25:55.795 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1 localhost:8096 waiting path (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.001s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.797 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:start_dns @0.003s
+2026-11-20 00:25:55.798 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> setting up Connection 35
+2026-11-20 00:25:55.799 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 36: starting, TC(0x0)
+2026-11-20 00:25:55.800 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36 CF47E8BC-8B88-4C2E-861E-20B397BAB416 localhost:8096 tcp, url: http://localhost:8096/Items/e007210263afcb45e0faf280eb2b051e/Images/Primary, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{60359A9A-CB0B-48FE-BF4E-7E5830D6A7BD}{(null)}{Y}{2}{0x0} (private), proc: 8FB0A8B9-EA7D-39E1-BD2E-66662AC24779, delegated upid: 0] start
+2026-11-20 00:25:55.817 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36 localhost:8096 initial parent-flow ((null))] event: path:start @0.017s
+2026-11-20 00:25:55.817 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36 localhost:8096 waiting parent-flow (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.017s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.830 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_connect @0.029s
+2026-11-20 00:25:55.830 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C36] reporting state preparing
+2026-11-20 00:25:55.831 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_child @0.030s
+2026-11-20 00:25:55.837 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1 localhost:8096 initial path ((null))] event: path:start @0.037s
+2026-11-20 00:25:55.837 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1 localhost:8096 waiting path (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.037s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.838 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:start_dns @0.038s
+2026-11-20 00:25:55.839 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> setting up Connection 36
+2026-11-20 00:25:55.840 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 37: starting, TC(0x0)
+2026-11-20 00:25:55.840 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37 4032176C-A92B-41A3-91BB-2BE0663F261C localhost:8096 tcp, url: http://localhost:8096/Items/f357bfcdd3fb7a79cab24ec15a1cc4de/Images/Primary, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{60359A9A-CB0B-48FE-BF4E-7E5830D6A7BD}{(null)}{Y}{2}{0x0} (private), proc: 8FB0A8B9-EA7D-39E1-BD2E-66662AC24779, delegated upid: 0] start
+2026-11-20 00:25:55.841 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37 localhost:8096 initial parent-flow ((null))] event: path:start @0.000s
+2026-11-20 00:25:55.841 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37 localhost:8096 waiting parent-flow (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.000s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.843 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_connect @0.002s
+2026-11-20 00:25:55.843 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C37] reporting state preparing
+2026-11-20 00:25:55.844 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_child @0.004s
+2026-11-20 00:25:55.845 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1 localhost:8096 initial path ((null))] event: path:start @0.004s
+2026-11-20 00:25:55.845 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1 localhost:8096 waiting path (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.004s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.846 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:start_dns @0.005s
+2026-11-20 00:25:55.848 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> setting up Connection 37
+2026-11-20 00:25:55.849 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 38: starting, TC(0x0)
+2026-11-20 00:25:55.849 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38 CC0D366A-4574-412E-A7AF-692A2BC68A95 localhost:8096 tcp, url: http://localhost:8096/Items/9c76590e28446d70b8c4c96a271c2d4d/Images/Primary, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{60359A9A-CB0B-48FE-BF4E-7E5830D6A7BD}{(null)}{Y}{2}{0x0} (private), proc: 8FB0A8B9-EA7D-39E1-BD2E-66662AC24779, delegated upid: 0] start
+2026-11-20 00:25:55.849 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38 localhost:8096 initial parent-flow ((null))] event: path:start @0.000s
+2026-11-20 00:25:55.849 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38 localhost:8096 waiting parent-flow (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.000s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.851 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_connect @0.001s
+2026-11-20 00:25:55.851 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C38] reporting state preparing
+2026-11-20 00:25:55.851 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_child @0.002s
+2026-11-20 00:25:55.852 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1 localhost:8096 initial path ((null))] event: path:start @0.003s
+2026-11-20 00:25:55.853 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1 localhost:8096 waiting path (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.003s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.853 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:start_dns @0.004s
+2026-11-20 00:25:55.854 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> setting up Connection 38
+2026-11-20 00:25:55.894 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 39: starting, TC(0x0)
+2026-11-20 00:25:55.894 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39 73256CE2-E535-464C-887E-E9294399F45E localhost:8096 tcp, url: http://localhost:8096/Items/045a415fe3ce561b1619aa990b66ac4d/Images/Primary, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{60359A9A-CB0B-48FE-BF4E-7E5830D6A7BD}{(null)}{Y}{2}{0x0} (private), proc: 8FB0A8B9-EA7D-39E1-BD2E-66662AC24779, delegated upid: 0] start
+2026-11-20 00:25:55.896 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39 localhost:8096 initial parent-flow ((null))] event: path:start @0.000s
+2026-11-20 00:25:55.896 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39 localhost:8096 waiting parent-flow (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.001s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.897 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_connect @0.001s
+2026-11-20 00:25:55.897 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C39] reporting state preparing
+2026-11-20 00:25:55.897 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_child @0.002s
+2026-11-20 00:25:55.907 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1 localhost:8096 initial path ((null))] event: path:start @0.012s
+2026-11-20 00:25:55.908 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1 localhost:8096 waiting path (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.012s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.914 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:start_dns @0.019s
+2026-11-20 00:25:55.916 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> setting up Connection 39
+2026-11-20 00:25:55.918 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 40: starting, TC(0x0)
+2026-11-20 00:25:55.918 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40 58B766CD-8645-482D-AA8F-8613ED463CC9 localhost:8096 tcp, url: http://localhost:8096/Items/7d7c27d902c446ba16c8b2fbe8622d76/Images/Primary, definite, attribution: developer, context: com.apple.CFNetwork.NSURLSession.{60359A9A-CB0B-48FE-BF4E-7E5830D6A7BD}{(null)}{Y}{2}{0x0} (private), proc: 8FB0A8B9-EA7D-39E1-BD2E-66662AC24779, delegated upid: 0] start
+2026-11-20 00:25:55.919 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40 localhost:8096 initial parent-flow ((null))] event: path:start @0.000s
+2026-11-20 00:25:55.925 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40 localhost:8096 waiting parent-flow (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.006s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.926 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_connect @0.007s
+2026-11-20 00:25:55.926 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C40] reporting state preparing
+2026-11-20 00:25:55.928 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40 localhost:8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:start_child @0.009s
+2026-11-20 00:25:55.928 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1 localhost:8096 initial path ((null))] event: path:start @0.009s
+2026-11-20 00:25:55.928 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1 localhost:8096 waiting path (satisfied (Path is satisfied), interface: en0)] event: path:satisfied @0.009s, uuid: 1459749D-C8DA-45F9-B9AC-4A028E3432D6
+2026-11-20 00:25:55.929 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:start_dns @0.010s
+2026-11-20 00:25:55.930 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> setting up Connection 40
+2026-11-20 00:25:55.957 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C35.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for ::1.8096
+2026-11-20 00:25:55.957 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C35.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for 127.0.0.1:8096
+2026-11-20 00:25:55.957 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:receive_dns @0.163s
+2026-11-20 00:25:55.958 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C36.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for ::1.8096
+2026-11-20 00:25:55.958 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C36.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for 127.0.0.1:8096
+2026-11-20 00:25:55.958 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:receive_dns @0.157s
+2026-11-20 00:25:55.958 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C37.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for ::1.8096
+2026-11-20 00:25:55.959 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C37.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for 127.0.0.1:8096
+2026-11-20 00:25:55.959 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:receive_dns @0.119s
+2026-11-20 00:25:55.960 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C38.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for ::1.8096
+2026-11-20 00:25:55.960 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C38.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for 127.0.0.1:8096
+2026-11-20 00:25:55.960 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:receive_dns @0.110s
+2026-11-20 00:25:55.960 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C39.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for ::1.8096
+2026-11-20 00:25:55.960 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C39.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for 127.0.0.1:8096
+2026-11-20 00:25:55.961 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:receive_dns @0.066s
+2026-11-20 00:25:55.964 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C40.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for ::1.8096
+2026-11-20 00:25:55.968 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_endpoint_resolver_update [C40.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] Adding endpoint handler for 127.0.0.1:8096
+2026-11-20 00:25:55.971 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1 localhost:8096 in_progress resolver (satisfied (Path is satisfied), interface: en0)] event: resolver:receive_dns @0.052s
+2026-11-20 00:25:55.971 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1.1 ::1.8096 initial path ((null))] event: path:start @0.178s
+2026-11-20 00:25:55.971 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1.1 ::1.8096 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.178s, uuid: 2EF77ABB-D7AD-4929-9085-774631FB20F6
+2026-11-20 00:25:55.975 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.181s
+2026-11-20 00:25:55.989 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1.1 ::1.8096 initial path ((null))] event: path:start @0.189s
+2026-11-20 00:25:55.989 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1.1 ::1.8096 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.189s, uuid: 2EF77ABB-D7AD-4929-9085-774631FB20F6
+2026-11-20 00:25:55.990 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.190s
+2026-11-20 00:25:55.993 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1.1 ::1.8096 initial path ((null))] event: path:start @0.152s
+2026-11-20 00:25:55.993 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1.1 ::1.8096 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.152s, uuid: 2EF77ABB-D7AD-4929-9085-774631FB20F6
+2026-11-20 00:25:55.997 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.156s
+2026-11-20 00:25:56.000 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1.1 ::1.8096 initial path ((null))] event: path:start @0.151s
+2026-11-20 00:25:56.001 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1.1 ::1.8096 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.152s, uuid: 2EF77ABB-D7AD-4929-9085-774631FB20F6
+2026-11-20 00:25:56.003 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.153s
+2026-11-20 00:25:56.003 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1.1 ::1.8096 initial path ((null))] event: path:start @0.108s
+2026-11-20 00:25:56.005 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1.1 ::1.8096 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.110s, uuid: 2EF77ABB-D7AD-4929-9085-774631FB20F6
+2026-11-20 00:25:56.011 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.115s
+2026-11-20 00:25:56.016 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1.1 ::1.8096 initial path ((null))] event: path:start @0.097s
+2026-11-20 00:25:56.016 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1.1 ::1.8096 waiting path (satisfied (Path is satisfied), interface: lo0)] event: path:satisfied @0.097s, uuid: 2EF77ABB-D7AD-4929-9085-774631FB20F6
+2026-11-20 00:25:56.017 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:start_connect @0.098s
+2026-11-20 00:25:56.017 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_socket_handle_socket_event [C35.1.1:2] Socket received CONNECTED event
+2026-11-20 00:25:56.017 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C35.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Transport protocol connected (socket)
+2026-11-20 00:25:56.017 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:finish_transport @0.224s
+2026-11-20 00:25:56.017 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C35.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Output protocol connected (CFNetworkConnection-200582924)
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1.1 ::1.8096 ready socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:child_finish_connect @0.224s
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35.1 localhost:8096 ready resolver (satisfied (Path is satisfied), interface: en0)] event: flow:child_finish_connect @0.224s
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C35 ::1.8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] Output protocol connected (endpoint_flow)
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] [C35 ::1.8096 ready parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:finish_connect @0.224s
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C35] reporting state ready
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_socket_handle_socket_event [C36.1.1:2] Socket received CONNECTED event
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C36.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Transport protocol connected (socket)
+2026-11-20 00:25:56.018 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:finish_transport @0.218s
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C36.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Output protocol connected (CFNetworkConnection-200582924)
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1.1 ::1.8096 ready socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:child_finish_connect @0.218s
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36.1 localhost:8096 ready resolver (satisfied (Path is satisfied), interface: en0)] event: flow:child_finish_connect @0.218s
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C36 ::1.8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] Output protocol connected (endpoint_flow)
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36 ::1.8096 ready parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:finish_connect @0.219s
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C36] reporting state ready
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_socket_handle_socket_event [C37.1.1:2] Socket received CONNECTED event
+2026-11-20 00:25:56.019 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C37.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Transport protocol connected (socket)
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:finish_transport @0.179s
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C37.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Output protocol connected (CFNetworkConnection-200582924)
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1.1 ::1.8096 ready socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:child_finish_connect @0.179s
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37.1 localhost:8096 ready resolver (satisfied (Path is satisfied), interface: en0)] event: flow:child_finish_connect @0.179s
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C37 ::1.8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] Output protocol connected (endpoint_flow)
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] [C37 ::1.8096 ready parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:finish_connect @0.180s
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C37] reporting state ready
+2026-11-20 00:25:56.020 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_socket_handle_socket_event [C38.1.1:2] Socket received CONNECTED event
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C38.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Transport protocol connected (socket)
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:finish_transport @0.171s
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C38.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Output protocol connected (CFNetworkConnection-200582924)
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1.1 ::1.8096 ready socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:child_finish_connect @0.171s
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38.1 localhost:8096 ready resolver (satisfied (Path is satisfied), interface: en0)] event: flow:child_finish_connect @0.171s
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C38 ::1.8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] Output protocol connected (endpoint_flow)
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38 ::1.8096 ready parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:finish_connect @0.171s
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C38] reporting state ready
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_socket_handle_socket_event [C39.1.1:2] Socket received CONNECTED event
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C39.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Transport protocol connected (socket)
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:finish_transport @0.126s
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C39.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Output protocol connected (CFNetworkConnection-200582924)
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1.1 ::1.8096 ready socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:child_finish_connect @0.126s
+2026-11-20 00:25:56.021 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39.1 localhost:8096 ready resolver (satisfied (Path is satisfied), interface: en0)] event: flow:child_finish_connect @0.126s
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C39 ::1.8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] Output protocol connected (endpoint_flow)
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] [C39 ::1.8096 ready parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:finish_connect @0.126s
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C39] reporting state ready
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_socket_handle_socket_event [C40.1.1:2] Socket received CONNECTED event
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C40.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Transport protocol connected (socket)
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:finish_transport @0.103s
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C40.1.1 ::1.8096 in_progress socket-flow (satisfied (Path is satisfied), interface: lo0)] Output protocol connected (CFNetworkConnection-200582924)
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1.1 ::1.8096 ready socket-flow (satisfied (Path is satisfied), interface: lo0)] event: flow:child_finish_connect @0.103s
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40.1 localhost:8096 ready resolver (satisfied (Path is satisfied), interface: en0)] event: flow:child_finish_connect @0.103s
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_flow_connected [C40 ::1.8096 in_progress parent-flow (satisfied (Path is satisfied), interface: en0)] Output protocol connected (endpoint_flow)
+2026-11-20 00:25:56.022 Df Jukebox[18633:15ece] [com.apple.network:connection] [C40 ::1.8096 ready parent-flow (satisfied (Path is satisfied), interface: en0)] event: flow:finish_connect @0.103s
+2026-11-20 00:25:56.023 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C40] reporting state ready
+2026-11-20 00:25:56.023 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 35: connected successfully
+2026-11-20 00:25:56.023 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 35: ready C(N) E(N)
+2026-11-20 00:25:56.023 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> now using Connection 35
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> sent request, body N 0
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 36: connected successfully
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 36: ready C(N) E(N)
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> now using Connection 36
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> sent request, body N 0
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 37: connected successfully
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 37: ready C(N) E(N)
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> now using Connection 37
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> sent request, body N 0
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 38: connected successfully
+2026-11-20 00:25:56.024 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 38: ready C(N) E(N)
+2026-11-20 00:25:56.025 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> now using Connection 38
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> sent request, body N 0
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 39: connected successfully
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 39: ready C(N) E(N)
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> now using Connection 39
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> sent request, body N 0
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 40: connected successfully
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Connection 40: ready C(N) E(N)
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> now using Connection 40
+2026-11-20 00:25:56.026 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> sent request, body N 0
+2026-11-20 00:25:56.039 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> received response, status 200 content K
+2026-11-20 00:25:56.040 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> response ended
+2026-11-20 00:25:56.040 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> done using Connection 35
+2026-11-20 00:25:56.040 Df Jukebox[18633:16cda] [com.apple.network:connection] [C35] event: client:connection_idle @0.246s
+2026-11-20 00:25:56.040 Df Jukebox[18633:16cda] [com.apple.network:connection] nw_protocol_socket_notify [C35.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.040 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Summary] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> summary for task success {transaction_duration_ms=276, response_status=200, connection=35, protocol="http/1.1", domain_lookup_duration_ms=160, connect_duration_ms=43, secure_connection_duration_ms=0, private_relay=false, request_start_ms=259, request_duration_ms=1, response_start_ms=275, response_duration_ms=0, request_bytes=331, request_throughput_kbps=2593, response_bytes=28405, response_throughput_kbps=456362, cache_hit=false}
+2026-11-20 00:25:56.041 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <D0669AD0-EBB3-4FEB-90EF-861333994B0C>.<123> finished successfully
+2026-11-20 00:25:56.041 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> now using Connection 35
+2026-11-20 00:25:56.041 Df Jukebox[18633:16cda] [com.apple.network:connection] [C35] event: client:connection_reused @0.247s
+2026-11-20 00:25:56.041 Df Jukebox[18633:16cda] [com.apple.network:connection] nw_protocol_socket_notify [C35.1.1:2] nw_protocol_notification_type_connection_idle is false
+2026-11-20 00:25:56.042 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> sent request, body N 0
+2026-11-20 00:25:56.044 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:56.047 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:56.048 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> received response, status 200 content K
+2026-11-20 00:25:56.048 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> response ended
+2026-11-20 00:25:56.048 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> done using Connection 36
+2026-11-20 00:25:56.048 Df Jukebox[18633:15f69] [com.apple.network:connection] [C36] event: client:connection_idle @0.248s
+2026-11-20 00:25:56.048 Df Jukebox[18633:1662a] [com.apple.CFNetwork:Summary] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> summary for task success {transaction_duration_ms=281, response_status=200, connection=36, protocol="http/1.1", domain_lookup_duration_ms=119, connect_duration_ms=29, secure_connection_duration_ms=0, private_relay=false, request_start_ms=257, request_duration_ms=0, response_start_ms=280, response_duration_ms=0, request_bytes=331, request_throughput_kbps=47362, response_bytes=28306, response_throughput_kbps=867389, cache_hit=false}
+2026-11-20 00:25:56.048 Df Jukebox[18633:1662a] [com.apple.CFNetwork:Default] Task <E2928398-FF91-4505-8090-EA56DE80828D>.<124> finished successfully
+2026-11-20 00:25:56.048 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C36.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.049 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:56.049 Df Jukebox[18633:15f69] [com.apple.network:connection] [C36] event: client:connection_idle @0.249s
+2026-11-20 00:25:56.051 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C36.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.061 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:56.061 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:56.061 Df Jukebox[18633:1662a] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:56.061 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:56.062 A  Jukebox[18633:16395] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:56.064 Df Jukebox[18633:1662a] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> resuming, timeouts(60.0, 604800.0) qos(0x19) voucher((null)) activity(00000000-0000-0000-0000-000000000000)
+2026-11-20 00:25:56.069 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36] event: client:connection_idle @0.269s
+2026-11-20 00:25:56.069 Df Jukebox[18633:16395] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:56.081 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_protocol_socket_notify [C36.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.086 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> now using Connection 36
+2026-11-20 00:25:56.086 Df Jukebox[18633:15ece] [com.apple.network:connection] [C36] event: client:connection_reused @0.286s
+2026-11-20 00:25:56.086 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_protocol_socket_notify [C36.1.1:2] nw_protocol_notification_type_connection_idle is false
+2026-11-20 00:25:56.086 A  Jukebox[18633:16395] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:56.088 Df Jukebox[18633:16395] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:56.088 A  Jukebox[18633:16395] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:56.089 Df Jukebox[18633:16395] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:56.091 A  Jukebox[18633:16395] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:56.092 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> not allowed to create a new connection (existing Connection 35)
+2026-11-20 00:25:56.092 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> not allowed to create a new connection (existing Connection 35)
+2026-11-20 00:25:56.092 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> not allowed to create a new connection (existing Connection 35)
+2026-11-20 00:25:56.092 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> not allowed to create a new connection (existing Connection 35)
+2026-11-20 00:25:56.092 Df Jukebox[18633:16395] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:56.092 A  Jukebox[18633:16395] (Security) SecTrustReportNetworkingAnalytics
+2026-11-20 00:25:56.092 Df Jukebox[18633:16395] [com.apple.securityd:SecError] SecTrustReportNetworkingAnalytics failed with error: -4
+2026-11-20 00:25:56.094 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> sent request, body N 0
+2026-11-20 00:25:56.150 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> received response, status 200 content K
+2026-11-20 00:25:56.151 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> response ended
+2026-11-20 00:25:56.151 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> done using Connection 37
+2026-11-20 00:25:56.151 Df Jukebox[18633:15f69] [com.apple.network:connection] [C37] event: client:connection_idle @0.310s
+2026-11-20 00:25:56.151 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C37.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.151 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> now using Connection 37
+2026-11-20 00:25:56.151 Df Jukebox[18633:15f69] [com.apple.network:connection] [C37] event: client:connection_reused @0.310s
+2026-11-20 00:25:56.151 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Summary] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> summary for task success {transaction_duration_ms=383, response_status=200, connection=37, protocol="http/1.1", domain_lookup_duration_ms=114, connect_duration_ms=24, secure_connection_duration_ms=0, private_relay=false, request_start_ms=256, request_duration_ms=0, response_start_ms=381, response_duration_ms=1, request_bytes=331, request_throughput_kbps=106282, response_bytes=28675, response_throughput_kbps=148289, cache_hit=false}
+2026-11-20 00:25:56.151 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <BF05A025-39BA-48E1-A894-0881EA86DE0F>.<125> finished successfully
+2026-11-20 00:25:56.151 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C37.1.1:2] nw_protocol_notification_type_connection_idle is false
+2026-11-20 00:25:56.152 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> sent request, body N 0
+2026-11-20 00:25:56.154 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> received response, status 200 content K
+2026-11-20 00:25:56.154 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> response ended
+2026-11-20 00:25:56.154 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> done using Connection 38
+2026-11-20 00:25:56.154 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38] event: client:connection_idle @0.304s
+2026-11-20 00:25:56.154 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_protocol_socket_notify [C38.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.154 Df Jukebox[18633:16395] [com.apple.CFNetwork:Summary] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> summary for task success {transaction_duration_ms=386, response_status=200, connection=38, protocol="http/1.1", domain_lookup_duration_ms=106, connect_duration_ms=18, secure_connection_duration_ms=0, private_relay=false, request_start_ms=257, request_duration_ms=0, response_start_ms=385, response_duration_ms=0, request_bytes=331, request_throughput_kbps=20212, response_bytes=26759, response_throughput_kbps=442306, cache_hit=false}
+2026-11-20 00:25:56.155 Df Jukebox[18633:16395] [com.apple.CFNetwork:Default] Task <A781D4DA-9CE1-4B2F-9EE5-02063CB8CA42>.<126> finished successfully
+2026-11-20 00:25:56.156 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> now using Connection 38
+2026-11-20 00:25:56.156 Df Jukebox[18633:15ece] [com.apple.network:connection] [C38] event: client:connection_reused @0.307s
+2026-11-20 00:25:56.156 Df Jukebox[18633:15ece] [com.apple.network:connection] nw_protocol_socket_notify [C38.1.1:2] nw_protocol_notification_type_connection_idle is false
+2026-11-20 00:25:56.158 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> sent request, body N 0
+2026-11-20 00:25:56.160 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> received response, status 404 content K
+2026-11-20 00:25:56.161 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> response ended
+2026-11-20 00:25:56.161 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> done using Connection 37
+2026-11-20 00:25:56.161 Df Jukebox[18633:15f69] [com.apple.network:connection] [C37] event: client:connection_idle @0.321s
+2026-11-20 00:25:56.161 Df Jukebox[18633:16395] [com.apple.CFNetwork:Summary] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> summary for task success {transaction_duration_ms=76, response_status=404, connection=37, reused=1, reused_after_ms=0, request_start_ms=67, request_duration_ms=0, response_start_ms=75, response_duration_ms=0, request_bytes=294, request_throughput_kbps=14790, response_bytes=249, response_throughput_kbps=2645, cache_hit=false}
+2026-11-20 00:25:56.161 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C37.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.161 Df Jukebox[18633:16395] [com.apple.CFNetwork:Default] Task <2076ABE2-D978-4642-9852-1C454630EAB5>.<130> finished successfully
+2026-11-20 00:25:56.162 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> now using Connection 37
+2026-11-20 00:25:56.162 Df Jukebox[18633:15f69] [com.apple.network:connection] [C37] event: client:connection_reused @0.321s
+2026-11-20 00:25:56.163 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C37.1.1:2] nw_protocol_notification_type_connection_idle is false
+2026-11-20 00:25:56.163 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> sent request, body N 0
+2026-11-20 00:25:56.166 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> received response, status 200 content K
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> response ended
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> done using Connection 40
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.network:connection] [C40] event: client:connection_idle @0.248s
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.network:connection] nw_protocol_socket_notify [C40.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> now using Connection 40
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.network:connection] [C40] event: client:connection_reused @0.248s
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.network:connection] nw_protocol_socket_notify [C40.1.1:2] nw_protocol_notification_type_connection_idle is false
+2026-11-20 00:25:56.167 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> sent request, body N 0
+2026-11-20 00:25:56.167 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Summary] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> summary for task success {transaction_duration_ms=398, response_status=200, connection=40, protocol="http/1.1", domain_lookup_duration_ms=42, connect_duration_ms=5, secure_connection_duration_ms=0, private_relay=false, request_start_ms=257, request_duration_ms=0, response_start_ms=397, response_duration_ms=0, request_bytes=331, request_throughput_kbps=91037, response_bytes=26203, response_throughput_kbps=269082, cache_hit=false}
+2026-11-20 00:25:56.167 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <130D307E-D8DA-46B2-BCC2-C9377C9FAD9B>.<122> finished successfully
+2026-11-20 00:25:56.169 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> received response, status 200 content K
+2026-11-20 00:25:56.169 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> response ended
+2026-11-20 00:25:56.170 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> done using Connection 40
+2026-11-20 00:25:56.170 Df Jukebox[18633:15f69] [com.apple.network:connection] [C40] event: client:connection_idle @0.251s
+2026-11-20 00:25:56.170 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C40.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.170 Df Jukebox[18633:15f69] [com.apple.network:connection] [C40] event: client:connection_idle @0.251s
+2026-11-20 00:25:56.170 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C40.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.170 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Summary] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> summary for task success {transaction_duration_ms=85, response_status=200, connection=40, reused=1, reused_after_ms=0, request_start_ms=82, request_duration_ms=0, response_start_ms=84, response_duration_ms=0, request_bytes=331, request_throughput_kbps=22058, response_bytes=27885, response_throughput_kbps=446085, cache_hit=false}
+2026-11-20 00:25:56.170 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <2BA36307-0380-41AD-831F-9F1BB196DCC0>.<131> finished successfully
+2026-11-20 00:25:56.173 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> received response, status 200 content K
+2026-11-20 00:25:56.173 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> response ended
+2026-11-20 00:25:56.173 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> done using Connection 35
+2026-11-20 00:25:56.173 Df Jukebox[18633:15f69] [com.apple.network:connection] [C35] event: client:connection_idle @0.380s
+2026-11-20 00:25:56.174 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C35.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.174 Df Jukebox[18633:15f69] [com.apple.network:connection] [C35] event: client:connection_idle @0.380s
+2026-11-20 00:25:56.174 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C35.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.174 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Summary] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> summary for task success {transaction_duration_ms=404, response_status=200, connection=35, reused=1, reused_after_ms=0, request_start_ms=271, request_duration_ms=0, response_start_ms=402, response_duration_ms=0, request_bytes=331, request_throughput_kbps=30058, response_bytes=28469, response_throughput_kbps=286822, cache_hit=false}
+2026-11-20 00:25:56.174 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <C07ADBA3-53D7-452E-A13E-4832DA0A3D04>.<127> finished successfully
+2026-11-20 00:25:56.176 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> received response, status 200 content K
+2026-11-20 00:25:56.176 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> response ended
+2026-11-20 00:25:56.176 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> done using Connection 38
+2026-11-20 00:25:56.176 Df Jukebox[18633:16cda] [com.apple.network:connection] [C38] event: client:connection_idle @0.327s
+2026-11-20 00:25:56.176 Df Jukebox[18633:16cda] [com.apple.network:connection] nw_protocol_socket_notify [C38.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.176 Df Jukebox[18633:16cda] [com.apple.network:connection] [C38] event: client:connection_idle @0.327s
+2026-11-20 00:25:56.176 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Summary] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> summary for task success {transaction_duration_ms=91, response_status=200, connection=38, reused=1, reused_after_ms=0, request_start_ms=71, request_duration_ms=0, response_start_ms=91, response_duration_ms=0, request_bytes=331, request_throughput_kbps=3799, response_bytes=32860, response_throughput_kbps=738264, cache_hit=false}
+2026-11-20 00:25:56.176 Df Jukebox[18633:15ece] [com.apple.CFNetwork:Default] Task <95D59BAD-3FC3-411B-BA77-D462DD1E779B>.<132> finished successfully
+2026-11-20 00:25:56.176 Df Jukebox[18633:16cda] [com.apple.network:connection] nw_protocol_socket_notify [C38.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.180 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> received response, status 200 content K
+2026-11-20 00:25:56.181 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> response ended
+2026-11-20 00:25:56.181 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> done using Connection 39
+2026-11-20 00:25:56.181 Df Jukebox[18633:15f69] [com.apple.network:connection] [C39] event: client:connection_idle @0.286s
+2026-11-20 00:25:56.181 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C39.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.182 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Summary] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> summary for task success {transaction_duration_ms=413, response_status=200, connection=39, protocol="http/1.1", domain_lookup_duration_ms=47, connect_duration_ms=11, secure_connection_duration_ms=0, private_relay=false, request_start_ms=258, request_duration_ms=0, response_start_ms=412, response_duration_ms=1, request_bytes=331, request_throughput_kbps=30428, response_bytes=26822, response_throughput_kbps=175318, cache_hit=false}
+2026-11-20 00:25:56.182 Df Jukebox[18633:15f69] [com.apple.network:connection] [C39] event: client:connection_idle @0.286s
+2026-11-20 00:25:56.182 Df Jukebox[18633:16cda] [com.apple.CFNetwork:Default] Task <BC366877-D062-4B0C-9B03-049384BDAF03>.<121> finished successfully
+2026-11-20 00:25:56.182 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C39.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.183 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> received response, status 200 content K
+2026-11-20 00:25:56.183 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> response ended
+2026-11-20 00:25:56.183 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> done using Connection 36
+2026-11-20 00:25:56.183 Df Jukebox[18633:15f69] [com.apple.network:connection] [C36] event: client:connection_idle @0.383s
+2026-11-20 00:25:56.183 Df Jukebox[18633:16395] [com.apple.CFNetwork:Summary] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> summary for task success {transaction_duration_ms=121, response_status=200, connection=36, reused=1, reused_after_ms=7, request_start_ms=31, request_duration_ms=0, response_start_ms=120, response_duration_ms=0, request_bytes=331, request_throughput_kbps=19332, response_bytes=31416, response_throughput_kbps=558487, cache_hit=false}
+2026-11-20 00:25:56.183 Df Jukebox[18633:16395] [com.apple.CFNetwork:Default] Task <45E5C4E5-CB24-44B7-BE49-40461D5B4ED3>.<128> finished successfully
+2026-11-20 00:25:56.184 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C36.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.184 Df Jukebox[18633:15f69] [com.apple.network:connection] [C36] event: client:connection_idle @0.384s
+2026-11-20 00:25:56.184 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C36.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.187 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:56.193 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:56.194 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:56.254 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> received response, status 200 content K
+2026-11-20 00:25:56.255 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> response ended
+2026-11-20 00:25:56.255 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> done using Connection 37
+2026-11-20 00:25:56.255 Df Jukebox[18633:15f69] [com.apple.network:connection] [C37] event: client:connection_idle @0.414s
+2026-11-20 00:25:56.255 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C37.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.255 Df Jukebox[18633:15f69] [com.apple.network:connection] [C37] event: client:connection_idle @0.415s
+2026-11-20 00:25:56.255 Df Jukebox[18633:15f69] [com.apple.network:connection] nw_protocol_socket_notify [C37.1.1:2] nw_protocol_notification_type_connection_idle is true
+2026-11-20 00:25:56.256 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Summary] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> summary for task success {transaction_duration_ms=170, response_status=200, connection=37, reused=1, reused_after_ms=1, request_start_ms=78, request_duration_ms=0, response_start_ms=169, response_duration_ms=0, request_bytes=331, request_throughput_kbps=22829, response_bytes=33232, response_throughput_kbps=458315, cache_hit=false}
+2026-11-20 00:25:56.256 Df Jukebox[18633:15f69] [com.apple.CFNetwork:Default] Task <6C25332F-ECF3-4388-9691-2EC2F7A8AD09>.<129> finished successfully
+2026-11-20 00:25:56.274 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:56.280 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:56.282 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:56.334 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:56.335 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:56.336 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:56.369 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:56.371 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:56.372 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:56.426 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:56.428 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:56.429 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text
+2026-11-20 00:25:56.431 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard adds a string
+2026-11-20 00:25:56.433 A  Jukebox[18633:e00c] (UIKitCore) send control actions
+2026-11-20 00:25:56.437 Df Jukebox[18633:e00c] [com.apple.UIKit:KeyboardUI] Keyboard inserts text

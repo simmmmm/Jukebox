@@ -1,0 +1,1322 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=72E136B5-518E-4610-8C3A-9887EFA205A4 -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPad" -resultBundlePath build/screenshots/ipad-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 930 -maximum-test-execution-time-allowance 930
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/tijmensteenvoorden/actions-runner-5/_work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/tijmensteenvoorden/actions-runner-5/_work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+2026-11-20 16:55:41.026291+0100 JukeboxUITests-Runner[18763:21418094] [Default] Running tests...
+2026-11-20 16:55:41.074402+0100 JukeboxUITests-Runner[18763:21418094] [UIKit App Config] Update the Info.plist: Launch screens will soon be required.
+    t =      nans Interface orientation changed to Portrait
+objc[18763]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.i7Qp6U/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x1039f8310) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.i7Qp6U/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x103a4c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+Test Suite 'Selected tests' started at 2026-11-20 16:55:51.340.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-20 16:55:51.341.
+Test Suite 'ScreenshotTests' started at 2026-11-20 16:55:51.341.
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' started.
+    t =     0.03s Start Test at 2026-11-20 16:55:51.372
+    t =     0.03s Set Up
+    t =     0.03s Setting device orientation to Landscape Left
+    t =     0.05s     Device orientation changed to Landscape Left
+    t =     0.18s     Interface orientation changed to Landscape Right
+    t =     0.36s     Wait for com.apple.springboard to idle
+    t =     0.70s Open com.tijmen.Jukebox
+    t =     0.70s     Launch com.tijmen.Jukebox
+2026-11-20 16:55:52.212 xcodebuild[18666:21416521] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-20 16:55:52.212 xcodebuild[18666:21416521] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     7.26s         Setting up automation session
+    t =    11.03s         Wait for com.tijmen.Jukebox to idle
+    t =    14.48s Checking existence of `"Home" NavigationBar`
+    t =    14.78s Checking existence of `"Home" Button`
+    t =    14.85s Checking existence of `"tab.home" Button`
+    t =    14.95s Checking existence of `"Your Station" StaticText`
+    t =    15.03s Checking existence of `"place.home" Any`
+    t =    15.22s Checking existence of `TextField (First Match)`
+    t =    21.24s Added attachment named '17-sign-in'
+PICTURE: 17-sign-in
+    t =    21.81s Waiting 10.0s for TextField (First Match) to exist
+    t =    22.82s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    22.82s         Checking existence of `TextField (First Match)`
+    t =    23.00s Find the TextField (First Match)
+    t =    23.26s Tap "signIn.address" TextField
+    t =    23.26s     Wait for com.tijmen.Jukebox to idle
+    t =    23.28s     Find the "signIn.address" TextField
+    t =    23.88s     Check for interrupting elements affecting "signIn.address" TextField
+    t =    24.06s         Wait for com.apple.springboard to idle
+    t =    24.28s     Synthesize event
+    t =    24.82s     Wait for com.tijmen.Jukebox to idle
+    t =    25.93s Find the "signIn.address" TextField
+    t =    26.13s Type 'localhost:18100' into "signIn.address" TextField
+    t =    26.14s     Wait for com.tijmen.Jukebox to idle
+    t =    26.18s     Find the "signIn.address" TextField
+    t =    26.27s     Check for interrupting elements affecting "signIn.address" TextField
+    t =    26.38s         Wait for com.apple.springboard to idle
+    t =    26.49s     Synthesize event
+    t =    26.97s     Wait for com.tijmen.Jukebox to idle
+    t =    28.19s Added attachment named '17b-sign-in-address'
+PICTURE: 17b-sign-in-address
+    t =    28.73s Type '
+' into TextField (First Match)
+    t =    28.73s     Wait for com.tijmen.Jukebox to idle
+    t =    28.82s     Find the TextField (First Match)
+    t =    28.93s     Check for interrupting elements affecting "signIn.address" TextField
+    t =    29.05s         Wait for com.apple.springboard to idle
+    t =    29.16s     Synthesize event
+    t =    29.40s     Wait for com.tijmen.Jukebox to idle
+    t =    29.46s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    30.52s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    30.52s         Checking existence of `SecureTextField (First Match)`
+    t =    30.59s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    31.66s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    31.66s         Checking existence of `SecureTextField (First Match)`
+    t =    33.22s Checking existence of `"signIn.user" TextField`
+    t =    33.28s Waiting 10.0s for "signIn.user" TextField to exist
+    t =    34.32s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.user" TextField`
+    t =    34.32s         Checking existence of `"signIn.user" TextField`
+    t =    34.38s Find the "signIn.user" TextField
+    t =    34.47s Tap "signIn.user" TextField
+    t =    34.47s     Wait for com.tijmen.Jukebox to idle
+    t =    34.48s     Find the "signIn.user" TextField
+    t =    34.53s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    34.56s         Wait for com.apple.springboard to idle
+    t =    34.58s     Synthesize event
+    t =    34.89s     Wait for com.tijmen.Jukebox to idle
+    t =    35.70s Type 'test' into "signIn.user" TextField
+    t =    35.70s     Wait for com.tijmen.Jukebox to idle
+    t =    35.71s     Find the "signIn.user" TextField
+    t =    35.84s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    35.90s         Wait for com.apple.springboard to idle
+    t =    35.93s     Synthesize event
+    t =    36.22s     Wait for com.tijmen.Jukebox to idle
+    t =    36.22s Type '
+' into "signIn.user" TextField
+    t =    36.22s     Wait for com.tijmen.Jukebox to idle
+    t =    36.23s     Find the "signIn.user" TextField
+    t =    36.27s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    36.30s         Wait for com.apple.springboard to idle
+    t =    36.32s     Synthesize event
+    t =    36.55s     Wait for com.tijmen.Jukebox to idle
+    t =    38.01s Waiting 10.0s for SecureTextField (First Match) to exist
+    t =    39.07s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    39.07s         Checking existence of `SecureTextField (First Match)`
+    t =    39.12s Find the SecureTextField (First Match)
+    t =    39.17s Find the "signIn.password" SecureTextField
+    t =    39.24s Type '<redacted>' into "signIn.password" SecureTextField
+    t =    39.24s     Wait for com.tijmen.Jukebox to idle
+    t =    39.25s     Find the "signIn.password" SecureTextField
+    t =    39.30s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =    39.33s         Wait for com.apple.springboard to idle
+    t =    39.35s     Synthesize event
+    t =    39.62s     Wait for com.tijmen.Jukebox to idle
+    t =    39.63s Find the SecureTextField (First Match)
+    t =    39.90s Added attachment named '17c-sign-in-filled'
+PICTURE: 17c-sign-in-filled
+    t =    39.94s Type '<redacted>' into SecureTextField (First Match)
+    t =    39.94s     Wait for com.tijmen.Jukebox to idle
+    t =    39.95s     Find the SecureTextField (First Match)
+    t =    40.00s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =    40.03s         Wait for com.apple.springboard to idle
+    t =    40.06s     Synthesize event
+    t =    40.28s     Wait for com.tijmen.Jukebox to idle
+    t =    40.76s Waiting 3.0s for "Not Now" Button to exist
+    t =    41.84s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    41.85s         Checking existence of `"Not Now" Button`
+    t =    42.09s         Capturing element debug description
+    t =    42.84s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    42.84s         Checking existence of `"Not Now" Button`
+    t =    43.09s         Capturing element debug description
+    t =    43.77s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    43.77s         Checking existence of `"Not Now" Button`
+    t =    43.97s         Capturing element debug description
+    t =    43.97s     Checking existence of `"Not Now" Button`
+    t =    44.20s Collecting debug information to assist test failure triage
+    t =    44.20s     Requesting snapshot of accessibility hierarchy for app with pid 18909
+    t =    44.36s Waiting 3.0s for "Not Now" Button to exist
+    t =    45.38s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    45.38s         Checking existence of `"Not Now" Button`
+    t =    45.40s         Capturing element debug description
+    t =    46.36s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    46.36s         Checking existence of `"Not Now" Button`
+    t =    46.40s         Capturing element debug description
+    t =    47.36s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    47.36s         Checking existence of `"Not Now" Button`
+    t =    47.39s         Capturing element debug description
+    t =    47.39s     Checking existence of `"Not Now" Button`
+    t =    47.41s Collecting debug information to assist test failure triage
+    t =    47.41s     Requesting snapshot of accessibility hierarchy for app with pid 18243
+    t =    47.47s Checking existence of `"Home" NavigationBar`
+    t =    47.67s Checking existence of `"Home" Button`
+    t =    47.84s Checking existence of `"tab.home" Button`
+    t =    48.06s Checking existence of `"Your Station" StaticText`
+    t =    48.13s Checking existence of `"Home" NavigationBar`
+    t =    48.30s Checking existence of `"Home" Button`
+    t =    48.47s Checking existence of `"tab.home" Button`
+    t =    48.70s Checking existence of `"Your Station" StaticText`
+    t =    48.78s Checking existence of `"Your Station" StaticText`
+    t =    48.85s Checking existence of `Any (First Match)`
+    t =    49.03s Checking existence of `Any (First Match)`
+    t =    53.24s Waiting 0.5s for "Not Now" Button to exist
+    t =    53.74s     Checking existence of `"Not Now" Button`
+    t =    53.94s Collecting debug information to assist test failure triage
+    t =    53.94s     Requesting snapshot of accessibility hierarchy for app with pid 18909
+    t =    54.07s Waiting 0.5s for "Not Now" Button to exist
+    t =    54.58s     Checking existence of `"Not Now" Button`
+    t =    54.61s Collecting debug information to assist test failure triage
+    t =    54.61s     Requesting snapshot of accessibility hierarchy for app with pid 18243
+    t =    54.98s Added attachment named '01-home'
+PICTURE: 01-home
+    t =    55.05s Getting device orientation
+    t =    55.05s Waiting 3.0s for "place.radio" Any to exist
+    t =    56.09s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =    56.10s         Checking existence of `"place.radio" Any`
+    t =    56.14s Waiting 1.0s for "place.radio" Any to exist
+    t =    57.14s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =    57.14s         Checking existence of `"place.radio" Any`
+    t =    57.19s     Checking existence of `"place.radio" Any`
+    t =    57.22s Checking existence of `"place.radio" Any`
+    t =    57.30s Find the "place.radio" Any
+    t =    57.36s Find the Target Application 'com.tijmen.Jukebox'
+    t =    57.44s Checking existence of `"place.radio" Button`
+    t =    57.47s Find the "place.radio" Button
+    t =    57.51s Find the Target Application 'com.tijmen.Jukebox'
+    t =    57.57s Find the "place.radio" Button
+    t =    57.62s Tap "place.radio" Button
+    t =    57.62s     Wait for com.tijmen.Jukebox to idle
+    t =    57.63s     Find the "place.radio" Button
+    t =    57.66s     Check for interrupting elements affecting "place.radio" Button
+    t =    57.76s         Wait for com.apple.springboard to idle
+    t =    57.78s     Synthesize event
+    t =    58.08s     Wait for com.tijmen.Jukebox to idle
+    t =    60.52s Added attachment named '02-radio'
+PICTURE: 02-radio
+    t =    60.58s Waiting 10.0s for Button (First Match) to exist
+    t =    61.60s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    61.60s         Checking existence of `Button (First Match)`
+    t =    61.72s Checking existence of `Button (First Match)`
+    t =    61.77s Find the Button (First Match)
+    t =    61.84s Find the Target Application 'com.tijmen.Jukebox'
+    t =    61.87s Checking existence of `"Your Station, Not played yet" Button`
+    t =    61.92s Find the "Your Station, Not played yet" Button
+    t =    61.97s Find the Target Application 'com.tijmen.Jukebox'
+    t =    62.00s Find the "Your Station, Not played yet" Button
+    t =    62.07s Tap "Your Station, Not played yet" Button
+    t =    62.07s     Wait for com.tijmen.Jukebox to idle
+    t =    62.07s     Find the "Your Station, Not played yet" Button
+    t =    62.12s     Check for interrupting elements affecting "Your Station, Not played yet" Button
+    t =    62.16s         Wait for com.apple.springboard to idle
+    t =    62.19s     Synthesize event
+    t =    62.49s     Wait for com.tijmen.Jukebox to idle
+    t =    62.70s Checking existence of `"New Picks" Button`
+    t =    66.23s Added attachment named '03-station'
+PICTURE: 03-station
+    t =    66.26s Getting device orientation
+    t =    66.26s Waiting 3.0s for "place.albums" Any to exist
+    t =    67.27s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =    67.27s         Checking existence of `"place.albums" Any`
+    t =    67.33s Waiting 1.0s for "place.albums" Any to exist
+    t =    68.34s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =    68.34s         Checking existence of `"place.albums" Any`
+    t =    68.39s     Checking existence of `"place.albums" Any`
+    t =    68.43s Checking existence of `"place.albums" Any`
+    t =    68.47s Find the "place.albums" Any
+    t =    68.51s Find the Target Application 'com.tijmen.Jukebox'
+    t =    68.54s Checking existence of `"place.albums" Button`
+    t =    68.58s Find the "place.albums" Button
+    t =    68.62s Find the Target Application 'com.tijmen.Jukebox'
+    t =    68.66s Find the "place.albums" Button
+    t =    68.71s Tap "place.albums" Button
+    t =    68.71s     Wait for com.tijmen.Jukebox to idle
+    t =    68.71s     Find the "place.albums" Button
+    t =    68.75s     Check for interrupting elements affecting "place.albums" Button
+    t =    68.80s         Wait for com.apple.springboard to idle
+    t =    68.82s     Synthesize event
+    t =    69.11s     Wait for com.tijmen.Jukebox to idle
+    t =    71.93s Added attachment named '04-albums'
+PICTURE: 04-albums
+    t =    72.02s Waiting 15.0s for Button (First Match) to exist
+    t =    73.04s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    73.05s         Checking existence of `Button (First Match)`
+    t =    73.12s Checking existence of `NavigationBar (First Match)`
+    t =    73.13s Find the NavigationBar (First Match)
+    t =    73.14s Find the Target Application 'com.tijmen.Jukebox'
+    t =    73.18s Get number of matches for: Elements matching predicate 'NOT identifier BEGINSWITH "place."'
+    t =    73.24s Checking existence of `Button (Element at index 0)`
+    t =    73.29s Find the Button (Element at index 0)
+    t =    73.34s Find the "Sort By" Button
+    t =    73.39s Find the "Sort By" Button
+    t =    73.45s Checking existence of `Button (Element at index 1)`
+    t =    73.49s Find the Button (Element at index 1)
+    t =    73.55s Find the Button
+    t =    73.60s Find the Button
+    t =    73.65s Checking existence of `Button (Element at index 2)`
+    t =    73.70s Find the Button (Element at index 2)
+    t =    73.75s Find the "Dust Parades, Hexagon Lights" Button
+    t =    73.80s Find the "Dust Parades, Hexagon Lights" Button
+    t =    73.86s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =    73.91s Find the "Dust Parades, Hexagon Lights" Button
+    t =    73.96s Find the Target Application 'com.tijmen.Jukebox'
+    t =    74.00s Waiting 10.0s for Button (First Match) to exist
+    t =    75.02s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    75.03s         Checking existence of `Button (First Match)`
+    t =    75.10s Checking existence of `Button (First Match)`
+    t =    75.15s Find the Button (First Match)
+    t =    75.20s Find the Target Application 'com.tijmen.Jukebox'
+    t =    75.24s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =    75.29s Find the "Dust Parades, Hexagon Lights" Button
+    t =    75.34s Find the Target Application 'com.tijmen.Jukebox'
+    t =    75.38s Find the "Dust Parades, Hexagon Lights" Button
+    t =    75.44s Tap "Dust Parades, Hexagon Lights" Button
+    t =    75.44s     Wait for com.tijmen.Jukebox to idle
+    t =    75.44s     Find the "Dust Parades, Hexagon Lights" Button
+    t =    75.49s     Check for interrupting elements affecting "Dust Parades, Hexagon Lights" Button
+    t =    75.53s         Wait for com.apple.springboard to idle
+    t =    75.55s     Synthesize event
+    t =    75.84s     Wait for com.tijmen.Jukebox to idle
+    t =    79.58s Added attachment named '05-album'
+PICTURE: 05-album
+    t =    79.62s Getting device orientation
+    t =    79.62s Waiting 3.0s for "place.artists" Any to exist
+    t =    80.66s     Checking `Expect predicate `existsNoRetry == 1` for object "place.artists" Any`
+    t =    80.68s         Checking existence of `"place.artists" Any`
+    t =    80.75s Waiting 1.0s for "place.artists" Any to exist
+    t =    81.76s     Checking `Expect predicate `existsNoRetry == 1` for object "place.artists" Any`
+    t =    81.79s         Checking existence of `"place.artists" Any`
+    t =    81.88s     Checking existence of `"place.artists" Any`
+    t =    81.91s Checking existence of `"place.artists" Any`
+    t =    81.95s Find the "place.artists" Any
+    t =    81.99s Find the Target Application 'com.tijmen.Jukebox'
+    t =    82.03s Checking existence of `"place.artists" Button`
+    t =    82.07s Find the "place.artists" Button
+    t =    82.11s Find the Target Application 'com.tijmen.Jukebox'
+    t =    82.14s Find the "place.artists" Button
+    t =    82.19s Tap "place.artists" Button
+    t =    82.19s     Wait for com.tijmen.Jukebox to idle
+    t =    82.19s     Find the "place.artists" Button
+    t =    82.23s     Check for interrupting elements affecting "place.artists" Button
+    t =    82.26s         Wait for com.apple.springboard to idle
+    t =    82.28s     Synthesize event
+    t =    82.58s     Wait for com.tijmen.Jukebox to idle
+    t =    85.00s Waiting 15.0s for Button (First Match) to exist
+    t =    86.03s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    86.03s         Checking existence of `Button (First Match)`
+    t =    86.11s Checking existence of `NavigationBar (First Match)`
+    t =    86.12s Find the NavigationBar (First Match)
+    t =    86.14s Find the Target Application 'com.tijmen.Jukebox'
+    t =    86.17s Get number of matches for: Elements matching predicate 'NOT identifier BEGINSWITH "place."'
+    t =    86.21s Checking existence of `Button (Element at index 0)`
+    t =    86.25s Find the Button (Element at index 0)
+    t =    86.29s Find the "Amsterdam Strings, 3 albums" Button
+    t =    86.33s Find the "Amsterdam Strings, 3 albums" Button
+    t =    86.37s Checking existence of `"Amsterdam Strings, 3 albums" Button`
+    t =    86.41s Find the "Amsterdam Strings, 3 albums" Button
+    t =    86.45s Find the Target Application 'com.tijmen.Jukebox'
+    t =    86.48s Checking existence of `"Amsterdam Strings, 3 albums" Button`
+    t =    86.51s Find the "Amsterdam Strings, 3 albums" Button
+    t =    86.55s Waiting 10.0s for Button (First Match) to exist
+    t =    87.57s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    87.57s         Checking existence of `Button (First Match)`
+    t =    87.65s Checking existence of `Button (First Match)`
+    t =    87.70s Find the Button (First Match)
+    t =    87.74s Find the Target Application 'com.tijmen.Jukebox'
+    t =    87.77s Checking existence of `"Amsterdam Strings, 3 albums" Button`
+    t =    87.81s Find the "Amsterdam Strings, 3 albums" Button
+    t =    87.86s Find the Target Application 'com.tijmen.Jukebox'
+    t =    87.89s Find the "Amsterdam Strings, 3 albums" Button
+    t =    87.94s Tap "Amsterdam Strings, 3 albums" Button
+    t =    87.94s     Wait for com.tijmen.Jukebox to idle
+    t =    87.94s     Find the "Amsterdam Strings, 3 albums" Button
+    t =    87.99s     Check for interrupting elements affecting "Amsterdam Strings, 3 albums" Button
+    t =    88.02s         Wait for com.apple.springboard to idle
+    t =    88.04s     Synthesize event
+    t =    88.33s     Wait for com.tijmen.Jukebox to idle
+    t =    92.04s Added attachment named '06-artist'
+PICTURE: 06-artist
+    t =    92.08s Getting device orientation
+    t =    92.08s Waiting 3.0s for "place.songs" Any to exist
+    t =    93.11s     Checking `Expect predicate `existsNoRetry == 1` for object "place.songs" Any`
+    t =    93.11s         Checking existence of `"place.songs" Any`
+    t =    93.18s Waiting 1.0s for "place.songs" Any to exist
+    t =    94.18s     Checking `Expect predicate `existsNoRetry == 1` for object "place.songs" Any`
+    t =    94.18s         Checking existence of `"place.songs" Any`
+    t =    94.37s     Checking existence of `"place.songs" Any`
+    t =    94.46s Checking existence of `"place.songs" Any`
+    t =    94.54s Find the "place.songs" Any
+    t =    94.65s Find the Target Application 'com.tijmen.Jukebox'
+    t =    94.70s Checking existence of `"place.songs" Button`
+    t =    94.76s Find the "place.songs" Button
+    t =    94.81s Find the Target Application 'com.tijmen.Jukebox'
+    t =    94.83s Find the "place.songs" Button
+    t =    94.88s Tap "place.songs" Button
+    t =    94.88s     Wait for com.tijmen.Jukebox to idle
+    t =    94.88s     Find the "place.songs" Button
+    t =    94.93s     Check for interrupting elements affecting "place.songs" Button
+    t =    94.96s         Wait for com.apple.springboard to idle
+    t =    94.99s     Synthesize event
+    t =    95.28s     Wait for com.tijmen.Jukebox to idle
+    t =    98.03s Added attachment named '07-songs'
+PICTURE: 07-songs
+    t =    98.06s Getting device orientation
+    t =    98.06s Waiting 3.0s for "place.playlists" Any to exist
+    t =    99.10s     Checking `Expect predicate `existsNoRetry == 1` for object "place.playlists" Any`
+    t =    99.10s         Checking existence of `"place.playlists" Any`
+    t =    99.16s Waiting 1.0s for "place.playlists" Any to exist
+    t =   100.16s     Checking `Expect predicate `existsNoRetry == 1` for object "place.playlists" Any`
+    t =   100.16s         Checking existence of `"place.playlists" Any`
+    t =   100.21s     Checking existence of `"place.playlists" Any`
+    t =   100.25s Checking existence of `"place.playlists" Any`
+    t =   100.28s Find the "place.playlists" Any
+    t =   100.32s Find the Target Application 'com.tijmen.Jukebox'
+    t =   100.36s Checking existence of `"place.playlists" Button`
+    t =   100.39s Find the "place.playlists" Button
+    t =   100.43s Find the Target Application 'com.tijmen.Jukebox'
+    t =   100.47s Find the "place.playlists" Button
+    t =   100.51s Tap "place.playlists" Button
+    t =   100.51s     Wait for com.tijmen.Jukebox to idle
+    t =   100.51s     Find the "place.playlists" Button
+    t =   100.54s     Check for interrupting elements affecting "place.playlists" Button
+    t =   100.59s         Wait for com.apple.springboard to idle
+    t =   100.61s     Synthesize event
+    t =   100.90s     Wait for com.tijmen.Jukebox to idle
+    t =   103.20s Added attachment named '08-playlists'
+PICTURE: 08-playlists
+    t =   103.24s Getting device orientation
+    t =   103.24s Waiting 3.0s for "place.albums" Any to exist
+    t =   104.26s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   104.26s         Checking existence of `"place.albums" Any`
+    t =   104.30s Waiting 1.0s for "place.albums" Any to exist
+    t =   105.31s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   105.31s         Checking existence of `"place.albums" Any`
+    t =   105.36s     Checking existence of `"place.albums" Any`
+    t =   105.39s Checking existence of `"place.albums" Any`
+    t =   105.43s Find the "place.albums" Any
+    t =   105.46s Find the Target Application 'com.tijmen.Jukebox'
+    t =   105.48s Checking existence of `"place.albums" Button`
+    t =   105.52s Find the "place.albums" Button
+    t =   105.56s Find the Target Application 'com.tijmen.Jukebox'
+    t =   105.58s Find the "place.albums" Button
+    t =   105.62s Tap "place.albums" Button
+    t =   105.62s     Wait for com.tijmen.Jukebox to idle
+    t =   105.62s     Find the "place.albums" Button
+    t =   105.66s     Check for interrupting elements affecting "place.albums" Button
+    t =   105.69s         Wait for com.apple.springboard to idle
+    t =   105.71s     Synthesize event
+    t =   106.00s     Wait for com.tijmen.Jukebox to idle
+    t =   108.01s Waiting 3.0s for Button (First Match) to exist
+    t =   109.07s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   109.07s         Checking existence of `Button (First Match)`
+    t =   109.14s Waiting 10.0s for Button (First Match) to exist
+    t =   110.18s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   110.18s         Checking existence of `Button (First Match)`
+    t =   110.25s Checking existence of `Button (First Match)`
+    t =   110.30s Find the Button (First Match)
+    t =   110.35s Find the Target Application 'com.tijmen.Jukebox'
+    t =   110.39s Checking existence of `"Dust Windows, Blue Room Trio" Button`
+    t =   110.43s Find the "Dust Windows, Blue Room Trio" Button
+    t =   110.48s Find the Target Application 'com.tijmen.Jukebox'
+    t =   110.52s Find the "Dust Windows, Blue Room Trio" Button
+    t =   110.58s Tap "Dust Windows, Blue Room Trio" Button
+    t =   110.58s     Wait for com.tijmen.Jukebox to idle
+    t =   110.58s     Find the "Dust Windows, Blue Room Trio" Button
+    t =   110.63s     Check for interrupting elements affecting "Dust Windows, Blue Room Trio" Button
+    t =   110.67s         Wait for com.apple.springboard to idle
+    t =   110.69s     Synthesize event
+    t =   110.98s     Wait for com.tijmen.Jukebox to idle
+    t =   114.35s Get number of matches for: Elements matching predicate 'label == "Play"'
+    t =   114.43s Checking existence of `Button (Element at index 0)`
+    t =   114.47s Find the Button (Element at index 0)
+    t =   114.51s Find the "Play" Button
+    t =   114.55s Waiting 10.0s for Button (First Match) to exist
+    t =   115.60s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   115.60s         Checking existence of `Button (First Match)`
+    t =   115.68s Checking existence of `Button (First Match)`
+    t =   115.72s Find the Button (First Match)
+    t =   115.77s Find the Target Application 'com.tijmen.Jukebox'
+    t =   115.80s Checking existence of `"Play" Button`
+    t =   115.85s Find the "Play" Button
+    t =   115.90s Find the Target Application 'com.tijmen.Jukebox'
+    t =   115.93s Find the "Play" Button
+    t =   115.98s Tap "Play" Button
+    t =   115.98s     Wait for com.tijmen.Jukebox to idle
+    t =   115.98s     Find the "Play" Button
+    t =   116.03s     Check for interrupting elements affecting "Play" Button
+    t =   116.07s         Wait for com.apple.springboard to idle
+    t =   116.08s     Synthesize event
+<unknown>:0: warning: -[JukeboxUITests.ScreenshotTests testPad] : This method can lead to UI unresponsiveness if called on the main thread. Consider using the asynchronous activate/deactivate API instead for calls from the main thread.
+    t =   116.38s     Wait for com.tijmen.Jukebox to idle
+    t =   116.71s Waiting 45.0s for "Pause" Button to exist
+    t =   117.78s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =   117.78s         Checking existence of `"Pause" Button`
+    t =   120.81s Getting device orientation
+    t =   120.82s Waiting 3.0s for "place.home" Any to exist
+    t =   121.88s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   121.88s         Checking existence of `"place.home" Any`
+    t =   121.94s Waiting 1.0s for "place.home" Any to exist
+    t =   122.94s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   122.94s         Checking existence of `"place.home" Any`
+    t =   123.02s     Checking existence of `"place.home" Any`
+    t =   123.08s Checking existence of `"place.home" Any`
+    t =   123.13s Find the "place.home" Any
+    t =   123.20s Find the Target Application 'com.tijmen.Jukebox'
+    t =   123.23s Checking existence of `"place.home" Button`
+    t =   123.29s Find the "place.home" Button
+    t =   123.35s Find the Target Application 'com.tijmen.Jukebox'
+    t =   123.38s Find the "place.home" Button
+    t =   123.44s Tap "place.home" Button
+    t =   123.44s     Wait for com.tijmen.Jukebox to idle
+    t =   123.45s     Find the "place.home" Button
+    t =   123.50s     Check for interrupting elements affecting "place.home" Button
+    t =   123.54s         Wait for com.apple.springboard to idle
+    t =   123.56s     Synthesize event
+    t =   123.85s     Wait for com.tijmen.Jukebox to idle
+    t =   126.66s Added attachment named '09-home-playing'
+PICTURE: 09-home-playing
+    t =   126.72s Waiting 4.0s for "bar.upNext" Any to exist
+    t =   127.73s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   127.73s         Checking existence of `"bar.upNext" Any`
+    t =   127.78s Checking existence of `"bar.upNext" Any`
+    t =   127.80s Find the "bar.upNext" Any
+    t =   127.82s Waiting 1.0s for "bar.upNext" Any to exist
+    t =   128.83s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   128.83s         Checking existence of `"bar.upNext" Any`
+    t =   128.87s     Checking existence of `"bar.upNext" Any`
+    t =   128.90s Checking existence of `"bar.upNext" Any`
+    t =   128.92s Find the "bar.upNext" Any
+    t =   128.94s Find the Target Application 'com.tijmen.Jukebox'
+    t =   129.01s Checking existence of `"bar.upNext" Button`
+    t =   129.03s Find the "bar.upNext" Button
+    t =   129.05s Find the Target Application 'com.tijmen.Jukebox'
+    t =   129.11s Find the "bar.upNext" Button
+    t =   129.14s Tap "bar.upNext" Button
+    t =   129.14s     Wait for com.tijmen.Jukebox to idle
+    t =   129.14s     Find the "bar.upNext" Button
+    t =   129.16s     Check for interrupting elements affecting "bar.upNext" Button
+    t =   129.23s         Wait for com.apple.springboard to idle
+    t =   129.24s     Synthesize event
+    t =   129.53s     Wait for com.tijmen.Jukebox to idle
+    t =   132.07s Getting device orientation
+    t =   132.07s Waiting 3.0s for "place.albums" Any to exist
+    t =   133.13s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   133.13s         Checking existence of `"place.albums" Any`
+    t =   133.26s Waiting 1.0s for "place.albums" Any to exist
+    t =   134.26s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   134.26s         Checking existence of `"place.albums" Any`
+    t =   134.37s     Checking existence of `"place.albums" Any`
+    t =   134.45s Checking existence of `"place.albums" Any`
+    t =   134.53s Find the "place.albums" Any
+    t =   134.62s Find the Target Application 'com.tijmen.Jukebox'
+    t =   134.73s Checking existence of `"place.albums" Button`
+    t =   134.82s Find the "place.albums" Button
+    t =   134.90s Find the Target Application 'com.tijmen.Jukebox'
+    t =   134.96s Find the "place.albums" Button
+    t =   135.05s Tap "place.albums" Button
+    t =   135.05s     Wait for com.tijmen.Jukebox to idle
+    t =   135.05s     Find the "place.albums" Button
+    t =   135.14s     Check for interrupting elements affecting "place.albums" Button
+    t =   135.20s         Wait for com.apple.springboard to idle
+    t =   135.22s     Synthesize event
+    t =   135.51s     Wait for com.tijmen.Jukebox to idle
+    t =   137.83s Added attachment named '10a-albums-panel'
+PICTURE: 10a-albums-panel
+    t =   137.89s Waiting 15.0s for Button (First Match) to exist
+    t =   138.91s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   138.91s         Checking existence of `Button (First Match)`
+    t =   139.02s Checking existence of `NavigationBar (First Match)`
+    t =   139.03s Find the NavigationBar (First Match)
+    t =   139.05s Find the Target Application 'com.tijmen.Jukebox'
+    t =   139.09s Get number of matches for: Elements matching predicate 'NOT identifier BEGINSWITH "place."'
+    t =   139.15s Checking existence of `Button (Element at index 0)`
+    t =   139.20s Find the Button (Element at index 0)
+    t =   139.26s Find the "Sort By" Button
+    t =   139.32s Find the "Sort By" Button
+    t =   139.38s Checking existence of `Button (Element at index 1)`
+    t =   139.43s Find the Button (Element at index 1)
+    t =   139.49s Find the Button
+    t =   139.54s Find the Button
+    t =   139.60s Checking existence of `Button (Element at index 2)`
+    t =   139.65s Find the Button (Element at index 2)
+    t =   139.71s Find the "Dust Parades, Hexagon Lights" Button
+    t =   139.77s Find the "Dust Parades, Hexagon Lights" Button
+    t =   139.82s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =   139.88s Find the "Dust Parades, Hexagon Lights" Button
+    t =   139.93s Find the Target Application 'com.tijmen.Jukebox'
+    t =   139.98s Waiting 10.0s for Button (First Match) to exist
+    t =   141.00s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   141.00s         Checking existence of `Button (First Match)`
+    t =   141.11s Checking existence of `Button (First Match)`
+    t =   141.19s Find the Button (First Match)
+    t =   141.27s Find the Target Application 'com.tijmen.Jukebox'
+    t =   141.32s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =   141.40s Find the "Dust Parades, Hexagon Lights" Button
+    t =   141.48s Find the Target Application 'com.tijmen.Jukebox'
+    t =   141.53s Find the "Dust Parades, Hexagon Lights" Button
+    t =   141.62s Tap "Dust Parades, Hexagon Lights" Button
+    t =   141.62s     Wait for com.tijmen.Jukebox to idle
+    t =   141.62s     Find the "Dust Parades, Hexagon Lights" Button
+    t =   141.70s     Check for interrupting elements affecting "Dust Parades, Hexagon Lights" Button
+    t =   141.76s         Wait for com.apple.springboard to idle
+    t =   141.77s     Synthesize event
+    t =   142.06s     Wait for com.tijmen.Jukebox to idle
+    t =   145.70s Added attachment named '10-album-up-next'
+PICTURE: 10-album-up-next
+    t =   145.74s Waiting 4.0s for "bar.song" Any to exist
+    t =   146.75s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   146.75s         Checking existence of `"bar.song" Any`
+    t =   146.78s Tap "bar.song" Any[0.10, 0.50]
+    t =   146.78s     Wait for com.tijmen.Jukebox to idle
+    t =   146.78s     Find the "bar.song" Any
+    t =   146.80s     Check for interrupting elements affecting "bar.song" Button
+    t =   146.86s         Wait for com.apple.springboard to idle
+    t =   146.88s     Synthesize event
+    t =   146.88s         Find the "bar.song" Button
+    t =   146.90s         Find the "bar.song" Button
+    t =   146.92s         Find the "bar.song" Button
+    t =   147.22s     Wait for com.tijmen.Jukebox to idle
+    t =   147.27s Waiting 8.0s for "nowPlaying.close" Any to exist
+    t =   148.29s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   148.29s         Checking existence of `"nowPlaying.close" Any`
+    t =   151.69s Added attachment named '10b-now-playing'
+PICTURE: 10b-now-playing
+    t =   151.77s Waiting 2.0s for "nowPlaying.more" Any to exist
+    t =   152.82s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.more" Any`
+    t =   152.82s         Checking existence of `"nowPlaying.more" Any`
+    t =   152.85s Waiting 1.0s for "nowPlaying.more" Any to exist
+    t =   153.86s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.more" Any`
+    t =   153.86s         Checking existence of `"nowPlaying.more" Any`
+    t =   153.89s     Checking existence of `"nowPlaying.more" Any`
+    t =   153.90s Checking existence of `"nowPlaying.more" Any`
+    t =   153.92s Find the "nowPlaying.more" Any
+    t =   153.94s Find the Target Application 'com.tijmen.Jukebox'
+    t =   153.98s Checking existence of `"nowPlaying.more" Button`
+    t =   154.00s Find the "nowPlaying.more" Button
+    t =   154.01s Find the Target Application 'com.tijmen.Jukebox'
+    t =   154.05s Find the "nowPlaying.more" Button
+    t =   154.08s Tap "nowPlaying.more" Button
+    t =   154.08s     Wait for com.tijmen.Jukebox to idle
+    t =   154.08s     Find the "nowPlaying.more" Button
+    t =   154.10s     Check for interrupting elements affecting "nowPlaying.more" Button
+    t =   154.15s         Wait for com.apple.springboard to idle
+    t =   154.17s     Synthesize event
+    t =   154.46s     Wait for com.tijmen.Jukebox to idle
+    t =   157.93s Added attachment named '10c-now-playing-menu'
+PICTURE: 10c-now-playing-menu
+    t =   158.01s Checking existence of `"PopoverDismissRegion" Other`
+    t =   158.21s Tap Target Application 'com.tijmen.Jukebox'[0.40, 0.05]
+    t =   158.21s     Wait for com.tijmen.Jukebox to idle
+    t =   158.22s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   158.26s     Check for interrupting elements affecting "Jukebox" Application
+    t =   158.31s         Wait for com.apple.springboard to idle
+    t =   158.32s     Synthesize event
+    t =   158.33s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   158.37s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   158.41s         Find the Target Application 'com.tijmen.Jukebox'
+    t =   158.74s     Wait for com.tijmen.Jukebox to idle
+    t =   161.37s Waiting 2.0s for "nowPlaying.close" Any to exist
+    t =   162.41s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   162.41s         Checking existence of `"nowPlaying.close" Any`
+    t =   162.42s Checking existence of `"nowPlaying.close" Any`
+    t =   162.44s Waiting 1.0s for "nowPlaying.close" Any to exist
+    t =   163.44s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   163.45s         Checking existence of `"nowPlaying.close" Any`
+    t =   163.48s     Checking existence of `"nowPlaying.close" Any`
+    t =   163.50s Checking existence of `"nowPlaying.close" Any`
+    t =   163.51s Find the "nowPlaying.close" Any
+    t =   163.52s Find the Target Application 'com.tijmen.Jukebox'
+    t =   163.56s Checking existence of `"nowPlaying.close" Button`
+    t =   163.58s Find the "nowPlaying.close" Button
+    t =   163.59s Find the Target Application 'com.tijmen.Jukebox'
+    t =   163.63s Find the "nowPlaying.close" Button
+    t =   163.65s Tap "nowPlaying.close" Button
+    t =   163.65s     Wait for com.tijmen.Jukebox to idle
+    t =   163.65s     Find the "nowPlaying.close" Button
+    t =   163.66s     Check for interrupting elements affecting "nowPlaying.close" Button
+    t =   163.71s         Wait for com.apple.springboard to idle
+    t =   163.73s     Synthesize event
+    t =   164.03s     Wait for com.tijmen.Jukebox to idle
+    t =   166.04s Checking existence of `"nowPlaying.close" Any`
+    t =   166.36s Checking existence of `"nowPlaying.close" Any`
+    t =   166.63s Getting device orientation
+    t =   166.63s Waiting 3.0s for "place.albums" Any to exist
+    t =   167.67s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   167.67s         Checking existence of `"place.albums" Any`
+    t =   167.78s Waiting 1.0s for "place.albums" Any to exist
+    t =   168.79s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   168.79s         Checking existence of `"place.albums" Any`
+    t =   168.90s     Checking existence of `"place.albums" Any`
+    t =   168.98s Checking existence of `"place.albums" Any`
+    t =   169.07s Find the "place.albums" Any
+    t =   169.16s Find the Target Application 'com.tijmen.Jukebox'
+    t =   169.21s Checking existence of `"place.albums" Button`
+    t =   169.29s Find the "place.albums" Button
+    t =   169.39s Find the Target Application 'com.tijmen.Jukebox'
+    t =   169.43s Find the "place.albums" Button
+    t =   169.53s Tap "place.albums" Button
+    t =   169.53s     Wait for com.tijmen.Jukebox to idle
+    t =   169.53s     Find the "place.albums" Button
+    t =   169.62s     Check for interrupting elements affecting "place.albums" Button
+    t =   169.67s         Wait for com.apple.springboard to idle
+    t =   169.69s     Synthesize event
+    t =   169.98s     Wait for com.tijmen.Jukebox to idle
+    t =   172.31s Waiting 3.0s for Button (First Match) to exist
+    t =   173.36s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   173.36s         Checking existence of `Button (First Match)`
+    t =   173.53s         Capturing element debug description
+    t =   174.39s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   174.39s         Checking existence of `Button (First Match)`
+    t =   174.57s         Capturing element debug description
+    t =   175.32s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   175.32s         Checking existence of `Button (First Match)`
+    t =   175.48s         Capturing element debug description
+    t =   175.48s     Checking existence of `Button (First Match)`
+    t =   175.62s Collecting debug information to assist test failure triage
+    t =   175.62s     Requesting snapshot of accessibility hierarchy for app with pid 18909
+    t =   175.72s Swipe up Target Application 'com.tijmen.Jukebox'
+    t =   175.72s     Wait for com.tijmen.Jukebox to idle
+    t =   175.72s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   175.76s     Check for interrupting elements affecting "Jukebox" Application
+    t =   175.82s         Wait for com.apple.springboard to idle
+    t =   175.83s     Synthesize event
+    t =   176.31s     Wait for com.tijmen.Jukebox to idle
+    t =   178.25s Waiting 1.5s for Button (First Match) to exist
+    t =   179.28s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   179.28s         Checking existence of `Button (First Match)`
+    t =   179.47s         Capturing element debug description
+    t =   179.76s     Checking existence of `Button (First Match)`
+    t =   179.93s Collecting debug information to assist test failure triage
+    t =   179.93s     Requesting snapshot of accessibility hierarchy for app with pid 18909
+    t =   180.03s Swipe up Target Application 'com.tijmen.Jukebox'
+    t =   180.03s     Wait for com.tijmen.Jukebox to idle
+    t =   180.03s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   180.08s     Check for interrupting elements affecting "Jukebox" Application
+    t =   180.14s         Wait for com.apple.springboard to idle
+    t =   180.16s     Synthesize event
+    t =   180.65s     Wait for com.tijmen.Jukebox to idle
+    t =   182.59s Waiting 1.5s for Button (First Match) to exist
+    t =   183.63s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   183.63s         Checking existence of `Button (First Match)`
+    t =   183.82s         Capturing element debug description
+    t =   184.10s     Checking existence of `Button (First Match)`
+    t =   184.29s Collecting debug information to assist test failure triage
+    t =   184.29s     Requesting snapshot of accessibility hierarchy for app with pid 18909
+    t =   184.40s Swipe up Target Application 'com.tijmen.Jukebox'
+    t =   184.40s     Wait for com.tijmen.Jukebox to idle
+    t =   184.40s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   184.46s     Check for interrupting elements affecting "Jukebox" Application
+    t =   184.52s         Wait for com.apple.springboard to idle
+    t =   184.53s     Synthesize event
+    t =   185.02s     Wait for com.tijmen.Jukebox to idle
+    t =   186.97s Waiting 1.5s for Button (First Match) to exist
+    t =   188.01s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   188.01s         Checking existence of `Button (First Match)`
+    t =   188.16s Waiting 10.0s for Button (First Match) to exist
+    t =   189.18s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   189.18s         Checking existence of `Button (First Match)`
+    t =   189.32s Checking existence of `Button (First Match)`
+    t =   189.44s Find the Button (First Match)
+    t =   189.56s Find the Target Application 'com.tijmen.Jukebox'
+    t =   189.62s Checking existence of `"Silver Roads, Willow & Pine" Button`
+    t =   189.74s Find the "Silver Roads, Willow & Pine" Button
+    t =   189.86s Find the Target Application 'com.tijmen.Jukebox'
+    t =   189.92s Checking existence of `"Silver Roads, Willow & Pine" Button`
+    t =   190.04s Find the "Silver Roads, Willow & Pine" Button
+    t =   190.16s Find the Target Application 'com.tijmen.Jukebox'
+    t =   190.21s Swipe up Target Application 'com.tijmen.Jukebox'
+    t =   190.21s     Wait for com.tijmen.Jukebox to idle
+    t =   190.22s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   190.27s     Check for interrupting elements affecting "Jukebox" Application
+    t =   190.33s         Wait for com.apple.springboard to idle
+    t =   190.35s     Synthesize event
+    t =   190.76s     Wait for com.tijmen.Jukebox to idle
+    t =   193.91s Checking existence of `"Silver Roads, Willow & Pine" Button`
+    t =   194.04s Find the "Silver Roads, Willow & Pine" Button
+    t =   194.16s Find the Target Application 'com.tijmen.Jukebox'
+    t =   194.22s Checking existence of `"Silver Roads, Willow & Pine" Button`
+    t =   194.34s Find the "Silver Roads, Willow & Pine" Button
+    t =   194.46s Find the Target Application 'com.tijmen.Jukebox'
+    t =   194.51s Find the "Silver Roads, Willow & Pine" Button
+    t =   194.67s Tap "Silver Roads, Willow & Pine" Button
+    t =   194.67s     Wait for com.tijmen.Jukebox to idle
+    t =   194.67s     Find the "Silver Roads, Willow & Pine" Button
+    t =   194.79s     Check for interrupting elements affecting "Silver Roads, Willow & Pine" Button
+    t =   194.85s         Wait for com.apple.springboard to idle
+    t =   194.86s     Synthesize event
+    t =   195.18s     Wait for com.tijmen.Jukebox to idle
+    t =   198.55s Get number of matches for: Elements matching predicate 'label == "Play"'
+    t =   198.65s Checking existence of `Button (Element at index 0)`
+    t =   198.71s Find the Button (Element at index 0)
+    t =   198.77s Find the "Play" Button
+    t =   198.83s Waiting 10.0s for Button (First Match) to exist
+    t =   199.86s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   199.86s         Checking existence of `Button (First Match)`
+    t =   199.99s Checking existence of `Button (First Match)`
+    t =   200.09s Find the Button (First Match)
+    t =   200.20s Find the Target Application 'com.tijmen.Jukebox'
+    t =   200.24s Checking existence of `"Play" Button`
+    t =   200.35s Find the "Play" Button
+    t =   200.45s Find the Target Application 'com.tijmen.Jukebox'
+    t =   200.50s Find the "Play" Button
+    t =   200.61s Tap "Play" Button
+    t =   200.61s     Wait for com.tijmen.Jukebox to idle
+    t =   200.61s     Find the "Play" Button
+    t =   200.72s     Check for interrupting elements affecting "Play" Button
+    t =   200.77s         Wait for com.apple.springboard to idle
+    t =   200.79s     Synthesize event
+    t =   201.08s     Wait for com.tijmen.Jukebox to idle
+    t =   201.08s Waiting 45.0s for "Pause" Button to exist
+    t =   202.13s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =   202.13s         Checking existence of `"Pause" Button`
+    t =   205.17s Waiting 15.0s for Any (First Match) to exist
+    t =   206.20s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =   206.20s         Checking existence of `Any (First Match)`
+    t =   206.23s Waiting 4.0s for "bar.lyrics" Any to exist
+    t =   207.26s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   207.26s         Checking existence of `"bar.lyrics" Any`
+    t =   207.30s Checking existence of `"bar.lyrics" Any`
+    t =   207.32s Find the "bar.lyrics" Any
+    t =   207.35s Waiting 1.0s for "bar.lyrics" Any to exist
+    t =   208.35s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   208.35s         Checking existence of `"bar.lyrics" Any`
+    t =   208.40s     Checking existence of `"bar.lyrics" Any`
+    t =   208.43s Checking existence of `"bar.lyrics" Any`
+    t =   208.46s Find the "bar.lyrics" Any
+    t =   208.48s Find the Target Application 'com.tijmen.Jukebox'
+    t =   208.53s Checking existence of `"bar.lyrics" Button`
+    t =   208.55s Find the "bar.lyrics" Button
+    t =   208.58s Find the Target Application 'com.tijmen.Jukebox'
+    t =   208.62s Find the "bar.lyrics" Button
+    t =   208.65s Tap "bar.lyrics" Button
+    t =   208.65s     Wait for com.tijmen.Jukebox to idle
+    t =   208.65s     Find the "bar.lyrics" Button
+    t =   208.68s     Check for interrupting elements affecting "bar.lyrics" Button
+    t =   208.73s         Wait for com.apple.springboard to idle
+    t =   208.75s     Synthesize event
+    t =   209.04s     Wait for com.tijmen.Jukebox to idle
+    t =   211.86s Added attachment named '11-album-lyrics'
+PICTURE: 11-album-lyrics
+    t =   211.89s Waiting 4.0s for "bar.song" Any to exist
+    t =   212.93s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   212.93s         Checking existence of `"bar.song" Any`
+    t =   212.97s Tap "bar.song" Any[0.10, 0.50]
+    t =   212.97s     Wait for com.tijmen.Jukebox to idle
+    t =   212.97s     Find the "bar.song" Any
+    t =   212.99s     Check for interrupting elements affecting "bar.song" Button
+    t =   213.04s         Wait for com.apple.springboard to idle
+    t =   213.06s     Synthesize event
+    t =   213.06s         Find the "bar.song" Button
+    t =   213.08s         Find the "bar.song" Button
+    t =   213.10s         Find the "bar.song" Button
+    t =   213.40s     Wait for com.tijmen.Jukebox to idle
+    t =   213.40s Waiting 8.0s for "nowPlaying.close" Any to exist
+    t =   214.44s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   214.44s         Checking existence of `"nowPlaying.close" Any`
+    t =   217.82s Added attachment named '12-now-playing-lyrics'
+PICTURE: 12-now-playing-lyrics
+    t =   217.90s Waiting 2.0s for "nowPlaying.close" Any to exist
+    t =   218.94s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   218.94s         Checking existence of `"nowPlaying.close" Any`
+    t =   218.97s Checking existence of `"nowPlaying.close" Any`
+    t =   218.99s Waiting 1.0s for "nowPlaying.close" Any to exist
+    t =   220.00s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   220.00s         Checking existence of `"nowPlaying.close" Any`
+    t =   220.02s     Checking existence of `"nowPlaying.close" Any`
+    t =   220.04s Checking existence of `"nowPlaying.close" Any`
+    t =   220.05s Find the "nowPlaying.close" Any
+    t =   220.07s Find the Target Application 'com.tijmen.Jukebox'
+    t =   220.10s Checking existence of `"nowPlaying.close" Button`
+    t =   220.11s Find the "nowPlaying.close" Button
+    t =   220.12s Find the Target Application 'com.tijmen.Jukebox'
+    t =   220.15s Find the "nowPlaying.close" Button
+    t =   220.17s Tap "nowPlaying.close" Button
+    t =   220.17s     Wait for com.tijmen.Jukebox to idle
+    t =   220.17s     Find the "nowPlaying.close" Button
+    t =   220.18s     Check for interrupting elements affecting "nowPlaying.close" Button
+    t =   220.22s         Wait for com.apple.springboard to idle
+    t =   220.24s     Synthesize event
+    t =   220.53s     Wait for com.tijmen.Jukebox to idle
+    t =   222.54s Checking existence of `"nowPlaying.close" Any`
+    t =   222.75s Checking existence of `"nowPlaying.close" Any`
+    t =   222.92s Checking existence of `"bar.upNext" Any`
+    t =   222.94s Find the "bar.upNext" Any
+    t =   222.97s Checking existence of `"bar.lyrics" Any`
+    t =   222.99s Find the "bar.lyrics" Any
+    t =   223.02s Waiting 1.0s for "bar.lyrics" Any to exist
+    t =   224.02s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   224.02s         Checking existence of `"bar.lyrics" Any`
+    t =   224.05s     Checking existence of `"bar.lyrics" Any`
+    t =   224.07s Checking existence of `"bar.lyrics" Any`
+    t =   224.10s Find the "bar.lyrics" Any
+    t =   224.12s Find the Target Application 'com.tijmen.Jukebox'
+    t =   224.16s Checking existence of `"bar.lyrics" Button`
+    t =   224.18s Find the "bar.lyrics" Button
+    t =   224.21s Find the Target Application 'com.tijmen.Jukebox'
+    t =   224.24s Find the "bar.lyrics" Button
+    t =   224.27s Tap "bar.lyrics" Button
+    t =   224.27s     Wait for com.tijmen.Jukebox to idle
+    t =   224.27s     Find the "bar.lyrics" Button
+    t =   224.30s     Check for interrupting elements affecting "bar.lyrics" Button
+    t =   224.34s         Wait for com.apple.springboard to idle
+    t =   224.36s     Synthesize event
+    t =   224.65s     Wait for com.tijmen.Jukebox to idle
+    t =   226.17s Getting device orientation
+    t =   226.17s Waiting 3.0s for "place.home" Any to exist
+    t =   227.22s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   227.22s         Checking existence of `"place.home" Any`
+    t =   227.31s Waiting 1.0s for "place.home" Any to exist
+    t =   228.31s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   228.31s         Checking existence of `"place.home" Any`
+    t =   228.40s     Checking existence of `"place.home" Any`
+    t =   228.45s Checking existence of `"place.home" Any`
+    t =   228.51s Find the "place.home" Any
+    t =   228.57s Find the Target Application 'com.tijmen.Jukebox'
+    t =   228.60s Checking existence of `"place.home" Button`
+    t =   228.66s Find the "place.home" Button
+    t =   228.71s Find the Target Application 'com.tijmen.Jukebox'
+    t =   228.74s Find the "place.home" Button
+    t =   228.81s Tap "place.home" Button
+    t =   228.81s     Wait for com.tijmen.Jukebox to idle
+    t =   228.81s     Find the "place.home" Button
+    t =   228.86s     Check for interrupting elements affecting "place.home" Button
+    t =   228.90s         Wait for com.apple.springboard to idle
+    t =   228.92s     Synthesize event
+    t =   229.21s     Wait for com.tijmen.Jukebox to idle
+    t =   231.70s Waiting 15.0s for "Your Station" StaticText to exist
+    t =   232.76s     Checking `Expect predicate `existsNoRetry == 1` for object "Your Station" StaticText`
+    t =   232.76s         Checking existence of `"Your Station" StaticText`
+    t =   232.86s Checking existence of `"Your Station" StaticText`
+    t =   232.93s Find the "Your Station" StaticText
+    t =   233.00s Find the Target Application 'com.tijmen.Jukebox'
+    t =   233.06s Checking existence of `Button (First Match)`
+    t =   233.11s Find the Button (First Match)
+    t =   233.16s Waiting 10.0s for Button (First Match) to exist
+    t =   234.22s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   234.22s         Checking existence of `Button (First Match)`
+    t =   234.28s Checking existence of `Button (First Match)`
+    t =   234.33s Find the Button (First Match)
+    t =   234.38s Find the Target Application 'com.tijmen.Jukebox'
+    t =   234.44s Checking existence of `"Your Station, Play" Button`
+    t =   234.49s Find the "Your Station, Play" Button
+    t =   234.54s Find the Target Application 'com.tijmen.Jukebox'
+    t =   234.60s Find the "Your Station, Play" Button
+    t =   234.66s Tap "Your Station, Play" Button
+    t =   234.66s     Wait for com.tijmen.Jukebox to idle
+    t =   234.66s     Find the "Your Station, Play" Button
+    t =   234.72s     Check for interrupting elements affecting "Your Station, Play" Button
+    t =   234.78s         Wait for com.apple.springboard to idle
+    t =   234.79s     Synthesize event
+    t =   235.08s     Wait for com.tijmen.Jukebox to idle
+    t =   235.08s Waiting 45.0s for "Pause" Button to exist
+    t =   236.11s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =   236.11s         Checking existence of `"Pause" Button`
+    t =   239.14s Getting device orientation
+    t =   239.15s Waiting 3.0s for "place.radio" Any to exist
+    t =   240.21s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   240.21s         Checking existence of `"place.radio" Any`
+    t =   240.31s Waiting 1.0s for "place.radio" Any to exist
+    t =   241.31s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   241.31s         Checking existence of `"place.radio" Any`
+    t =   241.42s     Checking existence of `"place.radio" Any`
+    t =   241.51s Checking existence of `"place.radio" Any`
+    t =   241.61s Find the "place.radio" Any
+    t =   241.72s Find the Target Application 'com.tijmen.Jukebox'
+    t =   241.78s Checking existence of `"place.radio" Button`
+    t =   241.83s Find the "place.radio" Button
+    t =   241.88s Find the Target Application 'com.tijmen.Jukebox'
+    t =   241.94s Find the "place.radio" Button
+    t =   242.00s Tap "place.radio" Button
+    t =   242.00s     Wait for com.tijmen.Jukebox to idle
+    t =   242.00s     Find the "place.radio" Button
+    t =   242.05s     Check for interrupting elements affecting "place.radio" Button
+    t =   242.12s         Wait for com.apple.springboard to idle
+    t =   242.14s     Synthesize event
+    t =   242.43s     Wait for com.tijmen.Jukebox to idle
+    t =   244.74s Added attachment named '13-radio-on-air'
+PICTURE: 13-radio-on-air
+    t =   244.80s Waiting 4.0s for "bar.upNext" Any to exist
+    t =   245.82s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   245.83s         Checking existence of `"bar.upNext" Any`
+    t =   245.88s Checking existence of `"bar.upNext" Any`
+    t =   245.91s Find the "bar.upNext" Any
+    t =   245.93s Waiting 1.0s for "bar.upNext" Any to exist
+    t =   246.94s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   246.94s         Checking existence of `"bar.upNext" Any`
+    t =   246.99s     Checking existence of `"bar.upNext" Any`
+    t =   247.01s Checking existence of `"bar.upNext" Any`
+    t =   247.03s Find the "bar.upNext" Any
+    t =   247.06s Find the Target Application 'com.tijmen.Jukebox'
+    t =   247.10s Checking existence of `"bar.upNext" Button`
+    t =   247.12s Find the "bar.upNext" Button
+    t =   247.15s Find the Target Application 'com.tijmen.Jukebox'
+    t =   247.18s Find the "bar.upNext" Button
+    t =   247.21s Tap "bar.upNext" Button
+    t =   247.21s     Wait for com.tijmen.Jukebox to idle
+    t =   247.22s     Find the "bar.upNext" Button
+    t =   247.24s     Check for interrupting elements affecting "bar.upNext" Button
+    t =   247.28s         Wait for com.apple.springboard to idle
+    t =   247.30s     Synthesize event
+    t =   247.59s     Wait for com.tijmen.Jukebox to idle
+    t =   250.47s Added attachment named '14-radio-up-next'
+PICTURE: 14-radio-up-next
+    t =   250.53s Waiting 4.0s for "bar.song" Any to exist
+    t =   251.56s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   251.56s         Checking existence of `"bar.song" Any`
+    t =   251.61s Tap "bar.song" Any[0.10, 0.50]
+    t =   251.61s     Wait for com.tijmen.Jukebox to idle
+    t =   251.61s     Find the "bar.song" Any
+    t =   251.63s     Check for interrupting elements affecting "bar.song" Button
+    t =   251.71s         Wait for com.apple.springboard to idle
+    t =   251.73s     Synthesize event
+    t =   251.73s         Find the "bar.song" Button
+    t =   251.75s         Find the "bar.song" Button
+    t =   251.77s         Find the "bar.song" Button
+    t =   252.08s     Wait for com.tijmen.Jukebox to idle
+    t =   252.09s Waiting 8.0s for "nowPlaying.close" Any to exist
+    t =   253.11s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   253.11s         Checking existence of `"nowPlaying.close" Any`
+    t =   256.50s Added attachment named '15-now-playing-station'
+PICTURE: 15-now-playing-station
+    t =   256.58s Waiting 2.0s for "nowPlaying.close" Any to exist
+    t =   257.61s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   257.61s         Checking existence of `"nowPlaying.close" Any`
+    t =   257.64s Checking existence of `"nowPlaying.close" Any`
+    t =   257.66s Waiting 1.0s for "nowPlaying.close" Any to exist
+    t =   258.66s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   258.66s         Checking existence of `"nowPlaying.close" Any`
+    t =   258.70s     Checking existence of `"nowPlaying.close" Any`
+    t =   258.72s Checking existence of `"nowPlaying.close" Any`
+    t =   258.73s Find the "nowPlaying.close" Any
+    t =   258.74s Find the Target Application 'com.tijmen.Jukebox'
+    t =   258.80s Checking existence of `"nowPlaying.close" Button`
+    t =   258.81s Find the "nowPlaying.close" Button
+    t =   258.83s Find the Target Application 'com.tijmen.Jukebox'
+    t =   258.88s Find the "nowPlaying.close" Button
+    t =   258.90s Tap "nowPlaying.close" Button
+    t =   258.90s     Wait for com.tijmen.Jukebox to idle
+    t =   258.90s     Find the "nowPlaying.close" Button
+    t =   258.91s     Check for interrupting elements affecting "nowPlaying.close" Button
+    t =   258.98s         Wait for com.apple.springboard to idle
+    t =   259.00s     Synthesize event
+    t =   259.29s     Wait for com.tijmen.Jukebox to idle
+    t =   261.33s Checking existence of `"nowPlaying.close" Any`
+    t =   261.75s Checking existence of `"nowPlaying.close" Any`
+    t =   262.13s Getting device orientation
+    t =   262.13s Waiting 3.0s for "place.home" Any to exist
+    t =   263.18s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   263.18s         Checking existence of `"place.home" Any`
+    t =   263.29s Waiting 1.0s for "place.home" Any to exist
+    t =   264.29s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =   264.29s         Checking existence of `"place.home" Any`
+    t =   264.40s     Checking existence of `"place.home" Any`
+    t =   264.50s Checking existence of `"place.home" Any`
+    t =   264.59s Find the "place.home" Any
+    t =   264.69s Find the Target Application 'com.tijmen.Jukebox'
+    t =   264.74s Checking existence of `"place.home" Button`
+    t =   264.84s Find the "place.home" Button
+    t =   264.93s Find the Target Application 'com.tijmen.Jukebox'
+    t =   264.99s Find the "place.home" Button
+    t =   265.09s Tap "place.home" Button
+    t =   265.09s     Wait for com.tijmen.Jukebox to idle
+    t =   265.09s     Find the "place.home" Button
+    t =   265.19s     Check for interrupting elements affecting "place.home" Button
+    t =   265.25s         Wait for com.apple.springboard to idle
+    t =   265.27s     Synthesize event
+    t =   265.56s     Wait for com.tijmen.Jukebox to idle
+    t =   267.57s Waiting 3.0s for "Main Menu" Button to exist
+    t =   268.64s     Checking `Expect predicate `existsNoRetry == 1` for object "Main Menu" Button`
+    t =   268.64s         Checking existence of `"Main Menu" Button`
+    t =   268.66s Waiting 1.0s for "Main Menu" Button to exist
+    t =   269.67s     Checking `Expect predicate `existsNoRetry == 1` for object "Main Menu" Button`
+    t =   269.67s         Checking existence of `"Main Menu" Button`
+    t =   269.69s     Checking existence of `"Main Menu" Button`
+    t =   269.70s Checking existence of `"Main Menu" Button`
+    t =   269.72s Find the "Main Menu" Button
+    t =   269.73s Find the Target Application 'com.tijmen.Jukebox'
+    t =   269.80s Checking existence of `"Main Menu" Button`
+    t =   269.81s Find the "Main Menu" Button
+    t =   269.82s Find the Target Application 'com.tijmen.Jukebox'
+    t =   269.88s Find the "Main Menu" Button
+    t =   269.90s Tap "Main Menu" Button
+    t =   269.90s     Wait for com.tijmen.Jukebox to idle
+    t =   269.90s     Find the "Main Menu" Button
+    t =   269.91s     Check for interrupting elements affecting "Main Menu" Button
+    t =   269.99s         Wait for com.apple.springboard to idle
+    t =   270.01s     Synthesize event
+    t =   270.30s     Wait for com.tijmen.Jukebox to idle
+    t =   271.74s Waiting 4.0s for "Settings…" Button to exist
+    t =   272.75s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings…" Button`
+    t =   272.75s         Checking existence of `"Settings…" Button`
+    t =   272.85s Checking existence of `"Settings…" Button`
+    t =   272.93s Find the "Settings…" Button
+    t =   273.01s Find the Target Application 'com.tijmen.Jukebox'
+    t =   273.08s Checking existence of `"Settings…" Button`
+    t =   273.16s Find the "Settings…" Button
+    t =   273.24s Find the Target Application 'com.tijmen.Jukebox'
+    t =   273.30s Find the "Settings…" Button
+    t =   273.40s Tap "Settings…" Button
+    t =   273.40s     Wait for com.tijmen.Jukebox to idle
+    t =   273.40s     Find the "Settings…" Button
+    t =   273.48s     Check for interrupting elements affecting "Settings…" Button
+    t =   273.55s         Wait for com.apple.springboard to idle
+    t =   273.57s     Synthesize event
+    t =   273.86s     Wait for com.tijmen.Jukebox to idle
+    t =   275.04s Waiting 8.0s for "Settings" NavigationBar to exist
+    t =   276.09s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" NavigationBar`
+    t =   276.09s         Checking existence of `"Settings" NavigationBar`
+    t =   277.98s Added attachment named '16-preferences'
+PICTURE: 16-preferences
+    t =   278.02s Waiting 4.0s for "settings.page.library" Any to exist
+    t =   279.07s     Checking `Expect predicate `existsNoRetry == 1` for object "settings.page.library" Any`
+    t =   279.07s         Checking existence of `"settings.page.library" Any`
+    t =   279.61s Checking existence of `"settings.page.library" Any`
+    t =   280.12s Find the "settings.page.library" Any
+    t =   280.63s Find the Target Application 'com.tijmen.Jukebox'
+    t =   280.71s Checking existence of `"settings.page.library" Button`
+    t =   281.22s Find the "settings.page.library" Button
+    t =   281.74s Find the Target Application 'com.tijmen.Jukebox'
+    t =   281.82s Find the "settings.page.library" Button
+    t =   282.34s Tap "settings.page.library" Button
+    t =   282.34s     Wait for com.tijmen.Jukebox to idle
+    t =   282.34s     Find the "settings.page.library" Button
+    t =   282.86s     Check for interrupting elements affecting "settings.page.library" Button
+    t =   282.95s         Wait for com.apple.springboard to idle
+    t =   282.98s     Synthesize event
+    t =   283.26s     Wait for com.tijmen.Jukebox to idle
+    t =   283.76s Waiting 6.0s for "Library" NavigationBar to exist
+    t =   284.80s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   284.80s         Checking existence of `"Library" NavigationBar`
+    t =   286.38s Checking existence of `"Playlists in the Sidebar" Switch`
+    t =   286.69s Swipe up Target Application 'com.tijmen.Jukebox'
+    t =   286.69s     Wait for com.tijmen.Jukebox to idle
+    t =   286.69s     Find the Target Application 'com.tijmen.Jukebox'
+    t =   286.78s     Check for interrupting elements affecting "Jukebox" Application
+    t =   286.88s         Wait for com.apple.springboard to idle
+    t =   286.90s     Synthesize event
+    t =   287.31s     Wait for com.tijmen.Jukebox to idle
+    t =   290.23s Checking existence of `"Playlists in the Sidebar" Switch`
+    t =   290.46s Find the "Playlists in the Sidebar" Switch
+    t =   290.70s Find the Target Application 'com.tijmen.Jukebox'
+    t =   290.79s Checking existence of `"Playlists in the Sidebar" Switch`
+    t =   291.02s Find the "Playlists in the Sidebar" Switch
+    t =   291.26s Find the Target Application 'com.tijmen.Jukebox'
+    t =   291.62s Added attachment named '16c-preferences-pages'
+PICTURE: 16c-preferences-pages
+    t =   291.67s Waiting 4.0s for "Done" Button to exist
+    t =   292.71s     Checking `Expect predicate `existsNoRetry == 1` for object "Done" Button`
+    t =   292.71s         Checking existence of `"Done" Button`
+    t =   292.86s Checking existence of `"Done" Button`
+    t =   292.99s Find the "Done" Button
+    t =   293.12s Find the Target Application 'com.tijmen.Jukebox'
+    t =   293.20s Checking existence of `"Done" Button`
+    t =   293.33s Find the "Done" Button
+    t =   293.46s Find the Target Application 'com.tijmen.Jukebox'
+    t =   293.54s Find the "Done" Button
+    t =   293.69s Tap "Done" Button
+    t =   293.69s     Wait for com.tijmen.Jukebox to idle
+    t =   293.69s     Find the "Done" Button
+    t =   293.82s     Check for interrupting elements affecting "Done" Button
+    t =   293.92s         Wait for com.apple.springboard to idle
+    t =   293.93s     Synthesize event
+    t =   294.23s     Wait for com.tijmen.Jukebox to idle
+    t =   296.21s Waiting 5.0s for SearchField (First Match) to exist
+    t =   297.26s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =   297.26s         Checking existence of `SearchField (First Match)`
+    t =   297.30s Waiting 3.0s for SearchField (First Match) to exist
+    t =   298.36s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =   298.36s         Checking existence of `SearchField (First Match)`
+    t =   298.42s Waiting 10.0s for SearchField (First Match) to exist
+    t =   299.47s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =   299.47s         Checking existence of `SearchField (First Match)`
+    t =   299.51s Find the SearchField (First Match)
+    t =   299.54s Tap "Search" SearchField
+    t =   299.54s     Wait for com.tijmen.Jukebox to idle
+    t =   299.54s     Find the "Search" SearchField
+    t =   299.58s     Check for interrupting elements affecting "Search" SearchField
+    t =   299.66s         Wait for com.apple.springboard to idle
+    t =   299.67s     Synthesize event
+    t =   299.96s     Wait for com.tijmen.Jukebox to idle
+    t =   301.80s Find the "Search" SearchField
+    t =   301.87s Type 'blue' into "Search" SearchField
+    t =   301.87s     Wait for com.tijmen.Jukebox to idle
+    t =   301.87s     Find the "Search" SearchField
+    t =   301.90s     Check for interrupting elements affecting "Search" SearchField
+    t =   301.96s         Wait for com.apple.springboard to idle
+    t =   301.98s     Synthesize event
+    t =   302.26s     Wait for com.tijmen.Jukebox to idle
+    t =   302.27s Type '
+' into SearchField (First Match)
+    t =   302.27s     Wait for com.tijmen.Jukebox to idle
+    t =   302.27s     Find the SearchField (First Match)
+    t =   302.31s     Check for interrupting elements affecting "Search" SearchField
+    t =   302.37s         Wait for com.apple.springboard to idle
+    t =   302.38s     Synthesize event
+    t =   302.60s     Wait for com.tijmen.Jukebox to idle
+    t =   305.66s Added attachment named '08c-search-query'
+PICTURE: 08c-search-query
+    t =   305.70s Terminate com.tijmen.Jukebox:18909
+    t =   306.72s Open com.tijmen.Jukebox
+    t =   306.72s     Launch com.tijmen.Jukebox
+2026-11-20 17:00:58.065 xcodebuild[18666:21416521] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-20 17:00:58.066 xcodebuild[18666:21416521] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =   306.93s         Setting up automation session
+    t =   310.36s         Wait for com.tijmen.Jukebox to idle
+    t =   313.26s Checking existence of `"Home" NavigationBar`
+    t =   313.39s Checking existence of `"Home" Button`
+    t =   313.47s Checking existence of `"tab.home" Button`
+    t =   313.52s Checking existence of `"Your Station" StaticText`
+    t =   313.57s Checking existence of `"place.home" Any`
+    t =   313.69s Checking existence of `TextField (First Match)`
+    t =   318.75s Waiting 10.0s for TextField (First Match) to exist
+    t =   319.78s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =   319.78s         Checking existence of `TextField (First Match)`
+    t =   319.83s Find the TextField (First Match)
+    t =   319.87s Tap "signIn.address" TextField
+    t =   319.87s     Wait for com.tijmen.Jukebox to idle
+    t =   319.88s     Find the "signIn.address" TextField
+    t =   319.92s     Check for interrupting elements affecting "signIn.address" TextField
+    t =   319.94s         Wait for com.apple.springboard to idle
+    t =   319.96s     Synthesize event
+    t =   320.24s     Wait for com.tijmen.Jukebox to idle
+    t =   321.13s Type '
+' into TextField (First Match)
+    t =   321.13s     Wait for com.tijmen.Jukebox to idle
+    t =   321.13s     Find the TextField (First Match)
+    t =   321.17s     Check for interrupting elements affecting "signIn.address" TextField
+    t =   321.19s         Wait for com.apple.springboard to idle
+    t =   321.21s     Synthesize event
+    t =   321.43s     Wait for com.tijmen.Jukebox to idle
+    t =   322.00s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =   323.06s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =   323.06s         Checking existence of `SecureTextField (First Match)`
+    t =   323.14s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =   324.16s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =   324.16s         Checking existence of `SecureTextField (First Match)`
+    t =   325.74s Checking existence of `"signIn.user" TextField`
+    t =   325.81s Waiting 10.0s for "signIn.user" TextField to exist
+    t =   326.85s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.user" TextField`
+    t =   326.85s         Checking existence of `"signIn.user" TextField`
+    t =   326.92s Find the "signIn.user" TextField
+    t =   326.97s Tap "signIn.user" TextField
+    t =   326.97s     Wait for com.tijmen.Jukebox to idle
+    t =   326.97s     Find the "signIn.user" TextField
+    t =   327.01s     Check for interrupting elements affecting "signIn.user" TextField
+    t =   327.03s         Wait for com.apple.springboard to idle
+    t =   327.05s     Synthesize event
+    t =   327.35s     Wait for com.tijmen.Jukebox to idle
+    t =   328.15s Type '
+' into "signIn.user" TextField
+    t =   328.15s     Wait for com.tijmen.Jukebox to idle
+    t =   328.16s     Find the "signIn.user" TextField
+    t =   328.23s     Check for interrupting elements affecting "signIn.user" TextField
+    t =   328.25s         Wait for com.apple.springboard to idle
+    t =   328.27s     Synthesize event
+    t =   328.49s     Wait for com.tijmen.Jukebox to idle
+    t =   329.86s Waiting 10.0s for SecureTextField (First Match) to exist
+    t =   330.86s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =   330.86s         Checking existence of `SecureTextField (First Match)`
+    t =   330.94s Find the SecureTextField (First Match)
+    t =   330.99s Find the "signIn.password" SecureTextField
+    t =   331.04s Type '<redacted>' into "signIn.password" SecureTextField
+    t =   331.04s     Wait for com.tijmen.Jukebox to idle
+    t =   331.04s     Find the "signIn.password" SecureTextField
+    t =   331.08s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =   331.11s         Wait for com.apple.springboard to idle
+    t =   331.12s     Synthesize event
+    t =   331.40s     Wait for com.tijmen.Jukebox to idle
+    t =   331.41s Find the SecureTextField (First Match)
+    t =   331.47s Type '<redacted>' into SecureTextField (First Match)
+    t =   331.47s     Wait for com.tijmen.Jukebox to idle
+    t =   331.47s     Find the SecureTextField (First Match)
+    t =   331.52s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =   331.54s         Wait for com.apple.springboard to idle
+    t =   331.56s     Synthesize event
+    t =   331.78s     Wait for com.tijmen.Jukebox to idle
+    t =   332.01s Waiting 3.0s for "Not Now" Button to exist
+    t =   333.03s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =   333.03s         Checking existence of `"Not Now" Button`
+    t =   333.25s         Capturing element debug description
+    t =   334.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =   334.07s         Checking existence of `"Not Now" Button`
+    t =   334.27s         Capturing element debug description
+    t =   335.01s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =   335.01s         Checking existence of `"Not Now" Button`
+    t =   335.20s         Capturing element debug description
+    t =   335.20s     Checking existence of `"Not Now" Button`
+    t =   335.38s Collecting debug information to assist test failure triage
+    t =   335.38s     Requesting snapshot of accessibility hierarchy for app with pid 20599
+    t =   335.49s Waiting 3.0s for "Not Now" Button to exist
+    t =   336.53s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =   336.53s         Checking existence of `"Not Now" Button`
+    t =   336.55s         Capturing element debug description
+    t =   337.49s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =   337.50s         Checking existence of `"Not Now" Button`
+    t =   337.54s         Capturing element debug description
+    t =   338.50s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =   338.50s         Checking existence of `"Not Now" Button`
+    t =   338.54s         Capturing element debug description
+    t =   338.54s     Checking existence of `"Not Now" Button`
+    t =   338.56s Collecting debug information to assist test failure triage
+    t =   338.56s     Requesting snapshot of accessibility hierarchy for app with pid 18243
+    t =   338.60s Checking existence of `"Home" NavigationBar`
+    t =   338.74s Checking existence of `"Home" Button`
+    t =   338.88s Checking existence of `"tab.home" Button`
+    t =   339.05s Checking existence of `"Your Station" StaticText`
+    t =   339.09s Checking existence of `"Home" NavigationBar`
+    t =   339.23s Checking existence of `"Home" Button`
+    t =   339.37s Checking existence of `"tab.home" Button`
+    t =   339.55s Checking existence of `"Your Station" StaticText`
+    t =   339.60s Checking existence of `"Your Station" StaticText`
+    t =   339.64s Checking existence of `Any (First Match)`
+    t =   339.79s Checking existence of `Any (First Match)`
+    t =   343.96s Waiting 0.5s for "Not Now" Button to exist
+    t =   344.46s     Checking existence of `"Not Now" Button`
+    t =   344.65s Collecting debug information to assist test failure triage
+    t =   344.65s     Requesting snapshot of accessibility hierarchy for app with pid 20599
+    t =   344.75s Waiting 0.5s for "Not Now" Button to exist
+    t =   345.26s     Checking existence of `"Not Now" Button`
+    t =   345.30s Collecting debug information to assist test failure triage
+    t =   345.30s     Requesting snapshot of accessibility hierarchy for app with pid 18243
+    t =   345.32s Getting device orientation
+    t =   345.33s Waiting 3.0s for "place.albums" Any to exist
+    t =   346.38s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   346.38s         Checking existence of `"place.albums" Any`
+    t =   346.44s Waiting 1.0s for "place.albums" Any to exist
+    t =   347.45s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   347.45s         Checking existence of `"place.albums" Any`
+    t =   347.50s     Checking existence of `"place.albums" Any`
+    t =   347.53s Checking existence of `"place.albums" Any`
+    t =   347.57s Find the "place.albums" Any
+    t =   347.60s Find the Target Application 'com.tijmen.Jukebox'
+    t =   347.65s Checking existence of `"place.albums" Button`
+    t =   347.68s Find the "place.albums" Button
+    t =   347.71s Find the Target Application 'com.tijmen.Jukebox'
+    t =   347.76s Find the "place.albums" Button
+    t =   347.80s Tap "place.albums" Button
+    t =   347.80s     Wait for com.tijmen.Jukebox to idle
+    t =   347.80s     Find the "place.albums" Button
+    t =   347.83s     Check for interrupting elements affecting "place.albums" Button
+    t =   347.89s         Wait for com.apple.springboard to idle
+    t =   347.91s     Synthesize event
+    t =   348.20s     Wait for com.tijmen.Jukebox to idle
+    t =   350.53s Added attachment named '23-pages-trimmed'
+PICTURE: 23-pages-trimmed
+    t =   350.62s Added attachment named 'missed-pad'
+    t =   350.64s Tear Down
+Test Case '-[JukeboxUITests.ScreenshotTests testPad]' passed (352.013 seconds).
+Test Suite 'ScreenshotTests' passed at 2026-11-20 17:01:43.385.
+	 Executed 1 test, with 0 failures (0 unexpected) in 352.013 (352.045) seconds
+Test Suite 'JukeboxUITests.xctest' passed at 2026-11-20 17:01:43.390.
+	 Executed 1 test, with 0 failures (0 unexpected) in 352.013 (352.049) seconds
+Test Suite 'Selected tests' passed at 2026-11-20 17:01:43.390.
+	 Executed 1 test, with 0 failures (0 unexpected) in 352.013 (352.050) seconds
+2026-11-20 17:01:54.188 xcodebuild[18666:21416521] [MT] IDETestOperationsObserverDebug: 387.902 elapsed -- Testing started completed.
+2026-11-20 17:01:54.188 xcodebuild[18666:21416521] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-20 17:01:54.188 xcodebuild[18666:21416521] [MT] IDETestOperationsObserverDebug: 387.902 sec, +387.902 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/tijmensteenvoorden/actions-runner-5/_work/Jukebox/Jukebox/build/screenshots/ipad-dark.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

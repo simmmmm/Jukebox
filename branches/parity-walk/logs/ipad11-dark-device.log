@@ -1,0 +1,600 @@
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.912 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443243840.879
+2026-11-18 20:22:18.912 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.912 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443243840.879 (AX element pid: 77922, elementOrHash.elementID: 4443243840.879) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.912 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.912 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443250560.880
+2026-11-18 20:22:18.912 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.912 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443250560.880 (AX element pid: 77922, elementOrHash.elementID: 4443250560.880) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.913 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.913 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443248768.881
+2026-11-18 20:22:18.913 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.913 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443248768.881 (AX element pid: 77922, elementOrHash.elementID: 4443248768.881) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.913 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443252352.882
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443252352.882 (AX element pid: 77922, elementOrHash.elementID: 4443252352.882) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443242496.859
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Button, label: '7, Static Line, 5:13' (AX element pid: 77922, elementOrHash.elementID: 4443242496.859) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+        "AX element pid: 77922, elementOrHash.elementID: 4443244736.883",
+        "AX element pid: 77922, elementOrHash.elementID: 4443245184.884",
+        "AX element pid: 77922, elementOrHash.elementID: 4443245632.885"
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.914 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443244736.883
+2026-11-18 20:22:18.915 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.915 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443244736.883 (AX element pid: 77922, elementOrHash.elementID: 4443244736.883) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.915 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.915 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443245184.884
+2026-11-18 20:22:18.915 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.916 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443245184.884 (AX element pid: 77922, elementOrHash.elementID: 4443245184.884) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.916 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.916 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443245632.885
+2026-11-18 20:22:18.916 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.917 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443245632.885 (AX element pid: 77922, elementOrHash.elementID: 4443245632.885) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.917 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.917 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4715083264.860
+2026-11-18 20:22:18.918 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.918 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Other (AX element pid: 77922, elementOrHash.elementID: 4715083264.860) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+        "AX element pid: 77922, elementOrHash.elementID: 4443250112.886"
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.918 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443250112.886
+2026-11-18 20:22:18.918 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.918 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443250112.886 (AX element pid: 77922, elementOrHash.elementID: 4443250112.886) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 0;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityLazyLayoutNode";
+    "XC_kAXXCAttributeTraits" = 8589934592;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.918 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType Other.
+2026-11-18 20:22:18.918 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443452992.862
+2026-11-18 20:22:18.919 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.919 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Image (AX element pid: 77922, elementOrHash.elementID: 4443452992.862) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.919 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4758091776.911
+2026-11-18 20:22:18.919 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.919 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Image (AX element pid: 77922, elementOrHash.elementID: 4758091776.911) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.919 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443444032.864
+2026-11-18 20:22:18.920 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.920 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443444032.864) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.920 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443442688.865
+2026-11-18 20:22:18.920 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.920 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443442688.865) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.921 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4442495104.866
+2026-11-18 20:22:18.921 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.921 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4442495104.866) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.921 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4442501824.867
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4442501824.867) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4442319808.868
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4442319808.868) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443185920.869
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.922 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443185920.869) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.923 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443189952.870
+2026-11-18 20:22:18.923 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.923 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443189952.870) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.923 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443190848.871
+2026-11-18 20:22:18.923 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.923 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443190848.871) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443189056.872
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443189056.872) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443182336.873
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443182336.873) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443182784.874
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443182784.874) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.924 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443183232.875
+2026-11-18 20:22:18.925 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.925 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443183232.875) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.925 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4864575680.876
+2026-11-18 20:22:18.925 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.925 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4864575680.876) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.925 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4864576128.877
+2026-11-18 20:22:18.925 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.926 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4864576128.877) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.926 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443256832.878
+2026-11-18 20:22:18.926 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.926 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443256832.878) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.927 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443243840.879
+2026-11-18 20:22:18.927 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.927 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443243840.879) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.928 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443250560.880
+2026-11-18 20:22:18.928 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.928 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443250560.880) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.928 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443248768.881
+2026-11-18 20:22:18.928 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.929 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443248768.881) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.929 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443252352.882
+2026-11-18 20:22:18.929 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.929 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443252352.882) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.929 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443244736.883
+2026-11-18 20:22:18.929 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.930 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443244736.883) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.930 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443245184.884
+2026-11-18 20:22:18.930 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.930 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443245184.884) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.930 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443245632.885
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443245632.885) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443250112.886
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Other (AX element pid: 77922, elementOrHash.elementID: 4443250112.886) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+        "AX element pid: 77922, elementOrHash.elementID: 4443249664.888"
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443249664.888
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.932 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443249664.888 (AX element pid: 77922, elementOrHash.elementID: 4443249664.888) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 9;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934593;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType Button.
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] [First Match] iteration with input Button and transformer `Elements matching predicate 'label CONTAINS[c] "sidebar" AND (NOT label CONTAINS[c] "hide")'`
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeLabel for AX element pid: 77922, elementOrHash.elementID: 4443249664.888
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Button (AX element pid: 77922, elementOrHash.elementID: 4443249664.888) faulted in {
+    "XC_kAXXCAttributeLabel" = "Velvet Tides, 2021";
+}: (no error) for label using XC_kAXXCAttributeLabel
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] [First Match] no match found for transformer `Elements matching predicate 'label CONTAINS[c] "sidebar" AND (NOT label CONTAINS[c] "hide")'`
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443249664.888
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Button, label: 'Velvet Tides, 2021' (AX element pid: 77922, elementOrHash.elementID: 4443249664.888) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+        "AX element pid: 77922, elementOrHash.elementID: 4443246080.889",
+        "AX element pid: 77922, elementOrHash.elementID: 4443246528.890",
+        "AX element pid: 77922, elementOrHash.elementID: 4443249216.891"
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.933 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443246080.889
+2026-11-18 20:22:18.934 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.934 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443246080.889 (AX element pid: 77922, elementOrHash.elementID: 4443246080.889) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 43;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934596;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.934 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType Image.
+2026-11-18 20:22:18.934 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443246528.890
+2026-11-18 20:22:18.935 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.935 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443246528.890 (AX element pid: 77922, elementOrHash.elementID: 4443246528.890) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.935 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.935 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType for AX element pid: 77922, elementOrHash.elementID: 4443249216.891
+2026-11-18 20:22:18.935 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.936 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] AX element pid: 77922, elementOrHash.elementID: 4443249216.891 (AX element pid: 77922, elementOrHash.elementID: 4443249216.891) faulted in {
+    "XC_kAXXCAttributeAutomationType" = 48;
+    "XC_kAXXCAttributeElementBaseType" = UIResponder;
+    "XC_kAXXCAttributeElementType" = "SwiftUI.AccessibilityNode";
+    "XC_kAXXCAttributeTraits" = 8589934656;
+}: (no error) for elementType using XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeTraits, XC_kAXXCAttributeAutomationType
+2026-11-18 20:22:18.936 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Computed elementType StaticText.
+2026-11-18 20:22:18.936 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443246080.889
+2026-11-18 20:22:18.937 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.937 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Image (AX element pid: 77922, elementOrHash.elementID: 4443246080.889) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.937 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443246528.890
+2026-11-18 20:22:18.937 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.937 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443246528.890) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.937 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeChildren for AX element pid: 77922, elementOrHash.elementID: 4443249216.891
+2026-11-18 20:22:18.946 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-18 20:22:18.946 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] StaticText (AX element pid: 77922, elementOrHash.elementID: 4443249216.891) faulted in {
+    "XC_kAXXCAttributeChildren" =     (
+    );
+}: (no error) for children using XC_kAXXCAttributeChildren
+2026-11-18 20:22:18.946 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] [First Match] no match found for transformer `Descendants matching type Button`
+2026-11-18 20:22:18.946 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] [First Match] no match found and no further inputs/transformers to explore in the current sequence, returning nil
+2026-11-18 20:22:18.946 Df Jukebox[77922:34f2c] [com.apple.dt.xctest:Default] [First Match] unioned related elements {(
+)} from {(
+)}
+2026-11-18 20:22:18.950 Df Jukebox[77922:35503] [com.apple.dt.xctest:Default] Current tree:
+0x119218640 <App element pid: 77922>
+  Window, 0x119219e00 <AX element pid: 77922, elementOrHash.elementID: 4360407040.5>
+    Other, 0x11921bd40 <AX element pid: 77922, elementOrHash.elementID: 4443480576.8>
+      Other, 0x11921be80 <AX element pid: 77922, elementOrHash.elementID: 4443159552.11>
+        Other, 0x119219900 <AX element pid: 77922, elementOrHash.elementID: 4443456384.15>
+          Other, 0x119218c80 <AX element pid: 77922, elementOrHash.elementID: 4360406016.20>
+            Other, 0x109301e00 <AX element pid: 77922, elementOrHash.elementID: 4442976960.24>
+              Other, 0x109302940 <AX element pid: 77922, elementOrHash.elementID: 4442971136.235>
+                NavigationBar, 0x119389f40 <AX element pid: 77922, elementOrHash.elementID: 4486362624.236>
+                  Button, 0x109330f00, label: 'Back' <AX element pid: 77922, elementOrHash.elementID: 4362046528.829>
+                  Button, 0x1093312c0, label: 'Download' <AX element pid: 77922, elementOrHash.elementID: 4446047360.830>
+                  SearchField, 0x1093317c0 <AX element pid: 77922, elementOrHash.elementID: 4736682496.831>
+                    Image, 0x11a53ebc0 <AX element pid: 77922, elementOrHash.elementID: 4717122048.832>
+                Other, 0x11938bc00 <AX element pid: 77922, elementOrHash.elementID: 4442970688.237>
+                  Other, 0x109330140 <AX element pid: 77922, elementOrHash.elementID: 4443135424.241>
+                    Other, 0x11a53e580 <AX element pid: 77922, elementOrHash.elementID: 4487608320.833>
+                      Other, 0x109393700 <AX element pid: 77922, elementOrHash.elementID: 4443248320.834>
+                        ScrollView, 0x1092d3ac0 <AX element pid: 77922, elementOrHash.elementID: 4442636288.835>
+                          Other, 0x1092d3840 <AX element pid: 77922, elementOrHash.elementID: 4864585984.836>
+                            Other, 0x11a5b6e40 <AX element pid: 77922, elementOrHash.elementID: 4443191296.840>
+                          Other, 0x1092d0500 <AX element pid: 77922, elementOrHash.elementID: 4864585536.837>
+                          Other, 0x1092d1b80 <AX element pid: 77922, elementOrHash.elementID: 4715082752.838>
+                            StaticText, 0x11a5b7e80 <AX element pid: 77922, elementOrHash.elementID: 4443454336.841>
+                            Button, 0x11a5b6f80, label: 'Hexagon Lights' <AX element pid: 77922, elementOrHash.elementID: 4443453888.842>
+                            StaticText, 0x11a5b70c0 <AX element pid: 77922, elementOrHash.elementID: 4443445376.843>
+                            Button, 0x11a5b5a40, label: 'Play' <AX element pid: 77922, elementOrHash.elementID: 4443449856.844>
+                            Button, 0x11a5b5cc0, label: 'Shuffle' <AX element pid: 77922, elementOrHash.elementID: 4443452096.845>
+                            Button, 0x11a5b6300, label: 'Favorite' <AX element pid: 77922, elementOrHash.elementID: 4443452544.846>
+                            Button, 0x11a5b7200, label: 'More' <AX element pid: 77922, elementOrHash.elementID: 4443446272.847>
+                              Button, 0x1092d0000 <AX element pid: 77922, elementOrHash.elementID: 4487605632.852>
+                                Image, 0x1193a5b80 <AX element pid: 77922, elementOrHash.elementID: 4443452992.862>
+                            Other, 0x11a5b6a80 <AX element pid: 77922, elementOrHash.elementID: 4443242944.848>
+                              Button, 0x11a5b5b80, label: 'Playing, Velvet Window, 4:18' <AX element pid: 77922, elementOrHash.elementID: 4442492864.853>
+                                Image, 0x1193a7980 <AX element pid: 77922, elementOrHash.elementID: 4758091776.911>
+                                StaticText, 0x1193a5400 <AX element pid: 77922, elementOrHash.elementID: 4443444032.864>
+                                StaticText, 0x1193a4f00 <AX element pid: 77922, elementOrHash.elementID: 4443442688.865>
+                              Button, 0x11a5b5900, label: '2, Fire Dream, 4:09' <AX element pid: 77922, elementOrHash.elementID: 4443185024.854>
+                                StaticText, 0x1193a7ac0 <AX element pid: 77922, elementOrHash.elementID: 4442495104.866>
+                                StaticText, 0x1193a4280 <AX element pid: 77922, elementOrHash.elementID: 4442501824.867>
+                                StaticText, 0x119359540 <AX element pid: 77922, elementOrHash.elementID: 4442319808.868>
+                              Button, 0x1193a7d40, label: '3, Harbour Waltz, 4:54' <AX element pid: 77922, elementOrHash.elementID: 4443184128.855>
+                                StaticText, 0x11935a580 <AX element pid: 77922, elementOrHash.elementID: 4443185920.869>
+                                StaticText, 0x11935abc0 <AX element pid: 77922, elementOrHash.elementID: 4443189952.870>
+                                StaticText, 0x119358c80 <AX element pid: 77922, elementOrHash.elementID: 4443190848.871>
+                              Button, 0x1193a7480, label: '4, Harbour Letters, Low Orbit, 2:35' <AX element pid: 77922, elementOrHash.elementID: 4443184576.856>
+                                StaticText, 0x1193597c0 <AX element pid: 77922, elementOrHash.elementID: 4443189056.872>
+                                StaticText, 0x119359680 <AX element pid: 77922, elementOrHash.elementID: 4443182336.873>
+                                StaticText, 0x119359f40 <AX element pid: 77922, elementOrHash.elementID: 4443182784.874>
+                                StaticText, 0x11935a6c0 <AX element pid: 77922, elementOrHash.elementID: 4443183232.875>
+                              Button, 0x1193a6080, label: '5, Winter Fields, 4:22' <AX element pid: 77922, elementOrHash.elementID: 4443254144.857>
+                                StaticText, 0x119358a00 <AX element pid: 77922, elementOrHash.elementID: 4864575680.876>
+                                StaticText, 0x11935a800 <AX element pid: 77922, elementOrHash.elementID: 4864576128.877>
+                                StaticText, 0x119359900 <AX element pid: 77922, elementOrHash.elementID: 4443256832.878>
+                              Button, 0x1193a5900, label: '6, Glass Story, Low Orbit, 4:32' <AX element pid: 77922, elementOrHash.elementID: 4443244288.858>
+                                StaticText, 0x119358500 <AX element pid: 77922, elementOrHash.elementID: 4443243840.879>
+                                StaticText, 0x119359b80 <AX element pid: 77922, elementOrHash.elementID: 4443250560.880>
+                                StaticText, 0x119358dc0 <AX element pid: 77922, elementOrHash.elementID: 4443248768.881>
+                                StaticText, 0x11935a1c0 <AX element pid: 77922, elementOrHash.elementID: 4443252352.882>
+                              Button, 0x1193a5a40, label: '7, Static Line, 5:13' <AX element pid: 77922, elementOrHash.elementID: 4443242496.859>
+                                StaticText, 0x11935b0c0 <AX element pid: 77922, elementOrHash.elementID: 4443244736.883>
+                                StaticText, 0x1193592c0 <AX element pid: 77922, elementOrHash.elementID: 4443245184.884>
+                                StaticText, 0x11935bac0 <AX element pid: 77922, elementOrHash.elementID: 4443245632.885>
+                            StaticText, 0x11a5b7700 <AX element pid: 77922, elementOrHash.elementID: 4443243392.849>
+                            ScrollView, 0x11a5b7c00 <AX element pid: 77922, elementOrHash.elementID: 4442648576.850>
+                              Other, 0x1193a57c0 <AX element pid: 77922, elementOrHash.elementID: 4715083264.860>
+                                Other, 0x11935a300 <AX element pid: 77922, elementOrHash.elementID: 4443250112.886>
+                                  Button, 0x119359400, label: 'Velvet Tides, 2021' <AX element pid: 77922, elementOrHash.elementID: 4443249664.888>
+                                    Image, 0x11935b840 <AX element pid: 77922, elementOrHash.elementID: 4443246080.889>
+                                    StaticText, 0x119358140 <AX element pid: 77922, elementOrHash.elementID: 4443246528.890>
+                                    StaticText, 0x119358780 <AX element pid: 77922, elementOrHash.elementID: 4443249216.891>
+                          Other, 0x1092d1680 <AX element pid: 77922, elementOrHash.elementID: 4485560832.839>
+                            Other, 0x11a5b7340 <AX element pid: 77922, elementOrHash.elementID: 4443448960.851>
+                          Other, 0x1092d0c80 <AX element pid: 77922, elementOrHash.elementID: 4485560832.839>
+                            Other, 0x11a5b6d00 <AX element pid: 77922, elementOrHash.elementID: 4443448960.851>
+                Other, 0x1093326c0 <AX element pid: 77922, elementOrHash.elementID: 4718212608.238>
+                  Other, 0x109331400 <AX element pid: 77922, elementOrHash.elementID: 4718204928.242>
+              Other, 0x109302e40 <AX element pid: 77922, elementOrHash.elementID: 4758112896.912>
+              CollectionView, 0x109300a00 <AX element pid: 77922, elementOrHash.elementID: 4706068992.913>
+                Other, 0x109331900 <AX element pid: 77922, elementOrHash.elementID: 4753739776.916>
+                Cell, 0x1093308c0 <AX element pid: 77922, elementOrHash.elementID: 4360476928.917>
+                  Other, 0x109330dc0 <AX element pid: 77922, elementOrHash.elementID: 4448430592.929>
+                    Other, 0x11a53e6c0 <AX element pid: 77922, elementOrHash.elementID: 4717162752.952>
+                      Other, 0x109392bc0 <AX element pid: 77922, elementOrHash.elementID: 4767758336.974>
+                  Other, 0x11938bd40 <AX element pid: 77922, elementOrHash.elementID: 4758116032.930>
+                    Other, 0x11a53c140 <AX element pid: 77922, elementOrHash.elementID: 4361900544.953>
+                      Other, 0x1093930c0 <AX element pid: 77922, elementOrHash.elementID: 4767754752.975>
+                        StaticText, 0x1092d1540 <AX element pid: 77922, elementOrHash.elementID: 4767757440.996>
+                          Image, 0x11a5b5e00 <AX element pid: 77922, elementOrHash.elementID: 4767758784.1008>
+                          StaticText, 0x11a5b6080 <AX element pid: 77922, elementOrHash.elementID: 4767759232.1009>
+                          StaticText, 0x11a5b5400 <AX element pid: 77922, elementOrHash.elementID: 4767757888.1010>
+                        Other, 0x1092d1040 <AX element pid: 77922, elementOrHash.elementID: 4767755200.997>
+                Cell, 0x109333200 <AX element pid: 77922, elementOrHash.elementID: 4360475648.918>
+                  Other, 0x11a53f840 <AX element pid: 77922, elementOrHash.elementID: 4448426496.931>
+                    Other, 0x11a53d900 <AX element pid: 77922, elementOrHash.elementID: 4717151104.954>
+                      Other, 0x1093935c0 <AX element pid: 77922, elementOrHash.elementID: 4767754304.976>
+                  Other, 0x11a53d680 <AX element pid: 77922, elementOrHash.elementID: 4758115584.932>
+                    Other, 0x11a53e440 <AX element pid: 77922, elementOrHash.elementID: 4361895936.955>
+                      Other, 0x1093d7e80 <AX element pid: 77922, elementOrHash.elementID: 4767750720.977>
+                        Button, 0x1092d1f40, label: 'Playing, Velvet Window, 4:18' <AX element pid: 77922, elementOrHash.elementID: 4767751616.998>
+                          Image, 0x11a5b57c0 <AX element pid: 77922, elementOrHash.elementID: 4767753408.1011>
+                          StaticText, 0x11a5b6580 <AX element pid: 77922, elementOrHash.elementID: 4767752960.1012>
+                          StaticText, 0x11a5b52c0 <AX element pid: 77922, elementOrHash.elementID: 4767752064.1013>
+                Cell, 0x109330a00 <AX element pid: 77922, elementOrHash.elementID: 4360474368.919>
+                  Other, 0x11a53d180 <AX element pid: 77922, elementOrHash.elementID: 4487153152.933>
+                    Other, 0x11a53c500 <AX element pid: 77922, elementOrHash.elementID: 4717155584.956>
+                      Other, 0x1093d5680 <AX element pid: 77922, elementOrHash.elementID: 4767750272.978>
+                  Other, 0x11a53d540 <AX element pid: 77922, elementOrHash.elementID: 4758115136.934>
+                    Other, 0x11a53c000 <AX element pid: 77922, elementOrHash.elementID: 4361903616.957>
+                      Other, 0x1093d5900 <AX element pid: 77922, elementOrHash.elementID: 4767747136.979>
+                        Button, 0x1092d3980, label: '2, Fire Dream, 4:09' <AX element pid: 77922, elementOrHash.elementID: 4767747584.999>
+                          StaticText, 0x11a5b6800 <AX element pid: 77922, elementOrHash.elementID: 4767749376.1014>
+                          StaticText, 0x11a5b7980 <AX element pid: 77922, elementOrHash.elementID: 4767748928.1015>
+                          StaticText, 0x11a5b5540 <AX element pid: 77922, elementOrHash.elementID: 4767748032.1016>
+                Cell, 0x109333700 <AX element pid: 77922, elementOrHash.elementID: 4360471808.920>
+                  Other, 0x11a53de00 <AX element pid: 77922, elementOrHash.elementID: 4485923328.935>
+                    Other, 0x11a53d2c0 <AX element pid: 77922, elementOrHash.elementID: 4717152000.958>
+                      Other, 0x10b7d92c0 <AX element pid: 77922, elementOrHash.elementID: 4767746688.980>
+                  Other, 0x11a53d400 <AX element pid: 77922, elementOrHash.elementID: 4758114688.936>
+                    Other, 0x11a53e1c0 <AX element pid: 77922, elementOrHash.elementID: 4361905152.959>
+                      Other, 0x10b7d8280 <AX element pid: 77922, elementOrHash.elementID: 4767744448.981>
+                        Button, 0x1092d0280, label: '3, Harbour Waltz, 4:54' <AX element pid: 77922, elementOrHash.elementID: 4767744896.1000>
+                          StaticText, 0x11a5b5680 <AX element pid: 77922, elementOrHash.elementID: 4767746240.1017>
+                          StaticText, 0x11a5b4b40 <AX element pid: 77922, elementOrHash.elementID: 4767745792.1018>
+                          StaticText, 0x11a5b7480 <AX element pid: 77922, elementOrHash.elementID: 4767745344.1019>
+                Cell, 0x109331f40 <AX element pid: 77922, elementOrHash.elementID: 4736694016.921>
+                  Other, 0x11a53dcc0 <AX element pid: 77922, elementOrHash.elementID: 4485933568.937>
+                    Other, 0x11a53e080 <AX element pid: 77922, elementOrHash.elementID: 4717152896.960>
+                      Other, 0x119164a00 <AX element pid: 77922, elementOrHash.elementID: 4767744000.982>
+                  Other, 0x11a53fc00 <AX element pid: 77922, elementOrHash.elementID: 4758114240.938>
+                    Other, 0x11a53c8c0 <AX element pid: 77922, elementOrHash.elementID: 4361906688.961>
+                      Other, 0x119164140 <AX element pid: 77922, elementOrHash.elementID: 4767811328.983>
+                        Button, 0x1092d2bc0, label: '4, Harbour Letters, Low Orbit, 2:35' <AX element pid: 77922, elementOrHash.elementID: 4758116928.1001>
+                          StaticText, 0x11a5b6440 <AX element pid: 77922, elementOrHash.elementID: 4767756096.1020>
+                          StaticText, 0x11a5b75c0 <AX element pid: 77922, elementOrHash.elementID: 4767756544.1021>
+                          StaticText, 0x11a5b61c0 <AX element pid: 77922, elementOrHash.elementID: 4767755648.1022>
+                          StaticText, 0x11a5b6940 <AX element pid: 77922, elementOrHash.elementID: 4767751168.1023>
+                Cell, 0x109332940 <AX element pid: 77922, elementOrHash.elementID: 4486854400.922>
+                  Other, 0x11a53f5c0 <AX element pid: 77922, elementOrHash.elementID: 4754475520.939>
+                    Other, 0x11a53db80 <AX element pid: 77922, elementOrHash.elementID: 4717153792.962>
+                      Other, 0x119165540 <AX element pid: 77922, elementOrHash.elementID: 4767809984.984>
+                  Other, 0x11a53d7c0 <AX element pid: 77922, elementOrHash.elementID: 4443308928.940>
+                    Other, 0x11a53fac0 <AX element pid: 77922, elementOrHash.elementID: 4361908224.963>
+                      Other, 0x10900e1c0 <AX element pid: 77922, elementOrHash.elementID: 4767822080.985>
+                        Button, 0x1092d35c0, label: '5, Winter Fields, 4:22' <AX element pid: 77922, elementOrHash.elementID: 4767814912.1002>
+                          StaticText, 0x11a5b4280 <AX element pid: 77922, elementOrHash.elementID: 4767809536.1024>
+                          StaticText, 0x11a5b4a00 <AX element pid: 77922, elementOrHash.elementID: 4767810880.1025>
+                          StaticText, 0x11a5b4640 <AX element pid: 77922, elementOrHash.elementID: 4767810432.1026>
+                Cell, 0x109331b80 <AX element pid: 77922, elementOrHash.elementID: 4486846720.923>
+                  Other, 0x11a53ea80 <AX element pid: 77922, elementOrHash.elementID: 4754480128.941>
+                    Other, 0x11a53c3c0 <AX element pid: 77922, elementOrHash.elementID: 4717150208.964>
+                      Other, 0x10900cc80 <AX element pid: 77922, elementOrHash.elementID: 4767823872.986>
+                  Other, 0x11a53cb40 <AX element pid: 77922, elementOrHash.elementID: 4443254592.942>
+                    Other, 0x11a53c640 <AX element pid: 77922, elementOrHash.elementID: 4361909760.965>
+                      Other, 0x10900cdc0 <AX element pid: 77922, elementOrHash.elementID: 4864166976.987>
+                        Button, 0x1092d1400, label: '6, Glass Story, Low Orbit, 4:32' <AX element pid: 77922, elementOrHash.elementID: 4864226880.1003>
+                          StaticText, 0x11a5b6bc0 <AX element pid: 77922, elementOrHash.elementID: 4767820288.1027>
+                          StaticText, 0x11a5b4500 <AX element pid: 77922, elementOrHash.elementID: 4864223296.1028>
+                          StaticText, 0x11a5b43c0 <AX element pid: 77922, elementOrHash.elementID: 4864221504.1029>
+                          StaticText, 0x11a5b7d40 <AX element pid: 77922, elementOrHash.elementID: 4864217920.1030>
+                Cell, 0x109332440 <AX element pid: 77922, elementOrHash.elementID: 4486849280.924>
+                  Other, 0x11a53e300 <AX element pid: 77922, elementOrHash.elementID: 4754485248.943>
+                    Other, 0x11a53d040 <AX element pid: 77922, elementOrHash.elementID: 4717157376.966>
+                      Other, 0x10900d180 <AX element pid: 77922, elementOrHash.elementID: 4864165184.988>
+                  Other, 0x11a53cdc0 <AX element pid: 77922, elementOrHash.elementID: 4443420672.944>
+                    Other, 0x11a53c280 <AX element pid: 77922, elementOrHash.elementID: 4360339456.967>
+                      Other, 0x10900c780 <AX element pid: 77922, elementOrHash.elementID: 4443141696.989>
+                        Button, 0x1092d21c0, label: '7, Static Line, 5:13' <AX element pid: 77922, elementOrHash.elementID: 4443142144.1004>
+                          StaticText, 0x11a5b7840 <AX element pid: 77922, elementOrHash.elementID: 4443140800.1031>
+                          StaticText, 0x11a5b4780 <AX element pid: 77922, elementOrHash.elementID: 4443143488.1032>
+                          StaticText, 0x11a5b66c0 <AX element pid: 77922, elementOrHash.elementID: 4443142592.1033>
+                Cell, 0x109330c80 <AX element pid: 77922, elementOrHash.elementID: 4486848000.925>
+                  Other, 0x11a53ed00 <AX element pid: 77922, elementOrHash.elementID: 4753736192.945>
+                    Other, 0x11a53cf00 <AX element pid: 77922, elementOrHash.elementID: 4361192320.968>
+                      Other, 0x10900ef80 <AX element pid: 77922, elementOrHash.elementID: 4443141248.990>
+                  Other, 0x11a53fe80 <AX element pid: 77922, elementOrHash.elementID: 4864263488.946>
+                    Other, 0x11a53da40 <AX element pid: 77922, elementOrHash.elementID: 4360340992.969>
+                      Other, 0x1092d2e40 <AX element pid: 77922, elementOrHash.elementID: 4443131392.991>
+                        StaticText, 0x1092d0140 <AX element pid: 77922, elementOrHash.elementID: 4443140352.1005>
+                Cell, 0x109333e80 <AX element pid: 77922, elementOrHash.elementID: 4486840320.926>
+                  Other, 0x11a53ee40 <AX element pid: 77922, elementOrHash.elementID: 4753737728.947>
+                    Other, 0x11a53fd40 <AX element pid: 77922, elementOrHash.elementID: 4361194112.970>
+                      Other, 0x1092d2440 <AX element pid: 77922, elementOrHash.elementID: 4443135872.992>
+                  Other, 0x11a53cc80 <AX element pid: 77922, elementOrHash.elementID: 4864272896.948>
+                    Other, 0x11a53f700 <AX element pid: 77922, elementOrHash.elementID: 4360342528.971>
+                      Other, 0x1092d0780 <AX element pid: 77922, elementOrHash.elementID: 4443132288.993>
+                        StaticText, 0x1092d3c00 <AX element pid: 77922, elementOrHash.elementID: 4443132736.1006>
+                Cell, 0x109332a80 <AX element pid: 77922, elementOrHash.elementID: 4486850560.927>
+                  Other, 0x11a53f980 <AX element pid: 77922, elementOrHash.elementID: 4753738752.949>
+                    Other, 0x109392f80 <AX element pid: 77922, elementOrHash.elementID: 4361200384.972>
+                      Other, 0x1092d0a00 <AX element pid: 77922, elementOrHash.elementID: 4443131840.994>
+                  Other, 0x11a53c780 <AX element pid: 77922, elementOrHash.elementID: 4864257856.950>
+                    Other, 0x109393980 <AX element pid: 77922, elementOrHash.elementID: 4360344064.973>
+                      Other, 0x1092d3e80 <AX element pid: 77922, elementOrHash.elementID: 4893130752.995>
+                        StaticText, 0x1092d1a40 <AX element pid: 77922, elementOrHash.elementID: 4443139904.1007>
+                Other, 0x109333d40 <AX element pid: 77922, elementOrHash.elementID: 4717501440.928>
+                  Other, 0x11a53e940 <AX element pid: 77922, elementOrHash.elementID: 4758116480.951>
+                Other, 0x109330640 <AX element pid: 77922, elementOrHash.elementID: 4717501440.928>
+                  Other, 0x11a53e800 <AX element pid: 77922, elementOrHash.elementID: 4758116480.951>
+              Button, 0x109302300, label: 'Now Playing' <AX element pid: 77922, elementOrHash.elementID: 4758123648.914>
+              Button, 0x10b7c3ac0, label: 'Lyrics' <AX element pid: 77922, elementOrHash.elementID: 4758119168.915>
+              Button, 0x10b7af340, label: 'Velvet Window, Hexagon Lights' <AX element pid: 77922, elementOrHash.elementID: 4443316992.892>
+              Image, 0x11a403ac0 <AX element pid: 77922, elementOrHash.elementID: 4758121856.893>
+              StaticText, 0x11a402f80 <AX element pid: 77922, elementOrHash.elementID: 4443319680.894>
+              Button, 0x11883f340, label: 'Hexagon Lights' <AX element pid: 77922, elementOrHash.elementID: 4443320128.895>
+              Button, 0x11883e6c0, label: 'Favorite' <AX element pid: 77922, elementOrHash.elementID: 4443320576.896>
+              Button, 0x11938a080, label: 'Shuffle' <AX element pid: 77922, elementOrHash.elementID: 4443317440.897>
+              Button, 0x11938bac0, label: 'Previous' <AX element pid: 77922, elementOrHash.elementID: 4443323264.898>
+              Button, 0x119389400, label: 'Pause' <AX element pid: 77922, elementOrHash.elementID: 4443323712.899>
+              Button, 0x11938af80, label: 'Next' <AX element pid: 77922, elementOrHash.elementID: 4443319232.900>
+              Button, 0x119389680, label: 'Repeat' <AX element pid: 77922, elementOrHash.elementID: 4443317888.901>
+              StaticText, 0x119388640 <AX element pid: 77922, elementOrHash.elementID: 4443318336.902>
+              Slider, 0x11938a800 <AX element pid: 77922, elementOrHash.elementID: 4443318784.903>
+              StaticText, 0x119389180 <AX element pid: 77922, elementOrHash.elementID: 4443321472.904>
+              Button, 0x1193888c0, label: 'Lyrics' <AX element pid: 77922, elementOrHash.elementID: 4443321920.905>
+              Button, 0x119388280, label: 'Now Playing' <AX element pid: 77922, elementOrHash.elementID: 4443322368.906>
+              Button, 0x11938ad00, label: 'Play On' <AX element pid: 77922, elementOrHash.elementID: 4758083712.907>
+              Image, 0x11938b980 <AX element pid: 77922, elementOrHash.elementID: 4758081920.908>
+              Other, 0x119389cc0 <AX element pid: 77922, elementOrHash.elementID: 4717505024.909>
+              Other, 0x119389900 <AX element pid: 77922, elementOrHash.elementID: 4758081472.910>
+  Window, 0x119218500 <AX element pid: 77922, elementOrHash.elementID: 4360482048.6>
+    Other, 0x11921bc00 <AX element pid: 77922, elementOrHash.elementID: 4442852864.9>
+      Other, 0x11921b980 <AX element pid: 77922, elementOrHash.elementID: 4442854656.12>
+2026-11-18 20:22:18.963 Df Jukebox[77922:35503] [com.apple.dt.xctest:Default] Query ↪︎ Descendants matching type Button
+    ↪︎ Elements matching predicate 'label CONTAINS[c] "sidebar" AND (NOT label CONTAINS[c] "hide")' (First Match) found matching snapshots: {(
+)} (error: (null))
+2026-11-18 20:22:18.963 Df Jukebox[77922:35503] [com.apple.dt.xctest:Default] Replying to query ↪︎ Descendants matching type Button
+    ↪︎ Elements matching predicate 'label CONTAINS[c] "sidebar" AND (NOT label CONTAINS[c] "hide")' (First Match) with results: <XCTElementQueryResults: 0x1092f12f0> (error: (null))
+2026-11-18 20:22:19.594 Df Jukebox[77922:35501] [com.apple.CFNetwork:Default] Connection 8: cleaning up
+2026-11-18 20:22:19.594 Df Jukebox[77922:35501] [com.apple.network:connection] [C8 E137B747-2AEE-4DC6-B64F-AF8E550731F0 localhost:8096 tcp, url: http://localhost:8096/Items/87dc3814a61bc70583634f3487e5ec9a/Images/Primary, definite, attribution: developer] cancel
+2026-11-18 20:22:19.594 Df Jukebox[77922:35501] [com.apple.network:connection] [C8 E137B747-2AEE-4DC6-B64F-AF8E550731F0 localhost:8096 tcp, url: http://localhost:8096/Items/87dc3814a61bc70583634f3487e5ec9a/Images/Primary, definite, attribution: developer] cancelled
+	[C8.1.1 D7E4681E-0BB7-46AD-8EBF-15540118BC2B ::1.55000<->::1.8096]
+	Connected Path: satisfied (Path is satisfied), interface: lo0
+	Privacy Stance: Not Eligible
+	Duration: 58.915s, DNS @0.012s took 0.224s, TCP @0.247s took 0.003s
+	bytes in/out: 241658/2648, packets in/out: 19/8, rtt: 0.001s, retransmitted bytes: 0, out-of-order bytes: 0
+	ecn packets sent/acked/marked/lost: 0/0/0/0
+2026-11-18 20:22:19.597 Df Jukebox[77922:35501] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C8] reporting state cancelled
+2026-11-18 20:22:19.620 Df Jukebox[77922:35501] [com.apple.CFNetwork:Default] Connection 11: cleaning up
+2026-11-18 20:22:19.620 Df Jukebox[77922:35501] [com.apple.network:connection] [C11 17CF867C-B2AF-404B-8DAA-1B1F80D2B048 localhost:8096 tcp, url: http://localhost:8096/Items/4bd72c149d5469b943672ef90a6239e4/Images/Primary, definite, attribution: developer] cancel
+2026-11-18 20:22:19.620 Df Jukebox[77922:35501] [com.apple.network:connection] [C11 17CF867C-B2AF-404B-8DAA-1B1F80D2B048 localhost:8096 tcp, url: http://localhost:8096/Items/4bd72c149d5469b943672ef90a6239e4/Images/Primary, definite, attribution: developer] cancelled
+	[C11.1.1 D7E4681E-0BB7-46AD-8EBF-15540118BC2B ::1.55003<->::1.8096]
+	Connected Path: satisfied (Path is satisfied), interface: lo0
+	Privacy Stance: Not Eligible
+	Duration: 58.765s, DNS @0.007s took 0.059s, TCP @0.073s took 0.023s
+	bytes in/out: 444508/4634, packets in/out: 34/14, rtt: 0.001s, retransmitted bytes: 0, out-of-order bytes: 0
+	ecn packets sent/acked/marked/lost: 0/0/0/0
+2026-11-18 20:22:19.621 Df Jukebox[77922:35501] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C11] reporting state cancelled
+2026-11-18 20:22:19.621 Df Jukebox[77922:35501] [com.apple.CFNetwork:Default] Connection 12: cleaning up
+2026-11-18 20:22:19.621 Df Jukebox[77922:35501] [com.apple.network:connection] [C12 C6CF6B05-3579-45C0-BC6B-F81A9C9D6818 localhost:8096 tcp, url: http://localhost:8096/Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary, definite, attribution: developer] cancel
+2026-11-18 20:22:19.621 Df Jukebox[77922:35501] [com.apple.network:connection] [C12 C6CF6B05-3579-45C0-BC6B-F81A9C9D6818 localhost:8096 tcp, url: http://localhost:8096/Items/6df20b73764ea8c1110c1c6301dce2bf/Images/Primary, definite, attribution: developer] cancelled
+	[C12.1.1 D7E4681E-0BB7-46AD-8EBF-15540118BC2B ::1.55004<->::1.8096]
+	Connected Path: satisfied (Path is satisfied), interface: lo0
+	Privacy Stance: Not Eligible
+	Duration: 58.751s, DNS @0.034s took 0.017s, TCP @0.058s took 0.024s
+	bytes in/out: 289163/2979, packets in/out: 21/9, rtt: 0.001s, retransmitted bytes: 0, out-of-order bytes: 0
+	ecn packets sent/acked/marked/lost: 0/0/0/0
+2026-11-18 20:22:19.622 Df Jukebox[77922:35501] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C12] reporting state cancelled
+2026-11-18 20:22:19.622 Df Jukebox[77922:35501] [com.apple.CFNetwork:Default] Connection 8: done
+2026-11-18 20:22:19.623 Df Jukebox[77922:35501] [com.apple.CFNetwork:Default] Connection 11: done
+2026-11-18 20:22:19.624 Df Jukebox[77922:35501] [com.apple.CFNetwork:Default] Connection 12: done
+2026-11-18 20:22:20.661 Df Jukebox[77922:358da] [com.apple.CFNetwork:Default] Connection 9: cleaning up
+2026-11-18 20:22:20.661 Df Jukebox[77922:358da] [com.apple.network:connection] [C9 E9B26D56-A9AF-4E93-B4EA-9287437C1924 localhost:8096 tcp, url: http://localhost:8096/Items/880e0a8fb2271301d9633062eb701aff/Images/Primary, definite, attribution: developer] cancel
+2026-11-18 20:22:20.661 Df Jukebox[77922:358da] [com.apple.network:connection] [C9 E9B26D56-A9AF-4E93-B4EA-9287437C1924 localhost:8096 tcp, url: http://localhost:8096/Items/880e0a8fb2271301d9633062eb701aff/Images/Primary, definite, attribution: developer] cancelled
+	[C9.1.1 D7E4681E-0BB7-46AD-8EBF-15540118BC2B ::1.55001<->::1.8096]
+	Connected Path: satisfied (Path is satisfied), interface: lo0
+	Privacy Stance: Not Eligible
+	Duration: 59.959s, DNS @0.127s took 0.088s, TCP @0.225s took 0.023s
+	bytes in/out: 428622/4634, packets in/out: 30/14, rtt: 0.001s, retransmitted bytes: 0, out-of-order bytes: 0
+	ecn packets sent/acked/marked/lost: 0/0/0/0
+2026-11-18 20:22:20.662 Df Jukebox[77922:358da] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C9] reporting state cancelled
+2026-11-18 20:22:20.663 Df Jukebox[77922:368d8] [com.apple.coremedia:] <<<< FAQ >>>> subaq_enqueueAQBufferIntoAudioQueue: [0x12393ca80:0x12393ce00:0x11b43d540] RP/SL.01 enqueueing #8 from 20.944 to 23.940 (duration: 2.995374, total: 5.990748) start time:(requested media: nan, actual host: 3284.878)
+2026-11-18 20:22:20.664 Df Jukebox[77922:358da] [com.apple.CFNetwork:Default] Connection 10: cleaning up
+2026-11-18 20:22:20.665 Df Jukebox[77922:358da] [com.apple.network:connection] [C10 D48CF7C3-A1EA-414B-991F-E02C850F3576 localhost:8096 tcp, url: http://localhost:8096/Items/1edd1d657a2dc61f54b22d2667b07d82/Images/Primary, definite, attribution: developer] cancel
+2026-11-18 20:22:20.665 Df Jukebox[77922:358da] [com.apple.network:connection] [C10 D48CF7C3-A1EA-414B-991F-E02C850F3576 localhost:8096 tcp, url: http://localhost:8096/Items/1edd1d657a2dc61f54b22d2667b07d82/Images/Primary, definite, attribution: developer] cancelled
+	[C10.1.1 D7E4681E-0BB7-46AD-8EBF-15540118BC2B ::1.55002<->::1.8096]
+	Connected Path: satisfied (Path is satisfied), interface: lo0
+	Privacy Stance: Not Eligible
+	Duration: 59.832s, DNS @0.020s took 0.065s, TCP @0.094s took 0.024s
+	bytes in/out: 378266/3972, packets in/out: 28/12, rtt: 0.001s, retransmitted bytes: 0, out-of-order bytes: 0
+	ecn packets sent/acked/marked/lost: 0/0/0/0
+2026-11-18 20:22:20.666 Df Jukebox[77922:358da] [com.apple.network:connection] nw_connection_report_state_with_handler_on_nw_queue [C10] reporting state cancelled
+2026-11-18 20:22:20.666 Df Jukebox[77922:358da] [com.apple.CFNetwork:Default] Connection 9: done
+2026-11-18 20:22:20.668 Df Jukebox[77922:358da] [com.apple.CFNetwork:Default] Connection 10: done
