@@ -524,9 +524,9 @@ final class Walk {
         // how far it got.
         app.launchArguments += ["-keepSongs", "NO"]
         // mini-bar-eq-walk's pictures: the fourth player bar, Equalizer
-        // (MiniPlayer.swift). A line for that branch's walk; off it again
-        // before main.
-        app.launchArguments += ["-miniBarVariant", "equalizer"]
+        // (MiniPlayer.swift), its bars at their calm still level. A line
+        // for that branch's walk; off it again before main.
+        app.launchArguments += ["-miniBarVariant", "equalizer", "-equalizerStill", "YES"]
         app.launchArguments += extra
         app.launch()
         try alive("launch")

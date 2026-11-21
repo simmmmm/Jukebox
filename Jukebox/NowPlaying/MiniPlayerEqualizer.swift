@@ -41,6 +41,12 @@ struct EqualizerBars: View {
     /// Where they rest, paused.
     static let rest: Float = 0.04
     static let nightOpacity = 0.24
+    /// The screenshot walk's `-equalizerStill YES` only: Reduce Motion's
+    /// calm level whatever plays, as the walk's songs stall in the
+    /// simulator and the bars would only rest.
+    private static let walkStill = UserDefaults.standard.bool(forKey: "equalizerStill")
+
+    private var standsStill: Bool { reduceMotion || Self.walkStill }
     static let dayOpacity = 0.14
 
     /// Seen, and the app in front: only then is anything worked out.
@@ -49,13 +55,13 @@ struct EqualizerBars: View {
     }
 
     private var moves: Bool {
-        isSeen && !reduceMotion && (player.isPlaying || isFalling)
+        isSeen && !standsStill && (player.isPlaying || isFalling)
     }
 
     var body: some View {
         TimelineView(.animation(minimumInterval: 1 / 30, paused: !moves)) { context in
             Canvas { graphics, size in
-                let levels = reduceMotion ? Self.still : motion.step(to: target(at: context.date), at: context.date)
+                let levels = standsStill ? Self.still : motion.step(to: target(at: context.date), at: context.date)
                 draw(levels, in: &graphics, size: size)
             }
         }
@@ -64,7 +70,7 @@ struct EqualizerBars: View {
         .onAppear { isOnScreen = true }
         .onDisappear { isOnScreen = false }
         // The meter copies samples only while some bar wants them.
-        .onChange(of: isSeen && !reduceMotion) { _, wants in
+        .onChange(of: isSeen && !standsStill) { _, wants in
             LevelMeter.shared.watch(wants)
         }
         .task(id: player.isPlaying) {
