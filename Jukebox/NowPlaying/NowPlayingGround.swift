@@ -215,7 +215,7 @@ struct NowPlayingGround: View {
         // The land and the record run past the screen's edges; pulled down
         // to close, the page must not show them above its top.
         .clipped()
-        .animation(.easeInOut(duration: 0.4), value: still)
+        .animation(.easeInOut(duration: Tokens.Motion.settle), value: still)
         .accessibilityHidden(true)
         // The room lies over the places and the page: its ground takes a
         // click on it, so nothing under the room answers one.
@@ -243,7 +243,7 @@ struct NowPlayingGround: View {
                 LandBitmap(image: LandDrawing.image(rings: rings, geometry: geometry))
             }.value
             guard !Task.isCancelled, let image = drawn.image else { return }
-            withAnimation(.easeInOut(duration: 0.4)) {
+            withAnimation(.easeInOut(duration: Tokens.Motion.settle)) {
                 land = LandPicture(key: key, image: image, start: side.start)
             }
         }
@@ -402,7 +402,7 @@ struct NowPlayingGround: View {
     /// The card's edge: the cover's average with 45% black, as sketch E;
     /// a dark brown until it is known.
     private var edgeColor: Color {
-        guard let tone = knownTone else { return Color(rgb: 0x16110A) }
+        guard let tone = knownTone else { return Color(rgb: Tokens.Art.sleeveEdge) }
         return Color(red: tone.red * 0.55, green: tone.green * 0.55, blue: tone.blue * 0.55)
     }
 
@@ -444,11 +444,11 @@ struct NowPlayingGround: View {
 
     /// D2's ground: a warm near-black, sketch E's #131010 (Night, the
     /// brand's dark ground, is #121110).
-    static let night = Color(rgb: 0x131010)
+    static let night = Color(rgb: Tokens.Art.landGround)
 
     /// The room's ground: Night, #121110, Linux's window by night, which
     /// its room is always (spec §6).
-    static let roomGround = Color(rgb: 0x121110)
+    static let roomGround = Color(rgb: Tokens.Arch.night)
 
     static func color(_ color: AccentColor) -> Color {
         Color(red: color.red, green: color.green, blue: color.blue)
@@ -591,5 +591,5 @@ private struct LandPlayed: View {
         }
     }
 
-    private static let lit = Color(rgb: 0x3F3127)
+    private static let lit = Color(rgb: Tokens.Art.landLit)
 }

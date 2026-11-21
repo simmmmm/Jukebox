@@ -253,7 +253,7 @@ private struct SettingsFormLook: ViewModifier {
     func body(content: Content) -> some View {
         Group {
             if isWide || settingsOnPad {
-                content.desktopFont(15)
+                content.desktopFont(Tokens.Size.body15.size)
             } else {
                 content
             }
@@ -297,7 +297,7 @@ private struct SettingsAccountSection: View {
                     VStack(alignment: .trailing, spacing: Theme.Space.xs) {
                         Text(verbatim: credentials.serverName)
                         Text(verbatim: ServerWords.product(credentials.kind, version: credentials.serverVersion))
-                            .desktopFont(13, phone: .footnote)
+                            .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                     }
                 } label: {
                     Text("Server")
@@ -375,7 +375,7 @@ private struct SettingsAccountSection: View {
                     Text(verbatim: ServerWords.name(of: account))
                         .foregroundStyle(.primary)
                     Text(verbatim: "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)")
-                        .desktopFont(13, phone: .footnote)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                         .foregroundStyle(.secondary)
                 }
                 Spacer()
@@ -725,7 +725,7 @@ private struct SettingsRadioSection: View {
                     Spacer()
                     Text("Adventurous")
                 }
-                .desktopFont(13, phone: .footnote)
+                .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
             }
@@ -1250,9 +1250,9 @@ private struct SettingsAboutSection: View {
                 ShellAppMark(side: 44)
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("Jukebox")
-                        .desktopFont(15, weight: .bold, phone: .headline)
+                        .desktopFont(Tokens.Size.body15.size, weight: .bold, phone: .headline)
                     Text("Made for Jellyfin, Emby, Plex, Navidrome and other Subsonic servers")
-                        .desktopFont(13, phone: .subheadline)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                         .foregroundStyle(.secondary)
                 }
             }
@@ -1297,7 +1297,7 @@ private struct SettingsHeader: View {
     var body: some View {
         if isWide {
             Text(title)
-                .desktopFont(15, weight: .bold)
+                .desktopFont(Tokens.Size.body15.size, weight: .bold)
                 .foregroundStyle(.primary)
                 .textCase(nil)
         } else {
@@ -1315,7 +1315,7 @@ private struct SettingsDetailLabel: View {
         VStack(alignment: .leading, spacing: Theme.Space.xs) {
             Text(title)
             Text(detail)
-                .desktopFont(13, phone: .footnote)
+                .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                 .foregroundStyle(.secondary)
         }
     }

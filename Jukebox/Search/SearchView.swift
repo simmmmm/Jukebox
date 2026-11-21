@@ -114,7 +114,7 @@ struct SearchView: View {
                 Spacer(minLength: Theme.Space.m)
                 Button("Clear") { clearRecents() }
                     .buttonStyle(.plain)
-                    .desktopFont(15)
+                    .desktopFont(Tokens.Size.body15.size)
                     .foregroundStyle(.secondary)
                     .accessibilityLabel("Clear Recent Searches")
             }
@@ -124,7 +124,7 @@ struct SearchView: View {
                     navigator.searchQuery = term
                 } label: {
                     Text(verbatim: term)
-                        .desktopFont(15)
+                        .desktopFont(Tokens.Size.body15.size)
                         .foregroundStyle(.primary)
                         .lineLimit(1)
                         // 40 a row, as Linux's.
@@ -197,7 +197,7 @@ private struct SearchResultsList: View {
                             if isFirstLoad {
                                 // Nothing found because nothing is here yet, not
                                 // because the library lacks it.
-                                ContentUnavailableView("Loading Your Library", systemImage: "square.stack",
+                                ContentUnavailableView("Loading your music", systemImage: "square.stack",
                                                        description: Text("Search finds your music once it has loaded."))
                             } else {
                                 ContentUnavailableView.search(text: term)
@@ -375,27 +375,23 @@ private struct SearchResultsList: View {
         radio.start(.track(track.id))
     }
 
-    private func artistMenu(_ artist: Artist) -> some View {
-        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-            remember()
-            Stats.track(.stationStarted, ["seed": "artist", "from": "search"])
-            radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
+    /// Start Radio, then the link, as an artist's tile in Artists.
+    @ViewBuilder private func artistMenu(_ artist: Artist) -> some View {
+        Section {
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                remember()
+                Stats.track(.stationStarted, ["seed": "artist", "from": "search"])
+                radio.start(.artist(key: artist.key, name: artist.name, id: artist.id))
+            }
+        }
+        Section {
+            ShareMenuItem(item: .artist(artist))
         }
     }
 
-    @ViewBuilder private func albumMenu(_ album: Album) -> some View {
-        let tracks = library.tracks(inAlbum: album.id)
-        if !tracks.isEmpty {
-            Button("Play", systemImage: "play") {
-                remember()
-                player.play(tracks, context: QueueContext(.album(album.id), title: album.name))
-            }
-        }
-        Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-            remember()
-            Stats.track(.stationStarted, ["seed": "album", "from": "search"])
-            radio.start(.album(album.id))
-        }
+    /// The one album menu every tile and row has, as Linux's albumMenu.
+    private func albumMenu(_ album: Album) -> some View {
+        LibraryAlbumMenu(album: album)
     }
 
     private var isFirstLoad: Bool {
@@ -489,7 +485,7 @@ private struct SearchBrowse: View {
         .overlay {
             if recents.isEmpty && library.genres.isEmpty {
                 ContentUnavailableView {
-                    Label("Search Your Library", systemImage: "magnifyingglass")
+                    Label("Search your library", systemImage: "magnifyingglass")
                 } description: {
                     Text("Find artists, albums, songs and playlists on your \(library.serverKind) server.")
                 }
@@ -502,11 +498,11 @@ private struct SearchBrowse: View {
             HStack(alignment: .firstTextBaseline) {
                 // SectionHeader's look, with Clear where See All would be.
                 Text("Recent searches")
-                    .desktopFont(24, design: .serif, phone: .serif(.title2))
+                    .desktopFont(Tokens.Size.sectionTitle.size, design: .serif, phone: .serif(.title2))
                     .accessibilityAddTraits(.isHeader)
                 Spacer()
                 Button("Clear") { clear() }
-                    .desktopFont(15, phone: nil)
+                    .desktopFont(Tokens.Size.body15.size, phone: nil)
                     .accessibilityLabel("Clear Recent Searches")
             }
             .padding(.horizontal, margin)
@@ -525,7 +521,7 @@ private struct SearchBrowse: View {
                                 .lineLimit(1)
                             Spacer(minLength: 0)
                         }
-                        .desktopFont(15, phone: nil)
+                        .desktopFont(Tokens.Size.body15.size, phone: nil)
                         .padding(.vertical, Theme.Space.m)
                         .contentShape(.rect)
                     }
@@ -577,7 +573,7 @@ private struct SearchGenreTile: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Text(verbatim: name)
-                .desktopFont(15, phone: nil)
+                .desktopFont(Tokens.Size.body15.size, phone: nil)
                 .foregroundStyle(.primary)
                 .multilineTextAlignment(.leading)
                 .lineLimit(2)

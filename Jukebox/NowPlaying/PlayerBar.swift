@@ -58,7 +58,7 @@ struct PlayerBar: View {
         .frame(maxWidth: .infinity)
         .frame(height: 88)
         // The glyphs at Linux's 16 icons, not the Mac's body of 13.
-        .desktopFont(15)
+        .desktopFont(Tokens.Size.body15.size)
         .onGeometryChange(for: CGFloat.self) { proxy in
             proxy.size.width
         } action: { newWidth in
@@ -102,7 +102,7 @@ struct PlayerBar: View {
                     // cover's height, and the bar stays 88.
                     VStack(alignment: .leading, spacing: Theme.Space.xs) {
                         Text(track.name)
-                            .desktopFont(15, weight: .medium)
+                            .desktopFont(Tokens.Size.body15.size, weight: .medium)
                             .lineLimit(1)
                             .frame(height: 20)
                             .allowsHitTesting(false)
@@ -110,7 +110,7 @@ struct PlayerBar: View {
                         VStack(alignment: .leading, spacing: 0) {
                             lines(track)
                         }
-                        .desktopFont(13)
+                        .desktopFont(Tokens.Size.fact13.size)
                         .lineLimit(1)
                     }
                 }
@@ -120,7 +120,7 @@ struct PlayerBar: View {
                         navigator.isNowPlayingPresented = true
                     } label: {
                         // Concentric with the cover's 6, 8 past it: 14.
-                        RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: Tokens.Radius.tileHover)
                             // Dark over a link, as Linux's: that is its own target.
                             .fill(Color.primary.opacity(isSongHovered && !isLinkHovered ? 0.07 : 0))
                             .contentShape(.rect)
@@ -142,9 +142,10 @@ struct PlayerBar: View {
                 }
                 .padding(-Theme.Space.s)
                 // Go to Album, Go to Artist, Start Radio, the heart: the
-                // song's own menu, as a right-click on Linux's bar.
+                // song's own menu, as a right-click on Linux's bar; on a
+                // station its lessons first.
                 .contextMenu {
-                    TrackMenu(track: track)
+                    TrackMenu(track: track, isPlaying: true)
                 }
 
                 // Not This on a station, then the heart, 4 apart.
@@ -365,7 +366,7 @@ struct PlayerBar: View {
                 .padding(.leading, Theme.Space.l)
             HStack(spacing: Theme.Space.s) {
                 Image(systemName: player.volume == 0 ? "speaker.slash.fill" : "speaker.wave.2.fill")
-                    .desktopFont(13)
+                    .desktopFont(Tokens.Size.fact13.size)
                     .accessibilityHidden(true)
                 VolumeControl(followsAppearance: true)
                     .controlSize(.mini)
@@ -467,7 +468,7 @@ private struct PlayerBarPosition: View {
             Text(duration > 0 ? duration.clock : "--:--")
                 .frame(width: 40, alignment: .leading)
         }
-        .desktopFont(13)
+        .desktopFont(Tokens.Size.fact13.size)
         .monospacedDigit()
         .foregroundStyle(.secondary)
     }

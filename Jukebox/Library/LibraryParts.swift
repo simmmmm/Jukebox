@@ -34,7 +34,7 @@ struct LibraryStatusView: View {
         switch library.state {
         case let .loading(progress):
             ContentUnavailableView {
-                Label("Loading Your Library", systemImage: "square.stack")
+                Label("Loading your music", systemImage: "square.stack")
             } description: {
                 if let name = library.serverName {
                     Text("Reading the music on \(name). Next time the library opens at once.")
@@ -47,7 +47,7 @@ struct LibraryStatusView: View {
                         ProgressView(value: progress)
                             .frame(maxWidth: 240)
                         Text(progress, format: .percent.precision(.fractionLength(0)))
-                            .desktopFont(13, phone: .footnote)
+                            .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
                             .monospacedDigit()
                             .foregroundStyle(.secondary)
                     }
@@ -57,7 +57,7 @@ struct LibraryStatusView: View {
             }
         case let .failed(message):
             ContentUnavailableView {
-                Label("Could Not Load Your Library", systemImage: "exclamationmark.triangle")
+                Label("Could not load your music", systemImage: "exclamationmark.triangle")
             } description: {
                 Text(message)
             } actions: {
@@ -134,30 +134,43 @@ struct LibraryAlbumLink: View {
     }
 }
 
-/// What can be done with an album, in its long press and behind its "…".
-/// `tracks`: the album's songs when the caller has them (an album the
-/// library has not indexed); else the library's.
+/// What can be done with an album: one menu for its tile and row
+/// everywhere (Library, Home, Search) and its page's "…". `tracks`: the
+/// album's songs when the caller has them (an album the library has not
+/// indexed); else the library's. `onPage`: its page's "…", without Play,
+/// which the page has as a button, and wide without Favorite, which is the
+/// heart beside it.
 struct LibraryAlbumMenu: View {
     let album: Album
     let tracks: [Track]?
     let includesGoToArtist: Bool
+    let onPage: Bool
 
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(LibraryStore.self) private var library
     @Environment(Navigator.self) private var navigator
+    @Environment(\.isWide) private var isWide
 
-    init(album: Album, tracks: [Track]? = nil, includesGoToArtist: Bool = true) {
+    init(album: Album, tracks: [Track]? = nil, includesGoToArtist: Bool = true, onPage: Bool = false) {
         self.album = album
         self.tracks = tracks
         self.includesGoToArtist = includesGoToArtist
+        self.onPage = onPage
     }
 
     var body: some View {
         let songs = tracks ?? library.tracks(inAlbum: album.id)
         let favorite = library.isFavorite(album.id)
-        // A song's groups (TrackMenu), as Linux's albumMenu.
+        // A song's groups (TrackMenu), as Linux's albumMenu; Play first on
+        // a tile, which has no button for it.
         Section {
+            if !onPage {
+                Button("Play", systemImage: "play.fill") {
+                    player.play(songs, context: QueueContext(.album(album.id), title: album.name))
+                }
+                .disabled(songs.isEmpty)
+            }
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext(songs)
             }
@@ -172,8 +185,10 @@ struct LibraryAlbumMenu: View {
                 navigator.addToPlaylist = AddToPlaylistRequest(tracks: songs)
             }
             .disabled(songs.isEmpty)
-            Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
-                Task { await library.toggleFavorite(.album(album.id)) }
+            if !(onPage && isWide) {
+                Button(favorite ? "Undo Favorite" : "Favorite", systemImage: favorite ? "heart.slash" : "heart") {
+                    Task { await library.toggleFavorite(.album(album.id)) }
+                }
             }
             if library.can(.rating) {
                 RatingMenu(item: .album(album.id))

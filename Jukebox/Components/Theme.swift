@@ -19,12 +19,12 @@ import UIKit
 
 enum Theme {
     enum Space {
-        static let xs: CGFloat = 4
-        static let s: CGFloat = 8
-        static let m: CGFloat = 12
-        static let l: CGFloat = 16
-        static let xl: CGFloat = 24
-        static let xxl: CGFloat = 32
+        static let xs = Tokens.Space.xs
+        static let s = Tokens.Space.s
+        static let m = Tokens.Space.m
+        static let l = Tokens.Space.l
+        static let xl = Tokens.Space.xl
+        static let xxl = Tokens.Space.xxl
     }
 
     enum Radius {
@@ -32,11 +32,11 @@ enum Theme {
         /// filled button. Nothing else Jukebox draws is rounded; the
         /// system's own controls keep theirs.
         // grid-ok: the brand's one radius (docs/BRAND.md), not a distance.
-        static let artwork: CGFloat = 6
+        static let artwork = Tokens.Radius.artwork
     }
 
     /// A page's side margin, as Music and the system lists use.
-    static let margin: CGFloat = 20
+    static let margin = Tokens.margin
 
     /// The accent: Copper (#A84A17) in light mode, Glow (#FFB54D) in dark —
     /// the same pair as the asset catalog's AccentColor. What is chosen,
@@ -48,36 +48,36 @@ enum Theme {
     /// Aptabase package (run 22's screenshots) `Color.accentColor` drew the
     /// system's blue, though the catalog and its build setting were as
     /// before. JukeboxApp tints the whole app with this too.
-    static let accent = Color(light: 0xA84A17, dark: 0xFFB54D)
+    static let accent = Color(Tokens.accent)
 
     /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
     /// (9.9:1). Glow is a light colour: white on it would all but vanish.
-    static let onAccent = Color(light: 0xFFFFFF, dark: 0x2A1505)
+    static let onAccent = Color(Tokens.onAccent)
     /// The word on a quiet button's faint accent ground (ActionButtonStyle,
     /// Linux's button.quiet): by day a step darker than Copper, as Copper
     /// on its own 12 % tint read 4.0:1 on the raised ground; this reads 4.9
     /// at the least. By night Glow, 7.8 and up. "zorg dat ze goed zichtbaar
     /// zijn in dark en light mode" (the photographer, 20 November 2026).
-    static let quietInk = Color(light: 0x953F12, dark: 0xFFB54D)
+    static let quietInk = Color(Tokens.quietInk)
 
     /// The ground the main screens stand on, flat (tells.md, 2): warm paper,
     /// #F6F3EE, by day, as a sleeve's card stock; #121110 by night, a black
     /// with a little warmth in it. No vignette, no gradient. Lists the
     /// system draws (Settings, the library's long lists) keep the system's
     /// own grounds.
-    static let ground = Color(light: 0xF6F3EE, dark: 0x121110)
+    static let ground = Color(Tokens.ground)
 
     /// One step up from the ground, for the wide window's sidebar, panel
     /// and bar (the designer's spec, §1; Linux's Style.swift `raised`):
     /// #ECE7DF by day, #1B1918 by night.
-    static let raised = Color(light: 0xECE7DF, dark: 0x1B1918)
+    static let raised = Color(Tokens.raised)
 
     /// Home's music to go on with, beside Your Station on a wide page: a
     /// step lighter ("'where you left off' misschien in een lichtere tint",
     /// the photographer, 18 November 2026). By night one step up from
     /// raised, #242120; by day halfway back to the paper, #F1EDE6, as a
     /// step past it would no longer read as a card. Linux's `lighter`.
-    static let raisedLighter = Color(light: 0xF1EDE6, dark: 0x242120)
+    static let raisedLighter = Color(Tokens.raisedLighter)
 
     /// Home's word that the server is out of reach: a soft warning, in the
     /// Arch's own amber rather than the system's yellow ("een warning
@@ -85,7 +85,7 @@ enum Theme {
     /// photographer, 20 November 2026). The mark core's amber, #F7A136, at
     /// 16% on the paper by day, #F6E6D1; Glow at 12% on the night by
     /// night, #2E2517. Copper on it 5.1:1, Glow 8.6:1. Linux's `notice`.
-    static let notice = Color(light: 0xF6E6D1, dark: 0x2E2517)
+    static let notice = Color(Tokens.notice)
 
     /// The Arch's own colours (docs/BRAND.md). Cabinet, Glow,
     /// Copper and Ink are the identity's; the tubes' colours are for art
@@ -94,25 +94,25 @@ enum Theme {
         /// Cabinet, #1E0A07: the warm dark of a jukebox's cabinet — the app
         /// icon, Now Playing's ground, a station's room until its cover's
         /// colour is known. Dark in light mode too.
-        static let cabinet = Color(rgb: 0x1E0A07)
+        static let cabinet = Color(rgb: Tokens.Arch.cabinet)
         /// Glow, #FFB54D: the accent in dark mode (AccentColor's dark half),
         /// and the inner band of every arch.
-        static let glow = Color(rgb: 0xFFB54D)
+        static let glow = Color(rgb: Tokens.Arch.glow)
         /// Copper, #A84A17: the accent in light mode, Glow's own hue seen by
         /// day, and the outer band of every arch.
-        static let copper = Color(rgb: 0xA84A17)
+        static let copper = Color(rgb: Tokens.Arch.copper)
         /// Ink, #2A1505: words and glyphs on Glow.
-        static let ink = Color(rgb: 0x2A1505)
+        static let ink = Color(rgb: Tokens.Arch.ink)
         /// The mark's core: amber (#F7A136) on light grounds, where a warm
         /// white would vanish; a warm white (#FFF1D6) on dark ones.
-        static let markCore = Color(light: 0xF7A136, dark: 0xFFF1D6)
+        static let markCore = Color(Tokens.Arch.markCore)
 
         // Art only: the station on the air, which alone is lit.
 
         /// The outer tube lit, #F07E36.
-        static let outerTube = Color(rgb: 0xF07E36)
+        static let outerTube = Color(rgb: Tokens.Arch.outerTube)
         /// The inner tube lit, #FFB44C.
-        static let innerTube = Color(rgb: 0xFFB44C)
+        static let innerTube = Color(rgb: Tokens.Arch.innerTube)
     }
 
     /// The one small label a screen may have ("On air"): sentence case, in
@@ -170,7 +170,7 @@ struct Eyebrow: View {
     var body: some View {
         Text(text)
             // Wide, Linux's: 13 in the accent.
-            .desktopFont(13, phone: Theme.label)
+            .desktopFont(Tokens.Size.fact13.size, phone: Theme.label)
             .foregroundStyle(Theme.accent)
             .accessibilityAddTraits(.isHeader)
     }
@@ -233,10 +233,32 @@ struct ListHeading: View {
 
     var body: some View {
         Text(title)
-            .desktopFont(20, design: .serif, phone: .serif(.title3))
+            .desktopFont(Tokens.Size.panelHead.size, design: .serif, phone: .serif(.title3))
             .foregroundStyle(.primary)
             .textCase(nil)
             .accessibilityAddTraits(.isHeader)
+    }
+}
+
+/// What a page says when it has nothing to show: one plain line of what to
+/// do, in the facts' grey, on the margin where its content would start, 24
+/// under what is above it. Linux's `emptyLine`, 1:1 (docs/design/SYSTEM.md,
+/// Notices and empty states): "favourites heeft een vage empty state" (the
+/// photographer, 14 November 2026). A whole window's state (loading, could
+/// not load) stays the system's ContentUnavailableView.
+struct EmptyLine: View {
+    let text: String
+
+    init(_ text: String) {
+        self.text = text
+    }
+
+    var body: some View {
+        Text(text)
+            .desktopFont(Tokens.Size.body15.size, phone: .subheadline)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.top, Theme.Space.xl)
     }
 }
 
@@ -266,26 +288,6 @@ struct Hairline: View {
     }
 }
 
-/// The one filled button of a screen (Play, Sign In): a plain rectangle in
-/// the accent, 6 pt corners, its own ink on it. No glow, no shadow, and no
-/// icon unless the word needs one. Callers that want it compact give it
-/// `.fixedSize()`. Wide, Linux's page-button: 40 tall, 15 bold.
-struct ProminentButtonStyle: ButtonStyle {
-    @Environment(\.isEnabled) private var isEnabled
-    @Environment(\.isWide) private var isWide
-
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .desktopFont(15, weight: .bold, phone: .body.weight(.semibold))
-            .foregroundStyle(Theme.onAccent)
-            .frame(maxWidth: .infinity, minHeight: isWide ? 40 : 44)
-            .padding(.horizontal, Theme.Space.xl)
-            .background(Theme.accent, in: .rect(cornerRadius: Theme.Radius.artwork))
-            .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
-            .contentShape(.rect)
-    }
-}
-
 /// Every other action (Shuffle, Stop, New Picks): a word in the accent, no
 /// ground under it — a text button, as the system's own are. Wide, Linux's
 /// word: 40 tall, 15 bold, 8 either side of the word, so beside Play it
@@ -296,7 +298,7 @@ struct SecondaryButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .desktopFont(15, weight: .bold, phone: .body)
+            .desktopFont(Tokens.Size.body15.size, weight: .bold, phone: .body)
             .foregroundStyle(Theme.accent)
             .padding(.horizontal, isWide ? Theme.Space.s : 0)
             .frame(minHeight: isWide ? 40 : 44)
@@ -321,12 +323,12 @@ struct ActionButtonStyle: ButtonStyle {
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .desktopFont(15, weight: .bold, phone: .subheadline.weight(.semibold))
+            .desktopFont(Tokens.Size.body15.size, weight: .bold, phone: .subheadline.weight(.semibold))
             .lineLimit(1)
             .foregroundStyle(isFilled ? Theme.onAccent : Theme.quietInk)
             .padding(.horizontal, Theme.Space.l)
-            .frame(minWidth: 96, minHeight: 36)
-            .background(isFilled ? Theme.accent : Theme.accent.opacity(0.12),
+            .frame(minWidth: Tokens.ActionButton.minWidth, minHeight: Tokens.ActionButton.height)
+            .background(isFilled ? Theme.accent : Theme.accent.opacity(Tokens.ActionButton.quietTint),
                         in: .rect(cornerRadius: Theme.Radius.artwork))
             .opacity(isEnabled ? (configuration.isPressed ? 0.7 : 1) : 0.4)
             .padding(.vertical, isWide ? 0 : Theme.Space.xs)
@@ -335,9 +337,6 @@ struct ActionButtonStyle: ButtonStyle {
     }
 }
 
-extension ButtonStyle where Self == ProminentButtonStyle {
-    static var prominent: ProminentButtonStyle { ProminentButtonStyle() }
-}
 
 extension ButtonStyle where Self == SecondaryButtonStyle {
     static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
@@ -346,6 +345,11 @@ extension ButtonStyle where Self == SecondaryButtonStyle {
 extension ButtonStyle where Self == ActionButtonStyle {
     /// Play, in a page's row of actions.
     static var action: ActionButtonStyle { ActionButtonStyle(isFilled: true) }
+    /// The one filled button of a screen that is not Play (Sign In, Try
+    /// Again): the same button, one size on every client, compact; Linux's
+    /// suggested-action page-button. It was 40 wide and 44 full-width on
+    /// the iPhone ("Los ze op", 20 November 2026).
+    static var prominent: ActionButtonStyle { ActionButtonStyle(isFilled: true) }
     /// The quieter one beside it.
     static var quietAction: ActionButtonStyle { ActionButtonStyle(isFilled: false) }
 }
@@ -390,6 +394,12 @@ extension View {
 // colour off the main actor (Color(light:dark:), Platform.swift), and the
 // app's own code is on the main actor by default.
 extension Color {
+    /// A token's pair (Tokens.swift): its day colour by day, its night one
+    /// by night.
+    nonisolated init(_ pair: ColorPair) {
+        self.init(light: pair.light, dark: pair.dark)
+    }
+
     /// An sRGB colour by its hex, as the brand board names it: 0xA84A17.
     nonisolated init(rgb: UInt32) {
         self.init(.sRGB,

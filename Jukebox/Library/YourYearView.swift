@@ -34,16 +34,16 @@ struct YourYearView: View {
     }
 
     @ViewBuilder private var content: some View {
-        if let year, year.isEmpty {
-            ContentUnavailableView("Nothing played yet", systemImage: "music.note",
-                                   description: Text(YourYearLoader.source(year)))
-        } else if let year {
+        if let year {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: Theme.Space.s) {
                         Text(verbatim: String(year.year))
                             .font(.serif(.largeTitle))
-                        Text(YourYearLoader.facts(year))
+                        // Nothing played: the year's head as Linux's, its
+                        // facts the one line, not a status page: "Los ze
+                        // op" (the photographer, 20 November 2026).
+                        Text(year.isEmpty ? String(localized: "Nothing played yet") : YourYearLoader.facts(year))
                             .foregroundStyle(.secondary)
                         MonthBars(minutes: year.months)
                             .padding(.top, Theme.Space.m)

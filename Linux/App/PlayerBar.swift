@@ -18,7 +18,7 @@ enum PlayerBar {
     private(set) static var times: [Widget] = []
     private(set) static var volume: Widget!
     private(set) static var volumeButton: Widget!
-    /// The heart and Not This beside the song; below 900 they are in its menu.
+    /// The heart and Not This beside the song; below 900 only in its menu.
     private(set) static var songActions: Widget!
 
     // Measures from the designer's spec (build/design-round/2027/spec.md, §2):
@@ -80,7 +80,7 @@ enum PlayerBar {
         gtk_overlay_add_overlay(ptr(songWithLinks), artistLink)
         gtk_overlay_add_overlay(ptr(songWithLinks), stationLink)
         g_signal_connect_data(raw(songWithLinks), "get-child-position", unsafeBitCast(placeLink, to: GCallback.self), nil, nil, GConnectFlags(0))
-        contextMenu(on: songWithLinks) { songMenu(narrow: !songActions.isVisible) }
+        contextMenu(on: songWithLinks) { songMenu() }
         // Not This on a station, then the heart (32 each, 4 apart).
         let notThis = iconButton(Glyphs.name("not-this"), "Not This", "flat") {
             if let track = app.player.currentTrack { app.radio.dislike(track) }
@@ -240,32 +240,19 @@ enum PlayerBar {
         return 1
     }
 
-    /// The song's menu, the bar's right-click and Now Playing's ⋮: where it
-    /// comes from, a station from it, and (`narrow`, below 900, where they
-    /// leave the bar) the heart and, on a station, the thumbs.
-    /// In a song's sections (`trackMenu`): the station's lessons where the
-    /// queue has its own, then keeping it, where it is from, the rest.
-    static func songMenu(narrow: Bool) -> [(String, () -> Void)] {
+    /// The song's menu, the bar's right-click and Full Player's ⋮: every
+    /// song's menu (`trackMenu`), its first section the station's lessons
+    /// while a station plays. The heart and Not This are in it at every
+    /// width, though the bar has them as buttons when wide: the same menu
+    /// as everywhere else ("Los ze op", the photographer, 20 November 2026).
+    static func songMenu() -> [(String, () -> Void)] {
         guard let track = app.player.currentTrack else { return [] }
         var station: [(String, () -> Void)] = []
         if app.player.context?.isRadio == true {
-            station.append((app.radio.liked.contains(track.id) ? "Liked" : "More Like This", { app.radio.like(track) }))
-            if narrow {
-                station.append((app.radio.disliked.contains(track.id) ? "Not This (Undo)" : "Not This", { app.radio.dislike(track) }))
-            }
+            station = [(app.radio.liked.contains(track.id) ? "Liked" : "More Like This", { app.radio.like(track) }),
+                       (app.radio.disliked.contains(track.id) ? "Not This (Undo)" : "Not This", { app.radio.dislike(track) })]
         }
-        var keep: [(String, () -> Void)] = []
-        if narrow {
-            let favorite = app.library.isFavorite(track.id)
-            keep.append((favorite ? "Remove from Favorites" : "Add to Favorites",
-                         { Task { await app.library.setFavorite(!favorite, item: .track(track.id)) } }))
-        }
-        // Rating always, as the Mac's bar menu has it: a menu's entry, not
-        // a button on the bar.
-        keep += ratingItems(.track(track.id)) + [("Start Radio", { app.radio.start(.track(track.id)) })]
-        // Who made it (Credits), where the server said: Full Player is
-        // where a song's details are.
-        return menuSections(station, keep, goItems(track), NotCountedUI.items(.song, track.id, track.name))
+        return trackMenu([track], place: station)
     }
 
     /// The listener's level, 0 to 1, as the player keeps it.
@@ -617,7 +604,7 @@ enum NowPlayingPage {
         // width decide it), under the button.
         more = iconButton("view-more-symbolic", "More", "flat") {
             showMenu(at: more, x: Double(gtk_widget_get_width(more)) / 2, y: Double(gtk_widget_get_height(more)),
-                     PlayerBar.songMenu(narrow: !PlayerBar.songActions.isVisible))
+                     PlayerBar.songMenu())
         }
         header = adw_header_bar_new()!
         adw_header_bar_set_show_title(ptr(header), 0)

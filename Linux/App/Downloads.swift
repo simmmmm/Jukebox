@@ -86,7 +86,7 @@ private func removalMenu(waiting: String?, name: String, reason: OfflineReason) 
 /// accent on a quiet one, around a stop square, 16 as the icons beside it.
 private func showRing(_ percent: Int, in image: Widget, if wanted: @escaping () -> Bool) {
     let dark = adw_style_manager_get_dark(adw_style_manager_get_default()) != 0
-    let accent: UInt32 = dark ? 0xFFB54D : 0xA84A17
+    let accent = Tokens.accent.hex(dark: dark)
     let track: UInt32 = dark ? 0xFFFFFF : 0x000000
     let scale = Screen.shared.scale
     Task {

@@ -112,10 +112,19 @@ struct PlaylistsView: View {
                 row(playlist)
             }
 
+            // None: Linux's line under New Playlist…; the library still
+            // loading, or not loaded, keeps its status.
             if library.playlists.isEmpty {
-                LibraryStatusView(emptyTitle: "No Playlists", emptySymbol: "music.note.list",
-                                  emptyMessage: "Make one with New Playlist…, or add songs to one from any song’s menu.")
-                    .listRowSeparator(.hidden)
+                Group {
+                    switch library.state {
+                    case .loading, .failed:
+                        LibraryStatusView()
+                    case .empty, .loaded:
+                        EmptyLine("Make one with New Playlist…, or add songs to one from any song’s menu.")
+                    }
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
             }
         }
         .listStyle(.plain)
@@ -327,7 +336,9 @@ struct PlaylistDetailView: View {
                         play(tracks, from: i, playlist: shown, shuffled: false)
                     } label: {
                         TrackRow(entry.track, subtitle: entry.track.artistLine,
-                                 removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) })
+                                 removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) },
+                                 moveUp: moveStep(i, by: -1, count: entries.count, in: shown),
+                                 moveDown: moveStep(i, by: 1, count: entries.count, in: shown))
                     }
                     .buttonStyle(.plain)
                     .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
@@ -391,28 +402,27 @@ struct PlaylistDetailView: View {
                 .onDelete(perform: deleteAction(shown))
                 .onMove(perform: moveAction(shown))
 
+                // No songs: the wide page's and Linux's line where the
+                // rows would start, Add Songs under it, not a notice in the
+                // middle: "Los ze op" (the photographer, 20 November 2026).
                 if entries.isEmpty {
-                    if shown.isReadOnly {
-                        ContentUnavailableView("No Songs Yet", systemImage: "music.note.list")
-                            .listRowSeparator(.hidden)
-                    } else {
-                        ContentUnavailableView {
-                            Label("No Songs Yet", systemImage: "music.note.list")
-                        } description: {
-                            Text("Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
-                        } actions: {
+                    VStack(alignment: .leading, spacing: Theme.Space.m) {
+                        EmptyLine(shown.isReadOnly ? "No songs yet."
+                                  : "Add songs from your library, or choose Add to Playlist… in any song’s or album’s menu.")
+                        if !shown.isReadOnly {
                             Button("Add Songs") {
                                 isAddingSongs = true
                             }
                             .buttonStyle(.secondary)
                             .fixedSize()
                         }
-                        .listRowSeparator(.hidden)
                     }
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
                 }
             } else if let loadError {
                 ContentUnavailableView {
-                    Label("Could Not Load the Playlist", systemImage: "exclamationmark.triangle")
+                    Label("Could not load the playlist", systemImage: "exclamationmark.triangle")
                 } description: {
                     Text(loadError)
                 } actions: {
@@ -435,13 +445,8 @@ struct PlaylistDetailView: View {
     /// The page's "…": in the toolbar on the iPhone, in the head when wide.
     @ViewBuilder
     private func moreItems(_ shown: Playlist, tracks: [Track]) -> some View {
-        Section {
-            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
-                Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
-                radio.start(seed(for: shown, tracks: tracks))
-            }
-            .disabled(tracks.isEmpty)
-        }
+        // In a song's order and Linux's (SYSTEM.md, Menus): playing it,
+        // Start Radio, its picture and Don't Count Plays, Delete last.
         Section {
             Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                 player.playNext(tracks)
@@ -453,14 +458,19 @@ struct PlaylistDetailView: View {
             .disabled(tracks.isEmpty)
         }
         Section {
-            DontCountToggle(kind: .playlist, id: shown.id, name: shown.name)
+            Button("Start Radio", systemImage: "dot.radiowaves.left.and.right") {
+                Stats.track(.stationStarted, ["seed": "collection", "from": "menu"])
+                radio.start(seed(for: shown, tracks: tracks))
+            }
+            .disabled(tracks.isEmpty)
         }
-        if picturesAllowed, !shown.isReadOnly {
-            Section {
+        Section {
+            if picturesAllowed, !shown.isReadOnly {
                 Button("Choose Picture…", systemImage: "photo") {
                     isChoosingPicture = true
                 }
             }
+            DontCountToggle(kind: .playlist, id: shown.id, name: shown.name)
         }
         if !shown.isReadOnly {
             Section {
@@ -564,6 +574,14 @@ struct PlaylistDetailView: View {
     private func moveAction(_ shown: Playlist) -> ((IndexSet, Int) -> Void)? {
         guard !shown.isReadOnly, library.can(.playlistReorder) else { return nil }
         return { source, destination in move(from: source, to: destination, in: shown) }
+    }
+
+    /// Move Up (-1) or Move Down (1) in a song's menu (wide), as Linux's
+    /// row has them for the keyboard; nil where it cannot move.
+    private func moveStep(_ i: Int, by step: Int, count: Int, in shown: Playlist) -> (() -> Void)? {
+        guard moveAction(shown) != nil, (0..<count).contains(i + step) else { return nil }
+        // List's destination counts the row's old place: down is two on.
+        return { move(from: IndexSet(integer: i), to: step > 0 ? i + 2 : i - 1, in: shown) }
     }
 
     /// Remove from Playlist in a song's menu (wide), as a swipe would.

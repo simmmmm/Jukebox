@@ -290,7 +290,7 @@ struct StationDetailView: View {
     private var previewRows: some View {
         if let picks, picks.isEmpty {
             ContentUnavailableView {
-                Label("Nothing to Play", systemImage: "dot.radiowaves.left.and.right")
+                Label("Nothing to play", systemImage: "dot.radiowaves.left.and.right")
             } description: {
                 Text("Nothing in your library fits this station yet.")
             }
@@ -513,9 +513,9 @@ private struct StationPlaceholderRows: View {
                     .frame(width: 48, height: 48)
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text("A song of the station")
-                        .desktopFont(15, phone: nil)
+                        .desktopFont(Tokens.Size.body15.size, phone: nil)
                     Text("Its artist")
-                        .desktopFont(13, phone: .subheadline)
+                        .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
                 }
                 Spacer(minLength: 0)
             }

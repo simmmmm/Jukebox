@@ -146,7 +146,7 @@ struct NowPlayingView: View {
             ZStack {
                 errorBanner
             }
-            .animation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.4, dampingFraction: 0.85),
+            .animation(reduceMotion ? .easeInOut(duration: Tokens.Motion.standard) : .spring(response: 0.4, dampingFraction: 0.85),
                        value: player.errorMessage)
         }
         // A pull down closes it; over the lyrics and the queue only the top
@@ -204,7 +204,7 @@ struct NowPlayingView: View {
             // A newer cover has its own task; these colours are not its.
             guard !Task.isCancelled, shownAccent?.url != url else { return }
             let first = shownAccent == nil
-            withAnimation(first || reduceMotion ? nil : .easeInOut(duration: 0.5)) {
+            withAnimation(first || reduceMotion ? nil : .easeInOut(duration: Tokens.Motion.scene)) {
                 shownAccent = (url: url, color: found)
                 shownWalls = (url: url, walls: walls)
             }
@@ -346,7 +346,7 @@ struct NowPlayingView: View {
                     .buttonStyle(.borderless)
                     .menuIndicator(.hidden)
                 Menu {
-                    TrackMenu(track: track)
+                    TrackMenu(track: track, isPlaying: true)
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(Self.roomGlyph)
@@ -499,7 +499,7 @@ struct NowPlayingView: View {
 
                 if let track = currentTrack {
                     Menu {
-                        TrackMenu(track: track)
+                        TrackMenu(track: track, isPlaying: true)
                         SleepTimerItem(player: player)
                         Section { PrivateListeningMenu(store: player.notCounted) }
                     } label: {
@@ -906,7 +906,7 @@ struct NowPlayingView: View {
     @ViewBuilder private var errorBanner: some View {
         if let message = player.errorMessage {
             Label(message, systemImage: "exclamationmark.triangle.fill")
-                .desktopFont(13, weight: .semibold, phone: .footnote.weight(.semibold), wide: inRoom)
+                .desktopFont(Tokens.Size.fact13.size, weight: .semibold, phone: .footnote.weight(.semibold), wide: inRoom)
                 .foregroundStyle(.primary)
                 .lineLimit(2)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -955,13 +955,13 @@ struct NowPlayingView: View {
 
     /// Back up, for a pull that was not a close.
     private func settle() {
-        withAnimation(reduceMotion ? .easeOut(duration: 0.2) : .spring(response: 0.35, dampingFraction: 0.82)) {
+        withAnimation(reduceMotion ? .easeOut(duration: Tokens.Motion.standard) : .spring(response: 0.35, dampingFraction: 0.82)) {
             dragOffset = 0
         }
     }
 
     private func show(_ new: NowPlayingPanel) {
-        withAnimation(reduceMotion ? .easeInOut(duration: 0.2) : .spring(response: 0.45, dampingFraction: 0.86)) {
+        withAnimation(reduceMotion ? .easeInOut(duration: Tokens.Motion.standard) : .spring(response: 0.45, dampingFraction: 0.86)) {
             panel = new
         }
     }

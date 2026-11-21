@@ -3,14 +3,23 @@
 // bar, where Music has its own Account menu. The one signed in is checked;
 // another chosen switches (AppModel.choose, which says in RootView's alert
 // why not, when its server does not answer). Add Account… opens the
-// sign-in in a sheet over the window (RootView). Signing out stays in
-// Settings, where it is asked about first.
+// sign-in in a sheet over the window (RootView). Sign Out… of the one
+// signed in where the menu can ask first (`signOut`, the iPad's ≡, as
+// Linux's primary menu), in Settings' words (signOutConfirmation).
 
 import JukeboxKit
 import SwiftUI
 
 struct AccountMenuItems: View {
     let app: AppModel
+    /// Asks before signing out of the account signed in; nil leaves
+    /// Sign Out… out (a menu with nowhere to ask).
+    var signOut: (() -> Void)?
+
+    init(app: AppModel, signOut: (() -> Void)? = nil) {
+        self.app = app
+        self.signOut = signOut
+    }
 
     var body: some View {
         if app.accounts.saved.count > 1 {
@@ -24,6 +33,10 @@ struct AccountMenuItems: View {
         }
         Button("Add Account…") { app.navigator.isAddingAccount = true }
             .disabled(app.phase != .signedIn)
+        if let signOut {
+            Button("Sign Out…", action: signOut)
+                .disabled(app.credentials == nil)
+        }
     }
 
     /// The account signed in, by its folder's name; set, the switch.
@@ -33,5 +46,38 @@ struct AccountMenuItems: View {
                     guard let account = app.accounts.saved.first(where: { OfflinePaths.account(for: $0) == name }) else { return }
                     app.choose(account)
                 })
+    }
+}
+
+extension View {
+    /// Settings' question before signing out of the account signed in
+    /// (SettingsAccountSection), for a menu's Sign Out….
+    func signOutConfirmation(isPresented: Binding<Bool>, app: AppModel) -> some View {
+        confirmationDialog(SignOutWords.title(app), isPresented: isPresented, titleVisibility: .visible) {
+            Button("Sign Out", role: .destructive) {
+                Task { await app.signOut() }
+            }
+        } message: {
+            Text(SignOutWords.message(app))
+        }
+    }
+}
+
+/// Settings' words for signing out of the account signed in.
+enum SignOutWords {
+    static func title(_ app: AppModel) -> Text {
+        if let name = app.credentials?.serverName {
+            return Text("Sign out of \(name)?")
+        }
+        return Text("Sign out?")
+    }
+
+    /// With others kept, it says which one Jukebox goes on with.
+    static func message(_ app: AppModel) -> String {
+        let others = app.accounts.saved.filter { app.credentials?.isSameAccount(as: $0) != true }
+        if let next = others.first {
+            return String(localized: "Playback stops and Jukebox forgets this account’s library, recent stations and downloaded songs on this \(Device.model), then goes on with \(ServerWords.name(of: next)). Your music, playlists and favorites stay on the server.")
+        }
+        return String(localized: "Playback stops and Jukebox forgets the library, your recent stations and the downloaded songs on this \(Device.model). Your music, playlists and favorites stay on the server.")
     }
 }

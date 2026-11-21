@@ -556,7 +556,7 @@ enum MainWindow {
             let scale = Screen.shared.scale
             Task {
                 guard let texture = await drawn("flat mark 20", width: 20, height: 20, scale: scale, { cr, _ in
-                    Draw.mark(cr, size: 20, outer: 0xA84A17, inner: 0xFFB54D, core: 0xFFF1D6)
+                    Draw.mark(cr, size: 20, outer: Tokens.Arch.copper, inner: Tokens.Arch.glow, core: Tokens.Arch.markCore.dark)
                 }) else { return }
                 gtk_image_set_from_paintable(ptr(mark), texture.pointer)
             }
@@ -632,7 +632,7 @@ enum MainWindow {
     /// the wider ones'.
     private static func breakpoints() {
         let overlaid: [(Widget, String, Bool)] = [(panel!, "collapsed", true)]
-        // Below 900 the heart and Not This go into the song's menu.
+        // Below 900 the heart and Not This leave the bar for the song's menu.
         let narrow = overlaid + [(split!, "collapsed", true), (PlayerBar.volume!, "visible", false),
                                  (PlayerBar.volumeButton!, "visible", true), (PlayerBar.songActions!, "visible", false)]
         // ponytail: below 600 the bar only loses its times and the volume

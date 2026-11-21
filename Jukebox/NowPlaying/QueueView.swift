@@ -234,11 +234,11 @@ struct QueueView: View {
                 // Linux's panel-head: the serif, 20; the line 13.
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title)
-                        .desktopFont(20, design: .serif)
+                        .desktopFont(Tokens.Size.panelHead.size, design: .serif)
                         .lineLimit(1)
                     if !line.isEmpty {
                         Text(line)
-                            .desktopFont(13)
+                            .desktopFont(Tokens.Size.fact13.size)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
                     }
@@ -254,7 +254,7 @@ struct QueueView: View {
                     ArchMark(size: 24, style: .template)
                         .foregroundStyle(Theme.accent)
                     Text(station.title)
-                        .desktopFont(20, design: .serif)
+                        .desktopFont(Tokens.Size.panelHead.size, design: .serif)
                         .lineLimit(1)
                         .accessibilityLabel(Text("Playing from \(station.title)"))
                     Spacer(minLength: 0)
@@ -316,7 +316,7 @@ struct QueueView: View {
     /// "Then", Autoplay's note, the foot: a fact, small and quiet.
     private func panelWords(_ text: String) -> some View {
         Text(text)
-            .desktopFont(13)
+            .desktopFont(Tokens.Size.fact13.size)
             .foregroundStyle(.secondary)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -446,7 +446,7 @@ struct QueueView: View {
             }
         } label: {
             Image(systemName: "ellipsis")
-                .desktopFont(15, weight: .semibold, phone: .body.weight(.semibold), wide: inPanel)
+                .desktopFont(Tokens.Size.body15.size, weight: .semibold, phone: .body.weight(.semibold), wide: inPanel)
                 .foregroundStyle(.primary)
                 .frame(width: 40, height: 32)
                 .contentShape(.rect)
@@ -670,7 +670,7 @@ private struct QueuePanelRow: View {
                     }
                 }
                 // Linux's queue row: the number and the title 15, the rest 13.
-                .desktopFont(15)
+                .desktopFont(Tokens.Size.body15.size)
                 .frame(width: 24, alignment: .trailing)
             } else {
                 ArtworkView(track.artwork, size: 48, sleeve: TitleSleeve.Words(track: track))
@@ -691,7 +691,7 @@ private struct QueuePanelRow: View {
                         // Why the radio chose it: here and nowhere else.
                         // Linux's faint, 40 %.
                         Text(reasonText(reason))
-                            .desktopFont(13)
+                            .desktopFont(Tokens.Size.fact13.size)
                             .foregroundStyle(Color.primary.opacity(0.4))
                             .lineLimit(1)
                     }
@@ -703,7 +703,7 @@ private struct QueuePanelRow: View {
                 bars
             } else {
                 Text(track.duration.clock)
-                    .desktopFont(13)
+                    .desktopFont(Tokens.Size.fact13.size)
                     .monospacedDigit()
                     .foregroundStyle(.secondary)
             }
@@ -713,14 +713,14 @@ private struct QueuePanelRow: View {
 
     private func title(_ track: Track) -> some View {
         Text(track.name)
-            .desktopFont(15)
+            .desktopFont(Tokens.Size.body15.size)
             .foregroundStyle(playing ? Theme.accent : Color.primary)
             .lineLimit(1)
     }
 
     private func fact(_ text: String) -> some View {
         Text(text)
-            .desktopFont(13)
+            .desktopFont(Tokens.Size.fact13.size)
             .foregroundStyle(.secondary)
             .lineLimit(1)
     }

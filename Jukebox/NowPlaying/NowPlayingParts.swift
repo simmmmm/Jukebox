@@ -132,7 +132,7 @@ struct NowPlayingTransportStyle: ButtonStyle {
                     .fill(Color.white.opacity(configuration.isPressed ? 0.16 : 0))
             }
             .scaleEffect(configuration.isPressed && !reduceMotion ? 0.88 : 1)
-            .animation(.easeOut(duration: 0.18), value: configuration.isPressed)
+            .animation(.easeOut(duration: Tokens.Motion.quick), value: configuration.isPressed)
             .opacity(isEnabled ? 1 : 0.35)
             .contentShape(.circle)
     }

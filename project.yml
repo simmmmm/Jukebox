@@ -147,6 +147,7 @@ targets:
       - path: Jukebox/Intents/WidgetIntents.swift
       - path: Jukebox/Components/ArchShapes.swift
       - path: Jukebox/Components/ArtMeasures.swift
+      - path: Jukebox/Components/Tokens.swift
     # ArtMeasures.swift's Station.
     dependencies:
       - package: JukeboxKit

@@ -20,10 +20,10 @@ struct MacMiniPlayer: View {
                 ArtworkView(track?.artwork, size: 64, cornerRadius: Theme.Radius.artwork, sleeve: track.map(TitleSleeve.Words.init(track:)))
                 VStack(alignment: .leading, spacing: Theme.Space.xs) {
                     Text(track?.name ?? String(localized: "Nothing playing"))
-                        .desktopFont(15, weight: .medium)
+                        .desktopFont(Tokens.Size.body15.size, weight: .medium)
                         .lineLimit(1)
                     Text(track?.artistLine ?? "")
-                        .desktopFont(13)
+                        .desktopFont(Tokens.Size.fact13.size)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }

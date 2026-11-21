@@ -53,7 +53,7 @@ struct RadioOnAirCard: View {
             VStack(alignment: .leading, spacing: Theme.Space.xs) {
                 Eyebrow("On air")
                 Text(station.title)
-                    .desktopFont(32, design: .serif)
+                    .desktopFont(Tokens.Size.heroTitle.size, design: .serif)
                     .foregroundStyle(.primary)
                     .lineLimit(2)
                 // When it started, as Linux's; the song where that is not
@@ -67,7 +67,7 @@ struct RadioOnAirCard: View {
                         Text(verbatim: [track.name, track.artistLine].filter { !$0.isEmpty }.joined(separator: " · "))
                     }
                 }
-                .desktopFont(13)
+                .desktopFont(Tokens.Size.fact13.size)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 HStack(spacing: Theme.Space.l) {
@@ -296,7 +296,7 @@ struct RadioDial: View {
                 Spacer()
                 Text("Adventurous")
             }
-            .desktopFont(13, phone: .subheadline)
+            .desktopFont(Tokens.Size.fact13.size, phone: .subheadline)
             .foregroundStyle(.secondary)
             .accessibilityHidden(true)
         }

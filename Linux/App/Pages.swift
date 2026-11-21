@@ -94,12 +94,18 @@ enum HomePage {
         switch app.library.state {
         case let .failed(message):
             let page = emptyPage("Could not load your music", message)
-            adw_status_page_set_child(ptr(page), button("Try Again", "suggested-action") {
+            adw_status_page_set_child(ptr(page), button("Try Again", "suggested-action", "page-button") {
                 Task { await app.library.refresh() }
             }.align(horizontal: GTK_ALIGN_CENTER))
             return page
         case .loaded:
-            return emptyPage("No music yet", "Music on your \(app.library.serverKind) server appears here.")
+            // The same words and Check Again as the iPhone's and the Mac's.
+            let page = emptyPage("No music yet",
+                                 "Your \(app.library.serverKind) server has no music in its libraries yet. Add some there, then check again.")
+            adw_status_page_set_child(ptr(page), wordButton("Check Again") {
+                Task { await app.library.refresh() }
+            }.align(horizontal: GTK_ALIGN_CENTER))
+            return page
         case .empty, .loading:
             let name = app.library.serverName.map { "Loading the music on \($0)" } ?? "Loading your music"
             let page = emptyPage(name, "")
@@ -255,7 +261,7 @@ enum HomePage {
         let card = cardButton(cardRow(art.widget, words, paired: paired)) {
             if app.radio.station?.id == station.id { app.player.togglePlayPause() } else { app.radio.start(station) }
         }
-        contextMenu(on: card) { [("Go to Station", { Pages.open(station) })] }
+        contextMenu(on: card) { stationMenu(station) }
         gtk_widget_set_margin_top(card, 32)
         keep(art, on: raw(card), as: "art")
         return card
@@ -282,9 +288,16 @@ enum HomePage {
         let tile = Tile()
         tile.show(collage: mix.artwork, mix.title, mix.subtitle)
         let button = tileButton(tile.widget) { Pages.open(mix) }
+        // A mix's page's own, with Play and Shuffle first, as a tile has no
+        // buttons (SYSTEM.md, Menus; "Los ze op", 20 November 2026).
         contextMenu(on: button) {
-            menuSections([("Play", { app.player.play(mix.tracks, context: QueueContext(.mix(mix.id), title: mix.title)) })],
-                         [("Start Radio", { app.radio.start(mix.stationSeed) })])
+            let context = QueueContext(.mix(mix.id), title: mix.title)
+            return menuSections([("Play", { app.player.play(mix.tracks, context: context) }),
+                                 ("Shuffle", { app.player.play(mix.tracks, context: context, shuffled: true) })],
+                                [("Play Next", { app.player.playNext(mix.tracks) }),
+                                 ("Add to Queue", { app.player.addToQueue(mix.tracks) })],
+                                [("Add to Playlist…", { Playlists.add(mix.tracks) }),
+                                 ("Start Radio", { app.radio.start(mix.stationSeed) })])
         }
         return button
     }
@@ -497,6 +510,12 @@ final class SearchField {
         UserDefaults.standard.set(recents, forKey: key)
     }
 
+    /// One recent search taken away (its row's Remove), as the iPhone's.
+    func forget(_ term: String) {
+        recents.removeAll { $0 == term }
+        UserDefaults.standard.set(recents, forKey: key)
+    }
+
     func clearRecents() {
         recents = []
         UserDefaults.standard.removeObject(forKey: key)
@@ -603,6 +622,7 @@ enum SearchPage {
                 SearchField.shared.text = term
                 SearchField.shared.focus()
             }
+            contextMenu(on: row) { [("Remove", { SearchField.shared.forget(term) })] }
             append(row, to: content)
         }
     }
@@ -748,14 +768,21 @@ enum LibraryPages {
     /// the library has in it under its name. A tag that joins several
     /// ("Rock; Shoegaze") is each of them, as the radio counts them.
     static func genres() -> Widget {
-        let grid = ItemList<Genre, Tile>(
+        let grid = ItemList<Genre, GenreCell>(
             grid: true,
             make: {
-                let tile = Tile(emptyIcon: Glyphs.name("genres"))
-                return (tile.widget, tile)
+                let cell = GenreCell()
+                // Start Radio on the secondary button, as the Mac's Genres
+                // and the iPhone's Search have it.
+                contextMenu(on: cell.tile.widget) { [weak cell] in
+                    guard let genre = cell?.genre else { return [] }
+                    return [("Start Radio", { app.radio.start(.genre(key: genre.key, name: genre.name)) })]
+                }
+                return (cell.tile.widget, cell)
             },
-            fill: { tile, genre, _ in
-                tile.show(collage: genreCovers(genre), genre.name, LibraryText.songs(songCount(of: genre)))
+            fill: { cell, genre, _ in
+                cell.genre = genre
+                cell.tile.show(collage: genreCovers(genre), genre.name, LibraryText.songs(songCount(of: genre)))
             },
             activate: { genre, _, _ in Pages.open(genre) })
         let empty = emptyLine("The genres in your music’s tags appear here.")
@@ -765,6 +792,13 @@ enum LibraryPages {
             empty.isVisible = genres.isEmpty && !app.library.tracks.isEmpty
         }
         return listPage(vbox([pageTitle("Genres"), empty]), grid.widget, grid: true)
+    }
+
+    /// A genre's tile in the grid, and which genre it shows now (a grid
+    /// reuses its tiles), for its menu.
+    final class GenreCell {
+        let tile = Tile(emptyIcon: Glyphs.name("genres"))
+        var genre: Genre?
     }
 
     /// The covers of a genre's first four albums: its tile's and its page's
@@ -900,7 +934,7 @@ enum Pages {
         // The tile's menu, without the Play the page has; made again as the
         // album's rating changes, so its tick is the server's.
         observe(menuButton) {
-            gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(albumMenu(album, play: false)))
+            gtk_menu_button_set_popover(ptr(menuButton), popoverMenu(albumMenu(album, play: false, heart: false)))
         }
         // The first genre of a joined tag ("Folk; Acoustic" is Folk), as
         // Genres lists them and the Mac's head says it.
@@ -946,9 +980,14 @@ enum Pages {
                           facts: facts([albums.isEmpty ? nil : albums.count == 1 ? "1 album" : "\(albums.count) albums",
                                         length(songs: all.count, seconds: 0)]),
                           actions: [
-            playButton { app.player.play(all, context: context, shuffled: true) },
+            // Play in order and Shuffle beside it, as an album's head has
+            // them, on every client ("Los ze op", 20 November 2026).
+            playButton { app.player.play(all, context: context) },
+            quietButton("Shuffle") { app.player.play(all, context: context, shuffled: true) },
             hbox(spacing: 8, [heartButton { .artist(artist.id) },
-                              moreButton(menuSections([("Start Radio", { app.radio.start(seed) })],
+                              moreButton(menuSections([("Play Next", { app.player.playNext(all) }),
+                                                       ("Add to Queue", { app.player.addToQueue(all) })],
+                                                      [("Start Radio", { app.radio.start(seed) })],
                                                       publicShareItems(.artist(artist))))]),
         ])
         keep(art, on: raw(top), as: "art")
@@ -1235,8 +1274,14 @@ enum Pages {
                 app.player.play(mix.tracks, context: context)
             },
             quietButton("Shuffle") { app.player.play(mix.tracks, context: context, shuffled: true) },
-            moreButton([("Add to Playlist…", { Playlists.add(mix.tracks) }),
-                        ("Start Radio", { app.radio.start(mix.stationSeed) })]),
+            // In a song's order, as the Mac's (SYSTEM.md, Menus).
+            moreButton(menuSections([("Play Next", { app.player.playNext(mix.tracks) }),
+                                     ("Add to Queue", { app.player.addToQueue(mix.tracks) })],
+                                    [("Save as Playlist…", {
+                                        saveAsPlaylist(mix.tracks, named: mix.title, what: "mix", changes: "has changed")
+                                     }),
+                                     ("Add to Playlist…", { Playlists.add(mix.tracks) }),
+                                     ("Start Radio", { app.radio.start(mix.stationSeed) })])),
         ])
         keep(art, on: raw(top), as: "art")
         let list = trackList(mix.tracks, context: { context })
@@ -1285,7 +1330,11 @@ enum Pages {
         Stats.track(.stationPage, ["seed": Stats.seed(station.seed)])
         // Its ⋮ at the header's end, where the Mac's bar has it: the songs
         // shown kept as a playlist, after the station has moved on.
-        let more = moreButton([("Save as Playlist…", { saveAsPlaylist(station, songs(of: station, picks: picks)) }),
+        let more = moreButton([("Save as Playlist…", {
+                                   saveAsPlaylist(songs(of: station, picks: picks),
+                                                  named: "\(station.title), \(Date().formatted(date: .abbreviated, time: .omitted))",
+                                                  what: "station", changes: "has moved on")
+                               }),
                                ("Add to Playlist…", { Playlists.add(songs(of: station, picks: picks)) })])
         Nav.push(station.title, pageColumn(column), end: [more])
     }
@@ -1299,19 +1348,18 @@ enum Pages {
         return tracks.filter { !app.radio.disliked.contains($0.id) && seen.insert($0.id).inserted }
     }
 
-    /// Save as Playlist…: "Radiohead Radio, Nov 15, 2026", the station as it
-    /// was that day, a name to change if the listener likes; then where it
-    /// is, as GNOME tells such news.
-    private static func saveAsPlaylist(_ station: Station, _ songs: [Track]) {
+    /// Save as Playlist…: a station's "Radiohead Radio, Nov 15, 2026", the
+    /// station as it was that day, or a mix's own name, a name to change if
+    /// the listener likes; then where it is, as GNOME tells such news.
+    private static func saveAsPlaylist(_ songs: [Track], named suggested: String, what: String, changes: String) {
         guard !songs.isEmpty else { return }
-        let suggested = "\(station.title), \(Date().formatted(date: .abbreviated, time: .omitted))"
         askName("Save as Playlist",
-                "A playlist with these \(songs.count) songs, on your \(app.library.serverKind) server, to keep after the station has moved on.",
+                "A playlist with these \(songs.count) songs, on your \(app.library.serverKind) server, to keep after the \(what) \(changes).",
                 placeholder: "Playlist Name", text: suggested, action: "Save") { typed in
             Task {
                 do {
                     let saved = try await app.library.createPlaylist(named: typed.isEmpty ? suggested : typed, with: songs)
-                    Stats.track(.playlistCreated, ["from": "station"])
+                    Stats.track(.playlistCreated, ["from": what])
                     MainWindow.toast("“\(saved.name)” is in your playlists now.", button: "Show Playlist") { open(saved) }
                 } catch {
                     MainWindow.toast(error.localizedDescription)

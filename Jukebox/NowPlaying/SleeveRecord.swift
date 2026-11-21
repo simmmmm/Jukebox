@@ -253,15 +253,15 @@ struct VinylDisc: View {
     /// read in paper white — or, until the cover's colour is known, a dark
     /// brown.
     private var labelColor: Color {
-        guard let tone else { return Color(rgb: 0x1A1411) }
+        guard let tone else { return Color(rgb: Tokens.Art.blankLabel) }
         let hsb = tone.hueSaturationBrightness
         return Color(hue: hsb.hue, saturation: min(hsb.saturation, 0.45), brightness: 0.3)
     }
 
     /// Black vinyl, the smooth land between songs, the run-out.
-    static let vinyl = Color(rgb: 0x100D0C)
-    private static let land = Color(rgb: 0x070505)
-    private static let runOut = Color(rgb: 0x0C0A09)
+    static let vinyl = Color(rgb: Tokens.Art.vinyl)
+    private static let land = Color(rgb: Tokens.Art.land)
+    private static let runOut = Color(rgb: Tokens.Art.runOut)
 }
 
 /// Circles about the middle of the frame, `radii` points out: the
@@ -333,7 +333,7 @@ private struct VinylLabelFace: View {
                 words(label)
             }
             Circle()
-                .fill(Color(rgb: 0x0A0807))
+                .fill(Color(rgb: Tokens.Art.hole))
                 .frame(width: holeRadius * 2, height: holeRadius * 2)
         }
         .frame(width: radius * 2, height: radius * 2)
@@ -378,7 +378,7 @@ private struct VinylLabelFace: View {
     }
 
     /// Paper white, Theme.ground's by day.
-    private static let ink = Color(rgb: 0xF6F3EE)
+    private static let ink = Color(rgb: Tokens.Arch.paper)
 }
 
 /// The light on the grooves: two soft wedges half a turn apart, white at a

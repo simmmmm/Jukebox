@@ -31,6 +31,8 @@ if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted && -d build ]]; then
   rm -rf build
 fi
 mkdir -p build/logs
+# The asset catalog's accent as Tokens.swift has it (docs/design/SYSTEM.md).
+dev/accent-check.sh
 
 # The Mac compiles (run 43621164893, 14 November 2026): its build is part of
 # the job's verdict. False again makes a red Mac build only a warning.

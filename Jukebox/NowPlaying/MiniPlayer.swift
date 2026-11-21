@@ -103,7 +103,7 @@ struct MiniBarFoot: ViewModifier {
                 }
             }
             // Plaat's song comes and goes with the page making room for it.
-            .animation(.easeInOut(duration: 0.25), value: recordIsShown)
+            .animation(.easeInOut(duration: Tokens.Motion.move), value: recordIsShown)
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 isKeyboardUp = true
             }

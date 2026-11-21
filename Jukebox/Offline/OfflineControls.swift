@@ -73,7 +73,7 @@ struct OfflineProgressRing: View {
                 .frame(width: side * 0.28, height: side * 0.28)
         }
         .frame(width: side, height: side)
-        .animation(.linear(duration: 0.4), value: shown)
+        .animation(.linear(duration: Tokens.Motion.settle), value: shown)
     }
 }
 
