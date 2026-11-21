@@ -87,17 +87,17 @@ struct MiniPlayerTabFoot: View {
     private static let reach: CGFloat = 72
 
     /// The fade, top to bottom, eased so no band shows where it starts:
-    /// nothing above the block, most of it by the tabs' symbols, so a
-    /// white cover under them still leaves their names readable.
+    /// nothing above the block, whole by the tabs, so no page shows
+    /// through under their names ("Lights Minors" did, 21 November 2026).
     private static func fade(_ color: Color) -> LinearGradient {
         LinearGradient(stops: [
             .init(color: color.opacity(0), location: 0),
-            .init(color: color.opacity(0.05), location: 0.15),
-            .init(color: color.opacity(0.18), location: 0.3),
-            .init(color: color.opacity(0.42), location: 0.45),
-            .init(color: color.opacity(0.72), location: 0.58),
-            .init(color: color.opacity(0.9), location: 0.7),
-            .init(color: color.opacity(0.96), location: 1),
+            .init(color: color.opacity(0.08), location: 0.12),
+            .init(color: color.opacity(0.3), location: 0.25),
+            .init(color: color.opacity(0.65), location: 0.38),
+            .init(color: color.opacity(0.9), location: 0.5),
+            .init(color: color.opacity(0.98), location: 0.6),
+            .init(color: color, location: 0.7),
         ], startPoint: .top, endPoint: .bottom)
     }
 
