@@ -697,9 +697,9 @@ final class Walk {
     func tab(_ label: String) throws -> Bool {
         let byLabel = NSPredicate(format: "label == %@", label)
         let candidates = [
-            // With Spotify and Glas the iPhone's tabs are Jukebox's own row
-            // (TabRow), by these; a back button or the keyboard's key can
-            // have the same label. With Plaat, the system's tab bar.
+            // The iPhone's tabs are Jukebox's own row (TabRow), by these; a
+            // back button or the keyboard's key can have the same label.
+            // The system's tab bar on the iPad.
             app.buttons.matching(identifier: "tab.\(label.lowercased())").firstMatch,
             app.tabBars.buttons.matching(byLabel).firstMatch,
             app.buttons.matching(byLabel).firstMatch,
