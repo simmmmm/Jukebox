@@ -205,8 +205,10 @@ private struct SettingsRoot: View {
     }
 }
 
-/// One page: its sections in the order the one long sheet had them.
-private struct SettingsPageForm: View {
+/// One page: its sections in the order the one long sheet had them. Not
+/// private: the Mac's snapshots draw each page alone (Snapshots.swift), as
+/// an offscreen window has no toolbar for the tabs.
+struct SettingsPageForm: View {
     let page: SettingsPage
 
     @Environment(\.isWide) private var isWide

@@ -7,7 +7,7 @@
 // (20 November 2026). The store's pictures, with the real window and its
 // title bar, stay the walk's, on GitHub's Mac, when he asks (store-walk).
 //
-// The app's own views (WideShell, NowPlayingView, SettingsView) and stores,
+// The app's own views (WideShell, NowPlayingView, each Settings pane) and stores,
 // signed in to the fake Jellyfin ci/screenshots.sh starts on localhost:8096
 // (the walk's made-up library), drawn in a window that is never put on
 // screen, 1440 by 900 as the store's window, dark and then light. No title
@@ -51,6 +51,9 @@ private struct Round {
     let address: String
     /// The window's size in the store's pictures (docs/RELEASE.md).
     let size = CGSize(width: 1440, height: 900)
+    /// The Settings window's width (SettingsView's 560), and room for its
+    /// longest pane, Library with its Pages.
+    let settingsSize = CGSize(width: 560, height: 1000)
 
     func run() async {
         let started = Date()
@@ -110,9 +113,19 @@ private struct Round {
                 app.navigator.searchQuery = app.library.artistsByName.first.map { String($0.name.prefix(4)) } ?? "a"
                 app.navigator.place = .search
             }
-            // No Settings: its window's tabs live in a toolbar, which an
-            // offscreen window does not draw, so the picture came out broken.
-            // The store's walk on GitHub has it.
+            // Settings: each pane's own form alone, at the window's width
+            // (SettingsView's tabs), as its toolbar of tabs is not drawn in
+            // an offscreen window and the whole window came out broken.
+            // Tall enough for the longest pane; the store's walk on GitHub
+            // has the real window.
+            for page in SettingsPage.allCases where page != .about {
+                number += 1
+                let view = SettingsPageForm(page: page)
+                    .frame(width: settingsSize.width, height: settingsSize.height)
+                    .snapshotEnvironment(app, panel: panel)
+                await render(view, size: settingsSize, appearance: appearance, settle: 1,
+                             as: String(format: "%@%02d-settings-%@", prefix, number, page.rawValue))
+            }
         }
         // What the system's Now Playing was told, cleared again.
         app.player.stop()
