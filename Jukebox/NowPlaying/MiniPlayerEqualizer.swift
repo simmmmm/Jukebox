@@ -1,24 +1,31 @@
-// Equalizer's bars, behind its row (RecordMiniPlayer, `.equalizer`): the
-// music's levels, low to high, as a hi-fi's meter seen through frosted
-// glass. "houd t wel lekker rustig", and no neon (the photographer, 21
-// November 2026). So:
+// Equalizer's meter, behind its row (RecordMiniPlayer, `.equalizer`): the
+// music's levels, low to high, as an 80s hi-fi's or jukebox's level meter:
+// "ik had eerder horizontale balkjes verwacht voor meer dat jaren 80
+// jukebox gevoel zoals in mijn voorbeeld", and "houd t wel lekker rustig"
+// (the photographer, 21 November 2026). So:
 //
-//   - 18 plain thin bars, no segments, no bloom: light means on air
-//     (tells.md, 1), and this is the song on air, quietly;
-//   - Copper at the foot to Glow at the top, the same in every bar, so no
-//     colour jumps with the level; by night at 24 %, by day 14 %, over the
-//     page's own ground, so the words keep their contrast: white on the
-//     brightest by night about 11:1 and Glow 6:1, Copper by day 4.9:1;
-//   - they rise in about a fifth of a second and fall at half their height
-//     a second, so a beat lifts them and they settle, never flicker;
+//   - 16 columns of short wide segments, from the tab bar's shoulder up
+//     behind the whole row to the arch's crown: the meter is the bar's
+//     ground. The segments not lit stay faintly there, the display at rest;
+//   - flat, no bloom: light means on air (tells.md, 1), and this is the
+//     song on air, quietly. Copper at the foot to Glow at the top, the same
+//     in every column, the lit ones a touch brighter going up, so no colour
+//     jumps with the level;
+//   - at most 16 % by night and 8 % by day over the page's own solid
+//     ground, so the words keep 4.5:1 over a lit segment: by night white
+//     about 13:1, Glow 7.9:1, the artist's grey 4.5:1; by day Copper 4.5:1
+//     and black about 15:1 (the artist's grey is the system's, near 3:1 on
+//     the plain page too);
+//   - they rise in about a fifth of a second and fall at 0.4 of their
+//     height a second, so a beat lifts them and they settle, never flicker;
 //   - paused they fall and rest low; with Reduce Motion they stand still at
 //     a calm level, whatever plays.
 //
 // The levels are the meter's (LevelMeter.swift) where this device plays the
 // sound; where it does not (HLS, Play On, AirPlay) a slow envelope of their
-// own, a beat at 112 a minute in the low bars and a drift over all of them.
-// 30 frames a second while it plays, none while paused and settled, off
-// screen, under Now Playing or in the background.
+// own, a beat at 112 a minute in the low columns and a drift over all of
+// them. 30 frames a second while it plays, none while paused and settled,
+// off screen, under Now Playing or in the background.
 
 import SwiftUI
 
@@ -35,19 +42,25 @@ struct EqualizerBars: View {
     /// Paused a moment ago: the bars still falling to rest.
     @State private var isFalling = false
 
-    static let columns = 18
-    /// The tallest bar's part of its frame: the row and the crown over it.
-    static let reach: CGFloat = 1
+    static let columns = 16
+    /// A segment's height and the gap over it, points.
+    static let segment: CGFloat = 4
+    static let gap: CGFloat = 3
+    /// The gap between columns, points.
+    static let gutter: CGFloat = 5
+    /// An unlit segment's part of a lit one's strength: the grid at rest.
+    static let unlit = 0.2
     /// Where they rest, paused.
     static let rest: Float = 0.04
-    static let nightOpacity = 0.24
+    /// The brightest lit segment's strength, over the solid ground.
+    static let nightOpacity = 0.16
+    static let dayOpacity = 0.08
     /// The screenshot walk's `-equalizerStill YES` only: Reduce Motion's
     /// calm level whatever plays, as the walk's songs stall in the
     /// simulator and the bars would only rest.
     private static let walkStill = UserDefaults.standard.bool(forKey: "equalizerStill")
 
     private var standsStill: Bool { reduceMotion || Self.walkStill }
-    static let dayOpacity = 0.14
 
     /// Seen, and the app in front: only then is anything worked out.
     private var isSeen: Bool {
@@ -104,23 +117,38 @@ struct EqualizerBars: View {
         }
     }
 
-    /// Reduce Motion's: the envelope's shape, standing.
-    static let still: [Float] = (0 ..< columns).map { 0.32 - 0.14 * Float($0) / Float(columns - 1) }
+    /// Reduce Motion's, and the walk's: a moment of music, standing, the
+    /// low end fuller, at about half height.
+    static let still: [Float] = [0.56, 0.7, 0.62, 0.74, 0.6, 0.5, 0.62, 0.46,
+                                 0.54, 0.42, 0.5, 0.38, 0.44, 0.32, 0.36, 0.26]
 
     private func draw(_ levels: [Float], in graphics: inout GraphicsContext, size: CGSize) {
+        let pitch = Self.segment + Self.gap
+        let rows = max(1, Int((size.height + Self.gap) / pitch))
         let column = size.width / CGFloat(levels.count)
-        let width = min(6, max(3, column * 0.28))
-        let tallest = size.height * Self.reach
-        let shading = GraphicsContext.Shading.linearGradient(
-            Gradient(colors: [Theme.Arch.copper, Theme.Arch.glow]),
-            startPoint: CGPoint(x: 0, y: size.height),
-            endPoint: CGPoint(x: 0, y: size.height - tallest))
+        let width = column - Self.gutter
         for (index, level) in levels.enumerated() {
-            let height = max(width, tallest * CGFloat(level))
-            let x = column * (CGFloat(index) + 0.5) - width / 2
-            let bar = CGRect(x: x, y: size.height - height, width: width, height: height)
-            graphics.fill(Path(roundedRect: bar, cornerRadius: width / 2), with: shading)
+            let lit = Int((CGFloat(level) * CGFloat(rows)).rounded())
+            let x = column * CGFloat(index) + Self.gutter / 2
+            for row in 0 ..< rows {
+                let up = Double(row) / Double(max(1, rows - 1))
+                let y = size.height - CGFloat(row + 1) * pitch + Self.gap
+                let segment = Path(CGRect(x: x, y: y, width: width, height: Self.segment))
+                let colour = Self.colour(at: up)
+                let strength = row < lit ? 0.75 + 0.25 * up : Self.unlit
+                graphics.fill(segment, with: .color(colour.opacity(strength)))
+            }
         }
+    }
+
+    /// Copper at the foot to Glow at the top.
+    private static func colour(at up: Double) -> Color {
+        let copper = Tokens.Arch.copper, glow = Tokens.Arch.glow
+        func part(_ shift: UInt32) -> Double {
+            let a = Double((copper >> shift) & 0xFF), b = Double((glow >> shift) & 0xFF)
+            return (a + (b - a) * up) / 255
+        }
+        return Color(red: part(16), green: part(8), blue: part(0))
     }
 }
 
@@ -132,7 +160,7 @@ private final class BarMotion {
 
     /// Rise: the part of the way closed each second. Fall: height a second.
     static let rise: Float = 5
-    static let fall: Float = 0.5
+    static let fall: Float = 0.4
 
     func step(to target: [Float], at date: Date) -> [Float] {
         let seconds = Float(min(0.1, max(0, date.timeIntervalSince(last ?? date))))

@@ -215,10 +215,13 @@ struct RecordMiniPlayer: View {
         .background {
             ZStack {
                 ground
-                // Equalizer's bars stand on the tab bar's shoulder and
-                // reach to the arch's crown, behind the words, not down
+                // Equalizer's meter stands on the tab bar's shoulder and
+                // reaches to the arch's crown, behind the words, not down
                 // under the tab bar's glass, where the first walk's hid.
                 if style == .equalizer {
+                    // Solid under the words, so no cover shows through
+                    // behind them; the arch above keeps its soft edge.
+                    Theme.ground
                     EqualizerBars()
                         .padding(.top, -Self.crown)
                         .allowsHitTesting(false)
