@@ -330,9 +330,12 @@ struct AlbumDetailView: View {
             let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
             play(tracks, from: i, album: shown, shuffled: false)
         } label: {
-            TrackRow(track, leading: .number(track.trackNumber), subtitle: Self.subtitle(of: track, on: shown))
+            // Its place on its disc, not the file's tag (LibraryIndex.placeOnDisc).
+            let place = LibraryIndex.placeOnDisc(at: tracks.firstIndex(where: { $0.id == track.id }) ?? 0, in: tracks)
+            TrackRow(track, leading: .number(place), subtitle: Self.subtitle(of: track, on: shown))
         }
         .buttonStyle(.plain)
+        .trackListRow()
     }
 
     private func footer(_ shown: Album, tracks: [Track]) -> some View {

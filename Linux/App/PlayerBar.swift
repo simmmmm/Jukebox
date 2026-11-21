@@ -168,6 +168,17 @@ enum PlayerBar {
         // Lyrics shows only where there are lyrics to be had (the server's,
         // or LRCLIB's when Preferences allow it), as on the iPhone.
         observe(lyrics) { lyrics.isVisible = lyricsToBeHad() }
+        // Off for a song with none, once that is known (Panel.swift); the
+        // song playing asked for here, so the button knows.
+        observe(lyrics) { gtk_widget_set_sensitive(lyrics, songHasNoLyrics() ? 0 : 1) }
+        var asked: String?
+        observe(lyrics) {
+            let online = app.settings.findLyricsOnline
+            guard lyricsToBeHad(), let server = app.server, let track = app.player.currentTrack,
+                  "\(track.id)\(online)" != asked else { return }
+            asked = "\(track.id)\(online)"
+            LyricsFinder.shared.prefetch(track, server: server, online: online)
+        }
         let tools = hbox(spacing: 8, [NotCountedUI.sign(), lyrics, upNext, playOnButton(), volume, volumeButton]).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER)
         tools.margins(horizontal: 16)
 

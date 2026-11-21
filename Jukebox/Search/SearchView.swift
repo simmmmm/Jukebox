@@ -340,6 +340,7 @@ private struct SearchResultsList: View {
                             TrackRow.standard(track)
                         }
                         .buttonStyle(.plain)
+                        .trackListRow()
                     }
                 } header: {
                     ListHeading("Songs")

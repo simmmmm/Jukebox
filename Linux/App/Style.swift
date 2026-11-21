@@ -37,6 +37,7 @@ enum Style {
 
     /// A duration as CSS: "200ms".
     private static func ms(_ seconds: Double) -> String { "\(Int((seconds * 1000).rounded()))ms" }
+    private static func px(_ points: CGFloat) -> String { "\(Int(points))px" }
 
     private static func load() {
         let dark = adw_style_manager_get_dark(adw_style_manager_get_default()) != 0
@@ -150,11 +151,11 @@ enum Style {
         /* min-width: an empty list's least stays 0 under its -16 of margin. */
         listview.rows { margin: 0 -8px; min-width: 16px; }
         listview.rows > row { padding: 0 8px; }
-        .track-row { min-height: 48px; }
+        .track-row { min-height: \(px(Tokens.Row.wideNumbered)); }
         /* Songs picked with Ctrl or Shift (TrackPicks): libadwaita's own
            selected row, not the accent, which means on air. */
         listview.rows > row.picked { background-color: alpha(currentColor, 0.1); }
-        .track-row.covered { min-height: 64px; }
+        .track-row.covered { min-height: \(px(Tokens.Row.wideCovered)); }
         /* A chooser's rows (Choosers.swift): 56 with their picture 40,
            their hover in the dialog's 8 of margin. */
         listview.picks { padding: 0 8px 16px; }
@@ -240,12 +241,12 @@ enum Style {
         .lyrics-quiet { font-size: 15px; }
         listview.queue { padding: 12px 0 16px; }
         listview.queue > row { padding: 0 16px; }
-        .queue-row { min-height: 48px; }
+        .queue-row { min-height: \(px(Tokens.Row.wideNumbered)); }
         /* Remove: there while the pointer is over the row, or the keys on it. */
         .queue-row .queue-remove { opacity: 0; transition: opacity \(ms(Tokens.Motion.quick)) ease-out; }
         .queue-row:hover .queue-remove, .queue-row .queue-remove:focus-visible { opacity: 1; }
-        .queue-row.covered { min-height: 64px; }
-        .queue-row.station { min-height: 72px; }
+        .queue-row.covered { min-height: \(px(Tokens.Row.wideCovered)); }
+        .queue-row.station { min-height: \(px(Tokens.Row.wideReason)); }
         /* History: there, but quieter than what is to come (the iPhone's 50 %). */
         .queue-row.played { min-height: 64px; opacity: 0.5; }
         /* The dial: the accent, its knob always shown (it is set, not read). */

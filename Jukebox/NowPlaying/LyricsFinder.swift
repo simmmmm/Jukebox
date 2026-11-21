@@ -10,13 +10,17 @@
 // The server is asked once a launch for each song; LRCLIB's answers are also
 // kept on disk (the kit's LyricsCache: found for 90 days, not found for 3),
 // so a song is not looked up again each time it comes round on a station.
-// Nothing is asked while the lyrics are closed: LyricsView asks for the song
-// playing and, while it is open, the one after it. A server without lyrics
-// of any kind (ServerCapability.lyrics: a Jellyfin before 10.9) is not asked:
-// LRCLIB answers at once.
+// The song playing is asked for where its Lyrics button shows (Now Playing
+// on the iPhone, the wide bar, Linux's bar), so the button is off for a song
+// with none: "Kan je t knoppie gewoon disablen toch?" (the photographer, 21
+// November 2026), in place of a "No lyrics for this song" behind it. The
+// song after it only while the lyrics are open (LyricsView). A server
+// without lyrics of any kind (ServerCapability.lyrics: a Jellyfin before
+// 10.9) is not asked: LRCLIB answers at once.
 
 import Foundation
 import JukeboxKit
+import Observation
 
 /// What Now Playing shows for a song.
 enum LyricsAnswer: Equatable {
@@ -32,21 +36,26 @@ enum LyricsAnswer: Equatable {
     case failed(server: Bool)
 }
 
+@Observable
 final class LyricsFinder {
     static let shared = LyricsFinder()
 
-    private let lrclib: LRCLIBClient
-    private let cache: LyricsCache
+    @ObservationIgnored private let lrclib: LRCLIBClient
+    @ObservationIgnored private let cache: LyricsCache
 
     /// The server's lyrics, by track, this launch.
-    private var fromServer: [ItemID: Lyrics] = [:]
+    @ObservationIgnored private var fromServer: [ItemID: Lyrics] = [:]
     /// Tracks the server has no lyrics for.
-    private var notOnServer: Set<ItemID> = []
+    @ObservationIgnored private var notOnServer: Set<ItemID> = []
     /// LRCLIB's answers, by track, this launch (and on disk for longer).
-    private var fromLRCLIB: [ItemID: LyricsLookup] = [:]
+    @ObservationIgnored private var fromLRCLIB: [ItemID: LyricsLookup] = [:]
     /// The next song's lookups under way, so when that song starts
     /// mid-lookup the view waits for it rather than asking twice.
-    private var asking: [Asked: Task<LyricsAnswer, Never>] = [:]
+    @ObservationIgnored private var asking: [Asked: Task<LyricsAnswer, Never>] = [:]
+    /// Songs found to have no words to show (none anywhere, or
+    /// instrumental), as asked with LRCLIB or without: what turns their
+    /// Lyrics button and tab off. Observed, so the button follows.
+    private var wordless: Set<Asked> = []
 
     private struct Asked: Hashable {
         var trackID: ItemID
@@ -82,6 +91,20 @@ final class LyricsFinder {
     /// songs with the lyrics open leaves no ten lookups running, and none
     /// is begun with LRCLIB for a song already gone.
     func lyrics(for track: Track, server: any MusicServer, online: Bool) async -> LyricsAnswer {
+        let answer = await look(for: track, server: server, online: online)
+        note(answer, for: Asked(trackID: track.id, online: online))
+        return answer
+    }
+
+    /// Whether the song is known to have no words to show: its Lyrics
+    /// button and tab off. Not known yet (still asking, or never asked), or
+    /// a lookup that failed: on.
+    func hasNone(_ track: Track?, online: Bool) -> Bool {
+        guard let track else { return false }
+        return wordless.contains(Asked(trackID: track.id, online: online))
+    }
+
+    private func look(for track: Track, server: any MusicServer, online: Bool) async -> LyricsAnswer {
         if let known = known(track, online: online) { return known }
         // The next song's lookup, begun while the one before it played:
         // waited for, not asked again.
@@ -89,18 +112,34 @@ final class LyricsFinder {
         return await find(track, server: server, online: online)
     }
 
+    private func note(_ answer: LyricsAnswer, for asked: Asked) {
+        switch answer {
+        case .notFound, .instrumental:
+            guard !wordless.contains(asked) else { return }
+            if wordless.count >= 2_000 { wordless.removeAll() }
+            wordless.insert(asked)
+        case .lyrics, .failed:
+            break
+        }
+    }
+
     /// Looks up `track` in the background if nothing is known of it yet:
-    /// the next song's, while the lyrics are open, so they are there when
-    /// it starts. A task of its own, so it ends and is remembered even when
-    /// the song playing ends first; one song's, as LyricsView asks only
-    /// once it has the song playing's answer.
+    /// the song playing's, where its Lyrics button shows, and the next
+    /// song's while the lyrics are open, so they are there when it starts.
+    /// A task of its own, so it ends and is remembered even when the song
+    /// playing ends first.
     func prefetch(_ track: Track?, server: any MusicServer, online: Bool) {
-        guard let track, known(track, online: online) == nil else { return }
+        guard let track else { return }
         let asked = Asked(trackID: track.id, online: online)
+        if let known = known(track, online: online) {
+            note(known, for: asked)
+            return
+        }
         guard asking[asked] == nil else { return }
         asking[asked] = Task {
             let answer = await self.find(track, server: server, online: online)
             self.asking[asked] = nil
+            self.note(answer, for: asked)
             return answer
         }
     }

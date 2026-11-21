@@ -398,6 +398,7 @@ struct PlaylistDetailView: View {
                         TrackRow.standard(entry.track)
                     }
                     .buttonStyle(.plain)
+                    .trackListRow()
                 }
                 .onDelete(perform: deleteAction(shown))
                 .onMove(perform: moveAction(shown))

@@ -62,6 +62,9 @@ the system's sans. Times and counts in tabular figures.
 - **Space**, the 4-point grid: 4, 8, 12, 16, 24, 32 (`Tokens.Space`). A
   page's margin is 20 on the iPhone, `DesktopMeasures` wide.
   `dev/grid-check.sh` walks both.
+- **Rows** (`Tokens.Row`): a song's row on the iPhone 52 for one line (44
+  for the finger, a little air) and 60 for two; wide, for the pointer, 48
+  numbered, 64 with a cover, 72 with the radio's reason.
 - **Radius**: 6 for artwork, and for the filled button and its twin on
   Apple (GNOME's own button corners on Linux, which are 6 too). What holds
   them is concentric: a tile's hover 14 (6 + 8), Home's cards 18 (6 + 12).
@@ -97,10 +100,21 @@ icon-and-label pill.
   Adwaita's symbolic icons and `Glyphs` (`Style.swift`).
 
 ### Rows and lists
-Content on the ground, parted by hairlines. Rows 48 tall, 64 with a cover.
-The song playing in the accent. Songs are picked with Ctrl and Shift wide.
+Content on the ground, parted by hairlines. A song's row is as tall as
+`Tokens.Row` says and no taller: on the iPhone 52, 60 with a second line
+(the list's own insets none: they stood rows of 75 round the "…", "Ook
+heb ik t idee dat nummers nu wel erg veel padding boven en onder
+krijgen", 21 November 2026); wide 48, 64 with a cover. The song playing
+in the accent. Songs are picked with Ctrl and Shift wide.
+
+An album's songs are numbered by their place on their disc, 1, 2, 3…, in
+the album's order (disc, the file's track number, the name); the file's
+number only orders them, as tags read 2, 3, 4 or 6, 7, 7, 8 ("Ik kan geen
+touw vastknopen waarom de nummers allemaal verschillend zijn", 21 November
+2026; `LibraryIndex.placeOnDisc`). Up Next numbers by place in the queue.
 - Apple: `TrackRow` (`Components/TrackRow.swift`), `Hairline`; the iPhone
-  adds a "…" on each row, as touch has no secondary click.
+  adds a "…" on each row, as touch has no secondary click, and its lists
+  put `.trackListRow()` on each song's row.
 - GNOME: `TrackRow`, `trackList` (`Parts.swift`), `listview.rows`.
 
 ### Cards and the raised ground
@@ -141,7 +155,10 @@ what applies (Play first on a tile, as it has no button; Play and Shuffle
 on a mix's). A page's "…" leaves out what has a button beside it (the
 heart wide). A station's tile: Play Station (Show Full Player on the air) ·
 Go to Station. The song playing (the bar, Full Player): a song's menu with
-the station's lessons as its list's section. The primary menu: Private
+the station's lessons as its list's section. A toggle in a menu (Don't
+Count Plays) is a check on Apple and on GNOME plain words that say what
+it does (Count Plays Again while marked); GNOME's checks and radio items
+live only on a submenu's page (Rating). The primary menu: Private
 Listening, Settings or Preferences, the accounts, Add Account…, Sign Out…
 (the Mac's in Settings), and where the platform has them Mini Player,
 Keyboard Shortcuts, About. Linux's menus sit on `lifted`; Apple's are the
@@ -166,6 +183,17 @@ same words on every client.
 - Apple: `ContentUnavailableView` (`Home/HomeParts.swift`,
   `Library/LibraryParts.swift`); `EmptyLine` (`Theme.swift`).
 - GNOME: `emptyPage` (status page) and `emptyLine` (`Parts.swift`).
+
+### Lyrics
+The Lyrics button (Now Playing's on the iPhone, the bar's wide) and the
+panel's Lyrics tab are there where lyrics can be had at all, and off,
+dimmed, for a song known to have none or to be instrumental: "Kan je t
+knoppie gewoon disablen toch?" (21 November 2026). On while it is still
+asked. Open on a song without, they give way to the sleeve or Up Next; no
+"No lyrics" line.
+- Apple: `NowPlayingView`'s bottom row, `PlayerBar`, `PanelView`;
+  `LyricsFinder.hasNone`.
+- GNOME: `PlayerBar.swift`, `Panel.swift` (`songHasNoLyrics`).
 
 ### The player bar and the mini player
 Wide: the bar, 88 across the window's foot, three zones from
@@ -213,6 +241,8 @@ Quick Connect) as words in the accent under it.
 | Grounds | Jukebox's flat grounds, menus `lifted`; the system's where it draws a list (Settings, Preferences) | Flat grounds (tells 2) |
 | Filled buttons | One a screen, plain; 6 corners on Apple, GNOME's own on Linux; never a pill or capsule | One radius (tells 6) |
 | Menus' ground | Linux's on `lifted`; Apple's the system's | GNOME's grey popovers read as another app's; Apple's menus are glass, drawn by the system |
+| Menu icons | SF Symbols in Apple's menus; none in GNOME's | Each platform's menus as its own apps draw them |
+| Menu checks | A check on Apple; on GNOME only in a submenu (Rating), a toggle in the menu itself as words (Don't Count Plays, Count Plays Again) | GTK keeps a check's room before every item of a menu page that has one, which stood the whole menu in from GNOME's edge ("het lijkt wel of je rekening hebt gehouden met meer iconen qua padding", 21 November 2026) |
 | Destructive items | Remove from a list first, in its list's section; what cannot be undone (Delete) last and alone; Apple's red role on both | GNOME's order, Apple's colour |
 | Wide window | Linux's layout on the iPad and the Mac; native only where the OS has a place (menu bar, toolbar search, traffic lights) | "ik wil dat de linux app en de apple app 1:1 op elkaar lijken" |
 

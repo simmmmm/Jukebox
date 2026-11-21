@@ -101,6 +101,21 @@ nonisolated enum Tokens {
         static let quietTint = 0.12
     }
 
+    /// A song's row: on the iPhone 52 for one line (an album's numbered
+    /// rows: 44 for the finger and a little air) and 60 for two (the cover
+    /// 48 with 6 above and under it); wide, for the pointer, 48 numbered
+    /// and 64 with a cover, 72 with the radio's reason. The iPhone's rows
+    /// stood 75 tall, the list's own insets around the "…": "Ook heb ik t
+    /// idee dat nummers nu wel erg veel padding boven en onder krijgen"
+    /// (the photographer, 21 November 2026).
+    enum Row {
+        static let oneLine: CGFloat = 52
+        static let twoLines: CGFloat = 60
+        static let wideNumbered: CGFloat = 48
+        static let wideCovered: CGFloat = 64
+        static let wideReason: CGFloat = 72
+    }
+
     // MARK: Type
 
     /// The wide window's sizes, in points (pixels on Linux), each with its

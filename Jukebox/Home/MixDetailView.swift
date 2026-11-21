@@ -149,6 +149,7 @@ struct MixDetailView: View {
                 TrackRow.standard(track)
             }
             .buttonStyle(.plain)
+            .trackListRow(!isWide)
         }
         .listRowBackground(Color.clear)
     }

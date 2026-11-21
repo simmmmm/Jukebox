@@ -11,6 +11,7 @@ import SwiftUI
 
 struct PanelView: View {
     @Environment(PanelState.self) private var panel
+    @Environment(AudioPlayer.self) private var player
     @Environment(AppModel.self) private var app
     @Environment(AppSettings.self) private var settings
     @Environment(Navigator.self) private var navigator
@@ -36,7 +37,10 @@ struct PanelView: View {
                 // 15 November 2026); its list's own headings stay.
                 tab("Now Playing", .upNext)
                 if offersLyrics {
+                    // Off for a song with none, as the bar's button
+                    // (LyricsFinder.hasNone).
                     tab("Lyrics", .lyrics)
+                        .disabled(songHasNoLyrics)
                 }
                 Spacer(minLength: 0)
             }
@@ -50,6 +54,14 @@ struct PanelView: View {
         .onChange(of: offersLyrics, initial: true) { _, offers in
             if !offers && panel.content == .lyrics { panel.content = .upNext }
         }
+        // None for this song, once that is known: Up Next.
+        .onChange(of: songHasNoLyrics, initial: true) { _, none in
+            if none && panel.content == .lyrics { panel.content = .upNext }
+        }
+    }
+
+    private var songHasNoLyrics: Bool {
+        LyricsFinder.shared.hasNone(player.currentTrack, online: settings.findLyricsOnline)
     }
 
     private var inRoom: Bool {

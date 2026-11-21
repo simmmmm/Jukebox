@@ -3,7 +3,8 @@
 // NotCountedStore). "kun je het ook mogelijk maken om nummers/albums/
 // playlists niet te scrobblen? of mee te laten tellen voor die stats bijv
 // voor kerstmuziek oid?", and "een soort prive modus overall" (19 November
-// 2026). A check item in the song's, album's and playlist's menus; Private
+// 2026). An item in the song's, album's and playlist's menus (Don't Count
+// Plays, or Count Plays Again while marked); Private
 // Listening as radio items in the primary menu and a row in Preferences;
 // one quiet glyph in the bar while it is on.
 
@@ -16,10 +17,15 @@ enum NotCountedUI {
         (.off, "Off"), (.on, "On"), (.untilRestart, "Until Jukebox Restarts"),
     ]
 
-    /// The menus' item, a check while marked (`popoverMenu`'s `checkItem`).
+    /// The menus' item, a plain one whose words say what it does: Don't
+    /// Count Plays, and Count Plays Again while marked, as Preferences'
+    /// Count Again. Not a check: one check item in a GNOME menu keeps room
+    /// for its mark before every item of that menu, so the whole menu stood
+    /// in from the edge ("het lijkt wel of je rekening hebt gehouden met
+    /// meer iconen qua padding", the photographer, 21 November 2026).
     static func items(_ kind: NotCounted.Kind, _ id: ItemID, _ name: String) -> [(String, () -> Void)] {
         let store = app.player.notCounted
-        return [(checkItem("Don't Count Plays", checked: store.isMarked(kind, id)),
+        return [(store.isMarked(kind, id) ? "Count Plays Again" : "Don't Count Plays",
                  { store.toggle(kind, id: id, name: name) })]
     }
 

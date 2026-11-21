@@ -462,7 +462,9 @@ Played, not counted (19 November 2026): "bijv voor kerstmuziek oid", and
 
 - **What**: songs, albums and playlists marked Don't Count Plays (a check
   item in their menus: TrackMenu, LibraryAlbumMenu, a playlist's "…"; on
-  Linux `NotCountedUI.items` in the same menus), and Private Listening:
+  Linux `NotCountedUI.items` in the same menus, a plain item that says
+  Count Plays Again while marked, as a check would put the whole GNOME menu
+  in from its edge), and Private Listening:
   Off, On (kept), Until Jukebox Restarts (never kept). The marks are per
   account in UserDefaults (`notCounted.<account>`); the mode is the
   device's. JukeboxKit's `NotCounted` holds the rule (tested,
@@ -517,10 +519,15 @@ is not "Queensrÿche"). Only the title (without "feat."), the main artist,
 the album and the length are sent.
 
 Answers are kept on disk (`LyricsCache`, about 1.2 kB a song): found for 90
-days, not found for 3. Nothing is asked while the panel is closed. The
-song's lookup is cancelled when the song changes or the panel closes; while
-it is open, the next song is looked up too, once the playing song's answer
-is in.
+days, not found for 3. The song playing is asked for where its Lyrics
+button shows (Now Playing on the iPhone, the wide bar, Linux's bar), and
+`LyricsFinder.hasNone` turns the button and the panel's tab off for a song
+with none or instrumental, once that is known: "Kan je t knoppie gewoon
+disablen toch?" (21 November 2026). The lyrics open on such a song give
+way to the sleeve or Up Next. While a lookup runs, or after one failed,
+the button stays on. The open panel's lookup is cancelled when the song
+changes or the panel closes; while it is open, the next song is looked up
+too, once the playing song's answer is in.
 
 `LRCLIBLiveTests` asks the real LRCLIB where it answers within 3 s (GitHub's
 runners) or with `LRCLIB_LIVE=1`, and skips itself elsewhere.

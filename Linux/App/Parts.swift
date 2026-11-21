@@ -183,15 +183,12 @@ private let submenuMark: Character = "\u{1F}"
 
 /// A choice under a submenu, as a menu's title: `popoverMenu` puts it under
 /// `submenu`, ticked when `checked`. Menus stay lists of (title, action),
-/// as every caller builds them.
+/// as every caller builds them. Only under a submenu: GTK keeps room for a
+/// check mark before every item of the menu page that holds one, so a
+/// check in a menu itself puts all of its items in from GNOME's edge
+/// (Rating's marks stay on Rating's own page).
 func submenuChoice(_ submenu: String, _ title: String, checked: Bool) -> String {
     [submenu, title, checked ? "checked" : ""].joined(separator: String(submenuMark))
-}
-
-/// A check item of the menu itself, not under a submenu: Don't Count
-/// Plays (NotCounted.swift).
-func checkItem(_ title: String, checked: Bool) -> String {
-    submenuChoice("", title, checked: checked)
 }
 
 /// An item under a submenu with no check mark, as a menu's title: Credits'
@@ -466,10 +463,11 @@ final class TrackRow {
         number.isVisible = !isPlaying
     }
 
-    func show(_ track: Track, subtitle words: String? = nil) {
+    /// `place`: the number a numbered row shows.
+    func show(_ track: Track, subtitle words: String? = nil, place: Int? = nil) {
         self.track = track
         menuTracks = [track]
-        setText(number, track.trackNumber.map(String.init) ?? "")
+        setText(number, place.map(String.init) ?? "")
         art.show(track.artwork, sleeve: TitleSleeve.Words(track: track))
         setText(title, track.name)
         setText(subtitle, words ?? track.artistLine)
@@ -509,7 +507,10 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
         },
         fill: { row, track, index in
             row.position = index
-            row.show(track, subtitle: subtitle?(track))
+            // Numbered by its place on its disc, not the file's tag
+            // (LibraryIndex.placeOnDisc).
+            row.show(track, subtitle: subtitle?(track),
+                     place: numbered ? LibraryIndex.placeOnDisc(at: index, in: made?.items ?? tracks) : nil)
             row.placeItems = []
             if let move {
                 if index > 0 { row.placeItems.append(("Move Up", { move(index, index - 1) })) }

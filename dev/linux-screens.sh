@@ -26,7 +26,8 @@ fi
 # HANDOFF=Studio: music playing on "Studio", offered on Home beside Your Station.
 "$fake" --port $port --data dev/demo --song-lengths --slow-downloads ${HANDOFF:+--handoff "$HANDOFF"} >"$work/fake.log" 2>&1 &
 fake_pid=$!
-trap 'kill $fake_pid 2>/dev/null; rm -rf "$work"' EXIT
+watcher=
+trap 'kill $fake_pid $watcher 2>/dev/null; rm -rf "$work"' EXIT
 for _ in $(seq 1 40); do curl -fs "http://localhost:$port/System/Info/Public" >/dev/null && break; sleep 0.25; done
 
 # Signed in already, by the file a desktop without a keyring uses.
@@ -64,13 +65,30 @@ for shot in ${@:-1440x900-dark 1440x900-light 1920x1080-dark 760x900-dark 400x80
   </policy>
 </busconfig>
 BUS
+  # A popover is a surface of its own, outside the window's picture: when
+  # the walk leaves "<name>-ready" in the folder (Shots.swift, a menu open),
+  # the whole screen is taken from outside as <name>.png. The display is
+  # open to this machine's own clients (-ac) for it.
+  ( while :; do
+      for ready in "$out/$shot"/*-ready; do
+        [[ -e $ready ]] || continue
+        name=$(basename "$ready" -ready)
+        [[ -e "$out/$shot/$name.png" ]] && continue
+        for display in $(seq 321 330); do
+          import -display ":$display" -window root "$out/$shot/$name.png" 2>/dev/null && break
+        done
+      done
+      sleep 0.3
+    done ) &
+  watcher=$!
   env -u WAYLAND_DISPLAY -u DBUS_SESSION_BUS_ADDRESS -u PULSE_SERVER -u SSH_AUTH_SOCK \
     HOME="$work/home" XDG_RUNTIME_DIR="$work/runtime" GSETTINGS_BACKEND=memory GIO_USE_VFS=local \
     GTK_USE_PORTAL=0 GDK_BACKEND=x11 GSK_RENDERER=cairo ADW_DEBUG_COLOR_SCHEME=prefer-$scheme \
     JUKEBOX_AUDIO_SINK=fakesink JUKEBOX_SHOTS="$out/$shot" JUKEBOX_WINDOW="$size" \
     XDG_CONFIG_HOME="$work/config" XDG_DATA_HOME="$work/data" XDG_CACHE_HOME="$work/cache" \
-    timeout 300 dbus-run-session --config-file="$work/bus.conf" -- xvfb-run -a -n 321 -s "-screen 0 ${size}x24" .build-linux/debug/Jukebox \
+    timeout 300 dbus-run-session --config-file="$work/bus.conf" -- xvfb-run -a -n 321 -s "-ac -screen 0 ${size}x24" .build-linux/debug/Jukebox \
     >"$work/app-$shot.log" 2>&1 || { echo "$shot: the walk did not finish"; tail -5 "$work/app-$shot.log"; }
+  kill $watcher 2>/dev/null || true
   echo "$shot: $(ls "$out/$shot" | wc -l) pictures"
 done
 echo "$out"
