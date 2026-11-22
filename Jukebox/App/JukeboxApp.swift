@@ -332,10 +332,15 @@ struct MainTabView: View {
 
 /// The system's tab bar away, on every page of a tab: its visibility is a
 /// page's own, so a page pushed without this would bring it back under
-/// Jukebox's (TabRow).
+/// Jukebox's (TabRow). And the room for Jukebox's own foot (MiniBarFoot)
+/// in the page's own safe area, so its List or ScrollView ends clear of it.
 private struct HidesSystemTabBar: ViewModifier {
+    @Environment(\.miniBarFootHeight) private var footHeight
+
     func body(content: Content) -> some View {
-        content.toolbarVisibility(.hidden, for: .tabBar)
+        content
+            .toolbarVisibility(.hidden, for: .tabBar)
+            .safeAreaPadding(.bottom, footHeight)
     }
 }
 #endif

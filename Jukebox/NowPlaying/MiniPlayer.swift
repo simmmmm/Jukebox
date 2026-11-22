@@ -47,17 +47,35 @@ import JukeboxKit
 import SwiftUI
 
 #if os(iOS)
-/// Each tab's foot: the block and the tabs, in the page's safe area, so a
-/// page's last row scrolls clear of them.
+extension EnvironmentValues {
+    /// The height of the tab's foot (MiniBarFoot) above the screen's own
+    /// safe area: the room each page of the tab keeps at its end.
+    @Entry var miniBarFootHeight: CGFloat = 0
+}
+
+/// Each tab's foot: the block and the tabs over the tab's stack, its
+/// height handed to every page of it (`miniBarFootHeight`), which each
+/// page takes as its own safe area (HidesSystemTabBar, JukeboxApp.swift),
+/// so a page's last row scrolls clear of them. Not a safeAreaInset on the
+/// stack: a page's List never got it, and an album's last rows and its
+/// year stayed under the block and the tabs ("Je houd niet genoeg ruimte
+/// onderaan dus ik kan steeds een deel niet zien", 22 November 2026).
 struct MiniBarFoot: ViewModifier {
     /// The keyboard up (Search): the tabs go, as the system's bar went
     /// behind it, and the block alone rides on it.
     @State private var isKeyboardUp = false
+    @State private var height: CGFloat = 0
 
     func body(content: Content) -> some View {
         content
-            .safeAreaInset(edge: .bottom, spacing: 0) {
+            .environment(\.miniBarFootHeight, height)
+            .overlay(alignment: .bottom) {
                 MiniPlayerTabFoot(isKeyboardUp: isKeyboardUp)
+                    .onGeometryChange(for: CGFloat.self) { proxy in
+                        proxy.size.height
+                    } action: { measured in
+                        height = measured
+                    }
             }
             .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
                 isKeyboardUp = true
