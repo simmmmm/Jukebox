@@ -310,7 +310,7 @@ final class UpNextRow {
         // click forgets the picks (a double-click plays, as before).
         onRowClick(widget) { [weak self] toggle, extend in
             guard let self else { return }
-            guard self.entry != nil, !self.isPlaying, !self.isPlayed else { picked.picks.clear(); return }
+            guard self.isUpcoming else { picked.picks.clear(); return }
             if toggle { picked.picks.click(self.position, .toggle) }
             else if extend { picked.picks.click(self.position, .extend) }
             else { picked.picks.plain(self.position) }
@@ -321,10 +321,14 @@ final class UpNextRow {
         }
     }
 
-    /// Picked: the list's own row lit as a page's picked songs are.
+    /// A song to come: what can be picked, moved and removed.
+    private var isUpcoming: Bool { entry != nil && !isPlaying && !isPlayed }
+
+    /// Picked: the list's own row lit as a page's picked songs are; a run
+    /// of Shift over "Then" or the song playing leaves those out.
     private func markPicked() {
         guard let row = gtk_widget_get_parent(widget) else { return }
-        if picked.picks.contains(position) { gtk_widget_add_css_class(row, "picked") }
+        if isUpcoming, picked.picks.contains(position) { gtk_widget_add_css_class(row, "picked") }
         else { gtk_widget_remove_css_class(row, "picked") }
     }
 
@@ -342,6 +346,7 @@ final class UpNextRow {
             if case .note = item { gtk_widget_set_margin_top(words, 0) } else { gtk_widget_set_margin_top(words, 24) }
             gtk_widget_set_margin_bottom(words, { switch item { case .then, .history: 4; default: 0 } }())
             entry = nil
+            markPicked()
             return
         }
         self.entry = entry
@@ -403,7 +408,7 @@ final class UpNextRow {
     /// station, taking them out teaches it once a song
     /// (PlayQueue.removeUpcoming). Found by id when chosen.
     private func pickedMenu() -> [(String, () -> Void)]? {
-        guard picked.picks.rows.count > 1, picked.picks.contains(position) else { return nil }
+        guard isUpcoming, picked.picks.rows.count > 1, picked.picks.contains(position) else { return nil }
         let entries = picked.picks.tracks(at: position, in: items()).compactMap { item -> QueueEntry? in
             guard case let .song(entry, _, style, playing, _) = item, !playing, style != .played else { return nil }
             return entry

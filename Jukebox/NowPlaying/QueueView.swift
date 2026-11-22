@@ -281,7 +281,7 @@ struct QueueView: View {
                 // accent, which means on air.
                 .background {
                     RoundedRectangle(cornerRadius: Theme.Space.s)
-                        .fill(Color.primary.opacity(panelPicks.contains(i) ? 0.1 : 0))
+                        .fill(Color.primary.opacity(item.isUpcoming && panelPicks.contains(i) ? 0.1 : 0))
                         .padding(.horizontal, -Theme.Space.s)
                 }
                 // The iPad's list swipes as the iPhone's; on a Mac a
@@ -294,7 +294,7 @@ struct QueueView: View {
                         if item.isUpcoming { panelPicks.click(i, kind) }
                         return
                     }
-                    panelPicks.plain(i)
+                    if item.isUpcoming { panelPicks.plain(i) } else { panelPicks.clear() }
                     if !playing { player.skip(to: entry) }
                 }
                 .contextMenu {
@@ -361,7 +361,7 @@ struct QueueView: View {
 
     /// The songs to come picked with the row at `i`, two or more; else none.
     private func pickedEntries(at i: Int, in items: [UpNextList.Item]) -> [QueueEntry] {
-        guard panelPicks.contains(i) else { return [] }
+        guard items[i].isUpcoming, panelPicks.contains(i) else { return [] }
         return panelPicks.tracks(at: i, in: items).compactMap { item -> QueueEntry? in
             guard item.isUpcoming, case let .song(entry, _, _, _, _) = item else { return nil }
             return entry
