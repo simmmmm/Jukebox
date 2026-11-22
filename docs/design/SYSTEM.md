@@ -126,7 +126,8 @@ one glyph among the page's actions, beside the heart and the "…", filled
 and in the accent while a version is off. It opens a list of each kind,
 Original (if any) first, then the others by name, each a check turned on
 or off on its own, the last one on staying on; then Show All. The list
-stays open while kinds are turned ("kun je er misschien een icon knopje
+stays open while kinds are turned, except on the Mac, whose menus close
+on a choice ("kun je er misschien een icon knopje
 van maken met uit of aan togglen?", 22 November 2026, of the row of
 segments it was). The version is read from
 the title's end (`TrackVersion`, JukeboxKit): "(Unplugged)", "[Live]",

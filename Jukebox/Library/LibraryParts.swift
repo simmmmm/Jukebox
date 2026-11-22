@@ -114,7 +114,11 @@ struct LibraryVersionMenu: View {
                     .contentShape(.rect)
             }
         }
+        // Open while kinds are turned, on the iPhone and the iPad (the
+        // Mac's menus close on a choice, as its own apps' do).
+        #if os(iOS)
         .menuActionDismissBehavior(.disabled)
+        #endif
         .modifier(PlainGlyphMenu(isPlain: !inBar))
         .accessibilityLabel("Versions")
         .accessibilityValue(off.isEmpty ? Text("All") : Text(kinds.filter { !off.contains($0) }.map(\.name).joined(separator: ", ")))
