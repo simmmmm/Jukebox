@@ -220,8 +220,8 @@ struct PlaylistDetailView: View {
     @State private var isChoosingPicture = false
     /// Songs picked with ⌘ or ⇧ in the wide list (TrackPicks).
     @State private var picks = TrackPicks()
-    /// The version chosen above the songs (LibraryVersionPicker); nil is All.
-    @State private var version: TrackVersion?
+    /// The versions turned off in the filter (LibraryVersionMenu); none is all.
+    @State private var off: Set<TrackVersion> = []
 
     var body: some View {
         let shown = library.playlists.first(where: { $0.id == playlist.id }) ?? playlist
@@ -232,14 +232,17 @@ struct PlaylistDetailView: View {
             if isWide {
                 wide(shown, all: all, kinds: kinds)
             } else {
-                compact(shown, all: all, kinds: kinds)
+                compact(shown, all: all)
             }
         }
-        .environment(\.hidesVersion, version != nil)
-        // A version no song has any more (one removed, the playlist read
-        // again) is All again.
-        .onChange(of: kinds) { if let chosen = version, !kinds.contains(chosen) { version = nil } }
-        .onChange(of: version) { picks.clear() }
+        .environment(\.hidesVersion, TrackVersion.only(kinds, without: off) != nil)
+        // Kinds no song has any more (one removed, the playlist read again)
+        // are forgotten; none left on is all.
+        .onChange(of: kinds) {
+            off = off.filter(kinds.contains)
+            if kinds.allSatisfy(off.contains) { off = [] }
+        }
+        .onChange(of: off) { picks.clear() }
         .toolbar {
             if !shown.isReadOnly {
                 ToolbarItem(placement: .barTrailing) {
@@ -265,6 +268,12 @@ struct PlaylistDetailView: View {
                 ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: all),
                                           isConfirmingRemoval: $isConfirmingRemoval)
+                }
+            }
+            // The filter beside the "…" on the iPhone; wide, in the head.
+            if !isWide, !kinds.isEmpty {
+                ToolbarItem(placement: .barTrailing) {
+                    LibraryVersionMenu(kinds: kinds, off: $off, inBar: true)
                 }
             }
             // Wide, the head has its own "…".
@@ -326,8 +335,13 @@ struct PlaylistDetailView: View {
                     PagePlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
                                     shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
                         .disabled(tracks.isEmpty)
-                    MoreMenu {
-                        moreItems(shown, tracks: all)
+                    HStack(spacing: Theme.Space.s) {
+                        if !kinds.isEmpty {
+                            LibraryVersionMenu(kinds: kinds, off: $off)
+                        }
+                        MoreMenu {
+                            moreItems(shown, tracks: all)
+                        }
                     }
                 }
                 PageRule(page: page)
@@ -335,12 +349,6 @@ struct PlaylistDetailView: View {
             .listRowInsets(EdgeInsets())
             .listRowSeparator(.hidden)
             .listRowBackground(Color.clear)
-
-            if !kinds.isEmpty {
-                LibraryVersionPicker(kinds: kinds, chosen: $version)
-                    .padding(.bottom, Theme.Space.l)
-                    .pageRow(page)
-            }
 
             if let entries = rows {
                 ForEach(entries) { entry in
@@ -397,7 +405,7 @@ struct PlaylistDetailView: View {
         .libraryScrolledTitle(shown.name, after: page.cover + Theme.Space.xl)
     }
 
-    private func compact(_ shown: Playlist, all: [Track], kinds: [TrackVersion]) -> some View {
+    private func compact(_ shown: Playlist, all: [Track]) -> some View {
         let rows = shownEntries
         let tracks = rows?.map(\.track) ?? []
         return List {
@@ -405,13 +413,6 @@ struct PlaylistDetailView: View {
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
                                           bottom: Theme.Space.l, trailing: Theme.margin))
                 .listRowSeparator(.hidden)
-
-            if !kinds.isEmpty {
-                LibraryVersionPicker(kinds: kinds, chosen: $version)
-                    .listRowInsets(EdgeInsets(top: 0, leading: Theme.margin,
-                                              bottom: Theme.Space.m, trailing: Theme.margin))
-                    .listRowSeparator(.hidden)
-            }
 
             if let entries = rows {
                 ForEach(entries) { entry in
@@ -591,10 +592,10 @@ struct PlaylistDetailView: View {
         }
     }
 
-    /// The rows' entries: a chosen version's, or all; nil until loaded.
+    /// The rows' entries: the versions left on, or all; nil until loaded.
     private var shownEntries: [LibraryPlaylistEntry]? {
-        guard let version else { return entries }
-        return entries?.filter { TrackVersion.read($0.track.name).version == version }
+        guard !off.isEmpty else { return entries }
+        return entries?.filter { !off.contains(TrackVersion.read($0.track.name).version) }
     }
 
     /// Swipe to remove, but not from someone else's playlist. By the rows shown, which a chosen version makes fewer than
@@ -612,7 +613,7 @@ struct PlaylistDetailView: View {
     /// version is chosen: a place among some of the songs is no place in
     /// the playlist.
     private func moveAction(_ shown: Playlist) -> ((IndexSet, Int) -> Void)? {
-        guard !shown.isReadOnly, library.can(.playlistReorder), version == nil else { return nil }
+        guard !shown.isReadOnly, library.can(.playlistReorder), off.isEmpty else { return nil }
         return { source, destination in move(from: source, to: destination, in: shown) }
     }
 

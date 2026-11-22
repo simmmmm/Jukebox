@@ -103,6 +103,17 @@ struct MiniPlayerTabFoot: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // The fade's reach in the inset too, so a page's last row and
+            // its footer scroll clear of the fade and the blur, not only of
+            // the block: without it the inset ended at the block's top and
+            // the last 72 points of every page stayed under the fade ("Je
+            // houd niet genoeg ruimte onderaan dus ik kan steeds een deel
+            // niet zien", 22 November 2026). The page runs on under it while
+            // it scrolls, and it takes no taps.
+            Color.clear
+                .frame(height: Self.reach)
+                .allowsHitTesting(false)
+                .accessibilityHidden(true)
             MiniPlayer()
                 .padding(.horizontal, Theme.Space.s)
                 .padding(.bottom, Theme.Space.xs)
@@ -119,7 +130,6 @@ struct MiniPlayerTabFoot: View {
                     .mask(Self.fade(.black))
                 Self.fade(Theme.ground)
             }
-            .padding(.top, -Self.reach)
             .ignoresSafeArea(.container, edges: .bottom)
             .allowsHitTesting(false)
         }

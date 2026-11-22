@@ -23,10 +23,12 @@ struct TrackVersionTests {
     func oasisAlbum() {
         let kinds = TrackVersion.kinds(of: oasis)
         #expect(kinds.map(\.name) == ["Remastered", "Unplugged"])
-        let unplugged = TrackVersion.tracks(oasis, in: kinds[1])
+        let unplugged = TrackVersion.tracks(oasis, without: [kinds[0]])
         #expect(unplugged.map(\.name) == ["Cast No Shadow (Unplugged)", "Champagne Supernova (Unplugged)",
                                           "Don't Look Back in Anger (Unplugged)", "Wonderwall (Unplugged)"])
-        #expect(TrackVersion.tracks(oasis, in: nil).count == oasis.count)
+        #expect(TrackVersion.tracks(oasis, without: []).count == oasis.count)
+        #expect(TrackVersion.only(kinds, without: [kinds[0]]) == kinds[1])
+        #expect(TrackVersion.only(kinds, without: []) == nil)
         #expect(base("Cast No Shadow (Unplugged)") == "Cast No Shadow")
     }
 
@@ -86,8 +88,21 @@ struct TrackVersionTests {
     func original() {
         let mixed = [Track(id: "1", name: "Song"), Track(id: "2", name: "Song (Live)"), Track(id: "3", name: "Other")]
         #expect(TrackVersion.kinds(of: mixed).map(\.name) == ["Original", "Live"])
-        #expect(TrackVersion.tracks(mixed, in: .original).map(\.id) == ["1", "3"])
+        #expect(TrackVersion.tracks(mixed, without: [TrackVersion(name: "Live")]).map(\.id) == ["1", "3"])
         #expect(TrackVersion.kinds(of: [Track(id: "1", name: "A (Live)"), Track(id: "2", name: "B [Live]")]).isEmpty)
         #expect(TrackVersion.kinds(of: [Track(id: "1", name: "A"), Track(id: "2", name: "B (feat. X)")]).isEmpty)
+    }
+
+    @Test("Each kind on or off on its own, the last one on stays on")
+    func toggling() {
+        let live = TrackVersion(name: "Live"), demo = TrackVersion(name: "Demo")
+        let kinds: [TrackVersion] = [.original, demo, live]
+        var off = TrackVersion.toggle(live, in: [], of: kinds)
+        #expect(off == [live])
+        off = TrackVersion.toggle(demo, in: off, of: kinds)
+        #expect(off == [live, demo])
+        // Original is the last one on: it stays on.
+        #expect(TrackVersion.toggle(.original, in: off, of: kinds) == off)
+        #expect(TrackVersion.toggle(live, in: off, of: kinds) == [demo])
     }
 }

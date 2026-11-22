@@ -496,8 +496,11 @@ func guests(_ track: Track, besides albumArtist: String? = nil) -> String {
 /// puts Move Up and Move Down in it, for the keyboard, and lets a song be
 /// dragged onto another to take its place, while `canMove` says so (not
 /// under a chosen version: a place among some songs is none in the playlist).
-/// `name` is what a row's title says, when not the song's own.
-func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () -> QueueContext,
+/// `name` is what a row's title says, when not the song's own. `numbers`
+/// numbers the rows (an album's, AlbumNumbers); `queue` is what plays from
+/// a row when the list is one disc of it (the whole album).
+func trackList(_ tracks: [Track], numbers: ((Track) -> Int?)? = nil, queue: (() -> [Track])? = nil,
+               context: @escaping () -> QueueContext,
                subtitle: ((Track) -> String)? = nil, name: ((Track) -> String?)? = nil,
                remove: ((Int) -> Void)? = nil, move: ((Int, Int) -> Void)? = nil,
                canMove: @escaping () -> Bool = { true }) -> ItemList<Track, TrackRow> {
@@ -505,16 +508,15 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
     let picked = PickedRows { made?.items ?? [] }
     let list = ItemList<Track, TrackRow>(
         make: {
-            let row = TrackRow(numbered: numbered, picked: picked)
+            let row = TrackRow(numbered: numbers != nil, picked: picked)
             if let move { reorderable(row) { if canMove() { move($0, $1) } } }
             return (row.widget, row)
         },
         fill: { row, track, index in
             row.position = index
-            // Numbered by its place on its disc, not the file's tag
-            // (LibraryIndex.placeOnDisc).
+            // An album's own numbers (AlbumNumbers), from the whole album.
             row.show(track, subtitle: subtitle?(track),
-                     place: numbered ? LibraryIndex.placeOnDisc(at: index, in: made?.items ?? tracks) : nil,
+                     place: numbers?(track),
                      name: name?(track))
             row.placeItems = []
             if let move, canMove() {
@@ -525,7 +527,14 @@ func trackList(_ tracks: [Track], numbered: Bool = false, context: @escaping () 
             row.markPicked()
         },
         activate: { _, index, items in
-            app.player.play(items, startingAt: index, context: context())
+            // One disc's list of an album's: the whole album plays on from it.
+            if let queue {
+                let whole = queue()
+                let at = whole.firstIndex { $0.id == items[index].id } ?? 0
+                app.player.play(whole, startingAt: at, context: context())
+            } else {
+                app.player.play(items, startingAt: index, context: context())
+            }
         })
     made = list
     list.willSet = { picked.picks.clear() }
@@ -826,26 +835,68 @@ func quietButton(_ title: String, action: @escaping @MainActor () -> Void) -> Wi
     button(title, "quiet", "page-button", action: action).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
 }
 
-/// The version filter over an album's or a playlist's songs, above them
-/// (Apple's LibraryVersionPicker): All and each kind they hold
-/// (TrackVersion), GNOME's linked toggle buttons, one pressed. "ik wil bijv
-/// alle unplugged nummers er uit kunnen filteren of alle remastered als ze
-/// er zijn zeg maar?" (the photographer, 21 November 2026).
-func versionChoices(_ kinds: [TrackVersion], selected: TrackVersion?,
-                    chosen: @escaping @MainActor (TrackVersion?) -> Void) -> Widget {
-    let group = hbox().css("linked")
-    var first: Widget?
-    for kind in [nil] + kinds.map(Optional.some) {
-        let toggle = gtk_toggle_button_new_with_label(kind?.name ?? "All")!
-        if let first { gtk_toggle_button_set_group(ptr(toggle), ptr(first)) } else { first = toggle }
-        gtk_toggle_button_set_active(ptr(toggle), kind == selected ? 1 : 0)
-        on(toggle, "toggled") {
-            if gtk_toggle_button_get_active(ptr(toggle)) != 0 { chosen(kind) }
-        }
-        append(toggle, to: group)
+/// The version filter over an album's or a playlist's songs: one glyph in
+/// the page's actions, beside the heart and the more button (Apple's
+/// LibraryVersionMenu, `line.3.horizontal.decrease.circle`), filled and in
+/// the accent while a kind is off. Its popover lists each kind they hold
+/// (TrackVersion: Original first), each with a check at the row's end, on
+/// or off on its own, the last one on staying on; then Show All. Drawn as
+/// Play On's list (PlayerBar), not a GMenu: GTK keeps a check's room before
+/// every item of a menu page that has one (SYSTEM.md, Menu checks), and
+/// this one stays open while kinds are turned. "kun je er misschien een
+/// icon knopje van maken met uit of aan togglen?" (the photographer, 22
+/// November 2026, of the row of toggle buttons it was).
+func versionFilter(_ kinds: [TrackVersion], off start: Set<TrackVersion> = [],
+                   changed: @escaping @MainActor (Set<TrackVersion>) -> Void) -> Widget {
+    var off = start
+    let rows = gtk_list_box_new()!
+    gtk_list_box_set_selection_mode(ptr(rows), GTK_SELECTION_NONE)
+    // grid-ok: libadwaita's menu measures (6 around, rows 12 in), as Play On's.
+    let heading = label("Versions", "heading").align(horizontal: GTK_ALIGN_START).margins(horizontal: 12, vertical: 6)
+    // Show All in a list of its own under a line, as a menu's next section.
+    let all = gtk_list_box_new()!
+    gtk_list_box_set_selection_mode(ptr(all), GTK_SELECTION_NONE)
+    // grid-ok: a menu section's line, 6 above and below, as libadwaita's.
+    let line = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL)!.margins(vertical: 6)
+    let popover = gtk_popover_new()!.css("menu")
+    // grid-ok: the menu's own 6 around.
+    gtk_popover_set_child(ptr(popover), vbox([heading, rows, line, all]).margins(6))
+    let button = gtk_menu_button_new()!.css("flat").named("Versions")
+    gtk_menu_button_set_popover(ptr(button), popover)
+    var checks: [Widget] = []
+    for kind in kinds {
+        let check = gtk_image_new_from_icon_name("object-select-symbolic")!
+        checks.append(check)
+        let row = gtk_list_box_row_new()!
+        gtk_list_box_row_set_child(ptr(row), hbox(spacing: 12, [
+            label(kind.name).align(horizontal: GTK_ALIGN_START).expand(horizontal: true), check,
+        ]))
+        gtk_list_box_append(ptr(rows), row)
     }
-    gtk_widget_set_margin_bottom(group, 16)
-    return group.align(horizontal: GTK_ALIGN_START)
+    let showAll = gtk_list_box_row_new()!
+    gtk_list_box_row_set_child(ptr(showAll), label("Show All").align(horizontal: GTK_ALIGN_START))
+    gtk_list_box_append(ptr(all), showAll)
+    func show() {
+        for (kind, check) in zip(kinds, checks) { gtk_widget_set_opacity(check, off.contains(kind) ? 0 : 1) }
+        gtk_widget_set_sensitive(showAll, off.isEmpty ? 0 : 1)
+        gtk_menu_button_set_icon_name(ptr(button), Glyphs.name(off.isEmpty ? "filter" : "filter-on"))
+        if off.isEmpty { gtk_widget_remove_css_class(button, "accent") } else { gtk_widget_add_css_class(button, "accent") }
+    }
+    on(raw(rows), "row-activated", argument: { row in
+        guard let row else { return }
+        let index = Int(gtk_list_box_row_get_index(ptr(row)))
+        guard kinds.indices.contains(index) else { return }
+        off = TrackVersion.toggle(kinds[index], in: off, of: kinds)
+        show()
+        changed(off)
+    })
+    on(raw(all), "row-activated", argument: { _ in
+        off = []
+        show()
+        changed(off)
+    })
+    show()
+    return button.align(vertical: GTK_ALIGN_CENTER)
 }
 
 /// Every other action: a word in the accent.

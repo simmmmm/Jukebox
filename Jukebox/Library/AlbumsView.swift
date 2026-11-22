@@ -144,8 +144,8 @@ struct AlbumDetailView: View {
     /// indexed (found by search before the library has loaded).
     @State private var fetched: [Track]?
     @State private var isConfirmingRemoval = false
-    /// The version chosen above the songs (LibraryVersionPicker); nil is All.
-    @State private var version: TrackVersion?
+    /// The versions turned off in the filter (LibraryVersionMenu); none is all.
+    @State private var off: Set<TrackVersion> = []
 
     var body: some View {
         let shown = library.album(id: album.id) ?? album
@@ -154,22 +154,36 @@ struct AlbumDetailView: View {
         let kinds = TrackVersion.kinds(of: all)
         // Play, Shuffle, the rows and the counts take the version's songs,
         // in the album's order; the download and the "…" the whole album.
-        let tracks = TrackVersion.tracks(all, in: version)
+        let tracks = TrackVersion.tracks(all, without: off)
         let isLoading = found.isLoading
         let discs = Self.splitIntoDiscs(tracks)
+        // The file's own numbers, from the whole album, so a version's
+        // songs keep theirs (AlbumNumbers).
+        let numbers = AlbumNumbers.of(all)
         let moreBy = isLoading ? nil : moreByArtist(shown)
 
         Group {
             if isWide {
-                wide(shown, all: all, kinds: kinds, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
+                wide(shown, all: all, kinds: kinds, tracks: tracks, discs: discs, numbers: numbers,
+                     isLoading: isLoading, moreBy: moreBy)
             } else {
-                compact(shown, kinds: kinds, tracks: tracks, discs: discs, isLoading: isLoading, moreBy: moreBy)
+                compact(shown, tracks: tracks, discs: discs, numbers: numbers, isLoading: isLoading, moreBy: moreBy)
             }
         }
-        .environment(\.hidesVersion, version != nil)
-        // A version no song has any more is All again.
-        .onChange(of: kinds) { if let chosen = version, !kinds.contains(chosen) { version = nil } }
+        .environment(\.hidesVersion, TrackVersion.only(kinds, without: off) != nil)
+        // Kinds no song has any more are forgotten; none left on is all.
+        .onChange(of: kinds) {
+            off = off.filter(kinds.contains)
+            if kinds.allSatisfy(off.contains) { off = [] }
+        }
         .toolbar {
+            // The filter beside the "…" on the iPhone, whose head has no
+            // heart or "…" of its own; wide, in the head's actions.
+            if !isWide, !kinds.isEmpty {
+                ToolbarItem(placement: .barTrailing) {
+                    LibraryVersionMenu(kinds: kinds, off: $off, inBar: true)
+                }
+            }
             // Not when the server does not let this account download,
             // unless the album is on the phone already, to remove it.
             if offline.offersDownload(for: .album(album.id)) {
@@ -197,7 +211,7 @@ struct AlbumDetailView: View {
     /// numbered (a guest artist after the title), then More by the artist
     /// in tiles. "Disc 2" over a second disc's songs.
     private func wide(_ shown: Album, all: [Track], kinds: [TrackVersion], tracks: [Track], discs: [Disc],
-                      isLoading: Bool, moreBy: Artist?) -> some View {
+                      numbers: [ItemID: Int], isLoading: Bool, moreBy: Artist?) -> some View {
         WidePage(title: shown.name, hasHead: true) { page, _ in
             PageHead(page: page, title: shown.name, lead: shown.artistLine,
                      leadAction: { goToArtist(shown) }, facts: player.notCounted.fact(Self.facts(shown, tracks: tracks), .album, shown.id)) { size in
@@ -208,17 +222,15 @@ struct AlbumDetailView: View {
                     .disabled(tracks.isEmpty)
                 HStack(spacing: Theme.Space.s) {
                     HeartButton(item: .album(shown.id))
+                    if !kinds.isEmpty {
+                        LibraryVersionMenu(kinds: kinds, off: $off)
+                    }
                     MoreMenu {
                         LibraryAlbumMenu(album: shown, tracks: all, onPage: true)
                     }
                 }
             }
             PageRule(page: page)
-            if !kinds.isEmpty {
-                LibraryVersionPicker(kinds: kinds, chosen: $version)
-                    .padding(.horizontal, page.side)
-                    .padding(.bottom, Theme.Space.l)
-            }
             Group {
                 if isLoading {
                     ProgressView()
@@ -232,7 +244,7 @@ struct AlbumDetailView: View {
                         }
                         // Only the guests after a title ("June Hollow" on a
                         // Willow & Pine album), Linux's rule.
-                        PageTrackRows(tracks: disc.tracks, numbered: true,
+                        PageTrackRows(tracks: disc.tracks, numbers: numbers,
                                       subtitle: { Self.guests(of: $0, on: shown) },
                                       play: { track in
                                           let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
@@ -255,20 +267,13 @@ struct AlbumDetailView: View {
         }
     }
 
-    private func compact(_ shown: Album, kinds: [TrackVersion], tracks: [Track], discs: [Disc],
+    private func compact(_ shown: Album, tracks: [Track], discs: [Disc], numbers: [ItemID: Int],
                          isLoading: Bool, moreBy: Artist?) -> some View {
         List {
             header(shown, tracks: tracks)
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
                                           bottom: Theme.Space.l, trailing: Theme.margin))
                 .listRowSeparator(.hidden)
-
-            if !kinds.isEmpty {
-                LibraryVersionPicker(kinds: kinds, chosen: $version)
-                    .listRowInsets(EdgeInsets(top: 0, leading: Theme.margin,
-                                              bottom: Theme.Space.m, trailing: Theme.margin))
-                    .listRowSeparator(.hidden)
-            }
 
             if isLoading {
                 ProgressView()
@@ -278,7 +283,7 @@ struct AlbumDetailView: View {
                 ForEach(discs) { disc in
                     Section {
                         ForEach(disc.tracks) { track in
-                            row(track, in: tracks, album: shown)
+                            row(track, in: tracks, numbers: numbers, album: shown)
                         }
                     } header: {
                         ListHeading("Disc \(disc.number)")
@@ -286,7 +291,7 @@ struct AlbumDetailView: View {
                 }
             } else {
                 ForEach(tracks) { track in
-                    row(track, in: tracks, album: shown)
+                    row(track, in: tracks, numbers: numbers, album: shown)
                 }
             }
 
@@ -347,15 +352,14 @@ struct AlbumDetailView: View {
         .frame(maxWidth: .infinity)
     }
 
-    private func row(_ track: Track, in tracks: [Track], album shown: Album) -> some View {
+    private func row(_ track: Track, in tracks: [Track], numbers: [ItemID: Int], album shown: Album) -> some View {
         Button {
             guard !player.refusesOffline(track) else { return }
             let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
             play(tracks, from: i, album: shown, shuffled: false)
         } label: {
-            // Its place on its disc, not the file's tag (LibraryIndex.placeOnDisc).
-            let place = LibraryIndex.placeOnDisc(at: tracks.firstIndex(where: { $0.id == track.id }) ?? 0, in: tracks)
-            TrackRow(track, leading: .number(place), subtitle: Self.subtitle(of: track, on: shown))
+            // The file's own number on its disc (AlbumNumbers).
+            TrackRow(track, leading: .number(numbers[track.id]), subtitle: Self.subtitle(of: track, on: shown))
         }
         .buttonStyle(.plain)
         .trackListRow()

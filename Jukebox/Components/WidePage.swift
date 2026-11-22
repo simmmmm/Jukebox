@@ -557,7 +557,7 @@ extension EnvironmentValues {
     /// The songs picked with a row's own (PageTrackRows), empty when it is
     /// not picked: its look and its menu (TrackRow, TrackMenu).
     @Entry var pickedTracks: [Track] = []
-    /// A version chosen on an album's or a playlist's page (LibraryVersionPicker):
+    /// One version left on in an album's or a playlist's filter (LibraryVersionMenu):
     /// the rows leave out the marker every one of them would say,
     /// "Cast No Shadow" under Unplugged.
     @Entry var hidesVersion = false
@@ -567,7 +567,9 @@ extension EnvironmentValues {
 /// caller gives; a click plays from that song, with ⌘ or ⇧ picks it.
 struct PageTrackRows: View {
     let tracks: [Track]
-    var numbered = false
+    /// An album's numbers by song (AlbumNumbers): the rows numbered with
+    /// them; nil, the rows with covers.
+    var numbers: [ItemID: Int]?
     var subtitle: (Track) -> String? = { $0.artistLine }
     let play: (Track) -> Void
 
@@ -585,9 +587,7 @@ struct PageTrackRows: View {
                     guard !player.refusesOffline(track) else { return }
                     play(track)
                 } label: {
-                    // Numbered by its place on its disc, not the file's tag
-                    // (LibraryIndex.placeOnDisc).
-                    TrackRow(track, leading: numbered ? .number(LibraryIndex.placeOnDisc(at: i, in: tracks)) : .artwork,
+                    TrackRow(track, leading: numbers.map { TrackRow.Leading.number($0[track.id]) } ?? .artwork,
                              subtitle: subtitle(track))
                 }
                 .buttonStyle(.plain)

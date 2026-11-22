@@ -198,6 +198,35 @@ final class ScreenshotTests: XCTestCase {
             walk.picture("station-on-air")
         }
 
+        // An album while a song plays: the version filter's menu on the
+        // demo's album of remastered and unplugged songs, Remastered turned
+        // off, then the page's end clear of the mini player and the tabs
+        // (the photographer's TestFlight 1.3, 22 November 2026).
+        try walk.tab("Library")
+        if try walk.push("Albums") {
+            if try walk.openAlbum("Lantern Hours") {
+                if try walk.tap(app.buttons["page.versions"].firstMatch, "Album: the version filter") {
+                    walk.pause(1.5)
+                    walk.picture("album-versions-menu")
+                    if try walk.tap(app.buttons["Remastered"].firstMatch, "Album: Remastered off", timeout: 3) {
+                        walk.pause(1)
+                        walk.picture("album-versions-off")
+                    }
+                    // Away from the menu: a tap on the page's cover.
+                    XCTExpectFailure("Closing a menu in the screenshot walk", strict: false) {
+                        app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.3)).tap()
+                    }
+                    walk.pause(1)
+                }
+                try walk.swipe(up: true)
+                try walk.swipe(up: true)
+                try walk.swipe(up: true)
+                walk.picture("album-bottom")
+                try walk.goBack(to: "Albums")
+            }
+            try walk.goBack(to: "Library")
+        }
+
         // Last: on iOS 26 a search takes the tab bar over until it is cancelled.
         try walk.tab("Search")
         let field = app.searchFields.firstMatch

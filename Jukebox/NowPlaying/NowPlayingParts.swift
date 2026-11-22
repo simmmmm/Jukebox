@@ -152,6 +152,23 @@ struct NowPlayingMarquee: View {
     let text: String
     let font: Font
 
+    /// A new title is a new line: its measure and its offset start afresh.
+    /// Kept, the old title's scroll went on under the new one: its linear
+    /// animation still added its rest to the offset after the offset was set
+    /// back to 0, so a short title stood shifted right for as long as the
+    /// long one would have scrolled ("Als de titel eerst te lang was maar van
+    /// t volgende nummer niet scrollt ie alsnog?", 22 November 2026).
+    var body: some View {
+        MarqueeLine(text: text, font: font)
+            .id(text)
+    }
+}
+
+/// NowPlayingMarquee's line, one per title.
+private struct MarqueeLine: View {
+    let text: String
+    let font: Font
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     /// The line's own width, measured; 0 until it is.
     @State private var lineWidth: CGFloat = 0
@@ -202,6 +219,9 @@ struct NowPlayingMarquee: View {
             }
         }
         .offset(x: overflows ? offset : 0)
+        // Come to fit mid-scroll (the window grew): the moving line anew,
+        // so no scroll in flight carries it off its start.
+        .id(overflows)
         .frame(width: width, alignment: .leading)
         .clipped()
         .mask {

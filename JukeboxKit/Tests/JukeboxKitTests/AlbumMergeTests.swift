@@ -106,4 +106,19 @@ struct AlbumMergeTests {
         #expect(AlbumMerge.firstArtist("Maribou State & Khruangbin") == "maribou state")
         #expect(AlbumMerge.firstArtist("A;B") == "a")
     }
+
+    @Test("An album's numbers: the file's, per disc; by place only when none has one")
+    func numbers() {
+        let tagged = [Track(id: "1", name: "A", trackNumber: 2, discNumber: 1),
+                      Track(id: "2", name: "B", trackNumber: 3, discNumber: 1),
+                      Track(id: "3", name: "C", discNumber: 1),
+                      Track(id: "4", name: "D", trackNumber: 1, discNumber: 2)]
+        let numbers = AlbumNumbers.of(tagged)
+        #expect(numbers == ["1": 2, "2": 3, "4": 1])
+        // A version's songs keep theirs: looked up, not counted again.
+        #expect(numbers["2"] == 3)
+        let bare = [Track(id: "a", name: "A"), Track(id: "b", name: "B"),
+                    Track(id: "c", name: "C", discNumber: 2), Track(id: "d", name: "D", discNumber: 2)]
+        #expect(AlbumNumbers.of(bare) == ["a": 1, "b": 2, "c": 1, "d": 2])
+    }
 }

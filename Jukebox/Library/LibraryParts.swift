@@ -77,37 +77,70 @@ struct LibraryStatusView: View {
     }
 }
 
-/// The version filter over an album's or a playlist's songs, above them:
-/// All, then each kind they hold (TrackVersion: Original first). Shown
-/// only when they hold two or more. The photographer, 21 November 2026:
-/// "ik wil bijv alle unplugged nummers er uit kunnen filteren of alle
-/// remastered als ze er zijn zeg maar?". The choice is the page's, not
-/// kept. Segmented while the choices fit (All and three kinds); a menu
-/// past that, as a segmented control of six reads as nothing on an iPhone.
-struct LibraryVersionPicker: View {
+/// The version filter over an album's or a playlist's songs: one glyph in
+/// the page's actions, filled while a kind is off, whose menu has each kind
+/// they hold (TrackVersion: Original first) as a check, on or off on its
+/// own, the last one on staying on, and Show All. Shown only when they hold
+/// two or more. "ik wil bijv alle unplugged nummers er uit kunnen filteren
+/// of alle remastered als ze er zijn zeg maar?" (21 November 2026); the
+/// row of segments it was "valt een beetje uit de boot, kun je er
+/// misschien een icon knopje van maken met uit of aan togglen?" (22
+/// November 2026). The choice is the page's, not kept. The menu stays open
+/// while kinds are turned, as more than one may be.
+struct LibraryVersionMenu: View {
     let kinds: [TrackVersion]
-    @Binding var chosen: TrackVersion?
+    /// The kinds turned off; none is all.
+    @Binding var off: Set<TrackVersion>
+    /// In a bar (the iPhone's): the bar's own size and ink.
+    var inBar = false
 
     var body: some View {
-        if kinds.count <= 3 {
-            picker
-                .pickerStyle(.segmented)
-                .fixedSize()
-        } else {
-            picker
-                .pickerStyle(.menu)
-                .fixedSize()
-        }
-    }
-
-    private var picker: some View {
-        Picker("Version", selection: $chosen) {
-            Text("All").tag(TrackVersion?.none)
+        Menu {
             ForEach(kinds, id: \.self) { kind in
-                Text(kind.name).tag(TrackVersion?.some(kind))
+                Toggle(kind.name, isOn: Binding(get: { !off.contains(kind) },
+                                                set: { _ in off = TrackVersion.toggle(kind, in: off, of: kinds) }))
+            }
+            Divider()
+            Button("Show All") { off = [] }
+                .disabled(off.isEmpty)
+        } label: {
+            if inBar {
+                Label("Versions", systemImage: symbol)
+            } else {
+                Image(systemName: symbol)
+                    .desktopFont(Tokens.Size.body15.size)
+                    .foregroundStyle(off.isEmpty ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.accent))
+                    .frame(width: 32, height: 32)
+                    .contentShape(.rect)
             }
         }
-        .labelsHidden()
+        .menuActionDismissBehavior(.disabled)
+        .modifier(PlainGlyphMenu(isPlain: !inBar))
+        .accessibilityLabel("Versions")
+        .accessibilityValue(off.isEmpty ? Text("All") : Text(kinds.filter { !off.contains($0) }.map(\.name).joined(separator: ", ")))
+        .accessibilityIdentifier("page.versions")
+    }
+
+    private var symbol: String {
+        off.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill"
+    }
+}
+
+/// A head's glyph menu as MoreMenu draws it, without the Mac's pop-up
+/// button around it; in a bar, the bar's own.
+private struct PlainGlyphMenu: ViewModifier {
+    let isPlain: Bool
+
+    func body(content: Content) -> some View {
+        if isPlain {
+            content
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
+        } else {
+            content
+        }
     }
 }
 

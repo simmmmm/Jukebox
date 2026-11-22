@@ -303,6 +303,11 @@ enum Glyphs {
         // Play On, as the Mac's AirPlay (`airplay.audio`) in the same
         // place: two arcs over a triangle.
         "play-on": #"<path d="M3.4 12.1A6.5 6.5 0 1 1 12.6 12.1L11.6 11.1A5.1 5.1 0 1 0 4.4 11.1Z"/><path d="M5.17 10.33A4 4 0 1 1 10.83 10.33L9.84 9.34A2.6 2.6 0 1 0 6.16 9.34Z"/><path d="M8 10L12 15H4Z"/>"#,
+        // The version filter, as the Mac's `line.3.horizontal.decrease.circle`
+        // and its `.fill` while a version is off: a ring, or a disc, with
+        // three lines shorter each.
+        "filter": #"<path fill-rule="evenodd" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1.4a5.6 5.6 0 1 1 0 11.2A5.6 5.6 0 0 1 8 2.4z"/><rect x="4.5" y="5" width="7" height="1.4" rx=".7"/><rect x="5.6" y="7.3" width="4.8" height="1.4" rx=".7"/><rect x="6.8" y="9.6" width="2.4" height="1.4" rx=".7"/>"#,
+        "filter-on": #"<path fill-rule="evenodd" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM5.2 5h5.6a.7.7 0 0 1 0 1.4H5.2a.7.7 0 0 1 0-1.4zm1.1 2.3h3.4a.7.7 0 0 1 0 1.4H6.3a.7.7 0 0 1 0-1.4zm1.2 2.3h1a.7.7 0 0 1 0 1.4h-1a.7.7 0 0 1 0-1.4z"/>"#,
         // The mark, heavy cut, as a template: its two tubes outlined, so
         // they are fills.
         "radio": #"<g transform="scale(.5)"><path d="M3 28.9V14.5A13 13 0 0 1 29 14.5V28.9A1.6 1.6 0 0 1 25.8 28.9V14.5A9.8 9.8 0 0 0 6.2 14.5V28.9A1.6 1.6 0 0 1 3 28.9Z"/><path d="M8.1 28.9V14.5A7.9 7.9 0 0 1 23.9 14.5V28.9A1.6 1.6 0 0 1 20.7 28.9V14.5A4.7 4.7 0 0 0 11.3 14.5V28.9A1.6 1.6 0 0 1 8.1 28.9Z"/><path d="M13.2 14.5A2.8 2.8 0 0 1 18.8 14.5V27.7A2.8 2.8 0 0 1 13.2 27.7Z"/></g>"#,

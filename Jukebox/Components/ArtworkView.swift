@@ -164,7 +164,11 @@ struct ArtworkView: View {
 
     @Environment(AppModel.self) private var app
     @Environment(\.displayScale) private var displayScale
-    @State private var loaded: PlatformImage?
+    /// The last cover that came, with the url it came for: shown only
+    /// while that is still the url asked, so a new song never wears the
+    /// last one's cover while its own is on the way ("Ook verkeerde album
+    /// art in dit geval", 22 November 2026).
+    @State private var loaded: (url: URL, image: PlatformImage?)?
     /// The url the server had no cover for, once asked.
     @State private var missingURL: URL?
 
@@ -192,9 +196,11 @@ struct ArtworkView: View {
             .aspectRatio(1, contentMode: .fit)
             .frame(width: size, height: size)
             .overlay {
-                // The current url's cover first: `loaded` can still be the
-                // last one's for a moment after the artwork changes in place.
-                if let image = url.flatMap({ ImagePipeline.shared.cached($0) }) ?? loaded {
+                // The current url's cover only: `loaded` can still be the
+                // last one's for a moment after the artwork changes in place,
+                // and then the quiet square shows, not the old cover.
+                if let image = url.flatMap({ ImagePipeline.shared.cached($0) })
+                    ?? (loaded?.url == url ? loaded?.image : nil) {
                     Image(platformImage: image)
                         .resizable()
                         .scaledToFill()
@@ -222,7 +228,7 @@ struct ArtworkView: View {
                 // this cover is not the one to show: written now, a slow old
                 // cover would replace the new one.
                 guard !Task.isCancelled else { return }
-                loaded = image
+                loaded = (url, image)
                 if image == nil, ImagePipeline.shared.isMissing(url) { missingURL = url }
             }
             .accessibilityHidden(true)

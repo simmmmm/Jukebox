@@ -60,13 +60,26 @@ enum Shots {
             }
             // The version filter: the demo's album of remastered and
             // unplugged songs without track numbers, as the photographer's
-            // Oasis album; all of them, then Unplugged alone.
+            // Oasis album; all of them, the filter's popover open (alone, a
+            // popover being its own surface), then Remastered turned off.
             if let versions = albums.first(where: { $0.name.hasPrefix("Lantern Hours") }) {
                 Pages.open(versions)
                 await step("05c-album-versions", wait: 2)
-                if let unplugged = find(visiblePage(), { isA($0, gtk_toggle_button_get_type()) && label(of: $0) == "Unplugged" }) {
-                    gtk_toggle_button_set_active(ptr(unplugged), 1)
-                    await step("05d-album-unplugged", wait: 1)
+                if let filter = find(visiblePage(), { isA($0, gtk_menu_button_get_type()) && tooltip(of: $0) == "Versions" }),
+                   let popover = gtk_menu_button_get_popover(ptr(filter)) {
+                    gtk_menu_button_popup(ptr(filter))
+                    try? await Task.sleep(for: .seconds(1))
+                    let shown: Widget = ptr(popover)
+                    if let node = picture(shown) { write(node, to: "\(folder)/05d-album-versions-menu.png", of: shown) }
+                    // Remastered, the first kind: off.
+                    if let list = find(shown, { isA($0, gtk_list_box_get_type()) }),
+                       let row = gtk_list_box_get_row_at_index(ptr(list), 0) {
+                        gtk_widget_activate(UnsafeMutableRawPointer(row).assumingMemoryBound(to: GtkWidget.self))
+                    }
+                    try? await Task.sleep(for: .milliseconds(500))
+                    if let node = picture(shown) { write(node, to: "\(folder)/05e-album-versions-menu-off.png", of: shown) }
+                    gtk_menu_button_popdown(ptr(filter))
+                    await step("05f-album-unplugged", wait: 1)
                 }
             }
             if let artist = app.library.artistsByName.first {

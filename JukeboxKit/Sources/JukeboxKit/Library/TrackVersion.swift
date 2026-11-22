@@ -60,11 +60,29 @@ public struct TrackVersion: Hashable, Sendable {
         return (found.contains(.original) ? [.original] : []) + others
     }
 
-    /// The songs of one version, in the order they came (an album's order:
-    /// by name when it has no track numbers); all of them for nil.
-    public static func tracks(_ tracks: [Track], in version: TrackVersion?) -> [Track] {
-        guard let version else { return tracks }
-        return tracks.filter { read($0.name).version == version }
+    /// The songs of the kinds left on, in the order they came (an album's
+    /// order: by name when it has no track numbers); all of them while
+    /// none is off. Each kind is a check in the filter's menu, turned on
+    /// or off on its own: "kun je er misschien een icon knopje van maken
+    /// met uit of aan togglen?" (the photographer, 22 November 2026).
+    public static func tracks(_ tracks: [Track], without off: Set<TrackVersion>) -> [Track] {
+        guard !off.isEmpty else { return tracks }
+        return tracks.filter { !off.contains(read($0.name).version) }
+    }
+
+    /// `off` with `kind` turned the other way; never all of `kinds` off,
+    /// so the page always shows songs: the last one on stays on.
+    public static func toggle(_ kind: TrackVersion, in off: Set<TrackVersion>, of kinds: [TrackVersion]) -> Set<TrackVersion> {
+        if off.contains(kind) { return off.subtracting([kind]) }
+        let after = off.union([kind])
+        return kinds.allSatisfy(after.contains) ? off : after
+    }
+
+    /// The one kind still on, when every other is off: then each row would
+    /// say it, so the rows leave its marker out.
+    public static func only(_ kinds: [TrackVersion], without off: Set<TrackVersion>) -> TrackVersion? {
+        let on = kinds.filter { !off.contains($0) }
+        return on.count == 1 ? on[0] : nil
     }
 
     // MARK: Reading

@@ -107,33 +107,45 @@ heb ik t idee dat nummers nu wel erg veel padding boven en onder
 krijgen", 21 November 2026); wide 48, 64 with a cover. The song playing
 in the accent. Songs are picked with Ctrl and Shift wide.
 
-An album's songs are numbered by their place on their disc, 1, 2, 3…, in
-the album's order (disc, the file's track number, the name); the file's
-number only orders them, as tags read 2, 3, 4 or 6, 7, 7, 8 ("Ik kan geen
-touw vastknopen waarom de nummers allemaal verschillend zijn", 21 November
-2026; `LibraryIndex.placeOnDisc`). Up Next numbers by place in the queue.
+An album's songs carry the file's own track number, on its disc, under
+"Disc 1", "Disc 2" when the album has more than one; a version filter
+keeps each song's number. A song without one shows none; only an album
+where no song has a number counts 1, 2, 3 by place on each disc ("De
+nummers tellen nu gewoon op terwijl ze eigenlijk gematched zouden moeten
+zijn met hoeveelste nummer het is op t album of welke cd", 22 November
+2026; `AlbumNumbers`, JukeboxKit). Parts of one album the server split are
+its discs (`AlbumMerge`). Up Next numbers by place in the queue.
 - Apple: `TrackRow` (`Components/TrackRow.swift`), `Hairline`; the iPhone
   adds a "…" on each row, as touch has no secondary click, and its lists
   put `.trackListRow()` on each song's row.
 - GNOME: `TrackRow`, `trackList` (`Parts.swift`), `listview.rows`.
 
 ### The version filter
-On an album's or a playlist's page, between the hairline and the songs,
-when they hold two or more versions: All, then Original (if any), then the
-others by name ("All · Remastered · Unplugged"). The version is read from
+On an album's or a playlist's page, when they hold two or more versions:
+one glyph among the page's actions, beside the heart and the "…", filled
+and in the accent while a version is off. It opens a list of each kind,
+Original (if any) first, then the others by name, each a check turned on
+or off on its own, the last one on staying on; then Show All. The list
+stays open while kinds are turned ("kun je er misschien een icon knopje
+van maken met uit of aan togglen?", 22 November 2026, of the row of
+segments it was). The version is read from
 the title's end (`TrackVersion`, JukeboxKit): "(Unplugged)", "[Live]",
 "(Remastered 2014)", " - Live at Wembley"; "(feat. X)" and "(Part 2)" are
 none. The rows, the head's count and length, Play and Shuffle take the
-chosen version's songs, in the page's order; the "…", the download, Add
-Songs and Start Radio the whole. The rows leave out the marker every one
-would say. The page's own choice, not kept; All when opened. A playlist
-is not reordered under a version; Remove still works. "ik wil bijv alle
+songs of the kinds on, in the page's order; the "…", the download, Add
+Songs and Start Radio the whole. With one kind on, the rows leave out the
+marker every one would say. The page's own choice, not kept; all on when
+opened. A playlist is not reordered while a kind is off; Remove still
+works. "ik wil bijv alle
 unplugged nummers er uit kunnen filteren of alle remastered als ze er zijn
 zeg maar?" (21 November 2026).
-- Apple: `LibraryVersionPicker` (`Library/LibraryParts.swift`), a
-  segmented `Picker` for up to three kinds, a menu past that;
-  `\.hidesVersion` for the rows (`TrackRow`).
-- GNOME: `versionChoices` (`Parts.swift`), linked toggle buttons;
+- Apple: `LibraryVersionMenu` (`Library/LibraryParts.swift`),
+  `line.3.horizontal.decrease.circle` (`.fill` while filtering), a `Menu`
+  of `Toggle`s; wide in the head's actions, on the iPhone in the bar
+  beside the "…"; `\.hidesVersion` for the rows (`TrackRow`).
+- GNOME: `versionFilter` (`Parts.swift`), a flat menu button with the
+  `filter` and `filter-on` glyphs (`Glyphs`), its popover a list as Play
+  On's, the check at each row's end, so the plain menus keep no indent;
   `trackList`'s `name` and `canMove`.
 
 ### Cards and the raised ground
@@ -314,7 +326,7 @@ Quick Connect) as words in the accent under it.
 | Menu icons | SF Symbols in Apple's menus; none in GNOME's | Each platform's menus as its own apps draw them |
 | Menu checks | A check on Apple; on GNOME only in a submenu (Rating), a toggle in the menu itself as words (Don't Count Plays, Count Plays Again) | GTK keeps a check's room before every item of a menu page that has one, which stood the whole menu in from GNOME's edge ("het lijkt wel of je rekening hebt gehouden met meer iconen qua padding", 21 November 2026) |
 | Destructive items | Remove from a list first, in its list's section; what cannot be undone (Delete) last and alone; Apple's red role on both | GNOME's order, Apple's colour |
-| A choice among a few (the version filter) | Apple's segmented control, a menu past three kinds; GNOME's linked toggle buttons (libadwaita 1.5 has no toggle group) | Each platform's own control for one of a few |
+| Turning some of a few on and off (the version filter) | One glyph in the page's actions; Apple's menu of checks, GNOME's popover list with the check at the row's end | A filter is an action, not a row of its own on the page |
 | Wide window | Linux's layout on the iPad and the Mac; native only where the OS has a place (menu bar, toolbar search, traffic lights) | "ik wil dat de linux app en de apple app 1:1 op elkaar lijken" |
 
 ## Parity checklist

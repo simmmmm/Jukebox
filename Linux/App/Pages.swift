@@ -926,12 +926,15 @@ enum Pages {
 
     static func open(_ album: Album) {
         let all = app.library.tracks(inAlbum: album.id)
-        // A version chosen above the songs (versionChoices): Play, Shuffle,
-        // the rows and the counts take its songs, in the album's order; the
-        // download and the ⋮ the whole album.
+        // The versions left on in the filter (versionFilter): Play, Shuffle,
+        // the rows and the counts take their songs, in the album's order;
+        // the download and the ⋮ the whole album.
         let kinds = TrackVersion.kinds(of: all)
-        var version: TrackVersion?
+        var off: Set<TrackVersion> = []
         var tracks = all
+        // The file's own numbers, from the whole album, so a version's songs
+        // keep theirs (AlbumNumbers).
+        let numbers = AlbumNumbers.of(all)
         let context = QueueContext(.album(album.id), title: album.name)
         let art = cover()
         art.show(album.artwork, sleeve: TitleSleeve.Words(album: album))
@@ -945,6 +948,34 @@ enum Pages {
         // The first genre of a joined tag ("Folk; Acoustic" is Folk), as
         // Genres lists them and the Mac's head says it.
         let albumFacts = facts([])
+        // The songs, under "Disc 1", "Disc 2" when the album has more than
+        // one, as the Mac's page; made again when the versions change.
+        let songs = vbox()
+        func fillSongs() {
+            clear(songs)
+            var discs: [(number: Int, tracks: [Track])] = []
+            for track in tracks {
+                let number = track.discNumber ?? 1
+                if let last = discs.indices.last, discs[last].number == number {
+                    discs[last].tracks.append(track)
+                } else {
+                    discs.append((number, [track]))
+                }
+            }
+            let one = TrackVersion.only(kinds, without: off) != nil
+            for (index, disc) in discs.enumerated() {
+                if discs.count > 1 {
+                    let title = sectionTitle("Disc \(disc.number)", below: 8)
+                    if index == 0 { gtk_widget_set_margin_top(title, 0) }
+                    append(title, to: songs)
+                }
+                // On an album every song is the album artist's unless it says so.
+                let list = trackList(disc.tracks, numbers: { numbers[$0.id] }, queue: { tracks }, context: { context },
+                                     subtitle: { guests($0, besides: album.artistLine) },
+                                     name: { one ? TrackVersion.read($0.name).title : nil })
+                append(list.widget, to: songs)
+            }
+        }
         func baseFacts() -> String {
             [album.year.map(String.init), LibraryIndex.genreNames(album.genres).first,
              length(songs: tracks.count, seconds: tracks.reduce(0) { $0 + $1.duration })]
@@ -958,24 +989,20 @@ enum Pages {
                           actions: [
             playButton { app.player.play(tracks, context: context) },
             quietButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
-            hbox(spacing: 8, [heartButton { .album(album.id) }, menuButton]),
+            hbox(spacing: 8, [heartButton { .album(album.id) }]
+                 + (kinds.isEmpty ? [] : [versionFilter(kinds) { chosen in
+                     off = chosen
+                     tracks = TrackVersion.tracks(all, without: chosen)
+                     fillSongs()
+                     base = baseFacts()
+                     setText(albumFacts, app.player.notCounted.fact(base, .album, album.id))
+                 }])
+                 + [menuButton]),
         ])
         keep(art, on: raw(top), as: "art")
-        // On an album every song is the album artist's unless it says so.
-        let list = trackList(tracks, numbered: true, context: { context },
-                             subtitle: { guests($0, besides: album.artistLine) },
-                             name: { version == nil ? nil : TrackVersion.read($0.name).title })
+        fillSongs()
         let column = vbox([top, rule()])
-        if !kinds.isEmpty {
-            append(versionChoices(kinds, selected: nil) { chosen in
-                version = chosen
-                tracks = TrackVersion.tracks(all, in: chosen)
-                list.set(tracks)
-                base = baseFacts()
-                setText(albumFacts, app.player.notCounted.fact(base, .album, album.id))
-            }, to: column)
-        }
-        append(list.widget, to: column)
+        append(songs, to: column)
         if let artist {
             let others = app.library.albums(by: artist).filter { $0.id != album.id }
             if !others.isEmpty {
@@ -1094,16 +1121,17 @@ enum Pages {
         // Set once the page's own functions are there, below.
         var removeSong: (Int) -> Void = { _ in }
         var moveSong: (Int, Int) -> Void = { _, _ in }
-        // Its songs, all; the list shows a chosen version's (versionChoices),
-        // and Play and Shuffle take those. The ⋮, Add Songs and the
-        // download take all.
+        // Its songs, all; the list shows the versions left on in the filter
+        // (versionFilter), and Play and Shuffle take those. The ⋮, Add Songs
+        // and the download take all.
         var all: [Track] = []
-        var version: TrackVersion?
+        var off: Set<TrackVersion> = []
+        var shownKinds: [TrackVersion] = []
         let list = trackList([], context: { context },
-                             name: { version == nil ? nil : TrackVersion.read($0.name).title },
+                             name: { TrackVersion.only(shownKinds, without: off) == nil ? nil : TrackVersion.read($0.name).title },
                              remove: own ? { removeSong($0) } : nil,
                              move: own && app.library.can(.playlistReorder) ? { moveSong($0, $1) } : nil,
-                             canMove: { version == nil })
+                             canMove: { off.isEmpty })
         // Gone from the server: back where the page was opened from, or a
         // place of its own, Home.
         let gone = { if start != nil { MainWindow.select(0) } else { adw_navigation_view_pop(ptr(Nav.view)) } }
@@ -1129,10 +1157,12 @@ enum Pages {
         }
         observe(moreMenu) { makeMenu() }
         PlaylistCover.offer(playlist) { items in picture = items; makeMenu() }
+        // The version filter, beside the ⋮, made again when the kinds change.
+        let filter = hbox()
         let top = heading(art: art.widget, title: playlist.name, facts: fact, actions: [
             playButton { app.player.play(list.items, context: context) },
             quietButton("Shuffle") { app.player.play(list.items, context: context, shuffled: true) },
-            moreMenu,
+            hbox(spacing: 8, [filter, moreMenu]),
         ])
         // A new picture shows at once.
         observe(top) {
@@ -1143,10 +1173,7 @@ enum Pages {
         // Empty, what to do about it, as the Mac's page says it.
         let empty = vbox()
         empty.isVisible = false
-        // The version filter, made again when the kinds change.
-        let choices = vbox()
-        var shownKinds: [TrackVersion] = []
-        let column = vbox([top, rule(), choices, list.widget, empty])
+        let column = vbox([top, rule(), list.widget, empty])
         // Add Songs waits for the songs it has, to tick them: a song added
         // twice stays twice on Jellyfin.
         var isLoaded = false
@@ -1157,19 +1184,20 @@ enum Pages {
             isLoaded = true
             all = tracks
             let kinds = TrackVersion.kinds(of: tracks)
-            // A version no song has any more is All again.
-            if let chosen = version, !kinds.contains(chosen) { version = nil }
+            // Kinds no song has any more are forgotten; none left on is all.
+            off = off.filter(kinds.contains)
+            if kinds.allSatisfy(off.contains) { off = [] }
             if kinds != shownKinds {
                 shownKinds = kinds
-                clear(choices)
+                clear(filter)
                 if !kinds.isEmpty {
-                    append(versionChoices(kinds, selected: version) { chosen in
-                        version = chosen
+                    append(versionFilter(kinds, off: off) { chosen in
+                        off = chosen
                         show(all)
-                    }, to: choices)
+                    }, to: filter)
                 }
             }
-            let shown = TrackVersion.tracks(tracks, in: version)
+            let shown = TrackVersion.tracks(tracks, without: off)
             list.set(shown)
             // Without an image of its own, the covers of its first
             // albums, as on the iPhone.
@@ -1208,7 +1236,7 @@ enum Pages {
         removeSong = { [weak list] at in
             guard let list, list.items.indices.contains(at) else { return }
             // The row's place among the songs shown, as the playlist's.
-            let places = all.indices.filter { version == nil || TrackVersion.read(all[$0].name).version == version }
+            let places = all.indices.filter { !off.contains(TrackVersion.read(all[$0].name).version) }
             guard places.indices.contains(at) else { return }
             var tracks = all
             let gone = tracks.remove(at: places[at])
@@ -1229,7 +1257,7 @@ enum Pages {
             }
         }
         moveSong = { [weak list] from, to in
-            guard let list, version == nil, list.items.indices.contains(from), list.items.indices.contains(to) else { return }
+            guard let list, off.isEmpty, list.items.indices.contains(from), list.items.indices.contains(to) else { return }
             var tracks = list.items
             let moved = tracks.remove(at: from)
             tracks.insert(moved, at: to)
