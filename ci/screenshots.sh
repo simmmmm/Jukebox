@@ -14,7 +14,8 @@
 #   - one contact sheet per device;
 #   - all of it on the `screenshots` branch, one commit that replaces the last:
 #     main's round at its top, a work branch's (one whose name ends in
-#     "walk", ci/app.sh) in branches/<name>/, so it never replaces main's.
+#     "walk", ci/app.sh) in branches/<name>/, so it never replaces main's;
+#     the folder goes once its branch is gone from origin (store-walk's stays).
 # The Mac's own window is walked when asked for (SHOTS_DEVICES has "mac":
 # the store's round, a push of `store-walk`, ci/app.sh), on the runner
 # itself, for the Mac App Store's pictures (MacScreenshotTests.swift).
@@ -93,9 +94,11 @@ fi
 
 group() { echo "::group::$*"; }
 endgroup() { echo "::endgroup::"; }
+# By its full path: the push's steps run in the branch's clone.
+problems_file=$PWD/$work/problems.txt
 problem() {
   echo "::warning::Screenshots: $*"
-  echo "$*" >> "$work/problems.txt"
+  echo "$*" >> "$problems_file"
 }
 
 # The seconds a step may take: what it asks for, or what is left before the
@@ -895,20 +898,30 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
     > "$part/logs/build-for-testing-mac-errors.txt"
   readme > "$part/README.md"
   remote="https://x-access-token:${GH_TOKEN}@github.com/$repo.git"
+  push_start=$SECONDS
+  : > "$work/push.log"
   # The branch as it is, with this round's place emptied and filled again,
   # as one new commit without a parent, so the branch stays one commit. The
   # lease refuses the push when another round pushed since the clone (main's
-  # and a work branch's runs can end together): then once more, from the
-  # newer branch. No branch at all yet: the lease expects none.
-  for try in 1 2; do
+  # and a work branch's runs can end together, mac-5's and mac-6's): then
+  # once more, from the newer branch. No branch at all yet: the lease
+  # expects none; a clone that fails while the branch is there fails the try.
+  # The folder of a branch no longer on origin goes, store-walk's and
+  # store-mac-walk's excepted (dev/store-shots.sh picks the store's set from
+  # them): kept forever, the folders grew the branch to 3 GB, and its clone
+  # alone outlasted the push's minutes (runs 45074717506, 45077311236).
+  for try in 1 2 3; do
+    (( push_until - SECONDS < 20 )) && break
     if (
       branch="$PWD/$work/branch"
       rm -rf "$branch"
+      heads=$(bounded "$(( push_until - SECONDS ))" git ls-remote --heads "$remote") || exit 1
+      heads=$(printf '%s\n' "$heads" | sed -n 's#^[0-9a-f]*[[:space:]]*refs/heads/##p')
       old=
-      if bounded "$(( push_until - SECONDS ))" git clone -q --depth 1 --branch screenshots "$remote" "$branch"; then
+      if printf '%s\n' "$heads" | grep -qx screenshots; then
+        bounded "$(( push_until - SECONDS ))" git clone -q --depth 1 --branch screenshots "$remote" "$branch" || exit 1
         old=$(git -C "$branch" rev-parse HEAD) || exit 1
       else
-        rm -rf "$branch"
         git init -q "$branch" || exit 1
       fi
       cd "$branch" || exit 1
@@ -918,6 +931,18 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
       else
         rm -rf "./$place"
       fi
+      # Only when origin named its branches: an empty answer prunes nothing.
+      if printf '%s\n' "$heads" | grep -qx main && [[ -d branches ]]; then
+        for dir in branches/*/; do
+          name=${dir#branches/}
+          name=${name%/}
+          case $name in store-walk | store-mac-walk) continue ;; esac
+          [[ "branches/$name/" == "$place" ]] && continue
+          printf '%s\n' "$heads" | sed 's#/#-#g' | grep -qxF "$name" && continue
+          echo "pruned branches/$name/, its branch is gone"
+          rm -rf "./branches/$name"
+        done
+      fi
       mkdir -p "./$place" && cp -R "$part"/. "./$place" \
         && git symbolic-ref HEAD refs/heads/round && git add -A \
         && git -c user.name="github-actions[bot]" \
@@ -925,13 +950,14 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
           commit -q -m "Screenshots of $short ($ref, run ${GITHUB_RUN_NUMBER:-local})" \
         && bounded "$(( push_until - SECONDS ))" git push -q --force-with-lease="screenshots:$old" \
           "$remote" HEAD:screenshots
-    ) > "$work/push.log" 2>&1; then
+    ) >> "$work/push.log" 2>&1; then
       pushed=true
       break
     fi
   done
+  grep '^pruned ' "$work/push.log" || true
   if $pushed; then
-    echo "On https://github.com/$repo/tree/screenshots/$place"
+    echo "On https://github.com/$repo/tree/screenshots/$place, pushed in $(( SECONDS - push_start )) s"
   else
     problem "the push to the screenshots branch failed"
     sed "s/${GH_TOKEN}/***/g" "$work/push.log" | tail -20

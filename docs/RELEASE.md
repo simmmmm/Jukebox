@@ -116,7 +116,11 @@ Mac's build was not played on a Mac before it went.
   iPhone's and the iPad's walks in simulators, and the Mac's snapshots
   (`JukeboxSnapshots/`), the main screens drawn offscreen, dark and light,
   without the title bar and without touching the laptop's screen. On the
-  screenshots branch in `mac-snap/`.
+  screenshots branch in `mac-snap/`. A work branch's round is in
+  `branches/<name>/`, gone at the next round once the branch is gone
+  from origin; `store-walk`'s stays, the store's set comes from it. Kept
+  forever, the folders grew the branch to 3 GB and its clone outlasted the
+  push (22 November 2026).
 - **The store's round**, only when the photographer asks: a push of the
   branch `store-walk` (`ci/app.sh`), on GitHub's Mac, walks the Mac's own
   window (`MacScreenshotTests.swift`), an iPhone 17 Pro and the 13-inch

@@ -290,7 +290,7 @@ if [[ ${TESTFLIGHT:-false} != true ]]; then
     screenshots
   fi
   # The derived data and the screenshots' work (the clone of the
-  # screenshots branch alone is 3 GB), gigabytes, gone once the pictures
+  # screenshots branch, a few hundred MB), gigabytes, gone once the pictures
   # are in build/logs: the MacBook, a runner of its own, keeps its work
   # folder between runs.
   rm -rf build/derived build/derived-mac build/screenshots
