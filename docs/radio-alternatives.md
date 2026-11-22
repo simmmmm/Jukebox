@@ -157,13 +157,16 @@ Later: the map's table, his own listening as a station's memory, the
 - The listener's own, optional, in place of it: Settings, Last.fm, on the
   iPhone, the iPad and the Mac; Preferences, Radio, Last.fm, on Linux. It is
   kept in that device's settings and does not travel.
-- A key Last.fm refuses later is dropped quietly for that run; only
-  Settings says so, when opened.
+- A key Last.fm refuses later is off for that run, and the line under
+  Enhance Radio with Last.fm and a station's page say so; "rate limit" or
+  no answer says so too and is asked again later, a minute, then longer
+  (`RADIO.md`, Last.fm's key).
 - An empty answer is kept for 30 days: "Moans" has no similar songs on
   Last.fm, and will not be asked again until then.
-- Names are asked as filed: his "Angele", without the accent, is a page
-  of its own on Last.fm, tagged "Slayer" and "Megadeth", so her songs get
-  genres that are not hers.
+- Names were asked as filed: his "Angele", without the accent, is a page
+  of its own on Last.fm, tagged "Slayer" and "Megadeth". Since 23
+  November 2026 the page is chosen among Last.fm's spellings of the name
+  (`RADIO.md`, Last.fm's tags): "Angèle", "pop", "indie pop".
 
 ## Sources
 

@@ -76,6 +76,12 @@ struct LastFMStore: Sendable {
         var fetched: Date
         /// Empty when Last.fm does not know the artist.
         var tags: [LastFMClient.Tag]
+        /// The Last.fm page these are from, of the spellings it has for the
+        /// name ("Angèle" for the files' "Angele"), and the one every other
+        /// question about the artist goes to. Nil in an answer from before
+        /// the pages were compared (it held "Angele"'s Slayer and Megadeth),
+        /// so that one is asked again.
+        var page: String?
     }
 
     /// One listener's scrobbles, newest first, with the keys made once.

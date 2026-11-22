@@ -138,6 +138,20 @@ mid-session, the questions still waiting are dropped
 (`RadioController.lastFMKeyChanged`). Last.fm's answers on disk stay
 and are still used.
 
+When Last.fm says nothing, the app says so, calmly and the same on every
+client ("doe ze allemaal", the photographer, 23 November 2026):
+`SimilarityService.trouble`, one line under the switch and on a station's
+page, no pop-up.
+- A refused key: "Last.fm didn’t accept the key; stations use your
+  library for now". Not asked again until the app opens again or the key
+  changes.
+- "Rate limit" after three tries, no answer, or three of Last.fm's own
+  errors in a row: "Last.fm isn’t answering; stations use your library for
+  now". Nothing is asked for a minute, then the app asks again
+  (`retryAt`); each rest that ends without an answer is twice the last, up
+  to an hour. The first answer ends it.
+- A round cancelled (a newer one, the switch) is no trouble.
+
 ### Last.fm's tags
 
 Tags are the radio's weakest link (`build/research/radio.md`, 4.4; "doe
@@ -159,6 +173,22 @@ answers are kept in `lastfm-tags.json` and asked again after half a year.
 - a genre keeps the files' spelling ("Shoegaze"; a tag-only one is
   "Dream Pop"); a genre's own tracks, where its station opens, stay the
   files'.
+
+**Which page.** Last.fm keeps a page per spelling, and autocorrect (and
+artist.getCorrection) answers a name that has a page with itself. His
+"Angele", without the accent, is a page of 2 345 listeners tagged "Slayer"
+and "Megadeth"; hers is "Angèle", 508 456 listeners, "pop", "indie pop",
+"french pop". So the tags start with artist.search, and of the pages whose
+name is the artist's but for accents, case and spacing (NameKey), the
+three most listened to are asked. The one whose genre tags agree best
+with the library wins: the files' genres of the artist's own songs, and
+the tags of their neighbours in the graph. Where the library says
+nothing, as for her (no genre, no neighbour), the page most listen to.
+Every later question about the artist (similar artists, songs, top songs)
+goes to that page. One call more per artist, every half year; an answer
+from before (no page kept) is asked again once. Tested in
+`LastFMTagsTests`: her case from Last.fm's answers, and a "Ghost" whose
+smaller page agrees with the files' Jazz beating a far bigger "Ghöst".
 
 The app reads it for the radio only. Genres, Home's mixes and offline keep
 the files' genres. Without a key, or with no tags yet, it is the library

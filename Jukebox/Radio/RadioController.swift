@@ -62,6 +62,13 @@ final class RadioController {
     /// the card then says what it said before. `refreshYourStationFact`
     /// works it out again.
     private(set) var yourStationFact: TimeFact?
+    /// Why Last.fm says nothing now (`SimilarityService.trouble`), for the
+    /// quiet line by Enhance Radio with Last.fm in Settings › Radio
+    /// (Preferences › Radio on Linux) and on a station's page; nil while it
+    /// answers, and when it is off. Before, a refused key or a Last.fm out
+    /// of reach left the radio on the library alone without a word ("doe ze
+    /// allemaal", the photographer, 23 November 2026).
+    private(set) var lastFMTrouble: LastFMTrouble?
 
     var server: (any MusicServer)?
     /// Set by AppModel: offline, what the radio may choose from.
@@ -84,6 +91,8 @@ final class RadioController {
     @ObservationIgnored private var sourceTasks: [Task<Void, Never>] = []
     @ObservationIgnored private var graphTask: Task<Void, Never>?
     @ObservationIgnored private var enrichTask: Task<Void, Never>?
+    /// Asks Last.fm again once it has rested (`SimilarityService.retryAt`).
+    @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var snapshotTask: Task<Void, Never>?
     @ObservationIgnored private var dialTask: Task<Void, Never>?
     @ObservationIgnored private var factTask: Task<Void, Never>?
@@ -314,6 +323,9 @@ final class RadioController {
         enrichTask?.cancel()
         graphTask = nil
         enrichTask = nil
+        retryTask?.cancel()
+        retryTask = nil
+        lastFMTrouble = nil
         factTask?.cancel()
         factTask = nil
         yourStationFact = nil
@@ -496,6 +508,9 @@ final class RadioController {
         if !settings.hasLastFM { cancelSources() }
         enrichTask?.cancel()
         enrichTask = nil
+        retryTask?.cancel()
+        retryTask = nil
+        lastFMTrouble = nil
         tagged = nil
         scrobbles = ListeningHistory()
         previewInputs += 1
@@ -950,10 +965,32 @@ final class RadioController {
             self.graph = graph
             let radio = await service.enrichTags(snapshot: snapshot, priority: priority)
             let radioGraph = await service.graph(for: radio)
-            guard !Task.isCancelled, self.service === service, self.library.snapshot.isSameSnapshot(as: snapshot) else { return }
+            guard !Task.isCancelled, self.service === service else { return }
+            await self.noteTrouble(of: service)
+            guard self.library.snapshot.isSameSnapshot(as: snapshot) else { return }
             self.tagged = (snapshot, radio)
             self.graph = radioGraph
             self.refreshYourStationFact()
+        }
+    }
+
+    /// What the round left Last.fm at: said in Settings and on a station's
+    /// page, and, after "rate limit" or no answer, the next round once it
+    /// has rested (a minute, then longer each time, at most an hour). A
+    /// refused key is not asked again until the app is opened again or the
+    /// key changes.
+    private func noteTrouble(of service: SimilarityService) async {
+        let trouble = await service.trouble
+        let retryAt = await service.retryAt
+        guard self.service === service else { return }
+        if lastFMTrouble != trouble { lastFMTrouble = trouble }
+        retryTask?.cancel()
+        retryTask = nil
+        guard let retryAt else { return }
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(1, retryAt.timeIntervalSinceNow)))
+            guard !Task.isCancelled, let self, self.service === service else { return }
+            self.enrich(self.library.snapshot, with: service)
         }
     }
 

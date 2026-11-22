@@ -215,13 +215,90 @@ final class LastFMServiceTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(sent[2].at - sent[1].at, .milliseconds(39))
 
         // Always refused: three tries, then the round stops (Iron Meadow is
-        // not asked), and nothing is kept, so the next round asks again.
+        // not asked), and nothing is kept. Last.fm then rests: a round
+        // before `retryAt` asks nothing, one after asks again.
         let always = LastFMMockTransport { _ in LastFMFixtures.respond(429, LastFMFixtures.rateLimited) }
+        let clock = LastFMTestClock(Date(timeIntervalSince1970: 1_800_000_000))
         let (busy, _) = await self.service(always)
+        await busy.setDate { clock.now }
         _ = await busy.enrich(snapshot: snapshot, priority: ["Velvet Static", "Iron Meadow"].map(Self.key))
         XCTAssertEqual(always.requests.map(\.asked.artist), ["Velvet Static", "Velvet Static", "Velvet Static"])
         _ = await busy.enrich(snapshot: snapshot, priority: [Self.key("Velvet Static")])
+        XCTAssertEqual(always.count, 3)
+        clock.advance(61)
+        _ = await busy.enrich(snapshot: snapshot, priority: [Self.key("Velvet Static")])
         XCTAssertEqual(always.count, 6)
+    }
+
+    // MARK: Saying so (LastFMTrouble)
+
+    func testTroubleIsSaidRestsLongerEachTimeAndEndsWithAnAnswer() async {
+        let snapshot = Self.snapshot
+        let knowledge = Self.knowledge
+        let down = LastFMCounter()
+        // No network for the first two rounds, then Last.fm as it is.
+        let mock = LastFMMockTransport { request in
+            if down.next() <= 2 { throw URLError(.notConnectedToInternet) }
+            return knowledge.answer(request)
+        }
+        let start = Date(timeIntervalSince1970: 1_800_000_000)
+        let clock = LastFMTestClock(start)
+        let (service, _) = await service(mock)
+        await service.setDate { clock.now }
+        let none = await service.trouble
+        XCTAssertNil(none)
+
+        _ = await service.enrich(snapshot: snapshot, priority: [Self.key("Velvet Static")])
+        var trouble = await service.trouble
+        var retry = await service.retryAt
+        XCTAssertEqual(trouble, .notAnswering)
+        XCTAssertEqual(trouble?.text, "Last.fm isn’t answering; stations use your library for now")
+        XCTAssertEqual(retry, start.addingTimeInterval(60))
+        // Resting: not even a song station asks.
+        _ = await service.similarTracks(to: snapshot.tracks[0], in: snapshot)
+        XCTAssertEqual(mock.count, 1)
+
+        clock.advance(60)
+        _ = await service.enrich(snapshot: snapshot, priority: [Self.key("Velvet Static")])
+        retry = await service.retryAt
+        XCTAssertEqual(mock.count, 2)
+        // Twice as long the second time.
+        XCTAssertEqual(retry, start.addingTimeInterval(60 + 120))
+
+        clock.advance(120)
+        let graph = await service.enrich(snapshot: snapshot, priority: [Self.key("Velvet Static")])
+        trouble = await service.trouble
+        retry = await service.retryAt
+        XCTAssertNil(trouble)
+        XCTAssertNil(retry)
+        XCTAssertEqual(graph.weight(Self.key("Velvet Static"), Self.key("The Lanterns")), 0.9, accuracy: 1e-9)
+    }
+
+    func testARefusedKeyIsSaidAndNotRetried() async {
+        let mock = LastFMMockTransport { _ in LastFMFixtures.respond(403, LastFMFixtures.invalidKey) }
+        let (service, _) = await service(mock)
+        _ = await service.enrich(snapshot: Self.snapshot, priority: [Self.key("Velvet Static")])
+        let trouble = await service.trouble
+        let retry = await service.retryAt
+        XCTAssertEqual(trouble, .keyRefused)
+        XCTAssertNil(retry)
+    }
+
+    func testCancellingIsNoTrouble() async {
+        let mock = LastFMMockTransport(Self.knowledge)
+        let (service, _) = await service(mock)
+        // Slow pacing, so the round is still waiting for its slot when cancelled.
+        await service.setPacing(minimumInterval: .seconds(5), backoff: .milliseconds(20))
+        let snapshot = Self.snapshot
+        let keys = ["Velvet Static", "Iron Meadow"].map { NameKey.artist($0) }
+        let round = Task { await service.enrich(snapshot: snapshot, priority: keys) }
+        try? await Task.sleep(for: .milliseconds(200))
+        round.cancel()
+        _ = await round.value
+        let trouble = await service.trouble
+        let retry = await service.retryAt
+        XCTAssertNil(trouble)
+        XCTAssertNil(retry)
     }
 
     func testNoNetworkStopsQuietlyAndKeepsWhatCame() async {
@@ -439,6 +516,20 @@ final class LastFMServiceTests: XCTestCase {
 
 /// Counts calls from any task, for a mock that answers differently the
 /// first few times.
+/// A date the test moves on by hand, for the rests.
+final class LastFMTestClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var date: Date
+
+    init(_ date: Date) { self.date = date }
+
+    var now: Date { lock.withLock { date } }
+
+    func advance(_ seconds: TimeInterval) {
+        lock.withLock { date = date.addingTimeInterval(seconds) }
+    }
+}
+
 final class LastFMCounter: @unchecked Sendable {
     private let lock = NSLock()
     private var value = 0

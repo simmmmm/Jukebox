@@ -784,7 +784,14 @@ private struct SettingsLastFMSwitchSection: View {
             }
             .onChange(of: settings.useLastFM) { _, _ in radio.lastFMKeyChanged() }
         } footer: {
-            if !isWide { Text(detail) }
+            // A refused key or a Last.fm out of reach, said once and
+            // calmly by the switch, as Linux's (RadioController.lastFMTrouble).
+            if !isWide || radio.lastFMTrouble != nil {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                    if !isWide { Text(detail) }
+                    if let trouble = radio.lastFMTrouble { Text(trouble.text) }
+                }
+            }
         }
     }
 }

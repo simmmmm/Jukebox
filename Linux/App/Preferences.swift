@@ -95,6 +95,11 @@ enum Preferences {
             radio.isVisible = $0
             app.radio.lastFMKeyChanged()
         })
+        // A refused key or a Last.fm out of reach, said once and calmly by
+        // the switch, as the Mac's footer (RadioController.lastFMTrouble).
+        observe(enhance) {
+            adw_preferences_group_set_description(ptr(enhance), app.radio.lastFMTrouble?.text)
+        }
         let saveTypedKey = lastFM(on: radio, in: dialog)
         adw_preferences_group_set_description(
             ptr(radio), AppSettings.appLastFMKey.isEmpty

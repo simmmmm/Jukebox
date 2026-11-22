@@ -112,8 +112,9 @@ final class LastFMTagsTests: XCTestCase {
         let (service, directory) = await self.service(mock)
 
         let first = await service.enrichTags(snapshot: snapshot, priority: [velvet], maxArtists: 5)
-        XCTAssertEqual(mock.count, 5)
-        XCTAssertEqual(mock.requests.first?.asked.method, "artist.gettoptags")
+        // Each artist's page first (artist.search), then its tags.
+        XCTAssertEqual(mock.count, 10)
+        XCTAssertEqual(Array(mock.requests.map(\.asked.method).prefix(2)), ["artist.search", "artist.gettoptags"])
         XCTAssertEqual(mock.requests.first?.asked.artist, "Velvet Static")
         let track = try XCTUnwrap(snapshot.ownTracks(artistKey: velvet).first)
         XCTAssertTrue(first.genreKeys(of: track).contains(NameKey.genre("Dream Pop")))
@@ -256,7 +257,8 @@ final class LastFMTagsTests: XCTestCase {
         let mock = LastFMMockTransport(knowledge)
         let (service, _) = await self.service(mock)
         _ = await service.enrichTags(snapshot: poor, priority: [], maxArtists: 100)
-        Self.line("tags: \(mock.count) artists asked, \(knowledge.topTags.count) known to Last.fm; poor tags: a third of the artists without a genre, the rest with the broad one only")
+        let asked = mock.requests.filter { $0.asked.method == "artist.gettoptags" }.count
+        Self.line("tags: \(asked) artists asked, \(knowledge.topTags.count) known to Last.fm; poor tags: a third of the artists without a genre, the rest with the broad one only")
 
         let before = Self.measure(poor, library, clock: listener)
         Self.line(Self.describe("poor tags", before))
@@ -281,5 +283,122 @@ final class LastFMTagsTests: XCTestCase {
         XCTAssertGreaterThanOrEqual(chosen.inCluster, before.inCluster - 0.01)
         XCTAssertGreaterThanOrEqual(chosen.genreStation, before.genreStation - 0.01)
         XCTAssertGreaterThanOrEqual(both.inCluster, reference.inCluster - 0.02)
+    }
+
+    // MARK: Which page: "Angele" and "Angèle"
+
+    /// His "Angele", as Last.fm answered on 20 and 23 November 2026: three
+    /// pages for the name, the one spelt as his files a small one tagged
+    /// with thrash metal bands, hers with the accent. Her songs have no
+    /// genre in the files, and no neighbour in the library.
+    static func angele() -> (tracks: [Track], knowledge: LastFMKnowledge) {
+        let her = ArtistRef(id: "angele", name: "Angele")
+        var tracks = (1...12).map { n in
+            Track(id: "a\(n)", name: "Song \(n)", albumID: "brol", albumName: "Brol", artists: [her], albumArtist: her)
+        }
+        let other = ArtistRef(id: "trio", name: "Blue Room Trio")
+        tracks += (1...6).map { n in
+            Track(id: "b\(n)", name: "Tune \(n)", albumID: "blue", albumName: "Blue", artists: [other], albumArtist: other, genres: ["Jazz"])
+        }
+        var k = LastFMKnowledge()
+        k.pages["Angele"] = [("Angèle", 508_456), ("Angele", 2345), ("Angéle", 47), ("Angela", 112_133)]
+        k.topTags["Angele"] = [("Slayer", 100), ("pop", 100), ("Megadeth", 66), ("Belgium", 66), ("Iron Maiden", 33),
+                               ("Anthrax", 33), ("sod", 33), ("johnny fountains", 10)]
+        k.topTags["Angèle"] = [("pop", 100), ("Belgium", 81), ("indie pop", 45), ("belgian", 33), ("french pop", 13), ("french", 7)]
+        k.topTags["Blue Room Trio"] = [("jazz", 100)]
+        k.similarArtists["Angèle"] = [("Stromae", 1), ("Clara Luciani", 0.9)]
+        k.similarArtists["Angele"] = [("Grandgeorge", 1)]
+        k.similarTracks["Angèle|Song 1"] = [("Angèle", "Song 2", 0.8)]
+        return (tracks, k)
+    }
+
+    func testAngeleIsAskedAsAngèle() async throws {
+        let (tracks, knowledge) = Self.angele()
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        let her = NameKey.artist("Angele")
+        let mock = LastFMMockTransport(knowledge)
+        let (service, directory) = await self.service(mock)
+
+        let radio = await service.enrichTags(snapshot: snapshot, priority: [her], maxArtists: 1)
+        let genres = Set(radio.genreKeys(of: tracks[0]))
+        XCTAssertTrue(genres.contains(NameKey.genre("Indie Pop")))
+        XCTAssertTrue(genres.contains(NameKey.genre("Pop")))
+        XCTAssertFalse(genres.contains(NameKey.genre("Slayer")))
+        XCTAssertFalse(genres.contains(NameKey.genre("Megadeth")))
+        // Her three spellings compared, most listened to first; "Angela",
+        // another name, is not. With nothing in the library to go by, the
+        // biggest page.
+        XCTAssertEqual(mock.requests.filter { $0.asked.method == "artist.gettoptags" }.map(\.asked.artist),
+                       ["Angèle", "Angele", "Angéle"])
+
+        // Every other question about her goes to that page too.
+        _ = await service.enrich(snapshot: snapshot, priority: [her])
+        _ = await service.similarTracks(to: tracks[0], in: snapshot)
+        let rest = mock.requests.filter { $0.asked.method == "artist.getsimilar" || $0.asked.method == "track.getsimilar" }
+        XCTAssertEqual(rest.map(\.asked.artist), ["Angèle", "Angèle"])
+
+        // Another launch: hers from disk, only the trio's asked.
+        let quiet = LastFMMockTransport(knowledge)
+        let (again, _) = await self.service(quiet, directory: directory)
+        _ = await again.enrichTags(snapshot: snapshot, priority: [her], maxArtists: 1)
+        XCTAssertEqual(Set(quiet.requests.map(\.asked.artist)), ["Blue Room Trio"])
+    }
+
+    /// An answer from before the pages were compared ("Angele"'s Slayer) is
+    /// asked again, though half a year has not passed.
+    func testAnOldAnswerIsAskedAgain() async throws {
+        let (tracks, knowledge) = Self.angele()
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        let her = NameKey.artist("Angele")
+        let directory = LastFMFixtures.directory()
+        var old = LastFMStore()
+        old.tags[her] = .init(name: "Angele", fetched: Date(), tags: [.init(name: "Slayer", count: 100)], page: nil)
+        old.saveTags(to: directory)
+        let mock = LastFMMockTransport(knowledge)
+        let (service, _) = await self.service(mock, directory: directory)
+        let before = await service.radioSnapshot(for: snapshot)
+        XCTAssertTrue(before.genreKeys(of: tracks[0]).contains(NameKey.genre("Slayer")))
+        let radio = await service.enrichTags(snapshot: snapshot, priority: [her], maxArtists: 1)
+        XCTAssertFalse(radio.genreKeys(of: tracks[0]).contains(NameKey.genre("Slayer")))
+        XCTAssertTrue(radio.genreKeys(of: tracks[0]).contains(NameKey.genre("Indie Pop")))
+    }
+
+    /// Where the library does say something, it outweighs the listeners: a
+    /// jazz singer filed as "Ghost", beside a far bigger "Ghöst" of black
+    /// metal. Her files say Jazz; a second singer without a genre is placed
+    /// by her neighbour's tags (a guest on the jazz trio's record).
+    func testThePageTheLibraryAgreesWithWinsOverTheBiggerOne() async throws {
+        let ghost = ArtistRef(id: "ghost", name: "Ghost")
+        let nova = ArtistRef(id: "nova", name: "Nova")
+        let trio = ArtistRef(id: "trio", name: "Blue Room Trio")
+        var tracks = (1...6).map { n in
+            Track(id: "g\(n)", name: "Ballad \(n)", albumID: "g", albumName: "G", artists: [ghost], albumArtist: ghost, genres: ["Jazz"])
+        }
+        tracks += (1...4).map { n in
+            Track(id: "n\(n)", name: "Nova \(n)", albumID: "n", albumName: "N", artists: [nova], albumArtist: nova)
+        }
+        tracks += (1...6).map { n in
+            Track(id: "t\(n)", name: "Tune \(n)", albumID: "t", albumName: "T", artists: n <= 3 ? [trio, nova] : [trio],
+                  albumArtist: trio, genres: ["Jazz"])
+        }
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        var k = LastFMKnowledge()
+        k.pages["Ghost"] = [("Ghöst", 400_000), ("Ghost", 900)]
+        k.topTags["Ghöst"] = [("black metal", 100), ("metal", 80)]
+        k.topTags["Ghost"] = [("vocal jazz", 100), ("jazz", 90)]
+        k.pages["Nova"] = [("Növa", 300_000), ("Nova", 700)]
+        k.topTags["Növa"] = [("techno", 100)]
+        k.topTags["Nova"] = [("jazz", 100), ("soul", 40)]
+        k.topTags["Blue Room Trio"] = [("jazz", 100), ("bebop", 60)]
+        let mock = LastFMMockTransport(k)
+        let (service, _) = await self.service(mock)
+        // The trio first: their tags are what Nova's neighbour says.
+        let radio = await service.enrichTags(snapshot: snapshot, priority: ["blueroomtrio", "ghost", "nova"], maxArtists: 3)
+        let ghostGenres = Set(radio.genreKeys(of: tracks[0]))
+        XCTAssertTrue(ghostGenres.contains(NameKey.genre("Vocal Jazz")))
+        XCTAssertFalse(ghostGenres.contains(NameKey.genre("Black Metal")))
+        let novaGenres = Set(radio.genreKeys(of: tracks[6]))
+        XCTAssertTrue(novaGenres.contains(NameKey.genre("Soul")))
+        XCTAssertFalse(novaGenres.contains(NameKey.genre("Techno")))
     }
 }

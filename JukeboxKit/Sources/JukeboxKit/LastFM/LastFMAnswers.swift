@@ -174,6 +174,25 @@ struct LastFMTopTagsAnswer: Decodable, Sendable {
     let toptags: Body?
 }
 
+/// artist.search:
+/// {"results": {"artistmatches": {"artist": [{"name": "Angèle", "listeners": "508456", "mbid": "…"}]}, "opensearch:Query": …}}
+struct LastFMArtistSearchAnswer: Decodable, Sendable {
+    struct Results: Decodable, Sendable {
+        struct Matches: Decodable, Sendable {
+            let artist: LastFMList<Item>?
+        }
+
+        let artistmatches: Matches?
+    }
+
+    struct Item: Decodable, Sendable {
+        let name: LastFMText?
+        let listeners: LastFMNumber?
+    }
+
+    let results: Results?
+}
+
 /// user.getrecenttracks: the newest first; the one playing now first of all,
 /// with "@attr": {"nowplaying": "true"} and no date.
 /// {"recenttracks": {"track": [{"artist": {"#text": "…"}, "name": "…", "date": {"uts": "1700000000"}}],

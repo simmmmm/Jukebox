@@ -1389,7 +1389,10 @@ enum Pages {
                 let chosen = await app.radio.preview(station, randomSeed: seed)
                 picks = chosen
                 list.set(chosen)
-                setText(fact, [station.subtitle, chosen.isEmpty ? "Nothing in your library for this station yet." : "Starts with these, then plays on."]
+                // Why it knows less than it might, as the Mac's head says it
+                // (RadioController.lastFMTrouble).
+                setText(fact, [station.subtitle, chosen.isEmpty ? "Nothing in your library for this station yet." : "Starts with these, then plays on.",
+                               app.radio.lastFMTrouble?.text]
                     .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
             }
         }
@@ -1403,6 +1406,7 @@ enum Pages {
         // longer be the one played, so it is chosen again, by the same draw.
         observe(column) {
             _ = app.radio.previewInputs
+            _ = app.radio.lastFMTrouble
             choose(app.radio.pageSeed(for: station))
         }
         Stats.track(.stationPage, ["seed": Stats.seed(station.seed)])
