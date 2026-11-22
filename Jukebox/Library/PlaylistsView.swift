@@ -232,7 +232,7 @@ struct PlaylistDetailView: View {
             if isWide {
                 wide(shown, all: all, kinds: kinds)
             } else {
-                compact(shown, all: all)
+                compact(shown, all: all, kinds: kinds)
             }
         }
         .environment(\.hidesVersion, TrackVersion.only(kinds, without: off) != nil)
@@ -268,12 +268,6 @@ struct PlaylistDetailView: View {
                 ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: all),
                                           isConfirmingRemoval: $isConfirmingRemoval)
-                }
-            }
-            // The filter beside the "…" on the iPhone; wide, in the head.
-            if !isWide, !kinds.isEmpty {
-                ToolbarItem(placement: .barTrailing) {
-                    LibraryVersionMenu(kinds: kinds, off: $off, inBar: true)
                 }
             }
             // Wide, the head has its own "…".
@@ -405,11 +399,11 @@ struct PlaylistDetailView: View {
         .libraryScrolledTitle(shown.name, after: page.cover + Theme.Space.xl)
     }
 
-    private func compact(_ shown: Playlist, all: [Track]) -> some View {
+    private func compact(_ shown: Playlist, all: [Track], kinds: [TrackVersion]) -> some View {
         let rows = shownEntries
         let tracks = rows?.map(\.track) ?? []
         return List {
-            header(shown, all: all, tracks: tracks)
+            header(shown, all: all, kinds: kinds, tracks: tracks)
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
                                           bottom: Theme.Space.l, trailing: Theme.margin))
                 .listRowSeparator(.hidden)
@@ -509,7 +503,7 @@ struct PlaylistDetailView: View {
     }
 
     /// `tracks` are the songs shown (a version's, or all), `all` the playlist's.
-    private func header(_ shown: Playlist, all: [Track], tracks: [Track]) -> some View {
+    private func header(_ shown: Playlist, all: [Track], kinds: [TrackVersion], tracks: [Track]) -> some View {
         let count = entries == nil ? (shown.trackCount ?? 0) : tracks.count
         let duration = entries == nil ? (shown.duration ?? 0) : LibraryText.totalDuration(tracks)
         return VStack(spacing: Theme.Space.s) {
@@ -523,10 +517,17 @@ struct PlaylistDetailView: View {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
             // Start Radio is in the "…" above.
-            PagePlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
-                            shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
-                .padding(.top, Theme.Space.m)
-                .disabled(tracks.isEmpty)
+            // The version filter right after Shuffle, as on an album's.
+            HStack(spacing: Theme.Space.s) {
+                PagePlayButtons(play: { play(tracks, from: 0, playlist: shown, shuffled: false) },
+                                shuffle: { play(tracks, from: 0, playlist: shown, shuffled: true) })
+                    .disabled(tracks.isEmpty)
+                if !kinds.isEmpty {
+                    LibraryVersionMenu(kinds: kinds, off: $off)
+                        .frame(height: 36)
+                }
+            }
+            .padding(.top, Theme.Space.m)
         }
         .frame(maxWidth: .infinity)
     }

@@ -122,7 +122,8 @@ its discs (`AlbumMerge`). Up Next numbers by place in the queue.
 
 ### The version filter
 On an album's or a playlist's page, when they hold two or more versions:
-one glyph among the page's actions, beside the heart and the "…", filled
+one plain glyph among the page's actions (beside the heart and the "…"
+wide, after Play and Shuffle on the iPhone), filled
 and in the accent while a version is off. It opens a list of each kind,
 Original (if any) first, then the others by name, each a check turned on
 or off on its own, the last one on staying on; then Show All. The list
@@ -142,8 +143,9 @@ unplugged nummers er uit kunnen filteren of alle remastered als ze er zijn
 zeg maar?" (21 November 2026).
 - Apple: `LibraryVersionMenu` (`Library/LibraryParts.swift`),
   `line.3.horizontal.decrease.circle` (`.fill` while filtering), a `Menu`
-  of `Toggle`s; wide in the head's actions, on the iPhone in the bar
-  beside the "…"; `\.hidesVersion` for the rows (`TrackRow`).
+  of `Toggle`s; wide in the head's actions, on the iPhone right after
+  Play and Shuffle ("kan het of in de puntjes of naast play/shuffle?", 22
+  November 2026); `\.hidesVersion` for the rows (`TrackRow`).
 - GNOME: `versionFilter` (`Parts.swift`), a flat menu button with the
   `filter` and `filter-on` glyphs (`Glyphs`), its popover a list as Play
   On's, the check at each row's end, so the plain menus keep no indent;

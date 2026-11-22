@@ -91,8 +91,6 @@ struct LibraryVersionMenu: View {
     let kinds: [TrackVersion]
     /// The kinds turned off; none is all.
     @Binding var off: Set<TrackVersion>
-    /// In a bar (the iPhone's): the bar's own size and ink.
-    var inBar = false
 
     var body: some View {
         Menu {
@@ -104,22 +102,24 @@ struct LibraryVersionMenu: View {
             Button("Show All") { off = [] }
                 .disabled(off.isEmpty)
         } label: {
-            if inBar {
-                Label("Versions", systemImage: symbol)
-            } else {
-                Image(systemName: symbol)
-                    .desktopFont(Tokens.Size.body15.size)
-                    .foregroundStyle(off.isEmpty ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.accent))
-                    .frame(width: 32, height: 32)
-                    .contentShape(.rect)
-            }
+            // A plain glyph, as the heart and the "…" beside it wide, and
+            // after Shuffle on the iPhone.
+            Image(systemName: symbol)
+                // The iPhone's at the size of a bar's glyph, beside the 36 of Play.
+                .desktopFont(Tokens.Size.body15.size, phone: .title2)
+                .foregroundStyle(off.isEmpty ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.accent))
+                .frame(width: 32, height: 32)
+                .contentShape(.rect)
         }
         // Open while kinds are turned, on the iPhone and the iPad (the
         // Mac's menus close on a choice, as its own apps' do).
         #if os(iOS)
         .menuActionDismissBehavior(.disabled)
         #endif
-        .modifier(PlainGlyphMenu(isPlain: !inBar))
+        .menuStyle(.button)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .fixedSize()
         .accessibilityLabel("Versions")
         .accessibilityValue(off.isEmpty ? Text("All") : Text(kinds.filter { !off.contains($0) }.map(\.name).joined(separator: ", ")))
         .accessibilityIdentifier("page.versions")
@@ -127,24 +127,6 @@ struct LibraryVersionMenu: View {
 
     private var symbol: String {
         off.isEmpty ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill"
-    }
-}
-
-/// A head's glyph menu as MoreMenu draws it, without the Mac's pop-up
-/// button around it; in a bar, the bar's own.
-private struct PlainGlyphMenu: ViewModifier {
-    let isPlain: Bool
-
-    func body(content: Content) -> some View {
-        if isPlain {
-            content
-                .menuStyle(.button)
-                .buttonStyle(.plain)
-                .menuIndicator(.hidden)
-                .fixedSize()
-        } else {
-            content
-        }
     }
 }
 

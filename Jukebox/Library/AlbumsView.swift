@@ -167,7 +167,7 @@ struct AlbumDetailView: View {
                 wide(shown, all: all, kinds: kinds, tracks: tracks, discs: discs, numbers: numbers,
                      isLoading: isLoading, moreBy: moreBy)
             } else {
-                compact(shown, tracks: tracks, discs: discs, numbers: numbers, isLoading: isLoading, moreBy: moreBy)
+                compact(shown, kinds: kinds, tracks: tracks, discs: discs, numbers: numbers, isLoading: isLoading, moreBy: moreBy)
             }
         }
         .environment(\.hidesVersion, TrackVersion.only(kinds, without: off) != nil)
@@ -177,13 +177,6 @@ struct AlbumDetailView: View {
             if kinds.allSatisfy(off.contains) { off = [] }
         }
         .toolbar {
-            // The filter beside the "…" on the iPhone, whose head has no
-            // heart or "…" of its own; wide, in the head's actions.
-            if !isWide, !kinds.isEmpty {
-                ToolbarItem(placement: .barTrailing) {
-                    LibraryVersionMenu(kinds: kinds, off: $off, inBar: true)
-                }
-            }
             // Not when the server does not let this account download,
             // unless the album is on the phone already, to remove it.
             if offline.offersDownload(for: .album(album.id)) {
@@ -267,10 +260,10 @@ struct AlbumDetailView: View {
         }
     }
 
-    private func compact(_ shown: Album, tracks: [Track], discs: [Disc], numbers: [ItemID: Int],
+    private func compact(_ shown: Album, kinds: [TrackVersion], tracks: [Track], discs: [Disc], numbers: [ItemID: Int],
                          isLoading: Bool, moreBy: Artist?) -> some View {
         List {
-            header(shown, tracks: tracks)
+            header(shown, kinds: kinds, tracks: tracks)
                 .listRowInsets(EdgeInsets(top: Theme.Space.l, leading: Theme.margin,
                                           bottom: Theme.Space.l, trailing: Theme.margin))
                 .listRowSeparator(.hidden)
@@ -316,7 +309,7 @@ struct AlbumDetailView: View {
         .libraryScrolledTitle(shown.name)
     }
 
-    private func header(_ shown: Album, tracks: [Track]) -> some View {
+    private func header(_ shown: Album, kinds: [TrackVersion], tracks: [Track]) -> some View {
         VStack(spacing: Theme.Space.s) {
             ArtworkView(shown.artwork, size: 260, sleeve: TitleSleeve.Words(album: shown))
                 .padding(.bottom, Theme.Space.m)
@@ -343,11 +336,19 @@ struct AlbumDetailView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            // Start Radio is in the "…" above.
-            PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
-                            shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
-                .padding(.top, Theme.Space.m)
-                .disabled(tracks.isEmpty)
+            // Start Radio is in the "…" above. The version filter right
+            // after Shuffle: "kan het of in de puntjes of naast
+            // play/shuffle?" (the photographer, 22 November 2026).
+            HStack(spacing: Theme.Space.s) {
+                PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
+                                shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
+                    .disabled(tracks.isEmpty)
+                if !kinds.isEmpty {
+                    LibraryVersionMenu(kinds: kinds, off: $off)
+                        .frame(height: 36)
+                }
+            }
+            .padding(.top, Theme.Space.m)
         }
         .frame(maxWidth: .infinity)
     }
