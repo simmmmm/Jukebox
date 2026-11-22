@@ -39,6 +39,7 @@ struct TrackRow: View {
     /// The songs picked with this one in a wide list (TrackPicks), empty
     /// when it is not picked.
     @Environment(\.pickedTracks) private var pickedTracks
+    @Environment(\.pickedPlace) private var pickedPlace
     @Environment(\.hidesVersion) private var hidesVersion
     @State private var isHovered = false
 
@@ -266,7 +267,8 @@ struct TrackRow: View {
         }
         .onHover { isHovered = $0 }
         .contextMenu {
-            TrackMenu(track: track, removal: removal, picked: pickedTracks, moveUp: moveUp, moveDown: moveDown)
+            TrackMenu(track: track, removal: removal, picked: pickedTracks, pickedPlace: pickedPlace,
+                      moveUp: moveUp, moveDown: moveDown)
         } preview: {
             // As the iPhone's: the preview's hosting controller needs the
             // AppModel carried into it.
@@ -368,6 +370,33 @@ struct CreditsMenu: View {
     }
 }
 
+/// What a list does with several picked songs (TrackPicks), as with one:
+/// Move to Top and Move to Bottom where one has Move Up and Move Down,
+/// then Remove from Playlist or from Queue; nil leaves one out. Linux's
+/// trackList and Up Next have the same, in the same order.
+struct PickedPlace {
+    var moveToTop: (() -> Void)?
+    var moveToBottom: (() -> Void)?
+    var remove: (() -> Void)?
+    var removeWord: LocalizedStringKey = "Remove from Playlist"
+
+    @ViewBuilder var section: some View {
+        if moveToTop != nil || moveToBottom != nil || remove != nil {
+            Section {
+                if let moveToTop {
+                    Button("Move to Top", systemImage: "arrow.up.to.line", action: moveToTop)
+                }
+                if let moveToBottom {
+                    Button("Move to Bottom", systemImage: "arrow.down.to.line", action: moveToBottom)
+                }
+                if let remove {
+                    Button(removeWord, systemImage: "minus.circle", role: .destructive, action: remove)
+                }
+            }
+        }
+    }
+}
+
 /// What can be done with a track, in the groups Linux's menus have
 /// (trackMenu, "en ook bij linux die menutjes ff mooier structureren", 20
 /// November 2026): what its list does with it first (Remove from
@@ -379,6 +408,9 @@ struct TrackMenu: View {
     var removal: (() -> Void)?
     /// Two or more picked with it (TrackPicks): the menu is theirs.
     var picked: [Track] = []
+    /// What the list does with all of them, where it can (a playlist of
+    /// one's own, Up Next): its first section for several.
+    var pickedPlace = PickedPlace()
     /// A playlist of one's own the server can reorder, on a wide page:
     /// Move Up and Move Down, nil at its ends, as Linux's row has them.
     var moveUp: (() -> Void)?
@@ -395,8 +427,8 @@ struct TrackMenu: View {
     var body: some View {
         if picked.count > 1 {
             // No heading: the same sections as one song's, what the list
-            // does with them (none yet: Remove is one entry's) and then
-            // playing and keeping them.
+            // does with them all and then playing and keeping them.
+            pickedPlace.section
             Section {
                 Button("Play Next", systemImage: "text.line.first.and.arrowtriangle.forward") {
                     player.playNext(picked)

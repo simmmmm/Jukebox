@@ -363,6 +363,8 @@ struct PlaylistDetailView: View {
                 }
                 .onDelete(perform: deleteAction(shown, rows: entries))
                 .onMove(perform: moveAction(shown))
+                // After onDelete and onMove, which want the ForEach itself.
+                .environment(\.pickedPlace, pickedPlace(shown, rows: entries))
                 .pageRow(page)
 
                 if entries.isEmpty {
@@ -624,6 +626,33 @@ struct PlaylistDetailView: View {
         guard moveAction(shown) != nil, (0..<count).contains(i + step) else { return nil }
         // List's destination counts the row's old place: down is two on.
         return { move(from: IndexSet(integer: i), to: step > 0 ? i + 2 : i - 1, in: shown) }
+    }
+
+    /// The menu on several picked (wide), as Linux's: Move to Top and Move
+    /// to Bottom where they could move one, Remove from Playlist for all
+    /// of them where one's own.
+    private func pickedPlace(_ shown: Playlist, rows: [LibraryPlaylistEntry]) -> PickedPlace {
+        let canMove = moveAction(shown) != nil
+        return PickedPlace(moveToTop: canMove ? { movePicked(toTop: true, in: shown) } : nil,
+                           moveToBottom: canMove ? { movePicked(toTop: false, in: shown) } : nil,
+                           remove: deleteAction(shown, rows: rows).map { remove -> () -> Void in { remove(IndexSet(picks.rows)) } })
+    }
+
+    /// Shown at once; then the server's moves, one after the other
+    /// (LibraryStore.move). Only with every version on, as moveAction.
+    private func movePicked(toTop: Bool, in shown: Playlist) {
+        guard let current = entries, moveAction(shown) != nil else { return }
+        let moving = picks.tracks(at: picks.rows.min() ?? 0, in: current)
+        guard moving.count > 1 else { return }
+        entries = picks.moved(current, toTop: toTop)
+        Task {
+            do {
+                try await library.move(moving.map(\.track), in: shown, toTop: toTop, count: current.count)
+            } catch {
+                errorMessage = error.localizedDescription
+                await load()
+            }
+        }
     }
 
     /// Remove from Playlist in a song's menu (wide), as a swipe would.

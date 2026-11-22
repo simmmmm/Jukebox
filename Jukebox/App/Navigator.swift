@@ -86,6 +86,9 @@ final class Navigator {
     /// Add Account… from a menu (AccountMenuItems): the sign-in in a sheet
     /// over the window (RootView).
     var isAddingAccount = false
+    /// Sign Out… from the Mac's Account menu: the question, over the main
+    /// window (RootView), as a menu bar has nowhere to ask it itself.
+    var isConfirmingSignOut = false
     /// What is typed in the wide window's one search field, in its bar
     /// (WideShell): the Search place shows what it finds (SearchView). It
     /// keeps its text, on any place, until it is cleared.

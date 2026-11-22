@@ -557,6 +557,9 @@ extension EnvironmentValues {
     /// The songs picked with a row's own (PageTrackRows), empty when it is
     /// not picked: its look and its menu (TrackRow, TrackMenu).
     @Entry var pickedTracks: [Track] = []
+    /// What the list does with those picked (PickedPlace): Move to Top,
+    /// Move to Bottom, Remove, where it can.
+    @Entry var pickedPlace = PickedPlace()
     /// One version left on in an album's or a playlist's filter (LibraryVersionMenu):
     /// the rows leave out the marker every one of them would say,
     /// "Cast No Shadow" under Unplugged.

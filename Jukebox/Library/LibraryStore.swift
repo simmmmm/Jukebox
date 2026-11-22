@@ -400,6 +400,16 @@ final class LibraryStore {
         try await server.movePlaylistEntry(playlistID: playlist.id, entryID: entryID, to: index)
     }
 
+    /// Several songs moved together to the top or the end (Move to Top,
+    /// Move to Bottom on picked songs), in the order given: the server
+    /// moves one entry at a time, so one after the other, each to its
+    /// place in the order the page already shows. `count`: the playlist's.
+    func move(_ tracks: [Track], in playlist: Playlist, toTop: Bool, count: Int) async throws {
+        for (k, track) in tracks.enumerated() {
+            try await move(track, in: playlist, to: toTop ? k : count - 1)
+        }
+    }
+
     func delete(_ playlist: Playlist) async throws {
         guard let server else { throw MusicServerError.notSignedIn }
         try await server.deletePlaylist(id: playlist.id)

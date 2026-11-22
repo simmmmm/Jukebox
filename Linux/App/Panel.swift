@@ -116,13 +116,21 @@ enum UpNext {
         gtk_widget_set_margin_top(rule, 16)
         // One GtkListView, so it makes only the rows on screen however long
         // the queue (shuffled Songs puts the whole library up next).
+        // Songs to come picked with Ctrl and Shift, as a page's
+        // (TrackPicks), for the menu on all of them. By place, so they go
+        // when the list's songs do.
+        weak var made: ItemList<Item, UpNextRow>?
+        let picked = PickedRows { [] }
         let list = ItemList<Item, UpNextRow>(
             singleClick: false,
             make: {
-                let row = UpNextRow()
+                let row = UpNextRow(picked: picked) { made?.items ?? [] }
                 return (row.widget, row)
             },
-            fill: { row, item, _ in row.show(item) },
+            fill: { row, item, index in
+                row.position = index
+                row.show(item)
+            },
             activate: { item, _, _ in
                 if case let .song(entry, _, _, playing, _) = item, !playing { app.player.skip(to: entry) }
             })
@@ -130,12 +138,27 @@ enum UpNext {
             if case let .song(_, _, _, playing, _) = item { return !playing }
             return false
         }
+        made = list
+        keep(picked, on: raw(list.widget), as: "picked")
         list.widget.css("queue")
         // The list must be the scroller's own to make only the rows on
         // screen.
         let scroller = scrolled(list.widget).expand(vertical: true)
-        observe(list.widget) { list.set(items()) }
+        var shown: [String] = []
+        observe(list.widget) {
+            let now = items()
+            let keys = now.map(key)
+            if keys != shown { picked.picks.clear() }
+            shown = keys
+            list.set(now)
+        }
         return vbox([head, rule, scroller])
+    }
+
+    /// A row's song and whether it plays: the same keys, the same places.
+    private static func key(_ item: Item) -> String {
+        if case let .song(entry, _, _, playing, _) = item { return playing ? "\(entry.id)*" : "\(entry.id)" }
+        return ""
     }
 
     /// What the list shows, in the order it plays.
@@ -252,8 +275,15 @@ final class UpNextRow {
     private var isPlaying = false
     /// In History: nothing to move or remove.
     private var isPlayed = false
+    /// The row's place in the list, as the list last filled it.
+    var position = 0
+    /// The list's picked songs to come (TrackPicks), and its rows.
+    private let picked: PickedRows
+    private let items: () -> [UpNext.Item]
 
-    init() {
+    init(picked: PickedRows, items: @escaping () -> [UpNext.Item]) {
+        self.picked = picked
+        self.items = items
         gtk_label_set_xalign(ptr(number), 1)
         gtk_label_set_xalign(ptr(time), 1)
         bars.expand(horizontal: true).align(horizontal: GTK_ALIGN_END)
@@ -276,6 +306,26 @@ final class UpNextRow {
         on(pointer, "enter") { [remove] in gtk_widget_set_can_target(remove, 1) }
         on(pointer, "leave") { [remove] in gtk_widget_set_can_target(remove, 0) }
         gtk_widget_add_controller(song, ptr(pointer))
+        // Ctrl and Shift pick the songs to come, as on a page; a plain
+        // click forgets the picks (a double-click plays, as before).
+        onRowClick(widget) { [weak self] toggle, extend in
+            guard let self else { return }
+            guard self.entry != nil, !self.isPlaying, !self.isPlayed else { picked.picks.clear(); return }
+            if toggle { picked.picks.click(self.position, .toggle) }
+            else if extend { picked.picks.click(self.position, .extend) }
+            else { picked.picks.plain(self.position) }
+        }
+        observe(widget) { [weak self] in
+            _ = picked.picks
+            self?.markPicked()
+        }
+    }
+
+    /// Picked: the list's own row lit as a page's picked songs are.
+    private func markPicked() {
+        guard let row = gtk_widget_get_parent(widget) else { return }
+        if picked.picks.contains(position) { gtk_widget_add_css_class(row, "picked") }
+        else { gtk_widget_remove_css_class(row, "picked") }
     }
 
     func show(_ item: UpNext.Item) {
@@ -297,6 +347,7 @@ final class UpNextRow {
         self.entry = entry
         isPlaying = playing
         isPlayed = style == .played
+        markPicked()
         song.isVisible = true
         words.isVisible = false
         let track = entry.track
@@ -329,6 +380,7 @@ final class UpNextRow {
     /// Queue ("eigenlijk hadden we hier al remove from queue", 20 November
     /// 2026). Found by id when chosen: the list may have moved since.
     func menu() -> [(String, () -> Void)] {
+        if let several = pickedMenu() { return several }
         guard let entry else { return [] }
         let moves: [(String, () -> Void)]
         if isPlaying || isPlayed {
@@ -343,6 +395,27 @@ final class UpNextRow {
             ] + stationItems(entry)
         }
         return trackMenu([entry.track], place: moves)
+    }
+
+    /// On one of two or more songs to come picked: what the queue does with
+    /// them all, as with one (Move to Top and Move to Bottom where one has
+    /// Up and Down), then Play Next, Add to Queue and Add to Playlist…. On a
+    /// station, taking them out teaches it once a song
+    /// (PlayQueue.removeUpcoming). Found by id when chosen.
+    private func pickedMenu() -> [(String, () -> Void)]? {
+        guard picked.picks.rows.count > 1, picked.picks.contains(position) else { return nil }
+        let entries = picked.picks.tracks(at: position, in: items()).compactMap { item -> QueueEntry? in
+            guard case let .song(entry, _, style, playing, _) = item, !playing, style != .played else { return nil }
+            return entry
+        }
+        guard entries.count > 1 else { return nil }
+        let ids = Set(entries.map(\.id))
+        func offsets() -> IndexSet { IndexSet(app.player.upNext.indices.filter { ids.contains(app.player.upNext[$0].id) }) }
+        return trackMenu(entries.map(\.track), place: [
+            ("Move to Top", { app.player.moveUpcoming(fromOffsets: offsets(), toOffset: 0) }),
+            ("Move to Bottom", { app.player.moveUpcoming(fromOffsets: offsets(), toOffset: app.player.upNext.count) }),
+            ("Remove from Queue", { app.player.removeUpcoming(atOffsets: offsets()) }),
+        ])
     }
 
     /// A song the station chose, before it plays, as on the iPhone

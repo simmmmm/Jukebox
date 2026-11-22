@@ -1,11 +1,12 @@
 // Several songs picked at once in a desktop list (Linux, the Mac's wide
-// window), for the menu's Play Next, Add to Queue and Add to
-// Playlist… on all of them: Ctrl (⌘) adds or takes away one, Shift picks
-// the run from the last one picked. No new buttons ("ik wil alleen er voor
-// waken dat we niet 10000 knopen krijgen. Alles is nu lekker clean", 18
-// November 2026): a plain click plays as it always did, and forgets the
-// picks. Shared by both clients, so the rules are one (Linux's QueueCheck
-// checks them after every build).
+// window), for the menu's Play Next, Add to Queue and Add to Playlist… on
+// all of them, and where the list allows it Move to Top, Move to Bottom
+// and Remove (a playlist of one's own, Up Next): Ctrl (⌘) adds or takes
+// away one, Shift picks the run from the last one picked. No new buttons
+// ("ik wil alleen er voor waken dat we niet 10000 knopen krijgen. Alles is
+// nu lekker clean", 18 November 2026): a plain click plays as it always
+// did, and forgets the picks. Shared by both clients, so the rules are one
+// (Linux's QueueCheck checks them after every build).
 
 import Foundation
 
@@ -46,6 +47,14 @@ struct TrackPicks: Equatable {
     mutating func plain(_ row: Int) {
         rows = []
         anchor = row
+    }
+
+    /// `items` with the rows picked moved together to the top or the end,
+    /// in the list's order: Move to Top and Move to Bottom on several.
+    func moved<Item>(_ items: [Item], toTop: Bool) -> [Item] {
+        let moving = rows.sorted().filter { items.indices.contains($0) }.map { items[$0] }
+        let rest = items.indices.filter { !rows.contains($0) }.map { items[$0] }
+        return toTop ? moving + rest : rest + moving
     }
 
     /// What a menu on `row` acts on: every pick, in the list's order, when
