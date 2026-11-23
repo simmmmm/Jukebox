@@ -102,8 +102,11 @@ public enum CastFrame {
             case 0:
                 _ = try varint()
             case 2:
-                let count = Int(try varint())
-                guard count >= 0, at + count <= bytes.count else { throw CastFrameError.malformed }
+                // Compared with what is left, never added to `at`: a length
+                // near UInt64's top would overflow.
+                guard let count = Int(exactly: try varint()), count <= bytes.count - at else {
+                    throw CastFrameError.malformed
+                }
                 if field != 7 {
                     guard let text = String(bytes: bytes[at..<(at + count)], encoding: .utf8) else {
                         throw CastFrameError.malformed
@@ -112,10 +115,10 @@ public enum CastFrame {
                 }
                 at += count
             case 1:
-                guard at + 8 <= bytes.count else { throw CastFrameError.malformed }
+                guard bytes.count - at >= 8 else { throw CastFrameError.malformed }
                 at += 8
             case 5:
-                guard at + 4 <= bytes.count else { throw CastFrameError.malformed }
+                guard bytes.count - at >= 4 else { throw CastFrameError.malformed }
                 at += 4
             default:
                 throw CastFrameError.malformed

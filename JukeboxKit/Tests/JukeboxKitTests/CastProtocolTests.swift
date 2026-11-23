@@ -52,6 +52,31 @@ import Testing
         #expect(throws: CastFrameError.malformed) { try CastFrame.take(from: &bad) }
     }
 
+    @Test func aBrokenFrameIsAnErrorNotACrash() {
+        let frames: [[UInt8]] = [
+            // A string whose length is UInt64's top: once a trap in Int(_:).
+            [0, 0, 0, 12, 0x32, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x01, 0x00],
+            // Int.max: once an overflow in `at + count`.
+            [0, 0, 0, 11, 0x32, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F, 0x00],
+            // One byte longer than the frame.
+            [0, 0, 0, 4, 0x32, 0x03, 0x7B, 0x7D],
+            // A varint that never ends.
+            [0, 0, 0, 3, 0x32, 0x80, 0x80],
+            // An eleven-byte varint: more than 64 bits.
+            [0, 0, 0, 11, 0x08, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80],
+            // Fixed 64- and 32-bit fields cut short.
+            [0, 0, 0, 3, 0x09, 0x00, 0x00],
+            [0, 0, 0, 2, 0x0D, 0x00],
+        ]
+        for frame in frames {
+            var buffer = Data(frame)
+            #expect(throws: CastFrameError.malformed) { try CastFrame.take(from: &buffer) }
+        }
+        // Just past Cast's 64 KiB: refused before any of it is waited for.
+        var long = Data([0x00, 0x01, 0x00, 0x01])
+        #expect(throws: CastFrameError.tooLong(0x10001)) { try CastFrame.take(from: &long) }
+    }
+
     @Test func skipsUnknownFieldsAndBinaryPayloads() throws {
         // A binary-payload frame (payload_type 1, payload_binary field 7).
         var binary = Data([0, 0, 0, 8, 0x08, 0x00, 0x28, 0x01, 0x3A, 0x02, 0x01, 0x02])
