@@ -108,18 +108,13 @@ enum Voice {
         return matches
     }
 
-    /// For the Shortcuts app's list and Siri's App Shortcut phrases: the
-    /// playlists, the albums played lately and the favourites. Only these
-    /// match a phrase that names them ("Play Road Trip in Jukebox"); any
-    /// other name goes through `find`.
+    /// For the Shortcuts app's list and Siri's App Shortcut phrases: Your
+    /// Station and the playlists. Only these match a phrase that names them
+    /// ("Play Road Trip in Jukebox"); any other name goes through `find`,
+    /// when it is said. No album played lately and no favourite: the system
+    /// keeps these names, and what someone plays stays in the app.
     static func suggestions(in library: LibraryStore) -> [MusicEntity] {
-        var all = [MusicEntity.yourStation]
-        all += library.playlists.prefix(40).map(MusicEntity.init)
-        all += library.recentlyPlayedAlbums.prefix(30).map(MusicEntity.init)
-        all += library.favoriteAlbums.prefix(20).map(MusicEntity.init)
-        all += library.favoriteArtists.prefix(20).map(MusicEntity.init)
-        var seen = Set<String>()
-        return all.filter { seen.insert($0.id).inserted }
+        [MusicEntity.yourStation] + library.playlists.prefix(40).map(MusicEntity.init)
     }
 
     /// An entity again from its id, as the library has it now.

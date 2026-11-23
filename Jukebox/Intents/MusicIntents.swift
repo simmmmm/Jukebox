@@ -7,9 +7,11 @@
 // actor, which is the app's default (project.yml). Their work hops to it
 // through Voice, whose calls are the screens' own.
 //
-// Entities stay on the device: App Intents keeps them in the app, and
-// nothing is donated or put in Spotlight. A name only goes where the
-// listener said it.
+// What the system learns of the library: Your Station and the playlists'
+// names, for Siri's phrases (Voice.suggestions). Any other name is found
+// when it is said, and nothing is donated or put in Spotlight. Like This
+// Song writes to the server, so it asks for an unlocked device; playing
+// does not, as the car needs it with the phone in a pocket.
 
 import AppIntents
 import JukeboxKit
@@ -210,6 +212,7 @@ nonisolated struct ShuffleIntent: AudioPlaybackIntent {
 nonisolated struct LikeSongIntent: AppIntent {
     static let title: LocalizedStringResource = "Like This Song"
     static let description = IntentDescription("Thumbs up for the song on a station; otherwise adds it to your favorites.")
+    static var authenticationPolicy: IntentAuthenticationPolicy { .requiresAuthentication }
 
     init() {}
 
