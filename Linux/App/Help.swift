@@ -12,7 +12,7 @@ enum Help {
     /// Copy Diagnostic Info's words (Support.diagnostics): no address,
     /// name, user or token. Linux has no build number, so the version alone.
     static var diagnostics: String {
-        Support.diagnostics(version: appVersion, client: "Linux", account: app.credentials, lastFM: app.settings.useLastFM)
+        Support.diagnostics(version: appVersion, client: "Linux", account: app.credentials, lastFM: app.settings.hasLastFM)
     }
 
     /// The default browser, through GTK (the desktop portal in a Flatpak).

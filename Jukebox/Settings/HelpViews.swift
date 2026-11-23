@@ -41,7 +41,7 @@ struct CopyDiagnosticsButton: View {
             let short = info?["CFBundleShortVersionString"] as? String ?? "1.0"
             let build = info?["CFBundleVersion"] as? String ?? "1"
             let text = Support.diagnostics(version: "\(short) (\(build))", client: Device.model,
-                                           account: app.credentials, lastFM: app.settings.useLastFM)
+                                           account: app.credentials, lastFM: app.settings.hasLastFM)
             #if os(macOS)
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)
