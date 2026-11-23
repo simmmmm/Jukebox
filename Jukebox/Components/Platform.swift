@@ -88,15 +88,10 @@ enum Device {
         #endif
     }
 
-    /// The name the listener gave it ("Tijmen's MacBook Pro"): how the
-    /// server and the listener's other devices know it.
-    static var name: String {
-        #if os(iOS)
-        return UIDevice.current.name
-        #else
-        return Host.current().localizedName ?? "Mac"
-        #endif
-    }
+    /// How the server and the listener's other devices know it: the kind
+    /// of device, never the name the listener gave it ("Tijmen's MacBook
+    /// Pro"), which would go to every server asked, before sign-in too.
+    static var name: String { model }
 }
 
 extension Color {

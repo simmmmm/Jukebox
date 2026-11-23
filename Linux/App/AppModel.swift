@@ -46,7 +46,8 @@ final class AppModel {
 
     init() {
         identity = ClientIdentity(clientName: "Jukebox", clientVersion: appVersion,
-                                  deviceName: ProcessInfo.processInfo.hostName, deviceID: Self.deviceID())
+                                  // Not the host's name, which would go to every server asked.
+                                  deviceName: "Linux", deviceID: Self.deviceID())
         settings = AppSettings()
         library = LibraryStore()
         history = HistoryStore()
