@@ -134,7 +134,7 @@ extension JellyfinClient {
             // A cancelled task's request: cancellation, not a network fault.
             throw CancellationError()
         } catch {
-            throw JellyfinError.transport(error.localizedDescription)
+            throw JellyfinError.transport(ConnectionProblem.describe(error))
         }
         try Self.check(response)
         return response

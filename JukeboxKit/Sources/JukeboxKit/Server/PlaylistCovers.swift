@@ -61,7 +61,7 @@ extension JellyfinClient {
         do {
             response = try await transport.send(request)
         } catch {
-            throw JellyfinError.transport(error.localizedDescription)
+            throw JellyfinError.transport(ConnectionProblem.describe(error))
         }
         try Self.check(response)
     }
