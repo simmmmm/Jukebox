@@ -301,11 +301,17 @@ final class AppSettings {
     /// The build has Jukebox's key: without one (GitHub's runners) there is
     /// no Enhance Radio to offer, in Settings or after signing in, and the
     /// radio is the library's alone.
-    static var canEnhanceRadio: Bool { !appLastFMKey.isEmpty }
+    /// The screenshot walks' builds have no key (ci/app.sh): their launch
+    /// argument `-showBetterRadio YES` shows the switch and Better Radio
+    /// all the same, for the pictures. Nothing is asked of Last.fm then
+    /// (`enhancesRadio` still wants the key).
+    static var canEnhanceRadio: Bool {
+        !appLastFMKey.isEmpty || UserDefaults.standard.bool(forKey: "showBetterRadio")
+    }
 
     /// Enhance Radio on, and a key to do it with: Last.fm, MusicBrainz and
     /// AcousticBrainz are asked only then (RadioController).
-    var enhancesRadio: Bool { enhanceRadio && Self.canEnhanceRadio }
+    var enhancesRadio: Bool { enhanceRadio && !Self.appLastFMKey.isEmpty }
 
     private enum Keys {
         static let wifiQuality = "wifiQuality"

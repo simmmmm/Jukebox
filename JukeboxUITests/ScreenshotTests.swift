@@ -564,6 +564,9 @@ final class Walk {
         // fake server while the walk goes, and the pictures would differ by
         // how far it got.
         app.launchArguments += ["-keepSongs", "NO"]
+        // Better Radio and Enhance Radio, though the walk's build has no
+        // Last.fm key (AppSettings.canEnhanceRadio).
+        app.launchArguments += ["-showBetterRadio", "YES"]
         app.launchArguments += extra
         app.launch()
         try alive("launch")

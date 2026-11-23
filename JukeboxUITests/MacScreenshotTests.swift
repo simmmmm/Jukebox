@@ -217,6 +217,9 @@ final class MacWalk {
         // No usage counts from CI's walk (docs/STATS.md), and no automatic
         // keep fetching from the fake server meanwhile (docs/OFFLINE.md).
         app.launchArguments += ["-shareUsage", "NO", "-keepSongs", "NO"]
+        // Better Radio and Enhance Radio, though the walk's build has no
+        // Last.fm key (AppSettings.canEnhanceRadio).
+        app.launchArguments += ["-showBetterRadio", "YES"]
         // The panel closed, whatever an earlier launch left: this walk
         // keeps count of it from there.
         app.launchArguments += ["-panelOpen", "NO"]
