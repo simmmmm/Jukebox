@@ -272,9 +272,15 @@ enum SignInPage {
         // hebben meerdere gebruikers nu al hulp nodig" (the photographer,
         // 23 November 2026). Quiet words under the buttons (Help.swift).
         let trouble = button("Trouble signing in?", "flat", "word", "help", "fact") { Help.open(Support.signInHelp) }
-        let copyInfo = button("Copy Diagnostic Info", "flat", "word", "help", "fact") {
+        // "Copied" for a moment, as the Mac's; the error above it stays.
+        var copyInfo: Widget!
+        copyInfo = button("Copy Diagnostic Info", "flat", "word", "help", "fact") {
             Help.copyDiagnostics()
-            say("Diagnostic info copied. It holds no address, user name or password.")
+            gtk_button_set_label(ptr(copyInfo), "Copied")
+            Task {
+                try? await Task.sleep(for: .seconds(2))
+                gtk_button_set_label(ptr(copyInfo), "Copy Diagnostic Info")
+            }
         }
         let help = vbox([trouble, copyInfo]).align(horizontal: GTK_ALIGN_CENTER)
         let actions = vbox(spacing: 8, [signIn, quick, plex, help])
