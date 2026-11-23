@@ -756,6 +756,7 @@ final class RadioController {
             guard let lastFM, let track = index.track(id: id) else { return }
             sourceTasks.append(Task { [weak self] in
                 let neighbors = await lastFM.similarTracks(to: track, in: index)
+                await self?.noteTrouble(of: lastFM)
                 guard let self, self.generation == generation, !neighbors.isEmpty else { return }
                 self.addCandidates(neighbors.map(\.key), weight: 0.8, reason: .similarTrack(track.name))
             })
@@ -770,7 +771,10 @@ final class RadioController {
             sourceTasks.append(Task { [weak self] in
                 var top: [Track] = []
                 if let topServer { top = (try? await topServer.topSongs(of: artist, limit: 10)) ?? [] }
-                if top.isEmpty, let lastFM { top = await lastFM.topTracks(artist: artist, in: index, limit: 10) }
+                if top.isEmpty, let lastFM {
+                    top = await lastFM.topTracks(artist: artist, in: index, limit: 10)
+                    await self?.noteTrouble(of: lastFM)
+                }
                 guard let self, self.generation == generation, !top.isEmpty else { return }
                 self.addCandidates(top.map(\.id), weight: 0.6, reason: .byArtist(name))
             })

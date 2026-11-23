@@ -344,6 +344,22 @@ final class LastFMTagsTests: XCTestCase {
         XCTAssertEqual(Set(quiet.requests.map(\.asked.artist)), ["Blue Room Trio"])
     }
 
+    /// A page a little bigger than the files' spelling is no reason to
+    /// leave it: on his library those were a stray bracket or "A & B".
+    func testTheFilesSpellingStaysUnlessAnotherIsFarBigger() async throws {
+        let artist = ArtistRef(id: "j", name: "Jahaan Sweet")
+        let tracks = (1...3).map { Track(id: "j\($0)", name: "Beat \($0)", albumID: "j", artists: [artist], albumArtist: artist) }
+        var k = LastFMKnowledge()
+        k.pages["Jahaan Sweet"] = [("Jahaan Sweet)", 104), ("Jahaan Sweet", 85)]
+        k.topTags["Jahaan Sweet"] = [("hip-hop", 100)]
+        k.topTags["Jahaan Sweet)"] = [("rnb", 100)]
+        let mock = LastFMMockTransport(k)
+        let (service, _) = await self.service(mock)
+        let radio = await service.enrichTags(snapshot: LibrarySnapshot(tracks: tracks), priority: ["jahaansweet"], maxArtists: 1)
+        XCTAssertTrue(radio.genreKeys(of: tracks[0]).contains(NameKey.genre("Hip-Hop")))
+        XCTAssertFalse(radio.genreKeys(of: tracks[0]).contains(NameKey.genre("Rnb")))
+    }
+
     /// An answer from before the pages were compared ("Angele"'s Slayer) is
     /// asked again, though half a year has not passed.
     func testAnOldAnswerIsAskedAgain() async throws {

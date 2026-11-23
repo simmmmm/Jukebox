@@ -183,8 +183,12 @@ name is the artist's but for accents, case and spacing (NameKey), the
 three most listened to are asked. The one whose genre tags agree best
 with the library wins: the files' genres of the artist's own songs, and
 the tags of their neighbours in the graph. Where the library says
-nothing, as for her (no genre, no neighbour), the page most listen to.
-Every later question about the artist (similar artists, songs, top songs)
+nothing, as for her (no genre, no neighbour), the page most listen to,
+and the files' own spelling unless another has twice its listeners. Of
+his 286 asked artists, 110 names have several pages; two move to another
+spelling, "Angèle" and "Blue Öyster Cult" (2.0 million listeners against
+470 000). The pages a little bigger were the same artist joined otherwise
+or a stray bracket, and stay as filed. Every later question about the artist (similar artists, songs, top songs)
 goes to that page. One call more per artist, every half year; an answer
 from before (no page kept) is asked again once. Tested in
 `LastFMTagsTests`: her case from Last.fm's answers, and a "Ghost" whose

@@ -274,6 +274,45 @@ final class LastFMServiceTests: XCTestCase {
         XCTAssertEqual(graph.weight(Self.key("Velvet Static"), Self.key("The Lanterns")), 0.9, accuracy: 1e-9)
     }
 
+    /// A song station found Last.fm gone; after the rest, a round with
+    /// nothing to ask ends the trouble, rather than waking on a timer
+    /// every second asking nothing.
+    func testARestWithNothingToAskSettles() async {
+        let snapshot = Self.snapshot
+        let mock = LastFMMockTransport { _ in throw URLError(.timedOut) }
+        let clock = LastFMTestClock(Date(timeIntervalSince1970: 1_800_000_000))
+        let (service, _) = await service(mock)
+        await service.setDate { clock.now }
+        _ = await service.similarTracks(to: snapshot.tracks[0], in: snapshot)
+        var trouble = await service.trouble
+        XCTAssertEqual(trouble, .notAnswering)
+        clock.advance(61)
+        _ = await service.enrich(snapshot: snapshot, priority: [])
+        trouble = await service.trouble
+        let retry = await service.retryAt
+        XCTAssertNil(trouble)
+        XCTAssertNil(retry)
+        XCTAssertEqual(mock.count, 1)
+    }
+
+    /// A search Last.fm could not answer leaves the artist due, rather
+    /// than settling on the files' spelling for half a year.
+    func testAFailedSearchIsAskedAgain() async {
+        let (tracks, knowledge) = LastFMTagsTests.angele()
+        let snapshot = LibrarySnapshot(tracks: tracks)
+        let failing = LastFMCounter()
+        let mock = LastFMMockTransport { request in
+            if request.method == "artist.search", failing.next() == 1 { return LastFMFixtures.respond(200, LastFMFixtures.operationFailed) }
+            return knowledge.answer(request)
+        }
+        let (service, _) = await service(mock)
+        let her = NameKey.artist("Angele")
+        _ = await service.enrichTags(snapshot: snapshot, priority: [her], maxArtists: 1)
+        XCTAssertEqual(mock.requests.map(\.asked.method), ["artist.search"])
+        let radio = await service.enrichTags(snapshot: snapshot, priority: [her], maxArtists: 1)
+        XCTAssertTrue(radio.genreKeys(of: tracks[0]).contains(NameKey.genre("Indie Pop")))
+    }
+
     func testARefusedKeyIsSaidAndNotRetried() async {
         let mock = LastFMMockTransport { _ in LastFMFixtures.respond(403, LastFMFixtures.invalidKey) }
         let (service, _) = await service(mock)

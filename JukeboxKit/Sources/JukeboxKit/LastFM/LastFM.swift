@@ -551,6 +551,7 @@ public actor SimilarityService {
             }
         }
         if unsaved > 0 { store.saveTags(to: directory) }
+        settleRest()
         return radioSnapshot(for: snapshot)
     }
 
@@ -573,11 +574,23 @@ public actor SimilarityService {
             var seen = Set<String>()
             pages = found.filter { NameKey.artist($0.name) == own && seen.insert($0.name).inserted }
                 .sorted { $0.listeners != $1.listeners ? $0.listeners > $1.listeners : $0.name < $1.name }
-        // The search alone said nothing: the name as filed, as before.
-        case .notFound, .failed: break
+        // Last.fm knows no page like it: the name as filed, as before.
+        case .notFound: break
+        // Last.fm's own trouble: asked again next round, not settled on
+        // the filed spelling for half a year.
+        case .failed: return .failed
         case .unavailable: return .unavailable
         case .rateLimited: return .rateLimited
         case .offline: return .offline
+        }
+        // The files' own spelling (Last.fm reads names in any case) first,
+        // unless another has twice its listeners: on his library the pages
+        // a little bigger were the same artist joined otherwise ("A & B" for
+        // "A, B") or a stray bracket ("Jahaan Sweet)"), and the far bigger
+        // ones the right page ("Blue Öyster Cult", "Angèle").
+        if let filed = pages.firstIndex(where: { $0.name.lowercased() == name.lowercased() }),
+           pages[0].listeners < 2 * pages[filed].listeners {
+            pages.insert(pages.remove(at: filed), at: 0)
         }
         // Three at most: past that the pages are a handful of listeners.
         let candidates = pages.isEmpty ? [LastFMClient.ArtistPage(name: name, listeners: 0)] : Array(pages.prefix(3))
@@ -787,6 +800,7 @@ public actor SimilarityService {
         if unsaved > 0 { store.saveArtists(to: directory) }
         let parts = parts(for: snapshot)
         if answered > 0 { LastFMStore.saveGraph(parts.lastFM, to: directory) }
+        settleRest()
         return parts.graph
     }
 
@@ -976,6 +990,15 @@ public actor SimilarityService {
         failuresInARow = 0
         nextRest = nil
         retryAt = nil
+        trouble = nil
+    }
+
+    /// A round after the rest that had nothing to ask: nothing was refused,
+    /// so nothing to say, and no reason to try again on a timer (which
+    /// would wake every second, asking nothing).
+    private func settleRest() {
+        guard let retryAt, currentDate() >= retryAt else { return }
+        self.retryAt = nil
         trouble = nil
     }
 
