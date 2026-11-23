@@ -67,11 +67,14 @@ final class AudioPlayer: PlayQueue {
         nowPlaying = NowPlayingInfo()
         super.init(settings: settings, history: history)
         engine.actionAtItemEnd = .advance
-        // AirPlay as a route for the sound, streamed from this device: never
-        // the song's address handed to the receiver to fetch itself, as the
-        // address carries the session's credentials. Jukebox has no video,
-        // so nothing needs the external kind.
+        // AirPlay as a route for the sound, streamed from this device, so
+        // the session stays here and the receiver never fetches the song
+        // itself. Jukebox has no video, so nothing needs the external kind.
+        // The Mac's picker routes this player (SystemControls), so the Mac
+        // keeps the default.
+        #if os(iOS)
         engine.allowsExternalPlayback = false
+        #endif
         // Music's own session: playback, long-form (AirPlay routes it as
         // music, not as a sound effect), on its own when the phone is silent.
         // A Mac has no audio session: its apps simply play.

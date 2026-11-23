@@ -112,6 +112,9 @@ enum DefaultsFile {
         guard let data = try? PropertyListSerialization.data(fromPropertyList: kept, format: .binary, options: 0),
               data != written else { return }
         try? FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
-        if (try? data.write(to: url, options: .atomic)) != nil { written = data }
+        if (try? data.write(to: url, options: .atomic)) != nil {
+            written = data
+            chmod(url.path, 0o600)
+        }
     }
 }

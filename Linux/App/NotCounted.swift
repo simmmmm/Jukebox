@@ -32,8 +32,8 @@ enum NotCountedUI {
     /// The primary menu's Private Listening: three radio items of one
     /// action with the mode as its state, followed as the store changes.
     /// The action is the window's own, in a group of its own on `owner`,
-    /// not the application's: those GApplication offers on the session's
-    /// bus, where any program could turn the counting back on unseen.
+    /// not the application's: whether plays count is changed in Jukebox,
+    /// where the listener sees it, and from nowhere else.
     static func install(owner: Widget, in menu: OpaquePointer) {
         let store = app.player.notCounted
         let action = g_simple_action_new_stateful("private-listening", g_variant_type_new("s"),
