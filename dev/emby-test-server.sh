@@ -37,7 +37,7 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   # otherwise, measured).
   docker run -d --name "$NAME" --network jukebox --network-alias "$alias" \
     -e UID="$(id -u)" -e GID="$(id -g)" \
-    -p "$PORT:8096" -v "$DATA/config:/config" -v "$MEDIA:/media:ro" "$IMAGE" >/dev/null
+    -p "${TEST_SERVER_BIND:-127.0.0.1}:$PORT:8096" -v "$DATA/config:/config" -v "$MEDIA:/media:ro" "$IMAGE" >/dev/null
 fi
 
 # A call, again each second until it succeeds, for a minute.

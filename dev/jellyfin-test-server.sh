@@ -9,7 +9,9 @@
 #
 # User "test", password "test" (and "second", "second" for a second
 # account). The server is "jellyfin" on the Docker network
-# "jukebox" (port 8096), and localhost:8096 from here.
+# "jukebox" (port 8096), and localhost:8096 from here, this machine only
+# (an administrator test/test on the Wi-Fi is anyone's): TEST_SERVER_BIND=0.0.0.0
+# for a phone on the same network.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -70,7 +72,7 @@ if ! docker ps --format '{{.Names}}' | grep -qx "$NAME"; then
   docker rm -f "$NAME" >/dev/null 2>&1 || true
   alias=jellyfin; [[ $NAME == jukebox-jellyfin ]] || alias=$NAME
   docker run -d --name "$NAME" --network jukebox --network-alias "$alias" \
-    -p "$PORT:8096" -v "$DATA/config:/config" -v "$DATA/cache:/cache" -v "$DATA/media:/media:ro" \
+    -p "${TEST_SERVER_BIND:-127.0.0.1}:$PORT:8096" -v "$DATA/config:/config" -v "$DATA/cache:/cache" -v "$DATA/media:/media:ro" \
     "$IMAGE" >/dev/null
 fi
 
