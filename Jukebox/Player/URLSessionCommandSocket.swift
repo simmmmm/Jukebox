@@ -2,14 +2,20 @@
 // own websocket (Linux has libsoup's, Linux/App/RemoteSocket.swift).
 
 import Foundation
+import JukeboxKit
 
 final class URLSessionCommandSocket: CommandSocket {
+    /// The socket's address carries the server's token: its redirects go
+    /// as RedirectPolicy lets them.
+    private static let session = URLSession(configuration: .default, delegate: RedirectGuard.shared,
+                                            delegateQueue: nil)
+
     var received: ((String?) -> Void)?
     private let task: URLSessionWebSocketTask
     private var isClosed = false
 
     init(url: URL) {
-        task = URLSession.shared.webSocketTask(with: url)
+        task = Self.session.webSocketTask(with: url)
         task.resume()
         listen()
     }
