@@ -101,8 +101,9 @@ struct MiniBarFoot: ViewModifier {
 struct MiniPlayerTabFoot: View {
     let isKeyboardUp: Bool
 
-    /// How far the fade reaches above the block.
-    private static let reach: CGFloat = 72
+    /// How far the fade reaches above the block. Part of the foot's height,
+    /// so the pages' indicator takes it back off (HidesSystemTabBar).
+    static let reach: CGFloat = 72
 
     /// The fade, top to bottom, eased so no band shows where it starts:
     /// nothing above the block, whole by the tabs, so no page shows

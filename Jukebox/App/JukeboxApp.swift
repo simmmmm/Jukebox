@@ -359,6 +359,14 @@ private struct HidesSystemTabBar: ViewModifier {
         content
             .toolbarVisibility(.hidden, for: .tabBar)
             .safeAreaPadding(.bottom, footHeight)
+            // The scroll indicator ends at the block's top, not at the
+            // fade's: the fade's reach is in the room above for the rows
+            // alone, and the indicator that stopped short of the block
+            // looked wrong ("het scroll balkje valt me vooral op dat die
+            // niet klopt", the photographer, 23 November 2026). The
+            // shelves' own indicators are hidden (Tiles.swift), so this
+            // touches only the page's.
+            .contentMargins(.bottom, -min(MiniPlayerTabFoot.reach, footHeight), for: .scrollIndicators)
     }
 }
 #endif
