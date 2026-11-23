@@ -187,6 +187,30 @@ final class RadioSoundTests: XCTestCase {
         XCTAssertTrue(quiet.asked.isEmpty)
     }
 
+    /// More than one batch of 50: the lookup answers each batch by its own
+    /// positions (0, 1, …). The second batch trapped the app a moment
+    /// after Better Radio's Turn On (build 521).
+    func testSoundServiceLooksUpMoreThanOneBatch() async throws {
+        let her = ArtistRef(id: "h", name: "Hania Rani")
+        let tracks = (0..<120).map {
+            Track(id: "\($0)", name: "Song \($0)", albumID: "a", albumName: "Esja", artists: [her], albumArtist: her)
+        }
+        var recordings: [String: String] = [:]
+        var sound: [String: (Double, Double, Double)] = [:]
+        for i in 0..<120 {
+            recordings["Hania Rani|Song \(i)"] = "r-\(i)"
+            sound["r-\(i)"] = (0.9, 1, 0)
+        }
+        let mock = Mock(recordings: recordings, sound: sound)
+        let directory = LastFMFixtures.directory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let service = SoundService(directory: directory, transport: mock)
+        await service.setPacing(.milliseconds(1))
+        let round = await service.enrich(snapshot: LibrarySnapshot(tracks: tracks))
+        XCTAssertEqual(round.profiles.count, 120)
+        XCTAssertEqual(round.profiles["119"]?.acoustic, 0.9)
+    }
+
     func testSoundServiceStopsQuietlyAndKeepsNothingUnasked() async throws {
         let her = ArtistRef(id: "h", name: "Hania Rani")
         let tracks = [Track(id: "1", name: "Eden", albumID: "a", albumName: "Esja", artists: [her], albumArtist: her)]

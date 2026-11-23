@@ -126,13 +126,13 @@ public actor SoundService {
             guard let found = await lookup("acrr-lookup", batch.map {
                 ["artist_credit_name": $0.artist, "recording_name": $0.title, "release_name": $0.album]
             }) else { return (finish(snapshot), false) }
-            for (i, id) in found { recordings[batch[i].key] = id }
+            for (i, id) in found where batch.indices.contains(i) { recordings[batch[i].key] = id }
         }
         let unmatched = due.filter { recordings[$0.key] == nil }
         for batch in Self.chunks(unmatched, 50) {
             guard let found = await lookup("acr-lookup", batch.map { ["artist_credit_name": $0.artist, "recording_name": $0.title] })
             else { return (finish(snapshot), false) }
-            for (i, id) in found { recordings[batch[i].key] = id }
+            for (i, id) in found where batch.indices.contains(i) { recordings[batch[i].key] = id }
         }
         // Their sound.
         let ids = Array(Set(recordings.values)).sorted()
@@ -188,8 +188,13 @@ public actor SoundService {
         return made
     }
 
-    static func chunks<T>(_ items: [T], _ size: Int) -> [ArraySlice<T>] {
-        stride(from: 0, to: items.count, by: size).map { items[$0..<min($0 + size, items.count)] }
+    /// Arrays, not slices: the lookup answers by the position in the batch
+    /// it was sent (0, 1, …), and a slice from the second batch on starts
+    /// at 50. `batch[i]` there trapped, the app gone a second after Better
+    /// Radio's Turn On, on any library of more than 50 songs ("crashed als
+    /// je better radio ja zegt", the photographer, 23 November 2026).
+    static func chunks<T>(_ items: [T], _ size: Int) -> [[T]] {
+        stride(from: 0, to: items.count, by: size).map { Array(items[$0..<min($0 + size, items.count)]) }
     }
 
     private var nextSlot: ContinuousClock.Instant?
@@ -233,7 +238,7 @@ public actor SoundService {
 
     /// The profiles AcousticBrainz has of these recordings; nil when it
     /// did not answer.
-    private func highLevel(_ ids: ArraySlice<String>) async -> [String: SoundProfile]? {
+    private func highLevel(_ ids: [String]) async -> [String: SoundProfile]? {
         guard let url = URL(string: "https://acousticbrainz.org/api/v1/high-level?recording_ids=" + ids.joined(separator: ";"))
         else { return nil }
         var request = URLRequest(url: url)
