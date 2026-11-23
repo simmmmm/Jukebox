@@ -129,6 +129,18 @@ enum AccountCheck {
         expect(!info.contains(ProcessInfo.processInfo.hostName), "nor the machine's name")
         expect(Support.contactURL("") == nil && Support.contactURL("a@b.example")?.scheme == "mailto", "no contact while empty; an address is a mailto")
 
+        // Enhance Radio is on by default, yet asks nothing of Last.fm,
+        // ListenBrainz or AcousticBrainz before it is answered.
+        let fresh = UserDefaults(suiteName: "jukebox-account-check")!
+        fresh.removePersistentDomain(forName: "jukebox-account-check")
+        defer { fresh.removePersistentDomain(forName: "jukebox-account-check") }
+        let unasked = AppSettings(defaults: fresh)
+        expect(unasked.enhanceRadio && !unasked.radioChoiceMade && !unasked.enhancesRadio && !unasked.hasLastFM,
+               "Enhance Radio waits for its answer")
+        unasked.enhanceRadio = true
+        expect(unasked.radioChoiceMade && unasked.enhancesRadio == !AppSettings.appLastFMKey.isEmpty,
+               "and once answered, it is on")
+
         print("account check: \(checks - failed.count) of \(checks) passed")
         for what in failed { print("  failed: \(what)") }
         return failed.isEmpty ? 0 : 1

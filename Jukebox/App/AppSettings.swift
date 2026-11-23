@@ -309,9 +309,12 @@ final class AppSettings {
         !appLastFMKey.isEmpty || UserDefaults.standard.bool(forKey: "showBetterRadio")
     }
 
-    /// Enhance Radio on, and a key to do it with: Last.fm, MusicBrainz and
-    /// AcousticBrainz are asked only then (RadioController).
-    var enhancesRadio: Bool { enhanceRadio && !Self.appLastFMKey.isEmpty }
+    /// Enhance Radio on, answered, and a key to do it with: Last.fm,
+    /// ListenBrainz and AcousticBrainz are asked only then
+    /// (RadioController). On by default, yet nothing leaves before Better
+    /// Radio (or the switch in Settings) has been answered: the radio
+    /// starts at sign-in, while Better Radio is still on screen.
+    var enhancesRadio: Bool { enhanceRadio && radioChoiceMade && !Self.appLastFMKey.isEmpty }
 
     private enum Keys {
         static let wifiQuality = "wifiQuality"
