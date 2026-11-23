@@ -94,6 +94,7 @@ struct OnboardingView: View {
                                     .transition(.opacity)
                             }
                         }
+                        SignInHelp()
                     }
                     // A phone's width on the iPad too: a sign-in form
                     // stretched across 1000 points reads as nothing. Wide,

@@ -195,6 +195,8 @@ enum Style {
         button.word { min-height: 40px; padding: 0 8px; font-size: 15px; }
         /* Under a paragraph: the word on the text's edge, no room before it. */
         button.word.inline { padding: 0; margin-left: 0; }
+        /* The sign-in's help: grey words in the note's 13, as the Mac's. */
+        button.word.help { min-height: 32px; font-size: 13px; font-weight: 400; }
         button.plain { padding: 0; min-height: 0; background: none; box-shadow: none; font-weight: inherit; }
         .playing { color: @accent_color; }
         /* The sidebar of places (spec §4): rows of 40 inset 8, padding 12,

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jukebox Help</title>
+<meta name="description" content="Help with signing in to your music server from Jukebox, Last.fm and downloads.">
+<link rel="icon" type="image/svg+xml" href="brand/mark.svg">
+<style>
+  /* The Arch, as index.html has it: flat grounds, Copper by day and Glow by
+     night, titles in a serif. A page of words, so one narrow column. */
+  :root {
+    --ground: #F6F3EE; --raised: #ECE7DF; --ink: #2A1505; --soft: #6B5A4C; --accent: #A84A17;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #121110; --raised: #1B1918; --ink: #F6F3EE; --soft: #A69B90; --accent: #FFB54D; }
+  }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font: 17px/1.55 -apple-system, BlinkMacSystemFont, "Adwaita Sans", Inter, "Segoe UI", sans-serif;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 56px 20px 96px; }
+  h1, h2 { font-family: ui-serif, "New York", "Iowan Old Style", Georgia, serif; font-weight: 400; }
+  h1 { font-size: 48px; line-height: 1.1; margin: 16px 0 8px; }
+  h2 { font-size: 28px; margin: 56px 0 8px; }
+  h3 { font-size: 17px; margin: 28px 0 4px; }
+  p { margin: 0 0 12px; }
+  a { color: var(--accent); }
+  code { background: var(--raised); padding: 2px 6px; border-radius: 6px; font-size: 15px; }
+  .lead, footer { color: var(--soft); }
+  .mark { width: 48px; height: 48px; display: block; }
+  footer { margin-top: 72px; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+  <a href="./"><img class="mark" src="brand/mark.svg" width="48" height="48" alt="Jukebox"></a>
+  <h1>Help</h1>
+  <p class="lead">Most questions are about signing in. Start there.</p>
+
+  <h2 id="sign-in">Signing in</h2>
+  <p>Jukebox asks for the address of your own music server: Jellyfin, Emby, Plex, Navidrome or another Subsonic server. When it says it cannot reach the server, walk through these.</p>
+
+  <h3>Open the address in a browser first</h3>
+  <p>On the same device, type the address in Safari or your browser. If the server's page does not open there, Jukebox cannot reach it either, and the address or the network is the thing to fix. If it opens, type that same address in Jukebox.</p>
+
+  <h3>The port</h3>
+  <p>If the address in your browser has a number after a colon, type it too: <code>192.168.1.10:8096</code>. The usual ones are 8096 for Jellyfin and Emby, 4533 for Navidrome and 32400 for Plex. With no port typed, Jukebox tries the address as it is and then those ports.</p>
+
+  <h3>http or https</h3>
+  <p>With nothing in front, Jukebox uses http for an address on your home network and https for any other. If yours is the other way round, type it in full: <code>https://music.example.com</code> or <code>http://nas:4533</code>.</p>
+  <p>Over plain http, anyone on the way can read your password. Use https for a server you reach over the internet.</p>
+
+  <h3>Behind a reverse proxy</h3>
+  <p>If your server lives under a path, the path is part of the address: <code>https://example.com/jellyfin</code>. Leave off what the web app adds after it, such as <code>/web</code>.</p>
+
+  <h3>Away from home</h3>
+  <p>An address like <code>192.168.1.10</code>, <code>nas</code> or <code>nas.local</code> works only on your home network. On mobile data or someone else's Wi-Fi you need the address your server has on the internet, or a VPN to your home.</p>
+
+  <h3>Tailscale</h3>
+  <p>Turn Tailscale on, on this device, before you sign in. Then use the server's Tailscale address, the one that starts with 100, with its port: <code>100.101.102.103:8096</code>. Its <code>ts.net</code> name works too once Tailscale serves it over https.</p>
+
+  <h3>iPhone, iPad and Mac: the local network</h3>
+  <p>The first time, the system asks whether Jukebox may find devices on your local network. Without it, a server at home cannot be reached. Turn it on in Settings, Privacy &amp; Security, Local Network.</p>
+
+  <h3>Try the demo</h3>
+  <p>Navidrome keeps a public demo server. Address <code>demo.navidrome.org</code>, user name <code>demo</code>, password <code>demo</code>. If that signs in, Jukebox and your connection are fine, and the address of your own server is what to look at.</p>
+
+  <h3>The password is refused</h3>
+  <p>Then the server was found. Check the user name and password in the server's own web page. Plex signs in at plex.tv: use Sign In with Plex. A server that asks for an API key or token takes that in place of the password.</p>
+
+  <h2 id="lastfm">Last.fm</h2>
+  <p>The radio asks Last.fm which artists and songs sound alike, by name. It works with no Last.fm account. Add your user name under Settings, Radio, and the radio also learns from your scrobbles. Jukebox writes nothing to Last.fm; scrobbling is your server's job.</p>
+  <p>To turn it off: Settings, Radio, Enhance Radio with Last.fm (Preferences on Linux). Jukebox then asks Last.fm nothing, and the radio chooses from your library and from what it learned before.</p>
+
+  <h2 id="downloads">Downloads</h2>
+  <p>The arrow on an album or a playlist keeps it on the device. Keep Songs I Play, on by default, also keeps what you play often, up to the size you set in Settings, Downloads.</p>
+  <p>If nothing downloads: the server may not allow downloads for your account (Settings says so), or the songs are waiting for Wi-Fi. Download over Cellular in Settings lets them come over mobile data.</p>
+
+  <h2 id="contact">Still stuck?</h2>
+  <p>Open an issue on <a href="https://github.com/simmmmm/Jukebox/issues">GitHub</a>. In Jukebox, choose Copy Diagnostic Info (on the sign-in page; in Settings under About; in the Mac's Help menu; on Linux in About Jukebox under Troubleshooting) and paste it in. It holds the app's version, your system and the kind of server. It never holds your server's address, your user name or a password.</p>
+
+  <footer><a href="./">Jukebox</a>. <a href="https://github.com/simmmmm/Jukebox/blob/main/docs/PRIVACY.md">Privacy</a>.</footer>
+</main>
+</body>
+</html>

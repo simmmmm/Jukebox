@@ -197,6 +197,12 @@ enum Shots {
                 await shown(dialog, .privacy, "16e-preferences-privacy")
                 adw_dialog_force_close(dialog)
             }
+            // About Jukebox, with Help & Feedback's rows (Help.swift).
+            About.present()
+            await step("16f-about", wait: 1.5)
+            if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
+                adw_dialog_force_close(dialog)
+            }
             await notCounted(albums)
             await pages()
             await stationClicks()

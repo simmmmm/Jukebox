@@ -118,6 +118,17 @@ enum AccountCheck {
         expect(!files.fileExists(atPath: LibraryStore.cacheURL(for: shared).path), "a sign-out of an account takes its library cache")
         expect(files.fileExists(atPath: AccountFiles.history(shared).path), "and leaves its history, for a sign-in again")
 
+        // Copy Diagnostic Info (Support.swift) says the kind of server and
+        // never whose: no address, name, user or token.
+        let secretive = ServerCredentials(kind: .jellyfin, serverURL: URL(string: "https://music.hidden.example:8920")!,
+                                          serverID: "id-hidden", serverName: "Hidden Music", serverVersion: "10.11.0",
+                                          userID: "uid-hidden", userName: "hidden-user", secret: .jellyfinToken("hidden-token"))
+        let info = Support.diagnostics(version: "1.3", client: "Linux", account: secretive, lastFM: true)
+        expect(info.contains("Jellyfin 10.11.0") && info.contains("Last.fm: on"), "diagnostic info names the server's kind and Last.fm")
+        expect(!info.lowercased().contains("hidden"), "diagnostic info holds no address, name, user or token")
+        expect(!info.contains(ProcessInfo.processInfo.hostName), "nor the machine's name")
+        expect(Support.contactURL("") == nil && Support.contactURL("a@b.example")?.scheme == "mailto", "no contact while empty; an address is a mailto")
+
         print("account check: \(checks - failed.count) of \(checks) passed")
         for what in failed { print("  failed: \(what)") }
         return failed.isEmpty ? 0 : 1
