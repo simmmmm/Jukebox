@@ -178,6 +178,20 @@ final class PlayOn {
         Stats.track(.playOn, ["target": "airplay"])
     }
 
+    /// Whether the server's every address carries the password itself
+    /// (`p=enc:`, ServerSecret.subsonicPassword): any account of it.
+    static func sendsPassword(_ server: (any MusicServer)?) -> Bool {
+        let accounts = (server as? MergedServer)?.members.map(\.credentials) ?? [server?.credentials].compactMap { $0 }
+        return accounts.contains { account in
+            if case .subsonicPassword = account.secret { return true }
+            return false
+        }
+    }
+
+    static func passwordStaysHere(_ device: PlayOnDevice) -> String {
+        "\(device.name) would be sent your password with every song, as this server signs in with nothing else. Play On stays on this device for it."
+    }
+
     private func remotePlayer(for device: PlayOnDevice, server: (any MusicServer)?) -> (any RemotePlayer)? {
         switch device.kind {
         case .chromecast, .upnp:
@@ -186,6 +200,13 @@ final class PlayOn {
             if let host = server?.credentials.serverURL.host?.lowercased(),
                host == "localhost" || host.hasPrefix("127.") || host == "::1" || host == "[::1]" {
                 player?.showError("\(device.name) cannot reach a server at \(host): use its address on this network.")
+                return nil
+            }
+            // A server that signs in with the password itself has it in
+            // every song's address (`p=enc:`, ServerSecret.subsonicPassword):
+            // those addresses do not go to another device.
+            if Self.sendsPassword(server) {
+                player?.showError(Self.passwordStaysHere(device))
                 return nil
             }
             return device.kind == .chromecast ? castPlayer?(device) : rendererPlayer?(device)
@@ -273,7 +294,7 @@ extension PlayQueue {
 
     /// `index` from its `position`, with what follows it.
     func remoteLoad(from index: Int, at position: TimeInterval, play: Bool) {
-        guard let remote = playingElsewhere, let server else { return }
+        guard let remote = playingElsewhere, let server, remoteMayFetch(from: server) else { return }
         let entries = remoteWindow(from: index, capacity: remote.capacity)
         guard !entries.isEmpty else { return }
         remoteHeld = entries.map(\.id)
@@ -286,7 +307,8 @@ extension PlayQueue {
     /// from the current entry on is brought in line. Added songs are added;
     /// anything else loads it again from where it is.
     func remoteQueueChanged() {
-        guard let remote = playingElsewhere, let server, let current, let currentIndex else { return }
+        guard let remote = playingElsewhere, let server, let current, let currentIndex,
+              remoteMayFetch(from: server) else { return }
         let wanted = remoteWindow(from: currentIndex, capacity: remote.capacity).map(\.id)
         guard let here = remoteHeld.firstIndex(of: current.id) else {
             remoteLoad(from: currentIndex, at: elapsed, play: wantsToPlay)
@@ -306,6 +328,18 @@ extension PlayQueue {
         } else {
             remoteLoad(from: currentIndex, at: elapsed, play: wantsToPlay)
         }
+    }
+
+    /// Asked where the addresses for a TV or a speaker are made, so an
+    /// account switched to while it plays there is asked too: the password
+    /// itself never goes to one (PlayOn.sendsPassword), and the music comes
+    /// back here.
+    private func remoteMayFetch(from server: any MusicServer) -> Bool {
+        guard let device = playsOn, device.kind == .chromecast || device.kind == .upnp,
+              PlayOn.sendsPassword(server) else { return true }
+        playHere()
+        showError(PlayOn.passwordStaysHere(device))
+        return false
     }
 
     private func remoteEntry(_ entry: QueueEntry, server: any MusicServer) -> RemoteEntry {
