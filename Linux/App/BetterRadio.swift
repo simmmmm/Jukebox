@@ -13,6 +13,11 @@ import JukeboxKit
 
 enum BetterRadio {
     private static var isShowing = false
+    /// The dialog on screen: closed by hand once answered, as it cannot
+    /// close itself (can-close is off, so Escape does not dismiss it, and
+    /// that also kept a response from closing it: Turn On did nothing,
+    /// "als ik druk gebeurt er niets", the photographer, 23 November 2026).
+    private static var shown: UnsafeMutablePointer<AdwDialog>?
 
     /// Shows it when due: signed in, the build has Jukebox's key, and
     /// Enhance Radio not yet chosen.
@@ -30,6 +35,7 @@ enum BetterRadio {
         on(raw(dialog), "response", argument: { response in
             answer(response.map { String(cString: $0.assumingMemoryBound(to: CChar.self)) } == "turn-on")
         })
+        shown = ptr(dialog)
         adw_dialog_present(ptr(dialog), MainWindow.window)
     }
 
@@ -38,6 +44,8 @@ enum BetterRadio {
         app.settings.enhanceRadio = on
         app.settings.radioChoiceMade = true
         app.radio.enhanceRadioChanged()
+        if let dialog = shown { adw_dialog_force_close(dialog) }
+        shown = nil
         isShowing = false
     }
 }

@@ -36,10 +36,9 @@ enum Shots {
             }
             // Better Radio, the step after signing in, then Turn On: the
             // walk's radio is the one most will have.
-            if let shown = adw_application_window_get_visible_dialog(ptr(MainWindow.window)), !app.settings.radioChoiceMade {
+            if adw_application_window_get_visible_dialog(ptr(MainWindow.window)) != nil, !app.settings.radioChoiceMade {
                 await step("00-better-radio", wait: 1)
-                // Closing answers its close response, Not Now: Turn On after.
-                adw_dialog_force_close(shown)
+                // Turn On, as a tap on it: the answer closes the dialog.
                 BetterRadio.answer(true)
             }
             await step("01-home", wait: 3)
