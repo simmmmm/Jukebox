@@ -40,7 +40,13 @@ enum OfflineText {
 
     static func waiting(_ wait: OfflineWait) -> String {
         switch wait {
-        case .wifi: return String(localized: "Waiting for Wi-Fi")
+        case .wifi:
+            #if os(Linux)
+            // Linux waits on a metered connection, which may be Wi-Fi too.
+            return String(localized: "Waiting for a connection that is not metered")
+            #else
+            return String(localized: "Waiting for Wi-Fi")
+            #endif
         case .network: return String(localized: "Waiting for a connection")
         case .notAllowed: return String(localized: "Downloads are off on your server")
         }

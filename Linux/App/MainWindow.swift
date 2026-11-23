@@ -170,7 +170,7 @@ enum MainWindow {
             // The hour may have moved on: Your Station's fact for now.
             app.radio.refreshYourStationFact()
             guard !app.offline.isOffline else { return }
-            Task { await app.library.refreshIfStale() }
+            Task { await app.library.refreshIfStale(expensive: app.offline.isExpensiveNetwork) }
         }
         // Closed while the music plays, the window hides and the music plays
         // on, as GNOME's players do: the launcher, or the media controls'

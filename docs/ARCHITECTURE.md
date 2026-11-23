@@ -30,7 +30,7 @@ Mac's, is Linux's window, 1:1 (below).
 | `project.yml` | XcodeGen. One target for the iPhone, the iPad and the Mac: one bundle ID, so one App Store record and one purchase. Every file under `Jukebox/` is in the app; no .xcodeproj in git. |
 | `ci/` | What `.github/workflows/ci.yml` runs: the iPhone's build and the Mac's, the screenshot walk, the upload (`docs/RELEASE.md`). The workflow stays generic: the Claude session may not push workflow files. |
 | `dev/` | The test servers and their made-up library, the kit tests, the Linux build and its screenshot walk, the fake Jellyfin and its demo library (`demo/`, recorded once from the test server), the 4-point grid check. |
-| `docs/` | This; `RADIO.md` (how the radio chooses); `BRAND.md` (the Arch, its rules and colours); `SERVERS.md` (Jellyfin and Subsonic, call by call); `OFFLINE.md` (songs kept on the phone); `LINUX.md` (the Linux client); `STATS.md` (anonymous usage counts); `SUPPORT.md` (how a listener reaches help, `help.html` on the site); `RELEASE.md` (the App Store, the builds, the Mac); `brand/` (the mark and the boards); `design/tells.md` (sketch D's rules, the reference for every screen). |
+| `docs/` | This; `RADIO.md` (how the radio chooses); `BRAND.md` (the Arch, its rules and colours); `SERVERS.md` (Jellyfin and Subsonic, call by call); `OFFLINE.md` (songs kept on the phone); `DATA.md` (what the mobile network costs, and what saves it); `LINUX.md` (the Linux client); `STATS.md` (anonymous usage counts); `SUPPORT.md` (how a listener reaches help, `help.html` on the site); `RELEASE.md` (the App Store, the builds, the Mac); `brand/` (the mark and the boards); `design/tells.md` (sketch D's rules, the reference for every screen). |
 
 ## Rules for every part
 

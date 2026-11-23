@@ -195,6 +195,14 @@ final class AudioPlayer: PlayQueue {
         gst_element_set_state(engine, play ? GST_STATE_PLAYING : GST_STATE_PAUSED)
     }
 
+    /// A metered connection streams at its own quality, as the iPhone's
+    /// mobile network does (Platform.swift's watch, DataCost). Before, every
+    /// network had the Wi-Fi quality, Original unless changed.
+    override var streamQuality: StreamQuality {
+        DataCost.quality(expensive: offline?.isExpensiveNetwork ?? false,
+                         wifi: settings.wifiQuality, cellular: settings.cellularQuality)
+    }
+
     /// The entry after the current one waits in `handover` for GStreamer
     /// to ask for it.
     override func enginePreload(_ entry: QueueEntry?) {

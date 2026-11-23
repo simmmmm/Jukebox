@@ -168,7 +168,7 @@ struct RootView: View {
                 app.radio.refreshYourStationFact()
                 // Music added on the server since, without a relaunch
                 // (LibraryStore.refreshIfStale): the Mac has no pull to refresh.
-                if !app.offline.isOffline { Task { await app.library.refreshIfStale() } }
+                if !app.offline.isOffline { Task { await app.library.refreshIfStale(expensive: app.player.isNetworkExpensive) } }
                 // What the computer was playing, there when the phone is
                 // picked up, not a quarter of a minute later.
                 Task { await app.handoff.refresh() }
@@ -183,7 +183,7 @@ struct RootView: View {
                 // The Play key comes here, not to Music (NowPlayingInfo.claim).
                 app.player.claimNowPlaying()
                 app.radio.refreshYourStationFact()
-                if !app.offline.isOffline { Task { await app.library.refreshIfStale() } }
+                if !app.offline.isOffline { Task { await app.library.refreshIfStale(expensive: app.player.isNetworkExpensive) } }
             }
             #endif
             // Which page `open` pushes on: the wide window's or the tab's.

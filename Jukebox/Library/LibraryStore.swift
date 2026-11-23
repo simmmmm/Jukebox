@@ -147,18 +147,18 @@ final class LibraryStore {
     /// so music added on the server since could not be found or played
     /// until the app started again (the photographer, on Linux, where
     /// nothing pulls to refresh). Nothing before the first read; a load
-    /// under way is waited for, not doubled.
-    func refreshIfStale(now: Date = Date()) async {
-        guard Self.isStale(lastAsked, now: now) else { return }
+    /// under way is waited for, not doubled. Not on a network that costs
+    /// (`expensive`, DataCost): "streaming data kosten optimaliseren".
+    func refreshIfStale(now: Date = Date(), expensive: Bool) async {
+        guard Self.isStale(lastAsked, now: now, expensive: expensive) else { return }
         await refresh()
     }
 
     /// A read costs what a launch's does: not at every glance at the window.
-    static let staleAfter: TimeInterval = 5 * 60
+    static let staleAfter = DataCost.libraryRefreshAfter
 
-    static func isStale(_ lastAsked: Date?, now: Date) -> Bool {
-        guard let lastAsked else { return false }
-        return now.timeIntervalSince(lastAsked) >= staleAfter
+    static func isStale(_ lastAsked: Date?, now: Date, expensive: Bool = false) -> Bool {
+        DataCost.libraryRefreshIsDue(lastAsked: lastAsked, now: now, expensive: expensive)
     }
 
     /// Signed out: forget everything.

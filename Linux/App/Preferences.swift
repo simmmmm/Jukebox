@@ -45,6 +45,12 @@ enum Preferences {
                                                         selected: qualities.firstIndex { $0.1 == settings.wifiQuality } ?? 0) {
             settings.wifiQuality = qualities[$0].1
         })
+        // The Mac's Streaming on a Hotspot, in GNOME's word for a connection
+        // that costs data (Platform.swift's watch, DataCost).
+        adw_preferences_group_add(ptr(streaming), combo("Streaming on a Metered Connection", qualities.map { $0.0 },
+                                                        selected: qualities.firstIndex { $0.1 == settings.cellularQuality } ?? 2) {
+            settings.cellularQuality = qualities[$0].1
+        })
         adw_preferences_group_set_description(
             ptr(streaming), "Original plays your files as they are. The others have \(app.library.serverKind) convert them to \(app.credentials?.kind.convertedFormat ?? "AAC") at that rate, which uses less data.")
         adw_preferences_group_add(ptr(playing), toggle(
@@ -350,6 +356,11 @@ enum Preferences {
                                                     selected: qualities.firstIndex(of: settings.downloadQuality) ?? 0) {
             settings.downloadQuality = qualities[$0]
         })
+        // The Mac's Download on a Hotspot: off, downloads wait for a
+        // connection that is not metered.
+        adw_preferences_group_add(ptr(group), toggle(
+            "Download on a Metered Connection", "Without it, downloads wait for a connection that is not metered.",
+            settings.downloadOverCellular) { settings.downloadOverCellular = $0 })
         let chosen = fact("Downloaded")
         let kept = fact("Kept")
         let status = fact("Downloading")

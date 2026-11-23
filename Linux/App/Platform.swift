@@ -169,14 +169,17 @@ extension OfflineStore {
 
     /// The network as GLib's monitor tells it (NetworkManager, or the
     /// kernel's routes), and the power saver, told to the store as they
-    /// change. The store keeps what this returns.
-    // ponytail: a metered connection is never "expensive" here, so nothing
-    // waits for Wi-Fi; the Mac's Download on a Hotspot if someone downloads
-    // over a phone's hotspot.
+    /// change. The store keeps what this returns. A metered connection
+    /// (NetworkManager's guess for a phone's hotspot, or GNOME Settings'
+    /// switch) costs data as the iPhone's mobile network does: streamed at
+    /// Streaming on a Metered Connection's quality, downloads wait unless
+    /// Download on a Metered Connection is on (DataCost).
     func watchSystem() -> AnyObject {
         let network = g_network_monitor_get_default()!
-        let state = { OfflinePathState(isSatisfied: g_network_monitor_get_network_available(network) != 0, isExpensive: false) }
+        let state = { OfflinePathState(isSatisfied: g_network_monitor_get_network_available(network) != 0,
+                                       isExpensive: g_network_monitor_get_network_metered(network) != 0) }
         on(raw(network), "notify::network-available") { [weak self] in self?.pathChanged(state()) }
+        on(raw(network), "notify::network-metered") { [weak self] in self?.pathChanged(state()) }
         let power = g_power_profile_monitor_dup_default()
         if let power {
             on(raw(power), "notify::power-saver-enabled") { [weak self] in

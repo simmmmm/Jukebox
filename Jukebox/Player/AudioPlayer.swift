@@ -233,11 +233,17 @@ final class AudioPlayer: PlayQueue {
 
     /// Settings' Mobile quality where the network costs something.
     override var streamQuality: StreamQuality {
-        network.isExpensive ? settings.cellularQuality : settings.wifiQuality
+        DataCost.quality(expensive: network.isExpensive, wifi: settings.wifiQuality, cellular: settings.cellularQuality)
     }
 
     private func makeLoaded(_ url: URL, entryID: UUID, playSessionID: String) -> Loaded {
         let item = AVPlayerItem(url: url)
+        // On the mobile network a minute ahead, not the whole file AVPlayer
+        // would fetch: a song skipped, or the next one held for the gapless
+        // move and then passed over, costs that much of it (DataCost).
+        if let ahead = DataCost.forwardBuffer(expensive: network.isExpensive) {
+            item.preferredForwardBufferDuration = ahead
+        }
         let itemID = ObjectIdentifier(item)
         let observation = PlayerSignals.observeStatus(of: item) { [weak self] in
             Task { @MainActor in self?.itemStatusChanged(itemID) }

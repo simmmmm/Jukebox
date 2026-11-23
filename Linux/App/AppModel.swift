@@ -65,6 +65,9 @@ final class AppModel {
         // and the radio chooses among them.
         player.offline = offline
         radio.offline = offline
+        // AcousticBrainz's lookups off a metered connection, as the
+        // iPhone's wait for Wi-Fi (DataCost).
+        radio.networkIsFree = { [weak self] in !(self?.offline.isExpensiveNetwork ?? false) }
         offline.onConnectivityChange = { [weak self] in self?.connectivityChanged() }
         offline.onSongsChange = { [weak self] in self?.radio.offlineSongsChanged() }
         // Chromecasts: Avahi finds them, castv2 over GIO's TLS plays on them
