@@ -33,6 +33,12 @@ case ${GITHUB_REF_NAME:-} in
   main | *-testflight) [[ ${TESTFLIGHT:-false} == true ]] || unset ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID ;;
   *) unset ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID ;;
 esac
+# GitHub's token only for the push of the screenshots branch
+# (screenshots()): XcodeGen, xcodebuild and the tree's own scripts run
+# without it. The copy actions/checkout leaves in .git/config goes too.
+gh_token=${GH_TOKEN:-}
+unset GH_TOKEN GITHUB_TOKEN
+git config --local --unset-all http.https://github.com/.extraheader 2> /dev/null || true
 # Every log of build/logs (the run's artifact, and the screenshots' logs)
 # and the summary without the runner's home, user or machine name, however
 # the run ends (ci/redact.sh).
@@ -179,7 +185,7 @@ screenshots() {
     echo "::warning::No screenshots: the build left $budget s of the job."
     return 0
   fi
-  SHOTS_BUDGET=$budget perl -e 'setpgrp(0, 0); exec @ARGV or die "exec: $!\n"' bash ci/screenshots.sh \
+  GH_TOKEN=$gh_token SHOTS_BUDGET=$budget perl -e 'setpgrp(0, 0); exec @ARGV or die "exec: $!\n"' bash ci/screenshots.sh \
     < /dev/null &
   pid=$!
   # One perl process, nothing else: killed, it leaves nothing that holds

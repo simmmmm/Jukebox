@@ -41,6 +41,10 @@
 # SEARCH_TERM sets what the search types (else a word of the first artist).
 set -uo pipefail
 cd "$(dirname "$0")/.." || exit 0
+# GitHub's token (from ci/app.sh) for the push at the end only: the
+# builds, the walks and the fake server run without it.
+push_token=${GH_TOKEN:-}
+unset GH_TOKEN GITHUB_TOKEN
 # adhoc_sign and adhoc_sign_tests, for the Mac's walk (ci/sign.sh).
 source ci/sign.sh
 
@@ -876,7 +880,7 @@ pushed=false
 push_limit=$(( budget + 100 - (SECONDS - start) ))
 if (( push_limit > 180 )); then push_limit=180; fi
 push_until=$(( SECONDS + push_limit ))
-if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png > /dev/null 2>&1; then
+if [[ -n ${push_token} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png > /dev/null 2>&1; then
   group "Onto the screenshots branch, ${place:-its top}"
   # This round's part of the branch, as it goes there.
   part="$PWD/$work/part"
@@ -900,7 +904,7 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
   # The branch is public: no home, user or machine name in what goes there.
   redact="$PWD/ci/redact.sh"
   bash "$redact" "$part"
-  remote="https://x-access-token:${GH_TOKEN}@github.com/$repo.git"
+  remote="https://x-access-token:${push_token}@github.com/$repo.git"
   push_start=$SECONDS
   : > "$work/push.log"
   # The branch as it is, with this round's place emptied and filled again,
@@ -966,7 +970,7 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
     echo "On https://github.com/$repo/tree/screenshots/$place, pushed in $(( SECONDS - push_start )) s"
   else
     problem "the push to the screenshots branch failed"
-    sed "s/${GH_TOKEN}/***/g" "$work/push.log" | tail -20
+    sed "s/${push_token}/***/g" "$work/push.log" | tail -20
   fi
   endgroup
 fi
