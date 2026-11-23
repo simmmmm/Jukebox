@@ -71,14 +71,29 @@ enum ServerAddress {
 
     // MARK: Where a password may go
 
-    /// Whether a password may go with every request to this address: over
-    /// https, or to the home network — a private address (RFC 1918, the
-    /// loopback, link-local, Tailscale's 100.64/10, IPv6's fc00::/7 and
-    /// fe80::/10) or a home name ("nas", ".local", ".lan", …). Stricter than
-    /// JellyfinAddress's guess at http, which takes any IP address: a
-    /// public IP over plain http is not home.
+    /// Whether a password may go with every request to this address without
+    /// asking: over https, or to the home network. Elsewhere plain http
+    /// goes only once the person has said Sign In Anyway to "This Server
+    /// Isn't Secure" (`PlainHTTPConsent`, SubsonicSignIn).
     static func mayCarryPassword(_ url: URL) -> Bool {
-        if url.scheme?.lowercased() == "https" { return true }
+        !isInsecure(url)
+    }
+
+    /// Plain http away from the home network: what "This Server Isn't
+    /// Secure" asks about, and what an account's card says "Not secure" of.
+    /// Plain http at home is no question: "als het binnen een thuisnetwerk
+    /// blijft vind ik het wat anders […] maar daarbuiten wel" (the
+    /// photographer, 23 November 2026).
+    public static func isInsecure(_ url: URL) -> Bool {
+        url.scheme?.lowercased() != "https" && !isHomeNetwork(url)
+    }
+
+    /// The home network: a private address (RFC 1918, the loopback,
+    /// link-local, Tailscale's 100.64/10, IPv6's fc00::/7 and fe80::/10) or
+    /// a home name ("nas", ".local", ".lan", …). Stricter than
+    /// JellyfinAddress's guess at http, which takes any IP address: a
+    /// public IP is not home.
+    static func isHomeNetwork(_ url: URL) -> Bool {
         guard var host = url.host?.lowercased(), !host.isEmpty else { return false }
         if host.hasPrefix("["), host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
         if host.contains(":") {
@@ -96,18 +111,43 @@ enum ServerAddress {
 
     // MARK: Asking
 
-    /// Every candidate at once, both ways at once; the first candidate in
-    /// order that proved to be a server wins, a later one only once every
-    /// earlier one has failed. So the address as typed wins whenever it
-    /// works, and the fallback ports add no wait of their own: the longest
-    /// wait is one 15 s timeout, not six. Nothing proved: the first
-    /// candidate's error (`.transport` when nothing answered there,
+    /// At home, every candidate at once, both ways at once; the first
+    /// candidate in order that proved to be a server wins, a later one only
+    /// once every earlier one has failed. So the address as typed wins
+    /// whenever it works, and the fallback ports add no wait of their own:
+    /// the longest wait is one 15 s timeout, not six. Nothing proved: the
+    /// first candidate's error (`.transport` when nothing answered there,
     /// `.invalidServerAddress` when something did that is not a server).
+    ///
+    /// A name on the internet ("demo.navidrome.org") is asked alone first,
+    /// its fallback ports only once it has failed. A public host drops a
+    /// connection to a port it does not serve rather than refusing it
+    /// (demo.navidrome.org's 8096, 4533 and 32400 time out, measured), so
+    /// those eighteen requests hung for 15 s each beside the one that
+    /// works. Hardening after App Review's five tries at the demo server on
+    /// 22 November 2026 all ended in `unreachable`; that cause is not
+    /// confirmed (the kit signs in there every way it can be typed, on
+    /// Linux), and the counts now say which network error it was. The
+    /// cost: a public name that answers nowhere waits 30 s, not 15.
     static func detect(_ typed: String, identity: ClientIdentity,
                        transport: any HTTPTransport) async throws -> DetectedServer {
         let candidates = candidates(typed)
-        guard !candidates.isEmpty else { throw MusicServerError.invalidServerAddress }
-        let outcome = await withTaskGroup(of: (Int, Result<DetectedServer, MusicServerError>).self) { group in
+        guard let first = candidates.first else { throw MusicServerError.invalidServerAddress }
+        if candidates.count > 1, !isHomeNetwork(first) {
+            let alone = await probe(first, identity: identity, transport: transport)
+            if case .success = alone { return try alone.get() }
+            let later = await firstServer(Array(candidates.dropFirst()), identity: identity, transport: transport)
+            if case .success = later { return try later.get() }
+            return try alone.get()
+        }
+        return try await firstServer(candidates, identity: identity, transport: transport).get()
+    }
+
+    /// The first of `candidates` in order that proves to be a server, all
+    /// asked at once; else the first one's error.
+    static func firstServer(_ candidates: [URL], identity: ClientIdentity,
+                            transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
+        await withTaskGroup(of: (Int, Result<DetectedServer, MusicServerError>).self) { group in
             for (i, url) in candidates.enumerated() {
                 group.addTask { (i, await probe(url, identity: identity, transport: transport)) }
             }
@@ -122,14 +162,31 @@ enum ServerAddress {
                     }
                 }
             }
-            return results[0] ?? .failure(.invalidServerAddress)
+            return results.first.flatMap { $0 } ?? .failure(.invalidServerAddress)
         }
-        return try outcome.get()
     }
 
     /// One address, both ways at once.
+    /// The server keeps the address it answered at after a redirect
+    /// (`Redirects`): typed "http://demo.navidrome.org", it is https from
+    /// then on, so the password never goes the plain way first and
+    /// Jellyfin's sign-in POST is not turned into a GET by a 301.
     static func probe(_ url: URL, identity: ClientIdentity,
                       transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
+        let redirects = Redirects(transport)
+        return await probeAsked(url, identity: identity, transport: redirects).map { found in
+            guard let moved = redirects.base(for: url) else { return found }
+            var found = found
+            found.url = moved
+            // A Subsonic server's id and name are its address and host.
+            if found.id == url.absoluteString { found.id = moved.absoluteString }
+            if found.name == url.host { found.name = moved.host ?? found.name }
+            return found
+        }
+    }
+
+    static func probeAsked(_ url: URL, identity: ClientIdentity,
+                           transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
         async let jellyfin = probeJellyfin(url, identity: identity, transport: transport)
         async let subsonic = probeSubsonic(url, identity: identity, transport: transport)
         async let plex = PlexSignIn.probe(url, identity: identity, transport: transport)
@@ -143,6 +200,12 @@ enum ServerAddress {
         // speaks XML only) says so; else whether anything answered.
         if case .failure(.server(status: 30, _)) = s { return s }
         for result in [j, s, p] {
+            // Every answer a 401 or 403: something in front of the server
+            // (a proxy's sign-in, a login page) turned Jukebox away, which
+            // "no server at this address" would hide.
+            if case let .failure(error) = result, !error.isTransport, let status = (transport as? Redirects)?.wall {
+                return .failure(.server(status: status, message: nil))
+            }
             if case let .failure(error) = result, !error.isTransport { return .failure(.invalidServerAddress) }
         }
         return j
@@ -167,7 +230,7 @@ enum ServerAddress {
         } catch let error as JellyfinError {
             return .failure(MusicServerError(error))
         } catch {
-            return .failure(.transport(error.localizedDescription))
+            return .failure(.transport(ConnectionProblem.describe(error)))
         }
     }
 
@@ -191,7 +254,7 @@ enum ServerAddress {
             if case .server(status: 30, _) = error { return .failure(error) }  // XML only: too old
             return .failure(.invalidServerAddress)
         } catch {
-            return .failure(.transport(error.localizedDescription))
+            return .failure(.transport(ConnectionProblem.describe(error)))
         }
         guard let status = body.status, !status.isEmpty else { return .failure(.invalidServerAddress) }
         let apiVersion = body.version.flatMap { SubsonicConnection.numbers($0).isEmpty ? nil : $0 }
@@ -204,6 +267,53 @@ enum ServerAddress {
                                        id: url.absoluteString, name: url.host ?? url.absoluteString,
                                        version: body.serverVersion ?? apiVersion ?? "",
                                        apiVersion: apiVersion, capabilities: capabilities))
+    }
+}
+
+/// The probes' transport, noting where each request ended up and what it
+/// was answered: a base answered from another scheme, host or port
+/// (http:// to https://, the same path after it) is the server's address
+/// from then on; answers that were all 401 or 403 are a wall in front.
+final class Redirects: HTTPTransport, @unchecked Sendable {
+    let base: any HTTPTransport
+    private let lock = NSLock()
+    private var moved: [(asked: URL, answered: URL)] = []
+    private var statuses: [Int] = []
+
+    init(_ base: any HTTPTransport) { self.base = base }
+
+    func send(_ request: URLRequest) async throws -> HTTPResponse {
+        let response = try await base.send(request)
+        lock.withLock {
+            statuses.append(response.status)
+            if let asked = request.url, let answered = response.url, answered != asked { moved.append((asked, answered)) }
+        }
+        return response
+    }
+
+    /// 401 or 403 when every answer was one of those; else nil.
+    var wall: Int? {
+        let seen = lock.withLock { statuses }
+        guard let first = seen.first, seen.allSatisfy({ $0 == 401 || $0 == 403 }) else { return nil }
+        return first
+    }
+
+    /// `url` at the scheme, host and port its requests were redirected to,
+    /// when one went there with its path unchanged; else nil.
+    func base(for url: URL) -> URL? {
+        let prefix = url.absoluteString
+        for (asked, answered) in lock.withLock({ moved }) where asked.absoluteString.hasPrefix(prefix) {
+            guard var parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
+                  let from = URLComponents(url: asked, resolvingAgainstBaseURL: false),
+                  let to = URLComponents(url: answered, resolvingAgainstBaseURL: false),
+                  from.path == to.path, from.scheme != to.scheme || from.host != to.host || from.port != to.port
+            else { continue }
+            parts.scheme = to.scheme
+            parts.host = to.host
+            parts.port = to.port
+            return parts.url
+        }
+        return nil
     }
 }
 

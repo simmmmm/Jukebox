@@ -227,6 +227,10 @@ enum Shots {
                 _ = gtk_widget_activate(SignInPage.quickConnect)
                 await step("17c-quick-connect-code", wait: 3)
             }
+            // "This Server Isn't Secure", as a sign-in over plain http away
+            // from home asks it; the walk ends under it.
+            Task { _ = await SignInPage.askInsecure() }
+            await step("17d-sign-in-not-secure", wait: 2)
             gtk_window_close(ptr(MainWindow.window))
             exit(0)
         }

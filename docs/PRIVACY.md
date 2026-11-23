@@ -9,7 +9,9 @@ where it goes. 21 November 2026.
 Your library, what you play, your favourites and playlists, the server's
 address and your user name go only to the server you signed in to (Jellyfin,
 Navidrome or another Subsonic server). Your password is kept in the device's
-keychain. None of it reaches the developer.
+keychain. None of it reaches the developer. To a server on plain http
+outside your home network it travels unencrypted: Jukebox asks before it
+signs in there, and the account says "Not secure" in Settings.
 
 ## Anonymous usage counts
 

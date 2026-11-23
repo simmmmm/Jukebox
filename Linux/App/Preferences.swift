@@ -424,7 +424,10 @@ enum Preferences {
         if isActive { gtk_widget_add_css_class(row, "on") }
         adw_preferences_row_set_use_markup(ptr(row), 0)
         adw_preferences_row_set_title(ptr(row), ServerWords.name(of: account))
-        adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)\n\(account.serverURL.absoluteString)")
+        // Plain http away from home, said once at sign-in ("This Server
+        // Isn't Secure") and kept in view, the Mac's line under the address.
+        let insecure = account.isInsecure ? "\n\(InsecureServerWords.note)" : ""
+        adw_action_row_set_subtitle(ptr(row), "\(ServerWords.product(account.kind, version: account.serverVersion)) · \(account.userName)\n\(account.serverURL.absoluteString)\(insecure)")
         let radio = gtk_check_button_new()!.named(isActive ? "Signed In" : "Switch to This Account")
         let check = UnsafeMutablePointer<GtkCheckButton>(OpaquePointer(radio))
         if let group { gtk_check_button_set_group(check, group) } else { group = check }

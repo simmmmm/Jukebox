@@ -63,7 +63,11 @@ enum SignInPage {
         func submit() {
             guard !isBusy else { return }
             let typed = text(address), name = text(user), secret = text(password)
-            guard !typed.isEmpty else { return }
+            guard !typed.isEmpty else {
+                setText(message, "Type your server's address, such as music.example.com.")
+                message.isVisible = true
+                return
+            }
             isBusy = true
             signIn.isSensitive = false
             message.isVisible = false
@@ -73,9 +77,16 @@ enum SignInPage {
                     signIn.isSensitive = true
                 }
                 var kind: ServerKind?
+                var step = SignInFailure.Step.address
                 do {
                     let server = try await app.detectServer(at: typed)
                     kind = server.kind
+                    step = needsKey ? .apiKey : .password
+                    guard await mayGoInsecure(to: server.url) else {
+                        setText(message, SignInFailure(MusicServerError.passwordNeedsHTTPS, step: step).message)
+                        message.isVisible = true
+                        return
+                    }
                     let way = app.signIn(to: server)
                     let credentials: ServerCredentials
                     if needsKey, let withKey = way as? any APIKeySignIn {
@@ -94,7 +105,9 @@ enum SignInPage {
                         adw_preferences_row_set_title(ptr(password), kind == .plex ? "Token" : "API Key")
                         gtk_editable_set_text(ptr(password), "")
                     }
-                    setText(message, error.localizedDescription)
+                    // The Mac's and the iPhone's words (JukeboxKit's SignInFailure).
+                    let first = MusicServers.candidateAddresses(for: typed).first
+                    setText(message, SignInFailure(error, step: step, address: first).message)
                     message.isVisible = true
                 }
             }
@@ -197,6 +210,11 @@ enum SignInPage {
             plex.isSensitive = false
             say("Asking \(way.server.name) for a code…")
             quickTask = Task {
+                // The session's token goes over the same plain http.
+                guard await mayGoInsecure(to: way.server.url) else {
+                    quickDone()
+                    return say(SignInFailure(MusicServerError.passwordNeedsHTTPS, step: .quickConnect).message)
+                }
                 do {
                     var state = try await way.quickConnectStart()
                     try Task.checkCancellation()
@@ -222,11 +240,7 @@ enum SignInPage {
                     quickDone()
                     Stats.track(.signInFailed, ["reason": Stats.signInFailure(error, quickConnect: true)])
                     // The Mac's words.
-                    switch error as? MusicServerError {
-                    case .notFound?: say("The code has expired. Use Quick Connect again for a new one.")
-                    case .unauthorized?: say("Quick Connect is turned off on this server. Sign in with your password instead.")
-                    default: say(error.localizedDescription)
-                    }
+                    say(SignInFailure(error, step: .quickConnect).message)
                 }
             }
         }
@@ -308,6 +322,43 @@ enum SignInPage {
         let launcher = gtk_uri_launcher_new(url.absoluteString)
         gtk_uri_launcher_launch(launcher, ptr(MainWindow.window), nil, nil, nil)
         g_object_unref(UnsafeMutableRawPointer(launcher))
+    }
+
+    /// "This Server Isn't Secure", asked once per address before a password
+    /// or a key goes over plain http away from home: GNOME's alert, Cancel
+    /// the default, Sign In Anyway in the destructive red. The same words
+    /// as the Mac's alert (JukeboxKit's InsecureServerWords); the answer
+    /// kept by PlainHTTPConsent. The photographer, 23 November 2026: "denk
+    /// toch dat we http servers toe moeten laten met wel een flinke warning
+    /// voor de gebruiker".
+    static func mayGoInsecure(to url: URL) async -> Bool {
+        let consent = PlainHTTPConsent()
+        guard consent.mustAsk(url) else { return true }
+        let yes = await askInsecure()
+        if yes {
+            consent.accept(url)
+            Stats.track(.insecureAccepted)
+        } else {
+            Stats.track(.signInFailed, ["reason": "needs_https"])
+        }
+        return yes
+    }
+
+    /// The alert alone, for the screenshot walk too (Shots).
+    static func askInsecure() async -> Bool {
+        await withCheckedContinuation { continuation in
+            let dialog = adw_alert_dialog_new(InsecureServerWords.title, InsecureServerWords.body)!
+            adw_alert_dialog_add_response(ptr(dialog), "cancel", InsecureServerWords.cancel)
+            adw_alert_dialog_add_response(ptr(dialog), "anyway", InsecureServerWords.signInAnyway)
+            adw_alert_dialog_set_response_appearance(ptr(dialog), "anyway", ADW_RESPONSE_DESTRUCTIVE)
+            adw_alert_dialog_set_default_response(ptr(dialog), "cancel")
+            adw_alert_dialog_set_close_response(ptr(dialog), "cancel")
+            on(raw(dialog), "response", argument: { response in
+                let id = response.map { String(cString: $0.assumingMemoryBound(to: CChar.self)) }
+                continuation.resume(returning: id == "anyway")
+            })
+            adw_dialog_present(ptr(dialog), MainWindow.window)
+        }
     }
 
     /// Which of the account's servers, when it has more than one: GNOME's

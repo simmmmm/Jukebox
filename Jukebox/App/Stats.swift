@@ -42,6 +42,7 @@ enum Stats {
         case appOpen = "app_open"
         case signedIn = "signed_in"
         case signInFailed = "sign_in_failed"
+        case insecureAccepted = "insecure_accepted"
         case signedOut = "signed_out"
         case accountAdded = "account_added"
         case accountSwitched = "account_switched"
@@ -223,24 +224,10 @@ enum Stats {
 
     /// Why signing in did not work, from the servers' errors; never the
     /// message, which can hold the address.
+    /// JukeboxKit's SignInFailure has the list (docs/STATS.md); `not_a_server`
+    /// was `not_jellyfin` before 9 November 2026, when only Jellyfin was.
     static func signInFailure(_ error: Error, quickConnect: Bool = false) -> String {
-        switch error as? MusicServerError {
-        case .transport?:
-            return "unreachable"
-        case .invalidServerAddress?:
-            // `not_jellyfin` before 9 November 2026, when only Jellyfin was.
-            return "not_a_server"
-        case .unauthorized?:
-            // For Quick Connect the server says so when Quick Connect is
-            // turned off there, not of a password.
-            return quickConnect ? "other" : "wrong_password"
-        case .needsAPIKey?:
-            return "needs_api_key"
-        case .passwordNeedsHTTPS?:
-            return "needs_https"
-        default:
-            return "other"
-        }
+        SignInFailure(error, step: quickConnect ? .quickConnect : .password).reason
     }
 
     /// Where the lyrics shown for a song came from, and whether they are
