@@ -199,7 +199,13 @@ enum Shots {
             await pages()
             await stationClicks()
             MainWindow.showSignIn()
-            await step("17-sign-in", wait: 2)
+            // The welcome's build-up (SignInPage.markTile): the outer band
+            // being drawn, the core on before the draw back, the record
+            // sliding out; then at rest.
+            await step("17a-welcome-0.6s", wait: 0.6)
+            await step("17a-welcome-2.3s", wait: 1.7)
+            await step("17a-welcome-3.6s", wait: 1.3)
+            await step("17-sign-in", wait: 1.4)
             // Quick Connect shows once the address is left, only where the
             // server says it is on: the fake Jellyfin's is off, so the walk
             // can be pointed at one with it on (the test Jellyfin).

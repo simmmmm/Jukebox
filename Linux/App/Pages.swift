@@ -604,13 +604,50 @@ enum SearchPage {
     }
 
     /// The recent searches, newest first, each a plain row that searches
-    /// it again; Clear at their heading's end. None yet: what to search.
+    /// it again; Clear at their heading's end. Then the genres, as the
+    /// Mac's Search has them. Neither yet: what to search.
     private static func recents(in content: Widget) {
         let recents = SearchField.shared.recents
-        guard !recents.isEmpty else {
+        let genres = app.library.genres
+        guard !recents.isEmpty || !genres.isEmpty else {
             append(emptyLine("Search your artists, albums, songs and playlists."), to: content)
             return
         }
+        if !recents.isEmpty { recentRows(recents, in: content) }
+        if !genres.isEmpty { genreNames(genres, in: content) }
+    }
+
+    /// The genres to browse, as the Mac's Search (SearchGenreTile): two
+    /// across, each its name on the ground over a hairline, no tile and no
+    /// colour of its own (tells 6); See All at the heading's end opens
+    /// Genres, Start Radio on the secondary button. Search's genres were
+    /// Apple's alone (SYSTEM.md's audit, "doe ze allemaal", 23 November 2026).
+    private static func genreNames(_ genres: [Genre], in content: Widget) {
+        let heading = sectionTitle("Genres", below: 8)
+        let all = button("See All", "flat", "plain", "t15", "accent") { MainWindow.select(.genres) }
+        append(all.expand(horizontal: true).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER), to: heading)
+        append(heading, to: content)
+        let grid = gtk_grid_new()!
+        gtk_grid_set_column_spacing(ptr(grid), 12)
+        gtk_grid_set_column_homogeneous(ptr(grid), 1)
+        for (index, genre) in genres.enumerated() {
+            let row = gtk_button_new()!.css("flat", "recent")
+            gtk_button_set_child(ptr(row), label(genre.name, "t15", lines: 2))
+            on(row, "clicked") { Pages.open(genre) }
+            contextMenu(on: row) {
+                [("Start Radio", {
+                    Stats.track(.stationStarted, ["seed": "genre", "from": "search"])
+                    app.radio.start(.genre(key: genre.key, name: genre.name))
+                })]
+            }
+            let cell = vbox([row, hairline()])
+            gtk_widget_set_size_request(row, -1, 44)
+            gtk_grid_attach(ptr(grid), cell, Int32(index % 2), Int32(index / 2), 1, 1)
+        }
+        append(grid, to: content)
+    }
+
+    private static func recentRows(_ recents: [String], in content: Widget) {
         let heading = sectionTitle("Recent searches", below: 8)
         let clear = button("Clear", "flat", "plain", "t15", "fact") { SearchField.shared.clearRecents() }
         append(clear.expand(horizontal: true).align(horizontal: GTK_ALIGN_END, vertical: GTK_ALIGN_CENTER), to: heading)
@@ -900,8 +937,19 @@ enum Pages {
         let buttons = hbox(spacing: 16, actions)
         gtk_widget_set_margin_top(buttons, 24)
         append(buttons, to: words)
-        let top = hbox(spacing: 32, [art, words.expand(horizontal: true).align(vertical: GTK_ALIGN_END)])
+        let top = hbox(spacing: 32, [art.align(horizontal: GTK_ALIGN_START), words.expand(horizontal: true).align(vertical: GTK_ALIGN_END)])
         gtk_widget_set_margin_top(top, 24)
+        // A narrow page (under 720) has the words under the cover, as the
+        // iPhone's head: beside it a long title was cut off, and Shuffle
+        // with it, past the window's edge (SYSTEM.md's audit, 23 November
+        // 2026). The actions 8 apart there, so Play, Shuffle, the heart,
+        // the filter and ⋮ fit a phone's width.
+        observe(top) {
+            let narrow = PageMeasure.shared.margin == 24
+            gtk_orientable_set_orientation(ptr(top), narrow ? GTK_ORIENTATION_VERTICAL : GTK_ORIENTATION_HORIZONTAL)
+            gtk_box_set_spacing(ptr(top), narrow ? 24 : 32)
+            gtk_box_set_spacing(ptr(buttons), narrow ? 8 : 16)
+        }
         return top
     }
 
