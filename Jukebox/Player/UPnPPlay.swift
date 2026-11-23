@@ -25,6 +25,8 @@ final class UPnPRooms {
     private var sonosAnswered = false
     private var sonos: [PlayOnDevice] = []
     private var renderers: [String: PlayOnDevice] = [:]
+    /// Where each renderer's row was read, by its udn.
+    private var locations: [String: URL] = [:]
 
     func start(_ found: @escaping ([PlayOnDevice]) -> Void) {
         stop()
@@ -39,6 +41,7 @@ final class UPnPRooms {
         sonosAnswered = false
         sonos = []
         renderers = [:]
+        locations = [:]
     }
 
     /// A description to read, once a look.
@@ -52,6 +55,14 @@ final class UPnPRooms {
             if description.isSonos {
                 await askSonos(location, generation)
             } else if let control = description.avTransport {
+                // A second address naming a renderer already listed: it
+                // stays where it was while it still answers there as
+                // itself, so another machine cannot take its row.
+                if let known = locations[description.udn], known != location {
+                    let again = try? await UPnPRenderer.description(at: known)
+                    guard generation == self.generation, again?.udn != description.udn else { return }
+                }
+                locations[description.udn] = location
                 renderers[description.udn] = PlayOnDevice(
                     id: "upnp-" + description.udn, name: description.name, kind: .upnp,
                     address: Self.address(control, description.renderingControl),
@@ -68,12 +79,16 @@ final class UPnPRooms {
         sonosAnswered = true
         var rows: [PlayOnDevice] = []
         for group in groups {
-            // The coordinator's own description says where it is played on.
-            var description = descriptions[group.location]
+            // The coordinator's own description says where it is played on:
+            // the one this look read already where it has one, else the
+            // topology's, and only when it is that speaker's.
+            let known = descriptions.first { $0.value.udn == group.coordinator }
+            var description = known?.value ?? descriptions[group.location]
             if description == nil { description = try? await UPnPRenderer.description(at: group.location) }
             guard generation == self.generation else { return }
-            guard let description, let control = description.avTransport else { continue }
-            descriptions[group.location] = description
+            guard let description, description.udn == group.coordinator,
+                  let control = description.avTransport else { continue }
+            descriptions[known?.key ?? group.location] = description
             rows.append(PlayOnDevice(id: "sonos-" + group.coordinator, name: group.name, kind: .upnp,
                                      address: Self.address(control, description.renderingControl), detail: "Sonos"))
         }
