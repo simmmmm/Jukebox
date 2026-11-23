@@ -210,6 +210,11 @@ enum SignInPage {
             plex.isSensitive = false
             say("Asking \(way.server.name) for a code…")
             quickTask = Task {
+                // The session's token goes over the same plain http.
+                guard await mayGoInsecure(to: way.server.url) else {
+                    quickDone()
+                    return say(SignInFailure(MusicServerError.passwordNeedsHTTPS, step: .quickConnect).message)
+                }
                 do {
                     var state = try await way.quickConnectStart()
                     try Task.checkCancellation()

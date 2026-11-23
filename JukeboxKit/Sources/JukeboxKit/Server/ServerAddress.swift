@@ -124,8 +124,11 @@ enum ServerAddress {
     /// connection to a port it does not serve rather than refusing it
     /// (demo.navidrome.org's 8096, 4533 and 32400 time out, measured), so
     /// those eighteen requests hung for 15 s each beside the one that
-    /// works. App Review's five tries at the demo server on 22 November
-    /// 2026 all ended in `unreachable`, about 24 s apart.
+    /// works. Hardening after App Review's five tries at the demo server on
+    /// 22 November 2026 all ended in `unreachable`; that cause is not
+    /// confirmed (the kit signs in there every way it can be typed, on
+    /// Linux), and the counts now say which network error it was. The
+    /// cost: a public name that answers nowhere waits 30 s, not 15.
     static func detect(_ typed: String, identity: ClientIdentity,
                        transport: any HTTPTransport) async throws -> DetectedServer {
         let candidates = candidates(typed)

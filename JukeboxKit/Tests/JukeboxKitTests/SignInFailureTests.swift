@@ -129,6 +129,48 @@ struct SignInFailureTests {
         }
     }
 
+    @Test("Redirects: same host as they are, never down to http, another host without credentials or a body")
+    func redirectPolicy() throws {
+        func request(_ url: String, method: String = "GET", body: Bool = false) -> URLRequest {
+            var request = URLRequest(url: URL(string: url)!)
+            request.httpMethod = method
+            if body { request.httpBody = Data(#"{"Pw":"secret"}"#.utf8) }
+            request.setValue("MediaBrowser Token=\"t\"", forHTTPHeaderField: "Authorization")
+            request.setValue("t", forHTTPHeaderField: "X-Emby-Token")
+            request.setValue("p", forHTTPHeaderField: "X-Plex-Token")
+            return request
+        }
+        let post = request("http://music.example.com/Users/AuthenticateByName", method: "POST", body: true)
+        // http to https on the same host: followed, body and all.
+        let upgraded = try #require(RedirectPolicy.next(
+            request("https://music.example.com/Users/AuthenticateByName", method: "POST", body: true), after: post))
+        #expect(upgraded.httpBody != nil)
+        #expect(upgraded.value(forHTTPHeaderField: "Authorization") != nil)
+        // Never from https down to plain http, not even on the same host.
+        #expect(RedirectPolicy.next(request("http://music.example.com/x"), after: request("https://music.example.com/x")) == nil)
+        // Another host: never the POST's body (a 307 or 308)…
+        #expect(RedirectPolicy.next(request("https://evil.example.net/x", method: "POST", body: true), after: post) == nil)
+        // …and a GET goes without the credential headers.
+        let elsewhere = try #require(RedirectPolicy.next(request("https://cdn.example.net/x"),
+                                                         after: request("https://music.example.com/x")))
+        for header in RedirectPolicy.credentialHeaders { #expect(elsewhere.value(forHTTPHeaderField: header) == nil) }
+        // Nowhere but http and https.
+        #expect(RedirectPolicy.next(request("ftp://music.example.com/x"), after: request("http://music.example.com/x")) == nil)
+    }
+
+    @Test("A dotted name whose https does not answer, found on plain http: that sign-in asks first, never silently")
+    func httpFallbackAsks() async throws {
+        let fake = AddressFake { url in
+            guard url.scheme == "http", url.port == 8096 else { throw URLError(.cannotConnectToHost) }
+            return AddressFake.jellyfin(url)
+        }
+        let server = try await MusicServers.detect("music.example.com", identity: Self.identity, transport: fake)
+        #expect(server.url.absoluteString == "http://music.example.com:8096")
+        let defaults = try #require(UserDefaults(suiteName: "consent-\(UUID().uuidString)"))
+        #expect(PlainHTTPConsent(defaults: defaults).mustAsk(server.url))
+        #expect(ServerAddress.isInsecure(server.url))
+    }
+
     @Test("A name on the internet is asked alone first: its fallback ports only after it fails")
     func publicNameAlone() async throws {
         let fake = AddressFake { url in

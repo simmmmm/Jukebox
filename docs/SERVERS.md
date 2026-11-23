@@ -134,7 +134,8 @@ typed, normalized as `JellyfinAddress` does, with these rules:
 ways at once, 15 s each. A name on the internet is asked alone first and
 its fallback ports only after it fails: a public host lets a port it does
 not serve time out, and those requests hung beside the one that works
-(App Review's tries at demo.navidrome.org, 22 November 2026). A redirect
+(hardening after App Review's `unreachable` at demo.navidrome.org, 22
+November 2026, whose cause is not confirmed). A redirect
 (http:// to https://, same path) gives the server its new address, so the
 password goes straight there. Every answer 401 or 403: a proxy's sign-in in
 front, said so rather than "no server". On Linux the kit follows redirects

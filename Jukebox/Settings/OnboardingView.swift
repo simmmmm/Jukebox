@@ -670,6 +670,11 @@ private struct OnboardingAccountForm: View {
         errorMessage = nil
         focus = nil
         quickConnectTask = Task {
+            // The session's token goes over the same plain http.
+            guard await insecure.mayGo(to: server.url) else {
+                quickConnectTask = nil
+                return show(Self.signInMessage(for: MusicServerError.passwordNeedsHTTPS))
+            }
             do {
                 var state = try await quickConnect.quickConnectStart()
                 // Cancelled while the server answered: a newer attempt's
