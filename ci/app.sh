@@ -14,6 +14,16 @@
 # reads without opening the log.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# The job's console without the runner's home, user or machine name, as the
+# logs below (ci/redact.sh): the script runs again with its output through
+# the redactor, a line at a time so the log still streams, and ends with
+# the script's own status. GitHub's ::group:: and ::error:: lines pass as
+# they are.
+if [[ -z ${JUKEBOX_REDACTED:-} ]]; then
+  set +e
+  JUKEBOX_REDACTED=1 bash "$0" "$@" 2>&1 | (unset GH_TOKEN ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID; bash ci/redact.sh -)
+  exit "${PIPESTATUS[0]}"
+fi
 # The App Store Connect key only for a run that uploads, from main or a
 # "-testflight" branch: every other run, and everything it starts (the
 # tree's scripts, XcodeGen, xcodebuild's phases), never has it. First, so
