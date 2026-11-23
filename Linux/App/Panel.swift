@@ -121,8 +121,13 @@ enum UpNext {
         // when the list's songs do.
         weak var made: ItemList<Item, UpNextRow>?
         let picked = PickedRows { [] }
+        // A click plays, as a tap does on the iPhone and the Mac: it was a
+        // double-click here, and a click did nothing ("hier zie je dat ik
+        // niet kan klikken", the photographer, 24 November 2026). A second
+        // click within half a second is the double-click of habit, not a
+        // second skip: the list has moved under the pointer by then.
+        var lastPlay = ContinuousClock.now - .seconds(1)
         let list = ItemList<Item, UpNextRow>(
-            singleClick: false,
             make: {
                 let row = UpNextRow(picked: picked) { made?.items ?? [] }
                 return (row.widget, row)
@@ -132,7 +137,11 @@ enum UpNext {
                 row.show(item)
             },
             activate: { item, _, _ in
-                if case let .song(entry, _, _, playing, _) = item, !playing { app.player.skip(to: entry) }
+                guard ContinuousClock.now - lastPlay > .milliseconds(500) else { return }
+                if case let .song(entry, _, _, playing, _) = item, !playing {
+                    lastPlay = .now
+                    app.player.skip(to: entry)
+                }
             })
         list.activatable = { item in
             if case let .song(_, _, _, playing, _) = item { return !playing }
