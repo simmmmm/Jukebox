@@ -897,6 +897,9 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
   grep -E 'error:' "$out/build-for-testing-mac.log" 2> /dev/null | sed "s#$PWD/##g" | sort -u \
     > "$part/logs/build-for-testing-mac-errors.txt"
   readme > "$part/README.md"
+  # The branch is public: no home, user or machine name in what goes there.
+  redact="$PWD/ci/redact.sh"
+  bash "$redact" "$part"
   remote="https://x-access-token:${GH_TOKEN}@github.com/$repo.git"
   push_start=$SECONDS
   : > "$work/push.log"
@@ -943,6 +946,9 @@ if [[ -n ${GH_TOKEN:-} && -n $repo && ${NO_PUSH:-} != 1 ]] && ls "$out"/*/*.png 
           rm -rf "./branches/$name"
         done
       fi
+      # The other places' files too, as they came from rounds before
+      # ci/redact.sh: the next round of any branch cleans the whole branch.
+      bash "$redact" .
       mkdir -p "./$place" && cp -R "$part"/. "./$place" \
         && git symbolic-ref HEAD refs/heads/round && git add -A \
         && git -c user.name="github-actions[bot]" \

@@ -14,6 +14,19 @@
 # reads without opening the log.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# The App Store Connect key only for a run that uploads, from main or a
+# "-testflight" branch: every other run, and everything it starts (the
+# tree's scripts, XcodeGen, xcodebuild's phases), never has it. First, so
+# nothing below sees it. ponytail: a branch can still change this script;
+# a GitHub Environment for main is the lock that holds.
+case ${GITHUB_REF_NAME:-} in
+  main | *-testflight) [[ ${TESTFLIGHT:-false} == true ]] || unset ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID ;;
+  *) unset ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID ;;
+esac
+# Every log of build/logs (the run's artifact, and the screenshots' logs)
+# and the summary without the runner's home, user or machine name, however
+# the run ends (ci/redact.sh).
+trap 'bash ci/redact.sh build/logs "${GITHUB_STEP_SUMMARY:-}" || true' EXIT
 # On the MacBook (a self-hosted runner) the folder outlives a run: a run
 # cancelled by the next push may still have an xcodebuild writing in
 # build/, and the next run then broke on its build database ("disk I/O
@@ -84,10 +97,17 @@ if ! command -v xcodegen >/dev/null; then
   if command -v brew >/dev/null; then
     brew install xcodegen
   else
-    tools="${RUNNER_TOOL_CACHE:-$HOME/.cache}/xcodegen"
+    # Pinned by version and sha256 (the release's own digest), as
+    # dev/linux-appimage.sh pins its tools: run on the owner's MacBook.
+    xcodegen_version=2.48.0
+    xcodegen_sha256=620c9f0dc10849f94728ab5df52d225ebab8187439dd6fee1925e59e80dff892
+    tools="${RUNNER_TOOL_CACHE:-$HOME/.cache}/xcodegen-$xcodegen_version"
     if [[ ! -x $tools/xcodegen/bin/xcodegen ]]; then
       mkdir -p "$tools"
-      curl -fsSL -o "$tools/xcodegen.zip" https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip
+      curl -fsSL -o "$tools/xcodegen.zip" \
+        "https://github.com/yonaskolb/XcodeGen/releases/download/$xcodegen_version/xcodegen.zip"
+      echo "$xcodegen_sha256  $tools/xcodegen.zip" | shasum -a 256 -c --quiet \
+        || { rm -f "$tools/xcodegen.zip"; echo "::error::xcodegen.zip: not the pinned sha256"; exit 1; }
       unzip -oq "$tools/xcodegen.zip" -d "$tools"
     fi
     export PATH="$tools/xcodegen/bin:$PATH"
