@@ -221,6 +221,10 @@ struct RadioEngine: Sendable {
     var started = false
 
     static let minCloseness = 0.02
+    /// An artist reached through a song Last.fm finds like the seed song
+    /// counts this share of that song's weight: their other songs are
+    /// likely near, less surely than the one Last.fm named.
+    static let likeSongArtist = 0.6
     /// A thumbs up makes its own artist up to 2.5 times as likely, a
     /// neighbour by the edge's weight, fading by half every 15 tracks.
     static let likeBoost = 1.5
@@ -691,6 +695,30 @@ struct RadioEngine: Sendable {
                 artistVia[artist] = -1
             }
         }
+        // A song station: the artists of the songs Last.fm finds like the
+        // seed song join its neighbourhood, through the seed's artist
+        // ("Sounds like Balthazar"), at a share of the song's own weight.
+        // Their songs are the nearest the station knows when the seed
+        // artist has no genre and no similar artists yet: Bunker Radio
+        // knew 12 songs and two picks in three were strangers, Bring Me
+        // The Horizon and a ten-minute Maruja among them ("wat doet bring
+        // me the horizon hier of maruja", the photographer, 24 November
+        // 2026; RadioNeighbourhoodTests). From `addCandidates` too, as a
+        // first start hears from Last.fm after its first picks.
+        if anchor.kind == .track, let seedTrack = anchor.seedTrack, let via = index.trackArtists[seedTrack].first {
+            func join(_ t: Int, _ w: Double) {
+                guard let artist = index.trackArtists[t].first, !anchor.subject.contains(artist) else { return }
+                let value = Self.likeSongArtist * w
+                if value > artistWeight[artist] {
+                    artistWeight[artist] = value
+                    artistVia[artist] = via
+                }
+            }
+            for (t, w) in anchor.trackWeight { join(t, w) }
+            for (t, w) in added {
+                if case .similarTrack = addedReason[t] { join(t, w) }
+            }
+        }
         artistWeightNow = artistWeight
         artistViaNow = artistVia
 
@@ -944,11 +972,24 @@ struct RadioEngine: Sendable {
         let gamma = Self.gamma(adv)
         let floor = Self.power(Self.floorCloseness, gamma)
         let isDiscovery = anchor.kind == .discovery
+        // A stranger is as long as what the station plays: its best 100's
+        // median, ± half an octave free, past it a bell 0.25 octaves wide at
+        // Familiar, 1 at Adventurous. Taste alone ranked them, and a
+        // ten-minute Maruja came after four-minute songs on Bunker Radio
+        // at Familiar (RadioNeighbourhoodTests).
+        let lengths = pool.prefix(100).map { snapshot.tracks[$0].duration }.filter { $0.isFinite && $0 > 0 }.sorted()
+        let median = lengths.count >= 5 ? lengths[lengths.count / 2] : .nan
+        let width = 0.25 + 0.75 * adv
         var list: [Int] = []
         var scores = [Double](repeating: 0, count: snapshot.tracks.count)
         for i in 0..<snapshot.tracks.count where closeness[i] <= Self.minCloseness {
             list.append(i)
             scores[i] = floor * personalFactor(i, adv: adv, discovery: isDiscovery)
+            let d = snapshot.tracks[i].duration
+            if median.isFinite, d.isFinite, d > 0 {
+                let over = max(0, abs(log2(d / median)) - 0.5)
+                scores[i] *= exp(-0.5 * over * over / (width * width))
+            }
         }
         list.sort { scores[$0] != scores[$1] ? scores[$0] > scores[$1] : tiedBefore($0, $1) }
         rest = list
@@ -1022,7 +1063,8 @@ struct RadioEngine: Sendable {
     /// session are allowed too when more than `window` tracks have come
     /// since, the longer ago the likelier; at the last level even skipped
     /// ones. Without one, only those heard `noRepeatHours` of music ago.
-    func admission(_ i: Int, window: Int?, level: Int, _ ctx: Context) -> Double {
+    /// `capKept`: the cap holds at any level (the neighbourhood's own step).
+    func admission(_ i: Int, window: Int?, level: Int, capKept: Bool = false, _ ctx: Context) -> Double {
         if disliked.contains(i) { return 0 }
         let lastResort = window != nil && level >= Self.lastLevel
         if skipped.contains(i), !lastResort { return 0 }
@@ -1043,7 +1085,7 @@ struct RadioEngine: Sendable {
         }
         if level < 5, recently.contains(i) || hoursSince[i] < settings.noRepeatHours { return 0 }
         let artists = index.trackArtists[i]
-        if level == 0, ctx.capBlocked, artists.contains(anchor.capArtist) { return 0 }
+        if level == 0 || capKept, ctx.capBlocked, artists.contains(anchor.capArtist) { return 0 }
         if level <= 1 {
             for a in artists where ctx.blocked.contains(a) { return 0 }
         } else if level == 2 {
@@ -1289,29 +1331,44 @@ struct RadioEngine: Sendable {
     /// two by one artist closer. Repeats used to come only once every rule
     /// was off: a 12-song library of four artists broke separation 352
     /// times in 6 × 120 picks and the album rule 126 times.
+    ///
+    /// A song station below `nearDial`, before it looks wider: its own
+    /// neighbourhood once more, separation halved, first with the cap kept,
+    /// then without. A song near the seed one track sooner, or one more by
+    /// the seed's artist, beats a stranger nothing holds near, whom only
+    /// taste ranks: Bunker Radio, three artists near, went wide every
+    /// fourth pick for want of a fourth (RadioNeighbourhoodTests). A song
+    /// station's neighbourhood is Last.fm's word on that song; elsewhere
+    /// (an artist station on a library without genres, RadioCriticTests)
+    /// separation holds before strangers, as it did. From `nearDial` up a
+    /// stranger is what the dial asks for.
     enum Window { case none, long, short }
-    static let steps: [(window: Window, wide: Bool, level: Int)] =
-        [(.none, false, 0)] + (0...lastLevel).map { (.none, true, $0) }
-        + (0...lastLevel).flatMap { [(.long, true, $0), (.short, true, $0)] }
+    typealias Step = (window: Window, wide: Bool, level: Int, capKept: Bool)
+    static let wideSteps: [Step] = (0...lastLevel).map { (.none, true, $0, false) }
+        + (0...lastLevel).flatMap { [(.long, true, $0, false), (.short, true, $0, false)] }
+    static let nearSteps: [Step] = [(.none, false, 0, false), (.none, false, 2, true), (.none, false, 2, false)] + wideSteps
+    static let farSteps: [Step] = [(.none, false, 0, false)] + wideSteps
+    static let nearDial = 0.7
     static let lastLevel = 5
 
     mutating func pickOne() -> RadioPick? {
         if needsScoring { scoreAll() }
         let ctx = context()
         let windows = Self.repeatWindows(ctx.usable)
-        for step in Self.steps {
+        let near = anchor.kind == .track && adventurousness < Self.nearDial
+        for step in near ? Self.nearSteps : Self.farSteps {
             if step.wide, rest == nil { makeRest() }
             let window: Int? = switch step.window {
             case .none: nil
             case .long: windows.long
             case .short: windows.short
             }
-            if let pick = choose(wide: step.wide, window: window, level: step.level, ctx) { return pick }
+            if let pick = choose(wide: step.wide, window: window, level: step.level, capKept: step.capKept, ctx) { return pick }
         }
         return nil
     }
 
-    mutating func choose(wide: Bool, window: Int?, level: Int, _ ctx: Context) -> RadioPick? {
+    mutating func choose(wide: Bool, window: Int?, level: Int, capKept: Bool = false, _ ctx: Context) -> RadioPick? {
         let adv = adventurousness
         let k = Self.breadth(adv)
         var top: [Candidate] = []
@@ -1322,7 +1379,7 @@ struct RadioEngine: Sendable {
                 let b = scores[i]
                 if top.count == k, let worst = top.last, b * ctx.maxBoost <= worst.score { break }
                 guard b > 0 else { continue }
-                let admitted = admission(i, window: window, level: level, ctx)
+                let admitted = admission(i, window: window, level: level, capKept: capKept, ctx)
                 guard admitted > 0 else { continue }
                 let d = dynamic(i, ctx)
                 let s = b * d.factor * admitted

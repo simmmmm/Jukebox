@@ -34,7 +34,8 @@ One dial runs through all of it: adventurousness, 0 (near and known) to 1
    artist at most one in five, nothing thumbed down.
 6. **One track is drawn at random** from the best 8 to 60 left (more at a
    higher dial), in proportion to score.
-7. **When nothing is left**, the station looks wider, then loosens the rules
+7. **When nothing is left**, the station tries its neighbourhood with
+   separation halved (below 0.7), then looks wider, then loosens the rules
    one at a time. It never stops on its own.
 8. **Feedback counts at once**: the scores are worked out again before the
    next pick.
@@ -426,7 +427,7 @@ part empty.
 
 | Seed | Artists | Genres, era | First track |
 |---|---|---|---|
-| `.track` | its artists (0.88, a guest 0.75) | its genres; its year ±5 | that track, always (even if just heard) |
+| `.track` | its artists (0.88, a guest 0.75); the artists of Last.fm's similar songs, 0.6 of the song's weight, through its artist | its genres; its year ±5 | that track, always (even if just heard) |
 | `.artist` | the artist (0.88) | their records' genres; their median year, spread from their years (≥ 4) | one of their best-liked, drawn from the top 3 and any within 85% of the best (up to 12) |
 | `.album` | the album's artists by share | the album's genres and year | a best-liked track from it |
 | `.genre` | none of its own; its artists (half their records or more) lead to their neighbours | the genre, and genres that go with it (0.1 + 0.5 · adventurousness of their link); a joined one ("Rock; Shoegaze") its parts by specificity | a best-liked track of the genre (of a joined one, with every part) |
@@ -538,8 +539,11 @@ The rules:
   five, after the first;
 - never a song thumbed down, in this session or before (see Taste).
 
-When nothing passes, the station first looks wider: the whole library, the
-tracks outside its neighbourhood at a closeness of 0.03, taste deciding.
+When nothing passes, below 0.7 on the dial the neighbourhood is tried once
+more with separation halved, the cap kept, then without it ("A song
+station's neighbourhood"). Then the station looks wider: the whole
+library, the tracks outside its neighbourhood at a closeness of 0.03,
+taste deciding, a song far longer or shorter than the station's held back.
 Then the rules loosen one at a time:
 1. the cap off (with four artists, separation alone makes it one in four);
 2. separation halved;
@@ -898,8 +902,8 @@ by taste, the three among it. The mix no longer adds to that.
 
 | Moans Radio at Familiar | with a key | without |
 |---|---|---|
-| the library in his shape, the piano artists | 1.000 | 0.342 (0.267 before) |
-| … the three | 0 | 0.233 (0.342 before) |
+| the library in his shape, the piano artists | 1.000 | 0.597 (0.342 before the neighbourhood, 0.267 before that) |
+| … the three | 0 | 0.194 (0.233, 0.342) |
 | his library, the piano artists | 0.928 | 0.206 (0.214 before) |
 | … the three | 0 | 0.072 (0.139 before) |
 
@@ -965,8 +969,8 @@ songs without (they take the artist's), 12 × 30 picks:
 
 | dial | without a key: the calm artists | the three | with Last.fm: the calm, the three |
 |---|---|---|---|
-| 0 | 0.342 → 0.856 | 0.233 → 0 | 1.000, 0 (unchanged) |
-| 0.35 | 0.339 → 0.678 | 0.231 → 0.086 | 1.000, 0 |
+| 0 | 0.597 → 0.936 | 0.194 → 0 | 1.000, 0 (unchanged) |
+| 0.35 | 0.619 → 0.897 | 0.139 → 0.003 | 1.000, 0 |
 | 0.7 | 0.333 → 0.533 | 0.181 → 0.133 | 1.000, 0 |
 | 1 | 0.333 → 0.456 | 0.114 → 0.106 | 1.000, 0 |
 
@@ -986,6 +990,56 @@ know her neighbours: other piano, not the library at random. About a
 quarter to a third of its picks have no profile either way. Every
 `RADIO-EVAL`, `RADIO-CRITIC` and `RADIO-QUEUE` line is unchanged: their
 libraries have no profiles.
+
+### A song station's neighbourhood
+
+"radio gaat nog steeds niet echt lekker hoor, wat doet bring me the
+horizon hier of maruja" (the photographer, 24 November 2026): Bunker Radio
+(Balthazar) at Familiar, on Linux with Last.fm. After two "Like “Bunker”"
+songs, Up Next was Balthazar and strangers "From the 1990s", "From the
+2010s": Oasis, Bring Me The Horizon, a ten-minute Maruja.
+
+**The cause.** A station keeps the library and the graph it started with.
+Balthazar has no genre in his files, and Last.fm's tags and similar
+artists for it came after the start: similar artists are asked first for
+the artists he plays most, and he had not played it. The station knew 12
+songs, Balthazar's ten and the two Last.fm finds like "Bunker". With the
+cap and separation most picks found none of them allowed and looked
+wider, where taste alone ranks. Loudness could not help: Balthazar has no
+gain, and The National (−10 … −12 dB) is as loud as Bring Me The Horizon
+(−11.6 … −13). His Linux had no AcousticBrainz data yet.
+
+**The rule.**
+- The artists of Last.fm's similar songs join a song station, through the
+  seed's artist ("Sounds like Balthazar"), at 0.6 of the song's weight,
+  also when the songs arrive after the start. Only the named songs say
+  "Like “Bunker”".
+- A song station below 0.7 tries its neighbourhood with separation halved,
+  the cap kept, then without it, before strangers. Other stations keep
+  separation first (`RadioCriticTests`).
+- A stranger far longer or shorter than the median of the station's best
+  100 is held back: half an octave free, then a bell 0.25 octaves wide at
+  Familiar, 1 at Adventurous.
+
+**Measured** (`RadioNeighbourhoodTests`, lines `RADIO-NEAR`): his shape,
+the hits arriving after the seed song, 12 × 29 picks, before → now:
+
+| dial | strangers | metalcore | ten-minute band | the seed artist |
+|---|---|---|---|---|
+| 0 | 0.759 → 0 | 24 → 0 | 12 → 0 | 0.172 → 0.241 |
+| 0.35 | 0.759 → 0 | 28 → 0 | 13 → 0 | 0.172 → 0.241 |
+| 0.7 | 0.759 → 0.365 | 31 → 23 | 20 → 0 | 0.172 |
+| 1 | 0.647 → 0.359 | 28 → 21 | 20 → 8 | 0.172 |
+
+His own library as the station started (the app's cache, not in the
+tests), 6 × 15 picks at 0 and at 0.35: 66 strangers of 90 → 0, the rest The
+National and The War On Drugs ("Sounds like Balthazar") and Balthazar.
+With the tags and graph as they are now, no strangers before or after.
+Moans Radio without a key, a song station too, moved with it (the tables
+above). Every other `RADIO-*` line is unchanged.
+
+Left: a playing station does not take up Last.fm's answers that come
+after its start, and at 0.7 and up strangers are still ranked by taste.
 
 ## What it does when …
 
@@ -1047,6 +1101,7 @@ Each round is in the test output of its time.
 | 12. Last.fm's tags | an artist's top tags as genres of their own songs, at a weight, on a library with poor tags | weight 0.25: in cluster 0.847 → 0.970, sub-genre 0.259 → 0.276; 1: genre stations 0.995 → 0.953, the noise counting as the files do; 0.5 kept (Last.fm's tags) |
 | 13. scrobbles | Last.fm's plays as the clock's older evidence, before this device's first event | weight 0.25: Jazz 0.295, no fact; 1: 0.350, but a scrobble is as sure as a play here; 0.5 kept (Scrobbles) |
 | 14. the server's mix | round 7 undone: the mix judged nothing (Jellyfin's is any shared genre at random), so it places nothing and only lifts, by the dial; not asked for with a Last.fm key | The server's mix |
+| 15. a song station's neighbourhood | the similar songs' artists join; the neighbourhood with separation halved before strangers; a stranger's length | A song station's neighbourhood |
 
 ## Building on it
 
