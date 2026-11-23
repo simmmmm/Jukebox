@@ -65,7 +65,7 @@ final class ArtworkLoader {
         let file = fileURL(for: url)
         if FileManager.default.fileExists(atPath: file.path) { return file }
         let written = await Task.detached(priority: .utility) { () -> Bool in
-            guard let (data, response) = try? await URLSession.shared.data(from: url),
+            guard let (data, response) = try? await URLSessionTransport.uncached.data(from: url),
                   (response as? HTTPURLResponse)?.statusCode == 200 else { return false }
             return (try? data.write(to: file, options: .atomic)) != nil
         }.value
@@ -99,7 +99,7 @@ final class ArtworkLoader {
         let fetch = Task.detached(priority: .utility) { () -> (Texture?, missing: Bool) in
             var data = try? Data(contentsOf: file)
             if data == nil {
-                guard let (fetched, response) = try? await URLSession.shared.data(from: url) else { return (nil, false) }
+                guard let (fetched, response) = try? await URLSessionTransport.uncached.data(from: url) else { return (nil, false) }
                 guard (response as? HTTPURLResponse)?.statusCode == 200 else { return (nil, true) }
                 try? fetched.write(to: file, options: .atomic)
                 data = fetched

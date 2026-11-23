@@ -236,14 +236,10 @@ public struct PlexAccount: Sendable {
 
     /// Whether an address of the server may be asked with the token: https
     /// and the home network always; plain http away from home only where
-    /// someone said Sign In Anyway for it, never silently. Kept under the
-    /// sign-in's own key for that question ("signIn.plainHTTPAccepted",
-    /// PlainHTTPConsent on the sign-in's branch), so one answer holds for both.
-    /// ponytail: read here by its key until that type is on main; then
-    /// `PlainHTTPConsent().isAccepted`.
+    /// someone said Sign In Anyway for it (PlainHTTPConsent, the sign-in's
+    /// own question and memory), never silently.
     static func mayAsk(_ url: URL, defaults: UserDefaults = .standard) -> Bool {
-        ServerAddress.mayCarryPassword(url)
-            || (defaults.stringArray(forKey: "signIn.plainHTTPAccepted") ?? []).contains(url.absoluteString)
+        !PlainHTTPConsent(defaults: defaults).mustAsk(url)
     }
 }
 

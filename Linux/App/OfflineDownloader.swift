@@ -153,6 +153,14 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
         emit(.finished(tag, fileName: fileName, bytes: bytes))
     }
 
+    /// A redirect as every other request's (RedirectPolicy): never down to
+    /// plain http, nothing of the session's to another host.
+    func urlSession(_ session: URLSession, task: URLSessionTask,
+                    willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+                    completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
+        completionHandler(task.currentRequest.flatMap { RedirectPolicy.next(request, after: $0) })
+    }
+
     func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: (any Error)?) {
         // Handed over (or cancelled) already: nothing more to say.
         guard let tag = take(task) else { return }

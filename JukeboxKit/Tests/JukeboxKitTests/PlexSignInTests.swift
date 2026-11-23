@@ -270,7 +270,7 @@ struct PlexSignInTests {
         let defaults = try #require(UserDefaults(suiteName: "plex-plain-http-test"))
         defaults.removeObject(forKey: "signIn.plainHTTPAccepted")
         #expect(!PlexAccount.mayAsk(away, defaults: defaults) && PlexAccount.mayAsk(Self.home, defaults: defaults))
-        defaults.set([away.absoluteString], forKey: "signIn.plainHTTPAccepted")
+        PlainHTTPConsent(defaults: defaults).accept(away)
         #expect(PlexAccount.mayAsk(away, defaults: defaults))
         defaults.removeObject(forKey: "signIn.plainHTTPAccepted")
     }

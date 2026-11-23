@@ -37,10 +37,10 @@ public protocol HTTPTransport: Sendable {
 /// headers, and not at all with a body (a 307 or 308 of the sign-in's
 /// POST, which would carry the password there). Nil: stop, and the 3xx is
 /// the answer.
-enum RedirectPolicy {
+public enum RedirectPolicy {
     static let credentialHeaders = ["Authorization", "X-Emby-Authorization", "X-Emby-Token", "X-Plex-Token"]
 
-    static func next(_ proposed: URLRequest, after current: URLRequest) -> URLRequest? {
+    public static func next(_ proposed: URLRequest, after current: URLRequest) -> URLRequest? {
         guard let from = current.url, let to = proposed.url,
               let toScheme = to.scheme?.lowercased(), toScheme == "http" || toScheme == "https" else { return nil }
         if from.scheme?.lowercased() == "https", toScheme != "https" { return nil }
@@ -55,29 +55,33 @@ enum RedirectPolicy {
     }
 }
 
-#if !canImport(FoundationNetworking)
-/// RedirectPolicy for Apple's URLSession, which follows redirects itself.
-private final class RedirectGuard: NSObject, URLSessionTaskDelegate, Sendable {
-    static let shared = RedirectGuard()
+/// RedirectPolicy as a URLSession's delegate, for every session that
+/// follows redirects itself: Apple's transport, and on both platforms the
+/// covers' sessions (`URLSessionTransport.uncached`, ImagePipeline). Not
+/// Apple's background downloads: a background session follows redirects
+/// without asking its delegate.
+public final class RedirectGuard: NSObject, URLSessionTaskDelegate, Sendable {
+    public static let shared = RedirectGuard()
 
-    func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-                    newRequest request: URLRequest) async -> URLRequest? {
-        task.currentRequest.flatMap { RedirectPolicy.next(request, after: $0) }
+    public func urlSession(_ session: URLSession, task: URLSessionTask,
+                           willPerformHTTPRedirection response: HTTPURLResponse, newRequest request: URLRequest,
+                           completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
+        completionHandler(task.currentRequest.flatMap { RedirectPolicy.next(request, after: $0) })
     }
 }
-#endif
 
 public struct URLSessionTransport: HTTPTransport {
     public let session: URLSession
 
     /// URLSession.shared without its disk cache: a Subsonic call's address
     /// carries the account's credentials, and URLCache keeps answers by
-    /// address. Nothing here is meant to be answered from a cache.
+    /// address. Nothing here is meant to be answered from a cache. Its
+    /// redirects go by RedirectPolicy (RedirectGuard).
     public static let uncached: URLSession = {
         let configuration = URLSessionConfiguration.default
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        return URLSession(configuration: configuration)
+        return URLSession(configuration: configuration, delegate: RedirectGuard.shared, delegateQueue: nil)
     }()
 
     public init(session: URLSession = URLSessionTransport.uncached) {
@@ -175,7 +179,7 @@ private final class RefusesRedirects: NSObject, URLSessionTaskDelegate, @uncheck
     static let shared = RefusesRedirects()
 
     func urlSession(_ session: URLSession, task: URLSessionTask, willPerformHTTPRedirection response: HTTPURLResponse,
-                    newRequest request: URLRequest, completionHandler: @escaping (URLRequest?) -> Void) {
+                    newRequest request: URLRequest, completionHandler: @escaping @Sendable (URLRequest?) -> Void) {
         completionHandler(nil)
     }
 }

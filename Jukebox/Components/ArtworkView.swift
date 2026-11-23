@@ -24,7 +24,7 @@ final class ImagePipeline {
         // No cache of the session's own: it keeps an answer by its address.
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
-        session = URLSession(configuration: configuration)
+        session = URLSession(configuration: configuration, delegate: RedirectGuard.shared, delegateQueue: nil)
         disk = URLCache(memoryCapacity: 0, diskCapacity: 512 << 20, directory: Self.folder)
         memory.countLimit = 500
         // Decoded bytes, not a count: a 900 px cover is 3.2 MB once prepared
