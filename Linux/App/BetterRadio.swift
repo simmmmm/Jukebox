@@ -20,7 +20,7 @@ enum BetterRadio {
         guard !isShowing, app.phase == .signedIn, AppSettings.canEnhanceRadio, !app.settings.radioChoiceMade else { return }
         isShowing = true
         let dialog = adw_alert_dialog_new("Better Radio",
-                                          "To find music that sounds alike, Jukebox looks up artist and song names on Last.fm and MusicBrainz. Nothing about you is sent.")!
+                                          "To find music that sounds alike, Jukebox sends the artist, song and album names in your library to Last.fm and ListenBrainz, and asks AcousticBrainz how each song sounds. Your Last.fm username goes too, if you add one. Nothing about your music server, your sign-in or this device is sent.")!
         adw_alert_dialog_add_response(ptr(dialog), "not-now", "Not Now")
         adw_alert_dialog_add_response(ptr(dialog), "turn-on", "Turn On")
         adw_alert_dialog_set_response_appearance(ptr(dialog), "turn-on", ADW_RESPONSE_SUGGESTED)

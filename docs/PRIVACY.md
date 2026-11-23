@@ -57,7 +57,8 @@ only. Nothing else about you is sent with them, apart from your IP address,
 as with any request. With your Last.fm username in Settings, it also reads
 your scrobbles. Nothing is written to Last.fm.
 
-You choose right after signing in (Better Radio): Turn On or Not Now. **To
+You choose right after signing in (Better Radio): Turn On or Not Now, and
+none of them is asked anything before you have chosen. **To
 change it: Settings › Radio › Enhance Radio** (Preferences › Radio on
 Linux). Off, Jukebox makes no request to Last.fm, ListenBrainz or
 AcousticBrainz, and the radio chooses from your library and from what they

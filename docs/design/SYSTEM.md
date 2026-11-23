@@ -318,8 +318,11 @@ Then Better Radio, once, right after the first sign-in (and once after the
 update for whoever never chose): "Standaard aan maar maak het onderdeel van
 een onboarding flow waarin dit kort en krachtig benoemd wordt" (the
 photographer, 24 November 2026). The title "Better Radio"; "To find music
-that sounds alike, Jukebox looks up artist and song names on Last.fm and
-MusicBrainz. Nothing about you is sent."; Turn On, the prominent default,
+that sounds alike, Jukebox sends the artist, song and album names in your
+library to Last.fm and ListenBrainz, and asks AcousticBrainz how each song
+sounds. Your Last.fm username goes too, if you add one. Nothing about your
+music server, your sign-in or this device is sent." (Settings › Radio says
+the same); nothing is asked of any of them before this is answered; Turn On, the prominent default,
 and Not Now, which turns Enhance Radio off. Not dismissed without an answer;
 changed later in Settings › Radio.
 - Apple: `BetterRadioView` (`Settings/BetterRadioView.swift`), a sheet

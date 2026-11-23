@@ -91,7 +91,7 @@ enum Preferences {
             let user = lastFMUser(in: dialog)
             adw_preferences_group_add(ptr(enhance), toggle(
                 "Enhance Radio",
-                "To find music that sounds alike, Jukebox looks up artist and song names on Last.fm and MusicBrainz. Nothing about you is sent, unless you add your Last.fm username.",
+                "To find music that sounds alike, Jukebox sends the artist, song and album names in your library to Last.fm and ListenBrainz, and asks AcousticBrainz how each song sounds. Your Last.fm username goes too, if you add one. Nothing about your music server, your sign-in or this device is sent.",
                 settings.enhanceRadio) {
                 settings.enhanceRadio = $0
                 user.row.isVisible = $0

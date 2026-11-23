@@ -92,7 +92,7 @@ same; the Mac asks over the main window (`Commands.swift`, RootView).
 |---|---|---|---|---|---|---|
 | 1 | Adventurousness, from Familiar to Adventurous | ✓ | ✓ | ✓ | ✓ (added 21 November; the panel's dial too) | 0.35 |
 | | *Footer*: "Familiar stays close to where a station started and to songs you know. Adventurous goes further out and plays more that is new to you." | ✓ | ✓ | ✓ | ✓ | |
-| 2 | Enhance Radio: "To find music that sounds alike, Jukebox looks up artist and song names on Last.fm and MusicBrainz. Nothing about you is sent, unless you add your Last.fm username." Last.fm and AcousticBrainz together (24 November 2026) | ✓ in the row | ✓ in the row | ✓ footer | ✓ in the row | on, unless an old switch was turned off |
+| 2 | Enhance Radio: "To find music that sounds alike, Jukebox sends the artist, song and album names in your library to Last.fm and ListenBrainz, and asks AcousticBrainz how each song sounds. Your Last.fm username goes too, if you add one. Nothing about your music server, your sign-in or this device is sent." Last.fm and AcousticBrainz together (24 November 2026) | ✓ in the row | ✓ in the row | ✓ footer | ✓ in the row | on, unless an old switch was turned off |
 | 3 | Last.fm Username (optional) | ✓ | ✓ | ✓ | ✓ | empty |
 | | *Footer*: "With your Last.fm username, the radio learns when you play what from your scrobbles. Nothing is written to Last.fm." | ✓ | ✓ | ✓ | — the row's title says it | |
 
