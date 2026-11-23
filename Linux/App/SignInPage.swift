@@ -268,7 +268,16 @@ enum SignInPage {
             gtk_label_set_xalign(ptr(line), 0.5)
             gtk_label_set_justify(ptr(line), GTK_JUSTIFY_CENTER)
         }
-        let actions = vbox(spacing: 8, [signIn, quick, plex])
+        // Help where it is needed first: "eigenlijk vanaf de inlogpagina
+        // hebben meerdere gebruikers nu al hulp nodig" (the photographer,
+        // 23 November 2026). Quiet words under the buttons (Help.swift).
+        let trouble = button("Trouble signing in?", "flat", "word", "help", "fact") { Help.open(Support.signInHelp) }
+        let copyInfo = button("Copy Diagnostic Info", "flat", "word", "help", "fact") {
+            Help.copyDiagnostics()
+            say("Diagnostic info copied. It holds no address, user name or password.")
+        }
+        let help = vbox([trouble, copyInfo]).align(horizontal: GTK_ALIGN_CENTER)
+        let actions = vbox(spacing: 8, [signIn, quick, plex, help])
         let column = vbox(spacing: 24, [markTile(), title, fact, group, code, message, actions]).margins(24)
         gtk_widget_set_valign(column, GTK_ALIGN_CENTER)
         let clamp = adw_clamp_new()!
@@ -282,7 +291,9 @@ enum SignInPage {
         Self.cancel = cancel
         adw_header_bar_pack_start(ptr(header), cancel)
         adw_toolbar_view_add_top_bar(ptr(toolbar), header)
-        adw_toolbar_view_set_content(ptr(toolbar), clamp)
+        // Scrolls where the window is too low for the column (400×800 with
+        // Quick Connect and the help's words): nothing is cut off.
+        adw_toolbar_view_set_content(ptr(toolbar), scrolled(clamp))
         return toolbar
     }
 
