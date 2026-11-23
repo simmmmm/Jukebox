@@ -790,7 +790,7 @@ private struct SettingsEnhanceRadioSection: View {
 
     private var section: some View {
         @Bindable var settings = settings
-        Section {
+        return Section {
             // Wide, the line in the row, as Linux's subtitle and Playback's
             // rows; on the iPhone the section's footer.
             Toggle(isOn: $settings.enhanceRadio) {
