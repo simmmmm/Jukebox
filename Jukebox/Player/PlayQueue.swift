@@ -179,6 +179,8 @@ class PlayQueue {
     /// Until when what the remote says may still be from before a load.
     @ObservationIgnored var remoteSettled = Date.distantPast
     @ObservationIgnored var remoteFailures = 0
+    /// The entry whose stream waits on PlainHTTPGuard (`waitForHome`).
+    @ObservationIgnored private var homeWait: UUID?
     @ObservationIgnored var remotePoll: Task<Void, Never>?
     @ObservationIgnored var remoteCalls: Task<Void, Never>?
 
@@ -677,10 +679,27 @@ class PlayQueue {
 
     // MARK: Loading
 
+    /// A stream over plain http that PlainHTTPGuard could not clear at
+    /// once (a name not looked up lately, or away from home): asked off
+    /// the main thread, as a lookup may wait, then the entry plays, or the
+    /// listener reads why not, in a refused library call's own words.
+    /// Another song chosen meanwhile wins (`homeWait`).
+    private func waitForHome(_ url: URL, entry: QueueEntry, at index: Int, play: Bool, fadesIn: Bool) {
+        homeWait = entry.id
+        Task { [weak self] in
+            let refusal = await Task.detached { PlainHTTPGuard.refusal(for: url) }.value
+            guard let self, self.homeWait == entry.id, self.queue.indices.contains(index),
+                  self.queue[index].id == entry.id else { return }
+            self.homeWait = nil
+            if let refusal { self.showError(refusal) } else { self.load(index, play: play, fadesIn: fadesIn) }
+        }
+    }
+
     /// Make `index` the current entry, from its start, in a fresh engine.
     /// `fadesIn`: the song before ended by itself (Crossfade).
-    private func load(_ index: Int, play: Bool, fadesIn: Bool = false) {
+    func load(_ index: Int, play: Bool, fadesIn: Bool = false) {
         guard queue.indices.contains(index) else { return }
+        homeWait = nil
         // Offline, a song not on the device cannot play: the next one that
         // is, in its place; none, and the music stops here.
         guard let start = playableIndex(from: index) else {
@@ -690,7 +709,12 @@ class PlayQueue {
         let entry = queue[start]
         let playSessionID = UUID().uuidString
         guard let url = address(of: entry, playSessionID: playSessionID) else {
-            showError("Not signed in to a server.")
+            if let server {
+                waitForHome(server.streamURL(for: entry.track, quality: streamQuality, playSessionID: playSessionID),
+                            entry: entry, at: start, play: play, fadesIn: fadesIn)
+            } else {
+                showError("Not signed in to a server.")
+            }
             return
         }
         let finished = finishCurrent()
@@ -774,10 +798,19 @@ class PlayQueue {
 
     /// Where the entry's song is: its file when it is on the device
     /// (always, online too: nothing to fetch, it starts at once), else the
-    /// server's stream. Nil signed out.
+    /// server's stream. Nil signed out, and nil where the stream would
+    /// carry the account's token over plain http and PlainHTTPGuard cannot
+    /// say at once that this device is on the server's network: AVPlayer
+    /// and GStreamer fetch it themselves, past the transport's own check.
+    /// `load` then waits for the answer; a preload is left for `load`.
+    /// ponytail: a stream handed over at home keeps being fetched (range
+    /// requests, the preload) after the device moves; asked again at the
+    /// next song.
     func address(of entry: QueueEntry, playSessionID: String) -> URL? {
         if let file = offline?.localURL(for: entry.track.id) { return file }
-        return server?.streamURL(for: entry.track, quality: streamQuality, playSessionID: playSessionID)
+        guard let url = server?.streamURL(for: entry.track, quality: streamQuality, playSessionID: playSessionID),
+              PlainHTTPGuard.mayFetchNow(url) else { return nil }
+        return url
     }
 
     private func indexAfter(_ index: Int, wrapping: Bool) -> Int? {

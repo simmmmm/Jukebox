@@ -91,6 +91,18 @@ final class RemoteControl {
     private func restart() {
         stop()
         guard let jellyfin, let url = jellyfin.client.sessionSocketURL, let connect else { return }
+        // The socket's address carries the token: over plain http (ws://)
+        // only while this device is on the server's network, as every call
+        // to it (PlainHTTPGuard). Not known at once, it is asked off the
+        // main thread; away, the socket waits as a closed one does.
+        guard PlainHTTPGuard.mayFetchNow(url) else {
+            again = Task { [weak self] in
+                let home = await Task.detached { PlainHTTPGuard.mayFetch(url) }.value
+                guard !Task.isCancelled, let self else { return }
+                if home { self.restart() } else { self.closed() }
+            }
+            return
+        }
         let socket = connect(url)
         self.socket = socket
         offered = false

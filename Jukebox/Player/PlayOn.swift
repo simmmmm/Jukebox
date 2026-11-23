@@ -342,8 +342,13 @@ extension PlayQueue {
         let position = elapsed
         endRemote()
         Task { await remote.stop() }
-        guard let entry = current, let playing,
-              let url = address(of: entry, playSessionID: playing.playSessionID) else { return }
+        guard let entry = current, let playing else { return }
+        // Not cleared at once by PlainHTTPGuard: `load` waits for it, and
+        // the song starts again from its start.
+        guard let url = address(of: entry, playSessionID: playing.playSessionID) else {
+            if let currentIndex { load(currentIndex, play: wasPlaying) }
+            return
+        }
         engineReplace(with: url, entry: entry, playSessionID: playing.playSessionID, play: wasPlaying)
         wantsToPlay = wasPlaying
         engineStart(wasPlaying)
@@ -380,9 +385,11 @@ extension PlayQueue {
 
     /// `index` from its `position`, with what follows it.
     func remoteLoad(from index: Int, at position: TimeInterval, play: Bool) {
-        guard let remote = playingElsewhere, let server, remoteMayFetch(from: server) else { return }
+        guard let remote = playingElsewhere, let server else { return }
         let entries = remoteWindow(from: index, capacity: remote.capacity)
-        guard !entries.isEmpty else { return }
+        guard remoteMayFetch(from: server, entries, retry: { [weak self] in
+            self?.remoteLoad(from: index, at: position, play: play)
+        }), !entries.isEmpty else { return }
         remoteHeld = entries.map(\.id)
         remoteSettled = Date().addingTimeInterval(1.5)
         let items = entries.map { remoteEntry($0, server: server) }
@@ -404,6 +411,7 @@ extension PlayQueue {
         if held == wanted { return }
         if wanted.count > held.count, Array(wanted.prefix(held.count)) == held {
             let more = wanted[held.count...].compactMap { id in queue.first { $0.id == id } }
+            guard remoteMayFetch(from: server, more, retry: { [weak self] in self?.remoteQueueChanged() }) else { return }
             remoteHeld += more.map(\.id)
             let items = more.map { remoteEntry($0, server: server) }
             remoteDo { try await $0.append(items) }
@@ -420,8 +428,25 @@ extension PlayQueue {
     /// account switched to while it plays there is asked too: the password
     /// itself never goes to one (PlayOn.sendsPassword), and the music comes
     /// back here.
-    private func remoteMayFetch(from server: any MusicServer) -> Bool {
+    private func remoteMayFetch(from server: any MusicServer, _ entries: [QueueEntry] = [],
+                                retry: @escaping () -> Void = {}) -> Bool {
         guard let device = playsOn, PlayOn.handsAddresses(device) else { return true }
+        // Over plain http each address carries a token, which the TV
+        // fetches with on this device's network: only while that is the
+        // server's own (PlainHTTPGuard), as this device's own streams. Not
+        // known at once (a name not looked up lately), nothing goes yet: it
+        // is asked off the main thread, then `retry`; away, back here,
+        // where the song says why (`load`).
+        if let unclear = entries.lazy.map({ server.castURL(for: $0.track).url })
+            .first(where: { !PlainHTTPGuard.mayFetchNow($0) }) {
+            let remote = playingElsewhere
+            Task { [weak self] in
+                let refusal = await Task.detached { PlainHTTPGuard.refusal(for: unclear) }.value
+                guard let self, let remote, self.playingElsewhere === remote else { return }
+                if refusal == nil { retry() } else { self.playHere() }
+            }
+            return false
+        }
         if PlayOn.sendsPassword(server) {
             playHere()
             showError(PlayOn.passwordStaysHere(device))

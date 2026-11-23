@@ -57,13 +57,26 @@ public struct LocalNetwork: Sendable {
     /// not) is on one of the device's own networks: the loopback always;
     /// a name only when every address it resolves to is.
     public func reaches(_ host: String) -> Bool {
-        var host = host.lowercased()
-        if host.hasPrefix("["), host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
-        if let zone = host.firstIndex(of: "%") { host = String(host[..<zone]) }
+        let host = Self.bare(host)
         if host == "localhost" { return true }
         if let bytes = Self.literal(host) { return reaches(bytes: bytes) }
         let addresses = resolve(host)
         return !addresses.isEmpty && addresses.allSatisfy(reaches(bytes:))
+    }
+
+    /// Whether `reaches` would look `host` up: a name, not an address
+    /// and not localhost. Such a lookup may wait on DNS or mDNS.
+    static func needsLookup(_ host: String) -> Bool {
+        let host = bare(host)
+        return host != "localhost" && literal(host) == nil
+    }
+
+    /// Lowercased, without brackets or an IPv6 zone.
+    static func bare(_ host: String) -> String {
+        var host = host.lowercased()
+        if host.hasPrefix("["), host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
+        if let zone = host.firstIndex(of: "%") { host = String(host[..<zone]) }
+        return host
     }
 
     func reaches(bytes: [UInt8]) -> Bool {
@@ -162,33 +175,69 @@ public struct LocalNetwork: Sendable {
 /// whoever has that address on a café's Wi-Fi: it waits until home. A
 /// request without credentials (detection's first questions) goes as it
 /// is; sign-in asks "This Server Isn't Secure" there first (mustAsk).
+/// The addresses that leave the transport ask it too, each where all its
+/// callers pass: a song's stream and a cast's (PlayQueue), the remote
+/// control's websocket (RemoteControl), a download (OfflineStore.pump),
+/// a cover (ArtworkView, Linux's Artwork). A websocket's ws:// is plain
+/// http here: it is an http request until it upgrades.
 public enum PlainHTTPGuard {
-    /// For an address fetched without URLSessionTransport (covers): false
-    /// where `refusal` would say why. May resolve a name: off the main
+    /// For an address fetched without URLSessionTransport: false where
+    /// `refusal(for:)` would say why. May resolve a name: off the main
     /// thread.
     public static func mayFetch(_ url: URL) -> Bool {
-        refusal(URLRequest(url: url)) == nil
+        refusal(for: url) == nil
+    }
+
+    /// mayFetch without waiting, for the main thread: false also where a
+    /// name would have to be looked up (none asked within 30 s). Then ask
+    /// mayFetch off the main thread, which leaves its answer here for 30 s.
+    /// Never an older answer: a laptop opened at a café is not at home
+    /// because it was an hour ago.
+    public static func mayFetchNow(_ url: URL) -> Bool {
+        refusal(URLRequest(url: url), lookup: false) == nil
+    }
+
+    /// Why `url` is not fetched now, in the words a refused API call has;
+    /// nil to fetch. May resolve a name: off the main thread.
+    public static func refusal(for url: URL) -> String? {
+        refusal(URLRequest(url: url))
     }
 
     private static let lock = NSLock()
     nonisolated(unsafe) private static var known: [String: (home: Bool, at: Date)] = [:]
 
-    /// Nil to send; else why not.
-    static func refusal(_ request: URLRequest, consent: PlainHTTPConsent = PlainHTTPConsent()) -> String? {
-        guard let url = request.url, url.scheme?.lowercased() == "http", let host = url.host?.lowercased(),
+    /// Nil to send; else why not. `lookup` false: a name not asked lately
+    /// is refused rather than looked up.
+    static func refusal(_ request: URLRequest, consent: PlainHTTPConsent = PlainHTTPConsent(),
+                        lookup: Bool = true) -> String? {
+        guard let url = request.url.map(asHTTP), url.scheme?.lowercased() == "http", let host = url.host?.lowercased(),
               ServerAddress.isHomeNetwork(url), carriesCredentials(request),
-              !reaches(host), !consent.isAcceptedOrigin(url) else { return nil }
+              reaches(host, lookup: lookup) != true, !consent.isAcceptedOrigin(url) else { return nil }
         return "This device isn't on the network of \(host) now, so Jukebox sends nothing there over plain http. Connect to that network, or sign in again."
     }
 
-    /// Asked again after 30 s: a laptop moves between networks.
+    /// ws:// as the http:// it starts as; wss:// is left, as https is.
+    static func asHTTP(_ url: URL) -> URL {
+        guard url.scheme?.lowercased() == "ws", var parts = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return url
+        }
+        parts.scheme = "http"
+        return parts.url ?? url
+    }
+
+    /// Asked again after 30 s: a laptop moves between networks. Nil: not
+    /// known without a lookup, and `lookup` was false. A test's own
+    /// network (`LocalNetwork.standIn`) is asked each time, never cached,
+    /// so one test's network is not another's answer.
     /// ponytail: a cache by host, no network-change signal; one if 30 s is
     /// ever too slow.
-    private static func reaches(_ host: String) -> Bool {
-        let now = Date()
-        if let seen = lock.withLock({ known[host] }), now.timeIntervalSince(seen.at) < 30 { return seen.home }
+    private static func reaches(_ host: String, lookup: Bool) -> Bool? {
+        let cached = LocalNetwork.standIn == nil
+        if cached, let seen = lock.withLock({ known[host] }), Date().timeIntervalSince(seen.at) < 30 { return seen.home }
+        guard lookup || !LocalNetwork.needsLookup(host) else { return nil }
         let home = LocalNetwork.current.reaches(host)
-        lock.withLock { known[host] = (home, now) }
+        // Stamped once the lookup is done: a slow one is not born old.
+        if cached { lock.withLock { known[host] = (home, Date()) } }
         return home
     }
 

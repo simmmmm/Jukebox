@@ -644,6 +644,7 @@ private extension OfflineStore {
         let cellular = settings.downloadOverCellular
         let now = Date()
         var nextRetry: Date?
+        var notHome: URL?
         for item in wanted {
             guard running < Self.window else { break }
             let id = item.trackID
@@ -655,13 +656,39 @@ private extension OfflineStore {
             }
             let tag = OfflineDownloadTag(account: account, trackID: id, quality: item.quality)
             let url = server.downloadURL(for: song(id), quality: item.quality)
+            // Its address carries the token: over plain http only while
+            // this device is on the server's network (PlainHTTPGuard), as
+            // every call to it. Not known at once, the song waits for the
+            // answer below; it has not failed.
+            guard PlainHTTPGuard.mayFetchNow(url) else {
+                notHome = notHome ?? url
+                continue
+            }
             // Low Data Mode holds back the keep, not what was chosen.
             OfflineDownloader.shared.start(tag, from: url, overCellular: cellular, inLowDataMode: item.isChosen,
                                            expectedBytes: item.estimate, isChosen: item.isChosen)
             inFlight.insert(id)
             running += 1
         }
-        if let nextRetry { schedulePump(at: nextRetry) }
+        if let notHome {
+            waitForHome(notHome)
+        } else if let nextRetry {
+            schedulePump(at: nextRetry)
+        }
+    }
+
+    /// Asked off the main thread, as a lookup may wait: at home, the pump
+    /// at once; away, again in a minute, as a refused call would be.
+    /// ponytail: Apple's background session resumes a download begun at
+    /// home by itself, wherever the device is then.
+    private func waitForHome(_ url: URL) {
+        pumpTask?.cancel()
+        pumpTask = Task { [weak self] in
+            let home = await Task.detached { PlainHTTPGuard.mayFetch(url) }.value
+            if !home { try? await Task.sleep(for: .seconds(60)) }
+            guard !Task.isCancelled else { return }
+            self?.pump()
+        }
     }
 
     /// The song, for its download URL: a Subsonic server's depends on its
