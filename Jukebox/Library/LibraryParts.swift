@@ -92,6 +92,8 @@ struct LibraryVersionMenu: View {
     /// The kinds turned off; none is all.
     @Binding var off: Set<TrackVersion>
 
+    @Environment(\.isWide) private var isWide
+
     var body: some View {
         Menu {
             ForEach(kinds, id: \.self) { kind in
@@ -102,14 +104,28 @@ struct LibraryVersionMenu: View {
             Button("Show All") { off = [] }
                 .disabled(off.isEmpty)
         } label: {
-            // A plain glyph, as the heart and the "…" beside it wide, and
-            // after Shuffle on the iPhone.
-            Image(systemName: symbol)
-                // The iPhone's at the size of a bar's glyph, beside the 36 of Play.
-                .desktopFont(Tokens.Size.body15.size, phone: .title2)
-                .foregroundStyle(off.isEmpty ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.accent))
-                .frame(width: 32, height: 32)
-                .contentShape(.rect)
+            if isWide {
+                // A plain glyph, as the heart and the "…" beside it.
+                Image(systemName: symbol)
+                    .desktopFont(Tokens.Size.body15.size, phone: .title2)
+                    .foregroundStyle(off.isEmpty ? AnyShapeStyle(.primary) : AnyShapeStyle(Theme.accent))
+                    .frame(width: 32, height: 32)
+                    .contentShape(.rect)
+            } else {
+                // On the iPhone a button of Play and Shuffle's own kind
+                // after them, 36 square: Shuffle's quiet ground while all
+                // show, Play's filled one while a kind is off. The thin
+                // outlined glyph it was read as a stray one beside two
+                // filled buttons ("Icoontje is niet heel Nice zo", 24
+                // November 2026).
+                Image(systemName: "line.3.horizontal.decrease")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(off.isEmpty ? Theme.quietInk : Theme.onAccent)
+                    .frame(width: Tokens.ActionButton.height, height: Tokens.ActionButton.height)
+                    .background(off.isEmpty ? Theme.accent.opacity(Tokens.ActionButton.quietTint) : Theme.accent,
+                                in: .rect(cornerRadius: Theme.Radius.artwork))
+                    .contentShape(.rect)
+            }
         }
         // Open while kinds are turned, on the iPhone and the iPad (the
         // Mac's menus close on a choice, as its own apps' do).
