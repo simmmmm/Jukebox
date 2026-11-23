@@ -45,6 +45,10 @@ struct QueueView: View {
     @State private var isSaving = false
     @State private var saved: Playlist?
     @State private var saveError: String?
+    /// Songs to come picked with ⌘ or ⇧ in the panel (TrackPicks), as on a
+    /// page, for the menu on all of them. By place: they go when the list
+    /// changes.
+    @State private var panelPicks = TrackPicks()
 
     init(inPanel: Bool = false) {
         self.inPanel = inPanel
@@ -192,8 +196,8 @@ struct QueueView: View {
                     .padding(.bottom, Theme.Space.m)
                     .panelRow()
             }
-            ForEach(items, id: \.panelKey) { item in
-                panelItem(item)
+            ForEach(Array(items.enumerated()), id: \.element.panelKey) { i, item in
+                panelItem(item, at: i, in: items)
                     .moveDisabled(!item.isUpcoming)
                     .deleteDisabled(!item.isUpcoming)
             }
@@ -211,6 +215,7 @@ struct QueueView: View {
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
         .environment(\.defaultMinListRowHeight, 0)
+        .onChange(of: items.map(\.panelKey)) { panelPicks.clear() }
     }
 
     /// Where it plays from: an album's, a playlist's or a mix's cover and
@@ -267,19 +272,33 @@ struct QueueView: View {
         }
     }
 
-    @ViewBuilder private func panelItem(_ item: UpNextList.Item) -> some View {
+    @ViewBuilder private func panelItem(_ item: UpNextList.Item, at i: Int, in items: [UpNextList.Item]) -> some View {
         switch item {
         case let .song(entry, number, style, playing, words):
             QueuePanelRow(entry: entry, number: number, style: style, playing: playing, words: words)
                 .contentShape(.rect)
+                // Picked: lit as a page's picked rows (TrackRow), never the
+                // accent, which means on air.
+                .background {
+                    RoundedRectangle(cornerRadius: Theme.Space.s)
+                        .fill(Color.primary.opacity(item.isUpcoming && panelPicks.contains(i) ? 0.1 : 0))
+                        .padding(.horizontal, -Theme.Space.s)
+                }
                 // The iPad's list swipes as the iPhone's; on a Mac a
                 // trackpad's two fingers do.
                 .modifier(RemoveSwipe(isOn: !playing && style != .played) { remove(entry) })
                 .onTapGesture {
+                    // ⌘ or ⇧ picks a song to come, as on a page (heldPick:
+                    // the Mac's keys); a plain tap forgets the picks.
+                    if let kind = heldPick() {
+                        if item.isUpcoming { panelPicks.click(i, kind) }
+                        return
+                    }
+                    if item.isUpcoming { panelPicks.plain(i) } else { panelPicks.clear() }
                     if !playing { player.skip(to: entry) }
                 }
                 .contextMenu {
-                    panelMenu(entry, playing: playing)
+                    panelMenu(entry, playing: playing, picked: pickedEntries(at: i, in: items))
                 }
                 // Played: there, but quieter than what is to come.
                 .opacity(style == .played ? 0.5 : 1)
@@ -324,7 +343,37 @@ struct QueueView: View {
     /// A song's menu: moved or taken out for the ones to come (a Mac's list
     /// has no Edit), then what every song has. Found by id when chosen: the
     /// list may have moved since.
-    @ViewBuilder private func panelMenu(_ entry: QueueEntry, playing: Bool) -> some View {
+    @ViewBuilder private func panelMenu(_ entry: QueueEntry, playing: Bool, picked: [QueueEntry]) -> some View {
+        if picked.count > 1 {
+            // Several: what the queue does with them all, as with one, then
+            // what every song has (TrackMenu for several). On a station,
+            // taking them out teaches it once a song (PlayQueue.removeUpcoming).
+            let ids = Set(picked.map(\.id))
+            TrackMenu(track: entry.track, picked: picked.map(\.track), pickedPlace: PickedPlace(
+                moveToTop: { player.moveUpcoming(fromOffsets: upNextOffsets(ids), toOffset: 0) },
+                moveToBottom: { player.moveUpcoming(fromOffsets: upNextOffsets(ids), toOffset: player.upNext.count) },
+                remove: { player.removeUpcoming(atOffsets: upNextOffsets(ids)) },
+                removeWord: "Remove from Queue"))
+        } else {
+            singlePanelMenu(entry, playing: playing)
+        }
+    }
+
+    /// The songs to come picked with the row at `i`, two or more; else none.
+    private func pickedEntries(at i: Int, in items: [UpNextList.Item]) -> [QueueEntry] {
+        guard items[i].isUpcoming, panelPicks.contains(i) else { return [] }
+        return panelPicks.tracks(at: i, in: items).compactMap { item -> QueueEntry? in
+            guard item.isUpcoming, case let .song(entry, _, _, _, _) = item else { return nil }
+            return entry
+        }
+    }
+
+    /// Found by id when chosen: the list may have moved since.
+    private func upNextOffsets(_ ids: Set<UUID>) -> IndexSet {
+        IndexSet(player.upNext.indices.filter { ids.contains(player.upNext[$0].id) })
+    }
+
+    @ViewBuilder private func singlePanelMenu(_ entry: QueueEntry, playing: Bool) -> some View {
         if !playing, let at = player.upNext.firstIndex(where: { $0.id == entry.id }) {
             Section {
                 Button("Move Up", systemImage: "arrow.up") {

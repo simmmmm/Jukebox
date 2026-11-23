@@ -400,6 +400,21 @@ final class LibraryStore {
         try await server.movePlaylistEntry(playlistID: playlist.id, entryID: entryID, to: index)
     }
 
+    /// Several songs moved together to the top or the end (Move to Top,
+    /// Move to Bottom on picked songs), in the order given: the server
+    /// moves one entry at a time, so one after the other, each to its
+    /// place in the order the page already shows. To the top the first
+    /// first, to the end the last first: each move then leaves the ones
+    /// still to go in their places, and a song in twice keeps its "#n" (its
+    /// n-th place of that song, SubsonicClient.parse). `count`: the
+    /// playlist's.
+    func move(_ tracks: [Track], in playlist: Playlist, toTop: Bool, count: Int) async throws {
+        let places = tracks.indices.map { toTop ? $0 : count - tracks.count + $0 }
+        for k in toTop ? Array(tracks.indices) : tracks.indices.reversed() {
+            try await move(tracks[k], in: playlist, to: places[k])
+        }
+    }
+
     func delete(_ playlist: Playlist) async throws {
         guard let server else { throw MusicServerError.notSignedIn }
         try await server.deletePlaylist(id: playlist.id)

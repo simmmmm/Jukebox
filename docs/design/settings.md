@@ -69,9 +69,8 @@ changes: "Mac", "iPhone", "iPad", "computer".
   downloaded songs on this Mac. The music plays on."
 
 The account menu: Linux's primary menu lists the accounts, then Add
-Account… and Sign Out…. The iPad's ≡ has the same. The Mac's menu bar has
-the accounts and Add Account…, but Sign Out… stays in Settings, where it can
-ask first (`Commands.swift`).
+Account… and Sign Out…. The iPad's ≡ and the Mac's Account menu have the
+same; the Mac asks over the main window (`Commands.swift`, RootView).
 
 ## Playback
 

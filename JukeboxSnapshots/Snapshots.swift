@@ -122,6 +122,15 @@ private struct Round {
                 app.navigator.place = .library(.albums)
                 if let album = album(named: "Lantern Hours (25th Anniversary)", in: app) { app.navigator.open(.album(album)) }
             }
+            // The menus' items in their order, each drawn as a form: a menu
+            // bar's and a context menu's own surfaces are not drawn in a
+            // window that is never on screen. The Account menu with Sign
+            // Out…, and the menus on several picked songs.
+            number += 1
+            await render(MenuItems(app: app).frame(width: size.width, height: size.height, alignment: .topLeading)
+                            .snapshotEnvironment(app, panel: panel),
+                         size: size, appearance: appearance, settle: 1,
+                         as: String(format: "%@%02d-menu-items", prefix, number))
             // Settings: each pane's own form alone, at the window's width
             // (SettingsView's tabs), as its toolbar of tabs is not drawn in
             // an offscreen window and the whole window came out broken.
@@ -228,6 +237,41 @@ private struct Round {
     private func note(_ text: String) {
         print("SNAPSHOT MISSED: \(text)")
         try? (text + "\n").append(to: folder.appendingPathComponent("missed.txt"))
+    }
+}
+
+/// The items of three menus side by side, in their sections, nothing
+/// chosen (Round's menu-items).
+private struct MenuItems: View {
+    let app: AppModel
+
+    var body: some View {
+        let tracks = Array(app.library.tracks.prefix(3))
+        HStack(alignment: .top, spacing: 24) {
+            column("Account menu") {
+                AccountMenuItems(app: app, signOut: {})
+            }
+            if let first = tracks.first {
+                column("Three picked, a playlist of one's own") {
+                    TrackMenu(track: first, picked: tracks,
+                              pickedPlace: PickedPlace(moveToTop: {}, moveToBottom: {}, remove: {}))
+                }
+                column("Three picked, Up Next") {
+                    TrackMenu(track: first, picked: tracks,
+                              pickedPlace: PickedPlace(moveToTop: {}, moveToBottom: {}, remove: {},
+                                                       removeWord: "Remove from Queue"))
+                }
+            }
+        }
+        .padding(24)
+    }
+
+    private func column(_ title: String, @ViewBuilder _ items: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(verbatim: title).font(.headline)
+            Form { items() }.formStyle(.grouped)
+        }
+        .frame(width: 440)
     }
 }
 

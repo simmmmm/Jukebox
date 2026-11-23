@@ -47,9 +47,16 @@ struct JukeboxCommands: Commands {
             #endif
         }
         // Music's own Account menu: the accounts kept, the one signed in
-        // checked, and Add Account… (AccountMenu.swift); then Your Year.
+        // checked, Add Account… and Sign Out… (AccountMenu.swift), in
+        // Linux's primary menu's order; then Your Year. Sign Out… asks over
+        // the main window (RootView). The iPad's keyboard menu leaves it to
+        // the ≡, which asks where it was chosen.
         CommandMenu("Account") {
+            #if os(macOS)
+            AccountMenuItems(app: app, signOut: { app.navigator.isConfirmingSignOut = true })
+            #else
             AccountMenuItems(app: app)
+            #endif
         }
         // The wide window's search field, in its bar: ⌘F, as the Mac's Find.
         CommandGroup(before: .textEditing) {

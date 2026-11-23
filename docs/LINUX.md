@@ -183,8 +183,9 @@ GNOME's Human Interface Guidelines, with libadwaita's own widgets:
   same calls as the Mac's (`LibraryStore.remove`, `move`). Moving only
   where the server can reorder, none of it on someone else's playlist.
 
-Songs are picked with Ctrl and Shift in any list of songs, lit as
-libadwaita's selected rows; the menu on a pick is for all of them. Copy
+Songs are picked with Ctrl and Shift in any list of songs and in Up Next,
+lit as libadwaita's selected rows; the menu on a pick is for all of them
+(Move to Top, Move to Bottom and Remove where the list allows). Copy
 Link is in a song's, an album's and an artist's menu; Choose Picture… in a
 playlist's ⋮ (an administrator on Jellyfin or Emby); Mini Player in the
 primary menu (`Extras.swift`, docs/ARCHITECTURE.md). Picking was tried by

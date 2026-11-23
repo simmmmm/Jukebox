@@ -188,12 +188,15 @@ struct RootView: View {
                 app.navigator.place = .home
                 app.navigator.isSettingsPresented = false
                 app.navigator.searchQuery = ""
+                app.navigator.isConfirmingSignOut = false
             }
             // Add Account… from the ≡ menu or the Mac's Account menu, and
             // why a switch from there did not happen (AccountMenu.swift).
             .sheet(isPresented: Bindable(app.navigator).isAddingAccount) {
                 OnboardingView(isAdding: true)
             }
+            // Sign Out… from the Mac's Account menu, in Settings' words.
+            .signOutConfirmation(isPresented: Bindable(app.navigator).isConfirmingSignOut, app: app)
             .alert("Still on This Account",
                    isPresented: Binding(get: { app.switchProblem != nil }, set: { if !$0 { app.switchProblem = nil } })) {
                 Button("OK") {}

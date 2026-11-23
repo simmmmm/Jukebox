@@ -1165,10 +1165,12 @@ enum Pages {
         let fact = facts([])
         // Edited in place, as on the Mac: a song's menu removes it, and
         // moves it where the server can reorder
-        // (ServerCapability.playlistReorder), as does dragging it.
+        // (ServerCapability.playlistReorder), as does dragging it; on
+        // several picked, all of them at once.
         // Set once the page's own functions are there, below.
-        var removeSong: (Int) -> Void = { _ in }
+        var removeSongs: ([Int]) -> Void = { _ in }
         var moveSong: (Int, Int) -> Void = { _, _ in }
+        var movePicked: (TrackPicks, Bool) -> Void = { _, _ in }
         // Its songs, all; the list shows the versions left on in the filter
         // (versionFilter), and Play and Shuffle take those. The ⋮, Add Songs
         // and the download take all.
@@ -1177,8 +1179,9 @@ enum Pages {
         var shownKinds: [TrackVersion] = []
         let list = trackList([], context: { context },
                              name: { TrackVersion.only(shownKinds, without: off) == nil ? nil : TrackVersion.read($0.name).title },
-                             remove: own ? { removeSong($0) } : nil,
+                             remove: own ? { removeSongs($0) } : nil,
                              move: own && app.library.can(.playlistReorder) ? { moveSong($0, $1) } : nil,
+                             movePicked: own && app.library.can(.playlistReorder) ? { movePicked($0, $1) } : nil,
                              canMove: { off.isEmpty })
         // Gone from the server: back where the page was opened from, or a
         // place of its own, Home.
@@ -1281,22 +1284,24 @@ enum Pages {
             guard !list.items.isEmpty else { return }
             gtk_list_view_scroll_to(ptr(list.widget), guint(min(at, list.items.count - 1)), GTK_LIST_SCROLL_FOCUS, nil)
         }
-        removeSong = { [weak list] at in
-            guard let list, list.items.indices.contains(at) else { return }
-            // The row's place among the songs shown, as the playlist's.
+        // Several in one go: one answer from the server, one list shown.
+        removeSongs = { [weak list] ats in
+            guard let list else { return }
+            // The rows' places among the songs shown, as the playlist's.
             let places = all.indices.filter { !off.contains(TrackVersion.read(all[$0].name).version) }
-            guard places.indices.contains(at) else { return }
-            var tracks = all
-            let gone = tracks.remove(at: places[at])
+            let chosen = Set(ats.filter(places.indices.contains).map { places[$0] })
+            guard let first = ats.min(), !chosen.isEmpty else { return }
+            let gone = chosen.sorted().map { all[$0] }
+            let tracks = all.indices.filter { !chosen.contains($0) }.map { all[$0] }
             show(tracks)
-            refocus(list, at: at)
+            refocus(list, at: first)
             // Jellyfin 12.4 removes every place of a song that is in the
             // playlist twice (its entry id is the song's own): then the
             // page shows what the server kept.
-            let wasTwice = tracks.contains { $0.id == gone.id }
+            let wasTwice = gone.contains { song in tracks.contains { $0.id == song.id } }
             Task {
                 do {
-                    try await app.library.remove([gone], from: playlist)
+                    try await app.library.remove(gone, from: playlist)
                     if wasTwice { load() }
                 } catch {
                     MainWindow.toast(error.localizedDescription)
@@ -1314,6 +1319,24 @@ enum Pages {
             Task {
                 do {
                     try await app.library.move(moved, in: playlist, to: to)
+                } catch {
+                    MainWindow.toast(error.localizedDescription)
+                    load()
+                }
+            }
+        }
+        // Move to Top, Move to Bottom on several: shown at once, then the
+        // server's moves one after the other (LibraryStore.move).
+        movePicked = { [weak list] picks, toTop in
+            guard let list, off.isEmpty else { return }
+            let moving = picks.tracks(at: picks.rows.min() ?? 0, in: list.items)
+            guard moving.count > 1 else { return }
+            let count = list.items.count
+            show(picks.moved(list.items, toTop: toTop))
+            refocus(list, at: toTop ? 0 : count - 1)
+            Task {
+                do {
+                    try await app.library.move(moving, in: playlist, toTop: toTop, count: count)
                 } catch {
                     MainWindow.toast(error.localizedDescription)
                     load()

@@ -448,12 +448,13 @@ final class TrackRow {
         }
     }
 
-    /// The song's own menu; on one of two or more picked, the picks' Play
-    /// Next, Add to Queue and Add to Playlist… (trackMenu for several).
+    /// The song's own menu; on one of two or more picked, the picks' own:
+    /// what the list does with them all, then Play Next, Add to Queue and
+    /// Add to Playlist… (trackMenu for several).
     func menu() -> [(String, () -> Void)] {
         if let picked {
             let tracks = picked.picks.tracks(at: position, in: picked.items())
-            if tracks.count > 1 { return trackMenu(tracks) }
+            if tracks.count > 1 { return trackMenu(tracks, place: picked.place(picked.picks)) }
         }
         return trackMenu(menuTracks, place: placeItems)
     }
@@ -501,22 +502,34 @@ func guests(_ track: Track, besides albumArtist: String? = nil) -> String {
 /// Shift+F10 or the Menu key opens the focused song's menu, as a click with
 /// the secondary button does.
 ///
-/// A playlist of the listener's own passes what edits it, by the song's
-/// place: `remove` puts Remove from Playlist in a song's menu and on the
-/// Delete key, GNOME's key for removing the item with the focus; `move`
-/// puts Move Up and Move Down in it, for the keyboard, and lets a song be
-/// dragged onto another to take its place, while `canMove` says so (not
-/// under a chosen version: a place among some songs is none in the playlist).
+/// A playlist of the listener's own passes what edits it, by the songs'
+/// places: `remove` puts Remove from Playlist in a song's menu and on the
+/// Delete key, GNOME's key for removing the item with the focus, for all
+/// the picked songs on one of them; `move` puts Move Up and Move Down in
+/// it, for the keyboard, and lets a song be dragged onto another to take
+/// its place, while `canMove` says so (not under a chosen version: a place
+/// among some songs is none in the playlist); `movePicked` puts Move to
+/// Top and Move to Bottom in the menu on several picked (true: the top).
 /// `name` is what a row's title says, when not the song's own. `numbers`
 /// numbers the rows (an album's, AlbumNumbers); `queue` is what plays from
 /// a row when the list is one disc of it (the whole album).
 func trackList(_ tracks: [Track], numbers: ((Track) -> Int?)? = nil, queue: (() -> [Track])? = nil,
                context: @escaping () -> QueueContext,
                subtitle: ((Track) -> String)? = nil, name: ((Track) -> String?)? = nil,
-               remove: ((Int) -> Void)? = nil, move: ((Int, Int) -> Void)? = nil,
+               remove: (([Int]) -> Void)? = nil, move: ((Int, Int) -> Void)? = nil,
+               movePicked: ((TrackPicks, Bool) -> Void)? = nil,
                canMove: @escaping () -> Bool = { true }) -> ItemList<Track, TrackRow> {
     weak var made: ItemList<Track, TrackRow>?
     let picked = PickedRows { made?.items ?? [] }
+    // In the order of one song's: Move first, then Remove.
+    picked.place = { picks in
+        var items: [(String, () -> Void)] = []
+        if let movePicked, canMove() {
+            items += [("Move to Top", { movePicked(picks, true) }), ("Move to Bottom", { movePicked(picks, false) })]
+        }
+        if let remove { items.append(("Remove from Playlist", { remove(picks.rows.sorted()) })) }
+        return items
+    }
     let list = ItemList<Track, TrackRow>(
         make: {
             let row = TrackRow(numbered: numbers != nil, picked: picked)
@@ -534,7 +547,7 @@ func trackList(_ tracks: [Track], numbers: ((Track) -> Int?)? = nil, queue: (() 
                 if index > 0 { row.placeItems.append(("Move Up", { move(index, index - 1) })) }
                 if index < (made?.items.count ?? 0) - 1 { row.placeItems.append(("Move Down", { move(index, index + 1) })) }
             }
-            if let remove { row.placeItems.append(("Remove from Playlist", { remove(index) })) }
+            if let remove { row.placeItems.append(("Remove from Playlist", { remove([index]) })) }
             row.markPicked()
         },
         activate: { _, index, items in
@@ -554,17 +567,25 @@ func trackList(_ tracks: [Track], numbers: ((Track) -> Int?)? = nil, queue: (() 
     onFocusedRow(of: list.widget, "<Shift>F10|Menu") { row in
         showMenu(at: row.widget, x: 0, y: Double(gtk_widget_get_height(row.widget)), row.menu())
     }
-    if let remove { onFocusedRow(of: list.widget, "Delete|KP_Delete") { remove($0.position) } }
+    if let remove {
+        onFocusedRow(of: list.widget, "Delete|KP_Delete") { row in
+            let picks = picked.picks
+            remove(picks.rows.count > 1 && picks.contains(row.position) ? picks.rows.sorted() : [row.position])
+        }
+    }
     onFocusedRow(of: list.widget, "Escape") { _ in picked.picks.clear() }
     list.set(tracks)
     return list
 }
 
 /// A list's picked songs (TrackPicks): Ctrl-click and Shift-click on a
-/// desktop, for Play Next, Add to Queue and Add to Playlist… on all of them.
+/// desktop, for Play Next, Add to Queue and Add to Playlist… on all of them,
+/// and what the list does with them all (`place`: Move to Top, Move to
+/// Bottom, Remove from Playlist), first.
 @Observable final class PickedRows {
     var picks = TrackPicks()
     let items: () -> [Track]
+    @ObservationIgnored var place: (TrackPicks) -> [(String, () -> Void)] = { _ in [] }
     init(_ items: @escaping () -> [Track]) { self.items = items }
 }
 
@@ -575,7 +596,7 @@ private nonisolated final class RowClick {
     init(_ run: @escaping @MainActor (Bool, Bool) -> Void) { self.run = run }
 }
 
-private func onRowClick(_ widget: Widget, _ body: @escaping (Bool, Bool) -> Void) {
+func onRowClick(_ widget: Widget, _ body: @escaping (Bool, Bool) -> Void) {
     jb_on_row_click(widget, { toggle, extend, data in
         guard let data else { return }
         let click = Unmanaged<RowClick>.fromOpaque(data).takeUnretainedValue()

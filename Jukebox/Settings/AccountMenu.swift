@@ -4,8 +4,9 @@
 // another chosen switches (AppModel.choose, which says in RootView's alert
 // why not, when its server does not answer). Add Account… opens the
 // sign-in in a sheet over the window (RootView). Sign Out… of the one
-// signed in where the menu can ask first (`signOut`, the iPad's ≡, as
-// Linux's primary menu), in Settings' words (signOutConfirmation).
+// signed in, as Linux's primary menu, where the menu can ask first
+// (`signOut`): the iPad's ≡ there, the Mac's Account menu over the main
+// window (RootView), in Settings' words (signOutConfirmation).
 
 import JukeboxKit
 import SwiftUI

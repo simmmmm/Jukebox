@@ -97,6 +97,7 @@ enum Shots {
             MainWindow.select(6)
             await step("08-playlists", wait: 2)
             await hovering([find(visiblePage(), { gtk_widget_has_css_class($0, "tile") != 0 })], "08a-playlists-hover")
+            await playlistPicked()
             // Search, through the header's fields themselves: Ctrl+F with
             // nothing searched yet; typed in Playlists' field, which goes to
             // the Search page; Enter twice; emptied, the searches kept; a
@@ -183,6 +184,7 @@ enum Shots {
             NowPlayingPage.open()
             await step("15-now-playing-station", wait: 3)
             await parity(albums)
+            await primaryMenu()
             Preferences.present()
             await step("16-preferences", wait: 2)
             if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
@@ -464,6 +466,81 @@ enum Shots {
         FileManager.default.createFile(atPath: "\(folder)/14b-ready", contents: nil)
         try? await Task.sleep(for: .seconds(3))
         try? FileManager.default.removeItem(atPath: "\(folder)/14b-ready")
+        var child = gtk_widget_get_first_child(owner)
+        while let next = child {
+            if isA(next, gtk_popover_get_type()) { gtk_popover_popdown(ptr(next)) }
+            child = gtk_widget_get_next_sibling(next)
+        }
+        try? await Task.sleep(for: .seconds(0.5))
+        // Two of the station's songs to come picked: their menu (14c, 14d).
+        guard rows.count > 2, let second = gtk_widget_get_parent(rows[2]),
+              let list = find(MainWindow.window, { gtk_widget_has_css_class($0, "queue") != 0 }),
+              let picked: PickedRows = kept(on: raw(list), as: "picked"),
+              let next: UpNextRow = kept(on: raw(second)) else { return }
+        picked.picks.click(row.position, .toggle)
+        picked.picks.click(next.position, .toggle)
+        await step("14c-radio-up-next-picked", wait: 1)
+        // Found again: the list may have made its rows anew since.
+        rows = []
+        if let window = MainWindow.window { collect(window) }
+        if let again = rows.compactMap({ gtk_widget_get_parent($0) }).first(where: { widget in
+            (kept(on: raw(widget)) as UpNextRow?).map { picked.picks.contains($0.position) } ?? false
+        }), let shown: UpNextRow = kept(on: raw(again)) {
+            await popped(at: again, shown.menu(), "14d-radio-up-next-picked-menu")
+        }
+        picked.picks.clear()
+    }
+
+    /// A playlist of one's own with three songs picked, and the menu on
+    /// them: Move to Top, Move to Bottom, Remove from Playlist first
+    /// (07b, 07c). Nothing chosen.
+    private static func playlistPicked() async {
+        guard let playlist = app.library.playlists.first(where: { !$0.isReadOnly }) else { return }
+        Pages.open(playlist)
+        try? await Task.sleep(for: .seconds(2))
+        guard let rows = find(visiblePage(), { gtk_widget_has_css_class($0, "rows") != 0 }),
+              let picked: PickedRows = kept(on: raw(rows), as: "picked") else { return }
+        picked.picks.plain(0)
+        picked.picks.click(2, .extend)
+        await step("07b-playlist-picked", wait: 1)
+        var found: [Widget] = []
+        func collect(_ widget: Widget) {
+            if gtk_widget_has_css_class(widget, "track-row") != 0, gtk_widget_get_mapped(widget) != 0 { found.append(widget) }
+            var child = gtk_widget_get_first_child(widget)
+            while let next = child { collect(next); child = gtk_widget_get_next_sibling(next) }
+        }
+        collect(rows)
+        if found.count > 1, let row: TrackRow = kept(on: raw(found[1])) {
+            await popped(at: found[1], row.menu(), "07c-playlist-picked-menu")
+        }
+        picked.picks.clear()
+        adw_navigation_view_pop(ptr(Nav.view))
+    }
+
+    /// The primary menu: the accounts, Add Account…, Sign Out… (16f).
+    private static func primaryMenu() async {
+        guard let folder else { return }
+        gtk_menu_button_popup(ptr(MainWindow.placesMenu))
+        try? await Task.sleep(for: .seconds(1))
+        FileManager.default.createFile(atPath: "\(folder)/16f-primary-menu-ready", contents: nil)
+        try? await Task.sleep(for: .seconds(3))
+        try? FileManager.default.removeItem(atPath: "\(folder)/16f-primary-menu-ready")
+        gtk_menu_button_popdown(ptr(MainWindow.placesMenu))
+        try? await Task.sleep(for: .seconds(0.5))
+    }
+
+    /// `items` as a song's menu on `owner`, pictured from outside as
+    /// `name`, written to frames.txt, then closed.
+    private static func popped(at owner: Widget, _ items: [(String, () -> Void)], _ name: String) async {
+        guard let folder else { return }
+        let line = "\(name): \(items.map { $0.0 == menuBreak.0 ? "·" : $0.0.replacingOccurrences(of: "\u{1F}", with: "|") })\n"
+        let file = "\(folder)/frames.txt"
+        try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + line).write(toFile: file, atomically: true, encoding: .utf8)
+        showMenu(at: owner, x: 120, y: Double(gtk_widget_get_height(owner)) / 2, items)
+        try? await Task.sleep(for: .seconds(1))
+        FileManager.default.createFile(atPath: "\(folder)/\(name)-ready", contents: nil)
+        try? await Task.sleep(for: .seconds(3))
+        try? FileManager.default.removeItem(atPath: "\(folder)/\(name)-ready")
         var child = gtk_widget_get_first_child(owner)
         while let next = child {
             if isA(next, gtk_popover_get_type()) { gtk_popover_popdown(ptr(next)) }

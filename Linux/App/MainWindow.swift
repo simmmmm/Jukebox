@@ -33,7 +33,7 @@ enum MainWindow {
     /// The hair between Home and Radio and the library's places.
     private static var libraryGap: Widget!
     /// The places' main menu, F10's while there are places.
-    private static var placesMenu: Widget!
+    private(set) static var placesMenu: Widget!
     /// The place shown, by its row; nil on Search.
     private static var current: Int?
     /// Whether the places are folded away, for the buttons that show them.

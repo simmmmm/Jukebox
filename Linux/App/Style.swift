@@ -161,7 +161,7 @@ enum Style {
         .track-row { min-height: \(px(Tokens.Row.wideNumbered)); }
         /* Songs picked with Ctrl or Shift (TrackPicks): libadwaita's own
            selected row, not the accent, which means on air. */
-        listview.rows > row.picked { background-color: alpha(currentColor, 0.1); }
+        listview.rows > row.picked, listview.queue > row.picked { background-color: alpha(currentColor, 0.1); }
         .track-row.covered { min-height: \(px(Tokens.Row.wideCovered)); }
         /* A chooser's rows (Choosers.swift): 56 with their picture 40,
            their hover in the dialog's 8 of margin. */

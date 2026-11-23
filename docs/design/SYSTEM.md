@@ -105,7 +105,7 @@ Content on the ground, parted by hairlines. A song's row is as tall as
 (the list's own insets none: they stood rows of 75 round the "…", "Ook
 heb ik t idee dat nummers nu wel erg veel padding boven en onder
 krijgen", 21 November 2026); wide 48, 64 with a cover. The song playing
-in the accent. Songs are picked with Ctrl and Shift wide.
+in the accent. Songs are picked with Ctrl and Shift wide, in Up Next too.
 
 An album's songs carry the file's own track number, on its disc, under
 "Disc 1", "Disc 2" when the album has more than one; a version filter
@@ -186,7 +186,8 @@ the art, the title, the facts, the pair of buttons, the heart, the "…".
 Every song's menu in the same sections and order, on every client:
 
 1. what its list does with it: Move Up, Move Down, Remove from Queue or
-   Playlist; on a station Don't Play X Here, Dislike;
+   Playlist; on a station Don't Play X Here, Dislike; on several picked
+   Move to Top, Move to Bottom, Remove;
 2. Play Next, Add to Queue;
 3. Add to Playlist…, the heart, Rating, Start Radio;
 4. Go to Album, Go to Artist, Credits;
@@ -202,8 +203,8 @@ the station's lessons as its list's section. A toggle in a menu (Don't
 Count Plays) is a check on Apple and on GNOME plain words that say what
 it does (Count Plays Again while marked); GNOME's checks and radio items
 live only on a submenu's page (Rating). The primary menu: Private
-Listening, Settings or Preferences, the accounts, Add Account…, Sign Out…
-(the Mac's in Settings), and where the platform has them Mini Player,
+Listening, Settings or Preferences, the accounts, Add Account…, Sign Out…,
+and where the platform has them Mini Player,
 Keyboard Shortcuts, About. Linux's menus sit on `lifted`; Apple's are the
 system's own.
 - Apple: `TrackMenu` (`Components/TrackRow.swift`), `Section`s; `.contextMenu`
@@ -401,6 +402,17 @@ the iPhone against 400×800. The menus read in the code on both.
   lessons first, on both (`TrackMenu`, Linux's `songMenu`).
 - **Primary menu**: Sign Out… in the iPad's ≡ (`AccountMenu.swift`,
   `WideShell.swift`); Linux has Private Listening already.
+- **Sign Out… on the Mac**: in the Account menu after Add Account…, as
+  Linux's primary menu, asking over the main window in Settings' words
+  (`Commands.swift`, `Navigator.isConfirmingSignOut`, RootView).
+- **Several picked songs**: Move to Top, Move to Bottom and Remove from
+  Playlist or Queue for all of them, first in their menu, on a playlist of
+  one's own and in Up Next, on the Mac and Linux (`PickedPlace`,
+  `TrackRow.swift`; `QueueView.swift`; Linux's `trackList`, `UpNextRow`).
+  Up Next's songs to come are picked with ⌘/Ctrl and Shift now. The iPad
+  picks none: its SwiftUI hears no keys held.
+- **The iPhone's mini player**: its song menu is the bar's, the station's
+  lessons first (`MiniPlayer.swift`).
 - **Recent searches**: Remove on Linux too (`Pages.swift`).
 - **In-page empty states**: one line at the margin on Apple too, Linux's
   words (`EmptyLine`; Favorites, Downloaded, Playlists, a playlist, Genres,
@@ -432,12 +444,6 @@ the iPhone against 400×800. The menus read in the code on both.
 
 ### Still open
 
-- **Sign Out… on the Mac**: in Settings, not the Account menu
-  (`Commands.swift` has nowhere to ask first).
-- **Several picked songs**: neither client offers Remove or Move for all of
-  them (`removal` is per song on both).
-- **The iPhone's mini player**: its song menu has no station section yet
-  (`MiniPlayer.swift`).
 - **A station's lesson word**: "Dislike" on Apple, "Not This" on Linux.
 - **Copy in empty states**: Apple's say "your music" where they said "Your
   Library", as Linux's; the photographer's to override.

@@ -300,9 +300,11 @@ struct MiniPlayer: View {
         // Past this size the two lines no longer fit the block.
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .contentShape(.contextMenuPreview, Self.shape)
+        // The song playing's menu, as the bar's and Full Player's "…": on a
+        // station its lessons first (TrackMenu's isPlaying).
         .contextMenu {
             if let track = player.currentTrack {
-                TrackMenu(track: track)
+                TrackMenu(track: track, isPlaying: true)
             }
         }
         .onChange(of: player.errorMessage) { _, message in

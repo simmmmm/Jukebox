@@ -707,10 +707,13 @@ in a menu that was there ("niet 10000 knopen"):
   at most. Only on Jellyfin and Emby, and only for an administrator: 12.4
   answers 403 to anyone else (`Server/PlaylistCovers.swift`, measured).
 - **Songs picked together** in a desktop list (Linux and the Mac; not the
-  iPad, whose SwiftUI hears no keys held): Ctrl or ⌘ adds one, Shift a run; the menu on a pick has Play
+  iPad, whose SwiftUI hears no keys held), Up Next's panel too: Ctrl or ⌘
+  adds one, Shift a run; the menu on a pick has, where the list allows,
+  Move to Top, Move to Bottom and Remove from Playlist or Queue, then Play
   Next, Add to Queue (Play Last) and Add to Playlist… for all of them. A
   plain click plays as before and forgets them (`Library/TrackPicks.swift`,
-  shared; checked in QueueCheck).
+  shared; checked in QueueCheck). Several taken out of a station's Up Next
+  teach it once a song (PlayQueue.removeUpcoming).
 - **The mini player**: Window › Mini Player (⌥⌘M) on the Mac, a small
   window above the others; Mini Player in Linux's primary menu, in place of
   the big window. None on the iPhone and the iPad: the bar is theirs.
