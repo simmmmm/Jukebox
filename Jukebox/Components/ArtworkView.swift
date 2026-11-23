@@ -25,7 +25,7 @@ final class ImagePipeline {
         configuration.urlCache = nil
         configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         session = URLSession(configuration: configuration, delegate: RedirectGuard.shared, delegateQueue: nil)
-        disk = URLCache(memoryCapacity: 0, diskCapacity: 512 << 20, directory: Self.folder)
+        disk = URLCache(memoryCapacity: 32 << 20, diskCapacity: 512 << 20, directory: Self.folder)
         memory.countLimit = 500
         // Decoded bytes, not a count: a 900 px cover is 3.2 MB once prepared
         // for display, so 500 of them would be 1.6 GB. 256 MB is about 80.
@@ -57,9 +57,9 @@ final class ImagePipeline {
     static func forgetAddressKeyedCache() {
         let done = "coversKeptByCoverKey"
         guard !UserDefaults.standard.bool(forKey: done) else { return }
-        URLCache.shared.removeAllCachedResponses()
-        URLCache(memoryCapacity: 0, diskCapacity: 512 << 20).removeAllCachedResponses()
-        // And the files themselves, should a system have left them.
+        // The files first, before anything opens them (URLCache.shared
+        // keeps its database open once touched); then the caches asked to
+        // empty what they hold, should a system keep it elsewhere.
         if let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first,
            let id = Bundle.main.bundleIdentifier {
             let old = caches.appendingPathComponent(id, isDirectory: true)
@@ -67,6 +67,8 @@ final class ImagePipeline {
                 try? FileManager.default.removeItem(at: old.appendingPathComponent(name))
             }
         }
+        URLCache.shared.removeAllCachedResponses()
+        URLCache(memoryCapacity: 0, diskCapacity: 512 << 20).removeAllCachedResponses()
         UserDefaults.standard.set(true, forKey: done)
     }
 

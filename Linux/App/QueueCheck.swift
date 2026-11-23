@@ -314,6 +314,26 @@ enum QueueCheck {
                "and never in the stream")
         engineSettings.normalizeVolume = false
 
+        // Play On's question about the speaker's key (PlayOn.needsKeyNotice):
+        // a Subsonic token once per account, an API key and Jellyfin never.
+        if let defaults = UserDefaults(suiteName: "jukebox-queue-check") {
+            defaults.removeObject(forKey: "playOn.keyAccepted")
+            let identity = ClientIdentity(clientVersion: "1", deviceName: "Check", deviceID: "check")
+            func server(_ kind: ServerKind, _ secret: ServerSecret) -> any MusicServer {
+                MusicServers.open(ServerCredentials(kind: kind, serverURL: URL(string: "https://music.example.com")!,
+                                                    serverID: "s", serverName: "S", userID: "u", userName: "anna",
+                                                    secret: secret), identity: identity)
+            }
+            let token = server(.subsonic(flavour: .navidrome), .subsonicToken(token: "t", salt: "s"))
+            expect(PlayOn.needsKeyNotice(token, defaults: defaults), "a Subsonic token asks before its first cast")
+            PlayOn.acceptKey(token, defaults: defaults)
+            expect(!PlayOn.needsKeyNotice(token, defaults: defaults), "and once Cast Anyway, not again")
+            expect(!PlayOn.needsKeyNotice(server(.subsonic(flavour: .navidrome), .subsonicAPIKey("k")), defaults: defaults)
+                   && !PlayOn.needsKeyNotice(server(.jellyfin, .jellyfinToken("j")), defaults: defaults),
+                   "an API key and Jellyfin's session never ask")
+            defaults.removeObject(forKey: "playOn.keyAccepted")
+        }
+
         for what in failed { print("queue check failed: \(what)") }
         print("queue rules: \(checks - failed.count) of \(checks) checks pass")
         return failed.isEmpty ? 0 : 1

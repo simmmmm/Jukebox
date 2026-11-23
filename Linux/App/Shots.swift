@@ -787,6 +787,11 @@ enum Shots {
                UPnPFinder.testLocation != nil,
                let device = app.player.playOn.devices.first(where: { $0.kind == .upnp }) {
                 app.player.playOn.choose(device)
+                // A Subsonic token account's question, answered as a click would.
+                if let asked = app.player.playOn.pendingKeyNotice {
+                    print("play on: asked about \(asked.name)'s key")
+                    app.player.playOn.castAnyway()
+                }
                 gtk_menu_button_popdown(ptr(button))
                 app.player.resume()
                 for second in 0..<seconds {
