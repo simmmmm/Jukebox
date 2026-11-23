@@ -249,6 +249,14 @@ struct ServerContractTests {
         }
         try await server.deletePlaylist(id: id)
         #expect(try await !server.playlists().contains { $0.id == id })
+        // Gone from the list at once, but a Jellyfin that has run for a
+        // while still answered the deleted playlist's songs for a moment
+        // (pc-kit, 23 November 2026; a fresh one on GitHub never did):
+        // asked again for up to five seconds before it must be not found.
+        for _ in 0..<10 {
+            if (try? await server.playlistTracks(playlistID: id)) == nil { break }
+            try await Task.sleep(for: .milliseconds(500))
+        }
         await #expect(throws: MusicServerError.notFound) { _ = try await server.playlistTracks(playlistID: id) }
     }
 
