@@ -45,7 +45,7 @@ none.
 | # | Row | Mac | iPad | iPhone | Linux | Note |
 |---|---|---|---|---|---|---|
 | 1 | A card for each account, even one | ✓ a section each, the system's radio | ✓ a section each, ◉ in the accent | ✓ the same | ✓ boxed list, a check button in radio mode before each row | GNOME's Settings chooses a power mode the same way |
-| | *Footer of the card signed in*, from `ServerWords.playbackReportingNote` (Jellyfin and Emby only): "Playback Reporting is installed: Your Year counts every play, from every device." | ✓ | ✓ | ✓ | ✓ the group's note | About the server, so it stays here |
+| | *Footer of the card signed in*, from `ServerWords.playbackReportingNote` (Jellyfin and Emby only): "Playback Reporting is installed: On Your Jukebox counts every play, from every device." | ✓ | ✓ | ✓ | ✓ the group's note | About the server, so it stays here |
 | 2 | Add Account… | ✓ trailing | ✓ row | ✓ row | ✓ the list's last row | |
 | 3 | Sign Out…, of the one signed in | ✓ trailing | ✓ row | ✓ row | ✓ under the list | Asks first: "Sign out of Betsy as tijmen?" With others kept, the next is signed in to; with none, the welcome |
 
@@ -169,12 +169,12 @@ its buttons on every client, in grey.
 
 - **Play On** (AirPlay, Cast, UPnP): the bar's and Now Playing's picker on
   every client. There is nothing to set.
-- **Your Year**: content, not a setting, so it left Settings on 21
+- **On Your Jukebox**: content, not a setting, so it left Settings on 21
   November 2026. Where it is now:
   - the iPhone: a row in Library, last;
-  - the iPad and the Mac: a place in the sidebar, last, and Your Year in
+  - the iPad and the Mac: a place in the sidebar, last, and On Your Jukebox in
     the ≡ menu and in the Mac's Account menu;
-  - Linux: a place in the sidebar, last, and Your Year in the primary
+  - Linux: a place in the sidebar, last, and On Your Jukebox in the primary
     menu.
   It has no switch in Pages. Its note on Playback Reporting stays in
   Accounts, under the server's card.
@@ -184,7 +184,7 @@ its buttons on every client, in grey.
 - **Mac**: buttons were each on a row of their own, in the window's tinted
   quiet style. They are now the system's push buttons, trailing, at the end
   of their section.
-- **Mac, iPad, iPhone**: Your Year was a button between Server and Address.
+- **Mac, iPad, iPhone**: On Your Jukebox (then Your Year) was a button between Server and Address.
   It had its own section for a while; now it is out of Settings (above).
 - **Mac, iPad, iPhone**: the quality footers sat under the whole section.
   Playback and Downloads now have two sections each, so each footer is under

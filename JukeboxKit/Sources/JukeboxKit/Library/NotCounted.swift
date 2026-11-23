@@ -8,7 +8,7 @@
 //
 // Not counted means the server hears nothing of the play (so no play count,
 // no scrobble from it, no Playback Reporting row) and the device keeps no
-// memory of it (the history: the radio's learning, the clock, Your Year,
+// memory of it (the history: the radio's learning, the clock, On Your Jukebox,
 // the mixes). It still plays, queues and shows in this session's Up Next.
 // The app asks `counts` in one place, PlayQueue.counts.
 

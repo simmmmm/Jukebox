@@ -677,7 +677,7 @@ with Subsonic's field beside Jellyfin's.
 | `rating` | never | API 1.6.0+ (`setRating`) | yes, songs and albums | no Rating in the menus |
 | `remoteControl` | `/Sessions?controllableByUserId=` answers (Emby too) | never | — | not listed in others' Play On |
 | `share` | never | `getShares` answers | yes; 501 with `ND_ENABLESHARING=false` | no Copy Share Link |
-| `playbackReporting` | the plugin's query answers this user (Emby: the same route; only its 404 without the plugin measured) | never | — | Your Year from this device only |
+| `playbackReporting` | the plugin's query answers this user (Emby: the same route; only its 404 without the plugin measured) | never | — | On Your Jukebox from this device only |
 
 The last three (18 November 2026, "zorg dat je ook alleen die opties toont
 als het beschikbaar is op die server en dat je dat ook zeker weet") are

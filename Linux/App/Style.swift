@@ -94,8 +94,10 @@ enum Style {
         css += """
         /* Titles as on sleeves: the system's serif, regular weight (tells.md 3). */
         .serif { font-family: serif; font-weight: 400; }
-        /* Your Year's months: flat bars in the accent. */
+        /* On Your Jukebox's days or months: flat bars in the accent; the
+           artist and the song it was most, their names in the serif. */
         .year-bar { background-color: @accent_bg_color; }
+        row.year-top label.title { font-family: serif; font-weight: 400; font-size: 1.35em; }
         /* Accounts' cards (Preferences.accountRow): the server's name in the
            serif, its kind's letter a round label in one ink, the accent on
            the one signed in, as the Mac's AccountCard. */

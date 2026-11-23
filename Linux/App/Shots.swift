@@ -210,6 +210,7 @@ enum Shots {
             if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
                 adw_dialog_force_close(dialog)
             }
+            await onYourJukebox()
             await notCounted(albums)
             await pages()
             await stationClicks()
@@ -627,6 +628,21 @@ enum Shots {
               let adjustment = gtk_scrolled_window_get_vadjustment(ptr(scroller)) else { return }
         gtk_adjustment_set_value(adjustment, (gtk_adjustment_get_upper(adjustment) - gtk_adjustment_get_page_size(adjustment)) * fraction)
         await step(name, wait: 1)
+    }
+
+    /// On Your Jukebox from the primary menu's item, on its week, then its
+    /// month and its year by their buttons, each from the fake Jellyfin's
+    /// Playback Reporting; the year's end too.
+    private static func onYourJukebox() async {
+        gtk_widget_activate_action_variant(MainWindow.window, "app.your-year", nil)
+        await step("26a-on-your-jukebox-week", wait: 3)
+        for (period, name) in [("This Month", "26b-on-your-jukebox-month"), ("This Year", "26c-on-your-jukebox-year")] {
+            if let button = find(visiblePage(), { isA($0, gtk_toggle_button_get_type()) && label(of: $0) == period }) {
+                gtk_toggle_button_set_active(ptr(button), 1)
+            }
+            await step(name, wait: 3)
+        }
+        await scrolled(visiblePage(), to: 1, "26d-on-your-jukebox-year-end")
     }
 
     /// One of Preferences' pages, chosen as its view switcher would.

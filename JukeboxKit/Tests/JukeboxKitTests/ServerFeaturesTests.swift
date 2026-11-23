@@ -63,7 +63,7 @@ struct ServerCapabilityProbeTests {
         let admin = try await FeatureServers.open(url, device: "reporting-admin")
         #expect(try await admin.currentCapabilities().contains(.playbackReporting))
         let plays = try await #require(admin as? JellyfinServer).client
-            .playbackReportingPlays(year: Calendar.current.component(.year, from: Date()))
+            .playbackReportingPlays(in: YourYear.Period.year.interval(containing: Date()))
         // Only this user's, and only songs (the query says both).
         JellyfinTestServer.measure("playback reporting: \(plays.count) plays this year for test")
         await admin.signOut()
@@ -71,7 +71,7 @@ struct ServerCapabilityProbeTests {
         let other = try await FeatureServers.open(url, user: "second", password: "second", device: "reporting-second")
         #expect(!(try await other.currentCapabilities().contains(.playbackReporting)))
         await #expect(throws: (any Error).self) {
-            _ = try await #require(other as? JellyfinServer).client.playbackReportingPlays(year: 2026)
+            _ = try await #require(other as? JellyfinServer).client.playbackReportingPlays(in: YourYear.Period.year.interval(containing: Date()))
         }
         await other.signOut()
     }
@@ -267,7 +267,7 @@ struct RemoteControlTests {
     }
 }
 
-@Suite("Your Year")
+@Suite("On Your Jukebox")
 struct YourYearTests {
     static func track(_ id: String, artist: String, album: String, genres: [String]) -> Track {
         Track(id: id, name: "Song \(id)", albumID: album, albumName: "Album \(album)",
@@ -294,17 +294,89 @@ struct YourYearTests {
             YearPlay(trackID: "gone", date: day(12), seconds: 300),
             YearPlay(trackID: "c", date: day(5, 2025), seconds: 999),
         ]
-        let year = YourYear.make(year: 2026, source: .server, plays: plays, track: { library[$0] }, calendar: calendar)
+        let year = YourYear.make(period: .year, now: day(6), source: .server, plays: plays, track: { library[$0] },
+                                 calendar: calendar)
         #expect(year.plays == 5)
         #expect(year.minutes == 20)
-        #expect(year.months == [4, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 5])
+        #expect(year.spread == [4, 0, 11, 0, 0, 0, 0, 0, 0, 0, 0, 5])
         #expect(year.songs.map(\.id) == ["a", "c", "b"])
         #expect(year.artists.map(\.name) == ["Mira Lux", "Blue Room Trio"])
         #expect(year.artists.first?.plays == 3)
         #expect(year.albums.map(\.id) == ["x", "y"])
         #expect(year.genres.map(\.name) == ["Rock", "Shoegaze", "Jazz"])
         #expect(!year.isEmpty)
-        #expect(YourYear.make(year: 2024, source: .thisDevice, plays: plays, track: { library[$0] }).isEmpty)
+        #expect(YourYear.make(period: .year, now: day(6, 2024), source: .thisDevice, plays: plays,
+                              track: { library[$0] }, calendar: calendar).isEmpty)
+    }
+
+    /// Gregorian in `zone`, its weeks starting on `firstWeekday` (1 Sunday,
+    /// 2 Monday), as a device's locale sets it.
+    static func calendar(_ zone: String = "UTC", firstWeekday: Int? = nil, locale: String? = nil) -> Calendar {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(identifier: zone)!
+        if let locale { calendar.locale = Locale(identifier: locale) }
+        if let firstWeekday { calendar.firstWeekday = firstWeekday }
+        return calendar
+    }
+
+    static func date(_ text: String, _ calendar: Calendar) -> Date {
+        let parts = text.split(separator: "-").map { Int($0)! }
+        return calendar.date(from: DateComponents(year: parts[0], month: parts[1], day: parts[2], hour: parts.count > 3 ? parts[3] : 0))!
+    }
+
+    @Test("A week starts on the calendar's first weekday: Sunday in the US, Monday in the Netherlands")
+    func weekStart() {
+        // Tuesday 24 November 2026.
+        for (calendar, start) in [(Self.calendar(locale: "en_US"), "2026-11-22"), (Self.calendar(locale: "nl_NL"), "2026-11-23"),
+                                  (Self.calendar(firstWeekday: 1), "2026-11-22"), (Self.calendar(firstWeekday: 2), "2026-11-23")] {
+            let week = YourYear.Period.week.interval(containing: Self.date("2026-11-24-15", calendar), calendar: calendar)
+            #expect(week.start == Self.date(start, calendar))
+            #expect(week.duration == 7 * 86400)
+        }
+    }
+
+    @Test("Month and year bounds; the spread has a bucket a day or a month", arguments: [
+        ("2026-02-14", YourYear.Period.month, "2026-02-01", "2026-03-01", 28),
+        ("2028-02-14", YourYear.Period.month, "2028-02-01", "2028-03-01", 29),
+        ("2026-12-31", YourYear.Period.month, "2026-12-01", "2027-01-01", 31),
+        ("2026-11-24", YourYear.Period.month, "2026-11-01", "2026-12-01", 30),
+        ("2026-01-01", YourYear.Period.year, "2026-01-01", "2027-01-01", 12),
+        ("2026-11-24", YourYear.Period.week, "2026-11-23", "2026-11-30", 7),
+    ])
+    func bounds(now: String, period: YourYear.Period, start: String, end: String, buckets: Int) {
+        let calendar = Self.calendar(firstWeekday: 2)
+        let made = YourYear.make(period: period, now: Self.date(now, calendar), source: .thisDevice, plays: [],
+                                 track: { _ in nil }, calendar: calendar)
+        #expect(made.interval.start == Self.date(start, calendar))
+        #expect(made.interval.end == Self.date(end, calendar))
+        #expect(made.spread.count == buckets)
+        #expect(made.isEmpty)
+    }
+
+    @Test("A week's days by the listener's clock: the clock change, its last moment, the next week's first")
+    func weekSpread() {
+        // Amsterdam's clocks went back on Sunday 25 October 2026: that week
+        // (Monday 19 to Sunday 25) is 169 hours long and still seven days.
+        let calendar = Self.calendar("Europe/Amsterdam", firstWeekday: 2)
+        let plays = [
+            YearPlay(trackID: "a", date: Self.date("2026-10-19", calendar), seconds: 60),
+            YearPlay(trackID: "a", date: Self.date("2026-10-21-23", calendar), seconds: 120),
+            YearPlay(trackID: "a", date: Self.date("2026-10-25-23", calendar), seconds: 180),
+            YearPlay(trackID: "a", date: Self.date("2026-10-26", calendar), seconds: 999),
+            YearPlay(trackID: "a", date: Self.date("2026-10-18-23", calendar), seconds: 999),
+        ]
+        let week = YourYear.make(period: .week, now: Self.date("2026-10-22-12", calendar), source: .server,
+                                 plays: plays, track: { _ in nil }, calendar: calendar)
+        #expect(week.interval.duration == 169 * 3600)
+        #expect(week.spread == [1, 0, 2, 0, 0, 0, 3])
+        #expect(week.plays == 3)
+        #expect(week.minutes == 6)
+    }
+
+    @Test("Playback Reporting's bounds are written in UTC, to the second")
+    func reportingText() {
+        let calendar = Self.calendar("Europe/Amsterdam")
+        #expect(JellyfinClient.reportingText(Self.date("2026-11-23", calendar)) == "2026-11-22 23:00:00")
     }
 
     @Test("This device's history: what was heard, not skips or thumbs")

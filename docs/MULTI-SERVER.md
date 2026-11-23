@@ -58,7 +58,7 @@ the rule. The rule is the account's own set.
 | Now playing, progress | yes M | yes M | with `playbackReport`, else `scrobble` only M | `/:/timeline` M |
 | Last played date | yes M | with `Fields` M | OpenSubsonic `played` M | `lastViewedAt` C |
 | Scrobbles to Last.fm (the server's job) | its plugin | ? | its own link | ? |
-| Your Year from the server | Playback Reporting plugin, asked M | the same route; only its 404 measured ? | no | history not used, not tried ? |
+| On Your Jukebox from the server | Playback Reporting plugin, asked M | the same route; only its 404 measured ? | no | history not used, not tried ? |
 | Quick Connect | when enabled M | no (404) M | no | no; Sign In with Plex, untested end to end |
 | API key or token sign-in | no | no | when listed C | a token C |
 | Capped streaming | AAC over HLS M | the same M | MP3, `maxBitRate` and `format` M | one progressive MP3; FLAC and AAC not measured ? |
@@ -99,7 +99,7 @@ and a handful of `capabilities.contains`.
 | `app.can(.lyrics)` | the playing song's account, or Find Lyrics Online | the Lyrics button (off when a song has none, as today) |
 | `app.can(.replayGain)` | any account on has it | Normalize Volume; a song without gain plays as it is, as an untagged one does today |
 | `.instantMix`, `.topSongs`, `.similarArtists` | the seed's account | the radio, an artist's page |
-| `.remoteControl`, `.playbackReporting` | each account that has it | Play On, Your Year |
+| `.remoteControl`, `.playbackReporting` | each account that has it | Play On, On Your Jukebox |
 
 The rule, as it is now ("What a server lacks is not offered"):
 
@@ -225,7 +225,7 @@ work by artist and title keys.
 | The server's mix | asked of the seed's account, when it has `.instantMix` and there is no Last.fm key. It only lifts songs the station already holds near, so a mix from one server cannot crowd out the other |
 | Top songs | the first account on that has `.topSongs` and the artist |
 | Home's mixes | from the merged library and history. A mix's draw uses a hash of the song's id, so mixes of the day change once when a second account comes on |
-| Your Year | per account: Playback Reporting where it answers (every device), else this device's history for that account's songs. Added up; never both for one account, so nothing counts twice. The source line names each: "Jellyfin: every device. Navidrome: this device." |
+| On Your Jukebox | per account: Playback Reporting where it answers (every device), else this device's history for that account's songs. Added up; never both for one account, so nothing counts twice. The source line names each: "Jellyfin: every device. Navidrome: this device." |
 | Scrobbling | each server scrobbles what it streamed: once |
 | Downloads | one limit for the device; each song from its winning copy; a server that forbids downloads is passed over for a copy that allows them |
 | The automatic keep | on the merged history |
@@ -284,7 +284,7 @@ words, not a coloured badge:
 | Two albums that did not merge but look alike | the server's name in the tile's second line |
 | Downloaded, Settings › Downloads | bytes per account |
 | Settings' footers | "AAC from Jellyfin, MP3 from Navidrome"; "Navidrome doesn't allow downloads for this account" |
-| Your Year | the source line (section 6) |
+| On Your Jukebox | the source line (section 6) |
 | Rows in lists | nothing |
 
 Per client:
@@ -309,7 +309,7 @@ Each step ships alone. S is days, M a week or so, L more.
 | 3 | The stores take a set of accounts: `LibraryStore` loads each cache and merges; history, downloads, recent stations and not-counted read and write per account; offline per account; the per-item `can` | nothing with one on. Behind a hidden setting, two on | high: every store. One account on stays on today's path | L |
 | 4 | The switches, on every client, with the facts lines and the playlist rules; the queue, the station and the pages retagged when a second account comes on | several servers, one library | medium | M |
 | 5 | Which copy plays, and falling back when a server goes silent | a song plays from the other server | medium | M |
-| 6 | Your Year added up; handoff and Play On with a mixed queue; the widget | the edges | low | M |
+| 6 | On Your Jukebox added up; handoff and Play On with a mixed queue; the widget | the edges | low | M |
 | 7 | Later: bitrate and MusicBrainz ids read, quality in the order of copies | better picks | low | M |
 
 **Step 1 in detail.** All in `JukeboxKit/Sources/JukeboxKit/Server/`, owner

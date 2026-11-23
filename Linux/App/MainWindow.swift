@@ -70,10 +70,10 @@ enum MainWindow {
         ("Downloaded", Glyphs.name("download"), .downloaded, DownloadedPage.make),
         // Out of Preferences: the year's music is content, not a setting
         // (21 November 2026). Last, so no other place moves; no switch.
-        ("Your Year", "x-office-calendar-symbolic", nil, YourYearPage.make),
+        ("On Your Jukebox", "x-office-calendar-symbolic", nil, YourYearPage.make),
     ]
 
-    /// Your Year's place in `sections`, for the primary menu's item.
+    /// On Your Jukebox's place in `sections`, for the primary menu's item.
     private static var yourYearIndex: Int { sections.count - 1 }
 
     static func present(in application: UnsafeMutablePointer<AdwApplication>) {
@@ -148,7 +148,7 @@ enum MainWindow {
         }
         action(application, "sign-out", nil) { if let account = app.credentials { confirmSignOut(of: account) } }
         action(application, "add-account", nil) { addAccount() }
-        // The primary menu's Your Year, as the Mac's Account › Your Year.
+        // The primary menu's On Your Jukebox, as the Mac's Account › On Your Jukebox.
         action(application, "your-year", nil) { if app.phase == .signedIn { select(yourYearIndex) } }
         // Space plays and pauses wherever the focus is ("op de desktop
         // varianten zou spatie altijd play/pause moeten zijn", 16 November
@@ -335,7 +335,7 @@ enum MainWindow {
         guard sections.indices.contains(index), let (title, _, kind, make) = sections[index] else { return }
         current = index
         // A place is made when first chosen and kept: going back to Albums
-        // finds it where it was left. Your Year anew each time, as the
+        // finds it where it was left. On Your Jukebox anew each time, as the
         // Mac's page reads it when it shows: the plays since count.
         if index == yourYearIndex, let old = pages[index] {
             g_object_unref(raw(old))
@@ -481,7 +481,7 @@ enum MainWindow {
         // The account's year, after the accounts, as on the Mac and the
         // iPad: content, out of Preferences.
         let year = g_menu_new()!
-        g_menu_append(year, "Your Year", "app.your-year")
+        g_menu_append(year, "On Your Jukebox", "app.your-year")
         g_menu_append_section(items, nil, ptr(year))
         g_object_unref(raw(year))
         return items

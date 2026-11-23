@@ -132,6 +132,19 @@ final class ScreenshotTests: XCTestCase {
         walk.picture("playlists")
         if playlists { try walk.goBack(to: "Library") }
 
+        // On Your Jukebox, the Library's last row, from the fake Jellyfin's
+        // Playback Reporting: its week, then its month and its year by the
+        // segmented control ("het gewoon wekelijks/maandelijks/jaarlijks
+        // laten zien", the photographer, 23 November 2026).
+        if try walk.push("On Your Jukebox") {
+            walk.picture("on-your-jukebox-week")
+            if try walk.tap(app.buttons["This Month"], "On Your Jukebox: This Month") { walk.pause(2) }
+            walk.picture("on-your-jukebox-month")
+            if try walk.tap(app.buttons["This Year"], "On Your Jukebox: This Year") { walk.pause(2) }
+            walk.picture("on-your-jukebox-year")
+            try walk.goBack(to: "Library")
+        }
+
         try walk.tab("Home")
         let settings = try walk.tap(app.buttons["Settings"], "Home: Settings (the person in the toolbar)")
         if settings {

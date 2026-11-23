@@ -1,5 +1,5 @@
 // Jellyfin's (and Emby's) Playback Reporting plugin: every play of every
-// client, kept on the server, so Your Year is the listener's year and not
+// client, kept on the server, so On Your Jukebox is the listener's year and not
 // one device's. The photographer, 18 November 2026: "ik heb playback
 // reporting geinstalleerd, maak daar ook ff een notitie van in de app
 // settings en op de website".
@@ -71,13 +71,16 @@ extension JellyfinClient {
         guard answer.results != nil else { throw JellyfinError.decoding("not Playback Reporting's answer") }
     }
 
-    /// The user's plays of songs in a year, oldest first.
-    public func playbackReportingPlays(year: Int) async throws -> [ServerPlay] {
+    /// The user's plays of songs from `interval`'s start to its end, oldest
+    /// first. Its bounds are written in UTC as the server keeps the dates;
+    /// YourYear.make places each play in the listener's own day.
+    public func playbackReportingPlays(in interval: DateInterval) async throws -> [ServerPlay] {
         let user = try reportingUser()
         let sql = """
             SELECT DateCreated, ItemId, PlayDuration FROM PlaybackActivity \
             WHERE UserId = '\(user)' AND ItemType = 'Audio' \
-            AND DateCreated >= '\(year)-01-01' AND DateCreated < '\(year + 1)-01-01' \
+            AND DateCreated >= '\(Self.reportingText(interval.start))' \
+            AND DateCreated < '\(Self.reportingText(interval.end))' \
             ORDER BY DateCreated
             """
         let answer = try await reportingQuery(sql)
@@ -90,11 +93,20 @@ extension JellyfinClient {
 
     /// "2026-11-18 19:12:12.4449127", the server's own clock in UTC.
     static func reportingDate(_ text: String) -> Date? {
-        let head = String(text.prefix(19))
+        reportingFormatter().date(from: String(text.prefix(19)))
+    }
+
+    /// A moment as the server writes it, to the second: compared as text
+    /// in the SQL, which orders as the dates do.
+    static func reportingText(_ date: Date) -> String {
+        reportingFormatter().string(from: date)
+    }
+
+    private static func reportingFormatter() -> DateFormatter {
         let parser = DateFormatter()
         parser.locale = Locale(identifier: "en_US_POSIX")
         parser.timeZone = TimeZone(identifier: "UTC")
         parser.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return parser.date(from: head)
+        return parser
     }
 }

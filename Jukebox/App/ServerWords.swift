@@ -51,9 +51,9 @@ enum ServerWords {
     static func playbackReportingNote(_ account: ServerCredentials) -> String? {
         guard account.kind == .jellyfin || account.kind == .emby else { return nil }
         if account.capabilities.contains(.playbackReporting) {
-            return String(localized: "Playback Reporting is installed: Your Year counts every play, from every device.")
+            return String(localized: "Playback Reporting is installed: On Your Jukebox counts every play, from every device.")
         }
-        return String(localized: "Playback Reporting was not found, or this account may not read it (it takes an administrator). With the plugin installed, Your Year counts every device; until then, only this one.")
+        return String(localized: "Playback Reporting was not found, or this account may not read it (it takes an administrator). With the plugin installed, On Your Jukebox counts every device; until then, only this one.")
     }
 
     /// The letter on an account's card, its kind's mark: "J" for

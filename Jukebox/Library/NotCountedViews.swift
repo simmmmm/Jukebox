@@ -89,7 +89,7 @@ struct NotCountedSection: View {
         } header: {
             Text("Not Counted")
         } footer: {
-            Text("Plays without a count: your server is not told, so no play count and no scrobble, and Jukebox does not learn from them for the radio, the mixes or Your Year. Mark a song, an album or a playlist with Don't Count Plays in its menu.")
+            Text("Plays without a count: your server is not told, so no play count and no scrobble, and Jukebox does not learn from them for the radio, the mixes or On Your Jukebox. Mark a song, an album or a playlist with Don't Count Plays in its menu.")
         }
     }
 

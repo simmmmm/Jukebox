@@ -82,7 +82,7 @@ enum NotCountedUI {
         let group = adw_preferences_group_new()!
         adw_preferences_group_set_title(ptr(group), "Not Counted")
         adw_preferences_group_set_description(
-            ptr(group), "Plays without a count: your server is not told, so no play count and no scrobble, and Jukebox does not learn from them for the radio, the mixes or Your Year. Mark a song, an album or a playlist with Don't Count Plays in its menu.")
+            ptr(group), "Plays without a count: your server is not told, so no play count and no scrobble, and Jukebox does not learn from them for the radio, the mixes or On Your Jukebox. Mark a song, an album or a playlist with Don't Count Plays in its menu.")
         adw_preferences_page_add(ptr(page), ptr(group))
 
         let mode = adw_combo_row_new()!

@@ -1,11 +1,17 @@
-// Your Year on the iPhone, the iPad and the Mac: the year in serif as on a
-// sleeve, the minutes and plays as a fact, where they come from, the months
-// as bars, then the songs, artists, albums and genres it was made of.
-// A page of the library's (Route.yourYear): a row in the iPhone's Library,
-// a place in the wide window's sidebar, the Mac's Account › Your Year. It
-// was a button in Settings, and left it: the year's music is content, not
-// a setting (21 November 2026). YourYearLoader has the sources. Linux's
-// is YourYearPage, in its sidebar and primary menu.
+// On Your Jukebox (first Your Year) on the iPhone, the iPad and the Mac:
+// This Week, This Month or This Year in the system's segmented control, the
+// period in serif as on a sleeve, the minutes and plays as a fact, where
+// they come from, its days or months as bars, the artist and the song it
+// was most, then the songs, artists, albums and genres it was made of.
+// "Your year kun je on your jukebox van maken en het gewoon
+// wekelijks/maandelijks/jaarlijks laten zien" (the photographer, 23
+// November 2026), and his rule from before: "Niet teveel als Spotify qua
+// ui": rows on the ground, no cards. A page of the library's
+// (Route.yourYear): a row in the iPhone's Library, a place in the wide
+// window's sidebar, the Mac's Account › On Your Jukebox. The music is
+// content, not a setting (21 November 2026). YourYearLoader has the
+// sources and the words. Linux's is YourYearPage, in its sidebar and
+// primary menu.
 
 import JukeboxKit
 import SwiftUI
@@ -14,49 +20,89 @@ struct YourYearView: View {
     @Environment(AppModel.self) private var app
     @Environment(LibraryStore.self) private var library
     @Environment(HistoryStore.self) private var history
-    @State private var year: YourYear?
+    @State private var period = YourYearLoader.firstPeriod
+    @State private var made: YourYear?
 
     var body: some View {
         content
-            .navigationTitle("Your Year")
+            .navigationTitle(YourYearLoader.title)
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
             #endif
-            // Each time it shows: a page kept in the sidebar's stack would
-            // otherwise keep the morning's year all day.
-            .task {
-                year = await YourYearLoader.load(year: YourYearLoader.year(), server: app.server,
-                                                 history: history.history, library: library)
+            // Each time it shows and each period chosen: a page kept in the
+            // sidebar's stack would otherwise keep the morning's week all
+            // day. A period chosen again before the last came in wins.
+            .task(id: period) {
+                let loaded = await YourYearLoader.load(period: period, server: app.server,
+                                                       history: history.history, library: library)
+                if !Task.isCancelled { made = loaded }
             }
     }
 
     @ViewBuilder private var content: some View {
-        if let year {
+        if let made {
             List {
                 Section {
                     VStack(alignment: .leading, spacing: Theme.Space.s) {
-                        Text(verbatim: String(year.year))
+                        // In the list, not in a bar over it: the ground stays
+                        // flat, and Linux's page has its buttons here too.
+                        Picker("Period", selection: $period) {
+                            ForEach(YourYear.Period.allCases, id: \.self) { period in
+                                Text(verbatim: YourYearLoader.name(period)).tag(period)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .labelsHidden()
+                        .padding(.bottom, Theme.Space.s)
+                        Text(verbatim: YourYearLoader.heading(made))
                             .font(.serif(.largeTitle))
-                        // Nothing played: the year's head as Linux's, its
-                        // facts the one line, not a status page: "Los ze
-                        // op" (the photographer, 20 November 2026).
-                        Text(year.isEmpty ? String(localized: "Nothing played yet") : YourYearLoader.facts(year))
+                        // Nothing played: the head as Linux's, its facts the
+                        // one line, not a status page: "Los ze op" (the
+                        // photographer, 20 November 2026).
+                        Text(made.isEmpty ? String(localized: "Nothing played yet") : YourYearLoader.facts(made))
                             .foregroundStyle(.secondary)
-                        MonthBars(minutes: year.months)
+                        SpreadBars(minutes: made.spread, labels: YourYearLoader.spreadLabels(made),
+                                   name: YourYearLoader.spreadName(made))
                             .padding(.top, Theme.Space.m)
                     }
                     .padding(.vertical, Theme.Space.s)
                 } footer: {
-                    Text(YourYearLoader.source(year))
+                    Text(YourYearLoader.source(made))
                 }
-                entries("Songs", year.songs, artwork: true)
-                entries("Artists", year.artists, artwork: false)
-                entries("Albums", year.albums, artwork: true)
-                entries("Genres", year.genres, artwork: false)
+                if let artist = made.artists.first, let song = made.songs.first {
+                    // The artist and the song it was most, larger than the
+                    // lists' rows, each with its cover (an artist's is its
+                    // most played song's, as YourYear keeps it).
+                    Section("Most played") {
+                        top(artist, line: YourYearLoader.plays(artist))
+                        top(song, line: [song.detail, YourYearLoader.plays(song)].compactMap { $0 }.joined(separator: " · "))
+                    }
+                }
+                entries("Songs", made.songs, artwork: true)
+                entries("Artists", made.artists, artwork: false)
+                entries("Albums", made.albums, artwork: true)
+                entries("Genres", made.genres, artwork: false)
             }
         } else {
             ProgressView()
         }
+    }
+
+    private func top(_ entry: YourYear.Entry, line: String) -> some View {
+        HStack(spacing: Theme.Space.m) {
+            ArtworkView(entry.track?.artwork, size: 64, sleeve: entry.track.map(TitleSleeve.Words.init(track:)))
+            VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                Text(verbatim: entry.name)
+                    .font(.serif(.title2))
+                    .lineLimit(2)
+                Text(verbatim: line)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
+        .padding(.vertical, Theme.Space.xs)
+        .accessibilityElement(children: .combine)
     }
 
     @ViewBuilder
@@ -89,29 +135,34 @@ struct YourYearView: View {
     }
 }
 
-/// Twelve bars, January first, each as tall as its month's minutes; flat
-/// ground, the accent for the bars.
-private struct MonthBars: View {
+/// A bar a day of the week or the month, or a month of the year, each as
+/// tall as its minutes; flat ground, the accent for the bars.
+private struct SpreadBars: View {
     let minutes: [Int]
+    let labels: [String]
+    let name: String
 
     var body: some View {
         let most = max(1, minutes.max() ?? 1)
-        let letters = YourYearLoader.monthLetters
-        HStack(alignment: .bottom, spacing: Theme.Space.xs) {
-            ForEach(0..<12, id: \.self) { month in
+        HStack(alignment: .bottom, spacing: minutes.count > 12 ? 2 : Theme.Space.xs) {
+            ForEach(minutes.indices, id: \.self) { index in
                 VStack(spacing: Theme.Space.xs) {
                     Rectangle()
                         .fill(Theme.accent)
-                        .frame(height: max(1, 64 * CGFloat(minutes[month]) / CGFloat(most)))
-                    Text(verbatim: letters.indices.contains(month) ? letters[month] : "")
+                        .frame(height: max(1, 64 * CGFloat(minutes[index]) / CGFloat(most)))
+                    // A month's day numbers stand under their bar and may
+                    // be wider than it.
+                    Text(verbatim: labels.indices.contains(index) ? labels[index] : "")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
+                        .fixedSize()
+                        .frame(maxWidth: .infinity, alignment: minutes.count > 12 ? .leading : .center)
                 }
                 .frame(maxWidth: .infinity)
             }
         }
         .frame(height: 88, alignment: .bottom)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text("Minutes by month"))
+        .accessibilityLabel(Text(verbatim: name))
     }
 }

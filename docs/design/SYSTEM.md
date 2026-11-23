@@ -431,7 +431,7 @@ the iPhone against 400×800. The menus read in the code on both.
 - **Recent searches**: Remove on Linux too (`Pages.swift`).
 - **In-page empty states**: one line at the margin on Apple too, Linux's
   words (`EmptyLine`; Favorites, Downloaded, Playlists, a playlist, Genres,
-  Songs, Your Year, Lyrics).
+  Songs, On Your Jukebox, Lyrics).
 - **The iPhone's album page**: the artist plain. **Played lately**: "Artist
   · Today" on every client (`AlbumsView.swift`, `HomeView.swift`).
 - **Tokens**: Apple's wide type sizes and durations, the drawn art's

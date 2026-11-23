@@ -70,7 +70,7 @@ public struct JellyfinServer: MusicServer {
     /// lyrics).
     /// Then what is asked rather than known from the version: whether this
     /// user's sessions can be controlled (Play On to this device), and
-    /// whether Playback Reporting answers this user (Your Year).
+    /// whether Playback Reporting answers this user (On Your Jukebox).
     public func currentCapabilities() async throws -> Set<ServerCapability> {
         let info = try await mapped { try await client.publicInfo() }
         var set = Self.capabilities(kind: kind, version: info.version)

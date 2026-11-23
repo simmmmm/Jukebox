@@ -215,9 +215,11 @@ requirement" (14 November 2026).
   `library.can(.playlistReorder)` (`ServerCapability`).
 - Asked of the server, never from its name (docs/SERVERS.md,
   "Capabilities"): Copy Share Link in a song's and an album's menu
-  (`.share`, Navidrome); Your Year (`Route.yourYear`: a row in the
+  (`.share`, Navidrome); On Your Jukebox (`Route.yourYear`: a row in the
   iPhone's Library, a place in the sidebar on the iPad, the Mac and
-  Linux), from Playback Reporting (`.playbackReporting`) or else this
+  Linux; This Week, This Month or This Year, `YourYear.Period`, each the
+  calendar's own, the week from the device's first weekday), from
+  Playback Reporting (`.playbackReporting`) or else this
   device's history, with a note under the server's card in Settings ›
   Accounts on Jellyfin and Emby saying which; moods and tempo
   into the radio's graph where songs carry them (`MoodEdges`).
@@ -475,7 +477,7 @@ Played, not counted (19 November 2026): "bijv voor kerstmuziek oid", and
   server nothing (no `nowPlaying`, `played`, `progress`, `stopped`: no
   play count, no scrobble, no Playback Reporting row, also not held for
   later offline) and `deliver` keeps nothing (history, so the radio, the
-  clock, the mixes and Your Year; "Played lately"). Asked when the play
+  clock, the mixes and On Your Jukebox; "Played lately"). Asked when the play
   would count, so Private Listening turned on mid-song keeps that song out;
   a song counted already stays counted. A song queued with Play Next into a
   marked playlist's queue counts by its own marks. A queue taken up again

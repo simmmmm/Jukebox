@@ -155,7 +155,7 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// 0.64.2).
     case share
     /// Jellyfin's Playback Reporting plugin answered this user's query:
-    /// every play on every device, for Your Year. Its routes need an
+    /// every play on every device, for On Your Jukebox. Its routes need an
     /// administrator (403 for anyone else, measured).
     case playbackReporting
 

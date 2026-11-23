@@ -48,7 +48,7 @@ struct JukeboxCommands: Commands {
         }
         // Music's own Account menu: the accounts kept, the one signed in
         // checked, Add Account… and Sign Out… (AccountMenu.swift), in
-        // Linux's primary menu's order; then Your Year. Sign Out… asks over
+        // Linux's primary menu's order; then On Your Jukebox. Sign Out… asks over
         // the main window (RootView). The iPad's keyboard menu leaves it to
         // the ≡, which asks where it was chosen.
         CommandMenu("Account") {
