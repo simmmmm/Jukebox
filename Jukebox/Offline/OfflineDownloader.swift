@@ -119,6 +119,15 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
                     didFinishDownloadingTo location: URL) {
         forget(downloadTask)
         guard let tag = OfflineDownloadTag(text: downloadTask.taskDescription) else { return }
+        // A background session follows redirects without asking its
+        // delegate (RedirectGuard cannot be its): a song that came from
+        // another host or port than the server asked is not kept, and not
+        // asked for again.
+        guard Self.sameOrigin(downloadTask.originalRequest?.url, downloadTask.response?.url) else {
+            try? FileManager.default.removeItem(at: location)
+            emit(.failed(tag, permanent: true))
+            return
+        }
         // An HTTP error arrives here too, as a file of the error's words;
         // the task then completes without an error.
         let response = downloadTask.response as? HTTPURLResponse
@@ -179,6 +188,18 @@ nonisolated final class OfflineDownloader: NSObject, URLSessionDownloadDelegate,
     }
 
     // MARK: Inside
+
+    /// The same host and port (a missing port as its scheme's), or the
+    /// same host moved up from http to https; never from https down to http.
+    private static func sameOrigin(_ asked: URL?, _ answered: URL?) -> Bool {
+        guard let asked, let answered, let host = asked.host?.lowercased(),
+              host == answered.host?.lowercased() else { return false }
+        let from = asked.scheme?.lowercased(), to = answered.scheme?.lowercased()
+        if from == "https", to != "https" { return false }
+        if from == "http", to == "https" { return true }
+        func port(_ url: URL) -> Int { url.port ?? (url.scheme?.lowercased() == "https" ? 443 : 80) }
+        return port(asked) == port(answered)
+    }
 
     private func emit(_ event: OfflineDownloadEvent) {
         lock.lock()
