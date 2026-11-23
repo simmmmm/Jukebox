@@ -96,9 +96,11 @@ public struct LocalNetwork: Sendable {
         return nil
     }
 
-    static func bytes(_ address: UnsafeMutablePointer<sockaddr>?) -> [UInt8]? {
+    /// `family`: the address's own, for a netmask, whose sa_family the BSDs
+    /// leave 0 or 255.
+    static func bytes(_ address: UnsafeMutablePointer<sockaddr>?, family: Int32? = nil) -> [UInt8]? {
         guard let address else { return nil }
-        switch Int32(address.pointee.sa_family) {
+        switch family ?? Int32(address.pointee.sa_family) {
         case AF_INET:
             return address.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { v4 in
                 withUnsafeBytes(of: v4.pointee.sin_addr) { Array($0) }
@@ -121,7 +123,8 @@ public struct LocalNetwork: Sendable {
         while let entry = next {
             next = entry.pointee.ifa_next
             guard (Int32(entry.pointee.ifa_flags) & Int32(IFF_UP)) != 0,
-                  let address = bytes(entry.pointee.ifa_addr), let mask = bytes(entry.pointee.ifa_netmask),
+                  let family = entry.pointee.ifa_addr.map({ Int32($0.pointee.sa_family) }),
+                  let address = bytes(entry.pointee.ifa_addr), let mask = bytes(entry.pointee.ifa_netmask, family: family),
                   address.count == mask.count else { continue }
             found.append(Interface(name: String(cString: entry.pointee.ifa_name), address: address, mask: mask))
         }
@@ -159,7 +162,14 @@ public struct LocalNetwork: Sendable {
 /// whoever has that address on a café's Wi-Fi: it waits until home. A
 /// request without credentials (detection's first questions) goes as it
 /// is; sign-in asks "This Server Isn't Secure" there first (mustAsk).
-enum PlainHTTPGuard {
+public enum PlainHTTPGuard {
+    /// For an address fetched without URLSessionTransport (covers): false
+    /// where `refusal` would say why. May resolve a name: off the main
+    /// thread.
+    public static func mayFetch(_ url: URL) -> Bool {
+        refusal(URLRequest(url: url)) == nil
+    }
+
     private static let lock = NSLock()
     nonisolated(unsafe) private static var known: [String: (home: Bool, at: Date)] = [:]
 

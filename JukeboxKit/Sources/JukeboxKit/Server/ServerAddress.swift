@@ -182,12 +182,13 @@ enum ServerAddress {
     /// Jellyfin's sign-in POST is not turned into a GET by a 301.
     static func probe(_ url: URL, identity: ClientIdentity,
                       transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
-        let redirects = Redirects(transport)
-        let result = await probeAsked(url, identity: identity, transport: redirects)
-        // Sent on to another host or port: that is another server, whatever
-        // it says it is, and the password would follow it there with no
-        // question asked of it. Not taken: it can be typed as itself.
-        if case .success = result, let elsewhere = redirects.elsewhere(for: url) {
+        let (result, winner) = await probeAsked(url, identity: identity, transport: transport)
+        guard let redirects = winner else { return result }
+        // The way that proved a server was sent on to another host or
+        // port: that is another server, whatever it says it is, and the
+        // password would follow it there with no question asked of it. Not
+        // taken: it can be typed as itself.
+        if let elsewhere = redirects.elsewhere(for: url) {
             let port = elsewhere.port.map { ":\($0)" } ?? ""
             return .failure(.movedElsewhere(host: (elsewhere.host ?? elsewhere.absoluteString) + port))
         }
@@ -202,30 +203,34 @@ enum ServerAddress {
         }
     }
 
-    static func probeAsked(_ url: URL, identity: ClientIdentity,
-                           transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
-        async let jellyfin = probeJellyfin(url, identity: identity, transport: transport)
-        async let subsonic = probeSubsonic(url, identity: identity, transport: transport)
-        async let plex = PlexSignIn.probe(url, identity: identity, transport: transport)
+    /// Each way asked through its own Redirects, so only the way that
+    /// proved a server is judged by where it was sent; nil with a failure.
+    static func probeAsked(_ url: URL, identity: ClientIdentity, transport: any HTTPTransport) async
+        -> (Result<DetectedServer, MusicServerError>, Redirects?) {
+        let jr = Redirects(transport), sr = Redirects(transport), pr = Redirects(transport)
+        async let jellyfin = probeJellyfin(url, identity: identity, transport: jr)
+        async let subsonic = probeSubsonic(url, identity: identity, transport: sr)
+        async let plex = PlexSignIn.probe(url, identity: identity, transport: pr)
         let j = await jellyfin
-        if case .success = j { return j }
+        if case .success = j { return (j, jr) }
         let p = await plex
-        if case .success = p { return p }
+        if case .success = p { return (p, pr) }
         let s = await subsonic
-        if case .success = s { return s }
+        if case .success = s { return (s, sr) }
         // A Subsonic server that proved itself and cannot be used (it
         // speaks XML only) says so; else whether anything answered.
-        if case .failure(.server(status: 30, _)) = s { return s }
+        if case .failure(.server(status: 30, _)) = s { return (s, nil) }
+        let wall = Redirects.wall(of: [jr, sr, pr])
         for result in [j, s, p] {
             // Every answer a 401 or 403: something in front of the server
             // (a proxy's sign-in, a login page) turned Jukebox away, which
             // "no server at this address" would hide.
-            if case let .failure(error) = result, !error.isTransport, let status = (transport as? Redirects)?.wall {
-                return .failure(.server(status: status, message: nil))
+            if case let .failure(error) = result, !error.isTransport, let status = wall {
+                return (.failure(.server(status: status, message: nil)), nil)
             }
-            if case let .failure(error) = result, !error.isTransport { return .failure(.invalidServerAddress) }
+            if case let .failure(error) = result, !error.isTransport { return (.failure(.invalidServerAddress), nil) }
         }
-        return j
+        return (j, nil)
     }
 
     /// /System/Info/Public with a non-empty Id, then /QuickConnect/Enabled.
@@ -308,9 +313,9 @@ final class Redirects: HTTPTransport, @unchecked Sendable {
         return response
     }
 
-    /// 401 or 403 when every answer was one of those; else nil.
-    var wall: Int? {
-        let seen = lock.withLock { statuses }
+    /// 401 or 403 when every answer to all of them was one of those; else nil.
+    static func wall(of all: [Redirects]) -> Int? {
+        let seen = all.flatMap { redirects in redirects.lock.withLock { redirects.statuses } }
         guard let first = seen.first, seen.allSatisfy({ $0 == 401 || $0 == 403 }) else { return nil }
         return first
     }

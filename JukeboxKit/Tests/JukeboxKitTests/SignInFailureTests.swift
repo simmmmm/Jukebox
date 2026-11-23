@@ -95,13 +95,27 @@ struct SignInFailureTests {
         ("http://100.64.0.1", false, true), ("http://[fd12::1]", false, true),
         ("http://nas", true, false), ("http://127.0.0.1:8096", false, false), ("http://localhost", false, false),
         ("http://10.20.5.5", true, false), ("http://192.168.1.10:8096", false, true),
-        // The rule's limit: a name the café's own DNS answers on its own
-        // network passes there.
+        // A name is judged by the addresses it resolves to on the network
+        // the device is on.
     ])
     func homeIsWhereTheDeviceIs(address: String, home: Bool, cafe: Bool) throws {
         let url = try #require(URL(string: address))
         #expect(ServerAddress.isInsecure(url, network: Self.home) == home, "at home")
         #expect(ServerAddress.isInsecure(url, network: Self.cafe) == cafe, "in the café")
+    }
+
+    @Test("This machine's own interfaces: each reaches its own address, the loopback always")
+    func realInterfaces() throws {
+        let network = LocalNetwork(interfaces: LocalNetwork.upInterfaces())
+        #expect(!network.interfaces.isEmpty)
+        for interface in network.interfaces {
+            #expect(interface.address.count == interface.mask.count, "\(interface.name)")
+            if !LocalNetwork.isTailnet(interface.address), !interface.mask.allSatisfy({ $0 == 0 }) {
+                #expect(network.reaches(bytes: interface.address), "\(interface.name)")
+            }
+        }
+        #expect(network.reaches("127.0.0.1") && network.reaches("[::1]") && network.reaches("localhost"))
+        #expect(!network.reaches("203.0.113.9"))
     }
 
     @Test("A credential over plain http waits for the home network; detection's first questions go")
@@ -197,6 +211,16 @@ struct SignInFailureTests {
             _ = try await MusicServers.detect("music.example.test", identity: Self.identity, transport: fake)
         }
         #expect(!fake.requests.contains { $0.path.contains("AuthenticateByName") })
+        // Only the way that proved a server counts: a proxy that answers
+        // Subsonic itself and sends Jellyfin's question to its sign-in
+        // page elsewhere is that Subsonic server.
+        let proxy = AddressFake { url in
+            if url.path.hasPrefix("/rest") { return AddressFake.navidrome(url) }
+            return HTTPResponse(status: 200, body: Data("<html>Sign in</html>".utf8),
+                                url: URL(string: "https://login.example.net/"))
+        }
+        let subsonic = try await MusicServers.detect("https://music.example.test", identity: Self.identity, transport: proxy)
+        #expect(subsonic.url.absoluteString == "https://music.example.test")
         // The same host on another port is another server too.
         let port = AddressFake { url in
             guard url.scheme == "http", url.port == 8096 else { throw URLError(.cannotConnectToHost) }

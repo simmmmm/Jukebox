@@ -93,7 +93,10 @@ final class ImagePipeline {
         let task = Task<PlatformImage?, Never> {
             let kept = await Task.detached(priority: .userInitiated) { disk.cachedResponse(for: key)?.data }.value
             if let kept, let image = PlatformImage(data: kept) { return await image.preparedForDisplay() }
-            guard let (data, response) = try? await session.data(from: url) else { return nil }
+            // A cover's address may carry the account's token: not over
+            // plain http to a home address while away from that network.
+            guard await Task.detached(operation: { PlainHTTPGuard.mayFetch(url) }).value,
+                  let (data, response) = try? await session.data(from: url) else { return nil }
             guard (response as? HTTPURLResponse)?.statusCode == 200, let image = PlatformImage(data: data) else {
                 self.missing.insert(url)
                 return nil
