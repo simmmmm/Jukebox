@@ -47,6 +47,25 @@ enum Keychain {
         delete(active)
     }
 
+    /// The items saved before this class was set, given it once: one
+    /// update of every item of the service. Tried again at the next launch
+    /// when the keychain could not answer (locked, before the first unlock).
+    static func moveToThisDeviceOnly() {
+        let done = "keychainThisDeviceOnly"
+        guard !UserDefaults.standard.bool(forKey: done) else { return }
+        let items: [String: Any] = [
+            kSecClass as String: kSecClassGenericPassword,
+            kSecAttrService as String: service,
+        ]
+        let changes: [String: Any] = [
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
+        ]
+        switch SecItemUpdate(sent(items), changes as CFDictionary) {
+        case errSecSuccess, errSecItemNotFound: UserDefaults.standard.set(true, forKey: done)
+        default: break
+        }
+    }
+
     // MARK: The items
 
     private enum Answer {
@@ -85,7 +104,8 @@ enum Keychain {
             // Readable after the first unlock: the radio fetches its next
             // tracks with the phone locked. This device only: a session
             // does not travel in a backup to another one, which signs in
-            // anew. An item saved before takes it at its next save.
+            // anew. Items saved before take it once at launch
+            // (moveToThisDeviceOnly).
             kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
         ]
         guard SecItemUpdate(sent(item), changes as CFDictionary) == errSecItemNotFound else { return }
