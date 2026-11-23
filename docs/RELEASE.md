@@ -195,8 +195,11 @@ so the notes point at Navidrome's public demo:
 >
 > NSAllowsArbitraryLoads: many people run their music server at home over
 > plain http on their own network (for example 192.168.1.10:8096); Jukebox
-> asks for the local network for the same reason. Passwords are never sent
-> over plain http to the internet: the app refuses that (docs/SERVERS.md).
+> asks for the local network for the same reason. Some people reach their
+> own server from outside over plain http too: before signing in to such an
+> address the app warns that the password and what is played would travel
+> unencrypted, with Cancel as the default, and marks the account "Not
+> secure" in Settings.
 
 Check before submitting that demo.navidrome.org is up and the demo user can
 play and download.

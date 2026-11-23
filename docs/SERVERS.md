@@ -130,8 +130,16 @@ typed, normalized as `JellyfinAddress` does, with these rules:
   4533, 4747, 4040, 5082 and Plex's 32400 follows the address as typed (Jellyfin's rule,
   extended: a fresh install listens on its own port only).
 
-**Asking** (`MusicServers.detect`): every candidate at once, both ways at
-once, 15 s each.
+**Asking** (`MusicServers.detect`): at home every candidate at once, both
+ways at once, 15 s each. A name on the internet is asked alone first and
+its fallback ports only after it fails: a public host lets a port it does
+not serve time out, and those requests hung beside the one that works
+(hardening after App Review's `unreachable` at demo.navidrome.org, 22
+November 2026, whose cause is not confirmed). A redirect
+(http:// to https://, same path) gives the server its new address, so the
+password goes straight there. Every answer 401 or 403: a proxy's sign-in in
+front, said so rather than "no server". On Linux the kit follows redirects
+itself: corelibs Foundation crashes when two requests at once are redirected.
 1. `GET {base}/System/Info/Public`. JSON with a non-empty `Id` is Jellyfin
    (`ServerName`, `Version`, `Id`; measured: `"ProductName":"Jellyfin
    Server","Version":"12.4.0"`), or Emby ("Emby", below). Then `GET
@@ -198,10 +206,11 @@ token is kept (`ServerSecret.jellyfinToken`).
      person's everywhere. `signIn(apiKey:)` pings with `apiKey` and no `u`
      (the spec: `u` with a key is error 43), then `tokenInfo` gives the user's
      name. Kept: `ServerSecret.subsonicAPIKey`.
-   - Otherwise the password itself, `p=enc:<hex>`, only over https or to a
-     home-network address (`JellyfinAddress.isHomeNetwork`): it goes with every
-     request, in every stream URL. Plain http to a public host:
-     `.passwordNeedsHTTPS`. Kept: `ServerSecret.subsonicPassword`, the one case
+   - Otherwise the password itself, `p=enc:<hex>`, over https or to a
+     home-network address (`ServerAddress.isHomeNetwork`): it goes with every
+     request, in every stream URL. Plain http to a public host only after
+     Sign In Anyway (below), else `.passwordNeedsHTTPS`. Kept:
+     `ServerSecret.subsonicPassword`, the one case
      where the keychain holds a password, because the server takes nothing
      else.
 5. A server older than API 1.13.0 (no tokens) is case 4 without the key.

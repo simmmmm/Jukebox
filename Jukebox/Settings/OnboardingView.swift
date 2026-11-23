@@ -94,6 +94,7 @@ struct OnboardingView: View {
                                     .transition(.opacity)
                             }
                         }
+                        SignInHelp()
                     }
                     // A phone's width on the iPad too: a sign-in form
                     // stretched across 1000 points reads as nothing. Wide,
@@ -230,21 +231,11 @@ struct OnboardingView: View {
         AccessibilityNotification.Announcement(message).post()
     }
 
+    /// Jukebox guesses https for a name with dots; a home server behind
+    /// plain http fails there, and SignInFailure says the fix is one word
+    /// away ("type http://").
     fileprivate static func message(for error: Error, at url: URL) -> String {
-        switch error as? MusicServerError {
-        case .invalidServerAddress?:
-            return String(localized: "There is no Jellyfin, Emby, Plex, Navidrome or other Subsonic server at this address.")
-        case let .transport(reason)?:
-            // Jukebox guesses https for a name with dots; a home server
-            // behind plain http (or a certificate the phone does not trust)
-            // fails here, and the fix is one word away.
-            if url.scheme == "https" {
-                return String(localized: "\(reason) If your server uses plain http, type http:// in front of the address.")
-            }
-            return reason
-        default:
-            return error.localizedDescription
-        }
+        SignInFailure(error, step: .address, address: url).message
     }
 }
 
@@ -277,6 +268,7 @@ private struct OnboardingAccountForm: View {
     @State private var password = ""
     @State private var isSigningIn = false
     @State private var errorMessage: String?
+    @State private var insecure = InsecureQuestion()
     /// Waiting for Quick Connect: asking for a code, then polling. Cancelled
     /// by Cancel, by Change Server, and when this step goes away.
     @State private var quickConnectTask: Task<Void, Never>?
@@ -336,6 +328,7 @@ private struct OnboardingAccountForm: View {
         .onAppear {
             if startsQuickConnect { startQuickConnect() }
         }
+        .insecureQuestion(insecure)
     }
 
     private var isQuickConnecting: Bool { quickConnectTask != nil }
@@ -471,6 +464,10 @@ private struct OnboardingAccountForm: View {
         // Not tied to this view: once signed in the app swaps this screen
         // for the library while `signIn` is still loading it.
         Task {
+            guard await insecure.mayGo(to: server.url) else {
+                isSigningIn = false
+                return show(Self.signInMessage(for: MusicServerError.passwordNeedsHTTPS))
+            }
             do {
                 let credentials = try await passwordSignIn.signIn(username: name, password: password)
                 OnboardingMemory.userName = name
@@ -601,6 +598,10 @@ private struct OnboardingAccountForm: View {
         isSigningIn = true
         focus = nil
         Task {
+            guard await insecure.mayGo(to: server.url) else {
+                isSigningIn = false
+                return show(Self.signInMessage(for: MusicServerError.passwordNeedsHTTPS))
+            }
             do {
                 let credentials = try await keySignIn.signIn(apiKey: key)
                 Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "api_key"])
@@ -670,6 +671,11 @@ private struct OnboardingAccountForm: View {
         errorMessage = nil
         focus = nil
         quickConnectTask = Task {
+            // The session's token goes over the same plain http.
+            guard await insecure.mayGo(to: server.url) else {
+                quickConnectTask = nil
+                return show(Self.signInMessage(for: MusicServerError.passwordNeedsHTTPS))
+            }
             do {
                 var state = try await quickConnect.quickConnectStart()
                 // Cancelled while the server answered: a newer attempt's
@@ -713,42 +719,69 @@ private struct OnboardingAccountForm: View {
         AccessibilityNotification.Announcement(message).post()
     }
 
+    // Every client's words for a failure are JukeboxKit's SignInFailure,
+    // so the iPhone, the Mac and Linux say the same.
     fileprivate static func signInMessage(for error: Error) -> String {
-        switch error as? MusicServerError {
-        case .unauthorized?:
-            return String(localized: "That user name and password did not work on this server.")
-        case .passwordNeedsHTTPS?:
-            // A server that takes neither tokens nor keys has the password
-            // itself sent with every request and in every song's address:
-            // only over https, or at home (docs/SERVERS.md, "Signing in").
-            return String(localized: "This server needs your password sent with every song, so Jukebox only signs in to it over a secure connection. Use its https:// address.")
-        case .notAllowed?:
-            return String(localized: "This server does not let this account play music.")
-        default:
-            return error.localizedDescription
-        }
+        SignInFailure(error, step: .password).message
     }
 
     fileprivate static func apiKeyMessage(for error: Error) -> String {
-        switch error as? MusicServerError {
-        case .unauthorized?:
-            return String(localized: "That API key did not work on this server.")
-        case .notAllowed?:
-            return String(localized: "This server does not let this account play music.")
-        default:
-            return error.localizedDescription
-        }
+        SignInFailure(error, step: .apiKey).message
     }
 
     private static func quickConnectMessage(for error: Error) -> String {
-        switch error as? MusicServerError {
-        case .notFound?:
-            // The server forgets a code after a few minutes.
-            return String(localized: "The code has expired. Use Quick Connect again for a new one.")
-        case .unauthorized?:
-            return String(localized: "Quick Connect is turned off on this server. Sign in with your password instead.")
-        default:
-            return error.localizedDescription
+        SignInFailure(error, step: .quickConnect).message
+    }
+}
+
+// MARK: - Plain http away from home
+
+/// "This Server Isn't Secure", asked once per address before a password or
+/// a key goes to a server over plain http away from home: Cancel (the
+/// default) or Sign In Anyway. The photographer, 23 November 2026: "denk
+/// toch dat we http servers toe moeten laten met wel een flinke warning
+/// voor de gebruiker". JukeboxKit's PlainHTTPConsent keeps the answer;
+/// Linux asks the same in an AdwAlertDialog (SignInPage).
+@MainActor @Observable
+final class InsecureQuestion {
+    var isAsking = false
+    @ObservationIgnored private var pending: CheckedContinuation<Bool, Never>?
+
+    /// True when the sign-in may go ahead: the address needs no asking, or
+    /// Sign In Anyway was chosen (kept for next time, and counted).
+    func mayGo(to url: URL) async -> Bool {
+        let consent = PlainHTTPConsent()
+        guard consent.mustAsk(url) else { return true }
+        let yes = await withCheckedContinuation { continuation in
+            pending = continuation
+            isAsking = true
+        }
+        if yes {
+            consent.accept(url)
+            Stats.track(.insecureAccepted)
+        } else {
+            Stats.track(.signInFailed, ["reason": "needs_https"])
+        }
+        return yes
+    }
+
+    func answer(_ yes: Bool) {
+        isAsking = false
+        pending?.resume(returning: yes)
+        pending = nil
+    }
+}
+
+extension View {
+    func insecureQuestion(_ question: InsecureQuestion) -> some View {
+        alert(Text(verbatim: InsecureServerWords.title), isPresented: Binding(
+            get: { question.isAsking },
+            set: { if !$0 { question.answer(false) } }
+        )) {
+            Button(InsecureServerWords.cancel, role: .cancel) { question.answer(false) }
+            Button(InsecureServerWords.signInAnyway, role: .destructive) { question.answer(true) }
+        } message: {
+            Text(verbatim: InsecureServerWords.body)
         }
     }
 }
@@ -781,6 +814,7 @@ private struct OnboardingWideForm: View {
     @State private var apiKeyHelp: URL?
     @State private var isWorking = false
     @State private var errorMessage: String?
+    @State private var insecure = InsecureQuestion()
     @FocusState private var focus: Field?
 
     private enum Field: Hashable {
@@ -917,6 +951,7 @@ private struct OnboardingWideForm: View {
             detectedAt = ""
             usesAPIKey = false
         }
+        .insecureQuestion(insecure)
     }
 
     private var canSignIn: Bool {
@@ -948,6 +983,10 @@ private struct OnboardingWideForm: View {
             guard let way = await signInWay(at: typed, first: first) else {
                 isWorking = false
                 return
+            }
+            guard await insecure.mayGo(to: way.server.url) else {
+                isWorking = false
+                return show(OnboardingAccountForm.signInMessage(for: MusicServerError.passwordNeedsHTTPS))
             }
             do {
                 if withKey, let keySignIn = way as? any APIKeySignIn {

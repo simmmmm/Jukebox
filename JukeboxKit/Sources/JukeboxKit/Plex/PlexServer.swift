@@ -513,7 +513,7 @@ struct PlexConnection: Sendable {
         } catch let error as URLError where error.code == .cancelled {
             throw CancellationError()
         } catch {
-            throw MusicServerError.transport(error.localizedDescription)
+            throw MusicServerError.transport(ConnectionProblem.describe(error))
         }
         switch response.status {
         case 200..<300: return response.body

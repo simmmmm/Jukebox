@@ -197,6 +197,12 @@ enum Shots {
                 await shown(dialog, .privacy, "16e-preferences-privacy")
                 adw_dialog_force_close(dialog)
             }
+            // About Jukebox, with Help & Feedback's rows (Help.swift).
+            About.present()
+            await step("16f-about", wait: 1.5)
+            if let dialog = adw_application_window_get_visible_dialog(ptr(MainWindow.window)) {
+                adw_dialog_force_close(dialog)
+            }
             await notCounted(albums)
             await pages()
             await stationClicks()
@@ -221,6 +227,10 @@ enum Shots {
                 _ = gtk_widget_activate(SignInPage.quickConnect)
                 await step("17c-quick-connect-code", wait: 3)
             }
+            // "This Server Isn't Secure", as a sign-in over plain http away
+            // from home asks it; the walk ends under it.
+            Task { _ = await SignInPage.askInsecure() }
+            await step("17d-sign-in-not-secure", wait: 2)
             gtk_window_close(ptr(MainWindow.window))
             exit(0)
         }

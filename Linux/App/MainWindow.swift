@@ -134,6 +134,7 @@ enum MainWindow {
         action(application, "next", "<Control>Right") { app.player.next() }
         action(application, "previous", "<Control>Left") { app.player.previous() }
         action(application, "preferences", "<Control>comma") { Preferences.present() }
+        action(application, "help", "F1") { Help.open(Support.help) }
         action(application, "about", nil) { About.present() }
         action(application, "mini-player", nil) { MiniPlayer.open() }
         action(application, "now-playing", "<Control><Shift>n") { if app.player.currentTrack != nil { NowPlayingPage.open() } }
@@ -472,6 +473,7 @@ enum MainWindow {
         g_menu_append(items, "Mini Player", "app.mini-player")
         g_menu_append(items, "Preferences", "app.preferences")
         g_menu_append(items, "Keyboard Shortcuts", "win.show-help-overlay")
+        g_menu_append(items, "Help", "app.help")
         g_menu_append(items, "About Jukebox", "app.about")
         g_menu_append_section(items, nil, ptr(accountItems))
         // The account's year, after the accounts, as on the Mac and the
@@ -767,6 +769,7 @@ enum Shortcuts {
                                 shortcut("Preferences", "&lt;Control&gt;comma"),
                                 shortcut("Main Menu", "F10"),
                                 shortcut("Keyboard Shortcuts", "&lt;Control&gt;question"),
+                                shortcut("Help", "F1"),
                                 shortcut("Back", "&lt;Alt&gt;Left"),
                                 shortcut("Quit", "&lt;Control&gt;q")])
             + "</object></child></object></interface>"
@@ -787,6 +790,7 @@ enum About {
         adw_about_dialog_set_application_icon(ptr(dialog), "com.tijmen.Jukebox")
         adw_about_dialog_set_developer_name(ptr(dialog), "Tijmen")
         adw_about_dialog_set_comments(ptr(dialog), "Music from your Jellyfin, Emby, Plex, Navidrome or other Subsonic server, with a radio that plays on from anything.")
+        Help.add(to: ptr(dialog))
         adw_dialog_present(ptr(dialog), MainWindow.window)
     }
 }

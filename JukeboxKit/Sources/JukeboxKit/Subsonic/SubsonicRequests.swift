@@ -64,7 +64,8 @@ struct SubsonicConnection: Sendable {
         case let .subsonicPassword(password):
             // "enc:" and hex, the API's own way, so no character of the
             // password needs escaping (it is no secret from anyone who
-            // sees the URL either way: why this is https or home only).
+            // sees the URL either way: why plain http away from home asks
+            // first, PlainHTTPConsent).
             [URLQueryItem(name: "u", value: user),
              URLQueryItem(name: "p", value: "enc:" + hex(Array(password.utf8)))]
         case .jellyfinToken, .plexToken:
@@ -179,7 +180,7 @@ struct SubsonicConnection: Sendable {
         } catch let error as MusicServerError {
             throw error
         } catch {
-            throw MusicServerError.transport(error.localizedDescription)
+            throw MusicServerError.transport(ConnectionProblem.describe(error))
         }
     }
 

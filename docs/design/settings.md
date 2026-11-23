@@ -147,6 +147,19 @@ server, with a radio that plays on from anything.", and the version "1.3
 Jukebox in the main menu, with the same line and version
 (`Linux/App/Version.swift` is held to `project.yml`).
 
+Help & Feedback (23 November 2026, `docs/SUPPORT.md`), from
+`Support.swift`:
+
+| # | Row | Mac | iPad | iPhone | Linux |
+|---|---|---|---|---|---|
+| 1 | Jukebox Help, the site's help page | ✓ Help menu | ✓ About | ✓ About | ✓ Help (F1) in the primary menu; "Support Questions" in About |
+| 2 | Report a Problem, GitHub's issues | ✓ Help menu | ✓ | ✓ | ✓ "Report an Issue" in About, libadwaita's words |
+| 3 | Contact Support, once `Support.contact` is filled | ✓ | ✓ | ✓ | ✓ a link in About |
+| 4 | Copy Diagnostic Info | ✓ Help menu | ✓ | ✓ | ✓ About › Troubleshooting › Debugging Information |
+
+The sign-in page has "Trouble signing in?" and Copy Diagnostic Info under
+its buttons on every client, in grey.
+
 ## Not in Settings anywhere
 
 - **Play On** (AirPlay, Cast, UPnP): the bar's and Now Playing's picker on

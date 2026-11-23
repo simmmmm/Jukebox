@@ -12,8 +12,11 @@
 //    cannot check a token; or this way is off): an API key, if the server
 //    offers them (OpenSubsonic's `apiKeyAuthentication`), since a key can
 //    be revoked and a password is often the person's everywhere; else the
-//    password itself (`p=enc:`), but only over https or to the home
-//    network, as it then goes with every request.
+//    password itself (`p=enc:`), as it then goes with every request: over
+//    https or to the home network at once; over plain http elsewhere only
+//    after "This Server Isn't Secure" and Sign In Anyway (PlainHTTPConsent).
+//    The photographer, 23 November 2026: "denk toch dat we http servers
+//    toe moeten laten met wel een flinke warning voor de gebruiker".
 // 4. A server older than API 1.13.0 has no tokens: step 3 at once.
 
 import Foundation
@@ -22,12 +25,14 @@ public struct SubsonicSignIn: ServerSignIn {
     public let server: DetectedServer
     let identity: ClientIdentity
     let transport: any HTTPTransport
+    let consent: PlainHTTPConsent
 
     public init(server: DetectedServer, identity: ClientIdentity,
-                transport: any HTTPTransport = URLSessionTransport()) {
+                transport: any HTTPTransport = URLSessionTransport(), consent: PlainHTTPConsent = PlainHTTPConsent()) {
         self.server = server
         self.identity = identity
         self.transport = transport
+        self.consent = consent
     }
 
     /// The server, with no credentials yet.
@@ -58,7 +63,13 @@ public struct SubsonicSignIn: ServerSignIn {
             throw MusicServerError.needsAPIKey(helpURL: nil)
         }
 
-        guard ServerAddress.mayCarryPassword(server.url) else { throw MusicServerError.passwordNeedsHTTPS }
+        // THE PLAIN-HTTP PATH. Away from home over plain http the password
+        // would go readable with every request: asked first ("This Server
+        // Isn't Secure", Cancel or Sign In Anyway), and only sent once
+        // the person said Sign In Anyway for this address.
+        guard ServerAddress.mayCarryPassword(server.url) || consent.isAccepted(server.url) else {
+            throw MusicServerError.passwordNeedsHTTPS
+        }
         let secret = ServerSecret.subsonicPassword(password)
         let ping = try await anonymous.with(auth: SubsonicConnection.auth(secret, user: user)).answer("ping", timeout: 15)
         guard ping.isOK else { throw SubsonicConnection.error(ping.error) }

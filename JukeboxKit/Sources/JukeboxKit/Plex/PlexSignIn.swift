@@ -86,7 +86,7 @@ public struct PlexSignIn: APIKeySignIn {
         } catch let error as MusicServerError {
             return .failure(error.isTransport ? error : .invalidServerAddress)
         } catch {
-            return .failure(.transport(error.localizedDescription))
+            return .failure(.transport(ConnectionProblem.describe(error)))
         }
     }
 }

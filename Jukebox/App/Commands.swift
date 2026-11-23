@@ -68,6 +68,11 @@ struct JukeboxCommands: Commands {
                 .keyboardShortcut("f")
                 .disabled(!app.navigator.isWide || app.phase != .signedIn)
         }
+        // The Help menu, in place of the system's "Help isn't available":
+        // Settings › About's entries (HelpViews.swift).
+        CommandGroup(replacing: .help) {
+            HelpItems(app: app)
+        }
         #if os(macOS)
         // Music's Window › MiniPlayer, its key too (MacMiniPlayer.swift).
         CommandGroup(before: .windowArrangement) {

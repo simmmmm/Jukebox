@@ -42,6 +42,13 @@ struct AccountCard<Indicator: View>: View {
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                         .truncationMode(.middle)
+                    // Plain http away from home, said once at sign-in
+                    // ("This Server Isn't Secure") and kept in view here.
+                    if account.isInsecure {
+                        Label(InsecureServerWords.note, systemImage: "lock.open")
+                            .desktopFont(Tokens.Size.fact13.size, phone: .footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 Spacer(minLength: 0)
             }

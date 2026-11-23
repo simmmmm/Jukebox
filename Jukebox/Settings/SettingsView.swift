@@ -1288,6 +1288,8 @@ private struct SettingsPrivacySection: View {
 // MARK: - About
 
 private struct SettingsAboutSection: View {
+    @Environment(AppModel.self) private var app
+
     var body: some View {
         Section {
             HStack(spacing: Theme.Space.m) {
@@ -1304,6 +1306,15 @@ private struct SettingsAboutSection: View {
             .padding(.vertical, Theme.Space.xs)
             .accessibilityElement(children: .combine)
             LabeledContent("Version", value: version)
+        }
+        // Help & Feedback (HelpViews.swift): the Mac's Help menu, and
+        // Linux's Help and About Jukebox.
+        Section {
+            HelpItems(app: app)
+        } header: {
+            SettingsHeader("Help & Feedback")
+        } footer: {
+            Text("Diagnostic info is Jukebox's version, your system and the kind of server, to paste into a report. It never holds your server's address, your user name or a password.")
         }
     }
 

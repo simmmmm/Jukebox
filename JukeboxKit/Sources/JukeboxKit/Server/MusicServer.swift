@@ -252,8 +252,8 @@ public enum ServerSecret: Hashable, Sendable, Codable {
     /// OpenSubsonic's `apiKey`, sent without `u`.
     case subsonicAPIKey(String)
     /// The password itself, sent as `p=enc:<hex>`: only for a server that
-    /// refuses tokens (error 41) and offers no API key, and only over https
-    /// or on the home network.
+    /// refuses tokens (error 41) and offers no API key: over https or on the
+    /// home network, else once Sign In Anyway was said (PlainHTTPConsent).
     case subsonicPassword(String)
     /// Plex's access token to this server: from plex.tv's sign-in in the
     /// browser (the server's own token, for a server shared with the user),
@@ -450,7 +450,8 @@ public enum MusicServerError: Error, Sendable, Equatable, LocalizedError {
     /// (OpenSubsonic's `helpUrl`).
     case needsAPIKey(helpURL: URL?)
     /// The server needs the password itself on every call (no tokens, no
-    /// API key), and the address is plain http away from home.
+    /// API key), and the address is plain http away from home, not accepted
+    /// with Sign In Anyway (PlainHTTPConsent).
     case passwordNeedsHTTPS
     /// Allowed for others, not this user: Jellyfin's 403, Subsonic's 50
     /// (a playlist of someone else's, a user without the stream role).
@@ -482,7 +483,7 @@ public enum MusicServerError: Error, Sendable, Equatable, LocalizedError {
         case .notSignedIn: "Not signed in."
         case .unauthorized: "The server did not accept the user name or password."
         case .needsAPIKey: "This server signs in with an API key rather than a password."
-        case .passwordNeedsHTTPS: "This server needs your password on every request: use its https:// address."
+        case .passwordNeedsHTTPS: "The connection to this server isn't secure. Use its https:// address."
         case .notAllowed: "The server does not allow that for this user."
         case .notFound: "The server does not have that."
         case .unsupported: "The server cannot do that."
