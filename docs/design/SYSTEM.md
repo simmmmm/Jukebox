@@ -309,8 +309,9 @@ group, Sign In filled and compact, the other ways in (Sign In with Plex, Use
 Quick Connect) as words in the accent under it.
 - Apple: `OnboardingView` (`Settings/OnboardingView.swift`), `WelcomeSleeve`
   (`ShellAppMark.swift`), built up as a jukebox switched on.
-- GNOME: `SignInPage.swift`, `Draw.welcomeSleeve` (`Drawings.swift`), at
-  rest.
+- GNOME: `SignInPage.swift` (`WelcomeBuild`), `Draw.welcomeLayer` and
+  `Draw.welcomeMark` (`Drawings.swift`), built up with the Mac's stages and
+  timing.
 
 ## Where the HIGs differ
 
@@ -414,18 +415,29 @@ the iPhone against 400×800. The menus read in the code on both.
   centred welcome (walk of 3d172e5); its buttons and words are centred
   under the fields now, as the iPad's and Linux's (`OnboardingView.swift`).
 
+### Fixed on Linux ("doe ze allemaal", 23 November 2026)
+
+- **Menus from Up Next**: a song's menu ran past the window's right edge;
+  a context menu now opens leftward from the click where it has no room
+  rightward (`showMenu`, `Parts.swift`).
+- **The narrow album page**: under 720 the head's words stand under the
+  cover, as the iPhone's, so a long title wraps and Play, Shuffle, the
+  heart, the filter and ⋮ all show (`heading`, `Pages.swift`).
+- **Search's genres**: under the recent searches, as the Mac's: "Genres"
+  with See All, the names two across over hairlines, Start Radio on the
+  secondary button (`SearchPage`, `Pages.swift`).
+- **The welcome's build-up**: the outer band, the inner, the core, then
+  the sleeve and the record, the Mac's stages and timing, at rest where
+  GNOME asks for no animations and for Add Account (`SignInPage.swift`).
+
 ### Still open
 
 - **Sign Out… on the Mac**: in Settings, not the Account menu
   (`Commands.swift` has nowhere to ask first).
-- **Search's genres**: Apple's Search shows genres, Linux's has no genre
-  section.
 - **Several picked songs**: neither client offers Remove or Move for all of
   them (`removal` is per song on both).
 - **The iPhone's mini player**: its song menu has no station section yet
   (`MiniPlayer.swift`).
 - **A station's lesson word**: "Dislike" on Apple, "Not This" on Linux.
-- **The welcome's build-up**: Apple's arches come on one by one; Linux's
-  picture stands still.
 - **Copy in empty states**: Apple's say "your music" where they said "Your
   Library", as Linux's; the photographer's to override.

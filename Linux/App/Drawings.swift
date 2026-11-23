@@ -457,6 +457,66 @@ nonisolated enum Draw {
         cairo_restore(cr)
     }
 
+    /// One of the welcome's two pictures for its build-up (SignInPage),
+    /// drawn once as welcomeSleeve draws it, `room` round it: the record
+    /// alone, or the sleeve's card alone, without its mark, which the
+    /// build-up draws as it comes on (welcomeMark).
+    static func welcomeLayer(scale: Double, width: Double, room: Double, record isRecord: Bool) -> OpaquePointer? {
+        let u = width / 300
+        let wide = Int32(((width + 2 * room) * scale).rounded(.up)), high = Int32(((width * 2 / 3 + 2 * room) * scale).rounded(.up))
+        guard let surface = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, wide, high) else { return nil }
+        cairo_surface_set_device_scale(surface, scale, scale)
+        let cr = cairo_create(surface)!
+        cairo_translate(cr, room, room)
+        if isRecord {
+            record(cr, scale: scale, center: (208 * u, 100 * u), diameter: 172 * u, bands: [],
+                   label: RecordLabel(title: "Jukebox", artist: "", disc: nil),
+                   tone: AverageColor(red: 0xA8 / 255, green: 0x4A / 255, blue: 0x17 / 255), strength: 1)
+        } else {
+            cairo_translate(cr, 20 * u, 10 * u)
+            sleeve(cr, scale: scale, side: 180 * u, cover: nil, words: nil, strength: 1)
+        }
+        cairo_destroy(cr)
+        return surface
+    }
+
+    /// The welcome's mark as the Mac's WelcomeSleeve builds it up, on the
+    /// sleeve's place (`width` as welcomeSleeve's): each band drawn up its
+    /// left leg, over the top and down the right as far as `outer` and
+    /// `inner` (0 to 1, ArchLine's trim), the core on at `core`, its colour
+    /// from `pageCore` (on the page alone) to the sleeve's at `onSleeve`.
+    static func welcomeMark(_ cr: OpaquePointer, width: Double, outer: Double, inner: Double, core: Double,
+                            pageCore: UInt32, onSleeve: Double) {
+        let u = width / 300, side = 180 * u, size = side * 0.7
+        let cut = ArchCut.forSize(size)
+        cairo_save(cr)
+        cairo_translate(cr, 20 * u + (side - size) / 2, 10 * u + (side - size) / 2 + side * 12 / 1024)
+        cairo_scale(cr, size / 32, size / 32)
+        cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND)
+        cairo_set_line_width(cr, cut.stroke)
+        for (r, hex, drawn) in [(Double(cut.outerRadius), copper, outer), (Double(cut.innerRadius), glow, inner)] where drawn > 0 {
+            let leg = Double(cut.leg - cut.spring), arc = Double.pi * r
+            var left = drawn * (2 * leg + arc)
+            cairo_move_to(cr, 16 - r, Double(cut.leg))
+            cairo_line_to(cr, 16 - r, Double(cut.leg) - min(left, leg))
+            left -= leg
+            if left > 0 { cairo_arc(cr, 16, Double(cut.spring), r, .pi, .pi + min(left, arc) / r) }
+            left -= arc
+            if left > 0 { cairo_line_to(cr, 16 + r, Double(cut.spring) + min(left, leg)) }
+            color(cr, hex)
+            cairo_stroke(cr)
+        }
+        if core > 0 {
+            let rc = Double(cut.coreRadius)
+            for (hex, alpha) in [(pageCore, core), (Tokens.Arch.markCore.dark, core * onSleeve)] where alpha > 0 {
+                roundedRect(cr, 16 - rc, Double(cut.spring) - rc, 2 * rc, Double(cut.base - cut.spring) + rc, rc)
+                color(cr, hex, alpha)
+                cairo_fill(cr)
+            }
+        }
+        cairo_restore(cr)
+    }
+
     // MARK: The collage
 
     /// CollageArtwork: four covers two by two with no gap; fewer, the first.

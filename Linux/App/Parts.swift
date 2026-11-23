@@ -319,9 +319,20 @@ func showMenu(at widget: Widget, x: Double, y: Double, _ items: [(String, () -> 
     guard items.contains(where: { $0.0 != menuBreak.0 }) else { return }
     let popover = popoverMenu(items)
     gtk_popover_set_has_arrow(ptr(popover), 0)
-    gtk_widget_set_halign(popover, GTK_ALIGN_START)
     jb_popover_point_to(popover, x, y)
     gtk_widget_set_parent(popover, widget)
+    // Rightward from the click where the window has room for it, leftward
+    // where it has not: a song's menu in Up Next ran past the window's
+    // right edge, cut off (SYSTEM.md's audit, 23 November 2026). Not left
+    // to the compositor, which may not slide it back in.
+    var width: Int32 = 0
+    // Its content: a popover not yet shown measures nothing.
+    gtk_widget_measure(gtk_popover_get_child(ptr(popover)), GTK_ORIENTATION_HORIZONTAL, -1, nil, &width, nil, nil)
+    var point = graphene_point_t(), at = graphene_point_t(x: Float(x), y: Float(y))
+    let window = MainWindow.window
+    let fits = gtk_widget_compute_point(widget, window, &at, &point) == 0
+        || Int32(point.x) + width <= gtk_widget_get_width(window)
+    gtk_widget_set_halign(popover, fits ? GTK_ALIGN_START : GTK_ALIGN_END)
     on(popover, "closed") {
         // After its closing has been drawn, and its item has run: GTK
         // warns of a popover taken away while it is still shown.

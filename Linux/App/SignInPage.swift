@@ -314,28 +314,137 @@ enum SignInPage {
 
     /// The welcome's picture above Jukebox's name, as the Mac's and the
     /// iPhone's (WelcomeSleeve): the mark on its sleeve with the record half
-    /// out, 240 wide (Draw.welcomeSleeve), never lit, as the welcome plays
-    /// nothing. Still: the Apple welcome's warm-up, the bands coming on one
-    /// by one, waits for motion on Linux.
+    /// out, 240 wide, never lit, as the welcome plays nothing. Built up as
+    /// the Mac's is, a jukebox switched on: close on the mark, the outer
+    /// band drawn, then the inner, then the core; drawn back to the whole
+    /// sleeve, and the record slides out ("doe ze allemaal", 23 November
+    /// 2026). Each time the welcome shows; at rest when an account is added,
+    /// which is no first sight, and where GNOME asks for no animations
+    /// (gtk-enable-animations off: an AdwAnimation ends at once).
     private static func markTile() -> Widget {
         // Drawn with room around it for the sleeve's and the record's
         // shadows, which the picture's own edge cut off square: "Je snijd
         // nu de schaduw af bij t inlogscherm" (the photographer, 21
         // November 2026).
-        let width: Int32 = 240, height: Int32 = 160, room: Int32 = 32
-        let picture = gtk_picture_new()!.size(width: width + 2 * room, height: height + 2 * room)
+        let width = 240.0, height = 160.0, room = 32.0
+        let area = gtk_drawing_area_new()!.size(width: Int32(width + 2 * room), height: Int32(height + 2 * room))
             .align(horizontal: GTK_ALIGN_CENTER)
-        observe(picture) {
-            let scale = Screen.shared.scale
-            Task {
-                guard let drawing = await drawn("welcome sleeve \(width) \(room)", width: Double(width + 2 * room),
-                                                height: Double(height + 2 * room), scale: scale, { cr, _ in
-                    cairo_translate(cr, Double(room), Double(room))
-                    Draw.welcomeSleeve(cr, scale: scale, width: Double(width))
-                }) else { return }
-                gtk_picture_set_paintable(ptr(picture), drawing.pointer)
-            }
+        let build = WelcomeBuild(area: area, width: width, room: room)
+        gtk_drawing_area_set_draw_func(ptr(area), { _, cr, _, _, data in
+            guard let cr, let data else { return }
+            MainActor.assumeIsolated { Unmanaged<WelcomeBuild>.fromOpaque(data).takeUnretainedValue().draw(cr) }
+        }, Unmanaged.passRetained(build).toOpaque(), { data in
+            guard let data else { return }
+            Unmanaged<WelcomeBuild>.fromOpaque(data).release()
+        })
+        on(area, "map") { build.start(animated: !cancel.isVisible) }
+        return area
+    }
+}
+
+/// The welcome's build-up with the Mac's WelcomeSleeve's stages and timing.
+@MainActor
+private final class WelcomeBuild {
+    /// 1 the outer band drawn, 2 the inner, 3 the core on, 4 drawn back to
+    /// the whole sleeve, 5 the record out: each step's wait after the one
+    /// before it began, how long it moves, and how (SwiftUI's easeOut and
+    /// easeInOut, as libadwaita's cubic ones).
+    static let steps: [(wait: Double, duration: Double, easing: AdwEasing)] = [
+        (0.2, 0.9, ADW_EASE_OUT_CUBIC),
+        (0.8, 0.8, ADW_EASE_OUT_CUBIC),
+        (0.7, 0.45, ADW_EASE_OUT_CUBIC),
+        (0.7, 1.1, ADW_EASE_IN_OUT_CUBIC),
+        (0.8, 1.0, ADW_EASE_OUT_CUBIC),
+    ]
+    /// When each step begins, and when the last has ended (4.2 s).
+    static let starts = steps.indices.map { i in steps[...i].reduce(0) { $0 + $1.wait } }
+    static let end = starts.last! + steps.last!.duration
+
+    let area: Widget, width: Double, room: Double
+    /// Seconds since the welcome showed; at rest until it starts.
+    var time = WelcomeBuild.end
+    var animation: OpaquePointer?
+    /// The record and the sleeve's card, drawn once for the screen's scale:
+    /// the shadows' blur is too slow for every frame.
+    var layers: (scale: Double, record: OpaquePointer, sleeve: OpaquePointer)?
+
+    init(area: Widget, width: Double, room: Double) {
+        self.area = area; self.width = width; self.room = room
+    }
+
+    func start(animated: Bool) {
+        if animation == nil {
+            // The time itself, linear: each step eases its own part of it.
+            let target = adw_callback_animation_target_new({ value, data in
+                guard let data else { return }
+                MainActor.assumeIsolated {
+                    let build = Unmanaged<WelcomeBuild>.fromOpaque(data).takeUnretainedValue()
+                    build.time = value
+                    gtk_widget_queue_draw(build.area)
+                }
+            }, Unmanaged.passUnretained(self).toOpaque(), nil)
+            animation = OpaquePointer(adw_timed_animation_new(area, 0, Self.end, guint(Self.end * 1000), target))
+            adw_timed_animation_set_easing(ptr(animation!), ADW_LINEAR)
         }
-        return picture
+        guard animated else {
+            adw_animation_skip(ptr(animation!))
+            return
+        }
+        adw_animation_reset(ptr(animation!))
+        adw_animation_play(ptr(animation!))
+    }
+
+    /// How far step `n` (1 to 5) has come, eased, 0 to 1.
+    func reached(_ n: Int) -> Double {
+        let step = Self.steps[n - 1]
+        let linear = min(1, max(0, (time - Self.starts[n - 1]) / step.duration))
+        return adw_easing_ease(step.easing, linear)
+    }
+
+    func draw(_ cr: OpaquePointer) {
+        let scale = Screen.shared.scale
+        if layers?.scale != scale {
+            if let old = layers { cairo_surface_destroy(old.record); cairo_surface_destroy(old.sleeve) }
+            layers = nil
+            guard let record = Draw.welcomeLayer(scale: scale, width: width, room: room, record: true),
+                  let sleeve = Draw.welcomeLayer(scale: scale, width: width, room: room, record: false) else { return }
+            layers = (scale, record, sleeve)
+        }
+        guard let layers else { return }
+        let u = width / 300, height = width * 2 / 3
+        let drawBack = reached(4), out = reached(5)
+        cairo_translate(cr, room, room)
+        cairo_push_group(cr)
+        // Close: 2.4 times as large about the mark's crown, drawing back to
+        // the whole picture.
+        let zoom = 2.4 + (1 - 2.4) * drawBack, anchor = (x: 0.2714 * width, y: 0.3536 * height)
+        cairo_translate(cr, anchor.x, anchor.y)
+        cairo_scale(cr, zoom, zoom)
+        cairo_translate(cr, -anchor.x, -anchor.y)
+        // The record behind the sleeve, wholly, until it slides out (from
+        // 24 to 122 of the 300 units).
+        if out > 0 {
+            cairo_set_source_surface(cr, layers.record, -room - (1 - out) * 98 * u, -room)
+            cairo_paint_with_alpha(cr, out)
+        }
+        // The sleeve only as the mark draws back: first the arches alone on
+        // the page, then the sleeve round them, then the record.
+        if drawBack > 0 {
+            cairo_set_source_surface(cr, layers.sleeve, -room, -room)
+            cairo_paint_with_alpha(cr, drawBack)
+        }
+        // On the page the page's own core; on the sleeve the night's.
+        let dark = adw_style_manager_get_dark(adw_style_manager_get_default()) != 0
+        Draw.welcomeMark(cr, width: width, outer: reached(1), inner: reached(2), core: reached(3),
+                         pageCore: dark ? Tokens.Arch.markCore.dark : Tokens.Arch.markCore.light, onSleeve: drawBack)
+        cairo_pop_group_to_source(cr)
+        // Close, the legs run on below the picture: they fade out there
+        // rather than end on a line, which would read as a box.
+        let fade = cairo_pattern_create_linear(0, 0, 0, height)!
+        cairo_pattern_add_color_stop_rgba(fade, 0, 0, 0, 0, 1)
+        cairo_pattern_add_color_stop_rgba(fade, 0.7 + 0.3 * drawBack, 0, 0, 0, 1)
+        cairo_pattern_add_color_stop_rgba(fade, 1, 0, 0, 0, drawBack)
+        cairo_mask(cr, fade)
+        cairo_pattern_destroy(fade)
     }
 }

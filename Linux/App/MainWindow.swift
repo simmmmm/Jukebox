@@ -311,6 +311,11 @@ enum MainWindow {
         show(index)
     }
 
+    /// A place by its page: Search's See All opens Genres.
+    static func select(_ page: AppSettings.Page) {
+        if let index = sections.firstIndex(where: { $0?.2 == page }) { select(index) }
+    }
+
     private static func show(_ index: Int) {
         // A playlist under the places, after their gap: a place of its own.
         if index > sections.count, playlists.indices.contains(index - sections.count - 1) {
