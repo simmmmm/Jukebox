@@ -102,6 +102,8 @@ enum NotCountedUI {
             rows = []
             for item in store.marks.items {
                 let row = adw_action_row_new()!
+                // The server's name for it, not markup.
+                adw_preferences_row_set_use_markup(ptr(row), 0)
                 adw_preferences_row_set_title(ptr(row), item.name)
                 adw_action_row_set_subtitle(ptr(row), kindName(item.kind))
                 let again = button("Count Again", "flat") {

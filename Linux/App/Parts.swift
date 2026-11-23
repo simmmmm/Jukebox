@@ -161,7 +161,11 @@ func emptyLine(_ text: String) -> Widget {
 func emptyPage(_ title: String, _ description: String) -> Widget {
     let page = adw_status_page_new()!
     adw_status_page_set_title(ptr(page), title)
-    adw_status_page_set_description(ptr(page), description)
+    // A status page's description is Pango markup, and an error's words
+    // can be the server's: escaped, so they show as they are.
+    let escaped = g_markup_escape_text(description, -1)
+    adw_status_page_set_description(ptr(page), escaped)
+    g_free(escaped)
     return page.expand(vertical: true)
 }
 

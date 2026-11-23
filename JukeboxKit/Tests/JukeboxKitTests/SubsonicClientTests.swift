@@ -576,3 +576,15 @@ struct SubsonicClientTests {
         await #expect(throws: MusicServerError.unauthorized) { _ = try await allowed(.json(F.failed(40, "Wrong username or password"))) }
     }
 }
+
+extension SubsonicClientTests {
+    @Test("A server's help link is kept over https only")
+    func helpLinkHTTPSOnly() throws {
+        for (link, kept) in [("https://a.example/keys", true), ("http://a.example/keys", false),
+                             ("file:///etc/passwd", false), ("someapp://open", false)] {
+            let json = #"{"code":41,"helpUrl":"\#(link)"}"#
+            let error = try JSONDecoder().decode(SubsonicErrorDTO.self, from: Data(json.utf8))
+            #expect((error.helpURL != nil) == kept, "\(link)")
+        }
+    }
+}

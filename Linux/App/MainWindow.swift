@@ -260,13 +260,18 @@ enum MainWindow {
         }
     }
 
+    /// Plain words, not Pango markup: a toast often names a playlist or a
+    /// speaker, anyone's words (an ampersand showed nothing).
     static func toast(_ message: String) {
-        adw_toast_overlay_add_toast(ptr(toasts), adw_toast_new(message))
+        let toast = adw_toast_new(message)!
+        adw_toast_set_use_markup(toast, 0)
+        adw_toast_overlay_add_toast(ptr(toasts), toast)
     }
 
     /// The same with the one thing to do about it (Show Playlist).
     static func toast(_ message: String, button: String, _ action: @escaping @MainActor () -> Void) {
         let toast = adw_toast_new(message)!
+        adw_toast_set_use_markup(toast, 0)
         adw_toast_set_button_label(toast, button)
         on(toast, "button-clicked", action)
         adw_toast_overlay_add_toast(ptr(toasts), toast)

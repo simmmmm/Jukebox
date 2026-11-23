@@ -83,8 +83,10 @@ enum Keychain {
         let changes: [String: Any] = [
             kSecValueData as String: data,
             // Readable after the first unlock: the radio fetches its next
-            // tracks with the phone locked.
-            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlock,
+            // tracks with the phone locked. This device only: a session
+            // does not travel in a backup to another one, which signs in
+            // anew. An item saved before takes it at its next save.
+            kSecAttrAccessible as String: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly,
         ]
         guard SecItemUpdate(sent(item), changes as CFDictionary) == errSecItemNotFound else { return }
         SecItemAdd(sent(item.merging(changes) { $1 }), nil)

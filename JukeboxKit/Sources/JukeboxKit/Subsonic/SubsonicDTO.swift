@@ -256,7 +256,10 @@ struct SubsonicErrorDTO: Decodable {
         let c = try decoder.container(keyedBy: SubsonicKey.self)
         code = c.lenientInt(SubsonicKey("code"))
         message = c.lenientString(SubsonicKey("message"))
+        // Opened in the system's browser as it comes: a web page over
+        // https only, never another scheme a server could name.
         helpURL = c.lenientString(SubsonicKey("helpUrl")).flatMap(URL.init(string:))
+            .flatMap { $0.scheme?.lowercased() == "https" && $0.host != nil ? $0 : nil }
     }
 }
 
