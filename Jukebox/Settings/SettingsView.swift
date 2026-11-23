@@ -233,8 +233,7 @@ struct SettingsPageForm: View {
                 if !isWide { SettingsLyricsSection() }
             case .radio:
                 SettingsRadioSection()
-                SettingsLastFMSwitchSection()
-                SettingsLastFMSection()
+                SettingsEnhanceRadioSection()
             case .library:
                 SettingsLibrarySection()
                 SettingsPagesSection(hasSidebar: isWide || settingsOnPad)
@@ -751,182 +750,79 @@ private struct SettingsRadioSection: View {
     }
 }
 
-// MARK: - Last.fm
+// MARK: - Enhance Radio
 
-/// Enhance Radio with Last.fm (`AppSettings.useLastFM`): since the app has
-/// a key of its own, Last.fm was asked on every device with no way to say
-/// no. "is het nodig? misschien iets van 'enhance radio with last.fm' ?"
-/// (the photographer, 21 November 2026). Off, the key and the username go
-/// from the page, and the radio plays from the library and what Last.fm
-/// said before. As Linux's Preferences › Radio.
-private struct SettingsLastFMSwitchSection: View {
-    @Environment(AppSettings.self) private var settings
-    @Environment(RadioController.self) private var radio
-    @Environment(\.isWide) private var isWide
-
-    init() {}
-
-    private var detail: LocalizedStringKey {
-        "Artists and songs are looked up on Last.fm to find what sounds alike. Nothing about you is sent, unless you add your Last.fm username."
-    }
-
-    var body: some View {
-        @Bindable var settings = settings
-        Section {
-            // Wide, the line in the row, as Linux's subtitle and Playback's
-            // rows; on the iPhone the section's footer.
-            Toggle(isOn: $settings.useLastFM) {
-                if isWide {
-                    SettingsDetailLabel(title: "Enhance Radio with Last.fm", detail: detail)
-                } else {
-                    Text("Enhance Radio with Last.fm")
-                }
-            }
-            .onChange(of: settings.useLastFM) { _, _ in radio.lastFMKeyChanged() }
-        } footer: {
-            if !isWide { Text(detail) }
-        }
-    }
-}
-
-/// The listener's own Last.fm key — the photographer's choice (8 November
-/// 2026): the radio works without it, and knows who sounds like whom far
-/// better with it. A key is kept only once Last.fm has accepted it, so a
-/// typo never takes the radio's Last.fm away. The same flow as Linux's
-/// Preferences ("invullen opslaan bevestiging krijgen van de app", the
-/// photographer, 18 November 2026): paste, Save, Last.fm is asked, and the
-/// key it accepted is shown as dots, with Change and Remove. Since 21
-/// November 2026 the app has a key of its own ("Ik denk dat een eigen last
-/// fm verstandiger is"): without the listener's, the section says Jukebox's
-/// is in use, never showing it, and the field is an optional override;
-/// Remove goes back to Jukebox's.
-private struct SettingsLastFMSection: View {
-    private enum KeyStatus: Equatable {
+/// Enhance Radio (`AppSettings.enhanceRadio`): Last.fm for who sounds like
+/// whom, MusicBrainz and AcousticBrainz for how each song sounds, one
+/// choice for both: "of lastfm en dit aan of beide uit" (the photographer,
+/// 24 November 2026), as Better Radio asks it after signing in. Under it,
+/// when on, the listener's Last.fm name, optional. The key is Jukebox's
+/// own, never the listener's: "Kan die api ding … ook uit de app dan?"
+/// (24 November 2026). As Linux's Preferences › Radio.
+private struct SettingsEnhanceRadioSection: View {
+    private enum Status: Equatable {
         case idle
         case checking
         case saved
         case problem(String)
     }
 
-    private static let createKeyURL = URL(string: "https://www.last.fm/api/account/create")!
-
     @Environment(AppSettings.self) private var settings
     @Environment(RadioController.self) private var radio
-    @State private var draft = ""
-    /// Change: the field again, the saved key kept until another is accepted.
-    @State private var isChanging = false
-    @State private var status: KeyStatus = .idle
-    @State private var didRecheck = false
-    /// Not the view's own task: a key saved just before Done is still
-    /// checked and kept after the sheet has closed.
-    @State private var checkTask: Task<Void, Never>?
-    /// The listener's Last.fm name, optional, once a key is kept: one field,
-    /// in the key's flow (typed, saved with Return or on leaving, Last.fm
-    /// asked), so the clock has their scrobbles from day one. Emptied, it
-    /// is gone. Not a secret, so shown as typed.
+    @Environment(\.isWide) private var isWide
+    /// The listener's Last.fm name, optional: typed, saved with Return or
+    /// on leaving, Last.fm asked, so the clock has their scrobbles from day
+    /// one. Emptied, it is gone. Not a secret, so shown as typed.
     @State private var userDraft: String?
-    @State private var userStatus: KeyStatus = .idle
+    @State private var userStatus: Status = .idle
     @State private var userTask: Task<Void, Never>?
 
     init() {}
 
-    private var isEditing: Bool { !settings.hasOwnLastFMKey || isChanging }
+    private var detail: LocalizedStringKey {
+        "To find music that sounds alike, Jukebox looks up artist and song names on Last.fm and MusicBrainz. Nothing about you is sent, unless you add your Last.fm username."
+    }
 
-    /// Off (Enhance Radio with Last.fm), none of it: no key, no name, no check.
+    /// A build without Jukebox's key has nothing to offer here.
     @ViewBuilder var body: some View {
-        if settings.useLastFM { section }
+        if AppSettings.canEnhanceRadio { section }
     }
 
     private var section: some View {
-        Section {
-            if isEditing {
-                if settings.usesAppLastFMKey {
-                    LabeledContent("API Key", value: "Jukebox's own")
+        @Bindable var settings = settings
+        return Section {
+            // Wide, the line in the row, as Linux's subtitle and Playback's
+            // rows; on the iPhone the section's footer.
+            Toggle(isOn: $settings.enhanceRadio) {
+                if isWide {
+                    SettingsDetailLabel(title: "Enhance Radio", detail: detail)
+                } else {
+                    Text("Enhance Radio")
                 }
-                // The platform's own field, in the form's text as Username's
-                // below: in monospace its prompt stood out large on the iPhone.
-                TextField(settings.usesAppLastFMKey ? "Your Key" : "API Key", text: $draft,
-                          prompt: Text(settings.usesAppLastFMKey ? "Optional" : "Paste your Last.fm API key"))
-                    .plainTextEntry()
-                    .autocorrectionDisabled()
-                    .submitLabel(.done)
-                    .disabled(status == .checking)
-                    .onSubmit(save)
-                    .onChange(of: draft) {
-                        // Typing again: the last answer was about another key.
-                        if case .problem = status { status = .idle }
-                    }
-                    .onDisappear {
-                        // A key typed and left without Save is checked all
-                        // the same, and kept only if Last.fm accepts it.
-                        if status == .idle { save() }
-                    }
-                #if !os(macOS)
-                keyButtons
-                #endif
-            } else {
-                LabeledContent("API Key") {
-                    Text(verbatim: "••••••••")
-                        .accessibilityLabel("Saved")
-                }
-                #if !os(macOS)
-                keyButtons
-                #endif
             }
-            statusRow(status, saved: "Last.fm accepted this key")
+            .onChange(of: settings.enhanceRadio) { _, _ in radio.enhanceRadioChanged() }
             if settings.hasLastFM {
-                TextField("Username", text: userText, prompt: Text("Optional"))
+                TextField("Last.fm Username", text: userText, prompt: Text("Optional"))
                     .plainTextEntry()
                     .autocorrectionDisabled()
                     .submitLabel(.done)
                     .disabled(userStatus == .checking)
                     .onSubmit(saveUser)
                     .onDisappear(perform: saveUser)
-                statusRow(userStatus, saved: "Last.fm knows this listener")
+                statusRow
             }
-            #if os(macOS)
-            // The Mac's: the way to a key of one's own at the start, the
-            // key's buttons trailing, in one row at the section's end.
-            HStack(spacing: Theme.Space.s) {
-                Link("Get a Free API Key", destination: Self.createKeyURL)
-                Spacer(minLength: 0)
-                keyButtons
-                    .systemButtons()
-            }
-            #else
-            Link("Get a Free API Key", destination: Self.createKeyURL)
-            #endif
-        } header: {
-            SettingsHeader("Last.fm")
         } footer: {
-            Text(AppSettings.appLastFMKey.isEmpty
-                 ? "With a key, the radio knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm."
-                 : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
-        }
-        .onAppear(perform: recheck)
-    }
-
-    /// Save and Cancel while a key is typed; Change Key and Remove Key once
-    /// one is kept.
-    @ViewBuilder private var keyButtons: some View {
-        if isEditing {
-            if isChanging {
-                Button("Cancel", role: .cancel) {
-                    checkTask?.cancel()
-                    draft = ""
-                    status = .idle
-                    isChanging = false
+            // A Last.fm out of reach, said once and calmly by the switch,
+            // as Linux's (RadioController.lastFMTrouble).
+            if !isWide || radio.lastFMTrouble != nil || settings.hasLastFM {
+                VStack(alignment: .leading, spacing: Theme.Space.xs) {
+                    if !isWide { Text(detail) }
+                    if settings.hasLastFM {
+                        Text("With your Last.fm username, the radio learns when you play what from your scrobbles. Nothing is written to Last.fm.")
+                    }
+                    if let trouble = radio.lastFMTrouble { Text(trouble.text) }
                 }
             }
-            Button("Save", action: save)
-                .disabled(Self.trimmed(draft).isEmpty || status == .checking)
-        } else {
-            Button("Change Key") {
-                draft = ""
-                status = .idle
-                isChanging = true
-            }
-            Button("Remove Key", role: .destructive, action: remove)
         }
     }
 
@@ -944,8 +840,8 @@ private struct SettingsLastFMSection: View {
     /// Last.fm asked; only a name it knows, with plays it shows, is kept.
     /// Emptied, the name goes: the clock then reads this device alone.
     private func saveUser() {
-        // The row leaves when Last.fm is switched off: nothing is asked then.
-        guard settings.useLastFM, let typed = userDraft.map(Self.trimmed), userStatus != .checking else { return }
+        // The row leaves when the switch is off: nothing is asked then.
+        guard settings.hasLastFM, let typed = userDraft.map(Self.trimmed), userStatus != .checking else { return }
         guard typed != Self.trimmed(settings.lastFMUser) else {
             userDraft = nil
             return
@@ -974,8 +870,8 @@ private struct SettingsLastFMSection: View {
         }
     }
 
-    @ViewBuilder private func statusRow(_ status: KeyStatus, saved: String) -> some View {
-        switch status {
+    @ViewBuilder private var statusRow: some View {
+        switch userStatus {
         case .idle:
             EmptyView()
         case .checking:
@@ -991,7 +887,7 @@ private struct SettingsLastFMSection: View {
             .accessibilityElement(children: .combine)
         case .saved:
             Label {
-                Text(saved)
+                Text("Last.fm knows this listener")
             } icon: {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(.secondary)
@@ -1003,58 +899,6 @@ private struct SettingsLastFMSection: View {
                 Image(systemName: "exclamationmark.circle.fill")
                     .foregroundStyle(.red)
             }
-        }
-    }
-
-    /// Last.fm asked; only a key it accepted is kept. Refused or unanswered,
-    /// the typed key stays in the field to be put right.
-    private func save() {
-        let key = Self.trimmed(draft)
-        guard settings.useLastFM, !key.isEmpty, status != .checking else { return }
-        checkTask?.cancel()
-        status = .checking
-        checkTask = Task {
-            let check = await LastFMClient(apiKey: key).validateKey()
-            guard !Task.isCancelled else { return }
-            guard check == .accepted else {
-                status = .problem(check.problem ?? "")
-                return
-            }
-            if key != Self.trimmed(settings.lastFMAPIKey) {
-                settings.lastFMAPIKey = key
-                radio.lastFMKeyChanged()
-                Stats.track(.lastFMKey, ["state": "added", "app_key": !AppSettings.appLastFMKey.isEmpty])
-            }
-            draft = ""
-            isChanging = false
-            status = .saved
-        }
-    }
-
-    private func remove() {
-        checkTask?.cancel()
-        userTask?.cancel()
-        userDraft = nil
-        userStatus = .idle
-        settings.lastFMAPIKey = ""
-        radio.lastFMKeyChanged()
-        Stats.track(.lastFMKey, ["state": "removed", "app_key": !AppSettings.appLastFMKey.isEmpty])
-        draft = ""
-        status = .idle
-    }
-
-    /// The saved key, asked about again once each time Settings opens, as
-    /// before the dots: a revoked key shows here rather than as a quieter
-    /// radio. Quietly; only a refusal is said, and the key stays. The
-    /// listener's alone: Jukebox's own is not theirs to put right.
-    private func recheck() {
-        guard !didRecheck, settings.useLastFM, settings.hasOwnLastFMKey else { return }
-        didRecheck = true
-        let key = Self.trimmed(settings.lastFMAPIKey)
-        checkTask = Task {
-            let check = await LastFMClient(apiKey: key).validateKey()
-            guard !Task.isCancelled, check == .refused, status == .idle, !isChanging else { return }
-            status = .problem(check.problem ?? "")
         }
     }
 

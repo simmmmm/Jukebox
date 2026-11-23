@@ -44,18 +44,24 @@ When your server has no lyrics for a song, Jukebox asks LRCLIB
 (`lrclib.net`), a free lyrics database, with the song's title, artist, album
 and length. To turn it off: Settings › Find Lyrics Online.
 
-## Last.fm
+## Enhance Radio: Last.fm, MusicBrainz and AcousticBrainz
 
-The radio asks Last.fm (`ws.audioscrobbler.com`) which artists and songs
-are alike, with artist names and song titles, using Jukebox's own key or
-yours from Settings. Nothing else about you is sent with them, apart from
-your IP address, as with any request. With your Last.fm username in
-Settings, it also reads your scrobbles. Nothing is written to Last.fm.
+To find music that sounds alike, the radio asks Last.fm
+(`ws.audioscrobbler.com`) which artists and songs are alike, with artist
+names and song titles, using Jukebox's own key. It looks up how each song
+sounds (acoustic or electronic, calm or driving) in MetaBrainz's open data:
+ListenBrainz (`labs.api.listenbrainz.org`) finds the song in MusicBrainz by
+its artist, title and album, and AcousticBrainz (`acousticbrainz.org`) gives
+its sound, each song once, on the iPhone and the iPad over Wi-Fi or Ethernet
+only. Nothing else about you is sent with them, apart from your IP address,
+as with any request. With your Last.fm username in Settings, it also reads
+your scrobbles. Nothing is written to Last.fm.
 
-It is on by default. **To turn it off: Settings › Radio › Enhance Radio with
-Last.fm** (Preferences › Radio on Linux). Off, Jukebox makes no request to
-Last.fm at all, and the radio chooses from your library and from what
-Last.fm answered before, which stays on your device.
+You choose right after signing in (Better Radio): Turn On or Not Now. **To
+change it: Settings › Radio › Enhance Radio** (Preferences › Radio on
+Linux). Off, Jukebox makes no request to Last.fm, ListenBrainz or
+AcousticBrainz, and the radio chooses from your library and from what they
+answered before, which stays on your device.
 
 ## Sharing
 

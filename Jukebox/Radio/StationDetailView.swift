@@ -171,6 +171,14 @@ struct StationDetailView: View {
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
+            // Why the station knows less than it might: a quiet line, no
+            // pop-up (RadioController.lastFMTrouble).
+            if let trouble = radio.lastFMTrouble {
+                Text(trouble.text)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
             // As wide as on an iPhone on the iPad too: a dial across a
             // whole iPad held sideways is a long way from one end to the other.
             VStack(spacing: Theme.Space.m) {
@@ -200,7 +208,7 @@ struct StationDetailView: View {
         } else {
             list = String(localized: "Choosing songs…")
         }
-        let facts = [station.subtitle ?? "", list]
+        let facts = [station.subtitle ?? "", list, radio.lastFMTrouble?.text ?? ""]
             .filter { !$0.isEmpty }
             .joined(separator: " · ")
         return VStack(alignment: .leading, spacing: 0) {

@@ -148,6 +148,14 @@ struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.isWide) private var isWide
 
+    /// Better Radio is due: signed in, the build has Jukebox's key, and
+    /// Enhance Radio not yet chosen. Read in `body`, so the sheet comes and
+    /// goes as it changes.
+    private var asksAboutRadio: Bool {
+        app.phase == .signedIn && !app.settings.radioChoiceMade && AppSettings.canEnhanceRadio
+            && !app.navigator.isAddingAccount
+    }
+
     var body: some View {
         content
             // In front again: is the server there (or gone), and do the
@@ -198,6 +206,11 @@ struct RootView: View {
             }
             // Sign Out… from the Mac's Account menu, in Settings' words.
             .signOutConfirmation(isPresented: Bindable(app.navigator).isConfirmingSignOut, app: app)
+            // Better Radio, once, right after the first sign-in (and after
+            // the update, for whoever never chose): Enhance Radio on or off.
+            .sheet(isPresented: .constant(asksAboutRadio)) {
+                BetterRadioView()
+            }
             .alert("Still on This Account",
                    isPresented: Binding(get: { app.switchProblem != nil }, set: { if !$0 { app.switchProblem = nil } })) {
                 Button("OK") {}

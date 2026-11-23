@@ -217,6 +217,9 @@ final class MacWalk {
         // No usage counts from CI's walk (docs/STATS.md), and no automatic
         // keep fetching from the fake server meanwhile (docs/OFFLINE.md).
         app.launchArguments += ["-shareUsage", "NO", "-keepSongs", "NO"]
+        // Better Radio and Enhance Radio, though the walk's build has no
+        // Last.fm key (AppSettings.canEnhanceRadio).
+        app.launchArguments += ["-showBetterRadio", "YES"]
         // The panel closed, whatever an earlier launch left: this walk
         // keeps count of it from there.
         app.launchArguments += ["-panelOpen", "NO"]
@@ -367,6 +370,14 @@ final class MacWalk {
             note("Sign in: Home did not come (the fake Jellyfin's log says what it was asked)")
             picture("00-sign-in-error")
             return false
+        }
+        // Better Radio, the step after signing in: its picture, then Turn On.
+        let turnOn = marked("betterRadio.turnOn")
+        if turnOn.waitForExistence(timeout: 8) {
+            pause(1.5)
+            picture("00-better-radio")
+            _ = try click(turnOn, "Better Radio: Turn On", timeout: 2)
+            pause(1)
         }
         return true
     }

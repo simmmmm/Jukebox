@@ -164,6 +164,31 @@ public struct LastFMClient: Sendable {
         }
     }
 
+    /// A page Last.fm has for a name, and how many listen to it.
+    public struct ArtistPage: Codable, Sendable, Hashable {
+        public var name: String
+        public var listeners: Int
+
+        public init(name: String, listeners: Int) {
+            self.name = name
+            self.listeners = listeners
+        }
+    }
+
+    /// artist.search: the pages whose name is like `artist`, as Last.fm
+    /// ranks them. "Angele" and "Angèle" are two pages there, and
+    /// autocorrect (and artist.getCorrection) answers "Angele" with itself,
+    /// so only a search finds the other (docs/RADIO.md, "Last.fm's tags").
+    public func searchArtists(_ artist: String, limit: Int = 10) async throws -> [ArtistPage] {
+        let body = try await call("artist.search", [("artist", artist), ("limit", Self.limit(limit))])
+        let answer = try Self.decode(LastFMArtistSearchAnswer.self, body)
+        let items = answer.results?.artistmatches?.artist?.items ?? []
+        return items.compactMap { item -> ArtistPage? in
+            guard let name = Self.clean(item.name?.value) else { return nil }
+            return ArtistPage(name: name, listeners: max(0, item.listeners?.value.flatMap(Self.int) ?? 0))
+        }
+    }
+
     /// user.getRecentTracks, one page, newest first: what the listener
     /// played since `from`, for the clock (docs/RADIO.md, "Scrobbles").
     /// The song playing now has no date yet and is left out. Read only:
@@ -357,6 +382,27 @@ public struct LastFMClient: Sendable {
     }
 }
 
+/// Why the radio hears nothing from Last.fm, in the same words on every
+/// client: by the switch in Settings › Radio (Preferences › Radio on
+/// Linux), and on a station's page. Calm, no pop-up: the radio plays on
+/// from the library and what Last.fm said before ("doe ze allemaal", the
+/// photographer, 23 November 2026).
+public enum LastFMTrouble: Sendable, Equatable {
+    /// Last.fm turned the key down: off until the app is opened again or
+    /// another key is set.
+    case keyRefused
+    /// "Rate limit", or no answer: asked again later, a little later each
+    /// time (`SimilarityService.retryAt`).
+    case notAnswering
+
+    public var text: String {
+        switch self {
+        case .keyRefused: "Last.fm didn’t accept the key; stations use your library for now"
+        case .notAnswering: "Last.fm isn’t answering; stations use your library for now"
+        }
+    }
+}
+
 /// Builds and keeps the SimilarityGraph: the library's own edges, and
 /// Last.fm's for the artists the listener plays most, fetched a few a second
 /// (Last.fm asks for at most five), kept on disk for 30 days so a launch
@@ -385,6 +431,22 @@ public actor SimilarityService {
     /// Last.fm said the key is not valid: nothing more is asked with it.
     private(set) var keyRejected = false
     private var nextSlot: ContinuousClock.Instant?
+    /// Why Last.fm says nothing now, for Settings and a station's page; nil
+    /// while it answers. Before, a refused key or a Last.fm out of reach
+    /// left the radio on the library alone without a word.
+    public private(set) var trouble: LastFMTrouble?
+    /// While Last.fm rests after "rate limit" or no answer: nothing is
+    /// asked before this, and the app asks again from then
+    /// (`RadioController`). Nil for a refused key: that one stays off.
+    public private(set) var retryAt: Date?
+    /// The first rest, doubled after each that ends without an answer, up
+    /// to `longestRest`; back to this after an answer.
+    var firstRest: TimeInterval = 60
+    var longestRest: TimeInterval = 3600
+    private var nextRest: TimeInterval?
+    /// Last.fm's own errors in a row, over every question: three say it is
+    /// Last.fm that is unwell, not the one artist.
+    private var failuresInARow = 0
     /// Bumped whenever an answer is added, so the graph is made again.
     private var answersVersion = 0
     private var libraryGraph: (index: LibrarySnapshot.Index, graph: SimilarityGraph)?
@@ -458,7 +520,7 @@ public actor SimilarityService {
         for key in artistKeys + rest where seen.insert(key).inserted {
             guard let ref = snapshot.artist(key: key), !LibrarySnapshot.Index.isVarious(ref.name),
                   let name = LastFMClient.clean(ref.name) else { continue }
-            if let known = store.tags[key], isFresh(known.fetched, maxAge: tagMaxAge) { continue }
+            if let known = store.tags[key], known.page != nil, isFresh(known.fetched, maxAge: tagMaxAge) { continue }
             due.append((key, name))
             if due.count == maxArtists { break }
         }
@@ -466,13 +528,13 @@ public actor SimilarityService {
         var failuresInARow = 0
         asking: for (key, name) in due {
             if Task.isCancelled { break }
-            if let known = store.tags[key], isFresh(known.fetched, maxAge: tagMaxAge) { continue }
-            switch await ask({ try await $0.topTags(artist: name) }) {
-            case let .answer(tags):
-                store.tags[key] = LastFMStore.TagAnswer(name: name, fetched: currentDate(), tags: tags)
+            if let known = store.tags[key], known.page != nil, isFresh(known.fetched, maxAge: tagMaxAge) { continue }
+            switch await pageAndTags(name: name, key: key, in: snapshot) {
+            case let .answer(found):
+                store.tags[key] = LastFMStore.TagAnswer(name: name, fetched: currentDate(), tags: found.tags, page: found.page)
                 failuresInARow = 0
             case .notFound:
-                store.tags[key] = LastFMStore.TagAnswer(name: name, fetched: currentDate(), tags: [])
+                store.tags[key] = LastFMStore.TagAnswer(name: name, fetched: currentDate(), tags: [], page: name)
                 failuresInARow = 0
             case .failed:
                 failuresInARow += 1
@@ -489,7 +551,104 @@ public actor SimilarityService {
             }
         }
         if unsaved > 0 { store.saveTags(to: directory) }
+        settleRest()
         return radioSnapshot(for: snapshot)
+    }
+
+    /// Which of Last.fm's pages for a name is the artist's, and its tags.
+    /// Last.fm keeps a page per spelling, and autocorrect leaves a name that
+    /// has one as it is: his "Angele", without the accent, is a page of
+    /// 2 345 listeners tagged "Slayer" and "Megadeth", hers is "Angèle", of
+    /// 508 456 (20 November 2026, `radio-alternatives.md`). So a search, and
+    /// of the pages with the same name but for accents, case and spacing
+    /// (NameKey), the one whose tags agree best with what the library says
+    /// of the artist: its files' genres, its neighbours' tags. Where the
+    /// library says nothing, as of her songs (no genre, no neighbour in
+    /// it), the page most listen to.
+    private func pageAndTags(name: String, key: String, in snapshot: LibrarySnapshot)
+        async -> Asked<(page: String, tags: [LastFMClient.Tag])> {
+        let own = NameKey.artist(name)
+        var pages: [LastFMClient.ArtistPage] = []
+        switch await ask({ try await $0.searchArtists(name) }) {
+        case let .answer(found):
+            var seen = Set<String>()
+            pages = found.filter { NameKey.artist($0.name) == own && seen.insert($0.name).inserted }
+                .sorted { $0.listeners != $1.listeners ? $0.listeners > $1.listeners : $0.name < $1.name }
+        // Last.fm knows no page like it: the name as filed, as before.
+        case .notFound: break
+        // Last.fm's own trouble: asked again next round, not settled on
+        // the filed spelling for half a year.
+        case .failed: return .failed
+        case .unavailable: return .unavailable
+        case .rateLimited: return .rateLimited
+        case .offline: return .offline
+        }
+        // The files' own spelling (Last.fm reads names in any case) first,
+        // unless another has twice its listeners: on his library the pages
+        // a little bigger were the same artist joined otherwise ("A & B" for
+        // "A, B") or a stray bracket ("Jahaan Sweet)"), and the far bigger
+        // ones the right page ("Blue Öyster Cult", "Angèle").
+        if let filed = pages.firstIndex(where: { $0.name.lowercased() == name.lowercased() }),
+           pages[0].listeners < 2 * pages[filed].listeners {
+            pages.insert(pages.remove(at: filed), at: 0)
+        }
+        // Three at most: past that the pages are a handful of listeners.
+        let candidates = pages.isEmpty ? [LastFMClient.ArtistPage(name: name, listeners: 0)] : Array(pages.prefix(3))
+        let evidence = candidates.count > 1 ? libraryGenres(of: key, in: snapshot) : [:]
+        var best: (page: String, tags: [LastFMClient.Tag], agreement: Double)?
+        var anyFound = false
+        for page in candidates {
+            let tags: [LastFMClient.Tag]
+            switch await ask({ try await $0.topTags(artist: page.name) }) {
+            case let .answer(answer):
+                tags = answer
+                anyFound = true
+            case .notFound: tags = []
+            case .failed: continue
+            case .unavailable: return .unavailable
+            case .rateLimited: return .rateLimited
+            case .offline: return .offline
+            }
+            let agreement = Self.agreement(tags, artist: page.name, with: evidence)
+            // In listeners' order: a later page must agree better to win.
+            if best == nil || agreement > best!.agreement + 1e-9 { best = (page.name, tags, agreement) }
+        }
+        guard let best else { return .failed }
+        return anyFound ? .answer((best.page, best.tags)) : .notFound
+    }
+
+    /// What the library says an artist is, by genre key: the files' genres
+    /// of their own songs (1 each), and the tags Last.fm gave their
+    /// neighbours, by the edge's weight and the tag's strength.
+    func libraryGenres(of key: String, in snapshot: LibrarySnapshot) -> [String: Double] {
+        var weights: [String: Double] = [:]
+        for track in snapshot.ownTracks(artistKey: key) {
+            for genre in snapshot.genreKeys(of: track) { weights[genre] = 1 }
+        }
+        for neighbor in parts(for: snapshot).graph.similarArtists(to: key, limit: 20) {
+            guard let answer = store.tags[neighbor.key] else { continue }
+            for tag in Self.genreTags(answer.tags, artist: answer.name, weight: neighbor.weight) {
+                let genre = NameKey.genre(tag.name)
+                weights[genre] = min(1, (weights[genre] ?? 0) + tag.weight)
+            }
+        }
+        return weights
+    }
+
+    /// The share of a page's genre tags, by strength, that the library's
+    /// genres for the artist bear out: 0 … 1, and 0 with nothing to go by.
+    static func agreement(_ tags: [LastFMClient.Tag], artist: String, with genres: [String: Double]) -> Double {
+        guard !genres.isEmpty else { return 0 }
+        let kept = genreTags(tags, artist: artist, weight: 1)
+        let total = kept.reduce(0) { $0 + $1.weight }
+        guard total > 0 else { return 0 }
+        return kept.reduce(0) { $0 + $1.weight * (genres[NameKey.genre($1.name)] ?? 0) } / total
+    }
+
+    /// The page asked about an artist, for every question about them:
+    /// the one their tags were chosen from, else the name as filed.
+    func pageName(key: String, filed name: String) -> String {
+        store.tags[key]?.page ?? name
     }
 
     /// Tags that name no genre: "seen live", "favorites", where the artist
@@ -609,7 +768,7 @@ public actor SimilarityService {
             if Task.isCancelled { break }
             // Another round may have asked meanwhile: the actor serves other
             // calls while this one waits for Last.fm.
-            if let known = store.artists[key], isFresh(known.fetched) { continue }
+            if let known = store.artists[key], isFresh(known.fetched), known.name == name { continue }
             let limit = similarArtistLimit
             switch await ask({ try await $0.similarArtists(to: name, limit: limit) }) {
             case let .answer(similar):
@@ -641,6 +800,7 @@ public actor SimilarityService {
         if unsaved > 0 { store.saveArtists(to: directory) }
         let parts = parts(for: snapshot)
         if answered > 0 { LastFMStore.saveGraph(parts.lastFM, to: directory) }
+        settleRest()
         return parts.graph
     }
 
@@ -653,11 +813,12 @@ public actor SimilarityService {
         // Polder; Lyric Engine", which Last.fm does not know.
         let artistName = snapshot.primaryArtistKey(of: track).flatMap { snapshot.artist(key: $0)?.name }
             ?? track.primaryArtist?.name
-        guard let artist = LastFMClient.clean(artistName), let title = LastFMClient.clean(track.name) else { return [] }
-        let cacheKey = NameKey.artist(artist) + "|" + NameKey.title(title)
+        guard let filed = LastFMClient.clean(artistName), let title = LastFMClient.clean(track.name) else { return [] }
+        let artist = pageName(key: NameKey.artist(filed), filed: filed)
+        let cacheKey = NameKey.artist(filed) + "|" + NameKey.title(title)
 
         var answer = store.tracks[cacheKey]
-        if answer.map({ !isFresh($0.fetched) }) ?? true {
+        if answer.map({ !isFresh($0.fetched) || $0.artist != artist }) ?? true {
             var fresh: [LastFMClient.SimilarTrack]?
             switch await ask({ try await $0.similarTracks(artist: artist, title: title, limit: 100) }) {
             case let .answer(similar): fresh = similar
@@ -692,11 +853,12 @@ public actor SimilarityService {
     /// first. Empty when there is no key.
     public func topTracks(artist: ArtistRef, in snapshot: LibrarySnapshot, limit: Int = 10) async -> [Track] {
         loadIfNeeded()
-        guard lastFM != nil, limit > 0, let name = LastFMClient.clean(artist.name) else { return [] }
-        let artistKey = NameKey.artist(name)
+        guard lastFM != nil, limit > 0, let filed = LastFMClient.clean(artist.name) else { return [] }
+        let artistKey = NameKey.artist(filed)
+        let name = pageName(key: artistKey, filed: filed)
 
         var answer = store.top[artistKey]
-        if answer.map({ !isFresh($0.fetched) }) ?? true {
+        if answer.map({ !isFresh($0.fetched) || $0.artist != name }) ?? true {
             // More than asked for: not every song Last.fm knows is in the
             // library.
             let wanted = max(50, limit * 3)
@@ -740,6 +902,11 @@ public actor SimilarityService {
         currentDate = date
     }
 
+    func setRests(first: TimeInterval, longest: TimeInterval) {
+        firstRest = first
+        longestRest = longest
+    }
+
     func setTagWeight(_ weight: Double) {
         tagWeight = weight
         tagsVersion += 1
@@ -777,30 +944,72 @@ public actor SimilarityService {
     /// One request at Last.fm's pace, backing off when it asks to.
     private func ask<Value: Sendable>(_ work: @Sendable (LastFMClient) async throws -> Value) async -> Asked<Value> {
         guard let lastFM, !keyRejected else { return .unavailable }
+        // Resting: not asked again before its time, by any round.
+        if let retryAt, currentDate() < retryAt { return .rateLimited }
         var attempt = 0
         while true {
             do {
                 try await waitForSlot()
-                return .answer(try await work(lastFM))
+                let value = try await work(lastFM)
+                answered()
+                return .answer(value)
             } catch let failure as LastFMClient.Failure {
                 switch failure {
                 case .invalidKey:
                     keyRejected = true
+                    trouble = .keyRefused
+                    retryAt = nil
                     return .unavailable
                 case .notFound, .hidden:
+                    answered()
                     return .notFound
                 case .other:
+                    failuresInARow += 1
+                    if failuresInARow >= 3 { rest() }
                     return .failed
                 case .rateLimited:
                     attempt += 1
-                    guard attempt < maxAttempts else { return .rateLimited }
+                    guard attempt < maxAttempts else {
+                        rest()
+                        return .rateLimited
+                    }
                     // Every request waits, not only this one: they share the slot.
                     holdRequests(for: backoff * (1 << (attempt - 1)))
                 }
             } catch {
+                // Cancelled (a newer round, the switch turned off) says
+                // nothing about Last.fm; no answer does.
+                if !Task.isCancelled, !(error is CancellationError) { rest() }
                 return .offline
             }
         }
+    }
+
+    /// Last.fm answered: whatever was wrong is over.
+    private func answered() {
+        failuresInARow = 0
+        nextRest = nil
+        retryAt = nil
+        trouble = nil
+    }
+
+    /// A round after the rest that had nothing to ask: nothing was refused,
+    /// so nothing to say, and no reason to try again on a timer (which
+    /// would wake every second, asking nothing).
+    private func settleRest() {
+        guard let retryAt, currentDate() >= retryAt else { return }
+        self.retryAt = nil
+        trouble = nil
+    }
+
+    /// No answer, or still "rate limit": nothing asked for a while, longer
+    /// each time.
+    private func rest() {
+        let rest = nextRest ?? firstRest
+        nextRest = min(longestRest, rest * 2)
+        retryAt = currentDate().addingTimeInterval(rest)
+        trouble = .notAnswering
+        failuresInARow = 0
     }
 
     /// Requests start at least `minimumInterval` apart, whoever asks: the
@@ -831,8 +1040,11 @@ public actor SimilarityService {
         var seen = Set<String>()
         for key in priority where seen.insert(key).inserted {
             guard let ref = snapshot.artist(key: key), !LibrarySnapshot.Index.isVarious(ref.name),
-                  let name = LastFMClient.clean(ref.name) else { continue }
-            if let known = store.artists[key], isFresh(known.fetched) { continue }
+                  let filed = LastFMClient.clean(ref.name) else { continue }
+            // Last.fm's own page for them, once the tags found it: an answer
+            // asked under the files' spelling is asked again there.
+            let name = pageName(key: key, filed: filed)
+            if let known = store.artists[key], isFresh(known.fetched), known.name == name { continue }
             due.append((key, name))
             if due.count == max { break }
         }

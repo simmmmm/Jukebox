@@ -152,7 +152,7 @@ final class ScreenshotTests: XCTestCase {
             try walk.tap(app.navigationBars["Playback"].buttons.element(boundBy: 0), "Settings › Playback: back", timeout: 2)
             walk.pause(1)
         }
-        // Radio: the dial, Enhance Radio with Last.fm and Last.fm's key.
+        // Radio: the dial, Enhance Radio and the Last.fm username.
         if settings, try walk.openSettingsPage("radio", "Radio") {
             walk.picture("settings-radio")
             try walk.tap(app.navigationBars["Radio"].buttons.element(boundBy: 0), "Settings › Radio: back", timeout: 2)
@@ -564,6 +564,9 @@ final class Walk {
         // fake server while the walk goes, and the pictures would differ by
         // how far it got.
         app.launchArguments += ["-keepSongs", "NO"]
+        // Better Radio and Enhance Radio, though the walk's build has no
+        // Last.fm key (AppSettings.canEnhanceRadio).
+        app.launchArguments += ["-showBetterRadio", "YES"]
         app.launchArguments += extra
         app.launch()
         try alive("launch")
@@ -993,14 +996,30 @@ final class Walk {
             picture("sign-in-error")
             return false
         }
+        try betterRadio(takingPicture: takingPictures)
         return true
+    }
+
+    /// Better Radio, the step after signing in: its picture, then Turn On,
+    /// so the walk's radio is the one most will have. Not there (chosen in
+    /// an earlier walk, a build without Jukebox's key): nothing to do.
+    func betterRadio(takingPicture: Bool) throws {
+        let turnOn = app.buttons["betterRadio.turnOn"].firstMatch
+        guard turnOn.waitForExistence(timeout: 8) else { return }
+        pause(1.5)
+        if takingPicture { picture("better-radio") }
+        _ = try tap(turnOn, "Better Radio: Turn On")
+        pause(1)
     }
 
     /// iOS may offer to save the password just typed: Not Now, so the sheet
     /// is not over the pictures that follow.
     func dismissSavePassword(wait: TimeInterval) {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        for button in [app.buttons["Not Now"].firstMatch, springboard.buttons["Not Now"].firstMatch] {
+        // Not Better Radio's own Not Now (betterRadio.notNow), which would
+        // turn Enhance Radio off for the walk.
+        let ours = NSPredicate(format: "label == 'Not Now' AND identifier != 'betterRadio.notNow'")
+        for button in [app.buttons.matching(ours).firstMatch, springboard.buttons["Not Now"].firstMatch] {
             if button.waitForExistence(timeout: wait) {
                 XCTExpectFailure("Not Now, for the screenshot walk", strict: false) {
                     button.tap()

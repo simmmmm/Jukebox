@@ -65,6 +65,10 @@ struct LastFMKnowledge: Sendable {
     var topTracks: [String: [String]] = [:]
     /// By artist, as Last.fm spells them: (tag, count 0 … 100).
     var topTags: [String: [(name: String, count: Int)]] = [:]
+    /// artist.search, by the name searched: the pages Last.fm has (as
+    /// "Angele" has "Angèle", "Angele" and "Angéle"). A name not here is
+    /// found as itself alone, as most are.
+    var pages: [String: [(name: String, listeners: Int)]] = [:]
     /// By listener: their plays, any order. A listener named in
     /// `hiddenUsers` keeps them private.
     var scrobbles: [String: [LastFMClient.Scrobble]] = [:]
@@ -75,6 +79,8 @@ struct LastFMKnowledge: Sendable {
 
     func answer(_ request: LastFMRequest) -> HTTPResponse {
         switch request.method {
+        case "artist.search":
+            return LastFMFixtures.respond(200, LastFMFixtures.search(request.artist, pages[request.artist] ?? [(request.artist, 1000)]))
         case "artist.gettoptags":
             guard let tags = topTags[request.artist] else { return LastFMFixtures.respond(200, LastFMFixtures.artistNotFound) }
             return LastFMFixtures.respond(200, LastFMFixtures.topTags(request.artist, tags))
@@ -155,6 +161,17 @@ enum LastFMFixtures {
         }
         return #"{"toptracks":{"track":["# + items.joined(separator: ",") + #"],"@attr":{"artist":"# + quoted(artist)
             + #","page":"1","perPage":"50","totalPages":"1","total":""# + String(titles.count) + #""}}}"#
+    }
+
+    /// artist.search as Last.fm sends it: listeners as strings, beside
+    /// "opensearch" counts the app does not read.
+    static func search(_ artist: String, _ pages: [(name: String, listeners: Int)]) -> String {
+        let items = pages.map { p in
+            #"{"name":\#(quoted(p.name)),"listeners":"\#(p.listeners)","mbid":"","url":"https://www.last.fm/music/x","streamable":"0","image":[]}"#
+        }
+        return ##"{"results":{"opensearch:Query":{"#text":"","role":"request","searchTerms":"## + quoted(artist)
+            + #","startPage":"1"},"opensearch:totalResults":""# + String(pages.count)
+            + #"","artistmatches":{"artist":["# + items.joined(separator: ",") + #"]},"@attr":{"for":"# + quoted(artist) + "}}}"
     }
 
     /// artist.gettoptags in Last.fm's documented shape: `count` a number.

@@ -95,7 +95,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Lead | `project.yml`, `ci/`, `dev/`, `Jukebox/App/*` (with WideShell, PanelState, Commands: the Mac's menus and ⌘F), `Jukebox/Components/*` (with Platform, WidePage, DesktopMeasures), kit `Models.swift`, `NameKey.swift`, `HTTPTransport.swift`, `LibraryCache.swift` |
 | Kit: Jellyfin | `JukeboxKit/Sources/JukeboxKit/Jellyfin/*` (client, DTOs), its tests |
 | Kit: radio | `Library/LibrarySnapshot.swift`, `Radio/*`, tests, `docs/RADIO.md` |
-| Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
+| Kit: mixes, Last.fm and AcousticBrainz | `Mixes/*`, `LastFM/*`, `Sound/*`, tests |
 | Kit: lyrics | `Lyrics/*` (LRCParser, LyricsQuery, LRCLIBClient, LyricsCache), tests |
 | Kit: artwork | `Artwork/CoverAccent.swift` (Now Playing's accent from its cover, BRAND.md), `Artwork/CoverWall.swift` (the still page's wall and floor from it), tests |
 | Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Plex/*` (PlexServer, PlexSignIn), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |
@@ -330,9 +330,8 @@ Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
   the Last.fm answers about its library (they name its songs by id). Home's
   mixes are made again from those.
 - **Shared**: `AppSettings` (qualities, pages, downloads' limit, the
-  switches) and the Last.fm API key, a key to Last.fm's catalogue rather
-  than anyone's Last.fm account (the servers scrobble), and the listener's
-  Last.fm username, read only.
+  switches, Enhance Radio among them), and the listener's Last.fm username,
+  read only. The Last.fm key is Jukebox's own, built in.
 - **A switch** (`AppModel.switchAccount`): the new account's server is asked
   first, with its own session (`AccountStores.reach`, 10 s at most); silent,
   the account signed in stays and the words say so, unless the new one has

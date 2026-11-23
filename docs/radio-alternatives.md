@@ -6,7 +6,8 @@ radio's te bouwen" (the photographer, 20 November 2026, after Gorillaz on
 Moans Radio; `RADIO.md`, "The server's mix").
 
 Researched on the web that day, with live lookups for Hania Rani, Nils
-Frahm, Gorillaz, Angèle and Cocteau Twins. Nothing here is built. The
+Frahm, Gorillaz, Angèle and Cocteau Twins. Recommendation 1 (AcousticBrainz) was built on 23 November 2026
+(`RADIO.md`, "How it sounds"); the rest is not. The
 frame is the app's: the client does the work, the server stays as it is,
 it runs on the iPhone and on Linux, and the kit is Foundation only.
 "Unverified" means read in a search result or a forum, not checked.
@@ -121,7 +122,10 @@ there is a sound to measure.
 
 ## What to build next
 
-**1. A sound profile from AcousticBrainz. Prototype this first.**
+**1. A sound profile from AcousticBrainz.** Built 23 November 2026, after
+the coverage check: 3 720 of his 4 091 songs matched (0.909), 3 007 with
+AcousticBrainz data (0.735). `RADIO.md`, "How it sounds", has what it
+keeps and what it does. The plan as it was:
 No key, CC0, all in the kit, so every client and server at once.
 1. Coverage first: IDs for his 3 780 songs, then one count call per 25.
    Under about half covered, stop and take the five-number analysis
@@ -154,16 +158,18 @@ Later: the map's table, his own listening as a station's memory, the
 
 - Jukebox's own, built into every client since 21 November 2026
   (docs/RADIO.md, Last.fm's key), so no device needs one typed in.
-- The listener's own, optional, in place of it: Settings, Last.fm, on the
-  iPhone, the iPad and the Mac; Preferences, Radio, Last.fm, on Linux. It is
-  kept in that device's settings and does not travel.
-- A key Last.fm refuses later is dropped quietly for that run; only
-  Settings says so, when opened.
+- No key of the listener's own since 24 November 2026 ("Kan die api ding
+  … ook uit de app dan?", the photographer).
+- A key Last.fm refuses later is off for that run, and the line under
+  Enhance Radio and a station's page say so; "rate limit" or
+  no answer says so too and is asked again later, a minute, then longer
+  (`RADIO.md`, Last.fm's key).
 - An empty answer is kept for 30 days: "Moans" has no similar songs on
   Last.fm, and will not be asked again until then.
-- Names are asked as filed: his "Angele", without the accent, is a page
-  of its own on Last.fm, tagged "Slayer" and "Megadeth", so her songs get
-  genres that are not hers.
+- Names were asked as filed: his "Angele", without the accent, is a page
+  of its own on Last.fm, tagged "Slayer" and "Megadeth". Since 23
+  November 2026 the page is chosen among Last.fm's spellings of the name
+  (`RADIO.md`, Last.fm's tags): "Angèle", "pop", "indie pop".
 
 ## Sources
 

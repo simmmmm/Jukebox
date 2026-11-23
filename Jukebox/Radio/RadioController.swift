@@ -62,6 +62,19 @@ final class RadioController {
     /// the card then says what it said before. `refreshYourStationFact`
     /// works it out again.
     private(set) var yourStationFact: TimeFact?
+    /// Why Last.fm says nothing now (`SimilarityService.trouble`), for the
+    /// quiet line by Enhance Radio with Last.fm in Settings › Radio
+    /// (Preferences › Radio on Linux) and on a station's page; nil while it
+    /// answers, and when it is off. Before, a refused key or a Last.fm out
+    /// of reach left the radio on the library alone without a word ("doe ze
+    /// allemaal", the photographer, 23 November 2026).
+    private(set) var lastFMTrouble: LastFMTrouble?
+    /// How the library's songs sound, from AcousticBrainz (`SoundService`),
+    /// as far as it is known: a station scores by it beside loudness
+    /// (docs/RADIO.md, "How it sounds").
+    private(set) var sound: [ItemID: SoundProfile] = [:] {
+        didSet { previewInputs += 1 }
+    }
 
     var server: (any MusicServer)?
     /// Set by AppModel: offline, what the radio may choose from.
@@ -84,6 +97,15 @@ final class RadioController {
     @ObservationIgnored private var sourceTasks: [Task<Void, Never>] = []
     @ObservationIgnored private var graphTask: Task<Void, Never>?
     @ObservationIgnored private var enrichTask: Task<Void, Never>?
+    /// Asks Last.fm again once it has rested (`SimilarityService.retryAt`).
+    @ObservationIgnored private var retryTask: Task<Void, Never>?
+    @ObservationIgnored private var soundService: SoundService?
+    /// Whether the network costs nothing now (Wi-Fi, Ethernet; not the
+    /// mobile network, a hotspot or Low Data Mode). Set by AppModel on the
+    /// iPhone and the iPad: AcousticBrainz's lookups, some 30 MB for a
+    /// library of 4 000 songs, wait for such a network there.
+    @ObservationIgnored var networkIsFree: () -> Bool = { true }
+    @ObservationIgnored private var soundTask: Task<Void, Never>?
     @ObservationIgnored private var snapshotTask: Task<Void, Never>?
     @ObservationIgnored private var dialTask: Task<Void, Never>?
     @ObservationIgnored private var factTask: Task<Void, Never>?
@@ -158,6 +180,7 @@ final class RadioController {
     func prepare() {
         if service == nil { service = makeService() }
         rebuildGraph()
+        lookUpSound()
         watchLibrary()
         refreshYourStationFact()
     }
@@ -314,6 +337,13 @@ final class RadioController {
         enrichTask?.cancel()
         graphTask = nil
         enrichTask = nil
+        retryTask?.cancel()
+        retryTask = nil
+        lastFMTrouble = nil
+        soundTask?.cancel()
+        soundTask = nil
+        soundService = nil
+        sound = [:]
         factTask?.cancel()
         factTask = nil
         yourStationFact = nil
@@ -496,6 +526,9 @@ final class RadioController {
         if !settings.hasLastFM { cancelSources() }
         enrichTask?.cancel()
         enrichTask = nil
+        retryTask?.cancel()
+        retryTask = nil
+        lastFMTrouble = nil
         tagged = nil
         scrobbles = ListeningHistory()
         previewInputs += 1
@@ -680,6 +713,7 @@ final class RadioController {
                                 history: history.history,
                                 scrobbles: scrobbles,
                                 graph: graph,
+                                sound: settings.enhancesRadio ? sound : [:],
                                 settings: RadioSettings(adventurousness: settings.adventurousness),
                                 now: Date(),
                                 playingNow: [playingNow].compactMap { $0 } + shown)
@@ -741,6 +775,7 @@ final class RadioController {
             guard let lastFM, let track = index.track(id: id) else { return }
             sourceTasks.append(Task { [weak self] in
                 let neighbors = await lastFM.similarTracks(to: track, in: index)
+                await self?.noteTrouble(of: lastFM)
                 guard let self, self.generation == generation, !neighbors.isEmpty else { return }
                 self.addCandidates(neighbors.map(\.key), weight: 0.8, reason: .similarTrack(track.name))
             })
@@ -755,7 +790,10 @@ final class RadioController {
             sourceTasks.append(Task { [weak self] in
                 var top: [Track] = []
                 if let topServer { top = (try? await topServer.topSongs(of: artist, limit: 10)) ?? [] }
-                if top.isEmpty, let lastFM { top = await lastFM.topTracks(artist: artist, in: index, limit: 10) }
+                if top.isEmpty, let lastFM {
+                    top = await lastFM.topTracks(artist: artist, in: index, limit: 10)
+                    await self?.noteTrouble(of: lastFM)
+                }
                 guard let self, self.generation == generation, !top.isEmpty else { return }
                 self.addCandidates(top.map(\.id), weight: 0.6, reason: .byArtist(name))
             })
@@ -950,10 +988,84 @@ final class RadioController {
             self.graph = graph
             let radio = await service.enrichTags(snapshot: snapshot, priority: priority)
             let radioGraph = await service.graph(for: radio)
-            guard !Task.isCancelled, self.service === service, self.library.snapshot.isSameSnapshot(as: snapshot) else { return }
+            guard !Task.isCancelled, self.service === service else { return }
+            await self.noteTrouble(of: service)
+            guard self.library.snapshot.isSameSnapshot(as: snapshot) else { return }
             self.tagged = (snapshot, radio)
             self.graph = radioGraph
             self.refreshYourStationFact()
+        }
+    }
+
+    /// Enhance Radio was switched (Settings › Radio, Preferences › Radio
+    /// on Linux, Better Radio after signing in): Last.fm and AcousticBrainz
+    /// together, "of lastfm en dit aan of beide uit" (the photographer, 24
+    /// November 2026).
+    func enhanceRadioChanged() {
+        lastFMKeyChanged()
+        acousticBrainzChanged()
+    }
+
+    private func acousticBrainzChanged() {
+        soundTask?.cancel()
+        soundTask = nil
+        if settings.enhancesRadio {
+            lookUpSound()
+        } else {
+            previewInputs += 1
+        }
+    }
+
+    /// What is on disk at once, then the songs not looked up yet, 500 a
+    /// round (about a minute at MetaBrainz's one call a second), round
+    /// after round until the library is done. Quiet: a round that fails
+    /// stops, and the next launch or library change goes on.
+    private func lookUpSound() {
+        guard settings.enhancesRadio, let directory = similarityDirectory else { return }
+        let service = soundService ?? SoundService(directory: directory)
+        soundService = service
+        let snapshot = library.snapshot
+        guard !snapshot.isEmpty else { return }
+        soundTask?.cancel()
+        soundTask = Task { [weak self] in
+            let known = await service.profiles(for: snapshot)
+            guard !Task.isCancelled, let self, self.soundService === service else { return }
+            if known != self.sound { self.sound = known }
+            // The songs Your Station and the listener's favourites play
+            // first, then the library.
+            let priority = snapshot.tracks.filter { $0.isFavorite || $0.playCount > 0 }.map(\.id)
+            var more = true
+            while more, !Task.isCancelled {
+                // A network that costs: wait for one that does not.
+                while !self.networkIsFree() {
+                    try? await Task.sleep(for: .seconds(30))
+                    if Task.isCancelled { return }
+                }
+                let round = await service.enrich(snapshot: snapshot, priority: priority)
+                guard !Task.isCancelled, self.soundService === service, self.settings.enhancesRadio else { return }
+                if round.profiles != self.sound { self.sound = round.profiles }
+                more = round.more
+            }
+        }
+    }
+
+    /// What the round left Last.fm at: said in Settings and on a station's
+    /// page, and, after "rate limit" or no answer, the next round once it
+    /// has rested (a minute, then longer each time, at most an hour). A
+    /// refused key is not asked again until the app is opened again or the
+    /// key changes.
+    private func noteTrouble(of service: SimilarityService) async {
+        let trouble = await service.trouble
+        let retryAt = await service.retryAt
+        guard self.service === service else { return }
+        if lastFMTrouble != trouble { lastFMTrouble = trouble }
+        retryTask?.cancel()
+        retryTask = nil
+        guard let retryAt else { return }
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: .seconds(max(1, retryAt.timeIntervalSinceNow)))
+            guard !Task.isCancelled, let self, self.service === service else { return }
+            self.enrich(self.library.snapshot, with: service)
         }
     }
 
@@ -982,6 +1094,7 @@ final class RadioController {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
             self?.rebuildGraph()
+            self?.lookUpSound()
             self?.refreshYourStationFact()
         }
     }
@@ -1012,6 +1125,8 @@ nonisolated private struct RadioStartInputs: Sendable {
     /// The listener's Last.fm plays, for the clock; empty without a name.
     let scrobbles: ListeningHistory
     let graph: SimilarityGraph
+    /// How songs sound, from AcousticBrainz; empty when it is off.
+    let sound: [ItemID: SoundProfile]
     let settings: RadioSettings
     let now: Date
     /// The song playing, and a page's songs about to: they reach the
@@ -1025,7 +1140,7 @@ nonisolated private struct RadioStartInputs: Sendable {
         var recent = history.trackIDs(since: now.addingTimeInterval(-settings.noRepeatHours * 3600))
         recent.formUnion(playingNow)
         let session = RadioSession(station: station, snapshot: index, taste: taste, graph: graph,
-                                   settings: settings, recentlyPlayed: recent, randomSeed: randomSeed)
+                                   settings: settings, recentlyPlayed: recent, randomSeed: randomSeed, sound: sound)
         return (session, index)
     }
 }

@@ -314,6 +314,18 @@ Quick Connect) as words in the accent under it.
   `Draw.welcomeMark` (`Drawings.swift`), built up with the Mac's stages and
   timing.
 
+Then Better Radio, once, right after the first sign-in (and once after the
+update for whoever never chose): "Standaard aan maar maak het onderdeel van
+een onboarding flow waarin dit kort en krachtig benoemd wordt" (the
+photographer, 24 November 2026). The title "Better Radio"; "To find music
+that sounds alike, Jukebox looks up artist and song names on Last.fm and
+MusicBrainz. Nothing about you is sent."; Turn On, the prominent default,
+and Not Now, which turns Enhance Radio off. Not dismissed without an answer;
+changed later in Settings › Radio.
+- Apple: `BetterRadioView` (`Settings/BetterRadioView.swift`), a sheet
+  (half height on the iPhone) with the arch and the serif title.
+- GNOME: `BetterRadio.swift`, an alert dialog, Turn On suggested.
+
 ## Where the HIGs differ
 
 | Question | Jukebox decides | Why |

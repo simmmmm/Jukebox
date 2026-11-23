@@ -68,8 +68,9 @@ photographer, 16 November 2026).
 > turns that off. Lyrics your server does not have are looked up at LRCLIB
 > by the song's title, artist, album and length; Find Lyrics Online in
 > Settings turns that off too. The radio asks Last.fm which artists and
-> songs sound alike, by artist names and song titles; Enhance Radio with
-> Last.fm in Settings turns that off.
+> songs sound alike, by artist names and song titles, and MusicBrainz and
+> AcousticBrainz how each song sounds, by artist, title and album; Enhance
+> Radio in Settings turns both off.
 
 **Keywords** (100, comma-separated, no spaces needed):
 `jellyfin,navidrome,subsonic,music server,self-hosted,radio,flac,offline,library,player,nas,plex`

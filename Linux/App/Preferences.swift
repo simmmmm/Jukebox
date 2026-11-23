@@ -78,28 +78,34 @@ enum Preferences {
             "Find Lyrics Online", "When your server has no lyrics for a song, ask LRCLIB (lrclib.net), with its title, artist, album and length.",
             settings.findLyricsOnline) { settings.findLyricsOnline = $0 })
 
-        // Enhance Radio with Last.fm (AppSettings.useLastFM), as the iPhone's,
-        // the iPad's and the Mac's Settings › Radio: "is het nodig? misschien
-        // iets van 'enhance radio with last.fm' ?" (the photographer, 21
-        // November 2026). Off, the key and the username go from the page,
-        // and the radio plays from the library and what Last.fm said before.
+        // Enhance Radio (AppSettings.enhanceRadio), as the iPhone's, the
+        // iPad's and the Mac's Settings › Radio: Last.fm and AcousticBrainz
+        // together, "of lastfm en dit aan of beide uit" (the photographer,
+        // 24 November 2026). Off, the username goes from the page, and the
+        // radio plays from the library and what they said before. A build
+        // without Jukebox's key has none of it.
         dial(on: radioPage)
-        let enhance = group(nil, on: radioPage)
-        let radio = group("Last.fm", on: radioPage)
-        radio.isVisible = settings.useLastFM
-        adw_preferences_group_add(ptr(enhance), toggle(
-            "Enhance Radio with Last.fm",
-            "Artists and songs are looked up on Last.fm to find what sounds alike. Nothing about you is sent, unless you add your Last.fm username.",
-            settings.useLastFM) {
-            settings.useLastFM = $0
-            radio.isVisible = $0
-            app.radio.lastFMKeyChanged()
-        })
-        let saveTypedKey = lastFM(on: radio, in: dialog)
-        adw_preferences_group_set_description(
-            ptr(radio), AppSettings.appLastFMKey.isEmpty
-                ? "With a key, the radio knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm."
-                : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
+        var saveTypedUser: @MainActor () -> Void = {}
+        if AppSettings.canEnhanceRadio {
+            let enhance = group(nil, on: radioPage)
+            let user = lastFMUser(in: dialog)
+            adw_preferences_group_add(ptr(enhance), toggle(
+                "Enhance Radio",
+                "To find music that sounds alike, Jukebox looks up artist and song names on Last.fm and MusicBrainz. Nothing about you is sent, unless you add your Last.fm username.",
+                settings.enhanceRadio) {
+                settings.enhanceRadio = $0
+                user.row.isVisible = $0
+                app.radio.enhanceRadioChanged()
+            })
+            adw_preferences_group_add(ptr(enhance), user.row)
+            user.row.isVisible = settings.enhanceRadio
+            saveTypedUser = user.save
+            // A Last.fm out of reach, said once and calmly by the switch,
+            // as the Mac's footer (RadioController.lastFMTrouble).
+            observe(enhance) {
+                adw_preferences_group_set_description(ptr(enhance), app.radio.lastFMTrouble?.text)
+            }
+        }
 
         // Which places the sidebar shows (AppSettings.hiddenPages), in its
         // order; Home has no switch. The photographer, 15 November 2026:
@@ -137,108 +143,33 @@ enum Preferences {
         accounts(on: accountsPage, in: dialog)
         downloads(on: downloadsPage)
 
-        on(dialog, "closed") { saveTypedKey() }
+        on(dialog, "closed") { saveTypedUser() }
         adw_dialog_present(ptr(dialog), MainWindow.window)
     }
 
-    /// The Last.fm key, the same flow as the iPhone's and the Mac's Settings
-    /// ("invullen opslaan bevestiging krijgen van de app", the photographer,
-    /// 18 November 2026): pasted, saved with ✓ or Enter, Last.fm is asked,
-    /// and only a key it accepted is kept, then shown as dots with Change and
-    /// Remove. A typo never takes the radio's Last.fm away. Gives back what
-    /// the dialog does on closing: a key typed and left without ✓ is checked
-    /// all the same (it was once lost), and kept only if accepted. Since 21
-    /// November 2026 the app has a key of its own ("Ik denk dat een eigen
-    /// last fm verstandiger is"): without the listener's, a row says
-    /// Jukebox's is in use, never showing it, and the entry is an optional
-    /// override; Remove goes back to Jukebox's. As the iPhone's and the Mac's.
-    private static func lastFM(on group: Widget, in dialog: UnsafeMutablePointer<AdwDialog>) -> @MainActor () -> Void {
+    /// The listener's Last.fm name, optional, for the clock's scrobbles: ✓
+    /// or Enter, Last.fm asked, kept only when it knows them. Emptied, it
+    /// is gone. Not a secret, so shown as typed. The key is Jukebox's own
+    /// alone since 24 November 2026 ("Kan die api ding … ook uit de app
+    /// dan?", the photographer). Gives back the row, and what the dialog
+    /// does on closing: a name typed and left without ✓ is checked all the
+    /// same.
+    private static func lastFMUser(in dialog: UnsafeMutablePointer<AdwDialog>) -> (row: Widget, save: @MainActor () -> Void) {
         let settings = app.settings
-        let builtIn = adw_action_row_new()!
-        // The group's title says Last.fm: the rows' words are the Mac's.
-        adw_preferences_row_set_title(ptr(builtIn), "API Key")
-        adw_action_row_set_subtitle(ptr(builtIn), "Jukebox's own")
-        gtk_widget_add_css_class(builtIn, "property")
-        let entry = adw_entry_row_new()!
-        adw_preferences_row_set_title(ptr(entry), "API Key")
-        adw_entry_row_set_show_apply_button(ptr(entry), 1)
-        let spinner = gtk_spinner_new()!
-        spinner.isVisible = false
-        adw_entry_row_add_suffix(ptr(entry), spinner)
-        let saved = adw_action_row_new()!
-        adw_preferences_row_set_title(ptr(saved), "API Key")
-        adw_action_row_set_subtitle(ptr(saved), "••••••••")
-        gtk_widget_add_css_class(saved, "property")
-        // The listener's Last.fm name, optional, once a key is kept: one
-        // row in the key's flow (✓ or Enter, Last.fm asked, kept only when
-        // it knows them), for the clock's scrobbles. Emptied, it is gone.
-        // Not a secret, so shown as typed.
         let user = adw_entry_row_new()!
-        adw_preferences_row_set_title(ptr(user), "Username (Optional)")
+        adw_preferences_row_set_title(ptr(user), "Last.fm Username (Optional)")
         adw_entry_row_set_show_apply_button(ptr(user), 1)
         gtk_editable_set_text(ptr(user), settings.lastFMUser)
         var isChecking = false
-        var isCheckingUser = false
         var isClosed = false
-
-        func typed() -> String {
-            String(cString: gtk_editable_get_text(ptr(entry))).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
-        func editing(_ isEditing: Bool) {
-            entry.isVisible = isEditing
-            saved.isVisible = !isEditing
-            builtIn.isVisible = isEditing && settings.usesAppLastFMKey
-            adw_preferences_row_set_title(ptr(entry), settings.usesAppLastFMKey ? "Your Key (Optional)" : "API Key")
-            gtk_editable_set_text(ptr(entry), "")
-            gtk_widget_remove_css_class(entry, "error")
-        }
         // In the dialog while it is open, else in the window: a check may
         // answer after Preferences has closed.
         func say(_ words: String) {
             if isClosed { MainWindow.toast(words) } else { adw_preferences_dialog_add_toast(ptr(dialog), adw_toast_new(words)) }
         }
-        func save() {
-            let key = typed()
-            guard !key.isEmpty, !isChecking else { return }
-            isChecking = true
-            entry.isSensitive = false
-            spinner.isVisible = true
-            gtk_spinner_start(ptr(spinner))
-            gtk_widget_remove_css_class(entry, "error")
-            Task {
-                let check = await LastFMClient(apiKey: key).validateKey()
-                isChecking = false
-                if !isClosed {
-                    gtk_spinner_stop(ptr(spinner))
-                    spinner.isVisible = false
-                    entry.isSensitive = true
-                }
-                guard check == .accepted else {
-                    // The typed key stays, to be put right.
-                    if !isClosed { gtk_widget_add_css_class(entry, "error") }
-                    say(check.problem ?? "")
-                    return
-                }
-                if key != settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines) {
-                    settings.lastFMAPIKey = key
-                    app.radio.lastFMKeyChanged()
-                    Stats.track(.lastFMKey, ["state": "added", "app_key": !AppSettings.appLastFMKey.isEmpty])
-                }
-                if !isClosed {
-                    // A refusal of the key before it no longer stands.
-                    adw_action_row_set_subtitle(ptr(saved), "••••••••")
-                    editing(false)
-                    user.isVisible = true
-                }
-                say("Last.fm key saved")
-            }
-        }
-        func typedUser() -> String {
-            String(cString: gtk_editable_get_text(ptr(user))).trimmingCharacters(in: .whitespacesAndNewlines)
-        }
         func saveUser() {
-            let name = typedUser()
-            guard !isCheckingUser, name != settings.lastFMUser.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
+            let name = String(cString: gtk_editable_get_text(ptr(user))).trimmingCharacters(in: .whitespacesAndNewlines)
+            guard settings.hasLastFM, !isChecking, name != settings.lastFMUser.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
             gtk_widget_remove_css_class(user, "error")
             guard !name.isEmpty else {
                 settings.lastFMUser = ""
@@ -246,12 +177,12 @@ enum Preferences {
                 say("Last.fm username removed")
                 return
             }
-            isCheckingUser = true
+            isChecking = true
             user.isSensitive = false
             let key = settings.lastFMKey
             Task {
                 let check = await LastFMClient(apiKey: key).validateUser(name)
-                isCheckingUser = false
+                isChecking = false
                 if !isClosed { user.isSensitive = true }
                 guard check == .accepted else {
                     // The typed name stays, to be put right.
@@ -267,71 +198,10 @@ enum Preferences {
         on(user, "apply") { saveUser() }
         on(user, "entry-activated") { saveUser() }
         on(user, "changed") { gtk_widget_remove_css_class(user, "error") }
-        // ✓, and Enter: after "Could not reach Last.fm" the ✓ is gone until
-        // the text changes, and Enter tries again.
-        on(entry, "apply") { save() }
-        on(entry, "entry-activated") { save() }
-        // Typing again: the last answer was about another key.
-        on(entry, "changed") { gtk_widget_remove_css_class(entry, "error") }
-
-        let cancel = button("Cancel", "flat") { editing(false) }.align(vertical: GTK_ALIGN_CENTER)
-        adw_entry_row_add_suffix(ptr(entry), cancel)
-        let change = button("Change Key", "flat") {
-            editing(true)
-            cancel.isVisible = true
-            gtk_widget_grab_focus(entry)
-        }.align(vertical: GTK_ALIGN_CENTER)
-        let remove = button("Remove Key", "flat") {
-            settings.lastFMAPIKey = ""
-            app.radio.lastFMKeyChanged()
-            Stats.track(.lastFMKey, ["state": "removed", "app_key": !AppSettings.appLastFMKey.isEmpty])
-            editing(true)
-            cancel.isVisible = false
-            user.isVisible = settings.hasLastFM
-            say("Last.fm key removed")
-        }.align(vertical: GTK_ALIGN_CENTER)
-        adw_action_row_add_suffix(ptr(saved), change)
-        adw_action_row_add_suffix(ptr(saved), remove)
-        adw_preferences_group_add(ptr(group), builtIn)
-        adw_preferences_group_add(ptr(group), entry)
-        adw_preferences_group_add(ptr(group), saved)
-        adw_preferences_group_add(ptr(group), user)
-        // Last.fm's page for a key of one's own, as the Mac's link at the
-        // group's end: GNOME's way to a web page from a row.
-        let getKey = adw_action_row_new()!
-        adw_preferences_row_set_title(ptr(getKey), "Get a Free API Key")
-        adw_action_row_add_suffix(ptr(getKey), gtk_image_new_from_icon_name("adw-external-link-symbolic")!)
-        gtk_list_box_row_set_activatable(ptr(getKey), 1)
-        on(raw(getKey), "activated") {
-            let launcher = gtk_uri_launcher_new("https://www.last.fm/api/account/create")
-            gtk_uri_launcher_launch(launcher, ptr(MainWindow.window), nil, nil, nil)
-        }
-        adw_preferences_group_add(ptr(group), getKey)
-        editing(!settings.hasOwnLastFMKey)
-        cancel.isVisible = false
-        user.isVisible = settings.hasLastFM
-
-        // The saved key, asked about again each time Preferences opens, as
-        // the iPhone's Settings does: a revoked key shows here rather than as
-        // a quieter radio. Quietly; only a refusal is said, and the key stays.
-        if settings.useLastFM, settings.hasOwnLastFMKey {
-            let key = settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-            Task {
-                let check = await LastFMClient(apiKey: key).validateKey()
-                // Still the key shown: not one removed or changed meanwhile.
-                guard !isClosed, check == .refused, saved.isVisible,
-                      key == settings.lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines) else { return }
-                adw_action_row_set_subtitle(ptr(saved), "•••••••• · " + (check.problem ?? ""))
-            }
-        }
-        return {
+        return (user, {
             isClosed = true
-            // Switched off, Last.fm is not asked, typed or not.
-            guard settings.useLastFM else { return }
-            // Not one Last.fm already answered about.
-            if entry.isVisible, !isChecking, gtk_widget_has_css_class(entry, "error") == 0 { save() }
             if user.isVisible, gtk_widget_has_css_class(user, "error") == 0 { saveUser() }
-        }
+        })
     }
 
     /// Each account kept as a card, the cards a radio group: one is always

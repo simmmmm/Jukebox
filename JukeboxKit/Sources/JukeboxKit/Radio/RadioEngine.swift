@@ -118,6 +118,10 @@ struct RadioEngine: Sendable {
     /// (Track.normalizationGain: Jellyfin's LUFS scan, OpenSubsonic's
     /// ReplayGain); NaN when it gave none.
     let gain: [Double]
+    /// By track number × `SoundProfile.axes.count`: how the song sounds
+    /// (AcousticBrainz, `SoundService`), or its artist's mean where it has
+    /// none; NaN where neither is known.
+    let sound: [Double]
     /// The clock (TasteData): by artist and genre number, λ · L near now,
     /// and when now is. Only Your Station reads them.
     let artistLift: [Double]
@@ -152,6 +156,9 @@ struct RadioEngine: Sendable {
     /// How loud the station is: the median gain of its best 100 that have
     /// one (at least 5), NaN when the server gives too few.
     var loudnessCenter = Double.nan
+    /// How the station sounds: the median on each axis of its best 100
+    /// that have a profile (at least 5), empty with fewer.
+    var soundCenter: [Double] = []
     /// By position in `handed`: what the session had learnt against the
     /// song when it was handed out (`learnt`), for `ruledOut`.
     var handedLearnt: [Double] = []
@@ -239,7 +246,8 @@ struct RadioEngine: Sendable {
     static let laterRepeat = 0.4
 
     init(seed: StationSeed, snapshot: LibrarySnapshot, taste: TasteProfile, graph: SimilarityGraph,
-         settings: RadioSettings, recentlyPlayed: Set<ItemID>, randomSeed: UInt64) {
+         settings: RadioSettings, recentlyPlayed: Set<ItemID>, randomSeed: UInt64,
+         sound profiles: [ItemID: SoundProfile] = [:]) {
         self.snapshot = snapshot
         self.graph = graph
         self.seed = seed
@@ -291,6 +299,7 @@ struct RadioEngine: Sendable {
         rankedGenres = data.rankedGenres.compactMap { index.genreByKey[$0] }
         maxSpecificity = max(1e-9, index.genreIDF.max() ?? 1)
         gain = snapshot.tracks.map { $0.normalizationGain.flatMap { $0.isFinite ? $0 : nil } ?? .nan }
+        sound = Self.sound(profiles, snapshot: snapshot)
         // A stream of its own, so the picks' random numbers stay those of
         // the seed.
         tieSeed = randomSeed ^ 0x5DEE_CE66_D1CE_4E5B
@@ -818,6 +827,22 @@ struct RadioEngine: Sendable {
         needsScoring = false
         let known = pool.prefix(100).map { gain[$0] }.filter(\.isFinite).sorted()
         loudnessCenter = known.count >= 5 ? known[known.count / 2] : .nan
+        soundCenter = []
+        if !sound.isEmpty {
+            // A song, artist or album station sounds like its own artists'
+            // songs: without a key the pool's best are much of the library,
+            // and their middle is the library's, not the piano's.
+            var heard = anchor.subject.isEmpty ? [] : (0..<n).filter {
+                sound[$0 * Self.axes].isFinite && index.trackArtists[$0].first.map(anchor.subject.contains) == true
+            }
+            if heard.count < 5 { heard = pool.prefix(100).filter { sound[$0 * Self.axes].isFinite } }
+            if heard.count >= 5 {
+                soundCenter = (0..<Self.axes).map { a in
+                    let values = heard.map { sound[$0 * Self.axes + a] }.sorted()
+                    return values[values.count / 2]
+                }
+            }
+        }
     }
 
     /// Taste × familiarity × freshness: what is the same for a track
@@ -1099,8 +1124,65 @@ struct RadioEngine: Sendable {
             let via = artistViaNow[a]
             f *= exp(-0.25 * artistPressure[via]) * artistBan[via].squareRoot()
         }
-        return f * loudness(i, after: previous)
+        return f * loudness(i, after: previous) * soundFit(i, after: previous)
     }
+
+    static let axes = 3
+
+    /// The profiles by track number, flat; a track without one takes the
+    /// mean of its artist's that have one ("a song without data takes its
+    /// artist's mean, the first piece of the map", radio-alternatives.md).
+    /// Empty when nothing is known, so a station without them is as it was.
+    static func sound(_ profiles: [ItemID: SoundProfile], snapshot: LibrarySnapshot) -> [Double] {
+        guard !profiles.isEmpty else { return [] }
+        let index = snapshot.index
+        var sound = [Double](repeating: .nan, count: snapshot.tracks.count * axes)
+        var sums = [[Double]](repeating: [Double](repeating: 0, count: axes), count: index.artistKeys.count)
+        var counts = [Int](repeating: 0, count: index.artistKeys.count)
+        for (i, track) in snapshot.tracks.enumerated() {
+            guard let profile = profiles[track.id] else { continue }
+            let values = profile.axes
+            for a in 0..<axes { sound[i * axes + a] = values[a] }
+            if let artist = index.trackArtists[i].first {
+                for a in 0..<axes { sums[artist][a] += values[a] }
+                counts[artist] += 1
+            }
+        }
+        for i in snapshot.tracks.indices where !sound[i * axes].isFinite {
+            guard let artist = index.trackArtists[i].first, counts[artist] > 0 else { continue }
+            for a in 0..<axes { sound[i * axes + a] = sums[artist][a] / Double(counts[artist]) }
+        }
+        return sound
+    }
+
+    /// How near the track sounds to the station, and to the song before
+    /// it, as loudness is: within `soundFree` all the same, past it a
+    /// bell, narrow at Familiar and wide at Adventurous. 1 when either is
+    /// not known.
+    func soundFit(_ i: Int, after previous: Int) -> Double {
+        guard !soundCenter.isEmpty else { return 1 }
+        // Not known, by song or artist: no reason to prefer it over one
+        // that is known and a little off.
+        guard sound[i * Self.axes].isFinite else { return Self.soundUnknown }
+        var squares = 0.0
+        for a in 0..<Self.axes {
+            var target = soundCenter[a]
+            if previous >= 0, sound[previous * Self.axes].isFinite {
+                target = 0.5 * (target + sound[previous * Self.axes + a])
+            }
+            let d = sound[i * Self.axes + a] - target
+            squares += d * d
+        }
+        let over = max(0, (squares / Double(Self.axes)).squareRoot() - Self.soundFree)
+        guard over > 0 else { return 1 }
+        let width = Self.soundWidth + Self.soundWidening * adventurousness
+        return max(1e-4, exp(-0.5 * over * over / (width * width)))
+    }
+
+    static let soundUnknown = 0.6
+    static let soundFree = 0.15
+    static let soundWidth = 0.08
+    static let soundWidening = 0.3
 
     /// How near the track is to the station's loudness, and to the song
     /// before it: "Als in het past niet bij het volume van de rest" (the

@@ -121,22 +121,39 @@ name. With one genre, every weight is 1 and it is the station it always was.
 ### Last.fm's key
 
 Jukebox ships its own key ("Ik denk dat een eigen last fm verstandiger is",
-21 November 2026); the listener's key in Settings is used instead when set
-(`AppSettings.lastFMKey`). It is never in git: the Apple builds read it from
-`~/.config/jukebox-ci/lastfm-app-key` on the runner (docs/RELEASE.md), Linux
-from `LASTFM_APP_KEY` in `.env` or the environment (`dev/linux-build.sh`
-writes the gitignored `Linux/App/AppKeys.swift`). A build without it has
-none, and the radio works from the library alone, as before.
+21 November 2026), and since 24 November 2026 only that one: "Kan die api
+ding … ook uit de app dan?" (the photographer). There is no field for a key
+of one's own; one kept from before is removed at launch
+(`AppSettings.lastFMKey`). The key is never in git: the Apple builds read it
+from `~/.config/jukebox-ci/lastfm-app-key` on the runner (docs/RELEASE.md),
+Linux from `LASTFM_APP_KEY` in `.env` or the environment
+(`dev/linux-build.sh` writes the gitignored `Linux/App/AppKeys.swift`). A
+build without it (GitHub's runners) is as with Enhance Radio off, and shows
+neither the switch nor Better Radio.
 
-Enhance Radio with Last.fm (Settings › Radio, Preferences › Radio on
-Linux; `AppSettings.useLastFM`, on by default) says no to all of it: "is
-het nodig? misschien iets van 'enhance radio with last.fm' ?" (the
-photographer, 21 November 2026). Off, `hasLastFM` is false whatever the
-key: the service has no client, so no new similar artists or songs, no
-tags, no scrobbles, the server's mix where it has one. Switched off
-mid-session, the questions still waiting are dropped
-(`RadioController.lastFMKeyChanged`). Last.fm's answers on disk stay
-and are still used.
+Enhance Radio (Settings › Radio, Preferences › Radio on Linux;
+`AppSettings.enhanceRadio`) is one choice for Last.fm and AcousticBrainz
+together: "of lastfm en dit aan of beide uit" (the photographer, 24
+November 2026). On by default, asked once right after the first sign-in
+(Better Radio, Turn On or Not Now); off if either of the two switches before
+it was turned off. Off, `enhancesRadio` is false: the service has no client,
+so no new similar artists or songs, no tags, no scrobbles, no sound looked
+up, and the server's mix where it has one. Switched off mid-session, the
+questions still waiting are dropped (`RadioController.enhanceRadioChanged`).
+What they answered before stays on disk and is still used.
+
+When Last.fm says nothing, the app says so, calmly and the same on every
+client ("doe ze allemaal", the photographer, 23 November 2026):
+`SimilarityService.trouble`, one line under the switch and on a station's
+page, no pop-up.
+- A refused key: "Last.fm didn’t accept the key; stations use your
+  library for now". Not asked again until the app opens again.
+- "Rate limit" after three tries, no answer, or three of Last.fm's own
+  errors in a row: "Last.fm isn’t answering; stations use your library for
+  now". Nothing is asked for a minute, then the app asks again
+  (`retryAt`); each rest that ends without an answer is twice the last, up
+  to an hour. The first answer ends it.
+- A round cancelled (a newer one, the switch) is no trouble.
 
 ### Last.fm's tags
 
@@ -159,6 +176,26 @@ answers are kept in `lastfm-tags.json` and asked again after half a year.
 - a genre keeps the files' spelling ("Shoegaze"; a tag-only one is
   "Dream Pop"); a genre's own tracks, where its station opens, stay the
   files'.
+
+**Which page.** Last.fm keeps a page per spelling, and autocorrect (and
+artist.getCorrection) answers a name that has a page with itself. His
+"Angele", without the accent, is a page of 2 345 listeners tagged "Slayer"
+and "Megadeth"; hers is "Angèle", 508 456 listeners, "pop", "indie pop",
+"french pop". So the tags start with artist.search, and of the pages whose
+name is the artist's but for accents, case and spacing (NameKey), the
+three most listened to are asked. The one whose genre tags agree best
+with the library wins: the files' genres of the artist's own songs, and
+the tags of their neighbours in the graph. Where the library says
+nothing, as for her (no genre, no neighbour), the page most listen to,
+and the files' own spelling unless another has twice its listeners. Of
+his 286 asked artists, 110 names have several pages; two move to another
+spelling, "Angèle" and "Blue Öyster Cult" (2.0 million listeners against
+470 000). The pages a little bigger were the same artist joined otherwise
+or a stray bracket, and stay as filed. Every later question about the artist (similar artists, songs, top songs)
+goes to that page. One call more per artist, every half year; an answer
+from before (no page kept) is asked again once. Tested in
+`LastFMTagsTests`: her case from Last.fm's answers, and a "Ghost" whose
+smaller page agrees with the files' Jazz beating a far bigger "Ghöst".
 
 The app reads it for the radio only. Genres, Home's mixes and offline keep
 the files' genres. Without a key, or with no tags yet, it is the library
@@ -889,6 +926,67 @@ little more often (0.233 → 0.256 on the library in his shape, 0.078 →
 0.114 at 0.7 on his own) and six picks in ten said "From Jellyfin's mix";
 a mix that knows raised the piano artists only from 0.342 to 0.397.
 
+### How it sounds
+
+Recommendation 1 of `radio-alternatives.md`, built after the coverage
+check ("doe ze allemaal", the photographer, 23 November 2026). Code:
+`Sound/Sound.swift` (`SoundService`), `RadioEngine.soundFit`.
+
+**Coverage**, his library (4 341 tracks, 4 091 songs by artist and title
+with brackets left out; the app's own song key makes 3 780):
+- MusicBrainz recording IDs from ListenBrainz's lookup (no key, fifty a
+  call): 3 288 with the album, 432 more by artist and title alone; 3 720
+  in all (0.909).
+- With AcousticBrainz data: 3 007 songs (0.735); 2 026 of the 2 913
+  without a genre in the files. 3 087 tracks have a profile.
+- High-level values for 25 of 25 sampled, about 10 kB a recording: some
+  30 MB once for his library, a minute a round of 500 songs.
+
+**What it keeps.** Of its twelve classifiers, the three that set his piano
+artists apart from the three misfits, by artist mean: acoustic (0.83 …
+0.97 against 0.15 … 0.47), relaxed (0.89 … 1 against 0.41 … 0.94) and
+danceable (0 … 0.15 against 0.45 … 0.76). Its "electronic" (0.27 … 0.67
+against 0.42 … 0.73) and "aggressive" did not. A song without data takes
+its artist's mean.
+
+**The score**, beside loudness and shaped like it: the station's sound is
+the median on each axis of its own artists' songs (a song, artist or
+album station) or of its best 100, half-way to the song before; within
+0.15 (root mean square over the three) all the same, past it a bell 0.08
+wide at Familiar, 0.38 at Adventurous. A song whose sound is not known
+by song or artist counts 0.6: without it, the unknown were favoured. Its
+switch, Enhance Radio, with Last.fm's. On the iPhone and the iPad the
+lookups wait for Wi-Fi or Ethernet (not the mobile network, a hotspot or Low
+Data Mode).
+
+**Measured** (`RadioSoundTests`, lines `RADIO-MIX`): Moans Radio on the
+library in his shape, his artists' means, ±0.2 a song, a quarter of the
+songs without (they take the artist's), 12 × 30 picks:
+
+| dial | without a key: the calm artists | the three | with Last.fm: the calm, the three |
+|---|---|---|---|
+| 0 | 0.342 → 0.856 | 0.233 → 0 | 1.000, 0 (unchanged) |
+| 0.35 | 0.339 → 0.678 | 0.231 → 0.086 | 1.000, 0 |
+| 0.7 | 0.333 → 0.533 | 0.181 → 0.133 | 1.000, 0 |
+| 1 | 0.333 → 0.456 | 0.114 → 0.106 | 1.000, 0 |
+
+His own library (the app's cache on Linux, not in the tests), Moans
+Radio, the share of picks with a profile that are acoustic (0.5 or
+more), and Hania Rani with her five Last.fm neighbours:
+
+| dial | with a key: acoustic | her and her five | without: acoustic | her and her five | the three |
+|---|---|---|---|---|---|
+| 0 | 0.799 → 0.943 | 0.703 → 0.706 | 0.385 → 1.000 | 0.214 → 0.244 | 0.100 → 0.075 |
+| 0.35 | 0.803 → 0.908 | 0.733 → 0.733 | 0.404 → 0.996 | 0.200 → 0.244 | 0.094 → 0.078 |
+| 0.7 | 0.738 → 0.876 | 0.647 → 0.658 | 0.410 → 0.969 | 0.206 → 0.239 | 0.089 → 0.064 |
+| 1 | 0.695 → 0.838 | 0.531 → 0.536 | 0.395 → 0.932 | 0.194 → 0.231 | 0.064 → 0.064 |
+
+Without a key the station now sounds like her even where it does not
+know her neighbours: other piano, not the library at random. About a
+quarter to a third of its picks have no profile either way. Every
+`RADIO-EVAL`, `RADIO-CRITIC` and `RADIO-QUEUE` line is unchanged: their
+libraries have no profiles.
+
 ## What it does when …
 
 `RadioCriticTests.swift` tries the radio the way a demanding listener would
@@ -1006,8 +1104,10 @@ Each round is in the test output of its time.
 - The library alone knows only tags, guests and years. With few artists per
   genre, a station reaches its guests' genres early (the listings above).
   Last.fm's edges are what make "sounds like" right.
-- No audio analysis: two songs of one artist are alike, whatever they sound
-  like.
+- No audio analysis of our own: AcousticBrainz's values stop in 2022
+  ("Moans", 2023, takes its artist's mean), and a quarter of his songs
+  have none. Without them, two songs of one artist are alike, whatever
+  they sound like.
 - Adventurousness is not remembered per station; that is the app's job.
 - Repeats grow over a very long session: after 13 hours of an artist
   station on the made-up library a third of the songs were heard earlier,

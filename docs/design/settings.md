@@ -92,13 +92,18 @@ same; the Mac asks over the main window (`Commands.swift`, RootView).
 |---|---|---|---|---|---|---|
 | 1 | Adventurousness, from Familiar to Adventurous | ✓ | ✓ | ✓ | ✓ (added 21 November; the panel's dial too) | 0.35 |
 | | *Footer*: "Familiar stays close to where a station started and to songs you know. Adventurous goes further out and plays more that is new to you." | ✓ | ✓ | ✓ | ✓ | |
-| 2 | Enhance Radio with Last.fm: "Artists and songs are looked up on Last.fm to find what sounds alike. Nothing about you is sent, unless you add your Last.fm username." | ✓ in the row | ✓ in the row | ✓ footer | ✓ in the row | on |
-| 3 | Last.fm: API Key "Jukebox's own" · Your Key (optional) · Save / Cancel · once kept, •••• with Change Key and Remove Key | ✓ | ✓ | ✓ | ✓ | Jukebox's key |
-| 4 | Username (optional), once a key is in use | ✓ | ✓ | ✓ | ✓ | empty |
-| 5 | Get a Free API Key | ✓ | ✓ | ✓ | ✓ (added) | |
-| | *Footer*: "The radio asks Last.fm which artists and songs sound alike… Only artist names, song titles and your username are sent; nothing is written to Last.fm." | ✓ | ✓ | ✓ | ✓ (now the same words) | |
+| 2 | Enhance Radio: "To find music that sounds alike, Jukebox looks up artist and song names on Last.fm and MusicBrainz. Nothing about you is sent, unless you add your Last.fm username." Last.fm and AcousticBrainz together (24 November 2026) | ✓ in the row | ✓ in the row | ✓ footer | ✓ in the row | on, unless an old switch was turned off |
+| 3 | Last.fm Username (optional) | ✓ | ✓ | ✓ | ✓ | empty |
+| | *Footer*: "With your Last.fm username, the radio learns when you play what from your scrobbles. Nothing is written to Last.fm." | ✓ | ✓ | ✓ | — the row's title says it | |
 
-Rows 3 to 5 show only while row 2 is on.
+Row 3 shows only while row 2 is on. A build without Jukebox's key (GitHub's
+runners) shows neither. The key is Jukebox's own alone: the field for one's
+own, Get a Free API Key, Change Key and Remove Key are gone ("Kan die api
+ding … ook uit de app dan?", the photographer, 24 November 2026), and a key
+kept from before is removed at launch.
+
+Better Radio asks row 2 once, right after the first sign-in (SYSTEM.md, The
+welcome and sign-in pages).
 
 ## Library
 
@@ -187,7 +192,8 @@ its buttons on every client, in grey.
 - **Linux** was missing:
   - Address;
   - the Adventurousness dial in Preferences;
-  - Get a Free API Key;
+  - Get a Free API Key (since gone on every client with the key of one's
+    own, 24 November 2026);
   - Library's counts and Refresh Library;
   - History (Plays Remembered, Clear Listening History);
   - the streaming footer;
@@ -196,7 +202,6 @@ its buttons on every client, in grey.
 - **Words** that differed, now one:
   - Autoplay (Apple said "keep playing similar music");
   - Normalize Volume and Find Lyrics Online (Linux's were shorter);
-  - Last.fm's row names ("Last.fm API Key", "Change", "Remove" on Linux);
   - the Last.fm footer;
   - Share Anonymous Usage's note;
   - Add Account… and Sign Out…, now with "…" on Apple too;

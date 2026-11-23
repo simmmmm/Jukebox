@@ -63,7 +63,6 @@ enum Stats {
         case ratingSet = "rating_set"
         case searchUsed = "search_used"
         case settingChanged = "setting_changed"
-        case lastFMKey = "lastfm_key"
         case playbackError = "playback_error"
         case downloadChosen = "download_chosen"
         case offlinePlayStarted = "offline_play_started"
