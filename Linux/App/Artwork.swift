@@ -42,7 +42,9 @@ final class ArtworkLoader {
     init() {
         let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        folder = caches.appendingPathComponent("Jukebox/artwork", isDirectory: true)
+        folder = caches.appendingPathComponent("Jukebox/covers", isDirectory: true)
+        // The folder before CoverKey, its files named from the addresses.
+        try? FileManager.default.removeItem(at: caches.appendingPathComponent("Jukebox/artwork", isDirectory: true))
         try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
     }
 
@@ -70,10 +72,23 @@ final class ArtworkLoader {
         return written ? file : nil
     }
 
-    /// The address holds a Subsonic server's token: the file is named by a
-    /// number made of it, never by it.
+    /// Named by a number made of the cover's CoverKey, not of its address:
+    /// a Subsonic server's holds the account's token, or its password, which
+    /// a quick hash of it would let anyone with the file's name try for.
     private nonisolated func fileURL(for url: URL) -> URL {
-        folder.appendingPathComponent(String(Self.stableHash(url.absoluteString), radix: 16))
+        folder.appendingPathComponent(String(Self.stableHash(CoverKey.of(url).absoluteString), radix: 16))
+    }
+
+    /// Every cover goes, from memory and disk: at a sign-out (the iPhone's
+    /// ImagePipeline.removeAll).
+    func removeAll() {
+        memory = [:]
+        recent = []
+        missing = []
+        let files = FileManager.default
+        for file in (try? files.contentsOfDirectory(at: folder, includingPropertiesForKeys: nil)) ?? [] {
+            try? files.removeItem(at: file)
+        }
     }
 
     func texture(for url: URL) async -> Texture? {

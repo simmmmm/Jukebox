@@ -205,6 +205,8 @@ final class AppModel {
         guard let current = credentials else { return }
         let leaving = account ?? current
         Stats.track(.signedOut)
+        // Its covers go too (all accounts', ImagePipeline.removeAll).
+        ImagePipeline.shared.removeAll()
         guard leaving.isSameAccount(as: current) else {
             _ = accounts.remove(leaving)
             let unsent = offline.forget(leaving)

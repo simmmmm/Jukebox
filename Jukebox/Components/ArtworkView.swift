@@ -1,10 +1,10 @@
 // Covers and artist photos from the server, at the size they are drawn, held
-// in memory and on disk (URLCache), keyed by URL. Jellyfin's image URLs carry
-// the image's tag, so a cached one is never stale and scrolling back never
-// refetches; a Subsonic server's carry the coverArt id (Navidrome's has the
-// image's hash in it) and the session's one token and salt, made once at
-// sign-in so that the same cover is always the same URL (docs/SERVERS.md,
-// decision 4).
+// in memory by URL and on disk by CoverKey: the server, the path and the
+// picture's id, tag and size, never the session's credentials (a Subsonic
+// cover's address carries `u`, `t` and `s`, a Plex one its token). Jellyfin's
+// image URLs carry the image's tag, so a cached one is never stale and
+// scrolling back never refetches; a Subsonic server's carry the coverArt id
+// (Navidrome's has the image's hash in it).
 
 import JukeboxKit
 import SwiftUI
@@ -15,17 +15,59 @@ final class ImagePipeline {
 
     private let memory = NSCache<NSURL, PlatformImage>()
     private let session: URLSession
+    /// The covers on disk, by CoverKey, in a folder of their own.
+    private let disk: URLCache
     private var inFlight: [URL: Task<PlatformImage?, Never>] = [:]
 
     init() {
         let configuration = URLSessionConfiguration.default
-        configuration.urlCache = URLCache(memoryCapacity: 32 << 20, diskCapacity: 512 << 20)
-        configuration.requestCachePolicy = .returnCacheDataElseLoad
+        // No cache of the session's own: it keeps an answer by its address.
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
         session = URLSession(configuration: configuration)
+        disk = URLCache(memoryCapacity: 0, diskCapacity: 512 << 20, directory: Self.folder)
         memory.countLimit = 500
         // Decoded bytes, not a count: a 900 px cover is 3.2 MB once prepared
         // for display, so 500 of them would be 1.6 GB. 256 MB is about 80.
         memory.totalCostLimit = 256 << 20
+    }
+
+    private static var folder: URL {
+        (FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
+            ?? URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true))
+            .appendingPathComponent("Jukebox/Covers", isDirectory: true)
+    }
+
+    /// Every cover on disk and in memory goes: at a sign-out, so nothing of
+    /// an account's library stays behind it.
+    /// ponytail: every account's covers, not the one's; they come back as
+    /// they are shown.
+    func removeAll() {
+        memory.removeAllObjects()
+        disk.removeAllCachedResponses()
+        missing = []
+        averages = [:]
+        accents = [:]
+    }
+
+    /// Before this the covers were kept by their address, credentials and
+    /// all, in the system's own cache (Library/Caches/<the bundle's id>):
+    /// emptied once, at the first launch after, before anything of the app
+    /// asks the network (JukeboxApp.init).
+    static func forgetAddressKeyedCache() {
+        let done = "coversKeptByCoverKey"
+        guard !UserDefaults.standard.bool(forKey: done) else { return }
+        URLCache.shared.removeAllCachedResponses()
+        URLCache(memoryCapacity: 0, diskCapacity: 512 << 20).removeAllCachedResponses()
+        // And the files themselves, should a system have left them.
+        if let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first,
+           let id = Bundle.main.bundleIdentifier {
+            let old = caches.appendingPathComponent(id, isDirectory: true)
+            for name in ["Cache.db", "Cache.db-wal", "Cache.db-shm", "fsCachedData"] {
+                try? FileManager.default.removeItem(at: old.appendingPathComponent(name))
+            }
+        }
+        UserDefaults.standard.set(true, forKey: done)
     }
 
     func cached(_ url: URL) -> PlatformImage? {
@@ -44,11 +86,21 @@ final class ImagePipeline {
         if let image = cached(url) { return image }
         if let task = inFlight[url] { return await task.value }
         let session = self.session
+        let disk = self.disk
+        let key = URLRequest(url: CoverKey.of(url))
         let task = Task<PlatformImage?, Never> {
+            let kept = await Task.detached(priority: .userInitiated) { disk.cachedResponse(for: key)?.data }.value
+            if let kept, let image = PlatformImage(data: kept) { return await image.preparedForDisplay() }
             guard let (data, response) = try? await session.data(from: url) else { return nil }
             guard (response as? HTTPURLResponse)?.statusCode == 200, let image = PlatformImage(data: data) else {
                 self.missing.insert(url)
                 return nil
+            }
+            // Kept under the key with an answer made for it: the server's
+            // own answer names the address.
+            if let keyURL = key.url,
+               let answer = HTTPURLResponse(url: keyURL, statusCode: 200, httpVersion: "HTTP/1.1", headerFields: nil) {
+                disk.storeCachedResponse(CachedURLResponse(response: answer, data: data), for: key)
             }
             return await image.preparedForDisplay()
         }

@@ -25,6 +25,7 @@ struct JukeboxApp: App {
     @State private var panel = PanelState()
 
     init() {
+        ImagePipeline.forgetAddressKeyedCache()
         // `app_open` (Stats) is counted by AppModel.restore, once a launch,
         // when the keychain has said which kind of server it is.
         // The bars' titles in the serif, before the first bar is made.

@@ -26,7 +26,17 @@ public protocol HTTPTransport: Sendable {
 public struct URLSessionTransport: HTTPTransport {
     public let session: URLSession
 
-    public init(session: URLSession = .shared) {
+    /// URLSession.shared without its disk cache: a Subsonic call's address
+    /// carries the account's credentials, and URLCache keeps answers by
+    /// address. Nothing here is meant to be answered from a cache.
+    public static let uncached: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.urlCache = nil
+        configuration.requestCachePolicy = .reloadIgnoringLocalCacheData
+        return URLSession(configuration: configuration)
+    }()
+
+    public init(session: URLSession = URLSessionTransport.uncached) {
         self.session = session
     }
 
