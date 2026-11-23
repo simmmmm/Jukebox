@@ -165,7 +165,10 @@ enum Preferences {
         // In the dialog while it is open, else in the window: a check may
         // answer after Preferences has closed.
         func say(_ words: String) {
-            if isClosed { MainWindow.toast(words) } else { adw_preferences_dialog_add_toast(ptr(dialog), adw_toast_new(words)) }
+            guard !isClosed else { return MainWindow.toast(words) }
+            let toast = adw_toast_new(words)!
+            adw_toast_set_use_markup(toast, 0)
+            adw_preferences_dialog_add_toast(ptr(dialog), toast)
         }
         func saveUser() {
             let name = String(cString: gtk_editable_get_text(ptr(user))).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -241,7 +244,10 @@ enum Preferences {
                     on(raw(row), "activated") {
                         Task {
                             if let problem = await app.switchAccount(to: account) {
-                                adw_preferences_dialog_add_toast(ptr(dialog), adw_toast_new(problem))
+                                // Plain words: they name the server, anyone's.
+                                let toast = adw_toast_new(problem)!
+                                adw_toast_set_use_markup(toast, 0)
+                                adw_preferences_dialog_add_toast(ptr(dialog), toast)
                             } else {
                                 adw_dialog_close(ptr(dialog))
                             }
@@ -485,7 +491,11 @@ enum Preferences {
             }
             if !isLoading { gtk_button_set_label(ptr(refresh), "Refresh Library") }
             gtk_widget_set_sensitive(refresh, isLoading ? 0 : 1)
-            adw_preferences_group_set_description(ptr(group), failure ?? "Jukebox keeps a copy of the list of your music, so it opens at once. It reads the server again each time it starts.")
+            // A group's description is Pango markup, and a failure's words
+            // can be the server's: escaped, so they show as they are.
+            let escaped = g_markup_escape_text(failure ?? "Jukebox keeps a copy of the list of your music, so it opens at once. It reads the server again each time it starts.", -1)
+            adw_preferences_group_set_description(ptr(group), escaped)
+            g_free(escaped)
         }
     }
 
