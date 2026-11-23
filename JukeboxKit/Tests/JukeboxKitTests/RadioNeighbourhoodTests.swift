@@ -92,15 +92,23 @@ final class RadioNeighbourhoodTests: XCTestCase {
         var all = 0, strangers = 0, metalcore = 0, long = 0, near = 0, own = 0
         var wrongLike = 0
         var soundsLike = 0
+        /// Where the first stranger came, in each run that had one.
+        var firstStranger: [Int] = []
     }
 
-    func tally(_ bunker: Bunker, adventurousness: Double) -> Tally {
+    func tally(_ bunker: Bunker, adventurousness: Double, count: Int) -> Tally {
         var t = Tally()
         for run in 0..<12 {
-            for pick in bunker.picks(adventurousness: adventurousness, randomSeed: UInt64(4100 + run)).dropFirst() {
+            var first: Int?
+            for (k, pick) in bunker.picks(adventurousness: adventurousness, randomSeed: UInt64(4100 + run), count: count).enumerated().dropFirst() {
                 let artist = pick.track.artists.first?.name ?? ""
                 t.all += 1
-                if Bunker.near.contains(artist) { t.near += 1 } else { t.strangers += 1 }
+                if Bunker.near.contains(artist) {
+                    t.near += 1
+                } else {
+                    t.strangers += 1
+                    if first == nil { first = k }
+                }
                 if artist == Bunker.seedArtist { t.own += 1 }
                 if artist == "Horizon Fall" { t.metalcore += 1 }
                 if artist == "Marula" { t.long += 1 }
@@ -108,6 +116,7 @@ final class RadioNeighbourhoodTests: XCTestCase {
                 if case .similarTrack = pick.reason, !Bunker.hits.contains(pick.track.id) { t.wrongLike += 1 }
                 if pick.reason == .similarArtist(Bunker.seedArtist) { t.soundsLike += 1 }
             }
+            if let first { t.firstStranger.append(first) }
         }
         return t
     }
@@ -115,8 +124,15 @@ final class RadioNeighbourhoodTests: XCTestCase {
     func testASongStationStaysInItsNeighbourhood() {
         let bunker = Bunker()
         var at: [Double: Tally] = [:]
+        for adv in [0.0, 0.35] {
+            let t = tally(bunker, adventurousness: adv, count: 60)
+            Self.line("Bunker Radio at \(adv), 12 × 59 picks: strangers \(t.strangers), metalcore \(t.metalcore), the ten-minute band \(t.long), the seed artist \(t.own); first stranger at \(t.firstStranger.min().map(String.init) ?? "none") in \(t.firstStranger.count) runs")
+            // The neighbourhood is 60 songs: strangers only once nearly all
+            // of them have played, not once two of its three artists have.
+            XCTAssertGreaterThanOrEqual(t.firstStranger.min() ?? 60, 50, "the first stranger at \(adv)")
+        }
         for adv in [0.0, 0.35, 0.7, 1.0] {
-            let t = tally(bunker, adventurousness: adv)
+            let t = tally(bunker, adventurousness: adv, count: 30)
             at[adv] = t
             let share = { (n: Int) in String(format: "%.3f", Double(n) / Double(max(1, t.all))) }
             Self.line("Bunker Radio in his shape at \(adv), 12 × 29 picks: strangers \(share(t.strangers)), metalcore \(t.metalcore), the ten-minute band \(t.long), \"Sounds like\" \(share(t.soundsLike)), the seed artist \(share(t.own))")
@@ -130,7 +146,9 @@ final class RadioNeighbourhoodTests: XCTestCase {
             XCTAssertLessThan(Double(t.strangers) / Double(t.all), 0.05, "strangers at \(adv)")
             XCTAssertGreaterThan(t.soundsLike, 0, "the similar songs' artists join at \(adv)")
         }
-        // Adventurous: further out is what the dial asks for.
+        // Further out, strangers come, as long as the station's songs: the
+        // ten-minute band came 20 times at 0.7 before its length counted.
+        XCTAssertEqual(at[0.7]!.long, 0)
         XCTAssertGreaterThan(at[1.0]!.strangers, 0)
     }
 }

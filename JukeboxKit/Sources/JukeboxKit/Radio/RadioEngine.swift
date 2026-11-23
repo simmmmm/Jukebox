@@ -1333,11 +1333,14 @@ struct RadioEngine: Sendable {
     /// times in 6 × 120 picks and the album rule 126 times.
     ///
     /// A song station below `nearDial`, before it looks wider: its own
-    /// neighbourhood once more, separation halved, first with the cap kept,
-    /// then without. A song near the seed one track sooner, or one more by
-    /// the seed's artist, beats a stranger nothing holds near, whom only
-    /// taste ranks: Bunker Radio, three artists near, went wide every
-    /// fourth pick for want of a fourth (RadioNeighbourhoodTests). A song
+    /// neighbourhood once more, separation halved, then off; the cap and
+    /// the album rule kept. A song near the seed sooner beats a stranger
+    /// nothing holds near, whom only taste ranks: Bunker Radio, three
+    /// artists near, went wide every fourth pick for want of a fourth, and
+    /// with separation halved still from pick 35 on, once two of the three
+    /// had played all their songs (RadioNeighbourhoodTests). The cap stays:
+    /// off, Moans Radio without a key, its neighbourhood Hania Rani alone,
+    /// played her every other song. A song
     /// station's neighbourhood is Last.fm's word on that song; elsewhere
     /// (an artist station on a library without genres, RadioCriticTests)
     /// separation holds before strangers, as it did. From `nearDial` up a
@@ -1346,7 +1349,7 @@ struct RadioEngine: Sendable {
     typealias Step = (window: Window, wide: Bool, level: Int, capKept: Bool)
     static let wideSteps: [Step] = (0...lastLevel).map { (.none, true, $0, false) }
         + (0...lastLevel).flatMap { [(.long, true, $0, false), (.short, true, $0, false)] }
-    static let nearSteps: [Step] = [(.none, false, 0, false), (.none, false, 2, true), (.none, false, 2, false)] + wideSteps
+    static let nearSteps: [Step] = [(.none, false, 0, false), (.none, false, 2, true), (.none, false, 3, true)] + wideSteps
     static let farSteps: [Step] = [(.none, false, 0, false)] + wideSteps
     static let nearDial = 0.7
     static let lastLevel = 5

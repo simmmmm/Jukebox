@@ -34,9 +34,9 @@ One dial runs through all of it: adventurousness, 0 (near and known) to 1
    artist at most one in five, nothing thumbed down.
 6. **One track is drawn at random** from the best 8 to 60 left (more at a
    higher dial), in proportion to score.
-7. **When nothing is left**, the station tries its neighbourhood with
-   separation halved (below 0.7), then looks wider, then loosens the rules
-   one at a time. It never stops on its own.
+7. **When nothing is left**, a song station below 0.7 tries its
+   neighbourhood with separation loosened; then the station looks wider,
+   then loosens the rules one at a time. It never stops on its own.
 8. **Feedback counts at once**: the scores are worked out again before the
    next pick.
 
@@ -540,8 +540,8 @@ The rules:
 - never a song thumbed down, in this session or before (see Taste).
 
 When nothing passes, below 0.7 on the dial the neighbourhood is tried once
-more with separation halved, the cap kept, then without it ("A song
-station's neighbourhood"). Then the station looks wider: the whole
+more on a song station, separation halved, then off ("A song station's
+neighbourhood"). Then the station looks wider: the whole
 library, the tracks outside its neighbourhood at a closeness of 0.03,
 taste deciding, a song far longer or shorter than the station's held back.
 Then the rules loosen one at a time:
@@ -902,8 +902,8 @@ by taste, the three among it. The mix no longer adds to that.
 
 | Moans Radio at Familiar | with a key | without |
 |---|---|---|
-| the library in his shape, the piano artists | 1.000 | 0.597 (0.342 before the neighbourhood, 0.267 before that) |
-| … the three | 0 | 0.194 (0.233, 0.342) |
+| the library in his shape, the piano artists | 1.000 | 0.342 (0.267 before) |
+| … the three | 0 | 0.233 (0.342 before) |
 | his library, the piano artists | 0.928 | 0.206 (0.214 before) |
 | … the three | 0 | 0.072 (0.139 before) |
 
@@ -969,8 +969,8 @@ songs without (they take the artist's), 12 × 30 picks:
 
 | dial | without a key: the calm artists | the three | with Last.fm: the calm, the three |
 |---|---|---|---|
-| 0 | 0.597 → 0.936 | 0.194 → 0 | 1.000, 0 (unchanged) |
-| 0.35 | 0.619 → 0.897 | 0.139 → 0.003 | 1.000, 0 |
+| 0 | 0.342 → 0.856 | 0.233 → 0 | 1.000, 0 (unchanged) |
+| 0.35 | 0.339 → 0.678 | 0.231 → 0.086 | 1.000, 0 |
 | 0.7 | 0.333 → 0.533 | 0.181 → 0.133 | 1.000, 0 |
 | 1 | 0.333 → 0.456 | 0.114 → 0.106 | 1.000, 0 |
 
@@ -1015,8 +1015,8 @@ gain, and The National (−10 … −12 dB) is as loud as Bring Me The Horizon
   also when the songs arrive after the start. Only the named songs say
   "Like “Bunker”".
 - A song station below 0.7 tries its neighbourhood with separation halved,
-  the cap kept, then without it, before strangers. Other stations keep
-  separation first (`RadioCriticTests`).
+  then off, before strangers; the cap (one in five) and the album rule
+  hold. Other stations keep separation first (`RadioCriticTests`).
 - A stranger far longer or shorter than the median of the station's best
   100 is held back: half an octave free, then a bell 0.25 octaves wide at
   Familiar, 1 at Adventurous.
@@ -1024,22 +1024,28 @@ gain, and The National (−10 … −12 dB) is as loud as Bring Me The Horizon
 **Measured** (`RadioNeighbourhoodTests`, lines `RADIO-NEAR`): his shape,
 the hits arriving after the seed song, 12 × 29 picks, before → now:
 
-| dial | strangers | metalcore | ten-minute band | the seed artist |
-|---|---|---|---|---|
-| 0 | 0.759 → 0 | 24 → 0 | 12 → 0 | 0.172 → 0.241 |
-| 0.35 | 0.759 → 0 | 28 → 0 | 13 → 0 | 0.172 → 0.241 |
-| 0.7 | 0.759 → 0.365 | 31 → 23 | 20 → 0 | 0.172 |
-| 1 | 0.647 → 0.359 | 28 → 21 | 20 → 8 | 0.172 |
+| dial | strangers | metalcore | ten-minute band |
+|---|---|---|---|
+| 0 | 0.759 → 0 | 24 → 0 | 12 → 0 |
+| 0.35 | 0.759 → 0 | 28 → 0 | 13 → 0 |
+| 0.7 | 0.759 → 0.365 | 31 → 23 | 20 → 0 |
+| 1 | 0.647 → 0.359 | 28 → 21 | 20 → 8 |
+
+The seed artist stays one in five (0.172). Over 59 picks the first
+stranger comes at pick 56 or later, when the neighbourhood's 60 songs are
+nearly all played; with separation only halved it was pick 35.
 
 His own library as the station started (the app's cache, not in the
-tests), 6 × 15 picks at 0 and at 0.35: 66 strangers of 90 → 0, the rest The
-National and The War On Drugs ("Sounds like Balthazar") and Balthazar.
+tests), 6 × 29 picks at 0: 133 strangers of 174 → 0 (Bring Me The Horizon
+6 → 0, Maruja 8 → 0; at 0.35 the same), the rest The National and The War
+On Drugs ("Sounds like Balthazar") and Balthazar.
 With the tags and graph as they are now, no strangers before or after.
-Moans Radio without a key, a song station too, moved with it (the tables
-above). Every other `RADIO-*` line is unchanged.
+Every other `RADIO-*` line is unchanged.
 
 Left: a playing station does not take up Last.fm's answers that come
-after its start, and at 0.7 and up strangers are still ranked by taste.
+after its start. Strangers are still ranked by taste: at 0.7 and up, once
+a neighbourhood has played all its songs, and on a song station Last.fm
+names no library song for.
 
 ## What it does when …
 
