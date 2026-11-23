@@ -64,7 +64,11 @@ private struct Round {
         // laptop (Keep Songs I Play fetched the whole library, 138 songs):
         // in the registration domain, read when nothing else is set and
         // written nowhere.
-        UserDefaults.standard.register(defaults: [Stats.key: false, "keepSongs": false])
+        // Enhance Radio shown though the build has no Last.fm key
+        // (AppSettings.canEnhanceRadio), as the walks' -showBetterRadio, and
+        // Better Radio taken as answered: the pages under it are the pictures.
+        UserDefaults.standard.register(defaults: [Stats.key: false, "keepSongs": false,
+                                                  "showBetterRadio": true, "radioChoiceMade": true])
         let app = AppModel.shared
         guard await signIn(app) else { return }
         // The Mac's window is always wide; RootView tells the navigator so
