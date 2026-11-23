@@ -322,6 +322,14 @@ nothing to anyone but the listener's own server and devices.
   in that file, `chmod 600` it. The log then says its length in each build,
   and a runner with the file but an app without the key fails the run.
   GitHub's own runners have no file and build without one.
+- **Secrets**: `ci/app.sh` hands the App Store Connect key to an upload
+  only, and GitHub's token to the screenshots' push only. A GitHub
+  Environment for main holds them for main's runs alone: the secrets in
+  it, its branch rule "main", and the app job's `environment:` set to it.
+  That is a change to the workflow and the repository's settings, for the
+  photographer to make.
+- **XcodeGen** is the release's own zip, pinned by version and sha256,
+  checked and unpacked afresh on every run.
 
 ## Before submitting
 

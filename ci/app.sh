@@ -107,28 +107,29 @@ xcode=$(ls -d /Applications/Xcode_2[6-9]*.app 2>/dev/null | grep -iv beta | sort
 if [[ -n $xcode ]]; then export DEVELOPER_DIR="$xcode/Contents/Developer"; fi
 xcodebuild -version | tee build/logs/xcode-version.txt
 
-# XcodeGen: brew's on GitHub's machines; the MacBook has no brew, so there
-# the release's own binary, once, kept beside the runner's work.
-if ! command -v xcodegen >/dev/null; then
-  if command -v brew >/dev/null; then
-    brew install xcodegen
-  else
-    # Pinned by version and sha256 (the release's own digest), as
-    # dev/linux-appimage.sh pins its tools: run on the owner's MacBook.
-    xcodegen_version=2.48.0
-    xcodegen_sha256=620c9f0dc10849f94728ab5df52d225ebab8187439dd6fee1925e59e80dff892
-    tools="${RUNNER_TOOL_CACHE:-$HOME/.cache}/xcodegen-$xcodegen_version"
-    if [[ ! -x $tools/xcodegen/bin/xcodegen ]]; then
-      mkdir -p "$tools"
-      curl -fsSL -o "$tools/xcodegen.zip" \
-        "https://github.com/yonaskolb/XcodeGen/releases/download/$xcodegen_version/xcodegen.zip"
-      echo "$xcodegen_sha256  $tools/xcodegen.zip" | shasum -a 256 -c --quiet \
-        || { rm -f "$tools/xcodegen.zip"; echo "::error::xcodegen.zip: not the pinned sha256"; exit 1; }
-      unzip -oq "$tools/xcodegen.zip" -d "$tools"
-    fi
-    export PATH="$tools/xcodegen/bin:$PATH"
-  fi
+# XcodeGen: the release's own binary on every runner, pinned by version and
+# sha256 (the release's own digest), as dev/linux-appimage.sh pins its
+# tools; never Homebrew's or one already on the PATH. The zip is kept beside
+# the runner's work, but the MacBook keeps its files between runs, any
+# branch's: so on every run the zip is copied into this run's own folder,
+# its digest checked there, and unpacked there afresh.
+xcodegen_version=2.48.0
+xcodegen_sha256=620c9f0dc10849f94728ab5df52d225ebab8187439dd6fee1925e59e80dff892
+tools="${RUNNER_TOOL_CACHE:-$HOME/.cache}/xcodegen-$xcodegen_version"
+xcodegen_run=$(mktemp -d "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/xcodegen.XXXXXX")
+xcodegen_zip=$xcodegen_run/xcodegen.zip
+pinned() { echo "$xcodegen_sha256  $xcodegen_zip" | shasum -a 256 -c --quiet > /dev/null 2>&1; }
+cp "$tools/xcodegen.zip" "$xcodegen_zip" 2> /dev/null || true
+if ! pinned; then
+  curl -fsSL -o "$xcodegen_zip" \
+    "https://github.com/yonaskolb/XcodeGen/releases/download/$xcodegen_version/xcodegen.zip"
+  pinned || { echo "::error::xcodegen.zip: not the pinned sha256"; exit 1; }
+  # Into the cache whole or not at all: two runners on the MacBook share it.
+  mkdir -p "$tools"
+  cp "$xcodegen_zip" "$tools/xcodegen.zip.$$" && mv -f "$tools/xcodegen.zip.$$" "$tools/xcodegen.zip"
 fi
+unzip -oq "$xcodegen_zip" -d "$xcodegen_run"
+export PATH="$xcodegen_run/xcodegen/bin:$PATH"
 xcodegen generate
 
 # Jukebox's own Last.fm key, so the radio knows who sounds like whom
