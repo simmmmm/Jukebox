@@ -160,16 +160,103 @@ final class PlayOn {
         devices = []
     }
 
+    /// A TV or a speaker waiting on the one question before it is handed
+    /// the account's key (`needsKeyNotice`): the list shows it, Cast Anyway
+    /// (`castAnyway`) or Cancel (`cancelKeyNotice`).
+    private(set) var pendingKeyNotice: PlayOnDevice?
+
+    /// The question's words, the same on every client. "Ik ga mee met je
+    /// aanbevelingen" (the photographer, 23 November 2026).
+    enum KeyNoticeWords {
+        static let title = "Your Speaker Gets a Key"
+        static let body = "Anyone on your network could read it."
+        static let castAnyway = "Cast Anyway"
+        static let cancel = "Cancel"
+    }
+
     /// Play here (nil) or on `device`.
     func choose(_ device: PlayOnDevice?) {
         guard let player, device?.id != player.playsOn?.id else { return }
-        Stats.track(.playOn, ["target": device?.statsTarget ?? "this_device"])
         guard let device else {
+            Stats.track(.playOn, ["target": "this_device"])
             player.playHere()
             return
         }
+        if Self.handsAddresses(device), Self.needsKeyNotice(player.server) {
+            pendingKeyNotice = device
+            return
+        }
+        start(device)
+    }
+
+    /// Cast Anyway: kept for every account of the server, and played there.
+    func castAnyway() {
+        guard let device = pendingKeyNotice else { return }
+        pendingKeyNotice = nil
+        Self.acceptKey(player?.server)
+        start(device)
+    }
+
+    func cancelKeyNotice() {
+        pendingKeyNotice = nil
+    }
+
+    private func start(_ device: PlayOnDevice) {
+        guard let player else { return }
+        Stats.track(.playOn, ["target": device.statsTarget])
         guard let remote = remotePlayer(for: device, server: player.server) else { return }
-        player.play(on: remote)
+        guard Self.handsAddresses(device), let server = player.server else {
+            player.play(on: remote)
+            return
+        }
+        // Plex's own token for the device first (PlexServer.prepareCast).
+        Task { @MainActor [weak player] in
+            do {
+                try await server.prepareCast()
+            } catch {
+                player?.showError("\(device.name) could not be given a key of its own by the server. Play On stays on this device.")
+                return
+            }
+            player?.play(on: remote)
+        }
+    }
+
+    /// A TV or a speaker: it is handed addresses to fetch the songs itself.
+    static func handsAddresses(_ device: PlayOnDevice) -> Bool {
+        device.kind == .chromecast || device.kind == .upnp
+    }
+
+    /// The accounts of a server, a merged one's each.
+    private static func accounts(_ server: (any MusicServer)?) -> [ServerCredentials] {
+        (server as? MergedServer)?.members.map(\.credentials) ?? [server?.credentials].compactMap { $0 }
+    }
+
+    private static let keyAcceptedKey = "playOn.keyAccepted"
+
+    private static func accountID(_ account: ServerCredentials) -> String {
+        "\(account.serverID)/\(account.userID)"
+    }
+
+    /// Whether casting hands the device a key that is the account's own
+    /// and not asked about yet: a Subsonic token (`t` and `s`, which also
+    /// let the password be guessed). An API key is a key of its own,
+    /// taken back on the server; Jellyfin's session token goes as
+    /// Jellyfin's own Chromecast sends it; Plex's is the cast's own
+    /// (prepareCast); the password itself never goes (sendsPassword).
+    static func needsKeyNotice(_ server: (any MusicServer)?, defaults: UserDefaults = .standard) -> Bool {
+        let accepted = defaults.stringArray(forKey: keyAcceptedKey) ?? []
+        return accounts(server).contains { account in
+            guard case .subsonicToken = account.secret else { return false }
+            return !accepted.contains(accountID(account))
+        }
+    }
+
+    static func acceptKey(_ server: (any MusicServer)?, defaults: UserDefaults = .standard) {
+        var accepted = defaults.stringArray(forKey: keyAcceptedKey) ?? []
+        for account in accounts(server) where !accepted.contains(accountID(account)) {
+            accepted.append(accountID(account))
+        }
+        defaults.set(accepted, forKey: keyAcceptedKey)
     }
 
     /// Counted when the system's AirPlay list is opened from ours: which
@@ -181,8 +268,7 @@ final class PlayOn {
     /// Whether the server's every address carries the password itself
     /// (`p=enc:`, ServerSecret.subsonicPassword): any account of it.
     static func sendsPassword(_ server: (any MusicServer)?) -> Bool {
-        let accounts = (server as? MergedServer)?.members.map(\.credentials) ?? [server?.credentials].compactMap { $0 }
-        return accounts.contains { account in
+        accounts(server).contains { account in
             if case .subsonicPassword = account.secret { return true }
             return false
         }
@@ -335,16 +421,24 @@ extension PlayQueue {
     /// itself never goes to one (PlayOn.sendsPassword), and the music comes
     /// back here.
     private func remoteMayFetch(from server: any MusicServer) -> Bool {
-        guard let device = playsOn, device.kind == .chromecast || device.kind == .upnp,
-              PlayOn.sendsPassword(server) else { return true }
-        playHere()
-        showError(PlayOn.passwordStaysHere(device))
-        return false
+        guard let device = playsOn, PlayOn.handsAddresses(device) else { return true }
+        if PlayOn.sendsPassword(server) {
+            playHere()
+            showError(PlayOn.passwordStaysHere(device))
+            return false
+        }
+        // An account not asked about its key yet: back here, and the list
+        // asks when the device is chosen again.
+        if PlayOn.needsKeyNotice(server) {
+            playHere()
+            return false
+        }
+        return true
     }
 
     private func remoteEntry(_ entry: QueueEntry, server: any MusicServer) -> RemoteEntry {
         RemoteEntry(track: entry.track, stream: server.castURL(for: entry.track),
-                    artworkURL: entry.track.artwork.map { server.artworkURL($0, maxPixelSize: 600) })
+                    artworkURL: entry.track.artwork.map { server.castArtworkURL($0, maxPixelSize: 600) })
     }
 
     /// One call to the remote, in order after the ones before; a failure

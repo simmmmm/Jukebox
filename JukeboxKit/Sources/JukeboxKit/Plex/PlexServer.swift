@@ -30,6 +30,9 @@ import FoundationNetworking
 public struct PlexServer: MusicServer {
     public let credentials: ServerCredentials
     let connection: PlexConnection
+    /// The cast's own token, once prepareCast has it: one box for every
+    /// copy of this server.
+    let castToken = PlexCastToken()
 
     /// What every Plex server has once signed in (docs/SERVERS.md).
     public static let capabilities: Set<ServerCapability> = [
@@ -275,14 +278,35 @@ public struct PlexServer: MusicServer {
     }
 
     /// What a cast device fetches itself (MusicServer.castURL): the file
-    /// with the token for an MP3 or a FLAC; anything else, an M4A among them
-    /// (its codec may be ALAC), the transcoder's MP3 at 320, as on Jellyfin.
+    /// for an MP3 or a FLAC; anything else, an M4A among them (its codec
+    /// may be ALAC), the transcoder's MP3 at 320, as on Jellyfin. With the
+    /// cast's own token (prepareCast), never the account's: none before it.
     public func castURL(for track: Track) -> CastStream {
+        let cast = connection.with(token: castToken.value)
         let types = ["mp3": "audio/mpeg", "flac": "audio/flac"]
         if let key = track.fileKey, let container = track.container, let type = types[container] {
-            return CastStream(url: connection.url(key, [], withToken: true), contentType: type)
+            return CastStream(url: cast.url(key, [], withToken: true), contentType: type)
         }
-        return CastStream(url: transcoded(track, kbps: 320, session: "jukebox-cast-\(track.id)"), contentType: "audio/mpeg")
+        return CastStream(url: transcoded(track, kbps: 320, session: "jukebox-cast-\(track.id)", via: cast),
+                          contentType: "audio/mpeg")
+    }
+
+    public func castArtworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
+        artworkURL(artwork, maxPixelSize: maxPixelSize, via: connection.with(token: castToken.value))
+    }
+
+    /// A transient token of the server's, for the device alone: Plex's own
+    /// clients hand a cast this rather than the account's (GET
+    /// /security/token, type delegation). It ends with the server's
+    /// restart or in a day or two, and gives no sign-in to the account.
+    /// ponytail: asked once a session; asked again when Play On is chosen
+    /// again, should a long cast outlive it.
+    public func prepareCast() async throws {
+        let answer = try await connection.container("/security/token", [
+            URLQueryItem(name: "type", value: "delegation"), URLQueryItem(name: "scope", value: "all"),
+        ])
+        guard let token = answer.token, !token.isEmpty else { throw MusicServerError.decoding("token") }
+        castToken.value = token
     }
 
     public func downloadURL(for track: Track, quality: DownloadQuality) -> URL {
@@ -303,8 +327,9 @@ public struct PlexServer: MusicServer {
     /// most: a file under the cap is copied, not converted again. Plex's
     /// Generic profile has no target for music (it answered 400), so the
     /// request adds one: MP3 over plain HTTP.
-    func transcoded(_ track: Track, kbps: Int, session: String) -> URL {
-        connection.url("/music/:/transcode/universal/start.mp3", [
+    func transcoded(_ track: Track, kbps: Int, session: String, via cast: PlexConnection? = nil) -> URL {
+        let connection = cast ?? connection
+        return connection.url("/music/:/transcode/universal/start.mp3", [
             URLQueryItem(name: "path", value: "/library/metadata/\(track.id)"),
             URLQueryItem(name: "mediaIndex", value: "0"), URLQueryItem(name: "partIndex", value: "0"),
             URLQueryItem(name: "protocol", value: "http"),
@@ -338,6 +363,10 @@ public struct PlexServer: MusicServer {
     /// image's path ("/library/metadata/149/thumb/1794902352": the number
     /// changes with the image).
     public func artworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
+        artworkURL(artwork, maxPixelSize: maxPixelSize, via: connection)
+    }
+
+    func artworkURL(_ artwork: Artwork, maxPixelSize: Int, via connection: PlexConnection) -> URL {
         connection.url("/photo/:/transcode", [
             URLQueryItem(name: "width", value: String(maxPixelSize)),
             URLQueryItem(name: "height", value: String(maxPixelSize)),
@@ -398,6 +427,11 @@ struct PlexConnection: Sendable {
     var reach: PlexReach? = nil
 
     static func segment(_ text: String) -> String { JellyfinClient.escape(text) }
+
+    /// The same server and address under another token (nil: none).
+    func with(token: String?) -> PlexConnection {
+        PlexConnection(baseURL: baseURL, token: token, identity: identity, transport: transport, reach: reach)
+    }
 
     /// The address spoken to: the one that answered, once asked; until
     /// then the one the account was signed in at.
@@ -499,6 +533,17 @@ struct PlexConnection: Sendable {
     }
 }
 
+/// PlexServer.prepareCast's token, under a lock.
+final class PlexCastToken: @unchecked Sendable {
+    private let lock = NSLock()
+    private var token: String?
+
+    var value: String? {
+        get { lock.withLock { token } }
+        set { lock.withLock { token = newValue } }
+    }
+}
+
 /// Which of a Plex server's addresses (`ServerCredentials.addresses`) a
 /// session speaks to: one signed in at home has a local address that does
 /// not answer away from it. Asked as the sign-in asks (every one at once,
@@ -558,6 +603,8 @@ struct PlexContainer: Decodable {
     var machineIdentifier: String?
     var version: String?
     var friendlyName: String?
+    /// /security/token's.
+    var token: String?
 
     init() {}
 
@@ -570,6 +617,7 @@ struct PlexContainer: Decodable {
         machineIdentifier = c.lenientString(SubsonicKey("machineIdentifier"))
         version = c.lenientString(SubsonicKey("version"))
         friendlyName = c.lenientString(SubsonicKey("friendlyName"))
+        token = c.lenientString(SubsonicKey("token"))
     }
 }
 

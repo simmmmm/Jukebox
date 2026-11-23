@@ -348,6 +348,16 @@ public struct MergedServer: MusicServer {
         return server.artworkURL(artwork.retagged(Self.strip(tag)), maxPixelSize: maxPixelSize)
     }
 
+    public func castArtworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
+        let (tag, server) = routeOrFirst(artwork.itemID)
+        return server.castArtworkURL(artwork.retagged(Self.strip(tag)), maxPixelSize: maxPixelSize)
+    }
+
+    /// Every member's: the queue may hold songs of each.
+    public func prepareCast() async throws {
+        for member in members { try await member.prepareCast() }
+    }
+
     /// Told to the server the song was streamed from, only: no play is told
     /// twice.
     public func report(_ event: PlaybackEvent, _ report: PlaybackReport) async {

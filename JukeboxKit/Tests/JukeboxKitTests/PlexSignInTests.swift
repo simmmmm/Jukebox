@@ -246,18 +246,57 @@ struct PlexSignInTests {
         #expect(capped.hasPrefix("http://nas:32400/music/:/transcode/universal/start.mp3?path=%2Flibrary%2Fmetadata%2F151&"))
         #expect(capped.contains("maxAudioBitrate=128") && capped.contains("protocol=http") && capped.contains("X-Plex-Token=tok"))
         #expect(server.downloadURL(for: track, quality: .original).absoluteString.contains("file.mp3?download=1&X-Plex-Token=tok"))
-        // A Chromecast: the MP3's file with the token; an M4A, the transcoder's MP3.
+        // A Chromecast: the MP3's file; an M4A, the transcoder's MP3. Never
+        // the account's token: before prepareCast, none at all.
         let cast = server.castURL(for: track)
         #expect(cast.contentType == "audio/mpeg"
-            && cast.url.absoluteString == "http://nas:32400/library/parts/124/1794611181/file.mp3?X-Plex-Token=tok")
+            && cast.url.absoluteString == "http://nas:32400/library/parts/124/1794611181/file.mp3")
         track.container = "mp4"
         let converted = server.castURL(for: track)
         #expect(converted.contentType == "audio/mpeg" && converted.url.absoluteString.contains("start.mp3?")
-            && converted.url.absoluteString.contains("maxAudioBitrate=320") && converted.url.absoluteString.contains("X-Plex-Token=tok"))
+            && converted.url.absoluteString.contains("maxAudioBitrate=320") && !converted.url.absoluteString.contains("tok"))
         track.container = "opus"
         #expect(server.streamURL(for: track, quality: .original, playSessionID: "s").absoluteString.contains("maxAudioBitrate=320"))
         #expect(server.artworkURL(Artwork(itemID: "149", tag: "/library/metadata/149/thumb/1794902352"), maxPixelSize: 300).absoluteString
             == "http://nas:32400/photo/:/transcode?width=300&height=300&url=%2Flibrary%2Fmetadata%2F149%2Fthumb%2F1794902352&X-Plex-Token=tok")
+    }
+
+    @Test("Plain http away from home is never asked with the token, unless accepted for that address")
+    func plainHTTPAway() async throws {
+        let away = URL(string: "http://203.0.113.7:32400")!
+        let fake = AddressFake { _ in .json(PlexFixtures.identity) }
+        let found = await PlexAccount.firstAnswering([away, Self.remote], token: "t", identity: Self.identity, transport: fake)
+        #expect(found == Self.remote && !fake.requests.contains { $0.host == "203.0.113.7" })
+        let defaults = try #require(UserDefaults(suiteName: "plex-plain-http-test"))
+        defaults.removeObject(forKey: "signIn.plainHTTPAccepted")
+        #expect(!PlexAccount.mayAsk(away, defaults: defaults) && PlexAccount.mayAsk(Self.home, defaults: defaults))
+        defaults.set([away.absoluteString], forKey: "signIn.plainHTTPAccepted")
+        #expect(PlexAccount.mayAsk(away, defaults: defaults))
+        defaults.removeObject(forKey: "signIn.plainHTTPAccepted")
+    }
+
+    @Test("A cast gets the server's transient token, not the account's")
+    func castToken() async throws {
+        let fake = AddressFake { url in
+            url.path == "/security/token"
+                ? .json(#"{"MediaContainer":{"size":0,"token":"transient-1234"}}"#)
+                : .json(#"{"MediaContainer":{"size":0}}"#)
+        }
+        let credentials = ServerCredentials(kind: .plex, serverURL: URL(string: "http://nas:32400")!, serverID: "m",
+                                            serverName: "nas", userID: "1", userName: "me", secret: .plexToken("tok"))
+        let server = PlexServer(credentials: credentials, identity: Self.identity, transport: fake)
+        try await server.prepareCast()
+        let asked = try #require(fake.requests.first)
+        #expect(asked.query?.contains("type=delegation") == true)
+        let answer = try JSONDecoder().decode(PlexAnswer.self, from: Data(PlexFixtures.track.utf8))
+        let track = try #require(answer.container?.metadata.first?.track)
+        let urls = [server.castURL(for: track).url,
+                    server.castArtworkURL(Artwork(itemID: "149", tag: nil), maxPixelSize: 600)]
+        for url in urls {
+            #expect(url.absoluteString.contains("X-Plex-Token=transient-1234") && !url.absoluteString.contains("=tok"), "\(url)")
+        }
+        // Here, the account's as before.
+        #expect(server.artworkURL(Artwork(itemID: "149", tag: nil), maxPixelSize: 600).absoluteString.contains("X-Plex-Token=tok"))
     }
 
     @Test("Reports: the timeline while it plays, the scrobble for the play, a stop at 0 s")

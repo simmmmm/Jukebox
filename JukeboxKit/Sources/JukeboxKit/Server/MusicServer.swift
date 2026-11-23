@@ -634,6 +634,13 @@ public protocol MusicServer: Sendable {
     /// is told it gets. MP3 and FLAC as they are, anything else MP3 at 320
     /// by the server's own conversion.
     func castURL(for track: Track) -> CastStream
+    /// A cover's URL for that device: as artworkURL, with the same key as
+    /// castURL (Plex: the cast's own token, not the account's).
+    func castArtworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL
+    /// Readied before a TV or a speaker is handed castURL's addresses:
+    /// Plex asks the server for a token of the cast's own, as the device
+    /// may tell anyone what it plays. The others have nothing to ready.
+    func prepareCast() async throws
     /// Square, `maxPixelSize` on its longer side. The same artwork and size
     /// give the same URL, always: the image cache is keyed by it.
     /// `artwork.tag` is the server's key to the image: Jellyfin's ImageTag
@@ -673,6 +680,12 @@ public protocol MusicServer: Sendable {
 }
 
 extension MusicServer {
+    public func castArtworkURL(_ artwork: Artwork, maxPixelSize: Int) -> URL {
+        artworkURL(artwork, maxPixelSize: maxPixelSize)
+    }
+
+    public func prepareCast() async throws {}
+
     public func shareURL(for id: ItemID, tracks: [ItemID]) async throws -> URL {
         throw MusicServerError.unsupported(.share)
     }

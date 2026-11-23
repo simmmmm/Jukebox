@@ -288,7 +288,26 @@ private struct PlayOnList: View {
         // From the top in the drawer, which would centre it.
         .frame(minWidth: 300, maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear { player.playOn.look() }
-        .onDisappear { player.playOn.stopLooking() }
+        .onDisappear {
+            player.playOn.stopLooking()
+            player.playOn.cancelKeyNotice()
+        }
+        .alert(PlayOn.KeyNoticeWords.title, isPresented: keyNotice) {
+            Button(PlayOn.KeyNoticeWords.cancel, role: .cancel) { player.playOn.cancelKeyNotice() }
+            Button(PlayOn.KeyNoticeWords.castAnyway) {
+                player.playOn.castAnyway()
+                isOpen = false
+            }
+        } message: {
+            Text(PlayOn.KeyNoticeWords.body)
+        }
+    }
+
+    /// Once, before an account's first cast that hands the device its key
+    /// (PlayOn.needsKeyNotice). Its buttons answer it: the set does nothing,
+    /// so a dismissal never runs before Cast Anyway's own action.
+    private var keyNotice: Binding<Bool> {
+        Binding(get: { player.playOn.pendingKeyNotice != nil }, set: { _ in })
     }
 
     private var content: some View {
@@ -369,8 +388,9 @@ private struct PlayOnList: View {
     private func row(_ device: PlayOnDevice?, name: String, detail: String? = nil, symbol: String) -> some View {
         let chosen = device?.id == player.playsOn?.id
         return Button {
-            isOpen = false
             player.playOn.choose(device)
+            // Open while it asks about the speaker's key (keyNotice).
+            if player.playOn.pendingKeyNotice == nil { isOpen = false }
         } label: {
             label(name, detail: detail, symbol: symbol, checked: chosen)
         }

@@ -184,6 +184,10 @@ public struct PlexAccount: Sendable {
         let token = server.accessToken ?? accountToken
         let addresses = (typed.map { [$0] } ?? []) + server.addresses.filter { $0 != typed }
         guard let url = await Self.firstAnswering(addresses, token: token, identity: identity, transport: transport) else {
+            if addresses.contains(where: { !Self.mayAsk($0) }) {
+                throw MusicServerError.transport(
+                    "\(server.name) answers only at a plain http address away from home. Sign in at its https address, or at home.")
+            }
             throw MusicServerError.transport("None of \(server.name)’s addresses answered.")
         }
         let account = PlexConnection(baseURL: site, token: accountToken, identity: identity, transport: transport)
@@ -205,7 +209,8 @@ public struct PlexAccount: Sendable {
     /// as soon as every one before it has failed.
     static func firstAnswering(_ addresses: [URL], token: String, identity: ClientIdentity,
                                transport: any HTTPTransport) async -> URL? {
-        await withTaskGroup(of: (Int, Bool).self) { group in
+        let addresses = addresses.filter { mayAsk($0) }
+        return await withTaskGroup(of: (Int, Bool).self) { group in
             for (i, url) in addresses.enumerated() {
                 group.addTask {
                     var request = URLRequest(url: PlexConnection(baseURL: url, token: token, identity: identity,
@@ -227,6 +232,18 @@ public struct PlexAccount: Sendable {
             }
             return nil
         }
+    }
+
+    /// Whether an address of the server may be asked with the token: https
+    /// and the home network always; plain http away from home only where
+    /// someone said Sign In Anyway for it, never silently. Kept under the
+    /// sign-in's own key for that question ("signIn.plainHTTPAccepted",
+    /// PlainHTTPConsent on the sign-in's branch), so one answer holds for both.
+    /// ponytail: read here by its key until that type is on main; then
+    /// `PlainHTTPConsent().isAccepted`.
+    static func mayAsk(_ url: URL, defaults: UserDefaults = .standard) -> Bool {
+        ServerAddress.mayCarryPassword(url)
+            || (defaults.stringArray(forKey: "signIn.plainHTTPAccepted") ?? []).contains(url.absoluteString)
     }
 }
 

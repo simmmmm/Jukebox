@@ -293,6 +293,25 @@ enum PlayerBar {
     /// ("ik wil alleen er voor waken dat we niet 10000 knopen krijgen", the
     /// photographer, 17 November 2026). The list looks only while it is
     /// open; the glyph is in the accent while the music plays elsewhere.
+    /// Once, before an account's first cast that hands the device its key
+    /// (PlayOn.needsKeyNotice): the iPhone's alert, as GNOME's dialog.
+    private static func askKeyNotice() {
+        typealias Words = PlayOn.KeyNoticeWords
+        let dialog = adw_alert_dialog_new(Words.title, Words.body)!
+        adw_alert_dialog_add_response(ptr(dialog), "cancel", Words.cancel)
+        adw_alert_dialog_add_response(ptr(dialog), "cast", Words.castAnyway)
+        adw_alert_dialog_set_default_response(ptr(dialog), "cancel")
+        adw_alert_dialog_set_close_response(ptr(dialog), "cancel")
+        on(raw(dialog), "response", argument: { response in
+            if let response, String(cString: response.assumingMemoryBound(to: CChar.self)) == "cast" {
+                app.player.playOn.castAnyway()
+            } else {
+                app.player.playOn.cancelKeyNotice()
+            }
+        })
+        adw_dialog_present(ptr(dialog), MainWindow.window)
+    }
+
     private static func playOnButton() -> Widget {
         // A menu as libadwaita draws one ("dit staat niet netjes", the
         // photographer, 19 November 2026): the popover's `menu` style, whose
@@ -319,7 +338,10 @@ enum PlayerBar {
             guard shown.indices.contains(index) else { return }
             let device = shown[index]
             gtk_popover_popdown(ptr(popover))
-            Task { app.player.playOn.choose(device) }
+            Task {
+                app.player.playOn.choose(device)
+                if app.player.playOn.pendingKeyNotice != nil { Self.askKeyNotice() }
+            }
         })
         // The rows change in the open popover, which stays open: a menu made
         // again would close under the pointer (the sleep timer's).
