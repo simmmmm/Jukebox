@@ -14,6 +14,11 @@
 # reads without opening the log.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Every log of build/logs (the run's artifact, and the screenshots' logs)
+# and the summary without the runner's home, user or machine name, however
+# the run ends (ci/redact.sh): in both shells below, so a run cancelled
+# while the inner one works is cleaned too.
+trap 'bash ci/redact.sh build/logs "${GITHUB_STEP_SUMMARY:-}" || true' EXIT
 # The job's console without the runner's home, user or machine name, as the
 # logs below (ci/redact.sh): the script runs again with its output through
 # the redactor, a line at a time so the log still streams, and ends with
@@ -21,7 +26,7 @@ cd "$(dirname "$0")/.."
 # they are.
 if [[ -z ${JUKEBOX_REDACTED:-} ]]; then
   set +e
-  JUKEBOX_REDACTED=1 bash "$0" "$@" 2>&1 | (unset GH_TOKEN ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID; bash ci/redact.sh -)
+  JUKEBOX_REDACTED=1 bash ci/app.sh "$@" 2>&1 | (unset GH_TOKEN ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID; bash ci/redact.sh -)
   exit "${PIPESTATUS[0]}"
 fi
 # The App Store Connect key only for a run that uploads, from main or a
@@ -39,10 +44,6 @@ esac
 gh_token=${GH_TOKEN:-}
 unset GH_TOKEN GITHUB_TOKEN
 git config --local --unset-all http.https://github.com/.extraheader 2> /dev/null || true
-# Every log of build/logs (the run's artifact, and the screenshots' logs)
-# and the summary without the runner's home, user or machine name, however
-# the run ends (ci/redact.sh).
-trap 'bash ci/redact.sh build/logs "${GITHUB_STEP_SUMMARY:-}" || true' EXIT
 # On the MacBook (a self-hosted runner) the folder outlives a run: a run
 # cancelled by the next push may still have an xcodebuild writing in
 # build/, and the next run then broke on its build database ("disk I/O
