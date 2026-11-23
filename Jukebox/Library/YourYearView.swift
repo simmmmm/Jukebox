@@ -41,19 +41,27 @@ struct YourYearView: View {
 
     @ViewBuilder private var content: some View {
         if let made {
-            List {
+            // A grouped form, so every client has the same structure: the
+            // head in its section with the source under it, then the
+            // groups, as the iPhone's inset list draws them and Linux's
+            // boxed groups do. A List on the Mac drew no sections at all.
+            Form {
+                // On the ground above the head's section, not in it and not
+                // in a bar over the page: where Linux's page has its linked
+                // buttons.
+                Section {
+                    Picker("Period", selection: $period) {
+                        ForEach(YourYear.Period.allCases, id: \.self) { period in
+                            Text(verbatim: YourYearLoader.name(period)).tag(period)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .labelsHidden()
+                    .listRowBackground(Color.clear)
+                    .listRowInsets(EdgeInsets())
+                }
                 Section {
                     VStack(alignment: .leading, spacing: Theme.Space.s) {
-                        // In the list, not in a bar over it: the ground stays
-                        // flat, and Linux's page has its buttons here too.
-                        Picker("Period", selection: $period) {
-                            ForEach(YourYear.Period.allCases, id: \.self) { period in
-                                Text(verbatim: YourYearLoader.name(period)).tag(period)
-                            }
-                        }
-                        .pickerStyle(.segmented)
-                        .labelsHidden()
-                        .padding(.bottom, Theme.Space.s)
                         Text(verbatim: YourYearLoader.heading(made))
                             .font(.serif(.largeTitle))
                         // Nothing played: the head as Linux's, its facts the
@@ -83,6 +91,7 @@ struct YourYearView: View {
                 entries("Albums", made.albums, artwork: true)
                 entries("Genres", made.genres, artwork: false)
             }
+            .formStyle(.grouped)
         } else {
             ProgressView()
         }

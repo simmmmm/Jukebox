@@ -77,11 +77,21 @@ enum YourYearPage {
         arts = []
         var added: [Widget] = []
         let head = adw_preferences_group_new()!
-        adw_preferences_group_set_description(ptr(head), YourYearLoader.source(made))
         let title = label(YourYearLoader.heading(made), "serif", "page-title")
         // Nothing played: its one line, as the iPhone's.
         let facts = label(made.isEmpty ? String(localized: "Nothing played yet") : YourYearLoader.facts(made), "fact")
-        adw_preferences_group_add(ptr(head), vbox(spacing: 8, [title, facts, bars(made)]))
+        // The same structure on every client: the head in a boxed list of
+        // one row, as the groups below are (the iPhone's and the Mac's
+        // grouped section), and where the plays come from under it, as
+        // their section's footer.
+        let box = gtk_list_box_new()!.css("boxed-list")
+        gtk_list_box_set_selection_mode(ptr(box), GTK_SELECTION_NONE)
+        let row = gtk_list_box_row_new()!
+        gtk_list_box_row_set_activatable(ptr(row), 0)
+        gtk_list_box_row_set_child(ptr(row), vbox(spacing: 8, [title, facts, bars(made)]).margins(horizontal: 16, vertical: 12))
+        gtk_list_box_append(ptr(box), row)
+        let source = label(YourYearLoader.source(made), "t13", "fact", lines: 0).margins(horizontal: 12, vertical: 0)
+        adw_preferences_group_add(ptr(head), vbox(spacing: 8, [box, source]))
         adw_preferences_page_add(ptr(page), ptr(head))
         added.append(head)
         if let artist = made.artists.first, let song = made.songs.first {

@@ -257,7 +257,14 @@ final class AppModel {
     /// but past the list of accounts and the keychain, and without asking
     /// the server again (refreshServer saves to the keychain). The snapshots
     /// run on the photographer's own MacBook, whose keychain is his.
+    /// What the server can do is asked here, as refreshServer would, but
+    /// kept in memory only: without it On Your Jukebox never saw the fake
+    /// server's Playback Reporting and the picture said "Nothing played yet".
     func openForSnapshots(_ credentials: ServerCredentials) async {
+        var credentials = credentials
+        if let fresh = try? await MusicServers.open(credentials, identity: identity).currentCapabilities() {
+            credentials.capabilities = fresh
+        }
         let server = MusicServers.open(credentials, identity: identity)
         self.credentials = credentials
         self.server = server
