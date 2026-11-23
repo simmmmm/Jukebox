@@ -120,6 +120,8 @@ enum MainWindow {
                 guard !isAddingAccount else { return }
                 gtk_stack_set_visible_child_name(ptr(stack), "main")
                 if pages.isEmpty, account != nil { select(0) }
+                // Better Radio, once, right after the first sign-in.
+                BetterRadio.askIfDue()
             }
         }
         followAccounts(application)

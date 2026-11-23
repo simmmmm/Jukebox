@@ -93,6 +93,10 @@ final class AppModel {
         player.offline = offline
         radio.offline = offline
         offline.onConnectivityChange = { [weak self] in self?.connectivityChanged() }
+        #if os(iOS)
+        // AcousticBrainz's lookups on Wi-Fi or Ethernet only (NetworkCost).
+        radio.networkIsFree = { [weak self] in !(self?.player.isNetworkExpensive ?? false) }
+        #endif
         offline.onSongsChange = { [weak self] in self?.radio.offlineSongsChanged() }
         // Chromecasts (PlayOn.swift): castv2 spoken by the app itself over
         // Network's TLS, found by Bonjour, on the iPhone, the iPad and the

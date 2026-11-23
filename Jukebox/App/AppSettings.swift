@@ -39,40 +39,31 @@ final class AppSettings {
         }
     }
 
-    /// Enhance Radio with Last.fm: on, the radio asks Last.fm who sounds like
-    /// whom; off, it makes no call there at all, with no key, Jukebox's or
-    /// the listener's, and plays from the library alone, as a build without
-    /// a key does. "is het nodig? misschien iets van 'enhance radio with
-    /// last.fm' ?" (the photographer, 21 November 2026), once the app's own
-    /// key meant Last.fm was always asked. On by default. What Last.fm said
-    /// before stays on disk.
-    var useLastFM: Bool {
+    /// Enhance Radio: on, the radio asks Last.fm who sounds like whom and
+    /// MusicBrainz and AcousticBrainz how each song sounds; off, it calls
+    /// none of them, with no key, Jukebox's or the listener's, and plays
+    /// from the library alone. One choice for both: "Standaard aan maar
+    /// maak het onderdeel van een onboarding flow waarin dit kort en
+    /// krachtig benoemd wordt, maar dan wordt het of lastfm en dit aan of
+    /// beide uit" (the photographer, 24 November 2026). On by default, and
+    /// asked once after signing in (Better Radio). What they said before
+    /// stays on disk.
+    var enhanceRadio: Bool {
         didSet {
-            defaults.set(useLastFM, forKey: Keys.useLastFM)
-            if useLastFM != oldValue { Stats.track(.settingChanged, ["name": "lastfm", "value": Stats.onOff(useLastFM)]) }
-        }
-    }
-
-    /// Enhance Radio with AcousticBrainz: on, the radio looks up how each
-    /// song sounds (acoustic, calm, aggressive) on MetaBrainz's open data,
-    /// once, by artist, title and album, and a station keeps to its sound
-    /// beside its loudness (docs/RADIO.md, "How it sounds"). On by default,
-    /// as Last.fm's switch: "doe ze allemaal" (the photographer, 23
-    /// November 2026).
-    var useAcousticBrainz: Bool {
-        didSet {
-            defaults.set(useAcousticBrainz, forKey: Keys.useAcousticBrainz)
-            if useAcousticBrainz != oldValue {
-                Stats.track(.settingChanged, ["name": "acousticbrainz", "value": Stats.onOff(useAcousticBrainz)])
+            defaults.set(enhanceRadio, forKey: Keys.enhanceRadio)
+            // Set anywhere (Settings, Better Radio): the choice is made.
+            radioChoiceMade = true
+            if enhanceRadio != oldValue {
+                Stats.track(.settingChanged, ["name": "enhance_radio", "value": Stats.onOff(enhanceRadio)])
             }
         }
     }
 
-    /// The listener's own Last.fm key, optional: used in place of the app's
-    /// (`appLastFMKey`) when set. Empty: none. Kept in UserDefaults, not the
-    /// keychain: an API key for public data, not a password.
-    var lastFMAPIKey: String {
-        didSet { defaults.set(lastFMAPIKey, forKey: Keys.lastFMAPIKey) }
+    /// The listener has said yes or no to Enhance Radio: in Better Radio,
+    /// after signing in, or with the switch in Settings. Until then Better
+    /// Radio is shown, once.
+    var radioChoiceMade: Bool {
+        didSet { defaults.set(radioChoiceMade, forKey: Keys.radioChoiceMade) }
     }
 
     /// Jukebox's own Last.fm key, built in, so the radio knows who sounds
@@ -88,16 +79,11 @@ final class AppSettings {
         .trimmingCharacters(in: .whitespacesAndNewlines)
     #endif
 
-    /// The key the radio asks Last.fm with: the listener's, else the app's.
-    var lastFMKey: String {
-        let own = lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
-        return own.isEmpty ? Self.appLastFMKey : own
-    }
-
-    var hasOwnLastFMKey: Bool { !lastFMAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
-
-    /// The app's key in use: no key of the listener's, and the build has one.
-    var usesAppLastFMKey: Bool { !hasOwnLastFMKey && !Self.appLastFMKey.isEmpty }
+    /// The key the radio asks Last.fm with: Jukebox's own, the only one
+    /// since 24 November 2026 ("Kan die api ding … ook uit de app dan?",
+    /// the photographer). Empty in a build without one (GitHub's runners):
+    /// then the radio is as with Enhance Radio off.
+    var lastFMKey: String { Self.appLastFMKey }
 
     /// The listener's Last.fm name, optional: with it the radio's clock
     /// reads their scrobbles from day one (docs/RADIO.md, "Scrobbles").
@@ -279,9 +265,16 @@ final class AppSettings {
         wifiQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.wifiQuality) ?? "") ?? .original
         cellularQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.cellularQuality) ?? "") ?? .normal
         normalizeVolume = defaults.object(forKey: Keys.normalizeVolume) as? Bool ?? true
-        useLastFM = defaults.object(forKey: Keys.useLastFM) as? Bool ?? true
-        useAcousticBrainz = defaults.object(forKey: Keys.useAcousticBrainz) as? Bool ?? true
-        lastFMAPIKey = defaults.string(forKey: Keys.lastFMAPIKey) ?? ""
+        // From the two switches before (Enhance Radio with Last.fm, and with
+        // AcousticBrainz): one turned off by the listener starts this one
+        // off, and either touched counts as a choice made (a switch's
+        // value is written only when it is changed).
+        let old = [Keys.useLastFM, Keys.useAcousticBrainz].compactMap { defaults.object(forKey: $0) as? Bool }
+        enhanceRadio = defaults.object(forKey: Keys.enhanceRadio) as? Bool ?? !old.contains(false)
+        radioChoiceMade = defaults.bool(forKey: Keys.radioChoiceMade) || defaults.object(forKey: Keys.enhanceRadio) != nil || !old.isEmpty
+        // A key of the listener's own, from before: no longer used, and not
+        // left lying in the settings.
+        defaults.removeObject(forKey: Keys.lastFMAPIKey)
         lastFMUser = defaults.string(forKey: Keys.lastFMUser) ?? ""
         autoplay = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
         adventurousness = defaults.object(forKey: Keys.adventurousness) as? Double ?? 0.35
@@ -303,7 +296,16 @@ final class AppSettings {
 
     /// Last.fm is asked: switched on, and a key to ask with. Every call the
     /// radio makes there goes through this (RadioController.makeService).
-    var hasLastFM: Bool { useLastFM && !lastFMKey.isEmpty }
+    var hasLastFM: Bool { enhancesRadio }
+
+    /// The build has Jukebox's key: without one (GitHub's runners) there is
+    /// no Enhance Radio to offer, in Settings or after signing in, and the
+    /// radio is the library's alone.
+    static var canEnhanceRadio: Bool { !appLastFMKey.isEmpty }
+
+    /// Enhance Radio on, and a key to do it with: Last.fm, MusicBrainz and
+    /// AcousticBrainz are asked only then (RadioController).
+    var enhancesRadio: Bool { enhanceRadio && Self.canEnhanceRadio }
 
     private enum Keys {
         static let wifiQuality = "wifiQuality"
@@ -311,6 +313,8 @@ final class AppSettings {
         static let normalizeVolume = "normalizeVolume"
         static let useLastFM = "useLastFM"
         static let useAcousticBrainz = "useAcousticBrainz"
+        static let enhanceRadio = "enhanceRadio"
+        static let radioChoiceMade = "radioChoiceMade"
         static let lastFMAPIKey = "lastFMAPIKey"
         static let lastFMUser = "lastFMUser"
         static let adventurousness = "adventurousness"

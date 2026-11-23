@@ -330,9 +330,8 @@ Jukebox lacked, "maak ze allemaal maar" (17 November 2026).
   the Last.fm answers about its library (they name its songs by id). Home's
   mixes are made again from those.
 - **Shared**: `AppSettings` (qualities, pages, downloads' limit, the
-  switches) and the Last.fm API key, a key to Last.fm's catalogue rather
-  than anyone's Last.fm account (the servers scrobble), and the listener's
-  Last.fm username, read only.
+  switches, Enhance Radio among them), and the listener's Last.fm username,
+  read only. The Last.fm key is Jukebox's own, built in.
 - **A switch** (`AppModel.switchAccount`): the new account's server is asked
   first, with its own session (`AccountStores.reach`, 10 s at most); silent,
   the account signed in stays and the words say so, unless the new one has

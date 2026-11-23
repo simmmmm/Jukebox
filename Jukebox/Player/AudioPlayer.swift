@@ -37,6 +37,8 @@ final class AudioPlayer: PlayQueue {
 
     private let engine = AVQueuePlayer()
     private let network: NetworkCost
+    /// The mobile network, a hotspot or Low Data Mode (NetworkCost).
+    var isNetworkExpensive: Bool { network.isExpensive }
     private let nowPlaying: NowPlayingInfo
     private var remote: RemoteCommands?
     /// Whether this player is the system's: Now Playing, the media keys,

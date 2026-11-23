@@ -158,11 +158,10 @@ Later: the map's table, his own listening as a station's memory, the
 
 - Jukebox's own, built into every client since 21 November 2026
   (docs/RADIO.md, Last.fm's key), so no device needs one typed in.
-- The listener's own, optional, in place of it: Settings, Last.fm, on the
-  iPhone, the iPad and the Mac; Preferences, Radio, Last.fm, on Linux. It is
-  kept in that device's settings and does not travel.
+- No key of the listener's own since 24 November 2026 ("Kan die api ding
+  … ook uit de app dan?", the photographer).
 - A key Last.fm refuses later is off for that run, and the line under
-  Enhance Radio with Last.fm and a station's page say so; "rate limit" or
+  Enhance Radio and a station's page say so; "rate limit" or
   no answer says so too and is asked again later, a minute, then longer
   (`RADIO.md`, Last.fm's key).
 - An empty answer is kept for 30 days: "Moans" has no similar songs on

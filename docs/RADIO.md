@@ -121,30 +121,33 @@ name. With one genre, every weight is 1 and it is the station it always was.
 ### Last.fm's key
 
 Jukebox ships its own key ("Ik denk dat een eigen last fm verstandiger is",
-21 November 2026); the listener's key in Settings is used instead when set
-(`AppSettings.lastFMKey`). It is never in git: the Apple builds read it from
-`~/.config/jukebox-ci/lastfm-app-key` on the runner (docs/RELEASE.md), Linux
-from `LASTFM_APP_KEY` in `.env` or the environment (`dev/linux-build.sh`
-writes the gitignored `Linux/App/AppKeys.swift`). A build without it has
-none, and the radio works from the library alone, as before.
+21 November 2026), and since 24 November 2026 only that one: "Kan die api
+ding … ook uit de app dan?" (the photographer). There is no field for a key
+of one's own; one kept from before is removed at launch
+(`AppSettings.lastFMKey`). The key is never in git: the Apple builds read it
+from `~/.config/jukebox-ci/lastfm-app-key` on the runner (docs/RELEASE.md),
+Linux from `LASTFM_APP_KEY` in `.env` or the environment
+(`dev/linux-build.sh` writes the gitignored `Linux/App/AppKeys.swift`). A
+build without it (GitHub's runners) is as with Enhance Radio off, and shows
+neither the switch nor Better Radio.
 
-Enhance Radio with Last.fm (Settings › Radio, Preferences › Radio on
-Linux; `AppSettings.useLastFM`, on by default) says no to all of it: "is
-het nodig? misschien iets van 'enhance radio with last.fm' ?" (the
-photographer, 21 November 2026). Off, `hasLastFM` is false whatever the
-key: the service has no client, so no new similar artists or songs, no
-tags, no scrobbles, the server's mix where it has one. Switched off
-mid-session, the questions still waiting are dropped
-(`RadioController.lastFMKeyChanged`). Last.fm's answers on disk stay
-and are still used.
+Enhance Radio (Settings › Radio, Preferences › Radio on Linux;
+`AppSettings.enhanceRadio`) is one choice for Last.fm and AcousticBrainz
+together: "of lastfm en dit aan of beide uit" (the photographer, 24
+November 2026). On by default, asked once right after the first sign-in
+(Better Radio, Turn On or Not Now); off if either of the two switches before
+it was turned off. Off, `enhancesRadio` is false: the service has no client,
+so no new similar artists or songs, no tags, no scrobbles, no sound looked
+up, and the server's mix where it has one. Switched off mid-session, the
+questions still waiting are dropped (`RadioController.enhanceRadioChanged`).
+What they answered before stays on disk and is still used.
 
 When Last.fm says nothing, the app says so, calmly and the same on every
 client ("doe ze allemaal", the photographer, 23 November 2026):
 `SimilarityService.trouble`, one line under the switch and on a station's
 page, no pop-up.
 - A refused key: "Last.fm didn’t accept the key; stations use your
-  library for now". Not asked again until the app opens again or the key
-  changes.
+  library for now". Not asked again until the app opens again.
 - "Rate limit" after three tries, no answer, or three of Last.fm's own
   errors in a row: "Last.fm isn’t answering; stations use your library for
   now". Nothing is asked for a minute, then the app asks again
@@ -952,7 +955,9 @@ album station) or of its best 100, half-way to the song before; within
 0.15 (root mean square over the three) all the same, past it a bell 0.08
 wide at Familiar, 0.38 at Adventurous. A song whose sound is not known
 by song or artist counts 0.6: without it, the unknown were favoured. Its
-own switch, Enhance Radio with AcousticBrainz, on by default.
+switch, Enhance Radio, with Last.fm's. On the iPhone and the iPad the
+lookups wait for Wi-Fi or Ethernet (not the mobile network, a hotspot or Low
+Data Mode).
 
 **Measured** (`RadioSoundTests`, lines `RADIO-MIX`): Moans Radio on the
 library in his shape, his artists' means, ±0.2 a song, a quarter of the

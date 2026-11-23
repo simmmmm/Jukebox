@@ -100,6 +100,11 @@ final class RadioController {
     /// Asks Last.fm again once it has rested (`SimilarityService.retryAt`).
     @ObservationIgnored private var retryTask: Task<Void, Never>?
     @ObservationIgnored private var soundService: SoundService?
+    /// Whether the network costs nothing now (Wi-Fi, Ethernet; not the
+    /// mobile network, a hotspot or Low Data Mode). Set by AppModel on the
+    /// iPhone and the iPad: AcousticBrainz's lookups, some 30 MB for a
+    /// library of 4 000 songs, wait for such a network there.
+    @ObservationIgnored var networkIsFree: () -> Bool = { true }
     @ObservationIgnored private var soundTask: Task<Void, Never>?
     @ObservationIgnored private var snapshotTask: Task<Void, Never>?
     @ObservationIgnored private var dialTask: Task<Void, Never>?
@@ -708,7 +713,7 @@ final class RadioController {
                                 history: history.history,
                                 scrobbles: scrobbles,
                                 graph: graph,
-                                sound: settings.useAcousticBrainz ? sound : [:],
+                                sound: settings.enhancesRadio ? sound : [:],
                                 settings: RadioSettings(adventurousness: settings.adventurousness),
                                 now: Date(),
                                 playingNow: [playingNow].compactMap { $0 } + shown)
@@ -992,12 +997,19 @@ final class RadioController {
         }
     }
 
-    /// Enhance Radio with AcousticBrainz was switched (Settings › Radio,
-    /// Preferences › Radio on Linux).
-    func acousticBrainzChanged() {
+    /// Enhance Radio was switched (Settings › Radio, Preferences › Radio
+    /// on Linux, Better Radio after signing in): Last.fm and AcousticBrainz
+    /// together, "of lastfm en dit aan of beide uit" (the photographer, 24
+    /// November 2026).
+    func enhanceRadioChanged() {
+        lastFMKeyChanged()
+        acousticBrainzChanged()
+    }
+
+    private func acousticBrainzChanged() {
         soundTask?.cancel()
         soundTask = nil
-        if settings.useAcousticBrainz {
+        if settings.enhancesRadio {
             lookUpSound()
         } else {
             previewInputs += 1
@@ -1009,7 +1021,7 @@ final class RadioController {
     /// after round until the library is done. Quiet: a round that fails
     /// stops, and the next launch or library change goes on.
     private func lookUpSound() {
-        guard settings.useAcousticBrainz, let directory = similarityDirectory else { return }
+        guard settings.enhancesRadio, let directory = similarityDirectory else { return }
         let service = soundService ?? SoundService(directory: directory)
         soundService = service
         let snapshot = library.snapshot
@@ -1024,8 +1036,13 @@ final class RadioController {
             let priority = snapshot.tracks.filter { $0.isFavorite || $0.playCount > 0 }.map(\.id)
             var more = true
             while more, !Task.isCancelled {
+                // A network that costs: wait for one that does not.
+                while !self.networkIsFree() {
+                    try? await Task.sleep(for: .seconds(30))
+                    if Task.isCancelled { return }
+                }
                 let round = await service.enrich(snapshot: snapshot, priority: priority)
-                guard !Task.isCancelled, self.soundService === service, self.settings.useAcousticBrainz else { return }
+                guard !Task.isCancelled, self.soundService === service, self.settings.enhancesRadio else { return }
                 if round.profiles != self.sound { self.sound = round.profiles }
                 more = round.more
             }

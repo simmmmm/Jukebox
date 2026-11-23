@@ -368,6 +368,14 @@ final class MacWalk {
             picture("00-sign-in-error")
             return false
         }
+        // Better Radio, the step after signing in: its picture, then Turn On.
+        let turnOn = marked("betterRadio.turnOn")
+        if turnOn.waitForExistence(timeout: 8) {
+            pause(1.5)
+            picture("00-better-radio")
+            _ = try click(turnOn, "Better Radio: Turn On", timeout: 2)
+            pause(1)
+        }
         return true
     }
 

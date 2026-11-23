@@ -162,34 +162,11 @@ private struct RadioFeed: View {
                 RadioStationShelf(title: "Artist stations", stations: artistStations, measures: measures)
                 RadioStationShelf(title: "Genre stations", stations: genreStations, measures: measures)
                 RadioStationShelf(title: "Decades", stations: decadeStations, measures: measures)
-                // Not when the listener switched Last.fm off: theirs to say.
-                if settings.useLastFM, !settings.hasLastFM {
-                    lastFMFooter
-                        .padding(.horizontal, Theme.margin)
-                }
             }
             .padding(.top, Theme.Space.s)
             .padding(.bottom, Theme.Space.xxl)
             .animation(reduceMotion ? nil : .default, value: onAir?.id)
         }
-    }
-
-    /// Quiet, at the foot: the radio works without Last.fm, from the
-    /// library alone, and knows more with it. What it does, not a promise.
-    private var lastFMFooter: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("With a Last.fm API key, the radio also knows which artists and songs sound alike.")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .fixedSize(horizontal: false, vertical: true)
-            Button("Open Settings") {
-                isShowingSettings = true
-            }
-            .font(.footnote)
-            .foregroundStyle(Theme.accent)
-            .padding(.top, Theme.Space.xs)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: The suggested stations, by their seed's kind

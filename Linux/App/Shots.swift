@@ -34,6 +34,14 @@ enum Shots {
             for _ in 0..<80 where app.library.tracks.isEmpty || app.mixes.mixes.isEmpty {
                 try? await Task.sleep(for: .milliseconds(250))
             }
+            // Better Radio, the step after signing in, then Turn On: the
+            // walk's radio is the one most will have.
+            if let shown = adw_application_window_get_visible_dialog(ptr(MainWindow.window)), !app.settings.radioChoiceMade {
+                await step("00-better-radio", wait: 1)
+                // Closing answers its close response, Not Now: Turn On after.
+                adw_dialog_force_close(shown)
+                BetterRadio.answer(true)
+            }
             await step("01-home", wait: 3)
             // The pointer over Mixes: its first tile lit, › at its right
             // edge; then moved on once, ‹ at its left too.
