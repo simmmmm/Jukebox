@@ -295,8 +295,20 @@ struct QueueView: View {
                         return
                     }
                     if item.isUpcoming { panelPicks.plain(i) } else { panelPicks.clear() }
+                    #if !os(macOS)
                     if !playing { player.skip(to: entry) }
+                    #endif
                 }
+                #if os(macOS)
+                // On a Mac a double-click plays, as on Linux: "ik zou liever
+                // zelfs dubbelklik hebben zodat je niet perongeluk je nummer
+                // uit zet" (the photographer, 24 November 2026). Beside the
+                // click rather than before it, so a click picks at once,
+                // while ⌘ or ⇧ is still held. The iPad's tap plays.
+                .simultaneousGesture(TapGesture(count: 2).onEnded {
+                    if !playing { player.skip(to: entry) }
+                })
+                #endif
                 .contextMenu {
                     panelMenu(entry, playing: playing, picked: pickedEntries(at: i, in: items))
                 }
@@ -534,9 +546,17 @@ struct QueueView: View {
     private func row(_ entry: QueueEntry) -> some View {
         TrackRow(entry.track, subtitle: entry.track.artistLine, reason: entry.reason, showsMenu: false)
             .contentShape(.rect)
+            // A double-click plays on a Mac, as in the panel; a tap on the
+            // iPhone and the iPad.
+            #if os(macOS)
+            .onTapGesture(count: 2) {
+                player.skip(to: entry)
+            }
+            #else
             .onTapGesture {
                 player.skip(to: entry)
             }
+            #endif
             .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
             .accessibilityHint("Plays this song")

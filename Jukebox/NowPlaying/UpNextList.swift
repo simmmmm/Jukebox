@@ -22,7 +22,9 @@ enum UpNextList {
     }
 
     /// One row of the list.
-    enum Item {
+    /// Equatable so Linux's panel gives its rows a list again only when it
+    /// changed (Linux/App/Panel.swift).
+    enum Item: Equatable {
         /// `words`: on an album the song's guests after the title; otherwise
         /// the artist, under it.
         case song(QueueEntry, number: Int?, style: Style, playing: Bool, words: String)

@@ -315,7 +315,8 @@ final class ItemList<Item, Row: AnyObject> {
     var activatable: ((Item) -> Bool)?
 
     /// `singleClick`: a click plays, as a page's songs do; false, a
-    /// double-click or Enter does.
+    /// double-click or Enter does (Up next, where a click would skip away
+    /// from what plays).
     init(grid: Bool = false, singleClick: Bool = true, make: @escaping () -> (Widget, Row),
          fill: @escaping (Row, Item, Int) -> Void, activate: @escaping (Item, Int, [Item]) -> Void) {
         self.fill = fill

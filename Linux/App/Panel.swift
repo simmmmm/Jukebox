@@ -121,13 +121,12 @@ enum UpNext {
         // when the list's songs do.
         weak var made: ItemList<Item, UpNextRow>?
         let picked = PickedRows { [] }
-        // A click plays, as a tap does on the iPhone and the Mac: it was a
-        // double-click here, and a click did nothing ("hier zie je dat ik
-        // niet kan klikken", the photographer, 24 November 2026). A second
-        // click within half a second is the double-click of habit, not a
-        // second skip: the list has moved under the pointer by then.
-        var lastPlay = ContinuousClock.now - .seconds(1)
+        // A double-click or Enter plays a row, not a click: "ik zou liever
+        // zelfs dubbelklik hebben zodat je niet perongeluk je nummer uit
+        // zet" (the photographer, 24 November 2026). A page's songs play on
+        // one click.
         let list = ItemList<Item, UpNextRow>(
+            singleClick: false,
             make: {
                 let row = UpNextRow(picked: picked) { made?.items ?? [] }
                 return (row.widget, row)
@@ -137,11 +136,7 @@ enum UpNext {
                 row.show(item)
             },
             activate: { item, _, _ in
-                guard ContinuousClock.now - lastPlay > .milliseconds(500) else { return }
-                if case let .song(entry, _, _, playing, _) = item, !playing {
-                    lastPlay = .now
-                    app.player.skip(to: entry)
-                }
+                if case let .song(entry, _, _, playing, _) = item, !playing { app.player.skip(to: entry) }
             })
         list.activatable = { item in
             if case let .song(_, _, _, playing, _) = item { return !playing }
@@ -159,7 +154,14 @@ enum UpNext {
             let keys = now.map(key)
             if keys != shown { picked.picks.clear() }
             shown = keys
-            list.set(now)
+            // Only a list that changed is given to the rows again. The rows
+            // read the picks as they are filled, so this runs again on every
+            // click (a plain one forgets the picks); given again, the list
+            // made every row anew under the pointer, its press went with the
+            // old row, and neither a click nor a double-click ever played
+            // ("of ik nou klik of dubbelklik er gebeurt niets hoor", the
+            // photographer, 24 November 2026).
+            if now != list.items { list.set(now) }
         }
         return vbox([head, rule, scroller])
     }
