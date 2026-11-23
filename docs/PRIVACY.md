@@ -55,6 +55,19 @@ Last.fm** (Preferences › Radio on Linux). Off, Jukebox makes no request to
 Last.fm at all, and the radio chooses from your library and from what
 Last.fm answered before, which stays on your device.
 
+## AcousticBrainz
+
+The radio looks up how each song sounds (acoustic or electronic, calm or
+driving) in MetaBrainz's open data: ListenBrainz
+(`labs.api.listenbrainz.org`) finds the song in MusicBrainz by its artist,
+title and album, and AcousticBrainz (`acousticbrainz.org`) gives its sound.
+Each song is looked up once; what comes back stays on your device. Nothing
+else about you is sent, apart from your IP address, as with any request.
+
+It is on by default. **To turn it off: Settings › Radio › Enhance Radio with
+AcousticBrainz** (Preferences › Radio on Linux). Off, Jukebox makes no
+request to either.
+
 ## Questions
 
 Jukebox is made by Tijmen, in the Netherlands. Its source is public:

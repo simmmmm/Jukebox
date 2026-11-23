@@ -53,6 +53,21 @@ final class AppSettings {
         }
     }
 
+    /// Enhance Radio with AcousticBrainz: on, the radio looks up how each
+    /// song sounds (acoustic, calm, aggressive) on MetaBrainz's open data,
+    /// once, by artist, title and album, and a station keeps to its sound
+    /// beside its loudness (docs/RADIO.md, "How it sounds"). On by default,
+    /// as Last.fm's switch: "doe ze allemaal" (the photographer, 23
+    /// November 2026).
+    var useAcousticBrainz: Bool {
+        didSet {
+            defaults.set(useAcousticBrainz, forKey: Keys.useAcousticBrainz)
+            if useAcousticBrainz != oldValue {
+                Stats.track(.settingChanged, ["name": "acousticbrainz", "value": Stats.onOff(useAcousticBrainz)])
+            }
+        }
+    }
+
     /// The listener's own Last.fm key, optional: used in place of the app's
     /// (`appLastFMKey`) when set. Empty: none. Kept in UserDefaults, not the
     /// keychain: an API key for public data, not a password.
@@ -265,6 +280,7 @@ final class AppSettings {
         cellularQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.cellularQuality) ?? "") ?? .normal
         normalizeVolume = defaults.object(forKey: Keys.normalizeVolume) as? Bool ?? true
         useLastFM = defaults.object(forKey: Keys.useLastFM) as? Bool ?? true
+        useAcousticBrainz = defaults.object(forKey: Keys.useAcousticBrainz) as? Bool ?? true
         lastFMAPIKey = defaults.string(forKey: Keys.lastFMAPIKey) ?? ""
         lastFMUser = defaults.string(forKey: Keys.lastFMUser) ?? ""
         autoplay = defaults.object(forKey: Keys.autoplay) as? Bool ?? true
@@ -294,6 +310,7 @@ final class AppSettings {
         static let cellularQuality = "cellularQuality"
         static let normalizeVolume = "normalizeVolume"
         static let useLastFM = "useLastFM"
+        static let useAcousticBrainz = "useAcousticBrainz"
         static let lastFMAPIKey = "lastFMAPIKey"
         static let lastFMUser = "lastFMUser"
         static let adventurousness = "adventurousness"

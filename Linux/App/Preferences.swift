@@ -105,6 +105,16 @@ enum Preferences {
             ptr(radio), AppSettings.appLastFMKey.isEmpty
                 ? "With a key, the radio knows which artists and songs sound alike, and the genres of your artists. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm."
                 : "The radio asks Last.fm which artists and songs sound alike, and the genres of your artists, with Jukebox's own key or with yours. With your username, it learns when you play what from your scrobbles. Only artist names, song titles and your username are sent; nothing is written to Last.fm.")
+        // Enhance Radio with AcousticBrainz (AppSettings.useAcousticBrainz),
+        // as the Mac's Settings › Radio, word for word.
+        let sound = group(nil, on: radioPage)
+        adw_preferences_group_add(ptr(sound), toggle(
+            "Enhance Radio with AcousticBrainz",
+            "Songs are looked up on AcousticBrainz by artist, title and album, so a station keeps to one sound: acoustic or electronic, calm or driving. Nothing about you is sent.",
+            settings.useAcousticBrainz) {
+            settings.useAcousticBrainz = $0
+            app.radio.acousticBrainzChanged()
+        })
 
         // Which places the sidebar shows (AppSettings.hiddenPages), in its
         // order; Home has no switch. The photographer, 15 November 2026:

@@ -923,6 +923,65 @@ little more often (0.233 → 0.256 on the library in his shape, 0.078 →
 0.114 at 0.7 on his own) and six picks in ten said "From Jellyfin's mix";
 a mix that knows raised the piano artists only from 0.342 to 0.397.
 
+### How it sounds
+
+Recommendation 1 of `radio-alternatives.md`, built after the coverage
+check ("doe ze allemaal", the photographer, 23 November 2026). Code:
+`Sound/Sound.swift` (`SoundService`), `RadioEngine.soundFit`.
+
+**Coverage**, his library (4 341 tracks, 4 091 songs by artist and title
+with brackets left out; the app's own song key makes 3 780):
+- MusicBrainz recording IDs from ListenBrainz's lookup (no key, fifty a
+  call): 3 288 with the album, 432 more by artist and title alone; 3 720
+  in all (0.909).
+- With AcousticBrainz data: 3 007 songs (0.735); 2 026 of the 2 913
+  without a genre in the files. 3 087 tracks have a profile.
+- High-level values for 25 of 25 sampled, about 10 kB a recording: some
+  30 MB once for his library, a minute a round of 500 songs.
+
+**What it keeps.** Of its twelve classifiers, the three that set his piano
+artists apart from the three misfits, by artist mean: acoustic (0.83 …
+0.97 against 0.15 … 0.47), relaxed (0.89 … 1 against 0.41 … 0.94) and
+danceable (0 … 0.15 against 0.45 … 0.76). Its "electronic" (0.27 … 0.67
+against 0.42 … 0.73) and "aggressive" did not. A song without data takes
+its artist's mean.
+
+**The score**, beside loudness and shaped like it: the station's sound is
+the median on each axis of its own artists' songs (a song, artist or
+album station) or of its best 100, half-way to the song before; within
+0.15 (root mean square over the three) all the same, past it a bell 0.08
+wide at Familiar, 0.38 at Adventurous. A song whose sound is not known
+by song or artist counts 0.6: without it, the unknown were favoured. Its
+own switch, Enhance Radio with AcousticBrainz, on by default.
+
+**Measured** (`RadioSoundTests`, lines `RADIO-MIX`): Moans Radio on the
+library in his shape, his artists' means, ±0.2 a song, a quarter of the
+songs without (they take the artist's), 12 × 30 picks:
+
+| dial | without a key: the calm artists | the three | with Last.fm: the calm, the three |
+|---|---|---|---|
+| 0 | 0.342 → 0.856 | 0.233 → 0 | 1.000, 0 (unchanged) |
+| 0.35 | 0.339 → 0.678 | 0.231 → 0.086 | 1.000, 0 |
+| 0.7 | 0.333 → 0.533 | 0.181 → 0.133 | 1.000, 0 |
+| 1 | 0.333 → 0.456 | 0.114 → 0.106 | 1.000, 0 |
+
+His own library (the app's cache on Linux, not in the tests), Moans
+Radio, the share of picks with a profile that are acoustic (0.5 or
+more), and Hania Rani with her five Last.fm neighbours:
+
+| dial | with a key: acoustic | her and her five | without: acoustic | her and her five | the three |
+|---|---|---|---|---|---|
+| 0 | 0.799 → 0.943 | 0.703 → 0.706 | 0.385 → 1.000 | 0.214 → 0.244 | 0.100 → 0.075 |
+| 0.35 | 0.803 → 0.908 | 0.733 → 0.733 | 0.404 → 0.996 | 0.200 → 0.244 | 0.094 → 0.078 |
+| 0.7 | 0.738 → 0.876 | 0.647 → 0.658 | 0.410 → 0.969 | 0.206 → 0.239 | 0.089 → 0.064 |
+| 1 | 0.695 → 0.838 | 0.531 → 0.536 | 0.395 → 0.932 | 0.194 → 0.231 | 0.064 → 0.064 |
+
+Without a key the station now sounds like her even where it does not
+know her neighbours: other piano, not the library at random. About a
+quarter to a third of its picks have no profile either way. Every
+`RADIO-EVAL`, `RADIO-CRITIC` and `RADIO-QUEUE` line is unchanged: their
+libraries have no profiles.
+
 ## What it does when …
 
 `RadioCriticTests.swift` tries the radio the way a demanding listener would
@@ -1040,8 +1099,10 @@ Each round is in the test output of its time.
 - The library alone knows only tags, guests and years. With few artists per
   genre, a station reaches its guests' genres early (the listings above).
   Last.fm's edges are what make "sounds like" right.
-- No audio analysis: two songs of one artist are alike, whatever they sound
-  like.
+- No audio analysis of our own: AcousticBrainz's values stop in 2022
+  ("Moans", 2023, takes its artist's mean), and a quarter of his songs
+  have none. Without them, two songs of one artist are alike, whatever
+  they sound like.
 - Adventurousness is not remembered per station; that is the app's job.
 - Repeats grow over a very long session: after 13 hours of an artist
   station on the made-up library a third of the songs were heard earlier,

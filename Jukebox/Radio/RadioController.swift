@@ -69,6 +69,12 @@ final class RadioController {
     /// of reach left the radio on the library alone without a word ("doe ze
     /// allemaal", the photographer, 23 November 2026).
     private(set) var lastFMTrouble: LastFMTrouble?
+    /// How the library's songs sound, from AcousticBrainz (`SoundService`),
+    /// as far as it is known: a station scores by it beside loudness
+    /// (docs/RADIO.md, "How it sounds").
+    private(set) var sound: [ItemID: SoundProfile] = [:] {
+        didSet { previewInputs += 1 }
+    }
 
     var server: (any MusicServer)?
     /// Set by AppModel: offline, what the radio may choose from.
@@ -93,6 +99,8 @@ final class RadioController {
     @ObservationIgnored private var enrichTask: Task<Void, Never>?
     /// Asks Last.fm again once it has rested (`SimilarityService.retryAt`).
     @ObservationIgnored private var retryTask: Task<Void, Never>?
+    @ObservationIgnored private var soundService: SoundService?
+    @ObservationIgnored private var soundTask: Task<Void, Never>?
     @ObservationIgnored private var snapshotTask: Task<Void, Never>?
     @ObservationIgnored private var dialTask: Task<Void, Never>?
     @ObservationIgnored private var factTask: Task<Void, Never>?
@@ -167,6 +175,7 @@ final class RadioController {
     func prepare() {
         if service == nil { service = makeService() }
         rebuildGraph()
+        lookUpSound()
         watchLibrary()
         refreshYourStationFact()
     }
@@ -326,6 +335,10 @@ final class RadioController {
         retryTask?.cancel()
         retryTask = nil
         lastFMTrouble = nil
+        soundTask?.cancel()
+        soundTask = nil
+        soundService = nil
+        sound = [:]
         factTask?.cancel()
         factTask = nil
         yourStationFact = nil
@@ -695,6 +708,7 @@ final class RadioController {
                                 history: history.history,
                                 scrobbles: scrobbles,
                                 graph: graph,
+                                sound: settings.useAcousticBrainz ? sound : [:],
                                 settings: RadioSettings(adventurousness: settings.adventurousness),
                                 now: Date(),
                                 playingNow: [playingNow].compactMap { $0 } + shown)
@@ -978,6 +992,46 @@ final class RadioController {
         }
     }
 
+    /// Enhance Radio with AcousticBrainz was switched (Settings › Radio,
+    /// Preferences › Radio on Linux).
+    func acousticBrainzChanged() {
+        soundTask?.cancel()
+        soundTask = nil
+        if settings.useAcousticBrainz {
+            lookUpSound()
+        } else {
+            previewInputs += 1
+        }
+    }
+
+    /// What is on disk at once, then the songs not looked up yet, 500 a
+    /// round (about a minute at MetaBrainz's one call a second), round
+    /// after round until the library is done. Quiet: a round that fails
+    /// stops, and the next launch or library change goes on.
+    private func lookUpSound() {
+        guard settings.useAcousticBrainz, let directory = similarityDirectory else { return }
+        let service = soundService ?? SoundService(directory: directory)
+        soundService = service
+        let snapshot = library.snapshot
+        guard !snapshot.isEmpty else { return }
+        soundTask?.cancel()
+        soundTask = Task { [weak self] in
+            let known = await service.profiles(for: snapshot)
+            guard !Task.isCancelled, let self, self.soundService === service else { return }
+            if known != self.sound { self.sound = known }
+            // The songs Your Station and the listener's favourites play
+            // first, then the library.
+            let priority = snapshot.tracks.filter { $0.isFavorite || $0.playCount > 0 }.map(\.id)
+            var more = true
+            while more, !Task.isCancelled {
+                let round = await service.enrich(snapshot: snapshot, priority: priority)
+                guard !Task.isCancelled, self.soundService === service, self.settings.useAcousticBrainz else { return }
+                if round.profiles != self.sound { self.sound = round.profiles }
+                more = round.more
+            }
+        }
+    }
+
     /// What the round left Last.fm at: said in Settings and on a station's
     /// page, and, after "rate limit" or no answer, the next round once it
     /// has rested (a minute, then longer each time, at most an hour). A
@@ -1023,6 +1077,7 @@ final class RadioController {
             try? await Task.sleep(for: .seconds(1))
             guard !Task.isCancelled else { return }
             self?.rebuildGraph()
+            self?.lookUpSound()
             self?.refreshYourStationFact()
         }
     }
@@ -1053,6 +1108,8 @@ nonisolated private struct RadioStartInputs: Sendable {
     /// The listener's Last.fm plays, for the clock; empty without a name.
     let scrobbles: ListeningHistory
     let graph: SimilarityGraph
+    /// How songs sound, from AcousticBrainz; empty when it is off.
+    let sound: [ItemID: SoundProfile]
     let settings: RadioSettings
     let now: Date
     /// The song playing, and a page's songs about to: they reach the
@@ -1066,7 +1123,7 @@ nonisolated private struct RadioStartInputs: Sendable {
         var recent = history.trackIDs(since: now.addingTimeInterval(-settings.noRepeatHours * 3600))
         recent.formUnion(playingNow)
         let session = RadioSession(station: station, snapshot: index, taste: taste, graph: graph,
-                                   settings: settings, recentlyPlayed: recent, randomSeed: randomSeed)
+                                   settings: settings, recentlyPlayed: recent, randomSeed: randomSeed, sound: sound)
         return (session, index)
     }
 }

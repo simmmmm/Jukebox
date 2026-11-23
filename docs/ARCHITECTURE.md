@@ -95,7 +95,7 @@ Mac's, is Linux's window, 1:1 (below).
 | Lead | `project.yml`, `ci/`, `dev/`, `Jukebox/App/*` (with WideShell, PanelState, Commands: the Mac's menus and ⌘F), `Jukebox/Components/*` (with Platform, WidePage, DesktopMeasures), kit `Models.swift`, `NameKey.swift`, `HTTPTransport.swift`, `LibraryCache.swift` |
 | Kit: Jellyfin | `JukeboxKit/Sources/JukeboxKit/Jellyfin/*` (client, DTOs), its tests |
 | Kit: radio | `Library/LibrarySnapshot.swift`, `Radio/*`, tests, `docs/RADIO.md` |
-| Kit: mixes and Last.fm | `Mixes/*`, `LastFM/*`, tests |
+| Kit: mixes, Last.fm and AcousticBrainz | `Mixes/*`, `LastFM/*`, `Sound/*`, tests |
 | Kit: lyrics | `Lyrics/*` (LRCParser, LyricsQuery, LRCLIBClient, LyricsCache), tests |
 | Kit: artwork | `Artwork/CoverAccent.swift` (Now Playing's accent from its cover, BRAND.md), `Artwork/CoverWall.swift` (the still page's wall and floor from it), tests |
 | Kit: servers | `Server/*` (MusicServer, the CONTRACT; JellyfinServer; ServerAddress), `Plex/*` (PlexServer, PlexSignIn), `Subsonic/*` (SubsonicClient, its requests, answers, sign-in, MD5), their tests (Subsonic*, JellyfinServer, ServerAddress, Navidrome's integration, the contract on both servers), `dev/navidrome-test-server.sh`, `docs/SERVERS.md` |

@@ -450,13 +450,15 @@ public struct RadioSession: Sendable {
     ///     anywhere (ListeningHistory.trackIDs(since:)), which wait.
     ///   - randomSeed: the same seed, library and feedback give the same
     ///     station, for the tests.
+    ///   - sound: how songs sound (`SoundService.profiles`); empty, the
+    ///     station is as it was without.
     public init(station: Station, snapshot: LibrarySnapshot, taste: TasteProfile, graph: SimilarityGraph,
                 settings: RadioSettings = RadioSettings(), recentlyPlayed: Set<ItemID> = [],
-                randomSeed: UInt64 = UInt64.random(in: 0...UInt64.max)) {
+                randomSeed: UInt64 = UInt64.random(in: 0...UInt64.max), sound: [ItemID: SoundProfile] = [:]) {
         self.station = station
         self.settings = settings
         engine = RadioEngine(seed: station.seed, snapshot: snapshot, taste: taste, graph: graph,
-                             settings: settings, recentlyPlayed: recentlyPlayed, randomSeed: randomSeed)
+                             settings: settings, recentlyPlayed: recentlyPlayed, randomSeed: randomSeed, sound: sound)
     }
 
     /// Tracks from outside the library's own knowledge, raised by `weight`

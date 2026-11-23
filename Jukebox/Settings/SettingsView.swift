@@ -235,6 +235,7 @@ struct SettingsPageForm: View {
                 SettingsRadioSection()
                 SettingsLastFMSwitchSection()
                 SettingsLastFMSection()
+                SettingsAcousticBrainzSection()
             case .library:
                 SettingsLibrarySection()
                 SettingsPagesSection(hasSidebar: isWide || settingsOnPad)
@@ -792,6 +793,38 @@ private struct SettingsLastFMSwitchSection: View {
                     if let trouble = radio.lastFMTrouble { Text(trouble.text) }
                 }
             }
+        }
+    }
+}
+
+/// Enhance Radio with AcousticBrainz (`AppSettings.useAcousticBrainz`): how
+/// each song sounds, from MetaBrainz's open data, so a piano station keeps
+/// to piano where Last.fm's tags call Gorillaz "electronic" too
+/// (docs/RADIO.md, "How it sounds"). As Linux's Preferences › Radio.
+private struct SettingsAcousticBrainzSection: View {
+    @Environment(AppSettings.self) private var settings
+    @Environment(RadioController.self) private var radio
+    @Environment(\.isWide) private var isWide
+
+    init() {}
+
+    private var detail: LocalizedStringKey {
+        "Songs are looked up on AcousticBrainz by artist, title and album, so a station keeps to one sound: acoustic or electronic, calm or driving. Nothing about you is sent."
+    }
+
+    var body: some View {
+        @Bindable var settings = settings
+        Section {
+            Toggle(isOn: $settings.useAcousticBrainz) {
+                if isWide {
+                    SettingsDetailLabel(title: "Enhance Radio with AcousticBrainz", detail: detail)
+                } else {
+                    Text("Enhance Radio with AcousticBrainz")
+                }
+            }
+            .onChange(of: settings.useAcousticBrainz) { _, _ in radio.acousticBrainzChanged() }
+        } footer: {
+            if !isWide { Text(detail) }
         }
     }
 }
