@@ -5,7 +5,7 @@
 // November 2026). Turn On is the default and the prominent one; Not Now
 // turns Enhance Radio off. Either way it is not asked again: Settings ›
 // Radio changes it later. As Linux's dialog (BetterRadio.swift there): the
-// arch, the title in the sleeves' serif, two sentences, two buttons.
+// arch, the title in the sleeves' serif, three short sentences, two buttons.
 
 import SwiftUI
 
