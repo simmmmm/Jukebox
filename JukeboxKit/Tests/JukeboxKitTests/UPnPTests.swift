@@ -4,6 +4,9 @@
 // against a fake renderer (dev/fake-upnp-renderer.py).
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import Testing
 @testable import JukeboxKit
 
@@ -213,5 +216,76 @@ import Testing
         #expect(UPnPTime.string(3725) == "1:02:05")
         #expect(UPnPTime.seconds("0:03:21.500") == 201.5)
         #expect(UPnPTime.seconds("NOT_IMPLEMENTED") == nil)
+    }
+
+    @Test func takesOnlyAnswersToItsOwnQuestion() {
+        let ok = "HTTP/1.1 200 OK\r\nLOCATION: http://192.168.2.8:1400/d.xml\r\nST: \(SSDP.zonePlayer)\r\n\r\n"
+        let searched = [SSDP.zonePlayer, SSDP.mediaRenderer]
+        #expect(SSDP.answer(ok, searched: searched, from: "192.168.2.8") != nil)
+        // From another address than its description's.
+        #expect(SSDP.answer(ok, searched: searched, from: "192.168.2.66") == nil)
+        // For something not asked.
+        #expect(SSDP.answer(ok, searched: [SSDP.mediaRenderer], from: "192.168.2.8") == nil)
+        // A NOTIFY is no answer.
+        let notify = "NOTIFY * HTTP/1.1\r\nNTS: ssdp:alive\r\nNT: \(SSDP.zonePlayer)\r\nLOCATION: http://192.168.2.8:1400/d.xml\r\n\r\n"
+        #expect(SSDP.answer(notify, searched: searched, from: "192.168.2.8") == nil)
+        // A description on the internet.
+        let away = "HTTP/1.1 200 OK\r\nLOCATION: http://8.8.8.8/d.xml\r\nST: \(SSDP.zonePlayer)\r\n\r\n"
+        #expect(SSDP.answer(away, searched: searched, from: "8.8.8.8") == nil)
+    }
+
+    @Test func onlyAddressesInTheHouse() {
+        let local = ["http://192.168.1.2:1400/", "http://10.0.0.5/", "http://172.20.1.1/", "http://169.254.3.4/",
+                     "http://127.0.0.1:8080/", "http://localhost:9/", "http://[fe80::1]:1400/",
+                     "http://[fd12:3456::1]/", "http://[::1]/"]
+        let away = ["http://8.8.8.8/", "http://172.32.0.1/", "http://192.169.0.1/", "http://sonos.example.com/",
+                    "http://0xc0.168.1.1/", "http://3232235777/", "http://192.168.1/", "http://[2001:db8::1]/",
+                    "http://[fc::1]/", "file:///etc/passwd", "ftp://192.168.1.2/"]
+        for text in local { #expect(UPnPAddress.isLocal(URL(string: text)!), "\(text)") }
+        for text in away { #expect(!UPnPAddress.isLocal(URL(string: text)!), "\(text)") }
+    }
+
+    @Test func controlsStayOnTheDescriptionsHost() throws {
+        let xml = """
+            <root><URLBase>http://10.0.0.99:80/</URLBase><device><UDN>uuid:1</UDN><serviceList>
+            <service><serviceType>urn:schemas-upnp-org:service:AVTransport:1</serviceType>
+            <controlURL>avt</controlURL></service>
+            <service><serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
+            <controlURL>http://10.0.0.99/rc</controlURL></service></serviceList></device></root>
+            """
+        let description = try #require(UPnPDescription(xml: xml, location: URL(string: "http://10.0.0.5:49152/d.xml")!))
+        // The URLBase elsewhere is not taken; the control there neither.
+        #expect(description.avTransport?.absoluteString == "http://10.0.0.5:49152/avt")
+        #expect(description.renderingControl == nil)
+    }
+
+    @Test func aSpeakersAnswerIsBoundedAndFromItself() async throws {
+        let location = try #require(URL(string: "http://10.0.0.5:1400/d.xml"))
+        let xml = "<root><device><UDN>uuid:1</UDN></device></root>"
+        let plain = SpeakerFake(HTTPResponse(status: 200, body: Data(xml.utf8), url: location))
+        #expect(try await UPnPRenderer.description(at: location, transport: plain).udn == "1")
+        // Redirected to another host.
+        let moved = SpeakerFake(HTTPResponse(status: 200, body: Data(xml.utf8), url: URL(string: "http://10.0.0.6/d.xml")))
+        await #expect(throws: UPnPError.notLocal) { try await UPnPRenderer.description(at: location, transport: moved) }
+        // Too big.
+        let big = SpeakerFake(HTTPResponse(status: 200, body: Data(count: UPnPRenderer.maximumBytes + 1), url: location))
+        await #expect(throws: UPnPError.unreadable) { try await UPnPRenderer.description(at: location, transport: big) }
+        // Not in the house: not asked at all.
+        let away = try #require(URL(string: "http://8.8.8.8/d.xml"))
+        await #expect(throws: UPnPError.notLocal) { try await UPnPRenderer.description(at: away, transport: plain) }
+        await #expect(throws: UPnPError.notLocal) {
+            try await UPnPRenderer.call(away, UPnPSOAP.avTransport, "Play", [], transport: plain)
+        }
+        #expect(plain.asked == 1)
+    }
+}
+
+private final class SpeakerFake: HTTPTransport, @unchecked Sendable {
+    let answer: HTTPResponse
+    var asked = 0
+    init(_ answer: HTTPResponse) { self.answer = answer }
+    func send(_ request: URLRequest) async throws -> HTTPResponse {
+        asked += 1
+        return answer
     }
 }

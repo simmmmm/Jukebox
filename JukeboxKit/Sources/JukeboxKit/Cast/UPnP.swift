@@ -63,6 +63,67 @@ public enum SSDP {
               location.scheme == "http" || location.scheme == "https" else { return nil }
         return Answer(location: location, target: headers["ST"] ?? headers["NT"] ?? "", usn: headers["USN"] ?? "")
     }
+
+    /// An answer to one of our own M-SEARCHes, as a finder takes it: a 200
+    /// for a target that was asked for, whose description is on the address
+    /// the answer came from (`sender`, as the socket says it), in the house.
+    /// Anything else on the socket is nil: an unasked answer would have
+    /// Jukebox fetch an address of someone else's choosing.
+    public static func answer(_ text: String, searched targets: [String], from sender: String) -> Answer? {
+        guard text.uppercased().hasPrefix("HTTP/1.1 200"), let answer = parse(text),
+              targets.contains(answer.target), UPnPAddress.isLocal(answer.location),
+              let host = answer.location.host, UPnPAddress.bare(host) == UPnPAddress.bare(sender) else { return nil }
+        return answer
+    }
+}
+
+// MARK: - Where a speaker may be
+
+/// A speaker is in the house: a description, its URLBase and its control
+/// addresses are only ever on a private, link-local or loopback address
+/// (loopback for the fake renderer of the checks), never a name or the
+/// internet.
+enum UPnPAddress {
+    /// The host as compared: lowercased, without IPv6's brackets or zone.
+    static func bare(_ host: String) -> String {
+        var name = host.lowercased()
+        if name.hasPrefix("["), name.hasSuffix("]") { name = String(name.dropFirst().dropLast()) }
+        if let zone = name.firstIndex(of: "%") { name = String(name[..<zone]) }
+        return name
+    }
+
+    static func isLocal(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+              let host = url.host else { return false }
+        let name = bare(host)
+        if name == "localhost" || name == "::1" { return true }
+        if name.contains(":") {
+            // fe80::/10 (link-local) and fc00::/7 (unique local), by the
+            // first group written out in full.
+            guard let first = name.split(separator: ":", omittingEmptySubsequences: false).first,
+                  first.count == 4 else { return false }
+            return ["fe8", "fe9", "fea", "feb", "fc", "fd"].contains { first.hasPrefix($0) }
+        }
+        // Four plain decimals; anything else (a name, 0x…, one big number)
+        // is not taken.
+        let parts = name.split(separator: ".", omittingEmptySubsequences: false)
+        guard parts.count == 4 else { return false }
+        let octets = parts.compactMap { part -> Int? in
+            guard (1...3).contains(part.count), part.allSatisfy({ $0.isASCII && $0.isNumber }) else { return nil }
+            return Int(part).flatMap { $0 <= 255 ? $0 : nil }
+        }
+        guard octets.count == 4 else { return false }
+        switch (octets[0], octets[1]) {
+        case (10, _), (127, _), (192, 168), (169, 254): return true
+        case (172, 16...31): return true
+        default: return false
+        }
+    }
+
+    static func sameHost(_ one: URL, _ other: URL) -> Bool {
+        guard let a = one.host, let b = other.host else { return false }
+        return bare(a) == bare(b)
+    }
 }
 
 // MARK: - Reading what a speaker says
@@ -257,13 +318,18 @@ public struct UPnPDescription: Sendable, Hashable {
         roomName = UPnPXML.text("roomName", in: xml)
         manufacturer = UPnPXML.text("manufacturer", in: xml)
         modelName = UPnPXML.text("modelName", in: xml)
-        let base = UPnPXML.text("URLBase", in: xml).flatMap { URL(string: $0) } ?? location
+        // The device's own host only: a description that sends its
+        // controls elsewhere would have the song's address, token and all,
+        // posted there.
+        let base = UPnPXML.text("URLBase", in: xml).flatMap { URL(string: $0) }
+            .flatMap { UPnPAddress.sameHost($0, location) ? $0 : nil } ?? location
         // Every service of every device: a Sonos has its renderer as an
         // embedded MediaRenderer, a plain renderer at its root.
         for service in UPnPXML.elements("service", in: xml) {
             guard let type = UPnPXML.text("serviceType", in: service),
                   let control = UPnPXML.text("controlURL", in: service),
-                  let url = URL(string: control, relativeTo: base)?.absoluteURL else { continue }
+                  let url = URL(string: control, relativeTo: base)?.absoluteURL,
+                  UPnPAddress.sameHost(url, location) else { continue }
             if type.contains(":service:AVTransport:"), avTransport == nil { avTransport = url }
             if type.contains(":service:RenderingControl:"), renderingControl == nil { renderingControl = url }
         }
@@ -323,6 +389,9 @@ public enum UPnPError: Error, Sendable, Equatable {
     case fault(code: Int?, description: String?)
     case http(Int)
     case unreadable
+    /// An address outside the house (UPnPAddress), or a redirect away from
+    /// the device asked.
+    case notLocal
 }
 
 public enum UPnPSOAP {
@@ -460,29 +529,45 @@ public struct UPnPRenderer: Sendable {
     }
 
     /// One action. A device on the same network answers at once: 5 s is gone.
-    public static func call(_ url: URL, _ service: String, _ action: String,
-                            _ arguments: [(String, String)]) async throws -> [String: String] {
+    public static func call(_ url: URL, _ service: String, _ action: String, _ arguments: [(String, String)],
+                            transport: any HTTPTransport = URLSessionTransport()) async throws -> [String: String] {
         var request = URLRequest(url: url, timeoutInterval: 5)
         request.httpMethod = "POST"
         request.setValue("text/xml; charset=\"utf-8\"", forHTTPHeaderField: "Content-Type")
         request.setValue(UPnPSOAP.header(action, service: service), forHTTPHeaderField: "SOAPACTION")
         request.httpBody = Data(UPnPSOAP.envelope(action, service: service, arguments).utf8)
-        let (data, response) = try await URLSession.shared.data(for: request)
-        let text = String(decoding: data, as: UTF8.self)
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
+        let response = try await send(request, transport)
+        let text = String(decoding: response.body, as: UTF8.self)
         // A fault comes as a 500 with its reason in the body.
-        if status != 200, !text.contains("Fault") { throw UPnPError.http(status) }
+        if response.status != 200, !text.contains("Fault") { throw UPnPError.http(response.status) }
         return try UPnPSOAP.values(in: text, action: action)
     }
 
     /// The description at `location`.
-    public static func description(at location: URL) async throws -> UPnPDescription {
-        let (data, response) = try await URLSession.shared.data(for: URLRequest(url: location, timeoutInterval: 5))
-        let status = (response as? HTTPURLResponse)?.statusCode ?? 0
-        guard status == 200 else { throw UPnPError.http(status) }
-        guard let description = UPnPDescription(xml: String(decoding: data, as: UTF8.self), location: location)
+    public static func description(at location: URL,
+                                   transport: any HTTPTransport = URLSessionTransport()) async throws -> UPnPDescription {
+        let response = try await send(URLRequest(url: location, timeoutInterval: 5), transport)
+        guard response.status == 200 else { throw UPnPError.http(response.status) }
+        guard let description = UPnPDescription(xml: String(decoding: response.body, as: UTF8.self), location: location)
         else { throw UPnPError.unreadable }
         return description
+    }
+
+    /// More than any description or answer a speaker gives (a Sonos's
+    /// description is some 30 KB).
+    static let maximumBytes = 256 * 1024
+
+    /// Every request to a speaker: only to an address in the house, its
+    /// redirects as RedirectPolicy lets them go (URLSessionTransport) and
+    /// answered by the host asked, and no bigger than a speaker's answer
+    /// (checked once it is in: Linux's URLSession cannot safely be stopped
+    /// mid-way, HTTPTransport.swift).
+    static func send(_ request: URLRequest, _ transport: any HTTPTransport) async throws -> HTTPResponse {
+        guard let url = request.url, UPnPAddress.isLocal(url) else { throw UPnPError.notLocal }
+        let response = try await transport.send(request)
+        if let final = response.url, !UPnPAddress.sameHost(final, url) { throw UPnPError.notLocal }
+        guard response.body.count <= maximumBytes else { throw UPnPError.unreadable }
+        return response
     }
 
     /// The rooms of the Sonos system the speaker at `location` is in.
