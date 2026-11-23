@@ -55,6 +55,21 @@ Last.fm** (Preferences › Radio on Linux). Off, Jukebox makes no request to
 Last.fm at all, and the radio chooses from your library and from what
 Last.fm answered before, which stays on your device.
 
+## Sharing
+
+When you share a song, an album or an artist, Jukebox asks Apple's iTunes
+Search (`itunes.apple.com`) with the artist's name and the title, to add a
+public link to what you share. Only then, and nothing else about you,
+apart from your IP address. If nothing is found, the share is the words
+alone.
+
+## Plex
+
+Signing in to a Plex server goes through Plex's own sign-in (`plex.tv`, in
+your browser): Jukebox then asks `plex.tv` for your account's servers and
+their addresses, with the token Plex gave it. After that it talks to your
+server. Plex's own privacy policy covers what `plex.tv` keeps.
+
 ## Questions
 
 Jukebox is made by Tijmen, in the Netherlands. Its source is public:
