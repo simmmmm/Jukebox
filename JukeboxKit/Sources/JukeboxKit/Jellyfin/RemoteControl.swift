@@ -62,11 +62,15 @@ public enum RemoteControlMessage {
         let data = object["Data"]
         switch type {
         case "ForceKeepAlive":
+            // Kept within what a server means: the app sleeps this long,
+            // and a Duration holds neither 1e300 seconds nor NaN.
             let seconds = (data as? NSNumber)?.doubleValue ?? 60
-            return .keepAlive(max(10, seconds))
+            return .keepAlive(seconds.isFinite ? min(600, max(10, seconds)) : 60)
         case "Play":
             guard let data = data as? [String: Any], let list = data["ItemIds"] as? [Any] else { return nil }
-            let ids = list.map { "\($0)" }.filter { !$0.isEmpty }
+            // Each id the library does not have is asked of the server one
+            // by one; a controller sends 100 at most (Play On's capacity).
+            let ids = list.prefix(500).map { "\($0)" }.filter { !$0.isEmpty }
             guard !ids.isEmpty else { return nil }
             let placement = (data["PlayCommand"] as? String).flatMap(RemoteControlCommand.Placement.init) ?? .now
             let start = (data["StartIndex"] as? NSNumber)?.intValue ?? 0

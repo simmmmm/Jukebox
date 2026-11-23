@@ -151,6 +151,18 @@ struct RemoteControlTests {
     @Test("Messages as Jellyfin and Emby send them")
     func parse() {
         #expect(RemoteControlMessage.parse(#"{"MessageType":"ForceKeepAlive","Data":60}"#) == .keepAlive(60))
+        // Whatever the number, a sleep the app can take.
+        #expect(RemoteControlMessage.parse(#"{"MessageType":"ForceKeepAlive","Data":1e300}"#) == .keepAlive(600))
+        #expect(RemoteControlMessage.parse(#"{"MessageType":"ForceKeepAlive","Data":-5}"#) == .keepAlive(10))
+        #expect(RemoteControlMessage.parse(#"{"MessageType":"ForceKeepAlive","Data":"x"}"#) == .keepAlive(60))
+        let many = (0..<2000).map { "\"\($0)\"" }.joined(separator: ",")
+        let long = #"{"MessageType":"Play","Data":{"ItemIds":["# + many
+            + #"],"StartIndex":1e300,"StartPositionTicks":1e300}}"#
+        if case let .play(ids, start, _, _)? = RemoteControlMessage.parse(long) {
+            #expect(ids.count == 500 && start >= 0 && start < 500)
+        } else {
+            Issue.record("a long Play was not read")
+        }
         #expect(RemoteControlMessage.parse(
             #"{"MessageType":"Play","Data":{"ItemIds":["a","b","c"],"StartIndex":1,"StartPositionTicks":50000000,"PlayCommand":"PlayNow"}}"#)
             == .play(ids: ["a", "b", "c"], startIndex: 1, position: 5, placement: .now))
