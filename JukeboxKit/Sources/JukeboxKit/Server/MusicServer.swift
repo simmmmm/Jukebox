@@ -453,6 +453,15 @@ public enum MusicServerError: Error, Sendable, Equatable, LocalizedError {
     /// API key), and the address is plain http away from home, not accepted
     /// with Sign In Anyway (PlainHTTPConsent).
     case passwordNeedsHTTPS
+    /// The server needs the password itself on every call (no tokens, no
+    /// API key) and nobody has said Sign In Anyway to "This Server Gets
+    /// Your Password" for it yet (PasswordItselfWords): the clients ask,
+    /// keep the answer (PlainHTTPConsent.acceptPasswordItself) and sign in
+    /// again.
+    case passwordItself
+    /// The address sent detection on to another host or port: not taken as
+    /// the server, since the password would follow it there unasked.
+    case movedElsewhere(host: String)
     /// Allowed for others, not this user: Jellyfin's 403, Subsonic's 50
     /// (a playlist of someone else's, a user without the stream role).
     case notAllowed
@@ -484,6 +493,8 @@ public enum MusicServerError: Error, Sendable, Equatable, LocalizedError {
         case .unauthorized: "The server did not accept the user name or password."
         case .needsAPIKey: "This server signs in with an API key rather than a password."
         case .passwordNeedsHTTPS: "The connection to this server isn't secure. Use its https:// address."
+        case .passwordItself: "This server needs your password itself with every request."
+        case let .movedElsewhere(host): "This address sends Jukebox on to \(host). If that is your server, type its address."
         case .notAllowed: "The server does not allow that for this user."
         case .notFound: "The server does not have that."
         case .unsupported: "The server cannot do that."

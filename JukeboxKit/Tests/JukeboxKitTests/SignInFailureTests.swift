@@ -70,12 +70,65 @@ struct SignInFailureTests {
         ("https://music.example.com", false), ("http://[fd12::1]", false),
     ])
     func insecure(address: String, insecure: Bool) throws {
-        #expect(ServerAddress.isInsecure(try #require(URL(string: address))) == insecure)
+        #expect(ServerAddress.isInsecure(try #require(URL(string: address)), network: Self.home) == insecure)
+    }
+
+    /// A device at home: 192.168.1.5/24, Tailscale up, fd12::5/64; "nas.local"
+    /// is 192.168.1.20 there.
+    static let home = LocalNetwork(interfaces: [
+        .init(name: "wlan0", address: [192, 168, 1, 5], mask: [255, 255, 255, 0]),
+        .init(name: "tailscale0", address: [100, 101, 1, 2], mask: [255, 255, 255, 255]),
+        .init(name: "wlan0", address: [0xfd, 0x12] + [UInt8](repeating: 0, count: 13) + [5],
+              mask: [UInt8](repeating: 255, count: 8) + [UInt8](repeating: 0, count: 8)),
+    ], resolve: { $0 == "nas.local" ? [[192, 168, 1, 20]] : [] })
+
+    /// The same device in a café: 10.20.0.7/16, no Tailscale; the café's
+    /// DNS answers "nas" with an address of its own network, and its mobile
+    /// link is carrier-grade NAT, which is not Tailscale.
+    static let cafe = LocalNetwork(interfaces: [
+        .init(name: "wlan0", address: [10, 20, 0, 7], mask: [255, 255, 0, 0]),
+        .init(name: "wwan0", address: [100, 70, 0, 1], mask: [255, 192, 0, 0]),
+    ], resolve: { $0 == "nas" ? [[10, 20, 0, 9]] : [] })
+
+    @Test("Home is the network the device is on, not the address's shape", arguments: [
+        ("http://192.168.1.20", false, true), ("http://nas.local:4533", false, true),
+        ("http://100.64.0.1", false, true), ("http://[fd12::1]", false, true),
+        ("http://nas", true, false), ("http://127.0.0.1:8096", false, false), ("http://localhost", false, false),
+        ("http://10.20.5.5", true, false), ("http://192.168.1.10:8096", false, true),
+        // The rule's limit: a name the café's own DNS answers on its own
+        // network passes there.
+    ])
+    func homeIsWhereTheDeviceIs(address: String, home: Bool, cafe: Bool) throws {
+        let url = try #require(URL(string: address))
+        #expect(ServerAddress.isInsecure(url, network: Self.home) == home, "at home")
+        #expect(ServerAddress.isInsecure(url, network: Self.cafe) == cafe, "in the café")
+    }
+
+    @Test("A credential over plain http waits for the home network; detection's first questions go")
+    func plainHTTPGuard() throws {
+        var signIn = URLRequest(url: try #require(URL(string: "http://192.168.1.10:8096/Users/AuthenticateByName")))
+        signIn.httpMethod = "POST"
+        signIn.httpBody = Data(#"{"Pw":"x"}"#.utf8)
+        #expect(PlainHTTPGuard.carriesCredentials(signIn))
+        var info = URLRequest(url: try #require(URL(string: "http://192.168.1.10:8096/System/Info/Public")))
+        info.setValue("MediaBrowser Client=\"Jukebox\", Device=\"Linux\"", forHTTPHeaderField: "X-Emby-Authorization")
+        #expect(!PlainHTTPGuard.carriesCredentials(info))
+        info.setValue("MediaBrowser Client=\"Jukebox\", Token=\"abc\"", forHTTPHeaderField: "X-Emby-Authorization")
+        #expect(PlainHTTPGuard.carriesCredentials(info))
+        let subsonic = URLRequest(url: try #require(URL(string: "http://nas:4533/rest/ping?u=a&t=b&s=c")))
+        #expect(PlainHTTPGuard.carriesCredentials(subsonic))
+        #expect(!PlainHTTPGuard.carriesCredentials(URLRequest(url: try #require(URL(string: "http://nas:4533/rest/ping")))))
+        let defaults = try #require(UserDefaults(suiteName: "consent-\(UUID().uuidString)"))
+        let consent = PlainHTTPConsent(defaults: defaults)
+        consent.accept(try #require(URL(string: "http://192.168.1.10:8096/jellyfin")))
+        #expect(consent.isAcceptedOrigin(try #require(URL(string: "http://192.168.1.10:8096/Items"))))
+        #expect(!consent.isAcceptedOrigin(try #require(URL(string: "http://192.168.1.10:8097/Items"))))
     }
 
     @Test("Sign In Anyway is kept per address, and only an insecure address asks")
     func consent() throws {
         let defaults = try #require(UserDefaults(suiteName: "consent-\(UUID().uuidString)"))
+        try LocalNetwork.$standIn.withValue(Self.home) {
         let consent = PlainHTTPConsent(defaults: defaults)
         let away = try #require(URL(string: "http://music.example.com:4533"))
         let other = try #require(URL(string: "http://music.example.com:4534"))
@@ -87,6 +140,7 @@ struct SignInFailureTests {
         #expect(!consent.mustAsk(away))
         #expect(consent.mustAsk(other))
         #expect(defaults.stringArray(forKey: PlainHTTPConsent.key) == [away.absoluteString])
+        }
     }
 
     @Test("The password itself goes over plain http away from home only after Sign In Anyway")
@@ -102,8 +156,57 @@ struct SignInFailureTests {
         }
         #expect(fake.requests("ping").allSatisfy { $0.value("p") == nil })
         consent.accept(url)
+        // Then its own question: the password itself.
+        await #expect(throws: MusicServerError.passwordItself) {
+            _ = try await signIn.signIn(username: "test", password: "pw")
+        }
+        #expect(fake.requests("ping").allSatisfy { $0.value("p") == nil })
+        consent.acceptPasswordItself(url)
         let credentials = try await signIn.signIn(username: "test", password: "pw")
         #expect(credentials.secret == .subsonicPassword("pw"))
+    }
+
+    @Test("Over https too, the password itself goes only after its own question")
+    func passwordItselfOverHTTPS() async throws {
+        let defaults = try #require(UserDefaults(suiteName: "consent-\(UUID().uuidString)"))
+        let consent = PlainHTTPConsent(defaults: defaults)
+        let url = try #require(URL(string: "https://music.example.com"))
+        let fake = SubsonicClientTests.hashKeeper(password: "pw")
+        let signIn = SubsonicSignIn(server: SubsonicFixtures.detected(capabilities: [.lyrics], url: url),
+                                    identity: SubsonicFixtures.identity, transport: fake, consent: consent)
+        await #expect(throws: MusicServerError.passwordItself) {
+            _ = try await signIn.signIn(username: "test", password: "pw")
+        }
+        #expect(fake.requests("ping").allSatisfy { $0.value("p") == nil })
+        #expect(SignInFailure(MusicServerError.passwordItself, step: .password).reason == "password_itself")
+        #expect(!PasswordItselfWords.message(for: url).contains(PasswordItselfWords.unencrypted))
+    }
+
+    @Test("A redirect at sign-in to another host is not taken as the server: the café run")
+    func redirectToAnotherHost() async throws {
+        // The café drops 443 for music.example.test; its 8096 answers 301
+        // to https://evil.example.test, which plays Jellyfin with a real
+        // certificate. Nothing may sign in there.
+        let fake = AddressFake { url in
+            guard url.scheme == "http", url.port == 8096 else { throw URLError(.cannotConnectToHost) }
+            var answer = AddressFake.jellyfin(url)
+            answer.url = URL(string: "https://evil.example.test\(url.path)")
+            return answer
+        }
+        await #expect(throws: MusicServerError.movedElsewhere(host: "evil.example.test")) {
+            _ = try await MusicServers.detect("music.example.test", identity: Self.identity, transport: fake)
+        }
+        #expect(!fake.requests.contains { $0.path.contains("AuthenticateByName") })
+        // The same host on another port is another server too.
+        let port = AddressFake { url in
+            guard url.scheme == "http", url.port == 8096 else { throw URLError(.cannotConnectToHost) }
+            var answer = AddressFake.jellyfin(url)
+            answer.url = URL(string: "https://music.example.test:9443\(url.path)")
+            return answer
+        }
+        await #expect(throws: MusicServerError.movedElsewhere(host: "music.example.test:9443")) {
+            _ = try await MusicServers.detect("music.example.test", identity: Self.identity, transport: port)
+        }
     }
 
     @Test("A server reached through a redirect keeps the address it answered at")
@@ -148,6 +251,13 @@ struct SignInFailureTests {
         #expect(upgraded.value(forHTTPHeaderField: "Authorization") != nil)
         // Never from https down to plain http, not even on the same host.
         #expect(RedirectPolicy.next(request("http://music.example.com/x"), after: request("https://music.example.com/x")) == nil)
+        // The same host on another port is another origin: no body, no
+        // credential headers.
+        #expect(RedirectPolicy.next(request("https://music.example.com:8443/Users/AuthenticateByName", method: "POST",
+                                            body: true), after: post) == nil)
+        let otherPort = try #require(RedirectPolicy.next(request("https://music.example.com:8443/x"),
+                                                         after: request("https://music.example.com/x")))
+        #expect(otherPort.value(forHTTPHeaderField: "X-Emby-Token") == nil)
         // Another host: never the POST's body (a 307 or 308)…
         #expect(RedirectPolicy.next(request("https://evil.example.net/x", method: "POST", body: true), after: post) == nil)
         // …and a GET goes without the credential headers.

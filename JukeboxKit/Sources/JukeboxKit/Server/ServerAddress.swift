@@ -71,28 +71,33 @@ enum ServerAddress {
 
     // MARK: Where a password may go
 
-    /// Whether a password may go with every request to this address without
-    /// asking: over https, or to the home network. Elsewhere plain http
-    /// goes only once the person has said Sign In Anyway to "This Server
-    /// Isn't Secure" (`PlainHTTPConsent`, SubsonicSignIn).
-    static func mayCarryPassword(_ url: URL) -> Bool {
-        !isInsecure(url)
-    }
-
     /// Plain http away from the home network: what "This Server Isn't
     /// Secure" asks about, and what an account's card says "Not secure" of.
     /// Plain http at home is no question: "als het binnen een thuisnetwerk
     /// blijft vind ik het wat anders […] maar daarbuiten wel" (the
     /// photographer, 23 November 2026).
-    public static func isInsecure(_ url: URL) -> Bool {
+    /// Home is an address of the home's shape on a network the device is
+    /// on now (LocalNetwork): 192.168.1.10 typed in a café is asked about.
+    /// May resolve a name, so not on the main thread.
+    public static func isInsecure(_ url: URL, network: @autoclosure () -> LocalNetwork = .current) -> Bool {
+        guard url.scheme?.lowercased() != "https" else { return false }
+        guard isHomeNetwork(url), let host = url.host else { return true }
+        return !network().reaches(host)
+    }
+
+    /// Plain http to an address not of the home's shape, wherever the
+    /// device is: what an account's card says "Not secure" of. No lookup,
+    /// so a view may ask.
+    public static func isInsecureAnywhere(_ url: URL) -> Bool {
         url.scheme?.lowercased() != "https" && !isHomeNetwork(url)
     }
 
-    /// The home network: a private address (RFC 1918, the loopback,
+    /// The home network's shape: a private address (RFC 1918, the loopback,
     /// link-local, Tailscale's 100.64/10, IPv6's fc00::/7 and fe80::/10) or
     /// a home name ("nas", ".local", ".lan", …). Stricter than
     /// JellyfinAddress's guess at http, which takes any IP address: a
-    /// public IP is not home.
+    /// public IP is not home. Whether the device is there now is
+    /// LocalNetwork's (`isInsecure`).
     static func isHomeNetwork(_ url: URL) -> Bool {
         guard var host = url.host?.lowercased(), !host.isEmpty else { return false }
         if host.hasPrefix("["), host.hasSuffix("]") { host = String(host.dropFirst().dropLast()) }
@@ -138,6 +143,7 @@ enum ServerAddress {
             if case .success = alone { return try alone.get() }
             let later = await firstServer(Array(candidates.dropFirst()), identity: identity, transport: transport)
             if case .success = later { return try later.get() }
+            if case .failure(.movedElsewhere) = later { return try later.get() }
             return try alone.get()
         }
         return try await firstServer(candidates, identity: identity, transport: transport).get()
@@ -162,7 +168,10 @@ enum ServerAddress {
                     }
                 }
             }
-            return results.first.flatMap { $0 } ?? .failure(.invalidServerAddress)
+            // A server that sent Jukebox elsewhere says so before "nothing
+            // answered here".
+            let moved = results.first { if case .failure(.movedElsewhere)? = $0 { true } else { false } }
+            return moved.flatMap { $0 } ?? results.first.flatMap { $0 } ?? .failure(.invalidServerAddress)
         }
     }
 
@@ -174,7 +183,15 @@ enum ServerAddress {
     static func probe(_ url: URL, identity: ClientIdentity,
                       transport: any HTTPTransport) async -> Result<DetectedServer, MusicServerError> {
         let redirects = Redirects(transport)
-        return await probeAsked(url, identity: identity, transport: redirects).map { found in
+        let result = await probeAsked(url, identity: identity, transport: redirects)
+        // Sent on to another host or port: that is another server, whatever
+        // it says it is, and the password would follow it there with no
+        // question asked of it. Not taken: it can be typed as itself.
+        if case .success = result, let elsewhere = redirects.elsewhere(for: url) {
+            let port = elsewhere.port.map { ":\($0)" } ?? ""
+            return .failure(.movedElsewhere(host: (elsewhere.host ?? elsewhere.absoluteString) + port))
+        }
+        return result.map { found in
             guard let moved = redirects.base(for: url) else { return found }
             var found = found
             found.url = moved
@@ -298,15 +315,26 @@ final class Redirects: HTTPTransport, @unchecked Sendable {
         return first
     }
 
-    /// `url` at the scheme, host and port its requests were redirected to,
-    /// when one went there with its path unchanged; else nil.
+    /// The first place a request of `url`'s ended up that is not `url`'s
+    /// own origin (RedirectPolicy.sameOrigin); nil when none did.
+    func elsewhere(for url: URL) -> URL? {
+        let prefix = url.absoluteString
+        return lock.withLock { moved }.first { asked, answered in
+            asked.absoluteString.hasPrefix(prefix) && !RedirectPolicy.sameOrigin(asked, answered)
+        }?.answered
+    }
+
+    /// `url` at the scheme and port its requests were redirected to on its
+    /// own origin (http to https), when one went there with its path
+    /// unchanged; else nil. Another host or port is never taken as the
+    /// server (`elsewhere`).
     func base(for url: URL) -> URL? {
         let prefix = url.absoluteString
         for (asked, answered) in lock.withLock({ moved }) where asked.absoluteString.hasPrefix(prefix) {
             guard var parts = URLComponents(url: url, resolvingAgainstBaseURL: false),
                   let from = URLComponents(url: asked, resolvingAgainstBaseURL: false),
                   let to = URLComponents(url: answered, resolvingAgainstBaseURL: false),
-                  from.path == to.path, from.scheme != to.scheme || from.host != to.host || from.port != to.port
+                  RedirectPolicy.sameOrigin(asked, answered), from.path == to.path, from.scheme != to.scheme || from.host != to.host || from.port != to.port
             else { continue }
             parts.scheme = to.scheme
             parts.host = to.host

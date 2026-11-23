@@ -98,7 +98,7 @@ struct ServerAddressTests {
         #expect(MusicServers.candidateAddresses(for: typed).map(\.absoluteString) == expected)
     }
 
-    @Test("A password may go with every request over https, or on the home network only", arguments: [
+    @Test("Over https, or an address of the home network's shape", arguments: [
         ("https://music.example.com", true), ("https://203.0.113.9", true),
         ("http://nas.local:4533", true), ("http://nas:4533", true), ("http://localhost:4533", true),
         ("http://music.fritz.box", true), ("http://127.0.0.1:4533", true), ("http://10.0.0.5", true),
@@ -109,7 +109,7 @@ struct ServerAddressTests {
         ("http://8.8.8.8", false), ("http://music.example.com:4533", false), ("http://[2001:db8::1]", false),
     ])
     func password(address: String, allowed: Bool) throws {
-        #expect(ServerAddress.mayCarryPassword(try #require(URL(string: address))) == allowed)
+        #expect(!ServerAddress.isInsecureAnywhere(try #require(URL(string: address))) == allowed)
     }
 
     // MARK: Detecting

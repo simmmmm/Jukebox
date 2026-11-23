@@ -206,10 +206,14 @@ token is kept (`ServerSecret.jellyfinToken`).
      person's everywhere. `signIn(apiKey:)` pings with `apiKey` and no `u`
      (the spec: `u` with a key is error 43), then `tokenInfo` gives the user's
      name. Kept: `ServerSecret.subsonicAPIKey`.
-   - Otherwise the password itself, `p=enc:<hex>`, over https or to a
-     home-network address (`ServerAddress.isHomeNetwork`): it goes with every
-     request, in every stream URL. Plain http to a public host only after
-     Sign In Anyway (below), else `.passwordNeedsHTTPS`. Kept:
+   - Otherwise the password itself, `p=enc:<hex>`: it goes with every
+     request, in every stream URL. Only after "This Server Gets Your
+     Password" and Sign In Anyway (`.passwordItself`, kept per address),
+     over https too. Plain http away from home also after "This Server
+     Isn't Secure" (below), else `.passwordNeedsHTTPS`. Home is an address
+     of the home's shape on a network the device is on now
+     (`LocalNetwork`): 192.168.1.10 is home only while an interface is in
+     its subnet, 100.64/10 only while Tailscale is up. Kept:
      `ServerSecret.subsonicPassword`, the one case
      where the keychain holds a password, because the server takes nothing
      else.

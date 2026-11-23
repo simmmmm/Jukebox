@@ -92,7 +92,7 @@ enum SignInPage {
                     if needsKey, let withKey = way as? any APIKeySignIn {
                         credentials = try await withKey.signIn(apiKey: secret)
                     } else {
-                        credentials = try await way.signIn(username: name, password: secret)
+                        credentials = try await Self.signInAsking(way, username: name, password: secret)
                     }
                     Stats.track(.signedIn, ["server": Stats.server(credentials.kind)])
                     gtk_editable_set_text(ptr(password), "")
@@ -333,7 +333,9 @@ enum SignInPage {
     /// voor de gebruiker".
     static func mayGoInsecure(to url: URL) async -> Bool {
         let consent = PlainHTTPConsent()
-        guard consent.mustAsk(url) else { return true }
+        // Off the main loop: whether the device is on the address's network
+        // may wait on DNS or mDNS.
+        guard await Task.detached(operation: { consent.mustAsk(url) }).value else { return true }
         let yes = await askInsecure()
         if yes {
             consent.accept(url)
@@ -344,10 +346,28 @@ enum SignInPage {
         return yes
     }
 
+    /// A sign-in with the password that asks "This Server Gets Your
+    /// Password" (the Mac's words, JukeboxKit's PasswordItselfWords) when
+    /// the server takes nothing else, over https too, and tries once more
+    /// after Sign In Anyway. Cancel: `passwordItself`, said as a failure.
+    static func signInAsking(_ way: any ServerSignIn, username: String, password: String) async throws -> ServerCredentials {
+        do {
+            return try await way.signIn(username: username, password: password)
+        } catch MusicServerError.passwordItself {
+            guard await askInsecure(title: PasswordItselfWords.title,
+                                    body: PasswordItselfWords.message(for: way.server.url)) else {
+                throw MusicServerError.passwordItself
+            }
+            PlainHTTPConsent().acceptPasswordItself(way.server.url)
+            return try await way.signIn(username: username, password: password)
+        }
+    }
+
     /// The alert alone, for the screenshot walk too (Shots).
-    static func askInsecure() async -> Bool {
+    static func askInsecure(title: String = InsecureServerWords.title,
+                            body: String = InsecureServerWords.body) async -> Bool {
         await withCheckedContinuation { continuation in
-            let dialog = adw_alert_dialog_new(InsecureServerWords.title, InsecureServerWords.body)!
+            let dialog = adw_alert_dialog_new(title, body)!
             adw_alert_dialog_add_response(ptr(dialog), "cancel", InsecureServerWords.cancel)
             adw_alert_dialog_add_response(ptr(dialog), "anyway", InsecureServerWords.signInAnyway)
             adw_alert_dialog_set_response_appearance(ptr(dialog), "anyway", ADW_RESPONSE_DESTRUCTIVE)

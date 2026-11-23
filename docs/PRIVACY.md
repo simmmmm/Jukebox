@@ -11,7 +11,10 @@ address and your user name go only to the server you signed in to (Jellyfin,
 Navidrome or another Subsonic server). Your password is kept in the device's
 keychain. None of it reaches the developer. To a server on plain http
 outside your home network it travels unencrypted: Jukebox asks before it
-signs in there, and the account says "Not secure" in Settings.
+signs in there, and the account says "Not secure" in Settings. A server at
+a home address gets nothing over plain http while this device is on
+another network. A server that needs your password itself, rather than a
+token or a key, gets it only after you say so.
 
 ## Anonymous usage counts
 

@@ -12,9 +12,10 @@
 //    cannot check a token; or this way is off): an API key, if the server
 //    offers them (OpenSubsonic's `apiKeyAuthentication`), since a key can
 //    be revoked and a password is often the person's everywhere; else the
-//    password itself (`p=enc:`), as it then goes with every request: over
-//    https or to the home network at once; over plain http elsewhere only
-//    after "This Server Isn't Secure" and Sign In Anyway (PlainHTTPConsent).
+//    password itself (`p=enc:`), as it then goes with every request: only
+//    after "This Server Gets Your Password" and Sign In Anyway, everywhere
+//    (`passwordItself`), and over plain http away from home also after
+//    "This Server Isn't Secure" (PlainHTTPConsent).
 //    The photographer, 23 November 2026: "denk toch dat we http servers
 //    toe moeten laten met wel een flinke warning voor de gebruiker".
 // 4. A server older than API 1.13.0 has no tokens: step 3 at once.
@@ -67,9 +68,12 @@ public struct SubsonicSignIn: ServerSignIn {
         // would go readable with every request: asked first ("This Server
         // Isn't Secure", Cancel or Sign In Anyway), and only sent once
         // the person said Sign In Anyway for this address.
-        guard ServerAddress.mayCarryPassword(server.url) || consent.isAccepted(server.url) else {
+        guard !consent.mustAsk(server.url) else {
             throw MusicServerError.passwordNeedsHTTPS
         }
+        // And over https or at home too, its own question: it is the
+        // password itself that goes, to whichever server this is.
+        guard consent.sendsPasswordItself(server.url) else { throw MusicServerError.passwordItself }
         let secret = ServerSecret.subsonicPassword(password)
         let ping = try await anonymous.with(auth: SubsonicConnection.auth(secret, user: user)).answer("ping", timeout: 15)
         guard ping.isOK else { throw SubsonicConnection.error(ping.error) }

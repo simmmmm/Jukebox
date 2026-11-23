@@ -469,7 +469,7 @@ private struct OnboardingAccountForm: View {
                 return show(Self.signInMessage(for: MusicServerError.passwordNeedsHTTPS))
             }
             do {
-                let credentials = try await passwordSignIn.signIn(username: name, password: password)
+                let credentials = try await insecure.signIn(passwordSignIn, username: name, password: password)
                 OnboardingMemory.userName = name
                 Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "password"])
                 await app.signIn(credentials)
@@ -742,16 +742,25 @@ private struct OnboardingAccountForm: View {
 /// toch dat we http servers toe moeten laten met wel een flinke warning
 /// voor de gebruiker". JukeboxKit's PlainHTTPConsent keeps the answer;
 /// Linux asks the same in an AdwAlertDialog (SignInPage).
+/// It also asks "This Server Gets Your Password" before a Subsonic server
+/// that takes nothing else is sent the password itself, over https too
+/// (`passwordItself`).
 @MainActor @Observable
 final class InsecureQuestion {
     var isAsking = false
+    /// What is asked now: nil for "This Server Isn't Secure", else the
+    /// password question's message.
+    var passwordMessage: String?
     @ObservationIgnored private var pending: CheckedContinuation<Bool, Never>?
 
     /// True when the sign-in may go ahead: the address needs no asking, or
     /// Sign In Anyway was chosen (kept for next time, and counted).
     func mayGo(to url: URL) async -> Bool {
         let consent = PlainHTTPConsent()
-        guard consent.mustAsk(url) else { return true }
+        // Off the main thread: whether the device is on the address's
+        // network may wait on DNS or mDNS.
+        guard await Task.detached(operation: { consent.mustAsk(url) }).value else { return true }
+        passwordMessage = nil
         let yes = await withCheckedContinuation { continuation in
             pending = continuation
             isAsking = true
@@ -765,6 +774,30 @@ final class InsecureQuestion {
         return yes
     }
 
+    /// A sign-in with the password that asks "This Server Gets Your
+    /// Password" when the server takes nothing else, and tries once more
+    /// after Sign In Anyway. Cancel: `passwordItself`, said as a failure.
+    func signIn(_ way: any ServerSignIn, username: String, password: String) async throws -> ServerCredentials {
+        do {
+            return try await way.signIn(username: username, password: password)
+        } catch MusicServerError.passwordItself {
+            guard await mayGivePassword(to: way.server.url) else { throw MusicServerError.passwordItself }
+            return try await way.signIn(username: username, password: password)
+        }
+    }
+
+    /// "This Server Gets Your Password": true when Sign In Anyway was
+    /// chosen (kept for that address), so the sign-in is tried again.
+    func mayGivePassword(to url: URL) async -> Bool {
+        passwordMessage = PasswordItselfWords.message(for: url)
+        let yes = await withCheckedContinuation { continuation in
+            pending = continuation
+            isAsking = true
+        }
+        if yes { PlainHTTPConsent().acceptPasswordItself(url) }
+        return yes
+    }
+
     func answer(_ yes: Bool) {
         isAsking = false
         pending?.resume(returning: yes)
@@ -774,14 +807,15 @@ final class InsecureQuestion {
 
 extension View {
     func insecureQuestion(_ question: InsecureQuestion) -> some View {
-        alert(Text(verbatim: InsecureServerWords.title), isPresented: Binding(
-            get: { question.isAsking },
-            set: { if !$0 { question.answer(false) } }
-        )) {
+        alert(Text(verbatim: question.passwordMessage == nil ? InsecureServerWords.title : PasswordItselfWords.title),
+              isPresented: Binding(
+                  get: { question.isAsking },
+                  set: { if !$0 { question.answer(false) } }
+              )) {
             Button(InsecureServerWords.cancel, role: .cancel) { question.answer(false) }
             Button(InsecureServerWords.signInAnyway, role: .destructive) { question.answer(true) }
         } message: {
-            Text(verbatim: InsecureServerWords.body)
+            Text(verbatim: question.passwordMessage ?? InsecureServerWords.body)
         }
     }
 }
@@ -994,7 +1028,7 @@ private struct OnboardingWideForm: View {
                     Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "api_key"])
                     await app.signIn(credentials)
                 } else {
-                    let credentials = try await way.signIn(username: name, password: typedSecret)
+                    let credentials = try await insecure.signIn(way, username: name, password: typedSecret)
                     OnboardingMemory.userName = name
                     Stats.track(.signedIn, ["server": Stats.server(credentials.kind), "method": "password"])
                     await app.signIn(credentials)

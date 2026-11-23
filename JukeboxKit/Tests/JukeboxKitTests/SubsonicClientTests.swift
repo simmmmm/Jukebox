@@ -11,7 +11,7 @@ import FoundationNetworking
 import Testing
 @testable import JukeboxKit
 
-@Suite("Subsonic: client")
+@Suite("Subsonic: client", .atHome)
 struct SubsonicClientTests {
     typealias F = SubsonicFixtures
 
@@ -197,8 +197,11 @@ struct SubsonicClientTests {
                                    ("http://203.0.113.9:4533", false)] {
             let url = try #require(URL(string: address))
             let fake = Self.hashKeeper(password: "pw")
+            // At home, and "This Server Gets Your Password" answered.
+            let consent = PlainHTTPConsent(defaults: UserDefaults(suiteName: "consent-\(UUID().uuidString)")!)
+            consent.acceptPasswordItself(url)
             let signIn = SubsonicSignIn(server: F.detected(capabilities: [.lyrics], url: url), identity: F.identity,
-                                        transport: fake)
+                                        transport: fake, consent: consent)
             if allowed {
                 let credentials = try await signIn.signIn(username: "test", password: "pw")
                 #expect(credentials.secret == .subsonicPassword("pw"), "\(address)")
@@ -216,7 +219,9 @@ struct SubsonicClientTests {
     func beforeTokens() async throws {
         let fake = Self.hashKeeper(password: "pw")
         let old = F.detected(capabilities: [.lyrics], apiVersion: "1.12.0")
-        let credentials = try await SubsonicSignIn(server: old, identity: F.identity, transport: fake)
+        let consent = PlainHTTPConsent(defaults: UserDefaults(suiteName: "consent-\(UUID().uuidString)")!)
+        consent.acceptPasswordItself(old.url)
+        let credentials = try await SubsonicSignIn(server: old, identity: F.identity, transport: fake, consent: consent)
             .signIn(username: "test", password: "pw")
         #expect(credentials.secret == .subsonicPassword("pw"))
         #expect(fake.requests("ping").count == 1)

@@ -48,7 +48,7 @@ enum PlexFixtures {
     static let user = #"{"id":12345678,"uuid":"abc","username":"listener","title":"Listener","email":"listener@example.com"}"#
 }
 
-@Suite("Plex: sign-in and mapping, without a server", .timeLimit(.minutes(1)))
+@Suite("Plex: sign-in and mapping, without a server", .timeLimit(.minutes(1)), .atHome)
 struct PlexSignInTests {
     static let identity = ClientIdentity(clientName: "Jukebox", clientVersion: "1.0", deviceName: "Test",
                                          deviceID: "test-device")
@@ -270,6 +270,10 @@ struct PlexSignInTests {
         let defaults = try #require(UserDefaults(suiteName: "plex-plain-http-test"))
         defaults.removeObject(forKey: "signIn.plainHTTPAccepted")
         #expect(!PlexAccount.mayAsk(away, defaults: defaults) && PlexAccount.mayAsk(Self.home, defaults: defaults))
+        // Off the home network, its local address is not asked with the token.
+        LocalNetwork.$standIn.withValue(SignInFailureTests.cafe) {
+            #expect(!PlexAccount.mayAsk(Self.home, defaults: defaults))
+        }
         PlainHTTPConsent(defaults: defaults).accept(away)
         #expect(PlexAccount.mayAsk(away, defaults: defaults))
         defaults.removeObject(forKey: "signIn.plainHTTPAccepted")

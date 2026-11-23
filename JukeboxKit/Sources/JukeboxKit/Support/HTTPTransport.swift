@@ -44,7 +44,7 @@ public enum RedirectPolicy {
         guard let from = current.url, let to = proposed.url,
               let toScheme = to.scheme?.lowercased(), toScheme == "http" || toScheme == "https" else { return nil }
         if from.scheme?.lowercased() == "https", toScheme != "https" { return nil }
-        if from.host?.lowercased() == to.host?.lowercased() { return proposed }
+        if sameOrigin(from, to) { return proposed }
         let method = (proposed.httpMethod ?? "GET").uppercased()
         guard method == "GET" || method == "HEAD", proposed.httpBody == nil, proposed.httpBodyStream == nil else {
             return nil
@@ -52,6 +52,19 @@ public enum RedirectPolicy {
         var stripped = proposed
         for header in credentialHeaders { stripped.setValue(nil, forHTTPHeaderField: header) }
         return stripped
+    }
+
+    /// The same host and port, or plain http's default port moved up to
+    /// https's on the same host. Another port of the same host is another
+    /// server as far as credentials go: whoever runs something there was
+    /// never asked a password of.
+    public static func sameOrigin(_ from: URL, _ to: URL) -> Bool {
+        guard let host = from.host?.lowercased(), host == to.host?.lowercased() else { return false }
+        let fromScheme = from.scheme?.lowercased(), toScheme = to.scheme?.lowercased()
+        func port(_ url: URL, _ scheme: String?) -> Int? { url.port ?? (scheme == "https" ? 443 : scheme == "http" ? 80 : nil) }
+        let a = port(from, fromScheme), b = port(to, toScheme)
+        if fromScheme == toScheme { return a == b }
+        return fromScheme == "http" && a == 80 && toScheme == "https" && b == 443
     }
 }
 
@@ -89,6 +102,7 @@ public struct URLSessionTransport: HTTPTransport {
     }
 
     public func send(_ request: URLRequest) async throws -> HTTPResponse {
+        if let refusal = PlainHTTPGuard.refusal(request) { throw JellyfinError.transport(refusal) }
         #if canImport(FoundationNetworking)
         let (data, response) = try await Self.followingRedirects(session, request)
         #else
