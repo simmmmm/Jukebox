@@ -113,12 +113,13 @@ typedef void (*JbCastFound)(const char *service, const char *id, const char *nam
 JbAvahi *jb_avahi_browse(const char *type, JbCastFound found, gpointer data);
 void jb_avahi_stop(JbAvahi *avahi);
 // SSDP (ssdp.c): M-SEARCHes to 239.255.255.250:1900 and every answer's text
-// to `received`, on the main loop. NULL without a socket. After
+// and sender's address to `received`, on the main loop, while a search
+// waits for answers (its MX and a second). NULL without a socket. After
 // jb_ssdp_close nothing more is called.
 typedef struct JbSsdp JbSsdp;
-typedef void (*JbSsdpReceived)(const char *text, gpointer data);
+typedef void (*JbSsdpReceived)(const char *text, const char *from, gpointer data);
 JbSsdp *jb_ssdp_open(JbSsdpReceived received, gpointer data);
-void jb_ssdp_search(JbSsdp *ssdp, const char *message);
+void jb_ssdp_search(JbSsdp *ssdp, const char *message, int wait);
 void jb_ssdp_close(JbSsdp *ssdp);
 
 // MPRIS: how GNOME's own media controls (the clock's menu, the lock

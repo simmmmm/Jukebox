@@ -12,17 +12,29 @@ struct JbSsdp {
     GSource *source;
     JbSsdpReceived received;
     gpointer data;
+    // Answers count until then (monotonic µs): a datagram outside a
+    // search's window is no answer to it.
+    gint64 until;
 };
 
 static gboolean ssdp_readable(GSocket *socket, GIOCondition condition, gpointer user) {
     JbSsdp *ssdp = user;
     char buffer[4096];
     gssize length;
-    // Every datagram waiting, each a whole answer.
-    while ((length = g_socket_receive_from(socket, NULL, buffer, sizeof buffer - 1, NULL, NULL)) > 0) {
+    GSocketAddress *from = NULL;
+    // Every datagram waiting, each a whole answer; read even when it is
+    // dropped, or the socket stays readable.
+    while ((length = g_socket_receive_from(socket, &from, buffer, sizeof buffer - 1, NULL, NULL)) > 0) {
         buffer[length] = 0;
-        ssdp->received(buffer, ssdp->data);
+        if (g_get_monotonic_time() <= ssdp->until && G_IS_INET_SOCKET_ADDRESS(from)) {
+            char *address = g_inet_address_to_string(
+                g_inet_socket_address_get_address(G_INET_SOCKET_ADDRESS(from)));
+            ssdp->received(buffer, address, ssdp->data);
+            g_free(address);
+        }
+        g_clear_object(&from);
     }
+    g_clear_object(&from);
     return G_SOURCE_CONTINUE;
 }
 
@@ -51,7 +63,8 @@ JbSsdp *jb_ssdp_open(JbSsdpReceived received, gpointer data) {
     return ssdp;
 }
 
-void jb_ssdp_search(JbSsdp *ssdp, const char *message) {
+void jb_ssdp_search(JbSsdp *ssdp, const char *message, int wait) {
+    ssdp->until = g_get_monotonic_time() + (gint64)(wait + 1) * G_USEC_PER_SEC;
     GInetAddress *group = g_inet_address_new_from_string("239.255.255.250");
     GSocketAddress *to = g_inet_socket_address_new(group, 1900);
     g_socket_send_to(ssdp->socket, to, message, strlen(message), NULL, NULL);

@@ -284,6 +284,38 @@ static void avahi_browsing(GObject *source, GAsyncResult *result, gpointer user)
     g_variant_unref(reply);
 }
 
+// Signals only from Avahi itself, by the unique name that owns
+// org.freedesktop.Avahi now: anyone on the system bus can send a signal
+// that says ServiceBrowser. Subscribed before the browser is asked for, so
+// none of its signals is missed.
+static void avahi_owner(GObject *source, GAsyncResult *result, gpointer user) {
+    JbAvahi *avahi = user;
+    GVariant *reply = g_dbus_connection_call_finish(G_DBUS_CONNECTION(source), result, NULL);
+    if (!reply) return;
+    if (!avahi->stopped) {
+        const char *owner = NULL;
+        g_variant_get(reply, "(&s)", &owner);
+        avahi->subscription = g_dbus_connection_signal_subscribe(avahi->bus, owner, AVAHI ".ServiceBrowser", NULL,
+                                                                 NULL, NULL, G_DBUS_SIGNAL_FLAGS_NONE, avahi_signal,
+                                                                 avahi, NULL);
+        g_dbus_connection_call(avahi->bus, AVAHI, "/", AVAHI ".Server", "ServiceBrowserNew",
+                               g_variant_new("(iissu)", -1, -1, avahi->type, "local", 0), G_VARIANT_TYPE("(o)"),
+                               G_DBUS_CALL_FLAGS_NONE, 10000, avahi->cancel, avahi_browsing, avahi);
+    }
+    g_variant_unref(reply);
+}
+
+static void avahi_started(GObject *source, GAsyncResult *result, gpointer user) {
+    JbAvahi *avahi = user;
+    GVariant *reply = g_dbus_connection_call_finish(G_DBUS_CONNECTION(source), result, NULL);
+    if (!reply) return;
+    g_variant_unref(reply);
+    if (avahi->stopped) return;
+    g_dbus_connection_call(avahi->bus, "org.freedesktop.DBus", "/org/freedesktop/DBus", "org.freedesktop.DBus",
+                           "GetNameOwner", g_variant_new("(s)", AVAHI), G_VARIANT_TYPE("(s)"),
+                           G_DBUS_CALL_FLAGS_NONE, 10000, avahi->cancel, avahi_owner, avahi);
+}
+
 static void avahi_bus(GObject *source, GAsyncResult *result, gpointer user) {
     JbAvahi *avahi = user;
     GDBusConnection *bus = g_bus_get_finish(result, NULL);
@@ -293,11 +325,10 @@ static void avahi_bus(GObject *source, GAsyncResult *result, gpointer user) {
         return;
     }
     avahi->bus = bus;
-    avahi->subscription = g_dbus_connection_signal_subscribe(bus, NULL, AVAHI ".ServiceBrowser", NULL, NULL, NULL,
-                                                             G_DBUS_SIGNAL_FLAGS_NONE, avahi_signal, avahi, NULL);
-    g_dbus_connection_call(bus, AVAHI, "/", AVAHI ".Server", "ServiceBrowserNew",
-                           g_variant_new("(iissu)", -1, -1, avahi->type, "local", 0), G_VARIANT_TYPE("(o)"),
-                           G_DBUS_CALL_FLAGS_NONE, 10000, avahi->cancel, avahi_browsing, avahi);
+    // A call of Avahi's own first: the bus starts it when it is installed
+    // but not running, and then it has an owner to ask for.
+    g_dbus_connection_call(bus, AVAHI, "/", AVAHI ".Server", "GetAPIVersion", NULL, NULL,
+                           G_DBUS_CALL_FLAGS_NONE, 10000, avahi->cancel, avahi_started, avahi);
 }
 
 JbAvahi *jb_avahi_browse(const char *type, JbCastFound found, gpointer data) {
@@ -317,7 +348,7 @@ void jb_avahi_stop(JbAvahi *avahi) {
     avahi->stopped = TRUE;
     g_cancellable_cancel(avahi->cancel);
     if (avahi->bus) {
-        g_dbus_connection_signal_unsubscribe(avahi->bus, avahi->subscription);
+        if (avahi->subscription) g_dbus_connection_signal_unsubscribe(avahi->bus, avahi->subscription);
         if (avahi->browser) {
             g_dbus_connection_call(avahi->bus, AVAHI, avahi->browser, AVAHI ".ServiceBrowser", "Free", NULL, NULL,
                                    G_DBUS_CALL_FLAGS_NONE, -1, NULL, NULL, NULL);

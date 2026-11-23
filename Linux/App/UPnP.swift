@@ -44,8 +44,12 @@ final class UPnPFinder: PlayOnFinder {
             else { return }
             MainActor.assumeIsolated { finder.consider(location) }
         }, box.toOpaque())
-        ssdp = jb_ssdp_open({ text, data in
-            guard let text, let data, let answer = SSDP.parse(String(cString: text)) else { return }
+        // Only answers to these two questions, from the address their
+        // description is on (SSDP.answer), within the search's window (ssdp.c).
+        ssdp = jb_ssdp_open({ text, from, data in
+            guard let text, let from, let data,
+                  let answer = SSDP.answer(String(cString: text), searched: [SSDP.zonePlayer, SSDP.mediaRenderer],
+                                           from: String(cString: from)) else { return }
             let finder = Unmanaged<UPnPFinder>.fromOpaque(data).takeUnretainedValue()
             MainActor.assumeIsolated { finder.consider(answer.location) }
         }, box.toOpaque())
@@ -54,8 +58,8 @@ final class UPnPFinder: PlayOnFinder {
         searching = Task { [weak self] in
             while !Task.isCancelled {
                 guard let ssdp = self?.ssdp else { return }
-                jb_ssdp_search(ssdp, SSDP.search(SSDP.zonePlayer))
-                jb_ssdp_search(ssdp, SSDP.search(SSDP.mediaRenderer))
+                jb_ssdp_search(ssdp, SSDP.search(SSDP.zonePlayer, wait: 2), 2)
+                jb_ssdp_search(ssdp, SSDP.search(SSDP.mediaRenderer, wait: 2), 2)
                 try? await Task.sleep(for: .seconds(5))
             }
         }
