@@ -133,6 +133,11 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// A converted stream can start part-way (OpenSubsonic's
     /// `transcodeOffset`), for seeking in it.
     case transcodeOffset
+    /// A capped stream can be Opus where the players play it: HLS with
+    /// fMP4 segments (Jellyfin 10.10+; StreamQuality.efficient). Not Emby
+    /// (not measured), not a Subsonic server (Navidrome's Opus is Ogg,
+    /// which AVPlayer on the phone is not known to play), not Plex.
+    case opusStream
     /// One to five stars per user on songs and albums: Subsonic's setRating
     /// (API 1.6.0) and `userRating`. Jellyfin has none to offer: its
     /// UserData.Rating is a number without a scale that none of its own
@@ -162,7 +167,8 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// Those asked once signed in, never at sign-in: they need the session.
     public static let asked: Set<ServerCapability> = [.remoteControl, .share, .playbackReporting]
 
-    /// What every Jellyfin 10.9+ server has once signed in. Quick Connect
+    /// What every Jellyfin 10.9+ server has once signed in (Opus streams
+    /// are 10.10's: JellyfinServer.capabilities, by the version). Quick Connect
     /// is a question for the sign-in screen, not the session.
     public static let jellyfin: Set<ServerCapability> = [
         .instantMix, .similarArtists, .lyrics, .syncedLyrics, .playlistReorder,
@@ -172,6 +178,8 @@ public enum ServerCapability: String, Hashable, Sendable, Codable, CaseIterable 
     /// Emby 4.10 (measured): Jellyfin's without lyrics (it keeps them as
     /// subtitle streams; /Audio/{id}/Lyrics is read as a stream and answers
     /// 500) and without a loudness gain (no NormalizationGain).
+    /// No Opus streams either: what its HLS makes of `AudioCodec=opus` is
+    /// not measured.
     public static let emby: Set<ServerCapability> = jellyfin.subtracting([.lyrics, .syncedLyrics, .replayGain])
 }
 
@@ -638,8 +646,9 @@ public protocol MusicServer: Sendable {
 
     /// A URL AVPlayer plays as it is (credentials in the query: it sends
     /// no headers). `quality` caps the bitrate; the server converts to
-    /// something AVPlayer plays (Jellyfin: AAC over HLS; Subsonic: MP3,
-    /// since Navidrome's own choice is Ogg Opus, measured).
+    /// something AVPlayer plays (Jellyfin: AAC over HLS, Opus over HLS at
+    /// `.efficient`; Subsonic: MP3, since Navidrome's own choice is Ogg
+    /// Opus, measured).
     func streamURL(for track: Track, quality: StreamQuality, playSessionID: String) -> URL
     /// A URL a Chromecast's Default Media Receiver fetches and plays itself:
     /// a plain file (never HLS), credentials in the query, and the type it

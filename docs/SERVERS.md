@@ -357,7 +357,7 @@ few songs.
 
 | Member | Jellyfin | Subsonic |
 |---|---|---|
-| `streamURL(for:quality:playSessionID:)` | /Audio/{id}/universal, AAC over HLS when capped | `stream?id=` and the credentials. `.original`: `format=raw`, the file as it is (note). Capped: `maxBitRate=<kbit/s>&format=mp3` (320, 256, 128). `playSessionID` is not sent: Subsonic has no play sessions. |
+| `streamURL(for:quality:playSessionID:)` | /Audio/{id}/universal, AAC over HLS when capped; Opus over HLS at Efficient ("Opus") | `stream?id=` and the credentials. `.original`: `format=raw`, the file as it is (note). Capped: `maxBitRate=<kbit/s>&format=mp3` (320, 256, 128). `playSessionID` is not sent: Subsonic has no play sessions. |
 | `downloadURL(for:quality:)` | JellyfinClient.downloadURL (docs/OFFLINE.md) | `.original`: `download?id=`, the file byte for byte (MP3 at 320 for what AVPlayer cannot play); `.high`, `.normal`: `stream?id=&maxBitRate=256` / `128` with `format=mp3`. Below. |
 | `downloadsAllowed()` | /Users/Me's Policy.EnableContentDownloading | `getUser?username=` → `downloadRole`; true when absent or without getUser (404) |
 | `artworkURL(_:maxPixelSize:)` | /Items/{id}/Images/Primary?fillWidth=&fillHeight=&tag= | `getCoverArt?id=<artwork.tag ?? artwork.itemID>&size=<px>` and the credentials (it needs them: without, error 10, measured) |
@@ -402,6 +402,57 @@ read what came):
   which is still to be measured on a phone.
 - An unknown id is 200 with a JSON error (application/json), not audio:
   AVPlayer fails the item, as for any bad URL.
+
+### Opus (23 November 2026)
+
+The photographer asked "hoe we met maximale kwaliteit toch veel minder data
+hoeven te streamen". The files are already compressed, so the gain is a
+codec that needs fewer bits: `StreamQuality.efficient`, Opus at 128 kbit/s,
+half of Normal's 256. Offered where the server has `.opusStream`: Jellyfin
+10.10 and later (10.10 by its pull request 11399, read; 12.4 measured).
+Elsewhere Efficient plays and reads as Low.
+
+Jellyfin 12.4, `/Audio/{id}/universal` with `AudioCodec=opus` and a cap
+(it runs `libopus -ab <cap>`):
+
+| Asked | Came | AVPlayer, macOS 27.2 | GStreamer 1.28, playbin3 |
+|---|---|---|---|
+| `hls`, `TranscodingContainer=mp4` | HLS, fMP4 segments, `CODECS="Opus"` | plays; AVQueuePlayer hands over to it from an MP3, seeks in it, plays it out | plays to the end; handover from a 44.1 kHz MP3 and a seek |
+| `hls`, `ts` | HLS, ts segments | does not start | not tried |
+| `http`, `mp4` | one fragmented MP4, video/mp4 | fails (-11850) | not tried |
+| `http`, `ogg` | Ogg Opus | plays (the phone is not measured) | not tried |
+| `http`, `m4a` | 500 | | |
+
+So Efficient is HLS with fMP4 segments. Still open: an iPhone and an iPad
+(the Mac's result is the nearest there is), a song of real length in stereo
+for the true bitrate (the test library's are mono tones of 6 to 8 s), and
+how a song that is already an MP3 sounds as Opus at 128. Emby is not
+measured. Navidrome's Opus is Ogg only and Jellyfin's ffmpeg has no HE-AAC,
+so neither is a second road. Downloads stay AAC.
+
+### Adjust to the Connection (24 November 2026)
+
+"Kan je ook zo maken dat de kwaliteit die je kiest het doel is, maar je ook
+lager kan krijgen met slechter internet? Misschien met een vinkje erbij."
+Settings' quality is the target (`QualitySteps`, fed by `PlayQueue`; on by
+default). A slow sign, a wait mid-song or a start of 8 s or more, takes the
+next songs one step down, at most one per song: Original or High, then
+Normal, then 128 (Efficient with `.opusStream`, else Low). The song held
+next is asked again, so it is the very next one; the song that waited plays
+on (a converted MP3 has no ranges to reload from). Three streamed songs
+without a sign climb a step back. Not a sign: a wait just after a seek or a
+resume, paused, offline, a kept file, another device. Back to the target
+when it changes, when the network comes or goes, and at launch. Nor what
+GStreamer waits for once it has taken the next address: on a fast link it
+posts BUFFERING again while that one fills (measured), which is the next
+song arriving. Open: a skipped song counts as a clean one, and nothing on
+screen says a stream is lower.
+
+Measured through a 60 kbit/s proxy: Jellyfin's HLS master has one variant,
+so no adaptive HLS; the app decides per song. playbin3 posts BUFFERING
+under 100 mid-song for a file as it is and for Opus HLS. AVPlayer waits
+mid-song for a file as it is, but HLS never starts (30 s and more): hence
+the 8 s rule (a transcode's own start is about 2 s).
 
 ### Downloads, measured
 

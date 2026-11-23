@@ -46,13 +46,23 @@ public struct JellyfinServer: MusicServer {
     public var capabilities: Set<ServerCapability> { credentials.capabilities }
 
     /// What a Jellyfin of this version has once signed in: lyrics and
-    /// NormalizationGain came with 10.9. A version that cannot be read is
-    /// taken as new. Emby's are its own, whatever its version (4.10).
+    /// NormalizationGain came with 10.9, Opus in HLS's fMP4 segments with
+    /// 10.10 (its pull request 11399, read; 12.4 measured). A version that
+    /// cannot be read is taken as new. Emby's are its own, whatever its
+    /// version (4.10).
     static func capabilities(kind: ServerKind = .jellyfin, version: String) -> Set<ServerCapability> {
         if kind == .emby { return ServerCapability.emby }
-        guard !SubsonicConnection.numbers(version).isEmpty,
-              SubsonicConnection.compare(version, "10.9.0") == .orderedAscending else { return ServerCapability.jellyfin }
-        return ServerCapability.jellyfin.subtracting([.lyrics, .syncedLyrics, .replayGain])
+        var set = ServerCapability.jellyfin
+        // Only by a version that says so: a sign-in kept without one has
+        // no Efficient until the server has been asked (the launch's
+        // refresh), where an unread version is taken as new.
+        if SubsonicConnection.numbers(version).isEmpty
+            || SubsonicConnection.compare(version, "10.10.0") != .orderedAscending { set.insert(.opusStream) }
+        guard !SubsonicConnection.numbers(version).isEmpty else { return set }
+        if SubsonicConnection.compare(version, "10.9.0") == .orderedAscending {
+            set.subtract([.lyrics, .syncedLyrics, .replayGain])
+        }
+        return set
     }
 
     /// JellyfinError as MusicServerError; cancellation as it is.
@@ -337,7 +347,8 @@ public struct JellyfinServer: MusicServer {
     // MARK: Playing
 
     public func streamURL(for track: Track, quality: StreamQuality, playSessionID: String) -> URL {
-        client.streamURL(trackID: track.id, quality: quality, playSessionID: playSessionID)
+        client.streamURL(trackID: track.id, quality: quality, playSessionID: playSessionID,
+                         opus: quality == .efficient && capabilities.contains(.opusStream))
     }
 
     public func castURL(for track: Track) -> CastStream {

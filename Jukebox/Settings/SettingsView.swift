@@ -418,24 +418,29 @@ private struct SettingsPlaybackSection: View {
                 // A Mac has no mobile network of its own: what costs data
                 // there is a phone's hotspot or Low Data Mode (NetworkCost),
                 // so the words say that.
-                Picker("Streaming", selection: $settings.wifiQuality) {
+                Picker("Streaming", selection: shown($settings.wifiQuality)) {
                     qualityOptions
                 }
-                Picker("Streaming on a Hotspot", selection: $settings.cellularQuality) {
+                Picker("Streaming on a Hotspot", selection: shown($settings.cellularQuality)) {
                     qualityOptions
                 }
             } else {
                 // Music's own words for the two.
-                Picker("Wi-Fi Streaming", selection: $settings.wifiQuality) {
+                Picker("Wi-Fi Streaming", selection: shown($settings.wifiQuality)) {
                     qualityOptions
                 }
-                Picker("Cellular Streaming", selection: $settings.cellularQuality) {
+                Picker("Cellular Streaming", selection: shown($settings.cellularQuality)) {
                     qualityOptions
                 }
             }
+            // The pickers' quality is the target (QualitySteps); Linux's words.
+            Toggle(isOn: $settings.adjustsToConnection) {
+                SettingsDetailLabel(title: "Adjust to the Connection",
+                                    detail: "When a song has to wait for the network, the next ones stream lower until it holds again.")
+            }
         } footer: {
             // Under the pickers it explains, as Linux's Streaming Quality's.
-            Text("Original plays your files as they are. The others have \(app.serverKindName) convert them to \(format) at that rate, which uses less data.")
+            Text("Original plays your files as they are. The others have \(app.serverKindName) convert them to \(format) at that rate, which uses less data.\(opus ? StreamQuality.efficientNote : "")")
         }
         Section {
             if !isWide {
@@ -512,10 +517,19 @@ private struct SettingsPlaybackSection: View {
     }
 
     private var qualityOptions: some View {
-        ForEach(StreamQuality.allCases, id: \.self) { quality in
+        ForEach(StreamQuality.offered(opus: opus), id: \.self) { quality in
             label(for: quality)
                 .tag(quality)
         }
+    }
+
+    /// Whether this server makes Opus, so Efficient is offered.
+    private var opus: Bool { app.can(.opusStream) }
+
+    /// The picker's selection: a kept Efficient reads as Low on a server
+    /// without Opus, so the picker always has its row.
+    private func shown(_ quality: Binding<StreamQuality>) -> Binding<StreamQuality> {
+        Binding(get: { quality.wrappedValue.shown(opus: opus) }, set: { quality.wrappedValue = $0 })
     }
 
     private func label(for quality: StreamQuality) -> Text {
@@ -523,6 +537,7 @@ private struct SettingsPlaybackSection: View {
         case .original: Text("Original")
         case .high: Text("High (320 kbit/s)")
         case .normal: Text("Normal (256 kbit/s)")
+        case .efficient: Text("Efficient (Opus, 128 kbit/s)")
         case .low: Text("Low (128 kbit/s)")
         }
     }

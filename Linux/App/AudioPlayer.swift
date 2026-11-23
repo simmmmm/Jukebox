@@ -171,8 +171,10 @@ final class AudioPlayer: PlayQueue {
 
     /// The network went or came back (OfflineStore, through AppModel): the
     /// next song waiting for GStreamer is chosen again, offline perhaps a
-    /// later one, back online the very next again.
+    /// later one, back online the very next again. A stream stepped down
+    /// for a slow network starts at the target again (`networkChanged`).
     func connectivityChanged() {
+        networkChanged()
         if !handover.wasTaken() {
             handover.offer(nil)
             offered = nil
@@ -223,6 +225,10 @@ final class AudioPlayer: PlayQueue {
     }
 
     override var engineHeldNext: UUID? { handover.wasTaken() ? offered?.entryID : nil }
+    /// GStreamer asks for the next address once it has read the current
+    /// song to its end, and posts BUFFERING again while that one fills
+    /// (measured on a fast link, 24 November 2026): not a slow network.
+    override var engineFetchesNext: Bool { handover.wasTaken() }
 
     override func engineResume() {
         gst_element_set_state(engine, GST_STATE_PLAYING)

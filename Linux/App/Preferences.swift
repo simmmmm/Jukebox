@@ -39,20 +39,28 @@ enum Preferences {
         // footer by its pickers; then how songs follow each other.
         let streaming = group(nil, on: playbackPage)
         let playing = group(nil, on: playbackPage)
-        let qualities: [(String, StreamQuality)] = [("Original", .original), ("High (320 kbit/s)", .high),
-                                                    ("Normal (256 kbit/s)", .normal), ("Low (128 kbit/s)", .low)]
+        // Efficient where this server makes Opus; kept from another server
+        // it reads as Low (StreamQuality.shown), as the Mac's picker.
+        let opus = app.can(.opusStream)
+        let names: [StreamQuality: String] = [.original: "Original", .high: "High (320 kbit/s)", .normal: "Normal (256 kbit/s)",
+                                              .efficient: "Efficient (Opus, 128 kbit/s)", .low: "Low (128 kbit/s)"]
+        let qualities = StreamQuality.offered(opus: opus).map { (names[$0] ?? "", $0) }
+        let kept = settings.wifiQuality.shown(opus: opus)
         adw_preferences_group_add(ptr(streaming), combo("Streaming Quality", qualities.map { $0.0 },
-                                                        selected: qualities.firstIndex { $0.1 == settings.wifiQuality } ?? 0) {
+                                                        selected: qualities.firstIndex { $0.1 == kept } ?? 0) {
             settings.wifiQuality = qualities[$0].1
         })
         // The Mac's Streaming on a Hotspot, in GNOME's word for a connection
         // that costs data (Platform.swift's watch, DataCost).
         adw_preferences_group_add(ptr(streaming), combo("Streaming on a Metered Connection", qualities.map { $0.0 },
-                                                        selected: qualities.firstIndex { $0.1 == settings.cellularQuality } ?? 2) {
+                                                        selected: qualities.firstIndex { $0.1 == settings.cellularQuality.shown(opus: opus) } ?? 2) {
             settings.cellularQuality = qualities[$0].1
         })
+        adw_preferences_group_add(ptr(streaming), toggle(
+            "Adjust to the Connection", "When a song has to wait for the network, the next ones stream lower until it holds again.",
+            settings.adjustsToConnection) { settings.adjustsToConnection = $0 })
         adw_preferences_group_set_description(
-            ptr(streaming), "Original plays your files as they are. The others have \(app.library.serverKind) convert them to \(app.credentials?.kind.convertedFormat ?? "AAC") at that rate, which uses less data.")
+            ptr(streaming), "Original plays your files as they are. The others have \(app.library.serverKind) convert them to \(app.credentials?.kind.convertedFormat ?? "AAC") at that rate, which uses less data.\(opus ? StreamQuality.efficientNote : "")")
         adw_preferences_group_add(ptr(playing), toggle(
             "Autoplay", "When an album or a playlist ends, play on with a station from its last song.",
             settings.autoplay) { settings.autoplay = $0 })

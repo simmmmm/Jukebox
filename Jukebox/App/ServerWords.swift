@@ -26,6 +26,25 @@ extension ServerKind {
     }
 }
 
+extension StreamQuality {
+    /// What a quality picker offers: Efficient only where the server makes
+    /// Opus (`app.can(.opusStream)`), as every option that depends on the
+    /// server ("zorg dat je ook alleen die opties toont als het beschikbaar
+    /// is op die server", 18 November 2026).
+    static func offered(opus: Bool) -> [StreamQuality] {
+        allCases.filter { $0 != .efficient || opus }
+    }
+
+    /// A kept Efficient on a server without Opus reads as Low, which is
+    /// what it plays as there (the same 128 kbit/s, StreamQuality).
+    func shown(opus: Bool) -> StreamQuality {
+        self == .efficient && !opus ? .low : self
+    }
+
+    /// The footer's sentence about Efficient, where it is offered.
+    static let efficientNote = " Efficient makes Opus instead, at half of Normal's data."
+}
+
 enum ServerWords {
     /// "Jellyfin 12.4.0", "Navidrome 0.64.2": the kind and its version,
     /// without the build Navidrome adds in brackets ("0.64.2 (10114574)").

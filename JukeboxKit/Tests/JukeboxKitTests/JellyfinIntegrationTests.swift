@@ -517,6 +517,28 @@ struct JellyfinIntegrationTests {
         #expect(String(decoding: media.body, as: UTF8.self).contains("#EXT-X-ENDLIST"))
         JellyfinTestServer.measure("stream flac at 64 kbit/s: \(master.status) \(master.jellyfinHeader("Content-Type") ?? "-"), media playlist \(media.status)")
 
+        // Efficient: the MP3 (129 kbit/s, over the cap) as Opus in fMP4
+        // segments: a master that says so, a media playlist with its
+        // EXT-X-MAP, the init (an MP4 with Opus's own box) and a segment.
+        let opusURL = client.streamURL(trackID: try #require(byFormat["mp3"]), quality: .efficient,
+                                       playSessionID: UUID().uuidString, opus: true)
+        let opusMaster = try await JellyfinTestServer.fetch(opusURL)
+        #expect(opusMaster.jellyfinHeader("Content-Type") == "application/vnd.apple.mpegurl")
+        let opusMasterText = String(decoding: opusMaster.body, as: UTF8.self)
+        #expect(opusMasterText.lowercased().contains("codecs=\"opus\""))
+        let opusMediaRef = try #require(opusMasterText.split(separator: "\n").first { !$0.hasPrefix("#") && !$0.isEmpty })
+        let opusMediaURL = try #require(URL(string: String(opusMediaRef), relativeTo: opusURL)?.absoluteURL)
+        let opusMedia = String(decoding: try await JellyfinTestServer.fetch(opusMediaURL).body, as: UTF8.self)
+        let mapLine = try #require(opusMedia.split(separator: "\n").first { $0.hasPrefix("#EXT-X-MAP:URI=\"") })
+        let initRef = String(mapLine.dropFirst("#EXT-X-MAP:URI=\"".count).dropLast())
+        let initPart = try await JellyfinTestServer.fetch(try #require(URL(string: initRef, relativeTo: opusMediaURL)?.absoluteURL))
+        #expect(initPart.status == 200)
+        #expect(initPart.body.range(of: Data("ftyp".utf8)) != nil && initPart.body.range(of: Data("dOps".utf8)) != nil)
+        let opusSegmentRef = try #require(opusMedia.split(separator: "\n").first { !$0.hasPrefix("#") && !$0.isEmpty })
+        let opusSegment = try await JellyfinTestServer.fetch(try #require(URL(string: String(opusSegmentRef), relativeTo: opusMediaURL)?.absoluteURL))
+        #expect(opusSegment.status == 200 && opusSegment.body.count > 1000)
+        JellyfinTestServer.measure("stream mp3 .efficient: Opus HLS, init \(initPart.body.count) bytes, first segment \(opusSegment.body.count) bytes")
+
         // Which name for the token this server takes in a URL.
         let id = try #require(byFormat["mp3"])
         let withApiKey = client.streamURL(trackID: id, quality: .original, playSessionID: "probe")

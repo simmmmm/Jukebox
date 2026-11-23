@@ -1,5 +1,6 @@
 // The listener's choices, kept in UserDefaults: streaming quality on Wi-Fi
-// and on the mobile network, loudness normalisation, crossfade, the Last.fm key, how
+// and on the mobile network and whether it steps down on a slow one,
+// loudness normalisation, crossfade, the Last.fm key, how
 // adventurous the radio is, whether lyrics are looked up online, whether Now
 // Playing's record spins, whether the music last played waits in the player
 // at launch, whether the anonymous usage counts are sent, how songs are
@@ -27,6 +28,18 @@ final class AppSettings {
         didSet {
             defaults.set(cellularQuality.rawValue, forKey: Keys.cellularQuality)
             if cellularQuality != oldValue { Stats.track(.settingChanged, ["name": "cellular_quality", "value": cellularQuality.rawValue]) }
+        }
+    }
+
+    /// Adjust to the Connection: the quality above is the target, and the
+    /// next songs stream lower while the network is too slow for it
+    /// (QualitySteps). "Misschien met een vinkje erbij" (24 November 2026).
+    var adjustsToConnection: Bool {
+        didSet {
+            defaults.set(adjustsToConnection, forKey: Keys.adjustsToConnection)
+            if adjustsToConnection != oldValue {
+                Stats.track(.settingChanged, ["name": "adjust_to_connection", "value": Stats.onOff(adjustsToConnection)])
+            }
         }
     }
 
@@ -264,6 +277,7 @@ final class AppSettings {
         self.defaults = defaults
         wifiQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.wifiQuality) ?? "") ?? .original
         cellularQuality = StreamQuality(rawValue: defaults.string(forKey: Keys.cellularQuality) ?? "") ?? .normal
+        adjustsToConnection = defaults.object(forKey: Keys.adjustsToConnection) as? Bool ?? true
         normalizeVolume = defaults.object(forKey: Keys.normalizeVolume) as? Bool ?? true
         // From the two switches before (Enhance Radio with Last.fm, and with
         // AcousticBrainz): one turned off by the listener starts this one
@@ -319,6 +333,7 @@ final class AppSettings {
     private enum Keys {
         static let wifiQuality = "wifiQuality"
         static let cellularQuality = "cellularQuality"
+        static let adjustsToConnection = "adjustsToConnection"
         static let normalizeVolume = "normalizeVolume"
         static let useLastFM = "useLastFM"
         static let useAcousticBrainz = "useAcousticBrainz"

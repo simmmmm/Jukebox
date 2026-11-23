@@ -233,6 +233,24 @@ struct JellyfinClientTests {
             let url = client.streamURL(trackID: "track1", quality: quality, playSessionID: "p")
             #expect(URLRequest(url: url).jellyfinQuery["MaxStreamingBitrate"] == bitrate)
         }
+
+        // Efficient: Opus in fMP4 segments at 128, where the server makes
+        // it; AAC in ts at the same cap where it does not.
+        let opus = URLRequest(url: client.streamURL(trackID: "track1", quality: .efficient, playSessionID: "p", opus: true)).jellyfinQuery
+        #expect(opus["AudioCodec"] == "opus" && opus["TranscodingContainer"] == "mp4" && opus["TranscodingProtocol"] == "hls")
+        #expect(opus["MaxStreamingBitrate"] == "128000")
+        let plain = URLRequest(url: client.streamURL(trackID: "track1", quality: .efficient, playSessionID: "p")).jellyfinQuery
+        #expect(plain["AudioCodec"] == "aac" && plain["TranscodingContainer"] == "ts" && plain["MaxStreamingBitrate"] == "128000")
+    }
+
+    @Test("Opus streams: Jellyfin from 10.10, never Emby")
+    func opusCapability() {
+        #expect(JellyfinServer.capabilities(version: "12.4.0").contains(.opusStream))
+        #expect(JellyfinServer.capabilities(version: "10.10.0").contains(.opusStream))
+        #expect(!JellyfinServer.capabilities(version: "10.9.11").contains(.opusStream))
+        #expect(JellyfinServer.capabilities(version: "10.9.11").contains(.lyrics))
+        #expect(!JellyfinServer.capabilities(version: "10.8.13").contains(.lyrics))
+        #expect(!JellyfinServer.capabilities(kind: .emby, version: "4.10.0").contains(.opusStream))
     }
 
     @Test("The image URL: square, quality 90, the tag; no token")

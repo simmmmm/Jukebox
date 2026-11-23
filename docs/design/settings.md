@@ -78,7 +78,8 @@ same; the Mac asks over the main window (`Commands.swift`, RootView).
 |---|---|---|---|---|---|---|---|
 | 1 | Streaming Quality | | "Streaming" | "Wi-Fi Streaming" | "Wi-Fi Streaming" | ✓ | Original |
 | 2 | Streaming on a hotspot or cellular | | "Streaming on a Hotspot" | "Cellular Streaming" | "Cellular Streaming" | — Linux never sees a metered network (`Platform.swift`) | Normal |
-| | *Footer of 1–2* | "Original plays your files as they are. The others have Jellyfin convert them to AAC at that rate, which uses less data." | ✓ | ✓ | ✓ | ✓ | |
+| | *Footer of 1–2* | "Original plays your files as they are. The others have Jellyfin convert them to AAC at that rate, which uses less data." Where the server makes Opus (docs/SERVERS.md, "Opus"), the pickers have "Efficient (Opus, 128 kbit/s)" between Normal and Low and the footer adds "Efficient makes Opus instead, at half of Normal's data." | ✓ | ✓ | ✓ | ✓ | |
+| 2a | Adjust to the Connection | "When a song has to wait for the network, the next ones stream lower until it holds again." Under the pickers, in their section (Linux: their group) | ✓ | ✓ | ✓ | ✓ | on |
 | 3 | Autoplay | "When an album or a playlist ends, play on with a station from its last song." | ✓ | ✓ | ✓ | ✓ | on |
 | 4 | Crossfade | "A song fades out and the next fades in. Songs that follow each other on an album never fade." | ✓ | ✓ | ✓ | ✓ | Off |
 | 5 | Continue Where You Left Off | "When Jukebox opens, the song you last played, here or on another device, is ready to play." | ✓ | ✓ | ✓ | ✓ | on |

@@ -28,14 +28,21 @@ private final class SilentRemote: RemotePlayer {
 
 /// The queue with no engine: every song has an address, none plays.
 private final class Bench: PlayQueue {
-    /// What the engine was told to hold next.
+    /// What the engine was told to hold next, and at what quality.
     var held: UUID?
+    var heldAt: StreamQuality?
 
     override func address(of entry: QueueEntry, playSessionID: String) -> URL? {
         URL(fileURLWithPath: "/dev/null")
     }
 
-    override func enginePreload(_ entry: QueueEntry?) { held = entry?.id }
+    override func enginePreload(_ entry: QueueEntry?) {
+        held = entry?.id
+        heldAt = entry == nil ? nil : streamingQuality
+    }
+
+    /// The target, whatever this machine's settings say.
+    override var streamQuality: StreamQuality { .original }
 }
 
 enum QueueCheck {
@@ -295,6 +302,28 @@ enum QueueCheck {
         c.next()
         expect(heard.history.events.map(\.trackID) == (c.notCounted.isPrivate ? [] : ["t1"]), "nor kept in the history")
         c.stop()
+
+        // Adjust to the Connection (QualitySteps): a wait mid-song asks the
+        // next song lower at once, the one already held too; three songs
+        // without a wait ask it at the target again.
+        // The switch as it starts, whatever this machine's settings say.
+        let a = Bench(settings: AppSettings(defaults: UserDefaults(suiteName: "jukebox-queue-check") ?? .standard),
+                      history: HistoryStore())
+        a.play(tracks, context: album)
+        a.isBuffering = true
+        a.isBuffering = false
+        expect(a.streamingQuality == .original, "a wait as a song starts is its start, not a slow network")
+        a.bufferingChanged(true, now: Date().addingTimeInterval(10))
+        a.bufferingChanged(false, now: Date().addingTimeInterval(11))
+        expect(a.streamingQuality == .normal && a.heldAt == .normal, "a wait mid-song: the next song, already held, is asked lower")
+        for _ in 1...4 { a.next() }
+        expect(a.current?.track.id == "t5" && a.streamingQuality == .original, "three songs without a wait: the target again")
+        a.play(tracks, context: album)
+        a.isBuffering = true
+        a.next()
+        a.bufferingChanged(false, now: Date().addingTimeInterval(9))
+        expect(a.streamingQuality == .normal, "a song left while it waited: the next one's start, 9 s, steps down")
+        a.stop()
 
         // Linux's engine (AudioPlayer.swift): the listener's volume is the
         // stream's, GNOME's per-app volume, both ways; the song's gain is

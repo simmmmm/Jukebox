@@ -116,7 +116,9 @@ class PlayQueue {
     /// Set by the platform's AudioPlayer, as its engine says.
     var isPlaying = false
     /// Waiting for the network. The engine's, as `isPlaying`.
-    var isBuffering = false
+    var isBuffering = false {
+        didSet { if isBuffering != oldValue { bufferingChanged(isBuffering) } }
+    }
     /// Seconds into the current track. The engine's, as `isPlaying`.
     var elapsed: TimeInterval = 0
     /// The current track's length, seconds. The engine's, as `isPlaying`.
@@ -255,6 +257,15 @@ class PlayQueue {
     /// in `level(for:)`, so the listener's own volume is never touched.
     @ObservationIgnored private var sleepFadeLevel: Double = 1
     static let sleepFade: TimeInterval = 8
+    /// Adjust to the Connection: how far below the target the next songs
+    /// stream. Not kept: each launch starts at the target.
+    @ObservationIgnored private var qualitySteps = QualitySteps()
+    /// When the current song began, and when it was last sought or resumed
+    /// by hand: a wait soon after either is the start's, not the network
+    /// running dry (`bufferingChanged`).
+    @ObservationIgnored private var songSince = Date.distantPast
+    @ObservationIgnored private var handSince = Date.distantPast
+    static let settled: TimeInterval = 5
 
     init(settings: AppSettings, history: HistoryStore) {
         self.settings = settings
@@ -470,6 +481,7 @@ class PlayQueue {
         // A deadline that passed while paused (the iPhone's ticks rest
         // then): the timer is over, not a reason to stop again at once.
         if let sleepDeadline, sleepDeadline <= Date() { endSleep() }
+        handSince = Date()
         // Nothing in the engine (the queue ended, or an error stopped it):
         // load the current entry again.
         if playing == nil || (playingElsewhere == nil && !engineHasItem) {
@@ -514,6 +526,7 @@ class PlayQueue {
         elapsed = target
         // Back to its start by hand: no fade in again.
         playing?.fadesIn = false
+        handSince = Date()
         if playingElsewhere != nil { remoteDo { try await $0.seek(to: target) } } else { engineSeek(to: target) }
     }
 
@@ -700,6 +713,9 @@ class PlayQueue {
     func load(_ index: Int, play: Bool, fadesIn: Bool = false) {
         guard queue.indices.contains(index) else { return }
         homeWait = nil
+        // Left while it waited: a start that never came is judged now,
+        // before the next song's address is asked.
+        _ = qualitySteps.waitEnded(Date())
         // Offline, a song not on the device cannot play: the next one that
         // is, in its place; none, and the music stops here.
         guard let start = playableIndex(from: index) else {
@@ -710,7 +726,7 @@ class PlayQueue {
         let playSessionID = UUID().uuidString
         guard let url = address(of: entry, playSessionID: playSessionID) else {
             if let server {
-                waitForHome(server.streamURL(for: entry.track, quality: streamQuality, playSessionID: playSessionID),
+                waitForHome(server.streamURL(for: entry.track, quality: streamingQuality, playSessionID: playSessionID),
                             entry: entry, at: start, play: play, fadesIn: fadesIn)
             } else {
                 showError("Not signed in to a server.")
@@ -721,6 +737,10 @@ class PlayQueue {
         if playingElsewhere != nil {
             remoteLoad(from: start, at: 0, play: play)
         } else {
+            // Before the engine is told: what it waits for from here is
+            // this song's start, never the middle of the one left (a skip
+            // is not a slow network, `bufferingChanged`).
+            songSince = Date()
             engineReplace(with: url, entry: entry, playSessionID: playSessionID, play: play)
         }
         wantsToPlay = play
@@ -767,6 +787,12 @@ class PlayQueue {
         elapsed = 0
         duration = entry.track.duration
         engineVolume(level(for: entry.track))
+        songSince = Date()
+        // Before the preload, so a step back up reaches the next song.
+        if playingElsewhere == nil, offline?.localURL(for: entry.track.id) == nil { qualitySteps.songBegan(songSince) }
+        // Still waiting from the song left (Linux's engine never says it
+        // stopped): the wait is this song's start now.
+        if isBuffering { bufferingChanged(true) }
         preloadNext()
         publishNowPlaying()
         refreshRemoteFeedback()
@@ -808,9 +834,64 @@ class PlayQueue {
     /// next song.
     func address(of entry: QueueEntry, playSessionID: String) -> URL? {
         if let file = offline?.localURL(for: entry.track.id) { return file }
-        guard let url = server?.streamURL(for: entry.track, quality: streamQuality, playSessionID: playSessionID),
+        guard let url = server?.streamURL(for: entry.track, quality: streamingQuality, playSessionID: playSessionID),
               PlainHTTPGuard.mayFetchNow(url) else { return nil }
         return url
+    }
+
+    /// What the next stream is asked at: the target, `streamQuality`, or
+    /// lower while the network is too slow for it (QualitySteps).
+    var streamingQuality: StreamQuality {
+        guard settings.adjustsToConnection else {
+            qualitySteps.reset()
+            return streamQuality
+        }
+        return qualitySteps.quality(for: streamQuality, opus: server?.capabilities.contains(.opusStream) == true)
+    }
+
+    /// The engine began or stopped waiting for the network. A wait that
+    /// is not the network's speed is not told: paused, offline, a kept
+    /// file, another device playing, or just after a seek or a resume by
+    /// hand. Mid-song is a few seconds after the song began and before its
+    /// last few: at AVQueuePlayer's handover the engine may wait a moment
+    /// before the queue has followed it, which is the next song's start.
+    func bufferingChanged(_ waiting: Bool, now: Date = Date()) {
+        let stepped: Bool
+        if waiting {
+            guard settings.adjustsToConnection, wantsToPlay, playingElsewhere == nil, offline?.isOffline != true,
+                  !engineFetchesNext,
+                  let entry = current, offline?.localURL(for: entry.track.id) == nil,
+                  now.timeIntervalSince(handSince) >= Self.settled else { return }
+            let midSong = now.timeIntervalSince(songSince) >= Self.settled
+                && (duration <= 0 || elapsed < duration - Self.settled)
+            stepped = qualitySteps.waitBegan(now, midSong: midSong)
+        } else {
+            stepped = qualitySteps.waitEnded(now)
+        }
+        // ponytail: the song that waited plays on at its quality, so the
+        // first stall is still heard: a converted MP3 (Navidrome, Plex) has
+        // no ranges to reload it from at its place. Where the server can
+        // start a stream part-way (`transcodeOffset`, Jellyfin's HLS),
+        // reloading the current song lower would spare that.
+        if stepped { askNextAgain() }
+    }
+
+    /// The network changed (OfflineStore, through each AudioPlayer): the
+    /// target again, and the next song held asked again with it.
+    func networkChanged() {
+        guard qualitySteps.down > 0 else { return }
+        qualitySteps.reset()
+        askNextAgain()
+    }
+
+    /// The next song the engine holds, asked for again at the quality now:
+    /// both engines keep one whose entry has not changed. On Linux one
+    /// GStreamer has already taken (a moment before the song ends) stays
+    /// as it was asked.
+    private func askNextAgain() {
+        guard playingElsewhere == nil else { return }
+        enginePreload(nil)
+        preloadNext()
     }
 
     private func indexAfter(_ index: Int, wrapping: Bool) -> Int? {
@@ -1311,6 +1392,11 @@ class PlayQueue {
     /// server gave none.
     var playingLength: TimeInterval { duration }
     var engineIsPaused: Bool { !isPlaying }
-    /// What the server streams at.
+    /// The engine has all of the current song and is fetching the next
+    /// one: what it waits for then is not this song's network
+    /// (`bufferingChanged`). GStreamer says so; AVQueuePlayer does not.
+    var engineFetchesNext: Bool { false }
+    /// What the server streams at: the target, which Adjust to the
+    /// Connection may stream below (`streamingQuality`).
     var streamQuality: StreamQuality { settings.wifiQuality }
 }

@@ -150,10 +150,17 @@ public struct TrackQuery: Sendable, Hashable {
 /// How a track is streamed. `original` sends the file as it is when the
 /// player can play it; the others ask Jellyfin to transcode down to that
 /// many kilobits a second (AAC), for the mobile network.
+///
+/// `efficient` is the answer to the photographer's "hoe we met maximale
+/// kwaliteit toch veel minder data hoeven te streamen" (23 November 2026):
+/// Opus at 128 kbit/s, which holds up where AAC and MP3 need 256 to 320,
+/// from a server that makes it (`ServerCapability.opusStream`). On any
+/// other server it is `low`: the same cap in the format that server makes.
 public enum StreamQuality: String, Sendable, Hashable, Codable, CaseIterable {
     case original
     case high      // 320 kbit/s
     case normal    // 256 kbit/s
+    case efficient // 128 kbit/s, Opus
     case low       // 128 kbit/s
 
     public var maxBitrate: Int? {
@@ -161,7 +168,7 @@ public enum StreamQuality: String, Sendable, Hashable, Codable, CaseIterable {
         case .original: nil
         case .high: 320_000
         case .normal: 256_000
-        case .low: 128_000
+        case .efficient, .low: 128_000
         }
     }
 }
@@ -713,15 +720,22 @@ public final class JellyfinClient: Sendable {
     /// - Emby 4.10 the same: the three files as they are, HLS at .low for
     ///   the MP3 and the M4A and at 64 kbit/s for all three; the segments
     ///   (AAC, 67 kbit/s at 64) load without a token and without Premiere.
-    public func streamURL(trackID: ItemID, quality: StreamQuality, playSessionID: String) -> URL {
+    ///
+    /// `opus` (StreamQuality.efficient on a server with `.opusStream`) asks
+    /// for Opus in fMP4 segments instead of AAC in ts. Measured on 12.4, 23
+    /// November 2026 (docs/SERVERS.md, "Opus"): Jellyfin runs `libopus -ab`
+    /// at the cap with `-hls_segment_type fmp4`; AVPlayer on macOS 27.2
+    /// played it (and not Opus in ts segments, nor the progressive mp4),
+    /// GStreamer's hlsdemux2 and opusdec played it to the end.
+    public func streamURL(trackID: ItemID, quality: StreamQuality, playSessionID: String, opus: Bool = false) -> URL {
         var query = [
             URLQueryItem(name: "UserId", value: userID ?? ""),
             URLQueryItem(name: "DeviceId", value: identity.deviceID),
             URLQueryItem(name: "PlaySessionId", value: playSessionID),
             URLQueryItem(name: "Container", value: Self.directContainers),
-            URLQueryItem(name: "TranscodingContainer", value: "ts"),
+            URLQueryItem(name: "TranscodingContainer", value: opus ? "mp4" : "ts"),
             URLQueryItem(name: "TranscodingProtocol", value: "hls"),
-            URLQueryItem(name: "AudioCodec", value: "aac"),
+            URLQueryItem(name: "AudioCodec", value: opus ? "opus" : "aac"),
         ]
         if let bitrate = quality.maxBitrate {
             query.append(URLQueryItem(name: "MaxStreamingBitrate", value: String(bitrate)))

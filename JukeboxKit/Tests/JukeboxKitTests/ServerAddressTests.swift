@@ -122,7 +122,7 @@ struct ServerAddressTests {
         #expect(server.url.absoluteString == "http://jf.local:8096")
         #expect(server.id == "ab1b921a10354a07a7dfbbc2c8061335" && server.name == "0548ac3b6612")
         #expect(server.version == "12.4.0" && server.apiVersion == nil)
-        #expect(server.capabilities == ServerCapability.jellyfin.union([.quickConnect]))
+        #expect(server.capabilities == ServerCapability.jellyfin.union([.quickConnect, .opusStream]))
         #expect(MusicServers.signIn(to: server, identity: Self.identity, transport: fake) is any QuickConnectSignIn)
     }
 

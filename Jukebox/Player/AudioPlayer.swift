@@ -450,8 +450,10 @@ final class AudioPlayer: PlayQueue {
     /// The network went or came back (OfflineStore, through AppModel): what
     /// is preloaded is chosen again — offline the next song may be a later
     /// one, back online the very next again — and a song waiting on the
-    /// network is watched.
+    /// network is watched. A stream stepped down for a slow network
+    /// starts at the target again (`networkChanged`).
     func connectivityChanged() {
+        networkChanged()
         preloadNext()
         if isBuffering { watchOfflineStall() }
     }
