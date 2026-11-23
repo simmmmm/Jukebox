@@ -305,6 +305,56 @@ final class RadioController {
             }
             self.isHandlingFeedback = false
             self.gatherSources(for: station, in: index, generation: generation)
+            // Last.fm's tags and similar artists for the station's own
+            // artists before anyone else's, and the station takes them up
+            // when they come (`takeUpLateData`).
+            if let service = self.service {
+                self.enrich(self.library.snapshot, with: service, first: Self.ownArtistKeys(of: station, in: index))
+            }
+        }
+    }
+
+    /// The artists a station is about: a song's, an artist, an album's, a
+    /// playlist's (its first 50 songs'); at most ten. None for the others.
+    private static func ownArtistKeys(of station: Station, in snapshot: LibrarySnapshot) -> [String] {
+        let tracks: [Track]
+        switch station.seed {
+        case let .track(id): tracks = snapshot.track(id: id).map { [$0] } ?? []
+        case let .artist(key, _, _): return [key]
+        case let .album(id): tracks = snapshot.tracks(albumID: id)
+        case let .collection(_, _, ids): tracks = ids.prefix(50).compactMap { snapshot.track(id: $0) }
+        case .genre, .decade, .personal, .discovery, .favorites: return []
+        }
+        var keys: [String] = []
+        for track in tracks {
+            for key in snapshot.artistKeys(of: track) where !keys.contains(key) { keys.append(key) }
+        }
+        return Array(keys.prefix(10))
+    }
+
+    /// Last.fm answered for the artists of the station on the air after it
+    /// started: its session takes up the newer library and graph, and what
+    /// is ahead after the next song is chosen again with them. The song
+    /// playing, the one after it, the history and the listener's own songs
+    /// in Up Next stay (`rechooseUpcoming`). Bunker Radio started a moment
+    /// before Last.fm knew Balthazar and never saw it after: "wat doet
+    /// bring me the horizon hier of maruja", then "Ja, doe maar" (the
+    /// photographer, 24 November 2026; RadioLateDataTests).
+    private func takeUpLateData() {
+        guard !isStarting, let station, session != nil, player.context?.station?.id == station.id,
+              offline?.isOffline != true else { return }
+        let generation = self.generation
+        let inputs = startInputs(playingNow: player.currentTrack?.id)
+        guard !inputs.snapshot.isEmpty else { return }
+        Task { [weak self] in
+            let taste = await Task.detached(priority: .userInitiated) {
+                TasteProfile(snapshot: inputs.snapshot, history: inputs.history, scrobbles: inputs.scrobbles, now: inputs.now)
+            }.value
+            guard let self, self.generation == generation, self.station?.id == station.id, self.session != nil,
+                  self.session?.takeUp(snapshot: inputs.snapshot, graph: inputs.graph, taste: taste) == true else { return }
+            // Started from its page, the page's songs play on; the songs
+            // after them are chosen with it.
+            if !self.keepsShownPicks { self.rechooseUpcoming(keepingNext: true) }
         }
     }
 
@@ -964,7 +1014,11 @@ final class RadioController {
     /// Last.fm is never asked twice over at once. The listener's scrobbles
     /// first (a few requests, and the clock's cold start), then who sounds
     /// like whom, then the artists' tags.
-    private func enrich(_ snapshot: LibrarySnapshot, with service: SimilarityService) {
+    /// - Parameter first: a station's own artists (`ownArtistKeys`), asked
+    ///   before all of that: their tags, then their similar artists, which
+    ///   the station takes up at once (`takeUpLateData`). Before, they
+    ///   waited for the 150 artists most played.
+    private func enrich(_ snapshot: LibrarySnapshot, with service: SimilarityService, first: [String] = []) {
         guard settings.hasLastFM, !snapshot.isEmpty else { return }
         let events = history.history
         let previous = enrichTask
@@ -972,6 +1026,14 @@ final class RadioController {
         enrichTask = Task { [weak self] in
             _ = await previous?.value
             guard !Task.isCancelled else { return }
+            if !first.isEmpty {
+                // The tags first: they find Last.fm's own page for a name
+                // ("Angèle"), which the similar artists are asked under.
+                let radio = await service.enrichTags(snapshot: snapshot, priority: first, maxArtists: first.count)
+                let graph = await service.enrich(snapshot: radio, priority: first, maxArtists: first.count)
+                guard !Task.isCancelled else { return }
+                self?.lateDataArrived(for: snapshot, radio: radio, graph: graph, from: service)
+            }
             let plays = await service.scrobbles(for: snapshot)
             guard !Task.isCancelled, let self, self.service === service else { return }
             if plays.events != self.scrobbles.events {
@@ -991,10 +1053,20 @@ final class RadioController {
             guard !Task.isCancelled, self.service === service else { return }
             await self.noteTrouble(of: service)
             guard self.library.snapshot.isSameSnapshot(as: snapshot) else { return }
-            self.tagged = (snapshot, radio)
-            self.graph = radioGraph
+            self.lateDataArrived(for: snapshot, radio: radio, graph: radioGraph, from: service)
             self.refreshYourStationFact()
         }
+    }
+
+    /// Last.fm's tags and graph as they are now: the radio's from here on,
+    /// and the station on the air's too when they say more of its own
+    /// artists.
+    private func lateDataArrived(for snapshot: LibrarySnapshot, radio: LibrarySnapshot, graph: SimilarityGraph,
+                                 from service: SimilarityService) {
+        guard self.service === service, library.snapshot.isSameSnapshot(as: snapshot) else { return }
+        tagged = (snapshot, radio)
+        self.graph = graph
+        takeUpLateData()
     }
 
     /// Enhance Radio was switched (Settings › Radio, Preferences › Radio

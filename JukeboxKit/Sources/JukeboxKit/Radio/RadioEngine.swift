@@ -121,7 +121,8 @@ struct RadioEngine: Sendable {
     /// By track number × `SoundProfile.axes.count`: how the song sounds
     /// (AcousticBrainz, `SoundService`), or its artist's mean where it has
     /// none; NaN where neither is known.
-    let sound: [Double]
+    /// A var for `takingUp`, which keeps it.
+    var sound: [Double]
     /// The clock (TasteData): by artist and genre number, λ · L near now,
     /// and when now is. Only Your Station reads them.
     let artistLift: [Double]
@@ -306,7 +307,7 @@ struct RadioEngine: Sendable {
         sound = Self.sound(profiles, snapshot: snapshot)
         // A stream of its own, so the picks' random numbers stay those of
         // the seed.
-        tieSeed = randomSeed ^ 0x5DEE_CE66_D1CE_4E5B
+        tieSeed = randomSeed ^ Self.tieMask
         var tieNumbers = SplitMix64(seed: tieSeed)
         ties = (0..<n).map { _ in tieNumbers.next() }
 
@@ -1774,6 +1775,85 @@ struct RadioEngine: Sendable {
             handedEnd.append(total)
         }
         if handed.isEmpty { started = false }
+    }
+}
+
+extension RadioEngine {
+    static let tieMask: UInt64 = 0x5DEE_CE66_D1CE_4E5B
+
+    /// The same session on a newer view of the same songs: Last.fm's tags
+    /// as genres, its similar artists in the graph. What was handed out,
+    /// heard, skipped, thumbed and liked, the pressures and the random
+    /// numbers all go on as they were. Nil when the songs are not the same
+    /// (the library itself changed), or when nothing changed for the
+    /// station's own artists: their tags and their neighbours. A station
+    /// keeps what it started with, and Bunker Radio started a moment
+    /// before Last.fm knew Balthazar: no genre, no similar artists, for as
+    /// long as it played ("wat doet bring me the horizon hier of maruja",
+    /// the photographer, 24 November 2026; RadioLateDataTests).
+    func takingUp(snapshot new: LibrarySnapshot, graph newGraph: SimilarityGraph, taste: TasteProfile) -> RadioEngine? {
+        guard new.tracks.count == snapshot.tracks.count,
+              zip(new.tracks, snapshot.tracks).allSatisfy({ $0.id == $1.id }) else { return nil }
+        var built = self
+        if built.anchorBuiltFor != built.adventurousness { built.buildAnchor() }
+        let keys = Set(built.anchor.subject.map { index.artistKeys[$0] })
+        let changed = keys.contains { key in
+            let before = graph.similarArtists(to: key, limit: 100).map(\.key)
+            let after = newGraph.similarArtists(to: key, limit: 100).map(\.key)
+            return before != after || genres(of: key, in: snapshot) != genres(of: key, in: new)
+        }
+        guard changed else { return nil }
+
+        var e = RadioEngine(seed: seed, snapshot: new, taste: taste, graph: newGraph, settings: settings,
+                            recentlyPlayed: [], randomSeed: tieSeed ^ Self.tieMask)
+        e.sound = sound
+        e.rng = rng
+        e.recently = recently
+        e.handed = handed
+        e.handedLearnt = handedLearnt
+        e.handedEnd = handedEnd
+        e.disliked = disliked
+        e.skipped = skipped
+        e.added = added
+        e.addedReason = addedReason
+        e.mix = mix
+        e.started = started
+        e.loudPressure = loudPressure
+        e.loudMark = loudMark
+        e.driftWeight = driftWeight
+        for (k, t) in handed.enumerated() { e.lastAt[e.index.trackSong[t]] = k }
+        // Artists and genres by key: the newer view numbers them its own way.
+        var artistTo: [Int: Int] = [:]
+        for (a, key) in index.artistKeys.enumerated() {
+            guard let b = e.index.artistByKey[key] else { continue }
+            artistTo[a] = b
+            e.artistPressure[b] = artistPressure[a]
+            e.artistBan[b] = artistBan[a]
+            e.artistMark[b] = artistMark[a]
+            e.driftArtist[b] = driftArtist[a]
+        }
+        var genreTo: [Int: Int] = [:]
+        for (g, key) in index.genreKeys.enumerated() {
+            guard let h = e.index.genreByKey[key] else { continue }
+            genreTo[g] = h
+            e.genrePressure[h] = genrePressure[g]
+            e.genreMark[h] = genreMark[g]
+            e.driftGenre[h] = driftGenre[g]
+        }
+        e.likes = likes.map { like in
+            var artists: [Int: Double] = [:]
+            for (a, w) in like.artists { if let b = artistTo[a] { artists[b] = w } }
+            return Like(track: like.track, at: like.at, artists: artists, genres: like.genres.compactMap { genreTo[$0] })
+        }
+        return e
+    }
+
+    /// The genres of an artist's own songs, by key.
+    private func genres(of key: String, in snapshot: LibrarySnapshot) -> Set<String> {
+        let index = snapshot.index
+        guard let a = index.artistByKey[key] else { return [] }
+        let own = index.artistOwnTracks[a].isEmpty ? index.artistTracks[a] : index.artistOwnTracks[a]
+        return Set(own.flatMap { index.trackGenres[$0].map { index.genreKeys[$0] } })
     }
 }
 

@@ -1042,10 +1042,37 @@ On Drugs ("Sounds like Balthazar") and Balthazar.
 With the tags and graph as they are now, no strangers before or after.
 Every other `RADIO-*` line is unchanged.
 
-Left: a playing station does not take up Last.fm's answers that come
-after its start. Strangers are still ranked by taste: at 0.7 and up, once
-a neighbourhood has played all its songs, and on a song station Last.fm
+Left: strangers are still ranked by taste: at 0.7 and up, once a
+neighbourhood has played all its songs, and on a song station Last.fm
 names no library song for.
+
+### Last.fm's answers after the start
+
+"Ja, doe maar" (the photographer, 24 November 2026), for the first half
+of Bunker Radio's cause: it kept the library and graph it started with.
+- A station that starts asks Last.fm first about its own artists (a
+  song's, an artist, an album's, a playlist's, at most ten): their tags,
+  then their similar artists. The song's similar songs are asked as
+  before. Then the 150 artists played most, as before.
+- When tags or similar artists of those artists arrive, the session takes
+  up the newer library and graph (`RadioSession.takeUp`): what it handed
+  out, heard and learnt stays, and the songs ahead after the next one are
+  chosen again. The song playing, the history and the listener's own songs
+  in Up Next stay. Nothing new for its artists, or another library: no
+  change.
+
+**Measured** (`RadioLateDataTests`, lines `RADIO-LATE`): Bunker Radio at
+Familiar, the seed artist's tags and two similar artists arriving after
+15 picks, 12 × 30 picks after them: those two artists 0 → 0.419 of
+picks, strangers 0 either way; the five picks heard or next stay.
+
+**His Linux had no `acousticbrainz.json`** because the Jukebox running
+there had been started at 00:17 on 23 November, before AcousticBrainz
+was built (01:18), and ran on into the day: it asked Last.fm with his old
+key of his own, and wrote its settings without Enhance Radio's choice. The
+installed build asks Better Radio at its next start; on "Turn On" the
+lookups begin and the file is written in the account's similarity
+folder. No bug in the lookup was found.
 
 ## What it does when …
 
@@ -1108,6 +1135,7 @@ Each round is in the test output of its time.
 | 13. scrobbles | Last.fm's plays as the clock's older evidence, before this device's first event | weight 0.25: Jazz 0.295, no fact; 1: 0.350, but a scrobble is as sure as a play here; 0.5 kept (Scrobbles) |
 | 14. the server's mix | round 7 undone: the mix judged nothing (Jellyfin's is any shared genre at random), so it places nothing and only lifts, by the dial; not asked for with a Last.fm key | The server's mix |
 | 15. a song station's neighbourhood | the similar songs' artists join; the neighbourhood with separation halved before strangers; a stranger's length | A song station's neighbourhood |
+| 16. Last.fm after the start | the station's own artists asked first; a playing station takes up their tags and similar artists | Last.fm's answers after the start |
 
 ## Building on it
 
@@ -1154,6 +1182,8 @@ Each round is in the test output of its time.
     stays off the radio for half a year;
   - pass `history.trackIDs(since: now − noRepeatHours)` as `recentlyPlayed`;
   - Last.fm's similar tracks at a weight of about 0.8 via `addCandidates`;
+  - Last.fm's later tags and graph via `takeUp`, then `returnUnplayed`
+    and `next`;
     the server's mix at 0.5 with `.instantMix`, and only without a Last.fm
     key;
   - a session and its first tracks take about 5 ms on 20 000 tracks, fine

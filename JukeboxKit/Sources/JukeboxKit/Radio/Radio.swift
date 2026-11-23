@@ -495,6 +495,20 @@ public struct RadioSession: Sendable {
         engine.ruledOut(ids)
     }
 
+    /// The library and graph as they are now, for a station that started
+    /// before Last.fm answered for its own artists: their tags as genres,
+    /// their similar artists. The same songs only (the tagged view of the
+    /// library it plays); what the session learnt and handed out stays.
+    /// False, and nothing changes, when the songs differ or nothing new is
+    /// known of the station's own artists. After it, `returnUnplayed` and
+    /// `next` choose what is ahead with it.
+    @discardableResult
+    public mutating func takeUp(snapshot: LibrarySnapshot, graph: SimilarityGraph, taste: TasteProfile) -> Bool {
+        guard let newer = engine.takingUp(snapshot: snapshot, graph: graph, taste: taste) else { return false }
+        engine = newer
+        return true
+    }
+
     /// Every track handed out and not returned, in order.
     public var handedOut: [ItemID] { engine.handed.map { engine.snapshot.tracks[$0].id } }
 }
