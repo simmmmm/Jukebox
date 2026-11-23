@@ -125,7 +125,7 @@ enum MainWindow {
             }
         }
         followAccounts(application)
-        NotCountedUI.install(application, owner: stack, in: menuItems)
+        NotCountedUI.install(owner: stack, in: menuItems)
         // The player's errors, for a moment, as GNOME shows such things.
         observe(toasts) {
             if let message = app.player.errorMessage { toast(message) }

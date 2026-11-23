@@ -31,7 +31,10 @@ enum NotCountedUI {
 
     /// The primary menu's Private Listening: three radio items of one
     /// action with the mode as its state, followed as the store changes.
-    static func install(_ application: UnsafeMutablePointer<AdwApplication>, owner: Widget, in menu: OpaquePointer) {
+    /// The action is the window's own, in a group of its own on `owner`,
+    /// not the application's: those GApplication offers on the session's
+    /// bus, where any program could turn the counting back on unseen.
+    static func install(owner: Widget, in menu: OpaquePointer) {
         let store = app.player.notCounted
         let action = g_simple_action_new_stateful("private-listening", g_variant_type_new("s"),
                                                   g_variant_new_string(store.privateListening.rawValue))!
@@ -41,11 +44,13 @@ enum NotCountedUI {
             else { return }
             store.privateListening = mode
         })
-        g_action_map_add_action(ptr(application), ptr(action))
+        let group = g_simple_action_group_new()!
+        g_action_map_add_action(ptr(group), ptr(action))
+        gtk_widget_insert_action_group(owner, "listening", ptr(group))
         let choices = g_menu_new()!
         for (mode, title) in modes {
             let item = g_menu_item_new(title, nil)!
-            g_menu_item_set_action_and_target_value(item, "app.private-listening", g_variant_new_string(mode.rawValue))
+            g_menu_item_set_action_and_target_value(item, "listening.private-listening", g_variant_new_string(mode.rawValue))
             g_menu_append_item(choices, item)
             g_object_unref(raw(item))
         }
