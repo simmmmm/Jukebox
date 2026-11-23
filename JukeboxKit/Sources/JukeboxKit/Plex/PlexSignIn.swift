@@ -181,7 +181,11 @@ public struct PlexAccount: Sendable {
     /// Signed in to one of `servers(token:)`: at its first address that
     /// answers, `preferring` the address the person typed, if any.
     public func signIn(to server: Server, accountToken: String, preferring typed: URL? = nil) async throws -> ServerCredentials {
-        let token = server.accessToken ?? accountToken
+        // The server's own token, never the account's: that one is the
+        // whole plex.tv account, and would go to every address listed.
+        guard let token = server.accessToken, !token.isEmpty else {
+            throw MusicServerError.transport("plex.tv gave no key for \(server.name). Try again, or sign in with a token.")
+        }
         let addresses = (typed.map { [$0] } ?? []) + server.addresses.filter { $0 != typed }
         guard let url = await Self.firstAnswering(addresses, token: token, identity: identity, transport: transport) else {
             if addresses.contains(where: { !Self.mayAsk($0) }) {

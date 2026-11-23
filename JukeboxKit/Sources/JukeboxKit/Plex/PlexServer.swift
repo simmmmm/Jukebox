@@ -299,8 +299,11 @@ public struct PlexServer: MusicServer {
     /// clients hand a cast this rather than the account's (GET
     /// /security/token, type delegation). It ends with the server's
     /// restart or in a day or two, and gives no sign-in to the account.
-    /// ponytail: asked once a session; asked again when Play On is chosen
-    /// again, should a long cast outlive it.
+    /// `scope=all` because Plex offers no other: the endpoint knows only
+    /// type delegation and scope all (what its clients and the SDKs send;
+    /// checked 23 November 2026), and its life is the server's to set. So
+    /// it is asked afresh each time Play On is chosen, never kept from one
+    /// cast to the next longer than the session.
     public func prepareCast() async throws {
         let answer = try await connection.container("/security/token", [
             URLQueryItem(name: "type", value: "delegation"), URLQueryItem(name: "scope", value: "all"),
