@@ -36,6 +36,25 @@ if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "remote" { exit(Remot
 watchMainQueue()
 // After it: the UPnP check awaits its speaker on the main actor.
 if ProcessInfo.processInfo.environment["JUKEBOX_CHECK"] == "upnp" { exit(UPnPCheck.run()) }
+
+// What Jukebox keeps is its user's alone: the settings (plain-http
+// addresses and accounts among them), the libraries, covers and lyrics,
+// the songs kept. Its folders are made, or closed if an earlier build made
+// them open, at each launch, so whatever is in them is the user's only.
+// Not a umask: a browser or file manager opened from here would inherit it.
+do {
+    let files = FileManager.default
+    let support = files.urls(for: .applicationSupportDirectory, in: .userDomainMask)
+    let caches = files.urls(for: .cachesDirectory, in: .userDomainMask)
+    let kept = [DefaultsFile.url.deletingLastPathComponent()]
+        + support.flatMap { [$0.appendingPathComponent("Jukebox"), $0.appendingPathComponent("jukebox")] }
+        + caches.flatMap { [$0.appendingPathComponent("Jukebox"), $0.appendingPathComponent("Lyrics")] }
+    for folder in kept {
+        try? files.createDirectory(at: folder, withIntermediateDirectories: true)
+        chmod(folder.path, 0o700)
+    }
+    chmod(DefaultsFile.url.path, 0o600)
+}
 DefaultsFile.load()
 let application = adw_application_new("com.tijmen.Jukebox", G_APPLICATION_DEFAULT_FLAGS)!
 on(raw(application), "activate") { MainWindow.present(in: application) }
