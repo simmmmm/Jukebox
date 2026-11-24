@@ -384,7 +384,7 @@ struct StationDetailView: View {
         StationPreviewKey(randomSeed: randomSeed ?? radio.pageSeed(for: station),
                           inputs: radio.previewInputs,
                           dial: isDragging ? nil : settings.adventurousness,
-                          playing: player.currentTrack?.id, isOnAir: isOnAir)
+                          isOnAir: isOnAir)
     }
 
     /// By id: the station the page was opened with and the one on the air
@@ -396,7 +396,7 @@ struct StationDetailView: View {
     private func choose(_ key: StationPreviewKey) async {
         if key.isOnAir {
             // What played is the player's now; off the air again, the page
-            // chooses afresh, with what was just heard left out.
+            // shows its list as it was, until New Picks (RadioController.shownPages).
             picks = nil
             chosenFor = nil
             isDrawing = false
@@ -406,7 +406,7 @@ struct StationDetailView: View {
         guard key.dial != nil else { return }
         if chosenFor == key, let picks, radio.isPreviewCurrent(station, picks) { return }
         if let chosenFor, chosenFor != key, chosenFor.randomSeed == key.randomSeed {
-            // The library, the graph, the dial or the song playing moved:
+            // The library, the graph or the dial moved:
             // a moment's wait, so a dial moved step by step, or a snapshot
             // and the graph after it, choose once.
             try? await Task.sleep(for: .milliseconds(300))
@@ -499,15 +499,13 @@ struct StationDetailView: View {
 nonisolated private struct StationPreviewKey: Hashable, Sendable {
     let randomSeed: UInt64
     /// RadioController.previewInputs: the library's snapshot, the graph.
+    /// The radio gives back the list shown unless the songs changed.
     let inputs: Int
     /// The dial; nil while it is dragged.
     let dial: Double?
-    /// The song playing, which the list leaves out. The next one could be
-    /// further down the list, and Play would then start the station afresh
-    /// rather than play what is shown (RadioController.start(_:preview:from:)):
-    /// so the list is chosen again. Not left to the library: a skip does not
-    /// move it, and a song heard to the end only half a minute later.
-    let playing: ItemID?
+    // Not the song playing: the list stays as shown while songs play
+    // (RadioController.shownPages), and Play on it with that song further
+    // down plays the list without it (start(_:preview:from:)).
     let isOnAir: Bool
 }
 

@@ -53,8 +53,10 @@ final class RadioController {
     /// AccountFiles), so they are there after a relaunch and a switch back.
     private(set) var recentStations: [Station] = []
     /// Moves whenever what a station's preview is chosen from changes (the
-    /// library's snapshot, the graph): a station's page then chooses its
-    /// list again, rather than show one that Play would no longer play.
+    /// library's snapshot, the graph): a station's page then asks for its
+    /// list again, and gets the one it shows unless the songs to choose
+    /// from changed (`shownPages`). Play on a list chosen before it moved
+    /// plays it all the same, with a session made then for what follows.
     private(set) var previewInputs = 0
     /// What the listener plays at this hour, for Your Station's card (and
     /// CarPlay's first row, and Linux's): "Weekday mornings: Jazz and Folk".
@@ -132,6 +134,17 @@ final class RadioController {
     /// The draw New Picks made for a station, by station id, while the app
     /// runs (`pageSeed(for:)`).
     @ObservationIgnored private var pageSeeds: [String: UInt64] = [:]
+    /// The list each station's page shows, by station id, with what it was
+    /// chosen from: asked again, `preview` gives it back as it was. "er zit
+    /// ook een bug in discovery, elke keer als je een nummer aanklikt
+    /// wisselt alles" (the photographer, 24 November 2026): the page chose
+    /// again whenever `previewInputs` moved (a round of AcousticBrainz,
+    /// Last.fm's graph, the play counts half a minute after a song), and
+    /// then without the song just clicked and what was heard lately, so
+    /// Discovery, new songs only, showed a wholly other list. Only New
+    /// Picks (another seed), the dial, or other songs to choose from (the
+    /// library's own, or offline the phone's) choose again.
+    @ObservationIgnored private var shownPages: [String: ShownPage] = [:]
     /// The library's songs that are on the phone, as a snapshot, with what
     /// it was made from: made again only when one of those moved.
     @ObservationIgnored private var onPhone: OnPhoneSnapshot?
@@ -600,18 +613,24 @@ final class RadioController {
     /// library, taste, graph, dial, and what was heard lately, the song
     /// playing now too), only more of them. The session that chose them is
     /// kept, so `start(_:preview:from:)` plays these and no others. The
-    /// same `randomSeed` with the same library gives the same songs: a page
-    /// chooses with its station's draw (`pageSeed(for:)`), so a list chosen
-    /// again because the library or the graph moved, or the page opened
-    /// again, stays much as it was; New Picks is a new seed, another list as
-    /// near the station.
+    /// same `randomSeed` with the same songs to choose from and the same
+    /// dial gives the list the page has shown, as it was (`shownPages`): a
+    /// page chooses with its station's draw (`pageSeed(for:)`), so the page
+    /// opened again, or asking again because the graph or a song played
+    /// moved, shows the list seen before; New Picks is a new seed, another
+    /// list as near the station.
     func preview(_ station: Station, count: Int = 25,
                  randomSeed: UInt64 = UInt64.random(in: 0...UInt64.max)) async -> [RadioPick] {
+        let inputs = startInputs(playingNow: player.currentTrack?.id)
+        let dial = inputs.settings.adventurousness
+        let songs = Self.songsKey(inputs.snapshot)
+        if let shown = shownPages[station.id], shown.randomSeed == randomSeed, shown.dial == dial, shown.songs == songs {
+            return shown.picks
+        }
         previewCount += 1
         let request = previewCount
         let slot = "\(station.id) \(randomSeed)"
         latestPreview[slot] = request
-        let inputs = startInputs(playingNow: player.currentTrack?.id)
         let stamp = previewInputs
         let (session, picks, index) = await Task.detached(priority: .userInitiated) {
             () async -> (RadioSession, [RadioPick], LibrarySnapshot) in
@@ -623,6 +642,7 @@ final class RadioController {
         // A newer one was asked for while this was chosen: that one is what
         // the page will show.
         guard latestPreview[slot] == request else { return picks }
+        shownPages[station.id] = ShownPage(randomSeed: randomSeed, dial: dial, songs: songs, picks: picks)
         previews[slot] = KeptPreview(station: station.id, request: request, picks: picks.map(\.id),
                                      session: session, index: index, inputs: stamp,
                                      adventurousness: inputs.settings.adventurousness)
@@ -721,6 +741,24 @@ final class RadioController {
     }
 
     private static let keptPreviewLimit = 4
+
+    /// A station's page's list and what it was chosen from (`shownPages`).
+    private struct ShownPage {
+        let randomSeed: UInt64
+        let dial: Double
+        let songs: Int
+        let picks: [RadioPick]
+    }
+
+    /// Which songs a snapshot has: the same for one made again for play
+    /// counts or Last.fm's tags. A number, not the snapshot, so a page
+    /// kept does not keep a library gone by.
+    private static func songsKey(_ snapshot: LibrarySnapshot) -> Int {
+        var hasher = Hasher()
+        hasher.combine(snapshot.tracks.count)
+        for track in snapshot.tracks { hasher.combine(track.id) }
+        return hasher.finalize()
+    }
 
     /// What a station's page showed, with the session that chose it.
     private struct KeptPreview {

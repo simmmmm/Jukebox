@@ -1473,8 +1473,10 @@ enum Pages {
         ])
         keep(art, on: raw(top), as: "art")
         let column = vbox([top, rule(), list.widget])
-        // The library, the graph or the dial moved: the list shown would no
-        // longer be the one played, so it is chosen again, by the same draw.
+        // The library or the graph moved: asked again, by the same draw. The
+        // radio gives back the list shown unless the songs to choose from
+        // changed (RadioController.shownPages): it stays as it is while
+        // songs from it play, until New Picks.
         observe(column) {
             _ = app.radio.previewInputs
             _ = app.radio.lastFMTrouble
