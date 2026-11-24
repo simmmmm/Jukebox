@@ -57,7 +57,7 @@ enum Shots {
             await step("02-radio", wait: 2)
             Pages.open(app.radio.station(for: .personal))
             await step("03-station", wait: 2)
-            MainWindow.select(3)
+            MainWindow.select(4)
             await step("04-albums", wait: 3)
             await hovering([gridCell()], "04b-albums-hover")
             let albums = app.library.albums(sortedBy: .artist)
@@ -90,7 +90,7 @@ enum Shots {
                 }
             }
             if let artist = app.library.artistsByName.first {
-                MainWindow.select(4)
+                MainWindow.select(5)
                 try? await Task.sleep(for: .seconds(2))
                 await hovering([gridCell()], "06a-artists-hover")
                 Pages.open(artist)
@@ -98,10 +98,10 @@ enum Shots {
                 // Under the fold: Similar artists and About, as the Mac's.
                 await scrolled(visiblePage(), to: 1, "06b-artist-end")
             }
-            MainWindow.select(5)
+            MainWindow.select(6)
             await step("07-songs", wait: 2)
             await picking()
-            MainWindow.select(6)
+            MainWindow.select(7)
             await step("08-playlists", wait: 2)
             await hovering([find(visiblePage(), { gtk_widget_has_css_class($0, "tile") != 0 })], "08a-playlists-hover")
             await playlistPicked()
@@ -112,7 +112,7 @@ enum Shots {
             SearchField.shared.clearRecents()
             gtk_widget_activate_action_variant(MainWindow.window, "app.search", nil)
             await step("08b-search-empty", wait: 2)
-            MainWindow.select(6)
+            MainWindow.select(7)
             try? await Task.sleep(for: .seconds(1))
             if let page = adw_navigation_view_get_visible_page(ptr(Nav.view)), let field = Nav.searchField(of: page) {
                 gtk_editable_set_text(ptr(field), "blue")
@@ -151,7 +151,7 @@ enum Shots {
                 app.panel.toggle(.upNext)
                 // Albums made before the panel opened: its tiles follow the
                 // narrower page (160 at a margin of 32 at 1440).
-                MainWindow.select(3)
+                MainWindow.select(4)
                 await step("10a-albums-panel", wait: 2)
                 Pages.open(albums.first { $0.name == "Quiet Rooms" } ?? album)
                 await step("10-album-up-next", wait: 2)
@@ -171,7 +171,7 @@ enum Shots {
                 app.player.play(tracks, startingAt: tracks.firstIndex { $0.id == song.id } ?? 0,
                                 context: QueueContext(.album(albumID), title: album.name))
                 app.panel.toggle(.lyrics)
-                MainWindow.select(3)
+                MainWindow.select(4)
                 Pages.open(album)
                 try? await Task.sleep(for: .seconds(2))
                 app.player.seek(to: 1.5)
@@ -267,13 +267,13 @@ enum Shots {
     /// Downloaded. What came is written to frames.txt: the songs, their
     /// files, and the file the player plays.
     private static func library(_ albums: [Album]) async {
-        MainWindow.select(8)
+        MainWindow.select(9)
         await step("18-genres", wait: 2)
         if let genre = app.library.genres.max(by: { app.library.albums(inGenre: $0).count < app.library.albums(inGenre: $1).count }) {
             Pages.open(genre)
             await step("19-genre", wait: 2)
         }
-        MainWindow.select(9)
+        MainWindow.select(10)
         await step("20-recently-added", wait: 2)
         var log = ""
         // One the keep has not fetched all of, so its ring shows on the way.
@@ -295,7 +295,7 @@ enum Shots {
             try? await Task.sleep(for: .seconds(1))
             await download(nil, reason: .mix(mix.id), log: &log)
         }
-        MainWindow.select(10)
+        MainWindow.select(11)
         await step("22-downloaded", wait: 3)
         await scrolled(visiblePage(), to: 1, "22b-downloaded-songs")
         // A downloaded song plays from its file.
@@ -394,7 +394,7 @@ enum Shots {
 
         // New Playlist…, named; its page, empty; Add Songs, two added; the
         // page again, with them; Delete Playlist from its ⋮, asked first.
-        MainWindow.select(6)
+        MainWindow.select(7)
         try? await Task.sleep(for: .seconds(1))
         if let new = find(visiblePage(), { icon(of: $0) == "list-add-symbolic" }) { gtk_widget_activate(new) }
         try? await Task.sleep(for: .seconds(0.5))
@@ -680,7 +680,7 @@ enum Shots {
         let settings = app.settings
         let before = settings.hiddenPages
         settings.hiddenPages = [.radio, .songs, .favorites, .genres, .recentlyAdded, .sidebarPlaylists]
-        MainWindow.select(3)
+        MainWindow.select(4)
         await step("23-pages-trimmed", wait: 2)
         settings.hiddenPages = Set(AppSettings.Page.allCases)
         await step("24-pages-none", wait: 2)
@@ -689,7 +689,7 @@ enum Shots {
         // nothing, its one line. The keep (turned off with it) on again
         // for the next size.
         app.offline.removeAll()
-        MainWindow.select(10)
+        MainWindow.select(11)
         await step("25-downloaded-empty", wait: 2)
         settings.keepSongs = true
     }
