@@ -29,6 +29,27 @@ if [[ -z ${JUKEBOX_REDACTED:-} ]]; then
   JUKEBOX_REDACTED=1 bash ci/app.sh "$@" 2>&1 | (unset GH_TOKEN ASC_KEY_P8 ASC_KEY_ID ASC_ISSUER_ID; bash ci/redact.sh -)
   exit "${PIPESTATUS[0]}"
 fi
+# One app job at a time on the MacBook, whichever of its runners took it: two
+# at once kept it at 100% CPU, and the simulators' own apps missed their
+# launch watchdog and crashed onto the photographer's screen ("1 want als
+# het steeds crashed ga je nog langzamer", 24 November 2026). The lock is a
+# directory with the holder's PID: one left by a cancelled job is taken over.
+if [[ ${RUNNER_ENVIRONMENT:-} == self-hosted && $(uname) == Darwin ]]; then
+  job_lock=/tmp/jukebox-app-job.lock
+  until mkdir "$job_lock" 2> /dev/null; do
+    holder=$(cat "$job_lock/pid" 2> /dev/null || true)
+    if [[ -n $holder ]] && kill -0 "$holder" 2> /dev/null; then
+      echo "Waiting for the other app job on this Mac (PID $holder) to finish."
+      sleep 20
+    else
+      sleep 2
+      holder=$(cat "$job_lock/pid" 2> /dev/null || true)
+      [[ -n $holder ]] && kill -0 "$holder" 2> /dev/null || rm -rf "$job_lock"
+    fi
+  done
+  echo $$ > "$job_lock/pid"
+  trap '[[ $(cat "$job_lock/pid" 2> /dev/null) == "$$" ]] && rm -rf "$job_lock"; bash ci/redact.sh build/logs "${GITHUB_STEP_SUMMARY:-}" || true' EXIT
+fi
 # The App Store Connect key only for a run that uploads, from main or a
 # "-testflight" branch: every other run, and everything it starts (the
 # tree's scripts, XcodeGen, xcodebuild's phases), never has it. First, so
