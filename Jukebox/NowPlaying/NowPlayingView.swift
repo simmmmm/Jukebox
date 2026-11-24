@@ -377,7 +377,7 @@ struct NowPlayingView: View {
     /// rather than scroll by). The room counts one line of each, 48 and 24,
     /// and the rest hangs below, so a title that wraps does not lift the
     /// sleeve from one song to the next. "Lossless" ends the byline, as it
-    /// ends the artist's line everywhere else (ArtistLine).
+    /// ends the artist's line in the bar (ArtistLine).
     private var roomTitle: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let track = currentTrack {
@@ -682,26 +682,28 @@ struct NowPlayingView: View {
     }
 
     /// The artist's name, which goes to the artist when the library knows
-    /// them; "Lossless" after it while the song is heard so (ArtistLine).
+    /// them. Here without "Lossless": on this Now Playing it stands between
+    /// the scrubber's times again (controls), "hier mag ie weer staan waar
+    /// die al stond" (the photographer, 24 November 2026).
     @ViewBuilder private func artistLine(_ font: Font) -> some View {
         if let track = currentTrack, !track.artistLine.isEmpty {
-            ArtistLine(spoken: track.artistLine) {
-                if let found = libraryArtist(for: track) {
-                    Button {
-                        navigator.open(.artist(found))
-                    } label: {
-                        Text(track.artistLine)
-                            .lineLimit(1)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Opens the artist")
-                } else {
+            if let found = libraryArtist(for: track) {
+                Button {
+                    navigator.open(.artist(found))
+                } label: {
                     Text(track.artistLine)
+                        .font(font)
+                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
+                .buttonStyle(.plain)
+                .accessibilityHint("Opens the artist")
+            } else {
+                Text(track.artistLine)
+                    .font(font)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
-            .font(font)
-            .foregroundStyle(.secondary)
         }
     }
 
@@ -799,6 +801,21 @@ struct NowPlayingView: View {
     private var controls: some View {
         VStack(spacing: 0) {
             NowPlayingScrubber()
+                // "Lossless" between the two times, where Music says it, in
+                // the times' own small type: a fact of the sound in the room
+                // the times leave, so nothing moves when it comes or goes.
+                // Beside the scrubber, not in it, so VoiceOver hears it
+                // (PlayQueue.playsLossless). Back here from after the artist:
+                // "hier mag ie weer staan waar die al stond" (the
+                // photographer, 24 November 2026).
+                .overlay(alignment: .bottom) {
+                    if player.playsLossless {
+                        Text("Lossless")
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
                 .padding(.top, Theme.Space.l)
             transport
                 .padding(.vertical, Theme.Space.s)

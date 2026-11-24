@@ -270,19 +270,24 @@ asked. Open on a song without, they give way to the sleeve or Up Next; no
 - GNOME: `PlayerBar.swift`, `Panel.swift` (`songHasNoLyrics`).
 
 ### Lossless
-"· Lossless" right after the playing song's artist, wherever that line is,
-while the song is heard as its lossless file is (`PlayQueue.playsLossless`):
-"als originals lossless zijn dat we dat tonen als je gaat streamen" (24
-November 2026), then "als heel klein labeltje achter de artiestnaam ... met
-een bullet ertussen" (TestFlight 535, the same day). The line's own size
-and ink, the word in small caps, medium weight; no pill, no colour, no
-icon. The artist ends in "…" first, the label never. Once a view: not
-under the times, not on a line of its own. VoiceOver and Orca read the line
-as "Artist, Lossless". On a station the iPhone's mini player has the
-station in the artist's place, so the label follows the station.
+"Lossless" while the playing song is heard as its lossless file is
+(`PlayQueue.playsLossless`): "als originals lossless zijn dat we dat tonen
+als je gaat streamen" (24 November 2026). After the artist with a bullet
+between, "als heel klein labeltje achter de artiestnaam ... met een bullet
+ertussen" (TestFlight 535, the same day): small caps, medium weight, one
+small size; no pill, no colour, no icon. The artist ends in "…" first, the
+label never. VoiceOver and Orca read the line as "Artist, Lossless". On a
+station the iPhone's mini player has the station in the artist's place, so
+the label follows the station.
+
+The iPhone's Now Playing has it between the scrubber's two times instead,
+in the times' own type, and not after the artist there or over the lyrics
+and the queue: "hier mag ie weer staan waar die al stond voor de volgende
+versie" (the same day, of the big Now Playing; "top zo" of the mini player).
 - Apple: `ArtistLine` and `LosslessTag` (`NowPlayingParts.swift`): the
-  iPhone's mini player and Now Playing, the bar, the Mac's Mini Player;
-  Full Player wide ends its "Artist · Album" with it (`roomTitle`).
+  iPhone's mini player, the bar, the Mac's Mini Player; Full Player wide
+  ends its "Artist · Album" with it (`roomTitle`). The iPhone's Now
+  Playing: `controls`, over `NowPlayingScrubber`.
 - GNOME: `PlayerBar.losslessTag` and Style's `lossless`: the bar and the
   Mini Player; Full Player ends its byline with it, in markup.
 
