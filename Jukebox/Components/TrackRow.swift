@@ -41,7 +41,6 @@ struct TrackRow: View {
     @Environment(\.pickedTracks) private var pickedTracks
     @Environment(\.pickedPlace) private var pickedPlace
     @Environment(\.hidesVersion) private var hidesVersion
-    @State private var isHovered = false
 
     init(_ track: Track, leading: Leading = .artwork, subtitle: String? = nil, reason: PickReason? = nil,
          showsMenu: Bool = true, removal: (() -> Void)? = nil,
@@ -257,15 +256,9 @@ struct TrackRow: View {
         }
         .frame(minHeight: showsArtwork ? (reason == nil ? Tokens.Row.wideCovered : Tokens.Row.wideReason) : Tokens.Row.wideNumbered)
         .contentShape(.rect)
-        // The pointer over it: the whole row lit, 8 past its ends.
-        .background {
-            RoundedRectangle(cornerRadius: Theme.Space.s)
-                // Picked: a little more, as a selected row is; never the
-                // accent, which means on air.
-                .fill(Color.primary.opacity(!pickedTracks.isEmpty ? 0.1 : isHovered ? 0.07 : 0))
-                .padding(.horizontal, -Theme.Space.s)
-        }
-        .onHover { isHovered = $0 }
+        // The pointer over it: the whole row lit, 8 past its ends; picked,
+        // a little more, as a selected row is.
+        .pointerHover(.row, picked: !pickedTracks.isEmpty)
         .contextMenu {
             TrackMenu(track: track, removal: removal, picked: pickedTracks, pickedPlace: pickedPlace,
                       moveUp: moveUp, moveDown: moveDown)

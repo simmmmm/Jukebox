@@ -361,7 +361,7 @@ struct MoreMenu<Items: View>: View {
 
 /// A tile in a wide window, as Linux's (spec §8): the art as wide as the
 /// tile, 8, the name in 15 medium, a fact under it in 13 at 60%. The whole
-/// tile is lit under the pointer (TileHover).
+/// tile is lit under the pointer (PointerHover.tile).
 struct WideTile<Art: View>: View {
     let name: String
     var line: String?
@@ -383,26 +383,11 @@ struct WideTile<Art: View>: View {
             }
         }
         .contentShape(.rect)
-        .modifier(TileHover())
+        // The whole tile lit, 8 past it on every side, so the light sits
+        // on the tile: on Linux a hover that did not was "fucking raar"
+        // (the photographer, 14 November 2026).
+        .pointerHover(.tile)
         .accessibilityElement(children: .combine)
-    }
-}
-
-/// The pointer over a tile (the Mac's, the iPad's): the whole tile lit, 8
-/// past it on every side, its corners concentric with the art's, so the
-/// light sits on the tile — on Linux a hover that did not was "fucking
-/// raar" (the photographer, 14 November 2026).
-private struct TileHover: ViewModifier {
-    @State private var isHovered = false
-
-    func body(content: Content) -> some View {
-        content
-            .background {
-                RoundedRectangle(cornerRadius: Theme.Radius.artwork + Theme.Space.s)
-                    .fill(Color.primary.opacity(isHovered ? 0.07 : 0))
-                    .padding(-Theme.Space.s)
-            }
-            .onHover { isHovered = $0 }
     }
 }
 

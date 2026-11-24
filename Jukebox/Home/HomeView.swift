@@ -193,6 +193,9 @@ struct HomeCardButtonStyle: ButtonStyle {
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .contentShape(.rect)
+            // Under the pointer its ground a little darker, as Linux's
+            // home-card.
+            .pointerHover(.card)
             .opacity(configuration.isPressed ? 0.7 : 1)
     }
 }
@@ -735,6 +738,10 @@ private struct HomePlayedRow: View {
                 row(title: album.name, detail: album.artistLine) {
                     ArtworkView(album.artwork, size: Self.artSide, sleeve: TitleSleeve.Words(album: album))
                 }
+                // Wide, a tile under the pointer, as Linux's row is one
+                // (Pages.latelyRows): "ik mis de hover states hier" (the
+                // photographer, 24 November 2026).
+                .modifier(LatelyHover(isWide: isWide))
             }
             .buttonStyle(.plain)
             .contextMenu {
@@ -784,6 +791,20 @@ private struct HomePlayedRow: View {
         .padding(.leading, isWide ? 0 : Theme.margin)
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
+    }
+}
+
+/// Played lately's wide row lit as a tile (PointerHover.tile); the
+/// iPhone's rows, on the margin, as they are.
+private struct LatelyHover: ViewModifier {
+    let isWide: Bool
+
+    func body(content: Content) -> some View {
+        if isWide {
+            content.pointerHover(.tile)
+        } else {
+            content
+        }
     }
 }
 

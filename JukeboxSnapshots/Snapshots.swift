@@ -90,10 +90,11 @@ private struct Round {
             let prefix = dark ? "" : "light-"
             let appearance = NSAppearance(named: dark ? .darkAqua : .aqua)
             var number = 0
-            func shot(_ name: String, settle: Double = 1.5, _ set: () -> Void) async {
+            func shot(_ name: String, settle: Double = 1.5, pointerAt: [CGPoint] = [], _ set: () -> Void) async {
                 number += 1
                 set()
                 let view = WideShell().snapshotEnvironment(app, panel: panel)
+                    .environment(\.pointerAt, pointerAt)
                 await render(view, size: size, appearance: appearance, settle: settle,
                              as: String(format: "%@%02d-%@", prefix, number, name))
             }
@@ -152,6 +153,25 @@ private struct Round {
                     .snapshotEnvironment(app, panel: panel)
                 await render(view, size: settingsSize, appearance: appearance, settle: 1,
                              as: String(format: "%@%02d-settings-%@", prefix, number, page.rawValue))
+            }
+            // The pointer's light (PointerHover), where no pointer comes:
+            // what lies under these points is drawn as under the pointer
+            // ("ik mis de hover states hier", the photographer, 24
+            // November 2026). Home with the panel open: a mix's tile, the
+            // second of Played lately, the card going on with the music, the
+            // second song of Up Next; then an album's third song and Up
+            // Next's fourth. Last, so the pictures before keep their numbers.
+            await shot("home-hover", settle: 2,
+                       pointerAt: [CGPoint(x: 360, y: 420), CGPoint(x: 400, y: 725),
+                                   CGPoint(x: 480, y: 175), CGPoint(x: 1250, y: 204)]) {
+                app.navigator.isNowPlayingPresented = false
+                panel.content = .upNext
+                panel.isOpen = true
+                app.navigator.place = .home
+            }
+            await shot("album-hover", pointerAt: [CGPoint(x: 600, y: 424), CGPoint(x: 1250, y: 300)]) {
+                app.navigator.place = .library(.albums)
+                if let album = album(named: "Dust Parades", in: app) { app.navigator.open(.album(album)) }
             }
         }
         // The song made ready, let go again.

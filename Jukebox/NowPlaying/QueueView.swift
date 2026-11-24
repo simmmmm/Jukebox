@@ -287,13 +287,11 @@ struct QueueView: View {
         case let .song(entry, number, style, playing, words):
             QueuePanelRow(entry: entry, number: number, style: style, playing: playing, words: words)
                 .contentShape(.rect)
-                // Picked: lit as a page's picked rows (TrackRow), never the
-                // accent, which means on air.
-                .background {
-                    RoundedRectangle(cornerRadius: Theme.Space.s)
-                        .fill(Color.primary.opacity(item.isUpcoming && panelPicks.contains(i) ? 0.1 : 0))
-                        .padding(.horizontal, -Theme.Space.s)
-                }
+                // Lit under the pointer and picked as a page's rows
+                // (TrackRow), never the accent, which means on air: "ik mis
+                // de hover states hier" (the photographer, 24 November
+                // 2026, of the songs under the panel's head).
+                .pointerHover(.row, picked: item.isUpcoming && panelPicks.contains(i))
                 // The iPad's list swipes as the iPhone's; on a Mac a
                 // trackpad's two fingers do.
                 .modifier(RemoveSwipe(isOn: !playing && style != .played) { remove(entry) })

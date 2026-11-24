@@ -123,6 +123,10 @@ Content on the ground, parted by hairlines. A song's row is as tall as
 heb ik t idee dat nummers nu wel erg veel padding boven en onder
 krijgen", 21 November 2026); wide 48, 64 with a cover. The song playing
 in the accent. Songs are picked with Ctrl and Shift wide, in Up Next too.
+Under the pointer what opens or plays lights with the text's colour at 7 %,
+never the accent: a row 8 past its ends, a tile (and Played lately's rows)
+8 past it on every side at 14, Home's cards a step darker; picked rows 10 %
+("ik mis de hover states hier", 24 November 2026).
 
 An album's songs carry the file's own track number, on its disc, under
 "Disc 1", "Disc 2" when the album has more than one; a version filter
@@ -132,7 +136,8 @@ nummers tellen nu gewoon op terwijl ze eigenlijk gematched zouden moeten
 zijn met hoeveelste nummer het is op t album of welke cd", 22 November
 2026; `AlbumNumbers`, JukeboxKit). Parts of one album the server split are
 its discs (`AlbumMerge`). Up Next numbers by place in the queue.
-- Apple: `TrackRow` (`Components/TrackRow.swift`), `Hairline`; the iPhone
+- Apple: `TrackRow` (`Components/TrackRow.swift`), `Hairline`,
+  `.pointerHover` (`Components/PointerHover.swift`); the iPhone
   adds a "…" on each row, as touch has no secondary click, and its lists
   put `.trackListRow()` on each song's row.
 - GNOME: `TrackRow`, `trackList` (`Parts.swift`), `listview.rows`.

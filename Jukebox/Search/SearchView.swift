@@ -130,6 +130,9 @@ struct SearchView: View {
                         // 40 a row, as Linux's.
                         .frame(maxWidth: .infinity, minHeight: 40, alignment: .leading)
                         .contentShape(.rect)
+                        // Lit 8 past the margin under the pointer, as
+                        // Linux's flat button.recent.
+                        .pointerHover(.row)
                 }
                 .buttonStyle(.plain)
                 .contextMenu {
