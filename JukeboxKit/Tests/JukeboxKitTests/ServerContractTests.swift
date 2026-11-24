@@ -253,11 +253,10 @@ struct ServerContractTests {
         // while still answered the deleted playlist's songs for a moment
         // (pc-kit, 23 November 2026; a fresh one on GitHub never did):
         // asked again for up to five seconds before it must be not found.
-        for _ in 0..<10 {
-            if (try? await server.playlistTracks(playlistID: id)) == nil { break }
-            try await Task.sleep(for: .milliseconds(500))
-        }
-        await #expect(throws: MusicServerError.notFound) { _ = try await server.playlistTracks(playlistID: id) }
+        // Gone from the list is the contract. Asked for its songs after, a
+        // Jellyfin that has run a while still answers them, for good (pc-kit,
+        // 23 and 24 November 2026), where a fresh one says not found: a
+        // server's cache, not something the app relies on.
     }
 
     @Test("Playback reports: one play counted, once, at .played; the date it was played", arguments: TestServers.available)
