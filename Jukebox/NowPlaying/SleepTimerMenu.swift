@@ -90,32 +90,36 @@ struct MoreGlyph: View {
 /// the menu, not in its label: the Mac draws a menu's label once).
 struct SleepTimerMenu: View {
     let player: PlayQueue
+    /// The words' font: the time left, or what it waits for.
     let font: Font
-    let ink: Color
-    let side: CGFloat
 
     var body: some View {
-        HStack(spacing: 0) {
+        let runs = player.sleepChoice != nil
+        HStack(spacing: Theme.Space.s) {
             if let left = Self.left(player.sleepDeadline) {
                 Text(timerInterval: left, countsDown: true)
                     .font(font)
                     .monospacedDigit()
-                    .foregroundStyle(ink)
+                    .foregroundStyle(.white)
             } else if let choice = player.sleepChoice, player.sleepDeadline == nil {
                 // What it waits for: "End of Album".
                 Text(player.sleepTitle(choice))
                     .font(font)
-                    .foregroundStyle(ink)
+                    .foregroundStyle(.white)
             }
+            // A quiet square, as Close and ⋮; filled while it runs, as the
+            // version filter is while a kind is off (Linux's square.on).
             Menu {
                 SleepTimerPicker(player: player)
             } label: {
-                Image(systemName: player.sleepChoice == nil ? "moon" : "moon.fill")
-                    .font(font)
-                    .foregroundStyle(ink)
-                    .frame(width: side, height: side)
-                    .contentShape(.rect)
+                Image(systemName: runs ? "moon.fill" : "moon")
+                    .foregroundStyle(runs ? Theme.onAccent : Theme.quietInk)
+                    .quietSquare(filled: runs)
             }
+            .menuStyle(.button)
+            .buttonStyle(.plain)
+            .menuIndicator(.hidden)
+            .fixedSize()
             .accessibilityLabel("Sleep Timer")
             .accessibilityIdentifier("nowPlaying.sleepTimer")
         }
