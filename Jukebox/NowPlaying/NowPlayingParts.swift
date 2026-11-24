@@ -303,13 +303,14 @@ struct ArtistLine<Artist: View>: View {
 /// in small caps, so it reads as a label set on a sleeve's back, not a pill
 /// or a colour (tells.md 1, 6). Linux's is Style's `lossless`.
 struct LosslessTag: View {
-    @Environment(\.font) private var font
-
     var body: some View {
         HStack(alignment: .firstTextBaseline, spacing: Theme.Space.xs) {
             Text(verbatim: "·")
+            // One small size wherever it stands: at the line's own size it
+            // came out large and bold on Now Playing's title3 line, and he
+            // asked for "heel klein labeltje" (24 November 2026).
             Text("Lossless")
-                .font((font ?? .body).smallCaps().weight(.medium))
+                .font(.caption.smallCaps().weight(.medium))
         }
         .lineLimit(1)
         .fixedSize()
