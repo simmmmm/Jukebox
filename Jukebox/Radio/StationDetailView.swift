@@ -314,13 +314,11 @@ struct StationDetailView: View {
                 // them, and the list would have the same song twice. No
                 // reasons under them: the radio's reasons are the queue's.
                 ForEach(Array(picks.enumerated()), id: \.offset) { index, pick in
-                    Button {
-                        Stats.track(.stationPage, ["action": "row"])
-                        play(from: index)
-                    } label: {
-                        TrackRow(pick.track, subtitle: pick.track.artistLine)
-                    }
-                    .buttonStyle(.plain)
+                    TrackRow(pick.track, subtitle: pick.track.artistLine)
+                        .songRowClicks {
+                            Stats.track(.stationPage, ["action": "row"])
+                            play(from: index)
+                        }
                     .trackListRow(!isWide)
                     .accessibilityHint("Plays the station from this song")
                 }
@@ -356,12 +354,8 @@ struct StationDetailView: View {
             if !upNext.isEmpty {
                 heading("Up next")
                 ForEach(upNext) { entry in
-                    Button {
-                        player.skip(to: entry)
-                    } label: {
-                        TrackRow(entry.track, subtitle: entry.track.artistLine)
-                    }
-                    .buttonStyle(.plain)
+                    TrackRow(entry.track, subtitle: entry.track.artistLine)
+                        .songRowClicks { player.skip(to: entry) }
                     .trackListRow(!isWide)
                     .accessibilityHint("Plays this song")
                 }

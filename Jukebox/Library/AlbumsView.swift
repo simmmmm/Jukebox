@@ -361,16 +361,14 @@ struct AlbumDetailView: View {
     }
 
     private func row(_ track: Track, in tracks: [Track], numbers: [ItemID: Int], album shown: Album) -> some View {
-        Button {
-            guard !player.refusesOffline(track) else { return }
-            let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
-            play(tracks, from: i, album: shown, shuffled: false)
-        } label: {
-            // The file's own number on its disc (AlbumNumbers).
-            TrackRow(track, leading: .number(numbers[track.id]), subtitle: Self.subtitle(of: track, on: shown))
-        }
-        .buttonStyle(.plain)
-        .trackListRow()
+        // The file's own number on its disc (AlbumNumbers).
+        TrackRow(track, leading: .number(numbers[track.id]), subtitle: Self.subtitle(of: track, on: shown))
+            .songRowClicks {
+                guard !player.refusesOffline(track) else { return }
+                let i = tracks.firstIndex(where: { $0.id == track.id }) ?? 0
+                play(tracks, from: i, album: shown, shuffled: false)
+            }
+            .trackListRow()
     }
 
     private func footer(_ shown: Album, tracks: [Track]) -> some View {

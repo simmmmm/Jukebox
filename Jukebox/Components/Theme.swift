@@ -395,15 +395,15 @@ extension ButtonStyle where Self == ActionButtonStyle {
 /// A page's row: Play and Shuffle as a pair, the same size, on every page
 /// that has them (an album's, an artist's, a playlist's, a genre's, a
 /// mix's), on the iPhone and on a wide page. Start Radio is in the page's
-/// "…", as Linux has it. Wide, 16 apart, as Linux's head.
+/// "…", as Linux has it. 8 apart, as every gap in the row: "kan je die de
+/// kleine maken op linux en apple gelijk" (the photographer, 24 November
+/// 2026).
 struct PagePlayButtons: View {
     let play: () -> Void
     var shuffle: (() -> Void)?
 
-    @Environment(\.isWide) private var isWide
-
     var body: some View {
-        HStack(spacing: isWide ? Theme.Space.l : Theme.Space.m) {
+        HStack(spacing: Theme.Space.s) {
             Button(action: play) {
                 Text("Play")
             }

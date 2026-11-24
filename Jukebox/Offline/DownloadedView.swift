@@ -134,12 +134,10 @@ struct DownloadedView: View {
             if !kept.isEmpty {
                 Section {
                     ForEach(kept) { track in
-                        Button {
-                            play(track, in: kept)
-                        } label: {
-                            TrackRow.standard(track)
-                        }
-                        .buttonStyle(.plain)
+                        TrackRow.standard(track)
+                            .songRowClicks {
+                                play(track, in: kept)
+                            }
                         .trackListRow()
                     }
                 } header: {

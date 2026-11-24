@@ -445,9 +445,17 @@ final class TrackRow {
                 else if extend { picked.picks.click(self.position, .extend) }
                 else { picked.picks.plain(self.position) }
             }
-            observe(widget) { [weak self] in
-                _ = picked.picks
-                self?.markPicked()
+            // Watched from the loop's next turn: a row is made while its
+            // page is made in an `observe` (Favorites, Search), and a watch
+            // begun inside another is that one's too. Begun at once, every
+            // click made the page anew under the pointer, and a double-click
+            // never played.
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                observe(self.widget) { [weak self] in
+                    _ = picked.picks
+                    self?.markPicked()
+                }
             }
         }
     }
@@ -467,7 +475,7 @@ final class TrackRow {
     /// libadwaita's selected rows are.
     func markPicked() {
         guard let picked, let row = gtk_widget_get_parent(widget) else { return }
-        if picked.picks.contains(position) { gtk_widget_add_css_class(row, "picked") }
+        if picked.shown.contains(position) { gtk_widget_add_css_class(row, "picked") }
         else { gtk_widget_remove_css_class(row, "picked") }
     }
 
@@ -502,7 +510,8 @@ func guests(_ track: Track, besides albumArtist: String? = nil) -> String {
     return track.artists.flatMap { $0.name.components(separatedBy: "; ") }.filter { !own.contains($0) }.joined(separator: ", ")
 }
 
-/// Songs as a list that plays from the song clicked, as `context`.
+/// Songs as a list that plays from the song double-clicked (or Enter on
+/// it), as `context`; a click picks (TrackPicks).
 /// Shift+F10 or the Menu key opens the focused song's menu, as a click with
 /// the secondary button does.
 ///
@@ -535,6 +544,7 @@ func trackList(_ tracks: [Track], numbers: ((Track) -> Int?)? = nil, queue: (() 
         return items
     }
     let list = ItemList<Track, TrackRow>(
+        singleClick: false,
         make: {
             let row = TrackRow(numbered: numbers != nil, picked: picked)
             if let move { reorderable(row) { if canMove() { move($0, $1) } } }
@@ -565,7 +575,9 @@ func trackList(_ tracks: [Track], numbers: ((Track) -> Int?)? = nil, queue: (() 
             }
         })
     made = list
-    list.willSet = { picked.picks.clear() }
+    // Cleared only when something is picked: even an empty clear is a
+    // read of the picks, and the page making the list would watch them.
+    list.willSet = { if !picked.shown.isEmpty { picked.picks.clear() } }
     keep(picked, on: raw(list.widget), as: "picked")
     list.widget.css("rows")
     onFocusedRow(of: list.widget, "<Shift>F10|Menu") { row in
@@ -587,7 +599,13 @@ func trackList(_ tracks: [Track], numbers: ((Track) -> Int?)? = nil, queue: (() 
 /// and what the list does with them all (`place`: Move to Top, Move to
 /// Bottom, Remove from Playlist), first.
 @Observable final class PickedRows {
-    var picks = TrackPicks()
+    var picks = TrackPicks() { didSet { shown = picks } }
+    /// The picks, read without being watched. A row reads them as it is
+    /// filled, often while a page is being made in an `observe`; read as
+    /// `picks`, every click (a plain one forgets them) made the page again,
+    /// the row under the pointer with it, and a double-click never played
+    /// (as Up next found, 24 November 2026).
+    @ObservationIgnored private(set) var shown = TrackPicks()
     let items: () -> [Track]
     @ObservationIgnored var place: (TrackPicks) -> [(String, () -> Void)] = { _ in [] }
     init(_ items: @escaping () -> [Track]) { self.items = items }
