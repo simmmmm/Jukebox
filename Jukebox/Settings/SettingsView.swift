@@ -429,8 +429,16 @@ private struct SettingsPlaybackSection: View {
                 Picker("Wi-Fi Streaming", selection: shown($settings.wifiQuality)) {
                     qualityOptions()
                 }
-                Picker("Cellular Streaming", selection: shown($settings.cellularQuality)) {
-                    qualityOptions(withCost: true)
+                // The hour's cost under the name, not beside the choice:
+                // there it took a line of its own on the iPhone ("als het
+                // niet past in de native dropdown van apple moet je er maar
+                // een eigen design van maken", the photographer, 24
+                // November 2026).
+                Picker(selection: shown($settings.cellularQuality)) {
+                    qualityOptions()
+                } label: {
+                    SettingsDetailLabel(title: "Cellular Streaming",
+                                        detail: "\(settings.cellularQuality.shown(opus: opus).hourCost)")
                 }
             }
             // The pickers' quality is the target (QualitySteps); Linux's words.
