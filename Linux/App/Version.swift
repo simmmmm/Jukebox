@@ -5,4 +5,4 @@
 // parity weer" (the photographer, 21 November 2026). dev/linux-build.sh
 // stops when the two differ.
 
-let appVersion = "1.3"
+let appVersion = "1.4"
