@@ -212,7 +212,17 @@ mac_settings() {
   if [[ -f $wallpaper_store ]]; then cp "$wallpaper_store" "$work/wallpaper-Index.plist"; fi
   mac_saved=true
 }
-trap 'stop_server; restore_mac' EXIT
+# This run's simulators shut down however it ends: a cancelled run left an
+# iPad booted with the app still playing on the MacBook ("ik hoor nogsteeds
+# muziek hoor", 24 November 2026).
+shut_sims() {
+  local var
+  for var in udid_iphone udid_ipad udid_ipad11; do
+    [[ -n ${!var:-} ]] && { bounded 60 xcrun simctl shutdown "${!var}" > /dev/null 2>&1 || true; }
+  done
+  drop_boot_lock 2> /dev/null || true
+}
+trap 'shut_sims; stop_server; restore_mac' EXIT
 # The watchdog's TERM (ci/app.sh) ends the round through the EXIT trap too.
 trap 'exit 143' TERM INT
 # jq reads simctl's and the results' JSON below; the runner has it.
