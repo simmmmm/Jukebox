@@ -320,7 +320,8 @@ private extension View {
     /// The app's stores and its tint, as JukeboxApp's appEnvironment hands
     /// them to each window (that one is private to the app's file).
     func snapshotEnvironment(_ app: AppModel, panel: PanelState) -> some View {
-        environment(app)
+        modifier(PlayingTint())
+            .environment(app)
             .environment(app.navigator)
             .environment(app.settings)
             .environment(app.library)
@@ -331,6 +332,5 @@ private extension View {
             .environment(app.offline)
             .environment(app.handoff)
             .environment(panel)
-            .tint(Theme.accent)
     }
 }
