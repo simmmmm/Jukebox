@@ -212,7 +212,17 @@ mac_settings() {
   if [[ -f $wallpaper_store ]]; then cp "$wallpaper_store" "$work/wallpaper-Index.plist"; fi
   mac_saved=true
 }
-trap 'stop_server; restore_mac' EXIT
+# This run's simulators shut down however it ends: a cancelled run left an
+# iPad booted with the app still playing on the MacBook ("ik hoor nogsteeds
+# muziek hoor", 24 November 2026).
+shut_sims() {
+  local var
+  for var in udid_iphone udid_ipad udid_ipad11; do
+    [[ -n ${!var:-} ]] && { bounded 60 xcrun simctl shutdown "${!var}" > /dev/null 2>&1 || true; }
+  done
+  drop_boot_lock 2> /dev/null || true
+}
+trap 'shut_sims; stop_server; restore_mac' EXIT
 # The watchdog's TERM (ci/app.sh) ends the round through the EXIT trap too.
 trap 'exit 143' TERM INT
 # jq reads simctl's and the results' JSON below; the runner has it.
@@ -682,18 +692,29 @@ snapshots_round() {
 # is atomic. A lock older than 15 minutes is a cancelled run's, and is taken.
 boot_lock=/tmp/jukebox-simulator-boot.lock
 take_boot_lock() {
-  local waited=0
+  local waited=0 holder
   until mkdir "$boot_lock" 2> /dev/null; do
-    if [[ -n $(find "$boot_lock" -maxdepth 0 -mmin +15 2> /dev/null) ]]; then
-      rmdir "$boot_lock" 2> /dev/null || true
-      continue
+    # A holder that is gone (a cancelled run) leaves its lock: taken over at
+    # once, not after a wait (run 45472090678 waited 15 minutes on one).
+    holder=$(cat "$boot_lock/pid" 2> /dev/null || true)
+    if [[ -z $holder ]] || ! kill -0 "$holder" 2> /dev/null; then
+      sleep 2
+      holder=$(cat "$boot_lock/pid" 2> /dev/null || true)
+      if [[ -z $holder ]] || ! kill -0 "$holder" 2> /dev/null; then
+        rm -rf "$boot_lock"
+        continue
+      fi
     fi
     sleep 5
     waited=$((waited + 5))
     (( waited >= 900 )) && { problem "another runner held the simulator boot for 15 minutes"; return 1; }
   done
+  echo $$ > "$boot_lock/pid"
 }
-drop_boot_lock() { rmdir "$boot_lock" 2> /dev/null || true; }
+drop_boot_lock() {
+  [[ $(cat "$boot_lock/pid" 2> /dev/null) == "$$" ]] && rm -rf "$boot_lock"
+  return 0
+}
 
 # SpringBoard up and staying up: a broken boot crashes it in a loop, so it is
 # looked at twice, 10 s apart.
