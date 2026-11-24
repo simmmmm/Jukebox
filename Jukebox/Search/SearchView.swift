@@ -338,12 +338,10 @@ private struct SearchResultsList: View {
             if !results.tracks.isEmpty {
                 Section {
                     ForEach(results.tracks) { track in
-                        Button {
-                            startStation(from: track)
-                        } label: {
-                            TrackRow.standard(track)
-                        }
-                        .buttonStyle(.plain)
+                        TrackRow.standard(track)
+                            .songRowClicks {
+                                startStation(from: track)
+                            }
                         .trackListRow()
                     }
                 } header: {

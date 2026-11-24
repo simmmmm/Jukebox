@@ -417,14 +417,12 @@ struct PlaylistDetailView: View {
 
             if let entries = rows {
                 ForEach(entries) { entry in
-                    Button {
-                        guard !player.refusesOffline(entry.track) else { return }
-                        let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
-                        play(tracks, from: i, playlist: shown, shuffled: false)
-                    } label: {
-                        TrackRow.standard(entry.track)
-                    }
-                    .buttonStyle(.plain)
+                    TrackRow.standard(entry.track)
+                        .songRowClicks {
+                            guard !player.refusesOffline(entry.track) else { return }
+                            let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
+                            play(tracks, from: i, playlist: shown, shuffled: false)
+                        }
                     .trackListRow()
                 }
                 .onDelete(perform: deleteAction(shown, rows: entries))

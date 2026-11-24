@@ -451,7 +451,8 @@ final class TrackRow {
             // click made the page anew under the pointer, and a double-click
             // never played.
             Task { @MainActor [weak self] in
-                observe(widget) {
+                guard let self else { return }
+                observe(self.widget) { [weak self] in
                     _ = picked.picks
                     self?.markPicked()
                 }

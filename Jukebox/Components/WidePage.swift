@@ -529,7 +529,7 @@ extension View {
 }
 
 /// What the keys held make a click on a song's row (TrackPicks): on the
-/// Mac, read as the click comes, ⌘ one more, ⇧ a run; nil plays. Not on the
+/// Mac, read as the click comes, ⌘ one more, ⇧ a run; nil a plain click. Not on the
 /// iPad: iOS gives SwiftUI no keys held (onModifierKeysChanged and a
 /// gesture's `modifiers` are the Mac's only, CI, 19 November 2026).
 func heldPick() -> TrackPicks.Click? {
@@ -563,6 +563,8 @@ extension View {
         contentShape(.rect)
             .onTapGesture { pick() }
             .simultaneousGesture(TapGesture(count: 2).onEnded { play() })
+            // One element, as the Button it was, with the play as its action.
+            .accessibilityElement(children: .combine)
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { play() }
         #else
