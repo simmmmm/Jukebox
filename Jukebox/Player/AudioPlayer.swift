@@ -67,6 +67,11 @@ final class AudioPlayer: PlayQueue {
         nowPlaying = NowPlayingInfo()
         super.init(settings: settings, history: history)
         engine.actionAtItemEnd = .advance
+        // The screenshot walks play the demo's tones to picture a song on
+        // air; muted, so the simulator on the MacBook plays nothing out loud
+        // ("zorg jij of xcode of de ci's runs voor een soort wachtmuziek op
+        // mijn macbook?", the photographer, 24 November 2026).
+        engine.isMuted = UserDefaults.standard.bool(forKey: "silentWalk")
         // AirPlay as a route for the sound, streamed from this device, so
         // the session stays here and the receiver never fetches the song
         // itself. Jukebox has no video, so nothing needs the external kind.
