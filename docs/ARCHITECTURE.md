@@ -250,11 +250,13 @@ A station's page plays the list it shows. It asks
   before. New Picks draws another (`radio.drawPageSeed(for:)`).
 - Lists are kept by station and draw, so one station's page on two tabs
   each plays its own.
-- A newer library, graph or dial makes the kept list stale
-  (`radio.previewInputs` moves; the page chooses again, same seed). It also
-  chooses again when another song plays, as the list leaves out the one
-  playing.
-- A stale or unknown list starts the station afresh.
+- The list shown stays while songs play, from it or not, until New Picks:
+  asked again, `preview` gives it back (`shownPages`, by station, draw,
+  dial and the songs to choose from). Only the dial, or other songs in the
+  library (offline, on the phone), choose again.
+- A list whose session is stale (`radio.previewInputs` moved) or spent
+  still plays as shown from the song clicked; a session made then chooses
+  what follows.
 
 ## Jellyfin
 

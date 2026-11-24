@@ -465,6 +465,11 @@ enum Shots {
             log += "a station's row \(row) clicked \(clicks)x: \(picks[row...(row + 1)]) asked, \(plays) plays: "
                 + "\(plays == Array(picks[row...(row + 1)]) ? "ok" : "WRONG")\n"
         }
+        // The page's list as it was, the songs played from it too, until
+        // New Picks ("elke keer als je een nummer aanklikt wisselt alles",
+        // 24 November 2026).
+        let after = await app.radio.preview(station, randomSeed: app.radio.pageSeed(for: station)).map(\.track.name)
+        log += "a station's list after its clicks: \(after == picks ? "ok, the same" : "WRONG, \(after.prefix(3)) for \(picks.prefix(3))")\n"
         guard let shots = folder else { return }
         let file = "\(shots)/frames.txt"
         try? (((try? String(contentsOfFile: file, encoding: .utf8)) ?? "") + log).write(toFile: file, atomically: true, encoding: .utf8)

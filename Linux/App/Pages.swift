@@ -1458,8 +1458,10 @@ enum Pages {
         func choose(_ seed: UInt64) {
             Task {
                 let chosen = await app.radio.preview(station, randomSeed: seed)
+                // The same list given back: the rows stay, where they were
+                // scrolled to, rather than drawn again.
+                if chosen.map(\.id) != picks.map(\.id) { list.set(chosen) }
                 picks = chosen
-                list.set(chosen)
                 // Why it knows less than it might, as the Mac's head says it
                 // (RadioController.lastFMTrouble).
                 setText(fact, [station.subtitle, chosen.isEmpty ? "Nothing in your library for this station yet." : "Starts with these, then plays on.",

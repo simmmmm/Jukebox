@@ -723,9 +723,7 @@ final class RadioController {
 
     /// A station's draw for its page: the same each time its page opens
     /// while the app runs, so the list the listener looked at is the one
-    /// they come back to (measured on the kit's made-up library of 60
-    /// artists: chosen again after another song has played, on average 19
-    /// to 24 of the 25 stay in their place, by station), until New Picks
+    /// they come back to (`shownPages` holds it as it was), until New Picks
     /// draws another (`drawPageSeed(for:)`). Before that, the id's hash,
     /// which Swift seeds anew at every launch: the same until the app is
     /// closed, another after, and nothing to store.
@@ -746,18 +744,15 @@ final class RadioController {
     private struct ShownPage {
         let randomSeed: UInt64
         let dial: Double
-        let songs: Int
+        let songs: [Int]
         let picks: [RadioPick]
     }
 
-    /// Which songs a snapshot has: the same for one made again for play
-    /// counts or Last.fm's tags. A number, not the snapshot, so a page
-    /// kept does not keep a library gone by.
-    private static func songsKey(_ snapshot: LibrarySnapshot) -> Int {
-        var hasher = Hasher()
-        hasher.combine(snapshot.tracks.count)
-        for track in snapshot.tracks { hasher.combine(track.id) }
-        return hasher.finalize()
+    /// Which songs a snapshot has, in any order: the same for one made
+    /// again for play counts or Last.fm's tags. A number, not the snapshot,
+    /// so a page kept does not keep a library gone by.
+    private static func songsKey(_ snapshot: LibrarySnapshot) -> [Int] {
+        [snapshot.tracks.count, snapshot.tracks.reduce(0) { $0 &+ $1.id.hashValue }]
     }
 
     /// What a station's page showed, with the session that chose it.
