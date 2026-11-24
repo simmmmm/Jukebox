@@ -425,6 +425,11 @@ struct TrackMenu: View {
     @Environment(Navigator.self) private var navigator
 
     var body: some View {
+        items
+            .menuIcons()
+    }
+
+    @ViewBuilder private var items: some View {
         if picked.count > 1 {
             // No heading: the same sections as one song's, what the list
             // does with them all and then playing and keeping them.

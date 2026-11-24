@@ -268,6 +268,11 @@ struct StationMenu: View {
     }
 
     var body: some View {
+        items
+            .menuIcons()
+    }
+
+    @ViewBuilder private var items: some View {
         Section {
             if radio.stationOnAir(player: player)?.seed == station.seed {
                 // Full Player in the wide window, where the panel is Now
@@ -362,6 +367,11 @@ struct HomeMixMenu: View {
     }
 
     var body: some View {
+        items
+            .menuIcons()
+    }
+
+    @ViewBuilder private var items: some View {
         Section {
             Button("Play", systemImage: "play.fill") {
                 player.playMix(mix)

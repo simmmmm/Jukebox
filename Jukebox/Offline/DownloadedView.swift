@@ -96,6 +96,7 @@ struct DownloadedView: View {
                     Button("Remove Download", systemImage: "trash", role: .destructive) {
                         pendingRemoval = collection
                     }
+                    .menuIcons()
                 }
             }
         }

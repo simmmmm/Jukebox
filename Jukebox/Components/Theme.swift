@@ -338,6 +338,41 @@ struct ActionButtonStyle: ButtonStyle {
 }
 
 
+extension View {
+    /// A glyph as one of the head's squares after Play and Shuffle (the
+    /// version filter, the download, the heart, the "…"): 36 square, at
+    /// the filter's weight, on Shuffle's quiet ground, or on Play's filled
+    /// one (`filled`, the filter while a kind is off). One kind of square,
+    /// so they cannot drift apart: a thin glyph alone beside two filled
+    /// buttons read as a stray one ("ik wil niet zo'n icoontje alleen zo
+    /// dunnig", the photographer, 24 November 2026).
+    func quietSquare(filled: Bool = false) -> some View {
+        font(.subheadline.weight(.semibold))
+            .frame(width: Tokens.ActionButton.height, height: Tokens.ActionButton.height)
+            .background(filled ? Theme.accent : Theme.accent.opacity(Tokens.ActionButton.quietTint),
+                        in: .rect(cornerRadius: Theme.Radius.artwork))
+            .contentShape(.rect)
+    }
+
+    /// A menu's items with their SF Symbols on the Mac from macOS 26, as
+    /// its own apps draw their menus there; SwiftUI's Mac menus show a
+    /// Label's title alone unless told otherwise ("op ios heb je al die
+    /// leuke icoontjes overal, waarom heeft mac dat niet?", the
+    /// photographer, 24 November 2026). Older Macs' menus, as their own
+    /// apps', without; the iPhone and the iPad show them anyway.
+    @ViewBuilder func menuIcons() -> some View {
+        #if os(macOS)
+        if #available(macOS 26, *) {
+            labelStyle(.titleAndIcon)
+        } else {
+            self
+        }
+        #else
+        self
+        #endif
+    }
+}
+
 extension ButtonStyle where Self == SecondaryButtonStyle {
     static var secondary: SecondaryButtonStyle { SecondaryButtonStyle() }
 }

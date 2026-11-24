@@ -182,12 +182,15 @@ enum Style {
         button.quiet { background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(Tokens.quietInk, dark)); box-shadow: none; }
         button.quiet:hover { background-color: alpha(\(accent), 0.18); }
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
-        /* The version filter: a 36 square of Shuffle's kind, filled as Play
-           while a kind is off (Parts.versionFilter). */
-        menubutton.version-filter > button { min-width: 36px; min-height: 36px; padding: 0; border-radius: 6px; box-shadow: none;
+        /* A page head's squares after Play and Shuffle (the version filter,
+           the download, the heart, the ⋮): 36 square, of Shuffle's kind;
+           the filter filled as Play while a kind is off, the given heart in
+           the accent (button.given, below). */
+        button.square, menubutton.square > button { min-width: 36px; min-height: 36px; padding: 0; border-radius: 6px; box-shadow: none;
             background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(Tokens.quietInk, dark)); }
-        menubutton.version-filter > button:hover { background-color: alpha(\(accent), 0.18); }
-        menubutton.version-filter.on > button { background-color: \(accent); color: \(hex(Tokens.onAccent, dark)); }
+        button.square:hover, menubutton.square > button:hover { background-color: alpha(\(accent), 0.18); }
+        button.square:active, menubutton.square > button:active { background-color: alpha(\(accent), 0.24); }
+        menubutton.square.on > button { background-color: \(accent); color: \(hex(Tokens.onAccent, dark)); }
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
         .home-card { background-color: \(raised); border-radius: \(Int(Tokens.Radius.card))px; padding: 12px 36px 12px 12px; }
@@ -236,6 +239,7 @@ enum Style {
         .player-bar button.play { min-width: 40px; min-height: 40px; padding: 0; }
         .player-bar button.toggle:checked { color: @accent_color; }
         button.given { color: @accent_color; }
+        button.square.given { color: \(accent); }
         /* grid-ok: the 4 track centred in its row of 16, and the 16 knob on it */
         .player-bar scale { padding: 6px 0; min-height: 0; }
         .player-bar scale > trough { min-height: 4px; }

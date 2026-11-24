@@ -80,6 +80,7 @@ struct PlaylistsView: View {
                             Button("Delete Playlist", systemImage: "trash", role: .destructive) {
                                 pendingDelete = playlist
                             }
+                            .menuIcons()
                         }
                     }
                 }
@@ -157,6 +158,7 @@ struct PlaylistsView: View {
                 Button("Delete Playlist", systemImage: "trash", role: .destructive) {
                     pendingDelete = playlist
                 }
+                .menuIcons()
             }
         }
     }
@@ -264,7 +266,8 @@ struct PlaylistDetailView: View {
                 }
                 #endif
             }
-            if offline.offersDownload(for: .playlist(playlist.id)) {
+            // Wide, in the head's row.
+            if !isWide && offline.offersDownload(for: .playlist(playlist.id)) {
                 ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: all),
                                           isConfirmingRemoval: $isConfirmingRemoval)
@@ -332,6 +335,10 @@ struct PlaylistDetailView: View {
                     HStack(spacing: Theme.Space.s) {
                         if !kinds.isEmpty {
                             LibraryVersionMenu(kinds: kinds, off: $off)
+                        }
+                        if offline.offersDownload(for: .playlist(shown.id)) {
+                            OfflineDownloadButton(collection: OfflineCollection(playlist: shown, tracks: all),
+                                                  isConfirmingRemoval: $isConfirmingRemoval, inHead: true)
                         }
                         MoreMenu {
                             moreItems(shown, tracks: all)

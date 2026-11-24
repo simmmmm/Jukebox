@@ -4,8 +4,9 @@
 // toevoegingen. Wat wij echter niet moeten doen is het een hele drukke app
 // maken" — so it is closed until the bar's buttons open it, and the lit
 // button is the way out: no close button here (the designer's spec, §3).
-// Its head is Linux's (Linux/App/Panel.swift), 1:1: 48 tall, the two tabs at
-// its start, the chosen one on a faint fill in full and the other at 60 %.
+// Its head is Linux's (Linux/App/Panel.swift) in the Apple clients' own
+// form: 48 tall, at its start the system's segmented control where Linux
+// has GNOME's tabs.
 
 import SwiftUI
 
@@ -31,17 +32,26 @@ struct PanelView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .safeAreaInset(edge: .top, spacing: 0) {
-            HStack(spacing: Theme.Space.xs) {
-                // The panel's name, Now Playing ("moet up next niet
-                // trouwens gewoon 'now playing' worden", the photographer,
-                // 15 November 2026); its list's own headings stay.
-                tab("Now Playing", .upNext)
-                if offersLyrics {
-                    // Off for a song with none, as the bar's button
-                    // (LyricsFinder.hasNone).
-                    tab("Lyrics", .lyrics)
-                        .disabled(songHasNoLyrics)
+            HStack(spacing: 0) {
+                // The system's segmented control, not Linux's GNOME tabs:
+                // "zijn die twee buttons hier now playing en lyrics niet
+                // gnome hig?" (the photographer, 24 November 2026). The
+                // panel's name, Now Playing ("moet up next niet trouwens
+                // gewoon 'now playing' worden", 15 November 2026); its
+                // list's own headings stay. Without lyrics to be had at
+                // all, Now Playing alone, as one segment.
+                Picker("Panel", selection: chosen) {
+                    Text("Now Playing").tag(PanelState.Content.upNext)
+                    if offersLyrics {
+                        // Off for a song with none, as the bar's button
+                        // (LyricsFinder.hasNone).
+                        Text("Lyrics").tag(PanelState.Content.lyrics)
+                            .disabled(songHasNoLyrics)
+                    }
                 }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .fixedSize()
                 Spacer(minLength: 0)
             }
             .padding(.horizontal, Theme.Space.s)
@@ -68,23 +78,14 @@ struct PanelView: View {
         navigator.isNowPlayingPresented
     }
 
-    /// One of the head's two tabs.
-    private func tab(_ title: LocalizedStringKey, _ content: PanelState.Content) -> some View {
-        let isChosen = panel.content == content
-        return Button {
-            panel.content = content
-        } label: {
-            Text(title)
-                // Linux's panel-tab: 15 at 600.
-                .desktopFont(Tokens.Size.body15.size, weight: .semibold)
-                .foregroundStyle(isChosen ? HierarchicalShapeStyle.primary : HierarchicalShapeStyle.secondary)
-                .padding(.horizontal, Theme.Space.l)
-                .frame(height: 32)
-                .background(isChosen ? Color.primary.opacity(0.1) : Color.clear, in: .rect(cornerRadius: Theme.Space.s))
-                .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(isChosen ? .isSelected : [])
+    /// What the head's segments choose: Lyrics never for a song with none,
+    /// should a disabled segment still be clicked.
+    private var chosen: Binding<PanelState.Content> {
+        Binding(get: { panel.content },
+                set: { content in
+                    if content == .lyrics && songHasNoLyrics { return }
+                    panel.content = content
+                })
     }
 
     /// The server's lyrics, or LRCLIB's when Settings allow it, as the bar's

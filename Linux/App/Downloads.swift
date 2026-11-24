@@ -13,15 +13,21 @@ import JukeboxKit
 /// tick. The ring and the tick are menus with Remove Download, asked first.
 /// None where the server does not let this account download, unless it is
 /// here already, to remove it.
-func downloadControl(_ reason: OfflineReason, name: String, collection: @escaping () -> OfflineCollection) -> Widget {
-    let download = iconButton(Glyphs.name("download"), "Download", "flat") {
+/// `square`: in the page's head, one of its quiet squares after the version
+/// filter, not at the header's end: "de downloadknop komt een beetje
+/// lullig uit zo, die zou eigenlijk bij de play shuffle hartje puntjes
+/// horen" (the photographer, 24 November 2026, of the Mac's).
+func downloadControl(_ reason: OfflineReason, name: String, square: Bool = false,
+                     collection: @escaping () -> OfflineCollection) -> Widget {
+    let kind = square ? "square" : "flat"
+    let download = iconButton(Glyphs.name("download"), "Download", kind) {
         let chosen = collection()
         guard !chosen.tracks.isEmpty else { return }
         app.offline.download(chosen)
     }
     let image = gtk_image_new()!
     gtk_image_set_pixel_size(ptr(image), 16)
-    let menu = gtk_menu_button_new()!.css("flat")
+    let menu = gtk_menu_button_new()!.css(kind)
     gtk_menu_button_set_child(ptr(menu), image)
     let control = hbox([download, menu]).align(vertical: GTK_ALIGN_CENTER)
     // The menu made again only when what it says changes, not with the

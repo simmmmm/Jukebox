@@ -129,6 +129,8 @@ private struct Round {
                 app.navigator.place = .library(.albums)
                 if let album = album(named: "Lantern Hours (25th Anniversary)", in: app) { app.navigator.open(.album(album)) }
             }
+            // Songs, its Shuffle the quiet button of a playlist's head.
+            await shot("songs") { app.navigator.place = .library(.songs) }
             // The menus' items in their order, each drawn as a form: a menu
             // bar's and a context menu's own surfaces are not drawn in a
             // window that is never on screen. The Account menu with Sign

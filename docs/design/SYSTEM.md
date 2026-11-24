@@ -92,6 +92,23 @@ mix's).
   `button.page-button`, `button.quiet` (`Style.swift`); Sign In and Try
   Again `suggested-action page-button`.
 
+### The head's squares
+After Play and Shuffle on a wide page's head, squares of one kind: the
+version filter, the download, the heart, the "…", in that order, each
+there when the page has it. 36 square, 6 corners, on Shuffle's quiet
+ground, the glyph in `quietInk` at the filter's weight; the filter filled
+as Play while a kind is off, the given heart filled in the accent. Never a
+thin glyph alone beside the filled buttons ("beide wat doen we dan alleen
+met deze knoppen", "ik wil niet zo'n icoontje alleen zo dunnig", 24
+November 2026). The download left the Mac's bar for it ("die zou
+eigenlijk bij de play shuffle hartje puntjes horen"). The iPhone keeps the
+heart, the download and the "…" in its bar, the filter after Shuffle.
+- Apple: `.quietSquare()` (`Components/Theme.swift`): `LibraryVersionMenu`,
+  `OfflineDownloadButton(inHead:)`, `HeartButton`, `MoreMenu`.
+- GNOME: CSS `button.square`, `menubutton.square` (`Style.swift`):
+  `versionFilter`, `downloadControl(square:)`, `heartButton(square:)`,
+  `moreButton(square:)`.
+
 ### Text buttons and plain symbols
 Every other action is a word in the accent or a plain symbol. Never an
 icon-and-label pill.
@@ -122,9 +139,8 @@ its discs (`AlbumMerge`). Up Next numbers by place in the queue.
 
 ### The version filter
 On an album's or a playlist's page, when they hold two or more versions:
-one plain glyph among the page's actions (beside the heart and the "…"
-wide, after Play and Shuffle on the iPhone), filled
-and in the accent while a version is off. It opens a list of each kind,
+the first of the head's squares, after Play and Shuffle on every client,
+filled as Play while a version is off. It opens a list of each kind,
 Original (if any) first, then the others by name, each a check turned on
 or off on its own, the last one on staying on; then Show All. The list
 stays open while kinds are turned, except on the Mac, whose menus close
@@ -142,12 +158,11 @@ works. "ik wil bijv alle
 unplugged nummers er uit kunnen filteren of alle remastered als ze er zijn
 zeg maar?" (21 November 2026).
 - Apple: `LibraryVersionMenu` (`Library/LibraryParts.swift`),
-  `line.3.horizontal.decrease.circle` (`.fill` while filtering), a `Menu`
-  of `Toggle`s; wide in the head's actions, on the iPhone right after
+  `line.3.horizontal.decrease` on its square, a `Menu` of `Toggle`s; wide in the head's actions, on the iPhone right after
   Play and Shuffle ("kan het of in de puntjes of naast play/shuffle?", 22
   November 2026); `\.hidesVersion` for the rows (`TrackRow`).
-- GNOME: `versionFilter` (`Parts.swift`), a flat menu button with the
-  `filter` and `filter-on` glyphs (`Glyphs`), its popover a list as Play
+- GNOME: `versionFilter` (`Parts.swift`), a square menu button with the
+  `filter-lines` glyph (`Glyphs`), its popover a list as Play
   On's, the check at each row's end, so the plain menus keep no indent;
   `trackList`'s `name` and `canMove`.
 
@@ -260,7 +275,7 @@ same words on every client.
 
 ### Lyrics
 The Lyrics button (Now Playing's on the iPhone, the bar's wide) and the
-panel's Lyrics tab are there where lyrics can be had at all, and off,
+panel's Lyrics tab (a segment on Apple) are there where lyrics can be had at all, and off,
 dimmed, for a song known to have none or to be instrumental: "Kan je t
 knoppie gewoon disablen toch?" (21 November 2026). On while it is still
 asked. Open on a song without, they give way to the sleeve or Up Next; no
@@ -365,7 +380,8 @@ changed later in Settings › Radio.
 | Grounds | Jukebox's flat grounds, menus `lifted`; the system's where it draws a list (Settings, Preferences) | Flat grounds (tells 2) |
 | Filled buttons | One a screen, plain; 6 corners on Apple, GNOME's own on Linux; never a pill or capsule | One radius (tells 6) |
 | Menus' ground | Linux's on `lifted`; Apple's the system's | GNOME's grey popovers read as another app's; Apple's menus are glass, drawn by the system |
-| Menu icons | SF Symbols in Apple's menus; none in GNOME's | Each platform's menus as its own apps draw them |
+| Menu icons | SF Symbols in Apple's menus, the Mac's too from macOS 26 (`.menuIcons()`); none in GNOME's | Each platform's menus as its own apps draw them ("op ios heb je al die leuke icoontjes overal, waarom heeft mac dat niet?", 24 November 2026) |
+| The panel's Now Playing and Lyrics | The system's segmented control on Apple; GNOME's tabs on Linux | "zijn die twee buttons hier now playing en lyrics niet gnome hig?" (24 November 2026) |
 | Menu checks | A check on Apple; on GNOME only in a submenu (Rating), a toggle in the menu itself as words (Don't Count Plays, Count Plays Again) | GTK keeps a check's room before every item of a menu page that has one, which stood the whole menu in from GNOME's edge ("het lijkt wel of je rekening hebt gehouden met meer iconen qua padding", 21 November 2026) |
 | Destructive items | Remove from a list first, in its list's section; what cannot be undone (Delete) last and alone; Apple's red role on both | GNOME's order, Apple's colour |
 | Turning some of a few on and off (the version filter) | One glyph in the page's actions; Apple's menu of checks, GNOME's popover list with the check at the row's end | A filter is an action, not a row of its own on the page |

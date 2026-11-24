@@ -50,7 +50,7 @@ struct ArtistsView: View {
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
-                        menu(artist)
+                        menu(artist).menuIcons()
                     }
                 }
                 .padding(.top, Theme.Space.xl)
@@ -97,7 +97,7 @@ struct ArtistsView: View {
             LibraryArtistRow(artist: artist)
         }
         .contextMenu {
-            menu(artist)
+            menu(artist).menuIcons()
         }
     }
 
@@ -169,7 +169,7 @@ struct ArtistDetailView: View {
             if !isWide {
                 ToolbarItem(placement: .barTrailing) {
                     Menu {
-                        menu(shown)
+                        menu(shown).menuIcons()
                     } label: {
                         Label("More", systemImage: "ellipsis")
                     }
@@ -208,7 +208,7 @@ struct ArtistDetailView: View {
                 HStack(spacing: Theme.Space.s) {
                     HeartButton(item: .artist(shown.id))
                     MoreMenu {
-                        menu(shown)
+                        menu(shown).menuIcons()
                     }
                 }
             }

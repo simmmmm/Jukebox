@@ -178,8 +178,9 @@ struct AlbumDetailView: View {
         }
         .toolbar {
             // Not when the server does not let this account download,
-            // unless the album is on the phone already, to remove it.
-            if offline.offersDownload(for: .album(album.id)) {
+            // unless the album is on the phone already, to remove it. Wide,
+            // in the head's row.
+            if !isWide && offline.offersDownload(for: .album(album.id)) {
                 ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: all),
                                           isConfirmingRemoval: $isConfirmingRemoval)
@@ -213,11 +214,17 @@ struct AlbumDetailView: View {
                 PagePlayButtons(play: { play(tracks, from: 0, album: shown, shuffled: false) },
                                 shuffle: { play(tracks, from: 0, album: shown, shuffled: true) })
                     .disabled(tracks.isEmpty)
+                // Then squares of one kind: the filter, the download, the
+                // heart, the "…", as Linux's head.
                 HStack(spacing: Theme.Space.s) {
-                    HeartButton(item: .album(shown.id))
                     if !kinds.isEmpty {
                         LibraryVersionMenu(kinds: kinds, off: $off)
                     }
+                    if offline.offersDownload(for: .album(shown.id)) {
+                        OfflineDownloadButton(collection: OfflineCollection(album: shown, tracks: all),
+                                              isConfirmingRemoval: $isConfirmingRemoval, inHead: true)
+                    }
+                    HeartButton(item: .album(shown.id))
                     MoreMenu {
                         LibraryAlbumMenu(album: shown, tracks: all, onPage: true)
                     }

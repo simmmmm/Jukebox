@@ -14,28 +14,61 @@ struct OfflineDownloadButton: View {
     /// The page's removal dialog (`offlineRemovalDialog`): on the page, not
     /// here, so it stays open when the ring turns into the checkmark.
     @Binding var isConfirmingRemoval: Bool
+    /// In a wide page's head, one of its quiet squares after the version
+    /// filter, not a glyph in the window's bar: "de downloadknop komt een
+    /// beetje lullig uit zo, die zou eigenlijk bij de play shuffle hartje
+    /// puntjes horen" (the photographer, 24 November 2026). The iPhone keeps
+    /// it in its bar.
+    var inHead = false
 
     @Environment(OfflineStore.self) private var offline
 
     var body: some View {
+        if inHead {
+            control
+                .menuStyle(.button)
+                .buttonStyle(.plain)
+                .menuIndicator(.hidden)
+                .fixedSize()
+        } else {
+            control
+        }
+    }
+
+    @ViewBuilder private var control: some View {
         switch offline.state(of: collection.reason) {
         case .notDownloaded:
             Button {
                 offline.download(collection)
             } label: {
-                Label("Download", systemImage: "arrow.down.circle")
+                if inHead {
+                    Image(systemName: "arrow.down.circle")
+                        .foregroundStyle(Theme.quietInk)
+                        .quietSquare()
+                } else {
+                    Label("Download", systemImage: "arrow.down.circle")
+                }
             }
             .disabled(collection.tracks.isEmpty)
+            .accessibilityLabel("Download")
         case let .downloading(fraction: fraction, waiting: waiting):
             Menu {
-                if let waiting {
-                    Text(OfflineText.waiting(waiting))
+                Group {
+                    if let waiting {
+                        Text(OfflineText.waiting(waiting))
+                    }
+                    Button("Remove Download", systemImage: "trash", role: .destructive) {
+                        isConfirmingRemoval = true
+                    }
                 }
-                Button("Remove Download", systemImage: "trash", role: .destructive) {
-                    isConfirmingRemoval = true
-                }
+                .menuIcons()
             } label: {
-                OfflineProgressRing(fraction: fraction)
+                if inHead {
+                    OfflineProgressRing(fraction: fraction, side: 16)
+                        .quietSquare()
+                } else {
+                    OfflineProgressRing(fraction: fraction)
+                }
             }
             .accessibilityLabel(Text("Downloading"))
             .accessibilityValue(Text(waiting.map(OfflineText.waiting) ?? OfflineText.percent(fraction)))
@@ -44,9 +77,17 @@ struct OfflineDownloadButton: View {
                 Button("Remove Download", systemImage: "trash", role: .destructive) {
                     isConfirmingRemoval = true
                 }
+                .menuIcons()
             } label: {
-                Label("Downloaded", systemImage: "checkmark.circle")
+                if inHead {
+                    Image(systemName: "checkmark.circle")
+                        .foregroundStyle(Theme.quietInk)
+                        .quietSquare()
+                } else {
+                    Label("Downloaded", systemImage: "checkmark.circle")
+                }
             }
+            .accessibilityLabel("Downloaded")
         }
     }
 }
@@ -55,8 +96,17 @@ struct OfflineDownloadButton: View {
 /// a stop square, as the system draws a download that can be stopped.
 struct OfflineProgressRing: View {
     let fraction: Double
+    /// Its side when not the bar's own (a head's quiet square: 16).
+    var fixedSide: CGFloat?
 
-    @ScaledMetric(relativeTo: .body) private var side: CGFloat = 22
+    @ScaledMetric(relativeTo: .body) private var scaledSide: CGFloat = 22
+
+    init(fraction: Double, side: CGFloat? = nil) {
+        self.fraction = fraction
+        self.fixedSide = side
+    }
+
+    private var side: CGFloat { fixedSide ?? scaledSide }
 
     var body: some View {
         // Never quite empty: a ring at nothing reads as no download at all.

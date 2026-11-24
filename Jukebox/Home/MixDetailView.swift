@@ -75,7 +75,8 @@ struct MixDetailView: View {
             showsTitle = isPast
         }
         .toolbar {
-            if offline.offersDownload(for: .mix(mix.id)) {
+            // Wide, in the head's row.
+            if !isWide && offline.offersDownload(for: .mix(mix.id)) {
                 ToolbarItem(placement: .barTrailing) {
                     OfflineDownloadButton(collection: OfflineCollection(mix: mix), isConfirmingRemoval: $isConfirmingRemoval)
                 }
@@ -195,8 +196,15 @@ struct MixDetailView: View {
             } actions: {
                 PagePlayButtons(play: { player.playMix(mix) },
                                 shuffle: { player.playMix(mix, shuffled: true) })
-                MoreMenu {
-                    moreItems
+                // Then its quiet squares: the download, the "…".
+                HStack(spacing: Theme.Space.s) {
+                    if offline.offersDownload(for: .mix(mix.id)) {
+                        OfflineDownloadButton(collection: OfflineCollection(mix: mix),
+                                              isConfirmingRemoval: $isConfirmingRemoval, inHead: true)
+                    }
+                    MoreMenu {
+                        moreItems
+                    }
                 }
             }
             .disabled(mix.tracks.isEmpty)

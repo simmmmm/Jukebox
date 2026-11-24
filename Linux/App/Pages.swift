@@ -991,7 +991,7 @@ enum Pages {
         let art = cover()
         art.show(album.artwork, sleeve: TitleSleeve.Words(album: album))
         let artist = album.primaryArtist.flatMap { app.library.artist($0) }
-        let menuButton = moreButton([])
+        let menuButton = moreButton([], square: true)
         // The tile's menu, without the Play the page has; made again as the
         // album's rating changes, so its tick is the server's.
         observe(menuButton) {
@@ -1041,15 +1041,17 @@ enum Pages {
                           actions: [
             playButton { app.player.play(tracks, context: context) },
             quietButton("Shuffle") { app.player.play(tracks, context: context, shuffled: true) },
-            hbox(spacing: 8, [heartButton { .album(album.id) }]
-                 + (kinds.isEmpty ? [] : [versionFilter(kinds) { chosen in
+            // Then squares of one kind: the filter, the download, the
+            // heart, the ⋮, as the Mac's head.
+            hbox(spacing: 8, (kinds.isEmpty ? [] : [versionFilter(kinds) { chosen in
                      off = chosen
                      tracks = TrackVersion.tracks(all, without: chosen)
                      fillSongs()
                      base = baseFacts()
                      setText(albumFacts, app.player.notCounted.fact(base, .album, album.id))
                  }])
-                 + [menuButton]),
+                 + [downloadControl(.album(album.id), name: album.name, square: true) { OfflineCollection(album: album, tracks: all) },
+                    heartButton(square: true) { .album(album.id) }, menuButton]),
         ])
         keep(art, on: raw(top), as: "art")
         fillSongs()
@@ -1063,9 +1065,7 @@ enum Pages {
             }
         }
         Stats.track(.screen, ["name": "album"])
-        // At the header's end, where the Mac's bar has it.
-        let download = downloadControl(.album(album.id), name: album.name) { OfflineCollection(album: album, tracks: all) }
-        Nav.push(album.name, pageColumn(column), end: [download])
+        Nav.push(album.name, pageColumn(column))
     }
 
     static func open(_ artist: Artist) {
@@ -1083,11 +1083,11 @@ enum Pages {
             // them, on every client ("Los ze op", 20 November 2026).
             playButton { app.player.play(all, context: context) },
             quietButton("Shuffle") { app.player.play(all, context: context, shuffled: true) },
-            hbox(spacing: 8, [heartButton { .artist(artist.id) },
+            hbox(spacing: 8, [heartButton(square: true) { .artist(artist.id) },
                               moreButton(menuSections([("Play Next", { app.player.playNext(all) }),
                                                        ("Add to Queue", { app.player.addToQueue(all) })],
                                                       [("Start Radio", { app.radio.start(seed) })],
-                                                      publicShareItems(.artist(artist))))]),
+                                                      publicShareItems(.artist(artist))), square: true)]),
         ])
         keep(art, on: raw(top), as: "art")
         let column = vbox([top])
@@ -1201,7 +1201,7 @@ enum Pages {
             }),
         ]
         let delete: [(String, () -> Void)] = own ? [("Delete Playlist", { Playlists.delete(playlist, then: gone) })] : []
-        let moreMenu = moreButton([])
+        let moreMenu = moreButton([], square: true)
         // Its own picture, where the server takes one (Extras.swift); the
         // menu made again as Don't Count Plays is ticked.
         var picture: [(String, () -> Void)] = []
@@ -1214,10 +1214,14 @@ enum Pages {
         PlaylistCover.offer(playlist) { items in picture = items; makeMenu() }
         // The version filter, beside the ⋮, made again when the kinds change.
         let filter = hbox()
+        // After the filter, as the Mac's head.
+        let download = downloadControl(.playlist(playlist.id), name: playlist.name, square: true) {
+            OfflineCollection(playlist: app.library.playlists.first { $0.id == playlist.id } ?? playlist, tracks: all)
+        }
         let top = heading(art: art.widget, title: playlist.name, facts: fact, actions: [
             playButton { app.player.play(list.items, context: context) },
             quietButton("Shuffle") { app.player.play(list.items, context: context, shuffled: true) },
-            hbox(spacing: 8, [filter, moreMenu]),
+            hbox(spacing: 8, [filter, download, moreMenu]),
         ])
         // A new picture shows at once.
         observe(top) {
@@ -1358,10 +1362,7 @@ enum Pages {
         if own { append(wordButton("Add Songs") { addSongs() }, to: empty) }
         load()
         Stats.track(.screen, ["name": "playlist"])
-        let download = downloadControl(.playlist(playlist.id), name: playlist.name) {
-            OfflineCollection(playlist: app.library.playlists.first { $0.id == playlist.id } ?? playlist, tracks: all)
-        }
-        var end = [download]
+        var end: [Widget] = []
         if own { end.append(iconButton("list-add-symbolic", "Add Songs", "flat") { addSongs() }.align(vertical: GTK_ALIGN_CENTER)) }
         if let start {
             Nav.show(Nav.page(playlist.name, pageColumn(column), start: start, end: end))
@@ -1389,7 +1390,7 @@ enum Pages {
             moreButton([("Start Radio", {
                 Stats.track(.stationStarted, ["seed": Stats.seed(seed), "from": "menu"])
                 app.radio.start(seed)
-            })]),
+            })], square: true),
         ]
         for action in actions where tracks.isEmpty { gtk_widget_set_sensitive(action, 0) }
         let top = heading(art: art.widget, title: genre.name,
@@ -1427,20 +1428,24 @@ enum Pages {
                 app.player.play(mix.tracks, context: context)
             },
             quietButton("Shuffle") { app.player.play(mix.tracks, context: context, shuffled: true) },
-            // In a song's order, as the Mac's (SYSTEM.md, Menus).
-            moreButton(menuSections([("Play Next", { app.player.playNext(mix.tracks) }),
-                                     ("Add to Queue", { app.player.addToQueue(mix.tracks) })],
-                                    [("Save as Playlist…", {
-                                        saveAsPlaylist(mix.tracks, named: mix.title, what: "mix", changes: "has changed")
-                                     }),
-                                     ("Add to Playlist…", { Playlists.add(mix.tracks) }),
-                                     ("Start Radio", { app.radio.start(mix.stationSeed) })])),
+            // Then its squares, the download and the ⋮, as the Mac's head;
+            // the ⋮ in a song's order (SYSTEM.md, Menus).
+            hbox(spacing: 8, [
+                downloadControl(.mix(mix.id), name: mix.title, square: true) { OfflineCollection(mix: mix) },
+                moreButton(menuSections([("Play Next", { app.player.playNext(mix.tracks) }),
+                                         ("Add to Queue", { app.player.addToQueue(mix.tracks) })],
+                                        [("Save as Playlist…", {
+                                            saveAsPlaylist(mix.tracks, named: mix.title, what: "mix", changes: "has changed")
+                                         }),
+                                         ("Add to Playlist…", { Playlists.add(mix.tracks) }),
+                                         ("Start Radio", { app.radio.start(mix.stationSeed) })]), square: true),
+            ]),
         ])
         keep(art, on: raw(top), as: "art")
         let list = trackList(mix.tracks, context: { context })
         let column = vbox([top, rule(), list.widget])
         Stats.track(.mixOpened)
-        Nav.push(mix.title, pageColumn(column), end: [downloadControl(.mix(mix.id), name: mix.title) { OfflineCollection(mix: mix) }])
+        Nav.push(mix.title, pageColumn(column))
     }
 
     /// A station's page: what it would play, before it plays. Play plays

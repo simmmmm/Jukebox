@@ -136,6 +136,7 @@ struct SearchView: View {
                     Button("Remove", systemImage: "xmark", role: .destructive) {
                         forget(term)
                     }
+                    .menuIcons()
                 }
                 .padding(.horizontal, page.side)
             }
@@ -245,7 +246,7 @@ private struct SearchResultsList: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .contextMenu { artistMenu(artist) }
+                    .contextMenu { artistMenu(artist).menuIcons() }
                 }
             }
             if !results.albums.isEmpty {
@@ -308,7 +309,7 @@ private struct SearchResultsList: View {
                             }
                         }
                         .contextMenu {
-                            artistMenu(artist)
+                            artistMenu(artist).menuIcons()
                         }
                     }
                 } header: {
@@ -531,6 +532,7 @@ private struct SearchBrowse: View {
                         Button("Remove", systemImage: "xmark", role: .destructive) {
                             remove(term)
                         }
+                        .menuIcons()
                     }
                     Divider()
                 }
@@ -555,6 +557,7 @@ private struct SearchBrowse: View {
                             Stats.track(.stationStarted, ["seed": "genre", "from": "search"])
                             radio.start(.genre(key: genre.key, name: genre.name))
                         }
+                        .menuIcons()
                     }
                 }
             }

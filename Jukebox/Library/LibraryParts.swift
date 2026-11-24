@@ -108,12 +108,8 @@ struct LibraryVersionMenu: View {
             // niet klopt met ios", 24 November 2026). The thin outlined glyph
             // read so on the iPhone too ("Icoontje is niet heel Nice zo").
             Image(systemName: "line.3.horizontal.decrease")
-                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(off.isEmpty ? Theme.quietInk : Theme.onAccent)
-                .frame(width: Tokens.ActionButton.height, height: Tokens.ActionButton.height)
-                .background(off.isEmpty ? Theme.accent.opacity(Tokens.ActionButton.quietTint) : Theme.accent,
-                            in: .rect(cornerRadius: Theme.Radius.artwork))
-                .contentShape(.rect)
+                .quietSquare(filled: !off.isEmpty)
         }
         // Open while kinds are turned, on the iPhone and the iPad (the
         // Mac's menus close on a choice, as its own apps' do).
@@ -213,6 +209,11 @@ struct LibraryAlbumMenu: View {
     }
 
     var body: some View {
+        items
+            .menuIcons()
+    }
+
+    @ViewBuilder private var items: some View {
         let songs = tracks ?? library.tracks(inAlbum: album.id)
         let favorite = library.isFavorite(album.id)
         // A song's groups (TrackMenu), as Linux's albumMenu; Play first on

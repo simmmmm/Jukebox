@@ -115,7 +115,7 @@ struct QueueView: View {
                 ForEach(upNext) { entry in
                     row(entry)
                         .contextMenu {
-                            upNextMenu(entry)
+                            upNextMenu(entry).menuIcons()
                         }
                         .modifier(RemoveSwipe { remove(entry) })
                         .queueRow(song: true)
@@ -320,7 +320,7 @@ struct QueueView: View {
                 })
                 #endif
                 .contextMenu {
-                    panelMenu(entry, playing: playing, picked: pickedEntries(at: i, in: items))
+                    panelMenu(entry, playing: playing, picked: pickedEntries(at: i, in: items)).menuIcons()
                 }
                 // Played: there, but quieter than what is to come.
                 .opacity(style == .played ? 0.5 : 1)
@@ -509,12 +509,14 @@ struct QueueView: View {
                 askToSave(station)
             }
             .disabled(isSaving)
+            .menuIcons()
             Button("Add to Playlist…", systemImage: "text.badge.plus") {
                 let songs = stationSongs()
                 guard !songs.isEmpty else { return }
                 // Now Playing presents the sheet (NowPlayingView).
                 navigator.addToPlaylist = AddToPlaylistRequest(tracks: songs)
             }
+            .menuIcons()
         } label: {
             Image(systemName: "ellipsis")
                 .desktopFont(Tokens.Size.body15.size, weight: .semibold, phone: .body.weight(.semibold), wide: inPanel)

@@ -900,7 +900,7 @@ func versionFilter(_ kinds: [TrackVersion], off start: Set<TrackVersion> = [],
     // A square of Shuffle's kind after it, as the iPhone's: quiet while all
     // show, filled while a kind is off ("behalve dat hier het filterknopje
     // nog niet klopt met ios", the photographer, 24 November 2026).
-    let button = gtk_menu_button_new()!.css("version-filter").named("Versions")
+    let button = gtk_menu_button_new()!.css("square").named("Versions")
     gtk_menu_button_set_popover(ptr(button), popover)
     var checks: [Widget] = []
     for kind in kinds {
@@ -943,17 +943,21 @@ func wordButton(_ title: String, action: @escaping @MainActor () -> Void) -> Wid
     button(title, "flat", "accent", "word", action: action).align(horizontal: GTK_ALIGN_START, vertical: GTK_ALIGN_CENTER)
 }
 
-/// ⋮: the rest of what can be done with what the page shows.
-func moreButton(_ items: [(String, () -> Void)]) -> Widget {
-    let more = gtk_menu_button_new()!.css("flat").named("More")
+/// ⋮: the rest of what can be done with what the page shows. `square`: in
+/// a page's head, one of its quiet squares after Play and Shuffle (Style's
+/// `square`), not a glyph alone: "ik wil niet zo'n icoontje alleen zo
+/// dunnig" (the photographer, 24 November 2026).
+func moreButton(_ items: [(String, () -> Void)], square: Bool = false) -> Widget {
+    let more = gtk_menu_button_new()!.css(square ? "square" : "flat").named("More")
     gtk_menu_button_set_icon_name(ptr(more), "view-more-symbolic")
     gtk_menu_button_set_popover(ptr(more), popoverMenu(items))
     return more.align(vertical: GTK_ALIGN_CENTER)
 }
 
-/// The heart: given, it is filled and in the accent.
-func heartButton(_ item: @escaping () -> ItemRef?) -> Widget {
-    let heart = iconButton(Glyphs.name("heart-outline"), "Add to Favorites", "flat") {
+/// The heart: given, it is filled and in the accent. `square`: a page
+/// head's quiet square, as the ⋮'s.
+func heartButton(square: Bool = false, _ item: @escaping () -> ItemRef?) -> Widget {
+    let heart = iconButton(Glyphs.name("heart-outline"), "Add to Favorites", square ? "square" : "flat") {
         guard let item = item() else { return }
         Task { await app.library.toggleFavorite(item) }
     }

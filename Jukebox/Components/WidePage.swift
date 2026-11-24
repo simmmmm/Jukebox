@@ -314,7 +314,10 @@ struct WordButton: View {
     }
 }
 
-/// A head's heart, 32: filled and in the accent when given.
+/// A head's heart, one of its quiet squares after Play and Shuffle: filled
+/// and in the accent when given, on the same quiet ground. "beide wat doen
+/// we dan alleen met deze knoppen" (the photographer, 24 November 2026, of
+/// the plain heart and "…" beside the Mac's filled buttons).
 struct HeartButton: View {
     let item: ItemRef
 
@@ -326,30 +329,27 @@ struct HeartButton: View {
             Task { await library.toggleFavorite(item) }
         } label: {
             Image(systemName: given ? "heart.fill" : "heart")
-                .desktopFont(Tokens.Size.body15.size)
-                .foregroundStyle(given ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.primary))
-                .frame(width: 32, height: 32)
-                .contentShape(.rect)
+                .foregroundStyle(given ? Theme.accent : Theme.quietInk)
+                .quietSquare()
         }
         .buttonStyle(.plain)
         .accessibilityLabel(given ? Text("Undo Favorite") : Text("Favorite"))
     }
 }
 
-/// A head's "…", 32: the rest of what can be done with what the page shows.
-/// A plain glyph, without the Mac's pop-up button around it.
+/// A head's "…", the last of its quiet squares: the rest of what can be
+/// done with what the page shows, without the Mac's pop-up button around it.
 struct MoreMenu<Items: View>: View {
     @ViewBuilder let items: Items
 
     var body: some View {
         Menu {
             items
+                .menuIcons()
         } label: {
             Image(systemName: "ellipsis")
-                .desktopFont(Tokens.Size.body15.size, weight: .semibold)
-                .foregroundStyle(.primary)
-                .frame(width: 32, height: 32)
-                .contentShape(.rect)
+                .foregroundStyle(Theme.quietInk)
+                .quietSquare()
         }
         .menuStyle(.button)
         .buttonStyle(.plain)
