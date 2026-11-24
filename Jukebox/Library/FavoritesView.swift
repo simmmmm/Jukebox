@@ -106,14 +106,12 @@ struct FavoritesView: View {
                 }
             }
             ForEach(favorites) { track in
-                Button {
-                    guard !player.refusesOffline(track) else { return }
-                    let i = favorites.firstIndex(where: { $0.id == track.id }) ?? 0
-                    player.play(favorites, startingAt: i, context: context)
-                } label: {
-                    TrackRow.standard(track)
-                }
-                .buttonStyle(.plain)
+                TrackRow.standard(track)
+                    .songRowClicks {
+                        guard !player.refusesOffline(track) else { return }
+                        let i = favorites.firstIndex(where: { $0.id == track.id }) ?? 0
+                        player.play(favorites, startingAt: i, context: context)
+                    }
                 .trackListRow()
             }
         }

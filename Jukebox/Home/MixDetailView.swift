@@ -143,13 +143,11 @@ struct MixDetailView: View {
 
     private var rows: some View {
         ForEach(Array(mix.tracks.enumerated()), id: \.offset) { index, track in
-            Button {
-                guard !player.refusesOffline(track) else { return }
-                player.playMix(mix, from: index)
-            } label: {
-                TrackRow.standard(track)
-            }
-            .buttonStyle(.plain)
+            TrackRow.standard(track)
+                .songRowClicks {
+                    guard !player.refusesOffline(track) else { return }
+                    player.playMix(mix, from: index)
+                }
             .trackListRow(!isWide)
         }
         .listRowBackground(Color.clear)

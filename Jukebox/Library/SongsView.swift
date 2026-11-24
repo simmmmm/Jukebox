@@ -77,15 +77,13 @@ struct SongsView: View {
                 }
             }
             ForEach(shown) { track in
-                Button {
-                    // Offline, a song not on the phone says why rather than play.
-                    guard !player.refusesOffline(track) else { return }
-                    let i = shown.firstIndex(where: { $0.id == track.id }) ?? 0
-                    player.play(shown, startingAt: i, context: context(searching: searching))
-                } label: {
-                    TrackRow.standard(track)
-                }
-                .buttonStyle(.plain)
+                TrackRow.standard(track)
+                    .songRowClicks {
+                        // Offline, a song not on the phone says why rather than play.
+                        guard !player.refusesOffline(track) else { return }
+                        let i = shown.firstIndex(where: { $0.id == track.id }) ?? 0
+                        player.play(shown, startingAt: i, context: context(searching: searching))
+                    }
                 .trackListRow()
             }
         }

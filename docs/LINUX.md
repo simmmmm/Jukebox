@@ -189,7 +189,8 @@ lit as libadwaita's selected rows; the menu on a pick is for all of them
 Link is in a song's, an album's and an artist's menu; Choose Picture… in a
 playlist's ⋮ (an administrator on Jellyfin or Emby); Mini Player in the
 primary menu (`Extras.swift`, docs/ARCHITECTURE.md). Picking was tried by
-mouse under Xvfb (XTest): Ctrl, Shift, the menu, a plain click playing.
+mouse under Xvfb (XTest): Ctrl, Shift, the menu, a plain click picking
+nothing and a double-click or Enter playing (24 November 2026).
 
 The sleep timer is a moon at the end of Full Player's header, beside ⋮,
 as on the iPhone and the Mac: its menu sets 15 to 60 minutes, End of Song

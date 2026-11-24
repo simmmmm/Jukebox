@@ -296,14 +296,12 @@ struct ArtistDetailView: View {
                         SectionHeader(isRanked ? String(localized: "Top songs") : String(localized: "Songs"))
                         VStack(spacing: 0) {
                             ForEach(top.indices, id: \.self) { i in
-                                Button {
-                                    guard !player.refusesOffline(top[i]) else { return }
-                                    player.play(topQueue, startingAt: i,
-                                                context: QueueContext(.artist(shown.id), title: shown.name))
-                                } label: {
-                                    TrackRow(top[i], subtitle: top[i].albumName)
-                                }
-                                .buttonStyle(.plain)
+                                TrackRow(top[i], subtitle: top[i].albumName)
+                                    .songRowClicks {
+                                        guard !player.refusesOffline(top[i]) else { return }
+                                        player.play(topQueue, startingAt: i,
+                                                    context: QueueContext(.artist(shown.id), title: shown.name))
+                                    }
                                 // Its own 60 (Tokens.Row), nothing round it.
                                 if i < top.count - 1 {
                                     Divider().padding(.leading, 48 + Theme.Space.m)

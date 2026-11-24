@@ -354,18 +354,16 @@ struct PlaylistDetailView: View {
             if let entries = rows {
                 ForEach(entries) { entry in
                     let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
-                    Button {
-                        if let kind = heldPick() { picks.click(i, kind); return }
-                        picks.plain(i)
-                        guard !player.refusesOffline(entry.track) else { return }
-                        play(tracks, from: i, playlist: shown, shuffled: false)
-                    } label: {
-                        TrackRow(entry.track, subtitle: entry.track.artistLine,
-                                 removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) },
-                                 moveUp: moveStep(i, by: -1, count: entries.count, in: shown),
-                                 moveDown: moveStep(i, by: 1, count: entries.count, in: shown))
-                    }
-                    .buttonStyle(.plain)
+                    TrackRow(entry.track, subtitle: entry.track.artistLine,
+                             removal: shown.isReadOnly ? nil : { removeEntry(entry.id, from: shown) },
+                             moveUp: moveStep(i, by: -1, count: entries.count, in: shown),
+                             moveDown: moveStep(i, by: 1, count: entries.count, in: shown))
+                        .songRowClicks {
+                            picks.pick(i)
+                        } play: {
+                            guard !player.refusesOffline(entry.track) else { return }
+                            play(tracks, from: i, playlist: shown, shuffled: false)
+                        }
                     .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
                 }
                 .onDelete(perform: deleteAction(shown, rows: entries))
@@ -419,14 +417,12 @@ struct PlaylistDetailView: View {
 
             if let entries = rows {
                 ForEach(entries) { entry in
-                    Button {
-                        guard !player.refusesOffline(entry.track) else { return }
-                        let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
-                        play(tracks, from: i, playlist: shown, shuffled: false)
-                    } label: {
-                        TrackRow.standard(entry.track)
-                    }
-                    .buttonStyle(.plain)
+                    TrackRow.standard(entry.track)
+                        .songRowClicks {
+                            guard !player.refusesOffline(entry.track) else { return }
+                            let i = entries.firstIndex(where: { $0.id == entry.id }) ?? 0
+                            play(tracks, from: i, playlist: shown, shuffled: false)
+                        }
                     .trackListRow()
                 }
                 .onDelete(perform: deleteAction(shown, rows: entries))

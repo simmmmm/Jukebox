@@ -473,6 +473,10 @@ private struct PageBar: ViewModifier {
     func body(content: Content) -> some View {
         @Bindable var navigator = navigator
         content
+            #if os(macOS)
+            // Inside the field's modifier, so its search item is this one's.
+            .modifier(SearchBesidePanel())
+            #endif
             .searchable(text: $navigator.searchQuery, placement: .toolbar)
             .onSubmit(of: .search) {
                 navigator.showSearch()
@@ -507,6 +511,51 @@ private struct BrandHead: View {
     var body: some View {
         BrandMark()
             .frame(width: overPlaces ? CGFloat(DesktopMeasures.sidebar) - 92 : nil, alignment: .leading)
+    }
+}
+
+/// The search field at the page's trailing edge, not over the panel: the
+/// window's bar runs over the whole window, the panel is drawn here, not
+/// a column of the system's, so the bar's end is over the panel. "ik zei
+/// dat de zoekbalk naar links moest en binnen de viewport moest vallen"
+/// (the photographer, 24 November 2026): the field placed, then the
+/// panel's width held empty after it while the panel stands beside the
+/// page. Lying over the page (below 1280) or closed, the field ends at the
+/// window's edge. The iPad's bar is the page's own already. macOS 26 lets
+/// the field be placed (DefaultToolbarItem); Sequoia keeps it at the end.
+private struct SearchBesidePanel: ViewModifier {
+    @Environment(PanelState.self) private var panel
+    @Environment(AudioPlayer.self) private var player
+
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content.toolbar {
+                SearchBesidePanelItems(beside: panel.isShown && player.hasTrack && !panel.isOverlaid)
+            }
+        } else {
+            content
+        }
+    }
+}
+
+@available(macOS 26, *)
+private struct SearchBesidePanelItems: ToolbarContent {
+    /// The panel stands beside the page.
+    let beside: Bool
+
+    var body: some ToolbarContent {
+        DefaultToolbarItem(kind: .search, placement: .primaryAction)
+        if beside {
+            ToolbarItem(placement: .primaryAction) {
+                // Nothing to see or press: the panel's width, less the
+                // bar's own inset at its end.
+                Color.clear
+                    .frame(width: CGFloat(DesktopMeasures.panel) - Theme.Space.s, height: 1)
+                    .accessibilityHidden(true)
+                    .allowsHitTesting(false)
+            }
+            .sharedBackgroundVisibility(.hidden)
+        }
     }
 }
 

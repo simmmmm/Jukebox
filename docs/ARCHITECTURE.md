@@ -714,7 +714,7 @@ in a menu that was there ("niet 10000 knopen"):
   adds one, Shift a run; the menu on a pick has, where the list allows,
   Move to Top, Move to Bottom and Remove from Playlist or Queue, then Play
   Next, Add to Queue (Play Last) and Add to Playlist… for all of them. A
-  plain click plays as before and forgets them (`Library/TrackPicks.swift`,
+  plain click forgets them, a double-click plays (`Library/TrackPicks.swift`,
   shared; checked in QueueCheck). Several taken out of a station's Up Next
   teach it once a song (PlayQueue.removeUpcoming).
 - **The mini player**: Window › Mini Player (⌥⌘M) on the Mac, a small

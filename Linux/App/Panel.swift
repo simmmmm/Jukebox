@@ -123,8 +123,7 @@ enum UpNext {
         let picked = PickedRows { [] }
         // A double-click or Enter plays a row, not a click: "ik zou liever
         // zelfs dubbelklik hebben zodat je niet perongeluk je nummer uit
-        // zet" (the photographer, 24 November 2026). A page's songs play on
-        // one click.
+        // zet" (the photographer, 24 November 2026), as a page's songs.
         let list = ItemList<Item, UpNextRow>(
             singleClick: false,
             make: {

@@ -319,18 +319,19 @@ struct NowPlayingView: View {
     }
 
     /// The room's top, as Linux's header bar: 48 high, Close at its start
-    /// (Escape presses it too), More at its end, plain white glyphs. No
-    /// grabber: nothing here is pulled down.
+    /// (Escape presses it too), More at its end. The page head's quiet
+    /// squares, not bare glyphs: "we hebben hier 3 iconen die alleen het
+    /// icoon zijn ipv de icon button die we nu steeds hanteren" (the
+    /// photographer, 24 November 2026). No grabber: nothing here is pulled
+    /// down.
     private var roomHeader: some View {
         HStack(spacing: 0) {
             Button {
                 close()
             } label: {
                 Image(systemName: "chevron.down")
-                    .font(Self.roomGlyph)
-                    .foregroundStyle(.white)
-                    .frame(width: 40, height: 40)
-                    .contentShape(.rect)
+                    .foregroundStyle(Theme.quietInk)
+                    .quietSquare()
             }
             .buttonStyle(.plain)
             .keyboardShortcut(.cancelAction)
@@ -340,27 +341,15 @@ struct NowPlayingView: View {
             Spacer(minLength: 0)
 
             if let track = currentTrack {
-                // The moon stays beside ⋮ on the iPad and the Mac ("op
-                // desktop mag ie er sowieso wel gewoon staan").
-                SleepTimerMenu(player: player, font: Self.roomGlyph, ink: .white, side: 40)
-                    .menuStyle(.button)
-                    .buttonStyle(.borderless)
-                    .menuIndicator(.hidden)
-                Menu {
-                    TrackMenu(track: track, isPlaying: true)
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(Self.roomGlyph)
-                        .foregroundStyle(.white)
-                        .frame(width: 40, height: 40)
-                        .contentShape(.rect)
+                HStack(spacing: Theme.Space.s) {
+                    // The moon stays beside ⋮ on the iPad and the Mac ("op
+                    // desktop mag ie er sowieso wel gewoon staan").
+                    SleepTimerMenu(player: player, font: Self.roomGlyph)
+                    MoreMenu {
+                        TrackMenu(track: track, isPlaying: true)
+                    }
+                    .accessibilityIdentifier("nowPlaying.more")
                 }
-                // The glyph alone, as Close: no border, no arrow.
-                .menuStyle(.button)
-                .buttonStyle(.borderless)
-                .menuIndicator(.hidden)
-                .accessibilityLabel("More")
-                .accessibilityIdentifier("nowPlaying.more")
             }
         }
         .padding(.horizontal, Theme.Space.s)
