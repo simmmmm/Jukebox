@@ -897,7 +897,10 @@ func versionFilter(_ kinds: [TrackVersion], off start: Set<TrackVersion> = [],
     let popover = gtk_popover_new()!.css("menu")
     // grid-ok: the menu's own 6 around.
     gtk_popover_set_child(ptr(popover), vbox([heading, rows, line, all]).margins(6))
-    let button = gtk_menu_button_new()!.css("flat").named("Versions")
+    // A square of Shuffle's kind after it, as the iPhone's: quiet while all
+    // show, filled while a kind is off ("behalve dat hier het filterknopje
+    // nog niet klopt met ios", the photographer, 24 November 2026).
+    let button = gtk_menu_button_new()!.css("version-filter").named("Versions")
     gtk_menu_button_set_popover(ptr(button), popover)
     var checks: [Widget] = []
     for kind in kinds {
@@ -915,8 +918,8 @@ func versionFilter(_ kinds: [TrackVersion], off start: Set<TrackVersion> = [],
     func show() {
         for (kind, check) in zip(kinds, checks) { gtk_widget_set_opacity(check, off.contains(kind) ? 0 : 1) }
         gtk_widget_set_sensitive(showAll, off.isEmpty ? 0 : 1)
-        gtk_menu_button_set_icon_name(ptr(button), Glyphs.name(off.isEmpty ? "filter" : "filter-on"))
-        if off.isEmpty { gtk_widget_remove_css_class(button, "accent") } else { gtk_widget_add_css_class(button, "accent") }
+        gtk_menu_button_set_icon_name(ptr(button), Glyphs.name("filter-lines"))
+        if off.isEmpty { gtk_widget_remove_css_class(button, "on") } else { gtk_widget_add_css_class(button, "on") }
     }
     on(raw(rows), "row-activated", argument: { row in
         guard let row else { return }

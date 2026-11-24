@@ -182,6 +182,12 @@ enum Style {
         button.quiet { background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(Tokens.quietInk, dark)); box-shadow: none; }
         button.quiet:hover { background-color: alpha(\(accent), 0.18); }
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
+        /* The version filter: a 36 square of Shuffle's kind, filled as Play
+           while a kind is off (Parts.versionFilter). */
+        menubutton.version-filter > button { min-width: 36px; min-height: 36px; padding: 0; border-radius: 6px; box-shadow: none;
+            background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(Tokens.quietInk, dark)); }
+        menubutton.version-filter > button:hover { background-color: alpha(\(accent), 0.18); }
+        menubutton.version-filter.on > button { background-color: \(accent); color: \(hex(Tokens.onAccent, dark)); }
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
         .home-card { background-color: \(raised); border-radius: \(Int(Tokens.Radius.card))px; padding: 12px 36px 12px 12px; }
@@ -314,6 +320,9 @@ enum Glyphs {
         // and its `.fill` while a version is off: a ring, or a disc, with
         // three lines shorter each.
         "filter": #"<path fill-rule="evenodd" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm0 1.4a5.6 5.6 0 1 1 0 11.2A5.6 5.6 0 0 1 8 2.4z"/><rect x="4.5" y="5" width="7" height="1.4" rx=".7"/><rect x="5.6" y="7.3" width="4.8" height="1.4" rx=".7"/><rect x="6.8" y="9.6" width="2.4" height="1.4" rx=".7"/>"#,
+        // The filter's three lines alone, for its square button (the
+        // iPhone's `line.3.horizontal.decrease`).
+        "filter-lines": #"<rect x="2.5" y="4" width="11" height="1.6" rx=".8"/><rect x="4.5" y="7.2" width="7" height="1.6" rx=".8"/><rect x="6.5" y="10.4" width="3" height="1.6" rx=".8"/>"#,
         "filter-on": #"<path fill-rule="evenodd" d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM5.2 5h5.6a.7.7 0 0 1 0 1.4H5.2a.7.7 0 0 1 0-1.4zm1.1 2.3h3.4a.7.7 0 0 1 0 1.4H6.3a.7.7 0 0 1 0-1.4zm1.2 2.3h1a.7.7 0 0 1 0 1.4h-1a.7.7 0 0 1 0-1.4z"/>"#,
         // The mark, heavy cut, as a template: its two tubes outlined, so
         // they are fills.
