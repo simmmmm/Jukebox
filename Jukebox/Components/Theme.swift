@@ -347,7 +347,10 @@ extension View {
     /// buttons read as a stray one ("ik wil niet zo'n icoontje alleen zo
     /// dunnig", the photographer, 24 November 2026).
     func quietSquare(filled: Bool = false) -> some View {
-        font(.subheadline.weight(.semibold))
+        // Wide, 15 semibold, the size of Shuffle's word and of Linux's
+        // 16 px glyphs: the Mac's .subheadline is 11, and its glyphs sat
+        // small in the square.
+        desktopFont(Tokens.Size.body15.size, weight: .semibold, phone: .subheadline.weight(.semibold))
             .frame(width: Tokens.ActionButton.height, height: Tokens.ActionButton.height)
             .background(filled ? Theme.accent : Theme.accent.opacity(Tokens.ActionButton.quietTint),
                         in: .rect(cornerRadius: Theme.Radius.artwork))
