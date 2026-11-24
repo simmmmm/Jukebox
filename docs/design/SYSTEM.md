@@ -270,16 +270,21 @@ asked. Open on a song without, they give way to the sleeve or Up Next; no
 - GNOME: `PlayerBar.swift`, `Panel.swift` (`songHasNoLyrics`).
 
 ### Lossless
-"Lossless" on Now Playing while the song is heard as its lossless file is
-(`PlayQueue.playsLossless`), in the facts' ink, sentence case, no pill or
-icon. Its place is kept, so nothing moves when it comes or goes. Not in the
-bar, the mini player or the panel. "als originals lossless zijn dat we dat
-tonen als je gaat streamen" (24 November 2026).
-- Apple: the iPhone's between the scrubber's two times, where Music has
-  it (`NowPlayingView.controls`); Full Player wide 8 under the byline, 15 at
-  60 % (`roomTitle`).
-- GNOME: Full Player, 8 under the artist, `t15 fact`, seen or not by its
-  opacity (`PlayerBar.swift`, `NowPlayingPage`).
+"· Lossless" right after the playing song's artist, wherever that line is,
+while the song is heard as its lossless file is (`PlayQueue.playsLossless`):
+"als originals lossless zijn dat we dat tonen als je gaat streamen" (24
+November 2026), then "als heel klein labeltje achter de artiestnaam ... met
+een bullet ertussen" (TestFlight 535, the same day). The line's own size
+and ink, the word in small caps, medium weight; no pill, no colour, no
+icon. The artist ends in "…" first, the label never. Once a view: not
+under the times, not on a line of its own. VoiceOver and Orca read the line
+as "Artist, Lossless". On a station the iPhone's mini player has the
+station in the artist's place, so the label follows the station.
+- Apple: `ArtistLine` and `LosslessTag` (`NowPlayingParts.swift`): the
+  iPhone's mini player and Now Playing, the bar, the Mac's Mini Player;
+  Full Player wide ends its "Artist · Album" with it (`roomTitle`).
+- GNOME: `PlayerBar.losslessTag` and Style's `lossless`: the bar and the
+  Mini Player; Full Player ends its byline with it, in markup.
 
 ### The player bar and the mini player
 Wide: the bar, 88 across the window's foot, three zones from

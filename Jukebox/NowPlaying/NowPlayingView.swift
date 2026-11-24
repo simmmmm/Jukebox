@@ -375,9 +375,9 @@ struct NowPlayingView: View {
     /// it at 60%, as wide as the sleeve and its record, two lines each at
     /// most (nothing in the room loops, spec §10, so a long title wraps
     /// rather than scroll by). The room counts one line of each, 48 and 24,
-    /// and "Lossless"'s line under them (8 and 20, kept whether it shows or
-    /// not, as Linux's); the rest hangs below, so a title that wraps does
-    /// not lift the sleeve from one song to the next.
+    /// and the rest hangs below, so a title that wraps does not lift the
+    /// sleeve from one song to the next. "Lossless" ends the byline, as it
+    /// ends the artist's line everywhere else (ArtistLine).
     private var roomTitle: some View {
         VStack(alignment: .leading, spacing: 0) {
             if let track = currentTrack {
@@ -389,22 +389,23 @@ struct NowPlayingView: View {
                     .filter { !$0.isEmpty }
                     .joined(separator: " · ")
                 if !byline.isEmpty {
-                    Text(byline)
-                        .font(.system(size: roomBylineSize))
-                        .foregroundStyle(Color.white.opacity(0.6))
-                        .lineLimit(2)
-                }
-                // "Lossless", a fact of the sound, as Linux's Full Player
-                // says it: 15 at 60 %, 8 under the byline. Its line is
-                // counted and kept unseen, so the sleeve stands where
-                // Linux's does and never moves for it (PlayQueue.playsLossless).
-                Text("Lossless")
-                    .font(.system(size: roomBylineSize * 15 / 17))
+                    // In the words, so it follows the last of two lines, as
+                    // Linux's (PlayerBar.swift, NowPlayingPage).
+                    // ponytail: past two lines the "…" takes it too; a byline
+                    // that long is rare at the sleeve's width.
+                    let tag = Text("Lossless").font(.system(size: roomBylineSize, weight: .medium).smallCaps())
+                    Group {
+                        if player.playsLossless {
+                            Text("\(Text(verbatim: byline)) · \(tag)")
+                                .accessibilityLabel("\(byline), \(String(localized: "Lossless"))")
+                        } else {
+                            Text(verbatim: byline)
+                        }
+                    }
+                    .font(.system(size: roomBylineSize))
                     .foregroundStyle(Color.white.opacity(0.6))
-                    .lineLimit(1)
-                    .padding(.top, Theme.Space.s)
-                    .opacity(player.playsLossless ? 1 : 0)
-                    .accessibilityHidden(!player.playsLossless)
+                    .lineLimit(2)
+                }
             } else {
                 Text("Not Playing")
                     .font(.system(size: roomTitleSize, weight: .regular, design: .serif))
@@ -413,8 +414,7 @@ struct NowPlayingView: View {
             }
         }
         .fixedSize(horizontal: false, vertical: true)
-        .frame(height: roomTitleSize * 1.2 + roomBylineSize * 24 / 17 + Theme.Space.s + roomBylineSize * 20 / 17,
-               alignment: .topLeading)
+        .frame(height: roomTitleSize * 1.2 + roomBylineSize * 24 / 17, alignment: .topLeading)
     }
 
     @ViewBuilder private var panelContent: some View {
@@ -681,26 +681,27 @@ struct NowPlayingView: View {
         }
     }
 
-    /// The artist's name, which goes to the artist when the library knows them.
+    /// The artist's name, which goes to the artist when the library knows
+    /// them; "Lossless" after it while the song is heard so (ArtistLine).
     @ViewBuilder private func artistLine(_ font: Font) -> some View {
         if let track = currentTrack, !track.artistLine.isEmpty {
-            if let found = libraryArtist(for: track) {
-                Button {
-                    navigator.open(.artist(found))
-                } label: {
+            ArtistLine(spoken: track.artistLine) {
+                if let found = libraryArtist(for: track) {
+                    Button {
+                        navigator.open(.artist(found))
+                    } label: {
+                        Text(track.artistLine)
+                            .lineLimit(1)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Opens the artist")
+                } else {
                     Text(track.artistLine)
-                        .font(font)
-                        .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                .buttonStyle(.plain)
-                .accessibilityHint("Opens the artist")
-            } else {
-                Text(track.artistLine)
-                    .font(font)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
+            .font(font)
+            .foregroundStyle(.secondary)
         }
     }
 
@@ -798,18 +799,6 @@ struct NowPlayingView: View {
     private var controls: some View {
         VStack(spacing: 0) {
             NowPlayingScrubber()
-                // "Lossless" between the two times, where Music says it:
-                // a fact of the sound in the room the times leave, so
-                // nothing moves when it comes or goes. Beside the scrubber,
-                // not in it, so VoiceOver hears it (PlayQueue.playsLossless).
-                .overlay(alignment: .bottom) {
-                    if player.playsLossless {
-                        Text("Lossless")
-                            .font(.caption.weight(.medium))
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
                 .padding(.top, Theme.Space.l)
             transport
                 .padding(.vertical, Theme.Space.s)

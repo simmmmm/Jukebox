@@ -9,6 +9,7 @@
 // shares from 760 to 2560 wide (ThreeZones).
 
 import CAdw
+import CGlue
 import Foundation
 import JukeboxKit
 
@@ -40,8 +41,11 @@ enum PlayerBar {
         let stationName = label("", "bar-fact", "accent")
         // As wide as their words, so the links laid over them (below) are too.
         let station = hbox(spacing: 4, [stationMark, stationName]).css("covered").align(horizontal: GTK_ALIGN_START)
-        artist.align(horizontal: GTK_ALIGN_START)
-        let words = vbox(spacing: 4, [title, vbox([artist, station])]).align(vertical: GTK_ALIGN_CENTER)
+        // "Lossless" after the artist, beside its words, not in them: the
+        // link below lies over the name alone (losslessTag).
+        let lossless = losslessTag("bar-fact", "fact")
+        let artistLine = hbox(spacing: 4, [artist, lossless]).align(horizontal: GTK_ALIGN_START)
+        let words = vbox(spacing: 4, [title, vbox([artistLine, station])]).align(vertical: GTK_ALIGN_CENTER)
         // The tile's own hover, 8 past the cover and the words on every
         // side (Style's button.tile): the bar had taken its padding away, so
         // the hover ended flush on the words ("ik zie een bug", the
@@ -192,6 +196,7 @@ enum PlayerBar {
             let line = track?.artistLine ?? ""
             setText(artist, line)
             setText(artistLinkName, line)
+            lossless.isVisible = !line.isEmpty && player.playsLossless
             let opensArtist = !line.isEmpty && track?.primaryArtist.flatMap { app.library.artist($0) } != nil
             artistLink.isVisible = opensArtist
             if opensArtist { gtk_widget_add_css_class(artist, "covered") } else { gtk_widget_remove_css_class(artist, "covered") }
@@ -224,6 +229,26 @@ enum PlayerBar {
         }
         return bar
     }
+
+    /// "· Lossless" after the playing song's artist, while the song is heard
+    /// as its lossless file is (PlayQueue.playsLossless): "ik wil het
+    /// eigenlijk als heel klein labeltje achter de artiestnaam hebben staan
+    /// met een bullet ertussen" (the photographer, 24 November 2026,
+    /// TestFlight 535). The line's own size and ink (`classes`), the word in
+    /// small caps (Style's `lossless`), never cut: the artist ends in "…"
+    /// first. Apple's is NowPlayingParts' ArtistLine. Hidden until it is so.
+    static func losslessTag(_ classes: String...) -> Widget {
+        let tag = gtk_label_new("· Lossless")!
+        for name in classes + ["lossless"] { gtk_widget_add_css_class(tag, name) }
+        // Heard as "Lossless", not "dot Lossless": after the artist, so
+        // Orca reads "Artist, Lossless".
+        jb_accessible_label(tag, "Lossless")
+        tag.isVisible = false
+        return tag
+    }
+
+    /// The same in Pango markup, for words that wrap (Full Player's byline).
+    static let losslessMarkup = "<span font_variant=\"all-small-caps\" weight=\"500\" size=\"9pt\">Lossless</span>"
 
     /// A button of words laid over `words` in the song (placeLink), at
     /// their place and size: the same words, so they line up and end in
@@ -614,19 +639,11 @@ enum NowPlayingPage {
             setText(elsewhere, device.map { "Playing on \($0.name)" } ?? "")
             elsewhere.isVisible = device != nil
         }
-        // "Lossless" when the song is heard as its lossless file is
-        // (PlayQueue.playsLossless): "als originals lossless zijn dat we dat
-        // tonen als je gaat streamen" (the photographer, 24 November 2026).
-        // A fact of the sound, quiet; its line is always there, only seen
-        // or not, so the centred sleeve never moves for it.
-        let lossless = label("Lossless", "t15", "fact")
-        gtk_widget_set_margin_top(lossless, 8)
-        observe(lossless) { gtk_widget_set_opacity(lossless, app.player.playsLossless ? 1 : 0) }
         // As wide as the sleeve and its record, not wider: the words start
         // at the sleeve's left edge.
-        for words in [title, artist, lossless, elsewhere] { gtk_label_set_max_width_chars(ptr(words), 1) }
+        for words in [title, artist, elsewhere] { gtk_label_set_max_width_chars(ptr(words), 1) }
         gtk_widget_set_margin_top(title, 32)
-        let content = vbox([sleeve.widget, title, artist, lossless, elsewhere]).align(horizontal: GTK_ALIGN_CENTER, vertical: GTK_ALIGN_CENTER)
+        let content = vbox([sleeve.widget, title, artist, elsewhere]).align(horizontal: GTK_ALIGN_CENTER, vertical: GTK_ALIGN_CENTER)
 
         // The room itself, flat (the land under it is not built: whether it
         // turns is the photographer's to say); its size sets the sleeve's.
@@ -666,7 +683,20 @@ enum NowPlayingPage {
             // room comes up with it.
             prepare()
             setText(title, track?.name ?? "Nothing playing")
-            setText(artist, [track?.artistLine, track?.albumName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
+            let byline = [track?.artistLine, track?.albumName].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · ")
+            // "Lossless" in the words, so it follows the last of two lines,
+            // in Style's `lossless` type (losslessTag).
+            // ponytail: past two lines the "…" takes it too; a byline that
+            // long is rare at the sleeve's width.
+            if app.player.playsLossless, !byline.isEmpty {
+                let escaped = g_markup_escape_text(byline, -1)
+                gtk_label_set_markup(ptr(artist), String(cString: escaped!) + " · " + PlayerBar.losslessMarkup)
+                g_free(escaped)
+                jb_accessible_label(artist, "\(byline), Lossless")
+            } else {
+                gtk_label_set_text(ptr(artist), byline)
+                jb_accessible_label(artist, byline)
+            }
             // Nothing playing (the queue ended, or signed out): down again.
             if track == nil { close() }
         }

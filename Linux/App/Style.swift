@@ -116,6 +116,9 @@ enum Style {
         .t13, .bar-fact { \(type(Tokens.Size.fact13)) }
         .medium { font-weight: 500; }
         .fact { opacity: 0.6; }
+        /* "Lossless" after the artist (PlayerBar.losslessTag): small caps,
+           as a label set on a sleeve's back. */
+        .lossless { font-variant-caps: all-small-caps; font-weight: 500; font-size: 12px; }
         .faint { opacity: 0.4; }
         .times { font-feature-settings: "tnum"; }
         /* One radius, for artwork (tells.md 6). */

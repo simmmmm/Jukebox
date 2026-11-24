@@ -180,16 +180,21 @@ enum Shots {
                 await step("12-now-playing-lyrics", wait: 3)
                 await frames("12b-closing") { NowPlayingPage.close() }
             }
-            // "Lossless" under the title (PlayQueue.playsLossless): the
-            // demo's songs are all m4a, so one plays as if it were a FLAC.
-            // Streamed: one kept on the machine plays as it was saved (the
-            // automatic keep holds the songs played so far, not at Original).
+            // "Lossless" after the artist (PlayerBar.losslessTag): the demo's
+            // songs say FLAC (dev/demo/items.json). Streamed: one kept on the
+            // machine plays as it was saved (the automatic keep holds the
+            // songs played so far, not at Original). Credited to four, from
+            // an album of a long name, so the bar's artist ends in "…" before
+            // the label and Full Player's byline takes two lines.
             if var song = app.library.tracks.first(where: { app.offline.localURL(for: $0.id) == nil }) {
-                song.container = "flac"
+                song.artists = app.library.artists.prefix(4).map { ArtistRef(id: $0.id, name: $0.name) }
+                song.albumName = "The Quiet Rooms Sessions, Recorded Live at the Old Harbour Church"
                 app.panel.isOpen = false
                 app.player.play([song], context: QueueContext(.songs, title: "Songs"))
+                await step("12c-bar-lossless", wait: 3)
+                await miniPlayer("12e-mini-player-lossless")
                 NowPlayingPage.open()
-                await step("12c-now-playing-lossless", wait: 3)
+                await step("12d-now-playing-lossless", wait: 3)
                 NowPlayingPage.close()
             }
             // Your Station on the air; then the panel with the radio's reasons.
@@ -783,11 +788,11 @@ enum Shots {
     }
 
     /// Mini Player (Extras.swift): its window alone, then the big one again.
-    private static func miniPlayer() async {
+    private static func miniPlayer(_ name: String = "09m-mini-player") async {
         MiniPlayer.open()
         try? await Task.sleep(for: .seconds(2))
         guard let folder, let mini = MiniPlayer.shown, let node = picture(mini) else { return }
-        write(node, to: "\(folder)/09m-mini-player.png", of: mini)
+        write(node, to: "\(folder)/\(name).png", of: mini)
         gtk_window_close(ptr(mini))
         try? await Task.sleep(for: .seconds(1))
     }

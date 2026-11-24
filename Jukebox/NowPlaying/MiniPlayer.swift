@@ -357,18 +357,28 @@ struct MiniPlayer: View {
                         // listener knows it is the radio and that the heart
                         // teaches it. Glow, not the accent: the block is
                         // dark by day too, where the accent is Copper.
-                        HStack(spacing: Theme.Space.xs) {
-                            ArchMark(size: 11, style: .template)
-                            Text(station.title)
-                                .font(.footnote)
+                        // "Lossless" after it, in the artist's ink: this
+                        // line takes the artist's place (NowPlayingParts).
+                        HStack(alignment: .firstTextBaseline, spacing: Theme.Space.xs) {
+                            HStack(spacing: Theme.Space.xs) {
+                                ArchMark(size: 11, style: .template)
+                                Text(station.title)
+                                    .lineLimit(1)
+                            }
+                            .foregroundStyle(Theme.Arch.glow)
+                            if player.playsLossless {
+                                LosslessTag()
+                                    .foregroundStyle(Self.quiet)
+                            }
+                        }
+                        .font(.footnote)
+                    } else if !track.artistLine.isEmpty {
+                        ArtistLine(spoken: track.artistLine) {
+                            Text(track.artistLine)
                                 .lineLimit(1)
                         }
-                        .foregroundStyle(Theme.Arch.glow)
-                    } else if !track.artistLine.isEmpty {
-                        Text(track.artistLine)
-                            .font(.footnote)
-                            .foregroundStyle(Self.quiet)
-                            .lineLimit(1)
+                        .font(.footnote)
+                        .foregroundStyle(Self.quiet)
                     }
                 }
             } else if let station = startingStation {
@@ -615,11 +625,12 @@ struct MiniPlayer: View {
         if let error = player.errorMessage {
             return "\(track.name), \(error)"
         }
+        let lossless = player.playsLossless ? ", \(String(localized: "Lossless"))" : ""
         if let station = player.context?.station {
-            return "\(track.name), \(station.title)"
+            return "\(track.name), \(station.title)\(lossless)"
         }
         let artist = track.artistLine
-        return artist.isEmpty ? track.name : "\(track.name), \(artist)"
+        return artist.isEmpty ? track.name : "\(track.name), \(artist)\(lossless)"
     }
 
     private func openNowPlaying() {

@@ -273,3 +273,48 @@ nonisolated private struct MarqueeRun: Hashable {
     let text: String
     let overflows: Bool
 }
+
+// MARK: - Lossless
+
+/// The playing song's artist with "Lossless" after it, a bullet between,
+/// while the song is heard as its lossless file is (PlayQueue.playsLossless):
+/// "ik wil het eigenlijk als heel klein labeltje achter de artiestnaam
+/// hebben staan met een bullet ertussen" (the photographer, 24 November
+/// 2026, TestFlight 535). The artist ends in "…" first; the label is never
+/// cut. VoiceOver hears the line as "Artist, Lossless".
+struct ArtistLine<Artist: View>: View {
+    @Environment(AudioPlayer.self) private var player
+    /// The artist's name, for VoiceOver.
+    let spoken: String
+    @ViewBuilder let artist: Artist
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.Space.xs) {
+            artist
+                .accessibilityLabel(player.playsLossless ? "\(spoken), \(String(localized: "Lossless"))" : spoken)
+            if player.playsLossless {
+                LosslessTag()
+            }
+        }
+    }
+}
+
+/// "· Lossless", the label, whole: the line's own size and ink, the word
+/// in small caps, so it reads as a label set on a sleeve's back, not a pill
+/// or a colour (tells.md 1, 6). Linux's is Style's `lossless`.
+struct LosslessTag: View {
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Theme.Space.xs) {
+            Text(verbatim: "·")
+            // One small size wherever it stands: at the line's own size it
+            // came out large and bold on Now Playing's title3 line, and he
+            // asked for "heel klein labeltje" (24 November 2026).
+            Text("Lossless")
+                .font(.caption.smallCaps().weight(.medium))
+        }
+        .lineLimit(1)
+        .fixedSize()
+        .layoutPriority(1)
+        .accessibilityHidden(true)
+    }
+}
