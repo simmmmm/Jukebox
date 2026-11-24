@@ -580,6 +580,9 @@ final class Walk {
         // Better Radio and Enhance Radio, though the walk's build has no
         // Last.fm key (AppSettings.canEnhanceRadio).
         app.launchArguments += ["-showBetterRadio", "YES"]
+        // Silent: the walk's songs play, muted, not out of the MacBook's
+        // speakers (AudioPlayer reads silentWalk).
+        app.launchArguments += ["-silentWalk", "YES"]
         app.launchArguments += extra
         app.launch()
         try alive("launch")
