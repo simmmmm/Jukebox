@@ -83,7 +83,7 @@ struct LibraryView: View {
         LibraryKind(title: "Downloaded", symbol: "arrow.down.circle", route: .downloaded, page: .downloaded),
         // The year's music, out of Settings: content, not a setting. No
         // switch in Settings › Pages, as Home has none.
-        LibraryKind(title: "Your Year", symbol: "calendar", route: .yourYear, page: nil),
+        LibraryKind(title: "On Your Jukebox", symbol: "calendar", route: .yourYear, page: nil),
     ]
 
     /// Two columns on the iPhone, as Music has it; four where there is room.

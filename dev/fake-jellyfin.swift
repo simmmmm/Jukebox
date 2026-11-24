@@ -1500,6 +1500,7 @@ let routeTable: [(String, String, Handler)] = [
     ("POST", "/Sessions/Playing/(Progress|Stopped|Ping)", playing),
     ("POST", "/Sessions/Capabilities(?:/Full)?", capabilities),
     ("GET POST", "/DisplayPreferences/[^/]+", displayPreferences),
+    ("POST", "/user_usage_stats/submit_custom_query", usageStats),
     ("GET", "/Audio/" + idPattern + "/Lyrics", lyrics),
     ("GET", "/Audio/" + idPattern + "/(universal|stream)(?:\\.\\w+)?", audio),
     ("GET", "/Items/" + idPattern + "/Images/(\\w+)(?:/(\\d+))?", image),
@@ -1507,6 +1508,47 @@ let routeTable: [(String, String, Handler)] = [
 let routes: [(methods: Set<String>, pattern: NSRegularExpression, handler: Handler)] = routeTable.map { methods, pattern, handler in
     (Set(methods.split(separator: " ").map(String.init)),
      try! NSRegularExpression(pattern: "^" + pattern + "$", options: .caseInsensitive), handler)
+}
+
+/// Playback Reporting's one route, so On Your Jukebox has a listener's
+/// weeks, months and year to show (the photographer asked for it on 23
+/// November 2026, with the plugin on his own server): a COUNT answers the
+/// client's probe; a SELECT gets made-up plays of the demo's songs between
+/// its two DateCreated bounds, the same every run for a given moment. Most
+/// are recent: about 40 in the last two days, 1400 over the year, a few
+/// songs far more than the rest.
+func usageStats(_ request: Request, _ q: Query, _ groups: [String?]) throws -> Response {
+    try require(request, q)
+    let sql = text(try bodyObject(request)["CustomQueryString"]) ?? ""
+    if sql.uppercased().contains("COUNT(") {
+        return jsonResponse(["colums": ["COUNT(1)"], "results": [["1440"]]] as Obj)
+    }
+    func bound(_ op: String) -> String? {
+        guard let found = sql.range(of: "DateCreated \(op) '([^']+)'", options: .regularExpression) else { return nil }
+        return String(sql[found].split(separator: "'")[1])
+    }
+    let from = bound(">=") ?? "", to = bound("<") ?? "9999"
+    let tracks = lib.tracks
+    guard !tracks.isEmpty else { return jsonResponse(["colums": [String](), "results": [[String]]()] as Obj) }
+    var seed: UInt64 = 2026
+    func random() -> Double {
+        seed = seed &* 6_364_136_223_846_793_005 &+ 1_442_695_040_888_963_407
+        return Double(seed >> 11) / Double(1 << 53)
+    }
+    let now = nowMicro()
+    var rows: [[String]] = []
+    for index in 0..<1440 {
+        // The first 40 within two days, the rest over the year, denser near now.
+        let days = index < 40 ? random() * 2 : pow(random(), 1.6) * 365
+        let date = formatDate(now - Int64(days * 86_400 * 1_000_000))
+            .replacingOccurrences(of: "T", with: " ").replacingOccurrences(of: "Z", with: "")
+        let id = tracks[min(tracks.count - 1, Int(pow(random(), 2.4) * Double(tracks.count)))]
+        let seconds = Double(int(lib.items[id]?["RunTimeTicks"]) ?? 200 * ticksPerSecond) / Double(ticksPerSecond)
+        let played = Int(seconds * (0.6 + 0.4 * random()))
+        if date >= from && date < to { rows.append([date, id, String(played)]) }
+    }
+    rows.sort { $0[0] < $1[0] }
+    return jsonResponse(["colums": ["DateCreated", "ItemId", "PlayDuration"], "results": rows] as Obj)
 }
 
 func quickDisabled(_ request: Request, _ q: Query, _ groups: [String?]) throws -> Response {

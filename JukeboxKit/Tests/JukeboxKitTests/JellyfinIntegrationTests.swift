@@ -345,6 +345,13 @@ struct JellyfinIntegrationTests {
         }
         try await client.deletePlaylist(id: id)
         #expect(try await !client.playlists().contains(where: { $0.id == id }))
+        // As ServerContractTests: a Jellyfin that has run a while still
+        // answered the deleted playlist's songs for a moment (pc-kit, 24
+        // November 2026), so asked again for up to five seconds first.
+        for _ in 0..<10 {
+            if (try? await client.playlistTracks(playlistID: id)) == nil { break }
+            try await Task.sleep(for: .milliseconds(500))
+        }
         await #expect(throws: JellyfinError.notFound) { _ = try await client.playlistTracks(playlistID: id) }
     }
 

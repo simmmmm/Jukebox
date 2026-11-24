@@ -316,7 +316,7 @@ private struct SettingsAccountSection: View {
                 }
             } footer: {
                 // Why the switch to this one did not happen; under the one
-                // signed in, the server's own note (Your Year is in the
+                // signed in, the server's own note (On Your Jukebox is in the
                 // library now; whether it counts every device is the
                 // server's doing).
                 if let switchProblem, switchProblem.account == key {

@@ -240,7 +240,7 @@ enum Preferences {
             let switching = app.isSwitching
             // Whether Playback Reporting answers, on Jellyfin and Emby: the
             // group's own description, where GNOME puts a group's note.
-            // About the server, so beside its cards; Your Year itself is in
+            // About the server, so beside its cards; On Your Jukebox itself is in
             // the sidebar now.
             adw_preferences_group_set_description(ptr(group), active.flatMap(ServerWords.playbackReportingNote))
             var radios: UnsafeMutablePointer<GtkCheckButton>?

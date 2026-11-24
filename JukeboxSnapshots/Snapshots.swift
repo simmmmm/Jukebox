@@ -116,6 +116,9 @@ private struct Round {
                 app.navigator.place = .radio
             }
             await shot("artists") { app.navigator.place = .library(.artists) }
+            // On Your Jukebox on its week, from the fake Jellyfin's Playback
+            // Reporting; the page reads it when it shows.
+            await shot("on-your-jukebox", settle: 4) { app.navigator.place = .library(.yourYear) }
             await shot("search") {
                 app.navigator.searchQuery = app.library.artistsByName.first.map { String($0.name.prefix(4)) } ?? "a"
                 app.navigator.place = .search
