@@ -220,7 +220,7 @@ struct TileGrid<Item: Identifiable, Tile: View>: View {
 /// (spec §5, Album; Linux's Pages.heading): the cover at the left, and 32
 /// beside it, at its foot, the title in the serif 40, the lead (an album's
 /// artist) in 17, the facts in 13, and 24 under them the one Play and the
-/// rest, 16 apart. 24 under the bar, on the page's margin.
+/// rest, 8 apart. 24 under the bar, on the page's margin.
 struct PageHead<Art: View, Actions: View>: View {
     let page: DesktopMeasures.Page
     let title: String
@@ -263,7 +263,10 @@ struct PageHead<Art: View, Actions: View>: View {
                         .lineLimit(2)
                         .padding(.top, Theme.Space.xs)
                 }
-                HStack(spacing: Theme.Space.l) {
+                // Every gap in the row the small one, Play to Shuffle to the
+                // squares: "kan je die de kleine maken op linux en apple
+                // gelijk" (the photographer, 24 November 2026).
+                HStack(spacing: Theme.Space.s) {
                     actions
                 }
                 .padding(.top, Theme.Space.xl)
@@ -538,6 +541,42 @@ func heldPick() -> TrackPicks.Click? {
     return nil
 }
 
+extension TrackPicks {
+    /// A click on a song's row: with ⌘ or ⇧ held (heldPick) one more or a
+    /// run, without them none picked.
+    mutating func pick(_ row: Int) {
+        if let kind = heldPick() { click(row, kind) } else { plain(row) }
+    }
+}
+
+extension View {
+    /// A song's row in a list. On the Mac a click picks (TrackPicks.pick)
+    /// and a double-click plays, as on Linux and in Up Next: "mac is ook 1x
+    /// klikken terwijl we het op mac en linux twee keer klikken zouden
+    /// maken" (the photographer, 24 November 2026). The double-click beside
+    /// the click rather than before it, so the click picks at once (Up
+    /// Next's panel, QueueView). On the iPhone and the iPad a tap plays.
+    /// VoiceOver's action plays on all of them.
+    @ViewBuilder
+    func songRowClicks(pick: @escaping () -> Void = {}, play: @escaping () -> Void) -> some View {
+        #if os(macOS)
+        contentShape(.rect)
+            .onTapGesture { pick() }
+            .simultaneousGesture(TapGesture(count: 2).onEnded { play() })
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { play() }
+        #else
+        Button {
+            pick()
+            play()
+        } label: {
+            self
+        }
+        .buttonStyle(.plain)
+        #endif
+    }
+}
+
 extension EnvironmentValues {
     /// The songs picked with a row's own (PageTrackRows), empty when it is
     /// not picked: its look and its menu (TrackRow, TrackMenu).
@@ -552,7 +591,8 @@ extension EnvironmentValues {
 }
 
 /// Songs as rows on a wide page (TrackRow's wide form), on the margin the
-/// caller gives; a click plays from that song, with ⌘ or ⇧ picks it.
+/// caller gives; a double-click plays from that song on the Mac, a tap
+/// on the iPhone and the iPad (songRowClicks); ⌘ or ⇧ picks it.
 struct PageTrackRows: View {
     let tracks: [Track]
     /// An album's numbers by song (AlbumNumbers): the rows numbered with
@@ -568,17 +608,15 @@ struct PageTrackRows: View {
     var body: some View {
         LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(Array(tracks.enumerated()), id: \.element.id) { i, track in
-                Button {
-                    if let kind = heldPick() { picks.click(i, kind); return }
-                    picks.plain(i)
-                    // Offline, a song not on the device says why rather than play.
-                    guard !player.refusesOffline(track) else { return }
-                    play(track)
-                } label: {
-                    TrackRow(track, leading: numbers.map { TrackRow.Leading.number($0[track.id]) } ?? .artwork,
-                             subtitle: subtitle(track))
-                }
-                .buttonStyle(.plain)
+                TrackRow(track, leading: numbers.map { TrackRow.Leading.number($0[track.id]) } ?? .artwork,
+                         subtitle: subtitle(track))
+                    .songRowClicks {
+                        picks.pick(i)
+                    } play: {
+                        // Offline, a song not on the device says why rather than play.
+                        guard !player.refusesOffline(track) else { return }
+                        play(track)
+                    }
                 .environment(\.pickedTracks, picks.contains(i) ? picks.tracks(at: i, in: tracks) : [])
             }
         }

@@ -314,9 +314,11 @@ final class ItemList<Item, Row: AnyObject> {
     /// Whether an item's row can be played (a heading in the list cannot).
     var activatable: ((Item) -> Bool)?
 
-    /// `singleClick`: a click plays, as a page's songs do; false, a
-    /// double-click or Enter does (Up next, where a click would skip away
-    /// from what plays).
+    /// `singleClick`: a click activates, as a chooser's rows do; false, a
+    /// double-click or Enter does, as every list of songs: "mac is ook 1x
+    /// klikken terwijl we het op mac en linux twee keer klikken zouden
+    /// maken" (the photographer, 24 November 2026), so a click never stops
+    /// the song playing by mistake.
     init(grid: Bool = false, singleClick: Bool = true, make: @escaping () -> (Widget, Row),
          fill: @escaping (Row, Item, Int) -> Void, activate: @escaping (Item, Int, [Item]) -> Void) {
         self.fill = fill

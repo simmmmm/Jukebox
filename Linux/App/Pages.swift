@@ -583,6 +583,7 @@ enum SearchPage {
                 // Mac and the iPhone: search is how one asks for a song, and
                 // the radio keeps the music going after it.
                 let list = ItemList<Track, TrackRow>(
+                    singleClick: false,
                     make: {
                         let row = TrackRow()
                         return (row.widget, row)
@@ -938,7 +939,10 @@ enum Pages {
         }
         gtk_widget_set_margin_top(facts, 4)
         append(facts, to: words)
-        let buttons = hbox(spacing: 16, actions)
+        // Every gap in the row the small one, 8, wide or narrow, as on the
+        // Mac and the iPad: "kan je die de kleine maken op linux en apple
+        // gelijk" (the photographer, 24 November 2026).
+        let buttons = hbox(spacing: 8, actions)
         gtk_widget_set_margin_top(buttons, 24)
         append(buttons, to: words)
         let top = hbox(spacing: 32, [art.align(horizontal: GTK_ALIGN_START), words.expand(horizontal: true).align(vertical: GTK_ALIGN_END)])
@@ -946,13 +950,11 @@ enum Pages {
         // A narrow page (under 720) has the words under the cover, as the
         // iPhone's head: beside it a long title was cut off, and Shuffle
         // with it, past the window's edge (SYSTEM.md's audit, 23 November
-        // 2026). The actions 8 apart there, so Play, Shuffle, the heart,
-        // the filter and ⋮ fit a phone's width.
+        // 2026).
         observe(top) {
             let narrow = PageMeasure.shared.margin == 24
             gtk_orientable_set_orientation(ptr(top), narrow ? GTK_ORIENTATION_VERTICAL : GTK_ORIENTATION_HORIZONTAL)
             gtk_box_set_spacing(ptr(top), narrow ? 24 : 32)
-            gtk_box_set_spacing(ptr(buttons), narrow ? 8 : 16)
         }
         return top
     }
@@ -1456,6 +1458,7 @@ enum Pages {
         art.show(station)
         var picks: [RadioPick] = []
         let list = ItemList<RadioPick, TrackRow>(
+            singleClick: false,
             make: {
                 let row = TrackRow()
                 return (row.widget, row)

@@ -103,6 +103,8 @@ met deze knoppen", "ik wil niet zo'n icoontje alleen zo dunnig", 24
 November 2026). The download left the Mac's bar for it ("die zou
 eigenlijk bij de play shuffle hartje puntjes horen"). The iPhone keeps the
 heart, the download and the "…" in its bar, the filter after Shuffle.
+Every gap in the row 8, Play to Shuffle to the squares, on every client
+("kan je die de kleine maken op linux en apple gelijk", 24 November 2026).
 - Apple: `.quietSquare()` (`Components/Theme.swift`): `LibraryVersionMenu`,
   `OfflineDownloadButton(inHead:)`, `HeartButton`, `MoreMenu`.
 - GNOME: CSS `button.square`, `menubutton.square` (`Style.swift`):
@@ -380,6 +382,7 @@ changed later in Settings › Radio.
 | The heart's word | "Favorite" / "Undo Favorite" on Apple, "Add to" / "Remove from Favorites" on GNOME | The same |
 | More | "…" on Apple, "⋮" on GNOME | Each platform's glyph |
 | A row's actions | "…" on each row on the iPhone; secondary click and Shift+F10 wide | Touch has no secondary click |
+| Playing a song from a list | A double-click or Enter on the Mac and Linux, a click picks; a tap on the iPhone and the iPad | "mac is ook 1x klikken terwijl we het op mac en linux twee keer klikken zouden maken"; a click never stops the song by mistake ("zodat je niet perongeluk je nummer uit zet", 24 November 2026) |
 | Alignment | Left, on the margin; centred only where the platform centres (the transport, the iPhone's page head, a welcome) | Editorial (tells 8) |
 | Accent | Copper and Glow everywhere, never the system's blue or GNOME's | One app |
 | Grounds | Jukebox's flat grounds, menus `lifted`; the system's where it draws a list (Settings, Preferences) | Flat grounds (tells 2) |

@@ -4,8 +4,9 @@
 // and Remove (a playlist of one's own, Up Next): Ctrl (⌘) adds or takes
 // away one, Shift picks the run from the last one picked. No new buttons
 // ("ik wil alleen er voor waken dat we niet 10000 knopen krijgen. Alles is
-// nu lekker clean", 18 November 2026): a plain click plays as it always
-// did, and forgets the picks. Shared by both clients, so the rules are one
+// nu lekker clean", 18 November 2026): a plain click forgets the picks;
+// on a desktop a double-click plays, on the iPhone and the iPad a tap
+// (24 November 2026). Shared by both clients, so the rules are one
 // (Linux's QueueCheck checks them after every build).
 
 import Foundation
@@ -42,7 +43,7 @@ struct TrackPicks: Equatable {
 
     mutating func clear() { self = TrackPicks() }
 
-    /// A plain click (it plays): nothing picked, and a Shift-click after it
+    /// A plain click: nothing picked, and a Shift-click after it
     /// runs from this row, as in Files.
     mutating func plain(_ row: Int) {
         rows = []
