@@ -22,6 +22,7 @@ let shared = [
     "Jukebox/App/ServerWords.swift",
     "Jukebox/App/Stats.swift",
     "Jukebox/App/Support.swift",
+    "Jukebox/Components/AccentTokens.swift",
     "Jukebox/Components/ArtMeasures.swift",
     "Jukebox/Components/DesktopMeasures.swift",
     "Jukebox/Components/RelativeDay.swift",

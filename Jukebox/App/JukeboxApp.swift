@@ -127,7 +127,12 @@ private extension View {
     /// The app's stores and its tint, for each of its windows: a scene does
     /// not inherit another's.
     func appEnvironment(_ app: AppModel, panel: PanelState) -> some View {
-        environment(app)
+        // Every control's tint (toggles, sliders, links, the tab bar's
+        // selection) in the accent, not the system's blue: Copper or Glow,
+        // or the playing cover's (PlayingTint). Inside the stores, which it
+        // reads.
+        modifier(PlayingTint())
+            .environment(app)
             .environment(app.navigator)
             .environment(app.settings)
             .environment(app.library)
@@ -138,9 +143,6 @@ private extension View {
             .environment(app.offline)
             .environment(app.handoff)
             .environment(panel)
-            // Every control's tint (toggles, sliders, links, the tab
-            // bar's selection) in Copper or Glow, not the system's blue.
-            .tint(Theme.accent)
     }
 }
 

@@ -48,17 +48,20 @@ enum Theme {
     /// Aptabase package (run 22's screenshots) `Color.accentColor` drew the
     /// system's blue, though the catalog and its build setting were as
     /// before. JukeboxApp tints the whole app with this too.
-    static let accent = Color(Tokens.accent)
+    ///
+    /// While a song plays, its cover's accent in their place (AccentTokens,
+    /// PlayingTint): read here, so every part that draws the accent follows.
+    static var accent: Color { Color(PlayingAccent.shared.tokens.accent) }
 
     /// Text and glyphs on the accent: white on Copper (5.7:1), Ink on Glow
     /// (9.9:1). Glow is a light colour: white on it would all but vanish.
-    static let onAccent = Color(Tokens.onAccent)
+    static var onAccent: Color { Color(PlayingAccent.shared.tokens.onAccent) }
     /// The word on a quiet button's faint accent ground (ActionButtonStyle,
     /// Linux's button.quiet): by day a step darker than Copper, as Copper
     /// on its own 12 % tint read 4.0:1 on the raised ground; this reads 4.9
     /// at the least. By night Glow, 7.8 and up. "zorg dat ze goed zichtbaar
     /// zijn in dark en light mode" (the photographer, 20 November 2026).
-    static let quietInk = Color(Tokens.quietInk)
+    static var quietInk: Color { Color(PlayingAccent.shared.tokens.quietInk) }
 
     /// The ground the main screens stand on, flat (tells.md, 2): warm paper,
     /// #F6F3EE, by day, as a sleeve's card stock; #121110 by night, a black

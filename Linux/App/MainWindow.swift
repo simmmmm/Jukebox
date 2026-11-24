@@ -85,6 +85,7 @@ enum MainWindow {
         }
         Style.install()
         window = adw_application_window_new(ptr(application))!
+        Style.followPlaying(window)
         gtk_window_set_title(ptr(window), "Jukebox")
         // The designer's default and GNOME's least (spec §1): 1440 wide, so
         // the panel opens beside the page, not over it.

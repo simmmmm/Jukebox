@@ -355,8 +355,8 @@ struct MiniPlayer: View {
                     } else if let station = player.context?.station {
                         // The station after its mark, in Glow, so the
                         // listener knows it is the radio and that the heart
-                        // teaches it. Glow, not the accent: the block is
-                        // dark by day too, where the accent is Copper.
+                        // teaches it. The accent's night half (Glow, or the
+                        // cover's): the block is dark by day too.
                         // "Lossless" after it, in the artist's ink: this
                         // line takes the artist's place (NowPlayingParts).
                         HStack(alignment: .firstTextBaseline, spacing: Theme.Space.xs) {
@@ -365,7 +365,7 @@ struct MiniPlayer: View {
                                 Text(station.title)
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(Theme.Arch.glow)
+                            .foregroundStyle(Color(rgb: PlayingAccent.shared.tokens.accent.dark))
                             if player.playsLossless {
                                 LosslessTag()
                                     .foregroundStyle(Self.quiet)
@@ -430,8 +430,8 @@ struct MiniPlayer: View {
         .foregroundStyle(Self.quiet)
     }
 
-    /// The heart, as Now Playing's: the song a favourite, filled in Glow
-    /// when it is one (Glow, not the accent: the block is dark by day too).
+    /// The heart, as Now Playing's: the song a favourite, filled in the
+    /// accent's night half when it is one (the block is dark by day too).
     /// Loved on a station it teaches the station too (RadioController.like),
     /// the clearest "more like this" there is.
     private func favoriteButton(_ track: Track) -> some View {
@@ -447,7 +447,7 @@ struct MiniPlayer: View {
         } label: {
             Image(systemName: favorite ? "heart.fill" : "heart")
                 .font(.title3)
-                .foregroundStyle(favorite ? Theme.Arch.glow : .white)
+                .foregroundStyle(favorite ? Color(rgb: PlayingAccent.shared.tokens.accent.dark) : .white)
                 .symbolEffect(.bounce, value: favorite)
                 .frame(width: Self.glyph, height: Self.glyph)
                 .contentShape(.rect)
@@ -588,9 +588,15 @@ struct MiniPlayer: View {
     /// line never changes the block. A cover with no colour of its own
     /// (black and white, grey): Cabinet, the brand's own dark. By day and by
     /// night the same: the cover's, not the system's.
+    ///
+    /// While the cover's accent is the app's (PlayingTint), the block's marks
+    /// are its night half, not Glow: the block is darkened until that one
+    /// reads on it ("zolang de gekozen kleur voldoet aan wcag contrast", 24
+    /// November 2026).
     static func block(from accent: AccentColor?) -> Color {
         guard var color = accent else { return Theme.Arch.cabinet }
-        while color.contrast(with: .glow) < 4.5, color.luminance > 0.001 {
+        let marks = AccentColor(hex: AccentTokens(cover: accent).accent.dark)
+        while color.contrast(with: marks) < 4.5, color.luminance > 0.001 {
             color = AccentColor(red: color.red * 0.95, green: color.green * 0.95, blue: color.blue * 0.95)
         }
         return Color(red: color.red, green: color.green, blue: color.blue)
@@ -655,7 +661,7 @@ private struct MiniPlayerProgress: View {
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Rectangle()
-                        .fill(Theme.Arch.glow)
+                        .fill(Color(rgb: PlayingAccent.shared.tokens.accent.dark))
                         .frame(width: proxy.size.width * part)
                 }
             }

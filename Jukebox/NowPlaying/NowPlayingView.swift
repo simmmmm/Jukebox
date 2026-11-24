@@ -35,7 +35,8 @@
 // Glow's weight, so only its hue changes; Glow for a cover with no colour
 // of its own. Given as the tint, which every
 // part here draws its accent with (.tint), so a part never picks Glow by
-// itself. Only here: the rest of the app keeps Copper and Glow, the brand.
+// itself. The rest of the app wears it too while the song plays
+// (PlayingTint), made readable on its own grounds (AccentTokens).
 //
 // Gone with sketch D: the cover's colours blurred behind everything,
 // "Playing From", the station as a spaced label in a capsule, round buttons.

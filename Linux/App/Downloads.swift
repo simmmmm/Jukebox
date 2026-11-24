@@ -92,11 +92,11 @@ private func removalMenu(waiting: String?, name: String, reason: OfflineReason) 
 /// accent on a quiet one, around a stop square, 16 as the icons beside it.
 private func showRing(_ percent: Int, in image: Widget, if wanted: @escaping () -> Bool) {
     let dark = adw_style_manager_get_dark(adw_style_manager_get_default()) != 0
-    let accent = Tokens.accent.hex(dark: dark)
+    let accent = Style.tokens.accent.hex(dark: dark)
     let track: UInt32 = dark ? 0xFFFFFF : 0x000000
     let scale = Screen.shared.scale
     Task {
-        guard let texture = await drawn("download ring \(percent) \(dark)", width: 16, height: 16, scale: scale, { cr, _ in
+        guard let texture = await drawn("download ring \(percent) \(accent)", width: 16, height: 16, scale: scale, { cr, _ in
             cairo_set_line_width(cr, 1.4)
             Draw.color(cr, track, 0.2)
             cairo_arc(cr, 8, 8, 6.3, 0, 2 * .pi)

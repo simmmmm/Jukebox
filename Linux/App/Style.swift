@@ -13,6 +13,7 @@
 
 import CAdw
 import Foundation
+import JukeboxKit
 
 enum Style {
     private static let provider = gtk_css_provider_new()!
@@ -39,10 +40,59 @@ enum Style {
     private static func ms(_ seconds: Double) -> String { "\(Int((seconds * 1000).rounded()))ms" }
     private static func px(_ points: CGFloat) -> String { "\(Int(points))px" }
 
+    /// The accent of what plays, or Copper and Glow (AccentTokens): the CSS
+    /// loaded again when it changes, so every part in the accent follows
+    /// the song ("ik wil het wel even zien dat het overal is doorgevoerd",
+    /// the photographer, 24 November 2026).
+    private(set) static var tokens = AccentTokens.brand {
+        didSet { if tokens != oldValue { load() } }
+    }
+    /// The cover whose accent is asked for, so a slow one does not
+    /// overwrite the next song's.
+    private static var following: URL?
+
+    /// The playing song's cover's accent as the app's, for as long as
+    /// `owner` (the window) lives. The cover the bar shows, at a row's
+    /// size, drawn into CoverAccent's 32 by 32 as the iPhone draws it.
+    static func followPlaying(_ owner: Widget) {
+        observe(owner) {
+            let url = app.player.currentTrack?.artwork.flatMap { app.server?.artworkURL($0, maxPixelSize: coverPixels(48)) }
+            guard url != following else { return }
+            following = url
+            guard let url else {
+                tokens = .brand
+                return
+            }
+            Task {
+                let found = await coverAccent(url)
+                guard following == url else { return }
+                tokens = AccentTokens(cover: found)
+            }
+        }
+    }
+
+    /// CoverAccent of the cover at `url`, nil without one or a colour of its
+    /// own.
+    private static func coverAccent(_ url: URL) async -> AccentColor? {
+        guard let texture = await ArtworkLoader.shared.texture(for: url) else { return nil }
+        let side = CoverAccent.side
+        return await Task.detached(priority: .utility) { () -> AccentColor? in
+            guard let (small, _) = Draw.render(width: Double(side), height: Double(side), scale: 1, covers: [texture], { cr, covers in
+                if let cover = covers.first { Draw.paint(cr, cover, x: 0, y: 0, side: Double(side)) }
+            }) else { return nil }
+            var pixels = [UInt8](repeating: 0, count: side * side * 4)
+            pixels.withUnsafeMutableBufferPointer { gdk_texture_download(small.pointer, $0.baseAddress, gsize(side * 4)) }
+            // cairo's and GDK's bytes are BGRA: CoverAccent's RGBA, red and
+            // blue swapped (unswapped, an orange cover gave a blue).
+            for i in stride(from: 0, to: pixels.count, by: 4) { pixels.swapAt(i, i + 2) }
+            return CoverAccent.accent(rgba: pixels, width: side, height: side)
+        }.value
+    }
+
     private static func load() {
         let dark = adw_style_manager_get_dark(adw_style_manager_get_default()) != 0
-        let accent = hex(Tokens.accent, dark)
-        let onAccent = hex(Tokens.onAccent, dark)
+        let accent = hex(tokens.accent, dark)
+        let onAccent = hex(tokens.onAccent, dark)
         let ground = hex(Tokens.ground, dark)
         // One step up, for the sidebar, the panel and the bar (the designer's
         // spec, §1).
@@ -179,7 +229,7 @@ enum Style {
         button.page-button { min-height: 36px; min-width: 64px; padding: 0 16px; font-size: 15px; }
         /* The word a step darker than Copper by day, so it reads 4.9:1 on
            its tint over the raised ground (Theme.quietInk). */
-        button.quiet { background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(Tokens.quietInk, dark)); box-shadow: none; }
+        button.quiet { background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(tokens.quietInk, dark)); box-shadow: none; }
         button.quiet:hover { background-color: alpha(\(accent), 0.18); }
         button.quiet:active { background-color: alpha(\(accent), 0.24); }
         /* A page head's squares after Play and Shuffle (the version filter,
@@ -187,10 +237,10 @@ enum Style {
            the filter filled as Play while a kind is off, the given heart in
            the accent (button.given, below). */
         button.square, menubutton.square > button { min-width: 36px; min-height: 36px; padding: 0; border-radius: 6px; box-shadow: none;
-            background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(Tokens.quietInk, dark)); }
+            background-color: alpha(\(accent), \(Tokens.ActionButton.quietTint)); color: \(hex(tokens.quietInk, dark)); }
         button.square:hover, menubutton.square > button:hover { background-color: alpha(\(accent), 0.18); }
         button.square:active, menubutton.square > button:active { background-color: alpha(\(accent), 0.24); }
-        menubutton.square.on > button { background-color: \(accent); color: \(hex(Tokens.onAccent, dark)); }
+        menubutton.square.on > button { background-color: \(accent); color: \(hex(tokens.onAccent, dark)); }
         /* Home's Your Station and the music to go on with, on a ground one
            step up, flat, its corners concentric with the art's 6 at 12 in. */
         .home-card { background-color: \(raised); border-radius: \(Int(Tokens.Radius.card))px; padding: 12px 36px 12px 12px; }
