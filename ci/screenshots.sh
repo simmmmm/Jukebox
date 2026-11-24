@@ -692,25 +692,42 @@ snapshots_round() {
 # is atomic. A lock older than 15 minutes is a cancelled run's, and is taken.
 boot_lock=/tmp/jukebox-simulator-boot.lock
 take_boot_lock() {
-  local waited=0
+  local waited=0 holder
   until mkdir "$boot_lock" 2> /dev/null; do
-    if [[ -n $(find "$boot_lock" -maxdepth 0 -mmin +15 2> /dev/null) ]]; then
-      rmdir "$boot_lock" 2> /dev/null || true
-      continue
+    # A holder that is gone (a cancelled run) leaves its lock: taken over at
+    # once, not after a wait (run 45472090678 waited 15 minutes on one).
+    holder=$(cat "$boot_lock/pid" 2> /dev/null || true)
+    if [[ -z $holder ]] || ! kill -0 "$holder" 2> /dev/null; then
+      sleep 2
+      holder=$(cat "$boot_lock/pid" 2> /dev/null || true)
+      if [[ -z $holder ]] || ! kill -0 "$holder" 2> /dev/null; then
+        rm -rf "$boot_lock"
+        continue
+      fi
     fi
     sleep 5
     waited=$((waited + 5))
     (( waited >= 900 )) && { problem "another runner held the simulator boot for 15 minutes"; return 1; }
   done
+  echo $$ > "$boot_lock/pid"
 }
-drop_boot_lock() { rmdir "$boot_lock" 2> /dev/null || true; }
+drop_boot_lock() {
+  [[ $(cat "$boot_lock/pid" 2> /dev/null) == "$$" ]] && rm -rf "$boot_lock"
+  return 0
+}
 
 # SpringBoard up and staying up: a broken boot crashes it in a loop, so it is
 # looked at twice, 10 s apart.
+# Read whole, then searched: `grep -q` on the pipe ends it early, launchctl
+# dies of SIGPIPE, and under pipefail a sound boot read as a broken one
+# (run 45476361618 walked nothing).
 springboard_up() {
-  sim spawn "$1" launchctl list 2> /dev/null | grep -q 'com.apple.SpringBoard' || return 1
+  local list
+  list=$(sim spawn "$1" launchctl list 2> /dev/null || true)
+  [[ $list == *SpringBoard* ]] || return 1
   sleep 10
-  sim spawn "$1" launchctl list 2> /dev/null | grep -q 'com.apple.SpringBoard'
+  list=$(sim spawn "$1" launchctl list 2> /dev/null || true)
+  [[ $list == *SpringBoard* ]]
 }
 
 # Booted, alone, and sound; else shut down at once, emptied, and booted once
