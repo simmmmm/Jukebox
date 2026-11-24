@@ -331,6 +331,10 @@ private struct Places: View {
                             ArchMark(size: 16, style: .template)
                         }
                     }
+                    // Under Radio, out of the library's places, as on Linux:
+                    // "on your jukebox mag onder radio", "dan houden we alle
+                    // zoekopties puur" (the photographer, 24 November 2026).
+                    glyphRow(.library(.yourYear), "On Your Jukebox", symbol: "calendar")
                     // No Search: the bar's field is its way in. A hair only
                     // before a group with rows: Home's is never empty.
                     if settings.showsLibrary {
@@ -346,9 +350,6 @@ private struct Places: View {
                     glyphRow(.library(.genres), "Genres", symbol: "guitars")
                     glyphRow(.library(.recentlyAdded), "Recently Added", symbol: "clock")
                     glyphRow(.library(.downloaded), "Downloaded", symbol: "arrow.down.circle")
-                    // Out of Settings: the year's music is content, a page
-                    // of the library's, last, as on Linux. No switch.
-                    glyphRow(.library(.yourYear), "On Your Jukebox", symbol: "calendar")
                     if settings.shows(.sidebarPlaylists) && !library.playlists.isEmpty {
                         hair
                         ForEach(library.playlists) { playlist in

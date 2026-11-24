@@ -58,6 +58,10 @@ enum MainWindow {
     private static let sections: [(String, String, AppSettings.Page?, () -> Widget)?] = [
         ("Home", "go-home-symbolic", nil, HomePage.make),
         ("Radio", Glyphs.name("radio"), .radio, RadioPage.make),
+        // Under Radio, out of the library's places, so those stay what is
+        // on the server: "on your jukebox mag onder radio", "dan houden we
+        // alle zoekopties puur" (the photographer, 24 November 2026).
+        ("On Your Jukebox", "x-office-calendar-symbolic", nil, YourYearPage.make),
         nil,
         ("Albums", "media-optical-symbolic", .albums, LibraryPages.albums),
         ("Artists", "avatar-default-symbolic", .artists, LibraryPages.artists),
@@ -68,13 +72,10 @@ enum MainWindow {
         ("Recently Added", Glyphs.name("clock"), .recentlyAdded, LibraryPages.recentlyAdded),
         // What is on this computer: what plays without a connection.
         ("Downloaded", Glyphs.name("download"), .downloaded, DownloadedPage.make),
-        // Out of Preferences: the year's music is content, not a setting
-        // (21 November 2026). Last, so no other place moves; no switch.
-        ("On Your Jukebox", "x-office-calendar-symbolic", nil, YourYearPage.make),
     ]
 
     /// On Your Jukebox's place in `sections`, for the primary menu's item.
-    private static var yourYearIndex: Int { sections.count - 1 }
+    private static let yourYearIndex = 2
 
     static func present(in application: UnsafeMutablePointer<AdwApplication>) {
         // A second launch shows the window there is.
