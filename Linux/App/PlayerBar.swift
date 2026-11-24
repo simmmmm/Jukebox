@@ -248,7 +248,7 @@ enum PlayerBar {
     }
 
     /// The same in Pango markup, for words that wrap (Full Player's byline).
-    static let losslessMarkup = "<span font_variant=\"all-small-caps\" weight=\"500\">Lossless</span>"
+    static let losslessMarkup = "<span font_variant=\"all-small-caps\" weight=\"500\" size=\"9pt\">Lossless</span>"
 
     /// A button of words laid over `words` in the song (placeLink), at
     /// their place and size: the same words, so they line up and end in
