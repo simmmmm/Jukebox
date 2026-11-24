@@ -185,7 +185,11 @@ struct QueueView: View {
                                      autoplay: settings.autoplay, repeatMode: player.repeatMode,
                                      played: player.played)
         let head = UpNextList.head(player.context, playing: player.currentTrack, library: library, mixes: mixes)
-        return List {
+        // The head above the list, not a row of it, as Linux's panel has
+        // it: a row, the Mac's list lit it edge to edge under the pointer
+        // ("er zit hier een rare hover op in mac", the photographer, 24
+        // November 2026).
+        return VStack(spacing: 0) {
             if let head {
                 panelHead(head)
                     .padding(.top, Theme.Space.s)
@@ -193,9 +197,15 @@ struct QueueView: View {
                     .overlay(alignment: .bottom) {
                         Hairline(inset: 0)
                     }
+                    .padding(.horizontal, Theme.Space.l)
                     .padding(.bottom, Theme.Space.m)
-                    .panelRow()
             }
+            panelSongs(items)
+        }
+    }
+
+    private func panelSongs(_ items: [UpNextList.Item]) -> some View {
+        List {
             ForEach(Array(items.enumerated()), id: \.element.panelKey) { i, item in
                 panelItem(item, at: i, in: items)
                     .moveDisabled(!item.isUpcoming)

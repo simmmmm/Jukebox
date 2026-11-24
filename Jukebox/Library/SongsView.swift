@@ -35,7 +35,10 @@ struct SongsView: View {
                         PageEmptyLine("Songs on your \(library.serverKind) server appear here.")
                     }
                 } else {
-                    WordButton(searching ? "Shuffle These" : "Shuffle") {
+                    // On the fact's left edge, as Linux's word under it: 8 in,
+                    // it read as a stray button ("hier zit nog een rare knop
+                    // op mac", the photographer, 24 November 2026).
+                    WordButton(searching ? "Shuffle These" : "Shuffle", inline: true) {
                         player.play(shown, context: context(searching: searching), shuffled: true)
                     }
                     PageTrackRows(tracks: shown, play: { track in
