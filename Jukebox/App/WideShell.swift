@@ -225,6 +225,9 @@ struct WideShell: View {
                 // Outside the place's id: a place chosen while typing keeps
                 // the field, and its keys.
                 .modifier(PageBar())
+                #if os(macOS)
+                .modifier(NoTopEdgeEffect())
+                #endif
                 .searchFocused($isSearchFocused)
                 .routeDestinations(each: PageBar(isPushed: true))
         }
@@ -501,6 +504,21 @@ private struct BrandMark: View {
 }
 
 #if os(macOS)
+/// No band under the title bar over the page: macOS 26 draws a scroll edge
+/// effect there, a lighter strip that came up under the pointer over an
+/// empty bar ("nu heeft de boven niet bestaande balk nog een hover
+/// state?", the photographer, 24 November 2026). The page's ground runs
+/// up to the traffic lights' row, as Linux's does.
+private struct NoTopEdgeEffect: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 26, *) {
+            content.scrollEdgeEffectHidden(true, for: .top)
+        } else {
+            content
+        }
+    }
+}
+
 /// The places' head in the Mac's title bar, beside the traffic lights: as
 /// wide as what is left of the places there, so what follows it in the bar
 /// starts over the page.
