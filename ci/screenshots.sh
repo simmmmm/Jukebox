@@ -137,7 +137,7 @@ appearance() {
   for try in 1 2 3 4 5; do
     if (( try == 4 )); then
       bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1
-      bounded "$(allow 300)" xcrun simctl bootstatus "$udid" -b > /dev/null 2>&1
+      boot_healthy "$udid" appearance || return 1
     fi
     bounded 45 xcrun simctl ui "$udid" appearance "$mode" > /dev/null 2>&1
     now=$(bounded 30 xcrun simctl ui "$udid" appearance 2> /dev/null)
@@ -674,6 +674,54 @@ snapshots_round() {
   endgroup
 }
 
+# One simulator boots at a time on this machine, whichever runner asks: two
+# booting at once on the MacBook left one's SpringBoard unable to load
+# Foundation ("Library missing"), and it crashed again and again, each crash
+# a dialog on the photographer's screen ("kan je er niet gewoon voor zorgen
+# dat het niet crashed?", 24 November 2026). A directory is the lock: mkdir
+# is atomic. A lock older than 15 minutes is a cancelled run's, and is taken.
+boot_lock=/tmp/jukebox-simulator-boot.lock
+take_boot_lock() {
+  local waited=0
+  until mkdir "$boot_lock" 2> /dev/null; do
+    if [[ -n $(find "$boot_lock" -maxdepth 0 -mmin +15 2> /dev/null) ]]; then
+      rmdir "$boot_lock" 2> /dev/null || true
+      continue
+    fi
+    sleep 5
+    waited=$((waited + 5))
+    (( waited >= 900 )) && { problem "another runner held the simulator boot for 15 minutes"; return 1; }
+  done
+}
+drop_boot_lock() { rmdir "$boot_lock" 2> /dev/null || true; }
+
+# SpringBoard up and staying up: a broken boot crashes it in a loop, so it is
+# looked at twice, 10 s apart.
+springboard_up() {
+  sim spawn "$1" launchctl list 2> /dev/null | grep -q 'com.apple.SpringBoard' || return 1
+  sleep 10
+  sim spawn "$1" launchctl list 2> /dev/null | grep -q 'com.apple.SpringBoard'
+}
+
+# Booted, alone, and sound; else shut down at once, emptied, and booted once
+# more; else shut down and left, so a broken one never keeps crashing.
+boot_healthy() {
+  local udid=$1 kind=$2 try
+  for try in 1 2; do
+    take_boot_lock || return 1
+    if bounded "$(allow 600)" xcrun simctl bootstatus "$udid" -b > "$work/boot-$kind.log" 2>&1 \
+        && springboard_up "$udid"; then
+      drop_boot_lock
+      return 0
+    fi
+    bounded 120 xcrun simctl shutdown "$udid" > /dev/null 2>&1 || true
+    drop_boot_lock
+    problem "the $kind simulator did not boot sound (try $try: $(tail -1 "$work/boot-$kind.log"))"
+    [[ $try == 1 ]] && { bounded 120 xcrun simctl erase "$udid" > /dev/null 2>&1 || true; }
+  done
+  return 1
+}
+
 # A device's round: its simulator booted and made to look the same each time,
 # a first start of the app, then its walks.
 round() {
@@ -709,9 +757,8 @@ round() {
     endgroup
     return
   fi
-  if ! bounded "$(allow 600)" xcrun simctl bootstatus "$udid" -b > "$work/boot-$kind.log" 2>&1; then
-    problem "the $kind simulator did not boot ($(tail -1 "$work/boot-$kind.log"))"
-    echo "not walked: the simulator did not boot" >> "$out/$kind/verdict.txt"
+  if ! boot_healthy "$udid" "$kind"; then
+    echo "not walked: the simulator did not boot sound" >> "$out/$kind/verdict.txt"
     endgroup
     return
   fi
