@@ -52,7 +52,8 @@ enum Preferences {
         })
         // The Mac's Streaming on a Hotspot, in GNOME's word for a connection
         // that costs data (Platform.swift's watch, DataCost).
-        adw_preferences_group_add(ptr(streaming), combo("Streaming on a Metered Connection", qualities.map { $0.0 },
+        // Each with what an hour of it costs, as the iPhone's Cellular Streaming.
+        adw_preferences_group_add(ptr(streaming), combo("Streaming on a Metered Connection", qualities.map { "\($0.0) · \($0.1.hourCost)" },
                                                         selected: qualities.firstIndex { $0.1 == settings.cellularQuality.shown(opus: opus) } ?? 2) {
             settings.cellularQuality = qualities[$0].1
         })

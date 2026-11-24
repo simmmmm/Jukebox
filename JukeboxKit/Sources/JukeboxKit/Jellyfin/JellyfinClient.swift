@@ -171,6 +171,16 @@ public enum StreamQuality: String, Sendable, Hashable, Codable, CaseIterable {
         case .efficient, .low: 128_000
         }
     }
+
+    /// What an hour of it costs on a mobile network, for the cellular
+    /// picker: "zet bij de cellular streaming ook erachter hoeveel mb per
+    /// uur je verwacht" (the photographer, 24 November 2026). The rate ×
+    /// an hour, rounded; Original is the file's own, about 900 kbit/s for
+    /// a FLAC of a CD.
+    public var hourCost: String {
+        guard let bits = maxBitrate else { return "FLAC ~400 MB/hour" }
+        return "\(Int((Double(bits) * 3600 / 8 / 1_000_000).rounded())) MB/hour"
+    }
 }
 
 /// One playback report, so Jellyfin counts plays and shows the session in

@@ -8,6 +8,15 @@ import Testing
 struct DataCostTests {
     let now = Date(timeIntervalSince1970: 1_800_000_000)
 
+    @Test("An hour's cost on the cellular picker: the rate times an hour")
+    func hourCost() {
+        #expect(StreamQuality.high.hourCost == "144 MB/hour")
+        #expect(StreamQuality.normal.hourCost == "115 MB/hour")
+        #expect(StreamQuality.low.hourCost == "58 MB/hour")
+        #expect(StreamQuality.efficient.hourCost == "58 MB/hour")
+        #expect(StreamQuality.original.hourCost == "FLAC ~400 MB/hour")
+    }
+
     @Test("The quality follows the network the song starts on")
     func quality() {
         #expect(DataCost.quality(expensive: true, wifi: .original, cellular: .normal) == .normal)
