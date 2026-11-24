@@ -448,6 +448,13 @@ posts BUFFERING again while that one fills (measured), which is the next
 song arriving. Open: a skipped song counts as a clean one, and nothing on
 screen says a stream is lower.
 
+Now Playing says "Lossless" (24 November 2026) when the engine was given
+the file as it is: streamed at Original, or kept at Original, and a
+container that is lossless and sent unconverted (flac, wav, aiff, aif,
+alac; JukeboxKit's `Lossless`). ape, wv, tta, dsf and dff are converted
+by every server even at Original. An .m4a reads as not lossless, as Track
+carries no codec to tell ALAC from AAC.
+
 Measured through a 60 kbit/s proxy: Jellyfin's HLS master has one variant,
 so no adaptive HLS; the app decides per song. playbin3 posts BUFFERING
 under 100 mid-song for a file as it is and for Opus HLS. AVPlayer waits

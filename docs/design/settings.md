@@ -77,7 +77,7 @@ same; the Mac asks over the main window (`Commands.swift`, RootView).
 | # | Row | Words under it | Mac | iPad | iPhone | Linux | Default |
 |---|---|---|---|---|---|---|---|
 | 1 | Streaming Quality | | "Streaming" | "Wi-Fi Streaming" | "Wi-Fi Streaming" | ✓ | Original |
-| 2 | Streaming on a hotspot or cellular | | "Streaming on a Hotspot" | "Cellular Streaming" | "Cellular Streaming" | — Linux never sees a metered network (`Platform.swift`) | Normal |
+| 2 | Streaming on a hotspot or cellular | | "Streaming on a Hotspot" | "Cellular Streaming" | "Cellular Streaming" | "Streaming on a Metered Connection" (GLib's network-metered, `Platform.swift`) | Normal |
 | | *Footer of 1–2* | "Original plays your files as they are. The others have Jellyfin convert them to AAC at that rate, which uses less data." Where the server makes Opus (docs/SERVERS.md, "Opus"), the pickers have "Efficient (Opus, 128 kbit/s)" between Normal and Low and the footer adds "Efficient makes Opus instead, at half of Normal's data." | ✓ | ✓ | ✓ | ✓ | |
 | 2a | Adjust to the Connection | "When a song has to wait for the network, the next ones stream lower until it holds again." Under the pickers, in their section (Linux: their group) | ✓ | ✓ | ✓ | ✓ | on |
 | 3 | Autoplay | "When an album or a playlist ends, play on with a station from its last song." | ✓ | ✓ | ✓ | ✓ | on |
@@ -126,7 +126,7 @@ Every page is shown by default.
 | 1 | Keep Songs I Play: "Songs you play often or lately stay on this Mac, to play without a connection." | ✓ | ✓ | ✓ | ✓ | on |
 | 2 | Up To (while 1 is on) | ✓ | ✓ | ✓ | ✓ | 5 GB |
 | 3 | Download Quality | ✓ | ✓ | ✓ | ✓ | High |
-| 4 | Download on a Hotspot / over Cellular | ✓ | ✓ | ✓ | — no metered network on Linux | off |
+| 4 | Download on a Hotspot / over Cellular | ✓ | ✓ | ✓ | "Download on a Metered Connection" | off |
 | | *Footer of 1–4*: what each quality means on this server, and when songs wait | ✓ | ✓ | ✓ | ✓ | |
 | 5 | Downloaded, Kept, and what the queue is doing | ✓ | ✓ | ✓ | ✓ | |
 | 6 | Remove All Downloads, asked first | ✓ trailing | ✓ row | ✓ row | ✓ | |

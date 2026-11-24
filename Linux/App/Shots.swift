@@ -180,6 +180,18 @@ enum Shots {
                 await step("12-now-playing-lyrics", wait: 3)
                 await frames("12b-closing") { NowPlayingPage.close() }
             }
+            // "Lossless" under the title (PlayQueue.playsLossless): the
+            // demo's songs are all m4a, so one plays as if it were a FLAC.
+            // Streamed: one kept on the machine plays as it was saved (the
+            // automatic keep holds the songs played so far, not at Original).
+            if var song = app.library.tracks.first(where: { app.offline.localURL(for: $0.id) == nil }) {
+                song.container = "flac"
+                app.panel.isOpen = false
+                app.player.play([song], context: QueueContext(.songs, title: "Songs"))
+                NowPlayingPage.open()
+                await step("12c-now-playing-lossless", wait: 3)
+                NowPlayingPage.close()
+            }
             // Your Station on the air; then the panel with the radio's reasons.
             app.panel.isOpen = false
             app.radio.start(.personal)

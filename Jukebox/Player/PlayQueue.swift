@@ -784,6 +784,7 @@ class PlayQueue {
         playing?.fadesIn = fadesIn && playingElsewhere == nil
             && before.map { Self.crossfades(from: $0, to: entry.track) } == true
         engineBegan()
+        takeSound(of: entry)
         elapsed = 0
         duration = entry.track.duration
         engineVolume(level(for: entry.track))
@@ -833,10 +834,41 @@ class PlayQueue {
     /// requests, the preload) after the device moves; asked again at the
     /// next song.
     func address(of entry: QueueEntry, playSessionID: String) -> URL? {
-        if let file = offline?.localURL(for: entry.track.id) { return file }
-        guard let url = server?.streamURL(for: entry.track, quality: streamingQuality, playSessionID: playSessionID),
+        if let file = offline?.localURL(for: entry.track.id) {
+            noteSound(of: entry, keptAt: offline?.manifest.file(entry.track.id)?.quality)
+            return file
+        }
+        let quality = streamingQuality
+        noteSound(of: entry, streamedAt: quality)
+        guard let url = server?.streamURL(for: entry.track, quality: quality, playSessionID: playSessionID),
               PlainHTTPGuard.mayFetchNow(url) else { return nil }
         return url
+    }
+
+    /// Now Playing's "Lossless": the song playing is heard lossless here,
+    /// as the engine was given it (Lossless.heard), not as the quality is
+    /// now. Never while it plays elsewhere. "als originals lossless zijn
+    /// dat we dat tonen als je gaat streamen" (the photographer, 24
+    /// November 2026).
+    var playsLossless: Bool { losslessHere && playsOn == nil && current != nil }
+    private(set) var losslessHere = false
+    /// The entries last given to the engine lossless, the one held next
+    /// among them: its quality may differ from the one playing.
+    @ObservationIgnored private var givenLossless: Set<UUID> = []
+
+    /// What `entry`'s address gives the engine, at `address(of:)`: kept at
+    /// `keptAt`, or streamed at `streamedAt`. Kept until it plays: the
+    /// entry held next may be the one playing (Repeat All on one song).
+    func noteSound(of entry: QueueEntry, streamedAt: StreamQuality? = nil, keptAt: DownloadQuality? = nil) {
+        let lossless = Lossless.heard(entry.track.container, streamedAt: streamedAt, keptAt: keptAt)
+        if lossless { givenLossless.insert(entry.id) } else { givenLossless.remove(entry.id) }
+    }
+
+    /// `entry` plays now as its address gave it: at `begin`, or given
+    /// again by Play Here (PlayOn.swift).
+    func takeSound(of entry: QueueEntry) {
+        let lossless = givenLossless.remove(entry.id) != nil
+        if losslessHere != lossless { losslessHere = lossless }
     }
 
     /// What the next stream is asked at: the target, `streamQuality`, or

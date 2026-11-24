@@ -614,11 +614,19 @@ enum NowPlayingPage {
             setText(elsewhere, device.map { "Playing on \($0.name)" } ?? "")
             elsewhere.isVisible = device != nil
         }
+        // "Lossless" when the song is heard as its lossless file is
+        // (PlayQueue.playsLossless): "als originals lossless zijn dat we dat
+        // tonen als je gaat streamen" (the photographer, 24 November 2026).
+        // A fact of the sound, quiet; its line is always there, only seen
+        // or not, so the centred sleeve never moves for it.
+        let lossless = label("Lossless", "t15", "fact")
+        gtk_widget_set_margin_top(lossless, 8)
+        observe(lossless) { gtk_widget_set_opacity(lossless, app.player.playsLossless ? 1 : 0) }
         // As wide as the sleeve and its record, not wider: the words start
         // at the sleeve's left edge.
-        for words in [title, artist, elsewhere] { gtk_label_set_max_width_chars(ptr(words), 1) }
+        for words in [title, artist, lossless, elsewhere] { gtk_label_set_max_width_chars(ptr(words), 1) }
         gtk_widget_set_margin_top(title, 32)
-        let content = vbox([sleeve.widget, title, artist, elsewhere]).align(horizontal: GTK_ALIGN_CENTER, vertical: GTK_ALIGN_CENTER)
+        let content = vbox([sleeve.widget, title, artist, lossless, elsewhere]).align(horizontal: GTK_ALIGN_CENTER, vertical: GTK_ALIGN_CENTER)
 
         // The room itself, flat (the land under it is not built: whether it
         // turns is the photographer's to say); its size sets the sleeve's.

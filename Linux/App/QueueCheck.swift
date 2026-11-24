@@ -32,13 +32,16 @@ private final class Bench: PlayQueue {
     var held: UUID?
     var heldAt: StreamQuality?
 
+    /// Streamed, as the queue's own would ask it (`noteSound`).
     override func address(of entry: QueueEntry, playSessionID: String) -> URL? {
-        URL(fileURLWithPath: "/dev/null")
+        noteSound(of: entry, streamedAt: streamingQuality)
+        return URL(fileURLWithPath: "/dev/null")
     }
 
     override func enginePreload(_ entry: QueueEntry?) {
         held = entry?.id
         heldAt = entry == nil ? nil : streamingQuality
+        if let entry { _ = address(of: entry, playSessionID: "held") }
     }
 
     /// The target, whatever this machine's settings say.
@@ -324,6 +327,31 @@ enum QueueCheck {
         a.bufferingChanged(false, now: Date().addingTimeInterval(9))
         expect(a.streamingQuality == .normal, "a song left while it waited: the next one's start, 9 s, steps down")
         a.stop()
+
+        // Now Playing's "Lossless": the song playing as the engine was
+        // given it, the one held next too, never elsewhere.
+        let flac = (1...3).map { Track(id: "f\($0)", name: "Flac \($0)", duration: 200, container: "flac") }
+        let l = Bench(settings: AppSettings(defaults: UserDefaults(suiteName: "jukebox-queue-check") ?? .standard),
+                      history: HistoryStore())
+        l.play(flac, context: album)
+        expect(l.playsLossless, "a FLAC streamed as it is plays lossless")
+        l.playsOn = PlayOnDevice(id: "check", name: "Check", kind: .chromecast, address: "")
+        expect(!l.playsLossless, "nothing while it plays elsewhere")
+        l.playsOn = nil
+        expect(l.playsLossless, "and here again, as it was given")
+        // One song on Repeat All: the entry held next is the one playing.
+        l.play([flac[0]], context: album)
+        l.repeatMode = .all
+        l.bufferingChanged(true, now: Date().addingTimeInterval(10))
+        l.bufferingChanged(false, now: Date().addingTimeInterval(11))
+        expect(l.streamingQuality == .normal && l.playsLossless,
+               "a step down: the song playing stays as it was given, though held again lower after itself")
+        l.begin(l.queue[0], at: 0, playSessionID: "again")
+        expect(!l.playsLossless, "round again by itself, as held at Normal: converted")
+        l.repeatMode = .off
+        l.play(tracks, context: album)
+        expect(!l.playsLossless, "a song of no known container is not")
+        l.stop()
 
         // Linux's engine (AudioPlayer.swift): the listener's volume is the
         // stream's, GNOME's per-app volume, both ways; the song's gain is

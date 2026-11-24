@@ -350,6 +350,7 @@ extension PlayQueue {
             return
         }
         engineReplace(with: url, entry: entry, playSessionID: playing.playSessionID, play: wasPlaying)
+        takeSound(of: entry)
         wantsToPlay = wasPlaying
         engineStart(wasPlaying)
         if position > 1 { seek(to: position) }

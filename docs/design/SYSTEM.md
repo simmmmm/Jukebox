@@ -269,6 +269,18 @@ asked. Open on a song without, they give way to the sleeve or Up Next; no
   `LyricsFinder.hasNone`.
 - GNOME: `PlayerBar.swift`, `Panel.swift` (`songHasNoLyrics`).
 
+### Lossless
+"Lossless" on Now Playing while the song is heard as its lossless file is
+(`PlayQueue.playsLossless`), in the facts' ink, sentence case, no pill or
+icon. Its place is kept, so nothing moves when it comes or goes. Not in the
+bar, the mini player or the panel. "als originals lossless zijn dat we dat
+tonen als je gaat streamen" (24 November 2026).
+- Apple: the iPhone's between the scrubber's two times, where Music has
+  it (`NowPlayingView.controls`); Full Player wide 8 under the byline, 15 at
+  60 % (`roomTitle`).
+- GNOME: Full Player, 8 under the artist, `t15 fact`, seen or not by its
+  opacity (`PlayerBar.swift`, `NowPlayingPage`).
+
 ### The player bar and the mini player
 Wide: the bar, 88 across the window's foot, three zones from
 `DesktopMeasures`; Play 40, the rest 32. The Mini Player window on the
