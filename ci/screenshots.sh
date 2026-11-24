@@ -718,10 +718,16 @@ drop_boot_lock() {
 
 # SpringBoard up and staying up: a broken boot crashes it in a loop, so it is
 # looked at twice, 10 s apart.
+# Read whole, then searched: `grep -q` on the pipe ends it early, launchctl
+# dies of SIGPIPE, and under pipefail a sound boot read as a broken one
+# (run 45476361618 walked nothing).
 springboard_up() {
-  sim spawn "$1" launchctl list 2> /dev/null | grep -q 'com.apple.SpringBoard' || return 1
+  local list
+  list=$(sim spawn "$1" launchctl list 2> /dev/null || true)
+  [[ $list == *SpringBoard* ]] || return 1
   sleep 10
-  sim spawn "$1" launchctl list 2> /dev/null | grep -q 'com.apple.SpringBoard'
+  list=$(sim spawn "$1" launchctl list 2> /dev/null || true)
+  [[ $list == *SpringBoard* ]]
 }
 
 # Booted, alone, and sound; else shut down at once, emptied, and booted once
