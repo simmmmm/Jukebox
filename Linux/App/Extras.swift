@@ -107,9 +107,11 @@ enum MiniPlayer {
         let art = Art(64)
         let title = label("", "t15", "medium")
         let artist = label("", "t13", "fact")
-        let words = vbox(spacing: 4, [title, artist]).expand(horizontal: true).align(vertical: GTK_ALIGN_CENTER)
+        // "Lossless" after the artist, as in the bar (PlayerBar.losslessTag).
+        let lossless = PlayerBar.losslessTag("t13", "fact")
+        let artistLine = hbox(spacing: 4, [artist, lossless])
+        let words = vbox(spacing: 4, [title, artistLine]).expand(horizontal: true).align(vertical: GTK_ALIGN_CENTER)
         gtk_label_set_max_width_chars(ptr(title), 1)
-        gtk_label_set_max_width_chars(ptr(artist), 1)
         let song = hbox(spacing: 12, [art.widget, words])
         let previous = iconButton("media-skip-backward-symbolic", "Previous", "flat") { app.player.previous() }
         let play = iconButton("media-playback-start-symbolic", "Play", "circular", "play") { app.player.togglePlayPause() }
@@ -133,6 +135,7 @@ enum MiniPlayer {
             art.show(track?.artwork, sleeve: track.map(TitleSleeve.Words.init(track:)))
             setText(title, track?.name ?? "")
             setText(artist, track?.artistLine ?? "")
+            lossless.isVisible = track?.artistLine.isEmpty == false && player.playsLossless
             setIcon(play, player.isPlaying ? "media-playback-pause-symbolic" : "media-playback-start-symbolic")
             play.tooltip(player.isPlaying ? "Pause" : "Play")
             let length = track?.duration ?? 0

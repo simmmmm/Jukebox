@@ -22,10 +22,13 @@ struct MacMiniPlayer: View {
                     Text(track?.name ?? String(localized: "Nothing playing"))
                         .desktopFont(Tokens.Size.body15.size, weight: .medium)
                         .lineLimit(1)
-                    Text(track?.artistLine ?? "")
-                        .desktopFont(Tokens.Size.fact13.size)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    // "Lossless" after the artist, as in the bar (ArtistLine).
+                    ArtistLine(spoken: track?.artistLine ?? "") {
+                        Text(track?.artistLine ?? "")
+                            .lineLimit(1)
+                    }
+                    .desktopFont(Tokens.Size.fact13.size)
+                    .foregroundStyle(.secondary)
                 }
                 Spacer(minLength: 0)
             }

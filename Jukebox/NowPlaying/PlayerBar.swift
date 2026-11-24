@@ -182,21 +182,23 @@ struct PlayerBar: View {
             .allowsHitTesting(false)
         } else {
             if !track.artistLine.isEmpty {
-                if let ref = track.primaryArtist, let artist = library.artist(ref) {
-                    BarLink(help: "Go to Artist", isAnyHovered: $isLinkHovered) {
-                        navigator.open(.artist(artist))
-                    } label: {
+                // "Lossless" after the name, outside its link (ArtistLine).
+                ArtistLine(spoken: track.artistLine) {
+                    if let ref = track.primaryArtist, let artist = library.artist(ref) {
+                        BarLink(help: "Go to Artist", isAnyHovered: $isLinkHovered) {
+                            navigator.open(.artist(artist))
+                        } label: {
+                            Text(track.artistLine)
+                        }
+                        .accessibilityHint("Opens the artist")
+                    } else {
                         Text(track.artistLine)
-                            .foregroundStyle(.secondary)
+                            .frame(height: 16)
+                            .allowsHitTesting(false)
                     }
-                    .accessibilityLabel(track.artistLine)
-                    .accessibilityHint("Opens the artist")
-                } else {
-                    Text(track.artistLine)
-                        .foregroundStyle(.secondary)
-                        .frame(height: 16)
-                        .allowsHitTesting(false)
                 }
+                .foregroundStyle(.secondary)
+                .frame(height: 16)
             }
             if let station = player.context?.station {
                 BarLink(help: "Now Playing", isAnyHovered: $isLinkHovered) {
@@ -231,7 +233,8 @@ struct PlayerBar: View {
         if let station = player.context?.station {
             return "\(track.name), \(station.title)"
         }
-        return track.artistLine.isEmpty ? track.name : "\(track.name), \(track.artistLine)"
+        let lossless = player.playsLossless ? ", \(String(localized: "Lossless"))" : ""
+        return track.artistLine.isEmpty ? track.name : "\(track.name), \(track.artistLine)\(lossless)"
     }
 
     /// Less like this: skips the song and keeps it, and songs like it, off
