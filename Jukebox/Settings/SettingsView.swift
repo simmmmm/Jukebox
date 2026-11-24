@@ -419,18 +419,18 @@ private struct SettingsPlaybackSection: View {
                 // there is a phone's hotspot or Low Data Mode (NetworkCost),
                 // so the words say that.
                 Picker("Streaming", selection: shown($settings.wifiQuality)) {
-                    qualityOptions
+                    qualityOptions()
                 }
                 Picker("Streaming on a Hotspot", selection: shown($settings.cellularQuality)) {
-                    qualityOptions
+                    qualityOptions(withCost: true)
                 }
             } else {
                 // Music's own words for the two.
                 Picker("Wi-Fi Streaming", selection: shown($settings.wifiQuality)) {
-                    qualityOptions
+                    qualityOptions()
                 }
                 Picker("Cellular Streaming", selection: shown($settings.cellularQuality)) {
-                    qualityOptions
+                    qualityOptions(withCost: true)
                 }
             }
             // The pickers' quality is the target (QualitySteps); Linux's words.
@@ -516,9 +516,11 @@ private struct SettingsPlaybackSection: View {
         return "Play every song at the loudness Jellyfin measured, so loud and quiet records sit side by side."
     }
 
-    private var qualityOptions: some View {
+    /// `withCost`: each with what an hour of it costs (StreamQuality.hourCost),
+    /// on the pickers for a network that costs data.
+    private func qualityOptions(withCost: Bool = false) -> some View {
         ForEach(StreamQuality.offered(opus: opus), id: \.self) { quality in
-            label(for: quality)
+            (withCost ? label(for: quality) + Text(verbatim: " · \(quality.hourCost)") : label(for: quality))
                 .tag(quality)
         }
     }
