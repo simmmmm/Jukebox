@@ -590,8 +590,10 @@ enum NowPlayingPage {
     private static func sleepTimer() -> Widget {
         let left = label("", "t15", "times")
         let moon = gtk_image_new_from_icon_name("weather-clear-night-symbolic")!
-        let button = gtk_menu_button_new()!.css("flat").named("Sleep Timer")
-        gtk_menu_button_set_child(ptr(button), hbox(spacing: 8, [left, moon]))
+        // A square, as Close and ⋮, filled while it runs, as the version
+        // filter is while a kind is off; the words before it, outside it.
+        let button = gtk_menu_button_new()!.css("square").named("Sleep Timer")
+        gtk_menu_button_set_child(ptr(button), moon)
         // The words apart from the menu: they change every second, and the
         // menu, made again, would close under the pointer.
         observe(left) {
@@ -611,8 +613,13 @@ enum NowPlayingPage {
             // Off only while it runs; the words before the moon say which.
             if player.sleepChoice != nil { items.insert(("Off", { app.player.setSleepTimer(nil) }), at: 0) }
             gtk_menu_button_set_popover(ptr(button), popoverMenu(items))
+            if player.sleepChoice != nil {
+                gtk_widget_add_css_class(button, "on")
+            } else {
+                gtk_widget_remove_css_class(button, "on")
+            }
         }
-        return button
+        return hbox(spacing: 8, [left, button])
     }
 
     private static func ground() {
@@ -657,10 +664,13 @@ enum NowPlayingPage {
         gtk_overlay_set_child(ptr(overlay), room)
         gtk_overlay_add_overlay(ptr(overlay), content)
 
-        down = iconButton("go-down-symbolic", "Close Full Player", "flat") { close() }
+        // The page head's squares, not bare glyphs: "we hebben hier 3
+        // iconen die alleen het icoon zijn ipv de icon button die we nu
+        // steeds hanteren" (the photographer, 24 November 2026).
+        down = iconButton("go-down-symbolic", "Close Full Player", "square") { close() }
         // ⋮: the song's menu, made as it opens (the song and the window's
         // width decide it), under the button.
-        more = iconButton("view-more-symbolic", "More", "flat") {
+        more = iconButton("view-more-symbolic", "More", "square") {
             showMenu(at: more, x: Double(gtk_widget_get_width(more)) / 2, y: Double(gtk_widget_get_height(more)),
                      PlayerBar.songMenu())
         }
