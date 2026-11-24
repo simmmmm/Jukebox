@@ -719,9 +719,13 @@ enum LibraryPages {
             if songs.map(\.id) != list.items.map(\.id) { list.set(songs) }
             setText(fact, songs.count == 1 ? "1 song" : "\(songs.count) songs")
         }
-        let shuffle = wordButton("Shuffle") {
+        // The quiet Shuffle of an album's or a playlist's head, not a word:
+        // "zo zit het in playlists dus we hebben al een patroon" (the
+        // photographer, 24 November 2026).
+        let shuffle = quietButton("Shuffle") {
             app.player.play(app.library.songsByTitle, context: QueueContext(.songs, title: "Songs"), shuffled: true)
         }
+        gtk_widget_set_margin_top(shuffle, 12)
         let top = vbox(spacing: 4, [pageTitle("Songs"), fact, shuffle])
         return listPage(top, list.widget, grid: false)
     }

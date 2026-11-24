@@ -35,12 +35,15 @@ struct SongsView: View {
                         PageEmptyLine("Songs on your \(library.serverKind) server appear here.")
                     }
                 } else {
-                    // On the fact's left edge, as Linux's word under it: 8 in,
-                    // it read as a stray button ("hier zit nog een rare knop
-                    // op mac", the photographer, 24 November 2026).
-                    WordButton(searching ? "Shuffle These" : "Shuffle", inline: true) {
+                    // The quiet Shuffle of a playlist's head, not a word that
+                    // read as a stray button ("hier zit nog een rare knop op
+                    // mac", "zo zit het in playlists dus we hebben al een
+                    // patroon", the photographer, 24 November 2026).
+                    Button(searching ? "Shuffle These" : "Shuffle") {
                         player.play(shown, context: context(searching: searching), shuffled: true)
                     }
+                    .buttonStyle(.quietAction)
+                    .padding(.top, Theme.Space.m)
                     PageTrackRows(tracks: shown, play: { track in
                         let i = shown.firstIndex(where: { $0.id == track.id }) ?? 0
                         player.play(shown, startingAt: i, context: context(searching: searching))
