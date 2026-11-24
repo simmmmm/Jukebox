@@ -10,18 +10,18 @@
 // was good in the other two came along:
 //
 //   - the block 8 in from the screen's edges, 8 pt corners, on the cover's
-//     colour darkened until Glow on it reads (block(from:)): "meer zoals die
+//     colour darkened until the accent on it reads (block(from:)): "meer zoals die
 //     van spotify maar dan in de kleur van de albumhoes" (19 November 2026);
 //   - on the left a small record, the cover as its label, turning while it
 //     plays: Glas's and Plaat's record, "En de album art draait niet rond"
 //     (20 November 2026, of Plaat's, before it did);
 //   - the title in the serif, as on the sleeve (tells.md, 3), and under it
-//     the artist, or on a station the arch and the station's name in Glow;
+//     the artist, or on a station the arch and the station's name in the accent;
 //   - on the right the heart, next and play or pause. The heart where
 //     Dislike was: "ipv thumbs down het hartje" (20 November 2026). No
 //     AirPlay: "eigenlijk mag van mij het airplay icoontje hier er uit"
 //     (the same day); Now Playing has it;
-//   - a line of 2 points in Glow along the block's foot for where the song
+//   - a line of 2 points in the accent along the block's foot for where the song
 //     is, "WEL over de hele breedte" (19 November 2026);
 //   - a swipe to the left the next song, to the right the one before:
 //     "sowieso swipe naar links rechts voor vorige volgende" (20 November
@@ -157,6 +157,8 @@ struct MiniPlayerTabFoot: View {
 
 struct MiniPlayer: View {
     @Environment(AppModel.self) private var app
+    /// The app's accent (PlayingTint): its night half marks the block.
+    @Environment(\.playingAccent) private var playingAccent
     @Environment(AudioPlayer.self) private var player
     @Environment(RadioController.self) private var radio
     @Environment(Navigator.self) private var navigator
@@ -353,7 +355,7 @@ struct MiniPlayer: View {
                     if let shownError {
                         errorLine(shownError)
                     } else if let station = player.context?.station {
-                        // The station after its mark, in Glow, so the
+                        // The station after its mark, in the accent, so the
                         // listener knows it is the radio and that the heart
                         // teaches it. The accent's night half (Glow, or the
                         // cover's): the block is dark by day too.
@@ -365,7 +367,7 @@ struct MiniPlayer: View {
                                 Text(station.title)
                                     .lineLimit(1)
                             }
-                            .foregroundStyle(Color(rgb: PlayingAccent.shared.tokens.accent.dark))
+                            .foregroundStyle(Color(rgb: playingAccent.accent.dark))
                             if player.playsLossless {
                                 LosslessTag()
                                     .foregroundStyle(Self.quiet)
@@ -447,7 +449,7 @@ struct MiniPlayer: View {
         } label: {
             Image(systemName: favorite ? "heart.fill" : "heart")
                 .font(.title3)
-                .foregroundStyle(favorite ? Color(rgb: PlayingAccent.shared.tokens.accent.dark) : .white)
+                .foregroundStyle(favorite ? Color(rgb: playingAccent.accent.dark) : .white)
                 .symbolEffect(.bounce, value: favorite)
                 .frame(width: Self.glyph, height: Self.glyph)
                 .contentShape(.rect)
@@ -652,6 +654,7 @@ struct MiniPlayer: View {
 /// Playing has the position, to be read and moved.
 private struct MiniPlayerProgress: View {
     @Environment(AudioPlayer.self) private var player
+    @Environment(\.playingAccent) private var playingAccent
 
     var body: some View {
         let duration = player.duration
@@ -661,7 +664,7 @@ private struct MiniPlayerProgress: View {
             .overlay(alignment: .leading) {
                 GeometryReader { proxy in
                     Rectangle()
-                        .fill(Color(rgb: PlayingAccent.shared.tokens.accent.dark))
+                        .fill(Color(rgb: playingAccent.accent.dark))
                         .frame(width: proxy.size.width * part)
                 }
             }
@@ -696,11 +699,12 @@ struct MiniPlayerRecord: View {
 }
 
 /// The tabs, Jukebox's own: the symbol over its name, the tab shown in the
-/// accent (Copper by day, Glow by night), the others quiet (secondary) on
+/// accent (Copper by day, Glow by night, or the playing cover's), the others quiet (secondary) on
 /// the fade. Tapped again, Navigator.select: back to the tab's first page,
 /// and on Search's first page into its field.
 struct TabRow: View {
     @Environment(Navigator.self) private var navigator
+    @Environment(\.playingAccent) private var playingAccent
     @Environment(AppSettings.self) private var settings
 
     private struct Item {
@@ -746,7 +750,7 @@ struct TabRow: View {
                     .font(.caption2.weight(.medium))
                     .lineLimit(1)
             }
-            .foregroundStyle(isShown ? AnyShapeStyle(Theme.accent) : AnyShapeStyle(.secondary))
+            .foregroundStyle(isShown ? AnyShapeStyle(Color(playingAccent.accent)) : AnyShapeStyle(.secondary))
             .frame(maxWidth: .infinity, minHeight: 49)
             .contentShape(.rect)
         }

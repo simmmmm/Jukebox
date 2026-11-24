@@ -23,6 +23,11 @@ final class PlayingAccent {
     var night: AccentColor { AccentColor(hex: tokens.accent.dark) }
 }
 
+extension EnvironmentValues {
+    /// PlayingAccent's tokens, as PlayingTint hands them down.
+    @Entry var playingAccent = AccentTokens.brand
+}
+
 /// The tint of a window, and what keeps PlayingAccent on the cover that
 /// plays. In a modifier's body, not the scene's, so it is drawn again when
 /// the accent changes.
@@ -34,6 +39,10 @@ struct PlayingTint: ViewModifier {
     func body(content: Content) -> some View {
         content
             .tint(Theme.accent)
+            // The same accent handed down, for the iPhone's tab row and
+            // mini player: read from PlayingAccent alone they kept Copper
+            // and Glow beside a purple heart on the walk (24 November 2026).
+            .environment(\.playingAccent, PlayingAccent.shared.tokens)
             .task(id: coverURL) {
                 // The cover's accent, once per cover (ImagePipeline keeps
                 // it): the one Now Playing takes, at the same 120 pixels.
