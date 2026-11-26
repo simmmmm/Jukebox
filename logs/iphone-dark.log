@@ -1,0 +1,1403 @@
+Command line invocation:
+    /Applications/Xcode.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination id=D4235122-1926-40D5-81CB-0674BD146575 -derivedDataPath build/screenshots/derived "-only-testing:JukeboxUITests/ScreenshotTests/testPhone" -resultBundlePath build/screenshots/iphone-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 1050 -maximum-test-execution-time-allowance 1050
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: ~/actions-runner-5/_work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	~/actions-runner-5/_work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+2026-11-26 12:03:33.702636+0100 JukeboxUITests-Runner[3102:41076238] [Default] Running tests...
+    t =      nans Interface orientation changed to Portrait
+Test Suite 'Selected tests' started at 2026-11-26 12:03:38.824.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-26 12:03:38.825.
+Test Suite 'ScreenshotTests' started at 2026-11-26 12:03:38.826.
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' started.
+    t =     0.02s Start Test at 2026-11-26 12:03:38.842
+    t =     0.02s Set Up
+    t =     0.02s Open com.runner.Jukebox
+    t =     0.02s     Launch com.runner.Jukebox
+2026-11-26 12:03:39.313 xcodebuild[3038:41075236] [MT] IDELaunchParametersSnapshot: debugger version lookup failed for path '<nil>': noURL
+2026-11-26 12:03:39.313 xcodebuild[3038:41075236] [MT] IDELaunchParametersSnapshot: no debugger version
+objc[3102]: Class UIAccessibilityLoaderWebShared is implemented in both /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.i7Qp6U/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebCore.axbundle/WebCore (0x107b38310) and /private/var/run/com.apple.security.cryptexd/mnt/com.apple.iPhoneOS.SimulatorRuntime-v24.2.8117.0.i7Qp6U/Library/Developer/CoreSimulator/Profiles/Runtimes/iOS 27.2.simruntime/Contents/Resources/RuntimeRoot/System/Library/AccessibilityBundles/WebKit.axbundle/WebKit (0x107b8c398). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+    t =     2.40s         Setting up automation session
+    t =     6.41s         Wait for com.runner.Jukebox to idle
+    t =     9.23s Checking existence of `"Home" NavigationBar`
+    t =     9.34s Checking existence of `"Home" Button`
+    t =     9.39s Checking existence of `"tab.home" Button`
+    t =     9.46s Checking existence of `"Your Station" StaticText`
+    t =     9.62s Checking existence of `"place.home" Any`
+    t =     9.85s Checking existence of `TextField (First Match)`
+    t =    15.62s Added attachment named '01-onboarding'
+PICTURE: 01-onboarding
+    t =    15.66s Waiting 10.0s for TextField (First Match) to exist
+    t =    16.75s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    16.75s         Checking existence of `TextField (First Match)`
+    t =    16.77s Find the TextField (First Match)
+    t =    16.79s Tap "music.example.com" TextField
+    t =    16.79s     Wait for com.runner.Jukebox to idle
+    t =    16.79s     Find the "music.example.com" TextField
+    t =    16.81s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    16.89s     Synthesize event
+    t =    17.33s     Wait for com.runner.Jukebox to idle
+    t =    19.94s Find the "music.example.com" TextField
+    t =    19.99s Type 'localhost:18100' into "music.example.com" TextField
+    t =    19.99s     Wait for com.runner.Jukebox to idle
+    t =    19.99s     Find the "music.example.com" TextField
+    t =    20.02s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    20.05s     Synthesize event
+    t =    20.51s     Wait for com.runner.Jukebox to idle
+    t =    20.70s Added attachment named '02-onboarding-server'
+PICTURE: 02-onboarding-server
+    t =    20.73s Type '
+' into TextField (First Match)
+    t =    20.73s     Wait for com.runner.Jukebox to idle
+    t =    20.73s     Find the TextField (First Match)
+    t =    20.77s     Check for interrupting elements affecting "music.example.com" TextField
+    t =    20.79s     Synthesize event
+    t =    21.01s     Wait for com.runner.Jukebox to idle
+    t =    21.32s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    22.36s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    22.36s         Checking existence of `SecureTextField (First Match)`
+    t =    22.41s Waiting 30.0s for SecureTextField (First Match) to exist
+    t =    23.48s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    23.48s         Checking existence of `SecureTextField (First Match)`
+    t =    25.01s Checking existence of `"signIn.user" TextField`
+    t =    25.04s Waiting 10.0s for TextField (First Match) to exist
+    t =    26.09s     Checking `Expect predicate `existsNoRetry == 1` for object TextField (First Match)`
+    t =    26.09s         Checking existence of `TextField (First Match)`
+    t =    26.11s Find the TextField (First Match)
+    t =    26.13s Tap "User Name" TextField
+    t =    26.14s     Wait for com.runner.Jukebox to idle
+    t =    26.14s     Find the "User Name" TextField
+    t =    26.17s     Check for interrupting elements affecting "User Name" TextField
+    t =    26.19s     Synthesize event
+    t =    26.48s     Wait for com.runner.Jukebox to idle
+    t =    27.65s Find the "User Name" TextField
+    t =    27.69s Type 'test' into "User Name" TextField
+    t =    27.69s     Wait for com.runner.Jukebox to idle
+    t =    27.69s     Find the "User Name" TextField
+    t =    27.74s     Check for interrupting elements affecting "User Name" TextField
+    t =    27.77s     Synthesize event
+    t =    28.04s     Wait for com.runner.Jukebox to idle
+    t =    28.04s Type '
+' into TextField (First Match)
+    t =    28.04s     Wait for com.runner.Jukebox to idle
+    t =    28.05s     Find the TextField (First Match)
+    t =    28.09s     Check for interrupting elements affecting "User Name" TextField
+    t =    28.12s     Synthesize event
+    t =    28.34s     Wait for com.runner.Jukebox to idle
+    t =    29.69s Waiting 10.0s for SecureTextField (First Match) to exist
+    t =    30.73s     Checking `Expect predicate `existsNoRetry == 1` for object SecureTextField (First Match)`
+    t =    30.73s         Checking existence of `SecureTextField (First Match)`
+    t =    30.80s Find the SecureTextField (First Match)
+    t =    30.87s Find the "Password" SecureTextField
+    t =    30.92s Type '<redacted>' into "Password" SecureTextField
+    t =    30.92s     Wait for com.runner.Jukebox to idle
+    t =    30.92s     Find the "Password" SecureTextField
+    t =    30.98s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    31.01s     Synthesize event
+    t =    31.28s     Wait for com.runner.Jukebox to idle
+    t =    31.29s Find the SecureTextField (First Match)
+    t =    31.54s Added attachment named '03-sign-in'
+PICTURE: 03-sign-in
+    t =    31.57s Type '<redacted>' into SecureTextField (First Match)
+    t =    31.57s     Wait for com.runner.Jukebox to idle
+    t =    31.58s     Find the SecureTextField (First Match)
+    t =    31.63s     Check for interrupting elements affecting "Password" SecureTextField
+    t =    31.66s     Synthesize event
+    t =    31.88s     Wait for com.runner.Jukebox to idle
+    t =    32.47s Waiting 3.0s for Button (First Match) to exist
+    t =    33.55s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    33.55s         Checking existence of `Button (First Match)`
+    t =    33.73s         Capturing element debug description
+    t =    34.48s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    34.48s         Checking existence of `Button (First Match)`
+    t =    34.65s         Capturing element debug description
+    t =    35.48s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    35.48s         Checking existence of `Button (First Match)`
+    t =    35.64s         Capturing element debug description
+    t =    35.64s     Checking existence of `Button (First Match)`
+    t =    35.82s Collecting debug information to assist test failure triage
+    t =    35.82s     Requesting snapshot of accessibility hierarchy for app with pid 3137
+    t =    35.98s Waiting 3.0s for "Not Now" Button to exist
+    t =    37.00s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    37.00s         Checking existence of `"Not Now" Button`
+    t =    37.20s         Capturing element debug description
+    t =    38.05s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    38.05s         Checking existence of `"Not Now" Button`
+    t =    38.08s         Capturing element debug description
+    t =    38.98s     Checking `Expect predicate `existsNoRetry == 1` for object "Not Now" Button`
+    t =    38.98s         Checking existence of `"Not Now" Button`
+    t =    39.03s         Capturing element debug description
+    t =    39.03s     Checking existence of `"Not Now" Button`
+    t =    39.06s Collecting debug information to assist test failure triage
+    t =    39.06s     Requesting snapshot of accessibility hierarchy for app with pid 2594
+    t =    39.12s Checking existence of `"Home" NavigationBar`
+    t =    39.23s Checking existence of `"Home" Button`
+    t =    39.33s Checking existence of `"tab.home" Button`
+    t =    39.36s Checking existence of `"Home" NavigationBar`
+    t =    39.48s Checking existence of `"Home" Button`
+    t =    39.59s Checking existence of `"tab.home" Button`
+    t =    39.62s Waiting 8.0s for "betterRadio.turnOn" Button to exist
+    t =    40.65s     Checking `Expect predicate `existsNoRetry == 1` for object "betterRadio.turnOn" Button`
+    t =    40.65s         Checking existence of `"betterRadio.turnOn" Button`
+    t =    42.44s Added attachment named '04-better-radio'
+PICTURE: 04-better-radio
+    t =    42.50s Waiting 10.0s for "betterRadio.turnOn" Button to exist
+    t =    43.55s     Checking `Expect predicate `existsNoRetry == 1` for object "betterRadio.turnOn" Button`
+    t =    43.55s         Checking existence of `"betterRadio.turnOn" Button`
+    t =    43.57s Checking existence of `"betterRadio.turnOn" Button`
+    t =    43.60s Find the "betterRadio.turnOn" Button
+    t =    43.63s Find the Target Application 'com.runner.Jukebox'
+    t =    43.69s Checking existence of `"betterRadio.turnOn" Button`
+    t =    43.71s Find the "betterRadio.turnOn" Button
+    t =    43.73s Find the Target Application 'com.runner.Jukebox'
+    t =    43.79s Find the "betterRadio.turnOn" Button
+    t =    43.83s Tap "betterRadio.turnOn" Button
+    t =    43.83s     Wait for com.runner.Jukebox to idle
+    t =    43.84s     Find the "betterRadio.turnOn" Button
+    t =    43.86s     Check for interrupting elements affecting "betterRadio.turnOn" Button
+    t =    43.94s     Synthesize event
+    t =    44.26s     Wait for com.runner.Jukebox to idle
+    t =    45.74s Checking existence of `"Your Station" StaticText`
+    t =    45.78s Checking existence of `Any (First Match)`
+    t =    45.93s Checking existence of `Any (First Match)`
+    t =    50.10s Waiting 0.5s for Button (First Match) to exist
+    t =    50.60s     Checking existence of `Button (First Match)`
+    t =    50.72s Collecting debug information to assist test failure triage
+    t =    50.72s     Requesting snapshot of accessibility hierarchy for app with pid 3137
+    t =    50.79s Waiting 0.5s for "Not Now" Button to exist
+    t =    51.30s     Checking existence of `"Not Now" Button`
+    t =    51.33s Collecting debug information to assist test failure triage
+    t =    51.33s     Requesting snapshot of accessibility hierarchy for app with pid 2594
+    t =    51.53s Added attachment named '05-home'
+PICTURE: 05-home
+    t =    51.57s Swipe up Target Application 'com.runner.Jukebox'
+    t =    51.57s     Wait for com.runner.Jukebox to idle
+    t =    51.57s     Find the Target Application 'com.runner.Jukebox'
+    t =    51.61s     Check for interrupting elements affecting "Jukebox" Application
+    t =    51.65s     Synthesize event
+    t =    52.07s     Wait for com.runner.Jukebox to idle
+    t =    56.43s Added attachment named '06-home-scrolled'
+PICTURE: 06-home-scrolled
+    t =    56.48s Swipe down Target Application 'com.runner.Jukebox'
+    t =    56.48s     Wait for com.runner.Jukebox to idle
+    t =    56.48s     Find the Target Application 'com.runner.Jukebox'
+    t =    56.52s     Check for interrupting elements affecting "Jukebox" Application
+    t =    56.57s     Synthesize event
+    t =    57.00s     Wait for com.runner.Jukebox to idle
+    t =    60.70s Waiting 5.0s for "tab.radio" Button to exist
+    t =    61.73s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.radio" Button`
+    t =    61.74s         Checking existence of `"tab.radio" Button`
+    t =    61.77s Checking existence of `"tab.radio" Button`
+    t =    61.79s Find the "tab.radio" Button
+    t =    61.81s Waiting 1.0s for "tab.radio" Button to exist
+    t =    62.83s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.radio" Button`
+    t =    62.83s         Checking existence of `"tab.radio" Button`
+    t =    62.87s     Checking existence of `"tab.radio" Button`
+    t =    62.89s Checking existence of `"tab.radio" Button`
+    t =    62.90s Find the "tab.radio" Button
+    t =    62.92s Find the Target Application 'com.runner.Jukebox'
+    t =    62.96s Checking existence of `"tab.radio" Button`
+    t =    62.97s Find the "tab.radio" Button
+    t =    62.99s Find the Target Application 'com.runner.Jukebox'
+    t =    63.02s Find the "tab.radio" Button
+    t =    63.05s Tap "tab.radio" Button
+    t =    63.05s     Wait for com.runner.Jukebox to idle
+    t =    63.05s     Find the "tab.radio" Button
+    t =    63.06s     Check for interrupting elements affecting "tab.radio" Button
+    t =    63.11s     Synthesize event
+    t =    63.40s     Wait for com.runner.Jukebox to idle
+    t =    66.07s Added attachment named '07-radio'
+PICTURE: 07-radio
+    t =    66.10s Waiting 10.0s for Button (First Match) to exist
+    t =    67.15s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    67.15s         Checking existence of `Button (First Match)`
+    t =    67.22s Checking existence of `Button (First Match)`
+    t =    67.26s Find the Button (First Match)
+    t =    67.30s Find the Target Application 'com.runner.Jukebox'
+    t =    67.33s Checking existence of `"Discovery, Not played yet" Button`
+    t =    67.36s Find the "Discovery, Not played yet" Button
+    t =    67.39s Find the Target Application 'com.runner.Jukebox'
+    t =    67.42s Find the "Discovery, Not played yet" Button
+    t =    67.46s Tap "Discovery, Not played yet" Button
+    t =    67.46s     Wait for com.runner.Jukebox to idle
+    t =    67.46s     Find the "Discovery, Not played yet" Button
+    t =    67.50s     Check for interrupting elements affecting "Discovery, Not played yet" Button
+    t =    67.53s     Synthesize event
+    t =    67.82s     Wait for com.runner.Jukebox to idle
+    t =    67.99s Checking existence of `"New Picks" Button`
+    t =    71.42s Added attachment named '08-station-page'
+PICTURE: 08-station-page
+    t =    71.44s Swipe up Target Application 'com.runner.Jukebox'
+    t =    71.44s     Wait for com.runner.Jukebox to idle
+    t =    71.44s     Find the Target Application 'com.runner.Jukebox'
+    t =    71.48s     Check for interrupting elements affecting "Jukebox" Application
+    t =    71.52s     Synthesize event
+    t =    71.93s     Wait for com.runner.Jukebox to idle
+    t =    76.24s Added attachment named '09-station-page-songs'
+PICTURE: 09-station-page-songs
+    t =    76.28s Waiting 3.0s for Button (First Match) to exist
+    t =    77.33s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    77.33s         Checking existence of `Button (First Match)`
+    t =    77.37s Waiting 1.0s for Button (First Match) to exist
+    t =    78.38s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    78.38s         Checking existence of `Button (First Match)`
+    t =    78.42s     Checking existence of `Button (First Match)`
+    t =    78.45s Checking existence of `Button (First Match)`
+    t =    78.46s Find the Button (First Match)
+    t =    78.48s Find the Target Application 'com.runner.Jukebox'
+    t =    78.54s Checking existence of `"BackButton" Button`
+    t =    78.56s Find the "BackButton" Button
+    t =    78.58s Find the Target Application 'com.runner.Jukebox'
+    t =    78.62s Find the "BackButton" Button
+    t =    78.65s Tap "BackButton" Button
+    t =    78.65s     Wait for com.runner.Jukebox to idle
+    t =    78.65s     Find the "BackButton" Button
+    t =    78.67s     Check for interrupting elements affecting "BackButton" Button
+    t =    78.73s     Synthesize event
+    t =    79.03s     Wait for com.runner.Jukebox to idle
+    t =    80.89s Waiting 10.0s for "Radio" NavigationBar to exist
+    t =    81.93s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =    81.93s         Checking existence of `"Radio" NavigationBar`
+    t =    81.97s Waiting 10.0s for "Start a Station" Button to exist
+    t =    83.00s     Checking `Expect predicate `existsNoRetry == 1` for object "Start a Station" Button`
+    t =    83.00s         Checking existence of `"Start a Station" Button`
+    t =    83.05s Checking existence of `"Start a Station" Button`
+    t =    83.08s Find the "Start a Station" Button
+    t =    83.11s Find the Target Application 'com.runner.Jukebox'
+    t =    83.13s Checking existence of `"Start a Station" Button`
+    t =    83.16s Find the "Start a Station" Button
+    t =    83.18s Find the Target Application 'com.runner.Jukebox'
+    t =    83.21s Find the "Start a Station" Button
+    t =    83.25s Tap "Start a Station" Button
+    t =    83.25s     Wait for com.runner.Jukebox to idle
+    t =    83.25s     Find the "Start a Station" Button
+    t =    83.27s     Check for interrupting elements affecting "Start a Station" Button
+    t =    83.31s     Synthesize event
+    t =    83.60s     Wait for com.runner.Jukebox to idle
+    t =    86.32s Added attachment named '10-radio-start-a-station'
+PICTURE: 10-radio-start-a-station
+    t =    86.34s Waiting 10.0s for Button (First Match) to exist
+    t =    87.36s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    87.36s         Checking existence of `Button (First Match)`
+    t =    87.47s Waiting 10.0s for Button (First Match) to exist
+    t =    88.50s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    88.50s         Checking existence of `Button (First Match)`
+    t =    88.60s Checking existence of `Button (First Match)`
+    t =    88.66s Find the Button (First Match)
+    t =    88.74s Find the Target Application 'com.runner.Jukebox'
+    t =    88.79s Checking existence of `"MC Polder Radio, MC Polder and artists like them" Button`
+    t =    88.86s Find the "MC Polder Radio, MC Polder and artists like them" Button
+    t =    88.93s Find the Target Application 'com.runner.Jukebox'
+    t =    88.98s Find the "MC Polder Radio, MC Polder and artists like them" Button
+    t =    89.06s Tap "MC Polder Radio, MC Polder and artists like them" Button
+    t =    89.06s     Wait for com.runner.Jukebox to idle
+    t =    89.06s     Find the "MC Polder Radio, MC Polder and artists like them" Button
+    t =    89.13s     Check for interrupting elements affecting "MC Polder Radio, MC Polder and artists like them" Button
+    t =    89.19s     Synthesize event
+    t =    89.48s     Wait for com.runner.Jukebox to idle
+    t =    91.88s Waiting 10.0s for "New Picks" Button to exist
+    t =    92.93s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =    92.93s         Checking existence of `"New Picks" Button`
+    t =    95.16s Added attachment named '11-station-picked'
+PICTURE: 11-station-picked
+    t =    95.19s Checking existence of `"Cancel" Button`
+    t =    95.23s Waiting 3.0s for Button (First Match) to exist
+    t =    96.26s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    96.26s         Checking existence of `Button (First Match)`
+    t =    96.28s Waiting 1.0s for Button (First Match) to exist
+    t =    97.29s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    97.29s         Checking existence of `Button (First Match)`
+    t =    97.31s     Checking existence of `Button (First Match)`
+    t =    97.33s Checking existence of `Button (First Match)`
+    t =    97.35s Find the Button (First Match)
+    t =    97.36s Find the Target Application 'com.runner.Jukebox'
+    t =    97.39s Checking existence of `"BackButton" Button`
+    t =    97.41s Find the "BackButton" Button
+    t =    97.42s Find the Target Application 'com.runner.Jukebox'
+    t =    97.45s Find the "BackButton" Button
+    t =    97.48s Tap "BackButton" Button
+    t =    97.48s     Wait for com.runner.Jukebox to idle
+    t =    97.48s     Find the "BackButton" Button
+    t =    97.50s     Check for interrupting elements affecting "BackButton" Button
+    t =    97.53s     Synthesize event
+    t =    97.82s     Wait for com.runner.Jukebox to idle
+    t =    99.67s Waiting 10.0s for "Radio" NavigationBar to exist
+    t =   100.70s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   100.70s         Checking existence of `"Radio" NavigationBar`
+    t =   100.73s Waiting 5.0s for "tab.library" Button to exist
+    t =   101.79s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.library" Button`
+    t =   101.79s         Checking existence of `"tab.library" Button`
+    t =   101.83s Checking existence of `"tab.library" Button`
+    t =   101.85s Find the "tab.library" Button
+    t =   101.87s Waiting 1.0s for "tab.library" Button to exist
+    t =   102.88s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.library" Button`
+    t =   102.88s         Checking existence of `"tab.library" Button`
+    t =   102.91s     Checking existence of `"tab.library" Button`
+    t =   102.93s Checking existence of `"tab.library" Button`
+    t =   102.95s Find the "tab.library" Button
+    t =   102.97s Find the Target Application 'com.runner.Jukebox'
+    t =   102.99s Checking existence of `"tab.library" Button`
+    t =   103.01s Find the "tab.library" Button
+    t =   103.02s Find the Target Application 'com.runner.Jukebox'
+    t =   103.05s Find the "tab.library" Button
+    t =   103.07s Tap "tab.library" Button
+    t =   103.07s     Wait for com.runner.Jukebox to idle
+    t =   103.07s     Find the "tab.library" Button
+    t =   103.09s     Check for interrupting elements affecting "tab.library" Button
+    t =   103.12s     Synthesize event
+    t =   103.41s     Wait for com.runner.Jukebox to idle
+    t =   106.00s Added attachment named '12-library'
+PICTURE: 12-library
+    t =   106.03s Waiting 10.0s for "Albums" Button to exist
+    t =   107.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" Button`
+    t =   107.07s         Checking existence of `"Albums" Button`
+    t =   107.12s Checking existence of `"Albums" Button`
+    t =   107.16s Find the "Albums" Button
+    t =   107.19s Find the Target Application 'com.runner.Jukebox'
+    t =   107.21s Checking existence of `"Albums" Button`
+    t =   107.25s Find the "Albums" Button
+    t =   107.28s Find the Target Application 'com.runner.Jukebox'
+    t =   107.30s Find the "Albums" Button
+    t =   107.34s Tap "Albums" Button
+    t =   107.34s     Wait for com.runner.Jukebox to idle
+    t =   107.35s     Find the "Albums" Button
+    t =   107.38s     Check for interrupting elements affecting "Albums" Button
+    t =   107.41s     Synthesize event
+    t =   107.70s     Wait for com.runner.Jukebox to idle
+    t =   108.08s Waiting 8.0s for "Albums" NavigationBar to exist
+    t =   109.10s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" NavigationBar`
+    t =   109.10s         Checking existence of `"Albums" NavigationBar`
+    t =   111.36s Added attachment named '13-albums'
+PICTURE: 13-albums
+    t =   111.40s Waiting 15.0s for Button (First Match) to exist
+    t =   112.43s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   112.43s         Checking existence of `Button (First Match)`
+    t =   112.48s Checking existence of `NavigationBar (First Match)`
+    t =   112.50s Find the NavigationBar (First Match)
+    t =   112.51s Find the Target Application 'com.runner.Jukebox'
+    t =   112.53s Get number of matches for: Elements matching predicate 'NOT identifier BEGINSWITH "place."'
+    t =   112.55s Checking existence of `Button (Element at index 0)`
+    t =   112.58s Find the Button (Element at index 0)
+    t =   112.60s Find the "Dust Parades, Hexagon Lights" Button
+    t =   112.63s Find the "Dust Parades, Hexagon Lights" Button
+    t =   112.65s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =   112.67s Find the "Dust Parades, Hexagon Lights" Button
+    t =   112.70s Find the Target Application 'com.runner.Jukebox'
+    t =   112.72s Waiting 10.0s for Button (First Match) to exist
+    t =   113.75s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   113.75s         Checking existence of `Button (First Match)`
+    t =   113.80s Checking existence of `Button (First Match)`
+    t =   113.83s Find the Button (First Match)
+    t =   113.86s Find the Target Application 'com.runner.Jukebox'
+    t =   113.88s Checking existence of `"Dust Parades, Hexagon Lights" Button`
+    t =   113.91s Find the "Dust Parades, Hexagon Lights" Button
+    t =   113.94s Find the Target Application 'com.runner.Jukebox'
+    t =   113.96s Find the "Dust Parades, Hexagon Lights" Button
+    t =   114.00s Tap "Dust Parades, Hexagon Lights" Button
+    t =   114.00s     Wait for com.runner.Jukebox to idle
+    t =   114.01s     Find the "Dust Parades, Hexagon Lights" Button
+    t =   114.04s     Check for interrupting elements affecting "Dust Parades, Hexagon Lights" Button
+    t =   114.06s     Synthesize event
+    t =   114.36s     Wait for com.runner.Jukebox to idle
+    t =   117.99s Added attachment named '14-album'
+PICTURE: 14-album
+    t =   118.02s Waiting 3.0s for Button (First Match) to exist
+    t =   119.06s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   119.07s         Checking existence of `Button (First Match)`
+    t =   119.10s Waiting 1.0s for Button (First Match) to exist
+    t =   120.11s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   120.12s         Checking existence of `Button (First Match)`
+    t =   120.15s     Checking existence of `Button (First Match)`
+    t =   120.17s Checking existence of `Button (First Match)`
+    t =   120.19s Find the Button (First Match)
+    t =   120.21s Find the Target Application 'com.runner.Jukebox'
+    t =   120.25s Checking existence of `"BackButton" Button`
+    t =   120.27s Find the "BackButton" Button
+    t =   120.29s Find the Target Application 'com.runner.Jukebox'
+    t =   120.31s Find the "BackButton" Button
+    t =   120.35s Tap "BackButton" Button
+    t =   120.35s     Wait for com.runner.Jukebox to idle
+    t =   120.35s     Find the "BackButton" Button
+    t =   120.37s     Check for interrupting elements affecting "BackButton" Button
+    t =   120.40s     Synthesize event
+    t =   120.70s     Wait for com.runner.Jukebox to idle
+    t =   122.54s Waiting 10.0s for "Albums" NavigationBar to exist
+    t =   123.58s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" NavigationBar`
+    t =   123.58s         Checking existence of `"Albums" NavigationBar`
+    t =   123.62s Waiting 3.0s for Button (First Match) to exist
+    t =   124.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   124.66s         Checking existence of `Button (First Match)`
+    t =   124.69s Waiting 1.0s for Button (First Match) to exist
+    t =   125.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   125.70s         Checking existence of `Button (First Match)`
+    t =   125.74s     Checking existence of `Button (First Match)`
+    t =   125.76s Checking existence of `Button (First Match)`
+    t =   125.78s Find the Button (First Match)
+    t =   125.79s Find the Target Application 'com.runner.Jukebox'
+    t =   125.82s Checking existence of `"BackButton" Button`
+    t =   125.83s Find the "BackButton" Button
+    t =   125.85s Find the Target Application 'com.runner.Jukebox'
+    t =   125.87s Find the "BackButton" Button
+    t =   125.90s Tap "BackButton" Button
+    t =   125.90s     Wait for com.runner.Jukebox to idle
+    t =   125.90s     Find the "BackButton" Button
+    t =   125.92s     Check for interrupting elements affecting "BackButton" Button
+    t =   125.95s     Synthesize event
+    t =   126.25s     Wait for com.runner.Jukebox to idle
+    t =   128.05s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   129.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   129.07s         Checking existence of `"Library" NavigationBar`
+    t =   129.10s Waiting 10.0s for "Artists" Button to exist
+    t =   130.18s     Checking `Expect predicate `existsNoRetry == 1` for object "Artists" Button`
+    t =   130.18s         Checking existence of `"Artists" Button`
+    t =   130.24s Checking existence of `"Artists" Button`
+    t =   130.27s Find the "Artists" Button
+    t =   130.30s Find the Target Application 'com.runner.Jukebox'
+    t =   130.32s Checking existence of `"Artists" Button`
+    t =   130.36s Find the "Artists" Button
+    t =   130.39s Find the Target Application 'com.runner.Jukebox'
+    t =   130.41s Find the "Artists" Button
+    t =   130.45s Tap "Artists" Button
+    t =   130.45s     Wait for com.runner.Jukebox to idle
+    t =   130.45s     Find the "Artists" Button
+    t =   130.49s     Check for interrupting elements affecting "Artists" Button
+    t =   130.51s     Synthesize event
+    t =   130.80s     Wait for com.runner.Jukebox to idle
+    t =   131.17s Waiting 8.0s for "Artists" NavigationBar to exist
+    t =   132.20s     Checking `Expect predicate `existsNoRetry == 1` for object "Artists" NavigationBar`
+    t =   132.20s         Checking existence of `"Artists" NavigationBar`
+    t =   134.41s Added attachment named '15-artists'
+PICTURE: 15-artists
+    t =   134.43s Waiting 15.0s for Cell (First Match) to exist
+    t =   135.46s     Checking `Expect predicate `existsNoRetry == 1` for object Cell (First Match)`
+    t =   135.47s         Checking existence of `Cell (First Match)`
+    t =   135.52s Checking existence of `NavigationBar (First Match)`
+    t =   135.54s Find the NavigationBar (First Match)
+    t =   135.55s Find the Target Application 'com.runner.Jukebox'
+    t =   135.58s Get number of matches for: Descendants matching type Cell
+    t =   135.61s Checking existence of `Cell (Element at index 0)`
+    t =   135.64s Find the Cell (Element at index 0)
+    t =   135.67s Find the Cell
+    t =   135.70s Find the Cell
+    t =   135.73s Checking existence of `Cell (Element at index 1)`
+    t =   135.76s Find the Cell (Element at index 1)
+    t =   135.79s Find the Cell
+    t =   135.82s Find the Cell
+    t =   135.85s Checking existence of `Cell at {{0.0, 208.3}, {402.0, 74.0}}`
+    t =   135.88s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   135.90s Find the Target Application 'com.runner.Jukebox'
+    t =   135.93s Checking existence of `Cell at {{0.0, 208.3}, {402.0, 74.0}}`
+    t =   135.96s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   135.98s Checking existence of `StaticText (First Match)`
+    t =   136.02s Find the StaticText (First Match)
+    t =   136.05s Waiting 10.0s for Cell (First Match) to exist
+    t =   137.06s     Checking `Expect predicate `existsNoRetry == 1` for object Cell (First Match)`
+    t =   137.07s         Checking existence of `Cell (First Match)`
+    t =   137.11s Checking existence of `Cell (First Match)`
+    t =   137.14s Find the Cell (First Match)
+    t =   137.17s Find the Target Application 'com.runner.Jukebox'
+    t =   137.19s Checking existence of `Cell at {{0.0, 208.3}, {402.0, 74.0}}`
+    t =   137.22s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   137.25s Find the Target Application 'com.runner.Jukebox'
+    t =   137.28s Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   137.31s Tap Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   137.31s     Wait for com.runner.Jukebox to idle
+    t =   137.32s     Find the Cell at {{0.0, 208.3}, {402.0, 74.0}}
+    t =   137.35s     Check for interrupting elements affecting Cell
+    t =   137.38s     Synthesize event
+    t =   137.67s     Wait for com.runner.Jukebox to idle
+    t =   141.25s Added attachment named '16-artist'
+PICTURE: 16-artist
+    t =   141.28s Waiting 3.0s for Button (First Match) to exist
+    t =   142.33s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   142.33s         Checking existence of `Button (First Match)`
+    t =   142.36s Waiting 1.0s for Button (First Match) to exist
+    t =   143.36s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   143.37s         Checking existence of `Button (First Match)`
+    t =   143.41s     Checking existence of `Button (First Match)`
+    t =   143.43s Checking existence of `Button (First Match)`
+    t =   143.45s Find the Button (First Match)
+    t =   143.47s Find the Target Application 'com.runner.Jukebox'
+    t =   143.50s Checking existence of `"BackButton" Button`
+    t =   143.51s Find the "BackButton" Button
+    t =   143.53s Find the Target Application 'com.runner.Jukebox'
+    t =   143.56s Find the "BackButton" Button
+    t =   143.59s Tap "BackButton" Button
+    t =   143.59s     Wait for com.runner.Jukebox to idle
+    t =   143.59s     Find the "BackButton" Button
+    t =   143.61s     Check for interrupting elements affecting "BackButton" Button
+    t =   143.64s     Synthesize event
+    t =   143.93s     Wait for com.runner.Jukebox to idle
+    t =   145.79s Waiting 10.0s for "Artists" NavigationBar to exist
+    t =   146.83s     Checking `Expect predicate `existsNoRetry == 1` for object "Artists" NavigationBar`
+    t =   146.83s         Checking existence of `"Artists" NavigationBar`
+    t =   146.85s Waiting 3.0s for Button (First Match) to exist
+    t =   147.86s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   147.86s         Checking existence of `Button (First Match)`
+    t =   147.89s Waiting 1.0s for Button (First Match) to exist
+    t =   148.90s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   148.90s         Checking existence of `Button (First Match)`
+    t =   148.93s     Checking existence of `Button (First Match)`
+    t =   148.95s Checking existence of `Button (First Match)`
+    t =   148.96s Find the Button (First Match)
+    t =   148.98s Find the Target Application 'com.runner.Jukebox'
+    t =   149.00s Checking existence of `"BackButton" Button`
+    t =   149.02s Find the "BackButton" Button
+    t =   149.04s Find the Target Application 'com.runner.Jukebox'
+    t =   149.06s Find the "BackButton" Button
+    t =   149.09s Tap "BackButton" Button
+    t =   149.09s     Wait for com.runner.Jukebox to idle
+    t =   149.09s     Find the "BackButton" Button
+    t =   149.11s     Check for interrupting elements affecting "BackButton" Button
+    t =   149.14s     Synthesize event
+    t =   149.43s     Wait for com.runner.Jukebox to idle
+    t =   151.23s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   152.29s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   152.29s         Checking existence of `"Library" NavigationBar`
+    t =   152.33s Waiting 10.0s for "Playlists" Button to exist
+    t =   153.40s     Checking `Expect predicate `existsNoRetry == 1` for object "Playlists" Button`
+    t =   153.40s         Checking existence of `"Playlists" Button`
+    t =   153.46s Checking existence of `"Playlists" Button`
+    t =   153.49s Find the "Playlists" Button
+    t =   153.52s Find the Target Application 'com.runner.Jukebox'
+    t =   153.54s Checking existence of `"Playlists" Button`
+    t =   153.57s Find the "Playlists" Button
+    t =   153.61s Find the Target Application 'com.runner.Jukebox'
+    t =   153.63s Find the "Playlists" Button
+    t =   153.67s Tap "Playlists" Button
+    t =   153.67s     Wait for com.runner.Jukebox to idle
+    t =   153.67s     Find the "Playlists" Button
+    t =   153.70s     Check for interrupting elements affecting "Playlists" Button
+    t =   153.73s     Synthesize event
+    t =   154.02s     Wait for com.runner.Jukebox to idle
+    t =   154.38s Waiting 8.0s for "Playlists" NavigationBar to exist
+    t =   155.40s     Checking `Expect predicate `existsNoRetry == 1` for object "Playlists" NavigationBar`
+    t =   155.40s         Checking existence of `"Playlists" NavigationBar`
+    t =   157.62s Added attachment named '17-playlists'
+PICTURE: 17-playlists
+    t =   157.64s Waiting 3.0s for Button (First Match) to exist
+    t =   158.66s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   158.66s         Checking existence of `Button (First Match)`
+    t =   158.70s Waiting 1.0s for Button (First Match) to exist
+    t =   159.70s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   159.70s         Checking existence of `Button (First Match)`
+    t =   159.74s     Checking existence of `Button (First Match)`
+    t =   159.76s Checking existence of `Button (First Match)`
+    t =   159.77s Find the Button (First Match)
+    t =   159.79s Find the Target Application 'com.runner.Jukebox'
+    t =   159.85s Checking existence of `"BackButton" Button`
+    t =   159.87s Find the "BackButton" Button
+    t =   159.89s Find the Target Application 'com.runner.Jukebox'
+    t =   159.91s Find the "BackButton" Button
+    t =   159.93s Tap "BackButton" Button
+    t =   159.94s     Wait for com.runner.Jukebox to idle
+    t =   159.94s     Find the "BackButton" Button
+    t =   159.95s     Check for interrupting elements affecting "BackButton" Button
+    t =   159.98s     Synthesize event
+    t =   160.27s     Wait for com.runner.Jukebox to idle
+    t =   162.08s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   163.13s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   163.13s         Checking existence of `"Library" NavigationBar`
+    t =   163.17s Waiting 10.0s for "On Your Jukebox" Button to exist
+    t =   164.21s     Checking `Expect predicate `existsNoRetry == 1` for object "On Your Jukebox" Button`
+    t =   164.21s         Checking existence of `"On Your Jukebox" Button`
+    t =   164.28s Checking existence of `"On Your Jukebox" Button`
+    t =   164.32s Find the "On Your Jukebox" Button
+    t =   164.36s Find the Target Application 'com.runner.Jukebox'
+    t =   164.38s Checking existence of `"On Your Jukebox" Button`
+    t =   164.41s Find the "On Your Jukebox" Button
+    t =   164.45s Find the Target Application 'com.runner.Jukebox'
+    t =   164.47s Find the "On Your Jukebox" Button
+    t =   164.52s Tap "On Your Jukebox" Button
+    t =   164.52s     Wait for com.runner.Jukebox to idle
+    t =   164.52s     Find the "On Your Jukebox" Button
+    t =   164.56s     Check for interrupting elements affecting "On Your Jukebox" Button
+    t =   164.58s     Synthesize event
+    t =   164.87s     Wait for com.runner.Jukebox to idle
+    t =   165.21s Waiting 8.0s for "On Your Jukebox" NavigationBar to exist
+    t =   166.23s     Checking `Expect predicate `existsNoRetry == 1` for object "On Your Jukebox" NavigationBar`
+    t =   166.23s         Checking existence of `"On Your Jukebox" NavigationBar`
+    t =   168.41s Added attachment named '18-on-your-jukebox-week'
+PICTURE: 18-on-your-jukebox-week
+    t =   168.43s Waiting 10.0s for "This Month" Button to exist
+    t =   169.48s     Checking `Expect predicate `existsNoRetry == 1` for object "This Month" Button`
+    t =   169.48s         Checking existence of `"This Month" Button`
+    t =   169.57s Checking existence of `"This Month" Button`
+    t =   169.63s Find the "This Month" Button
+    t =   169.70s Find the Target Application 'com.runner.Jukebox'
+    t =   169.72s Checking existence of `"This Month" Button`
+    t =   169.78s Find the "This Month" Button
+    t =   169.84s Find the Target Application 'com.runner.Jukebox'
+    t =   169.87s Find the "This Month" Button
+    t =   169.93s Tap "This Month" Button
+    t =   169.94s     Wait for com.runner.Jukebox to idle
+    t =   169.94s     Find the "This Month" Button
+    t =   170.00s     Check for interrupting elements affecting "This Month" Button
+    t =   170.03s     Synthesize event
+    t =   170.32s     Wait for com.runner.Jukebox to idle
+    t =   172.51s Added attachment named '19-on-your-jukebox-month'
+PICTURE: 19-on-your-jukebox-month
+    t =   172.53s Waiting 10.0s for "This Year" Button to exist
+    t =   173.55s     Checking `Expect predicate `existsNoRetry == 1` for object "This Year" Button`
+    t =   173.55s         Checking existence of `"This Year" Button`
+    t =   173.63s Checking existence of `"This Year" Button`
+    t =   173.70s Find the "This Year" Button
+    t =   173.76s Find the Target Application 'com.runner.Jukebox'
+    t =   173.79s Checking existence of `"This Year" Button`
+    t =   173.85s Find the "This Year" Button
+    t =   173.91s Find the Target Application 'com.runner.Jukebox'
+    t =   173.94s Find the "This Year" Button
+    t =   174.01s Tap "This Year" Button
+    t =   174.01s     Wait for com.runner.Jukebox to idle
+    t =   174.01s     Find the "This Year" Button
+    t =   174.07s     Check for interrupting elements affecting "This Year" Button
+    t =   174.11s     Synthesize event
+    t =   174.40s     Wait for com.runner.Jukebox to idle
+    t =   176.62s Added attachment named '20-on-your-jukebox-year'
+PICTURE: 20-on-your-jukebox-year
+    t =   176.64s Waiting 3.0s for Button (First Match) to exist
+    t =   177.69s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   177.69s         Checking existence of `Button (First Match)`
+    t =   177.71s Waiting 1.0s for Button (First Match) to exist
+    t =   178.71s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   178.72s         Checking existence of `Button (First Match)`
+    t =   178.75s     Checking existence of `Button (First Match)`
+    t =   178.77s Checking existence of `Button (First Match)`
+    t =   178.78s Find the Button (First Match)
+    t =   178.80s Find the Target Application 'com.runner.Jukebox'
+    t =   178.83s Checking existence of `"BackButton" Button`
+    t =   178.84s Find the "BackButton" Button
+    t =   178.86s Find the Target Application 'com.runner.Jukebox'
+    t =   178.89s Find the "BackButton" Button
+    t =   178.91s Tap "BackButton" Button
+    t =   178.91s     Wait for com.runner.Jukebox to idle
+    t =   178.92s     Find the "BackButton" Button
+    t =   178.93s     Check for interrupting elements affecting "BackButton" Button
+    t =   178.96s     Synthesize event
+    t =   179.26s     Wait for com.runner.Jukebox to idle
+    t =   181.07s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   182.10s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   182.10s         Checking existence of `"Library" NavigationBar`
+    t =   182.14s Waiting 5.0s for "tab.home" Button to exist
+    t =   183.18s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.home" Button`
+    t =   183.18s         Checking existence of `"tab.home" Button`
+    t =   183.21s Checking existence of `"tab.home" Button`
+    t =   183.23s Find the "tab.home" Button
+    t =   183.25s Waiting 1.0s for "tab.home" Button to exist
+    t =   184.26s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.home" Button`
+    t =   184.27s         Checking existence of `"tab.home" Button`
+    t =   184.29s     Checking existence of `"tab.home" Button`
+    t =   184.31s Checking existence of `"tab.home" Button`
+    t =   184.32s Find the "tab.home" Button
+    t =   184.34s Find the Target Application 'com.runner.Jukebox'
+    t =   184.36s Checking existence of `"tab.home" Button`
+    t =   184.37s Find the "tab.home" Button
+    t =   184.39s Find the Target Application 'com.runner.Jukebox'
+    t =   184.41s Find the "tab.home" Button
+    t =   184.43s Tap "tab.home" Button
+    t =   184.43s     Wait for com.runner.Jukebox to idle
+    t =   184.43s     Find the "tab.home" Button
+    t =   184.45s     Check for interrupting elements affecting "tab.home" Button
+    t =   184.47s     Synthesize event
+    t =   184.76s     Wait for com.runner.Jukebox to idle
+    t =   187.08s Waiting 10.0s for "Settings" Button to exist
+    t =   188.15s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" Button`
+    t =   188.15s         Checking existence of `"Settings" Button`
+    t =   188.18s Checking existence of `"Settings" Button`
+    t =   188.20s Find the "Settings" Button
+    t =   188.23s Find the Target Application 'com.runner.Jukebox'
+    t =   188.26s Checking existence of `"Settings" Button`
+    t =   188.28s Find the "Settings" Button
+    t =   188.31s Find the Target Application 'com.runner.Jukebox'
+    t =   188.34s Find the "Settings" Button
+    t =   188.37s Tap "Settings" Button
+    t =   188.37s     Wait for com.runner.Jukebox to idle
+    t =   188.38s     Find the "Settings" Button
+    t =   188.40s     Check for interrupting elements affecting "Settings" Button
+    t =   188.44s     Synthesize event
+    t =   188.73s     Wait for com.runner.Jukebox to idle
+    t =   189.23s Waiting 8.0s for "Settings" NavigationBar to exist
+    t =   190.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Settings" NavigationBar`
+    t =   190.26s         Checking existence of `"Settings" NavigationBar`
+    t =   191.98s Added attachment named '21-settings'
+PICTURE: 21-settings
+    t =   192.00s Waiting 4.0s for "settings.page.accounts" Any to exist
+    t =   193.05s     Checking `Expect predicate `existsNoRetry == 1` for object "settings.page.accounts" Any`
+    t =   193.05s         Checking existence of `"settings.page.accounts" Any`
+    t =   193.19s Checking existence of `"settings.page.accounts" Any`
+    t =   193.30s Find the "settings.page.accounts" Any
+    t =   193.42s Find the Target Application 'com.runner.Jukebox'
+    t =   193.47s Checking existence of `"settings.page.accounts" Button`
+    t =   193.58s Find the "settings.page.accounts" Button
+    t =   193.70s Find the Target Application 'com.runner.Jukebox'
+    t =   193.74s Find the "settings.page.accounts" Button
+    t =   193.86s Tap "settings.page.accounts" Button
+    t =   193.86s     Wait for com.runner.Jukebox to idle
+    t =   193.86s     Find the "settings.page.accounts" Button
+    t =   193.98s     Check for interrupting elements affecting "settings.page.accounts" Button
+    t =   194.05s     Synthesize event
+    t =   194.33s     Wait for com.runner.Jukebox to idle
+    t =   194.72s Waiting 6.0s for "Accounts" NavigationBar to exist
+    t =   195.76s     Checking `Expect predicate `existsNoRetry == 1` for object "Accounts" NavigationBar`
+    t =   195.76s         Checking existence of `"Accounts" NavigationBar`
+    t =   197.48s Added attachment named '22-settings-accounts'
+PICTURE: 22-settings-accounts
+    t =   197.50s Waiting 2.0s for Button (First Match) to exist
+    t =   198.55s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   198.55s         Checking existence of `Button (First Match)`
+    t =   198.59s Checking existence of `Button (First Match)`
+    t =   198.60s Find the Button (First Match)
+    t =   198.62s Find the Target Application 'com.runner.Jukebox'
+    t =   198.67s Checking existence of `"BackButton" Button`
+    t =   198.69s Find the "BackButton" Button
+    t =   198.71s Find the Target Application 'com.runner.Jukebox'
+    t =   198.75s Find the "BackButton" Button
+    t =   198.78s Tap "BackButton" Button
+    t =   198.78s     Wait for com.runner.Jukebox to idle
+    t =   198.78s     Find the "BackButton" Button
+    t =   198.80s     Check for interrupting elements affecting "BackButton" Button
+    t =   198.86s     Synthesize event
+    t =   199.15s     Wait for com.runner.Jukebox to idle
+    t =   200.48s Waiting 4.0s for "settings.page.playback" Any to exist
+    t =   201.50s     Checking `Expect predicate `existsNoRetry == 1` for object "settings.page.playback" Any`
+    t =   201.50s         Checking existence of `"settings.page.playback" Any`
+    t =   201.63s Checking existence of `"settings.page.playback" Any`
+    t =   201.75s Find the "settings.page.playback" Any
+    t =   201.87s Find the Target Application 'com.runner.Jukebox'
+    t =   201.91s Checking existence of `"settings.page.playback" Button`
+    t =   202.03s Find the "settings.page.playback" Button
+    t =   202.14s Find the Target Application 'com.runner.Jukebox'
+    t =   202.19s Find the "settings.page.playback" Button
+    t =   202.31s Tap "settings.page.playback" Button
+    t =   202.31s     Wait for com.runner.Jukebox to idle
+    t =   202.31s     Find the "settings.page.playback" Button
+    t =   202.43s     Check for interrupting elements affecting "settings.page.playback" Button
+    t =   202.50s     Synthesize event
+    t =   202.79s     Wait for com.runner.Jukebox to idle
+    t =   203.22s Waiting 6.0s for "Playback" NavigationBar to exist
+    t =   204.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Playback" NavigationBar`
+    t =   204.26s         Checking existence of `"Playback" NavigationBar`
+    t =   205.95s Added attachment named '23-settings-playback'
+PICTURE: 23-settings-playback
+    t =   205.97s Waiting 2.0s for Button (First Match) to exist
+    t =   207.00s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   207.00s         Checking existence of `Button (First Match)`
+    t =   207.03s Checking existence of `Button (First Match)`
+    t =   207.05s Find the Button (First Match)
+    t =   207.07s Find the Target Application 'com.runner.Jukebox'
+    t =   207.13s Checking existence of `"BackButton" Button`
+    t =   207.15s Find the "BackButton" Button
+    t =   207.17s Find the Target Application 'com.runner.Jukebox'
+    t =   207.22s Find the "BackButton" Button
+    t =   207.25s Tap "BackButton" Button
+    t =   207.25s     Wait for com.runner.Jukebox to idle
+    t =   207.25s     Find the "BackButton" Button
+    t =   207.27s     Check for interrupting elements affecting "BackButton" Button
+    t =   207.33s     Synthesize event
+    t =   207.62s     Wait for com.runner.Jukebox to idle
+    t =   208.93s Waiting 4.0s for "settings.page.radio" Any to exist
+    t =   209.96s     Checking `Expect predicate `existsNoRetry == 1` for object "settings.page.radio" Any`
+    t =   209.96s         Checking existence of `"settings.page.radio" Any`
+    t =   210.10s Checking existence of `"settings.page.radio" Any`
+    t =   210.21s Find the "settings.page.radio" Any
+    t =   210.33s Find the Target Application 'com.runner.Jukebox'
+    t =   210.38s Checking existence of `"settings.page.radio" Button`
+    t =   210.49s Find the "settings.page.radio" Button
+    t =   210.61s Find the Target Application 'com.runner.Jukebox'
+    t =   210.66s Find the "settings.page.radio" Button
+    t =   210.78s Tap "settings.page.radio" Button
+    t =   210.78s     Wait for com.runner.Jukebox to idle
+    t =   210.78s     Find the "settings.page.radio" Button
+    t =   210.90s     Check for interrupting elements affecting "settings.page.radio" Button
+    t =   210.97s     Synthesize event
+    t =   211.25s     Wait for com.runner.Jukebox to idle
+    t =   211.59s Waiting 6.0s for "Radio" NavigationBar to exist
+    t =   212.63s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   212.63s         Checking existence of `"Radio" NavigationBar`
+    t =   214.35s Added attachment named '24-settings-radio'
+PICTURE: 24-settings-radio
+    t =   214.37s Waiting 2.0s for Button (First Match) to exist
+    t =   215.40s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   215.40s         Checking existence of `Button (First Match)`
+    t =   215.43s Checking existence of `Button (First Match)`
+    t =   215.45s Find the Button (First Match)
+    t =   215.47s Find the Target Application 'com.runner.Jukebox'
+    t =   215.52s Checking existence of `"BackButton" Button`
+    t =   215.53s Find the "BackButton" Button
+    t =   215.55s Find the Target Application 'com.runner.Jukebox'
+    t =   215.59s Find the "BackButton" Button
+    t =   215.62s Tap "BackButton" Button
+    t =   215.62s     Wait for com.runner.Jukebox to idle
+    t =   215.62s     Find the "BackButton" Button
+    t =   215.64s     Check for interrupting elements affecting "BackButton" Button
+    t =   215.70s     Synthesize event
+    t =   215.99s     Wait for com.runner.Jukebox to idle
+    t =   217.30s Waiting 4.0s for "Done" Button to exist
+    t =   218.35s     Checking `Expect predicate `existsNoRetry == 1` for object "Done" Button`
+    t =   218.36s         Checking existence of `"Done" Button`
+    t =   218.40s Checking existence of `"Done" Button`
+    t =   218.42s Find the "Done" Button
+    t =   218.45s Find the Target Application 'com.runner.Jukebox'
+    t =   218.49s Checking existence of `"Done" Button`
+    t =   218.51s Find the "Done" Button
+    t =   218.53s Find the Target Application 'com.runner.Jukebox'
+    t =   218.57s Find the "Done" Button
+    t =   218.60s Tap "Done" Button
+    t =   218.60s     Wait for com.runner.Jukebox to idle
+    t =   218.60s     Find the "Done" Button
+    t =   218.62s     Check for interrupting elements affecting "Done" Button
+    t =   218.68s     Synthesize event
+    t =   218.97s     Wait for com.runner.Jukebox to idle
+    t =   220.91s Waiting 15.0s for "Your Station" StaticText to exist
+    t =   221.95s     Checking `Expect predicate `existsNoRetry == 1` for object "Your Station" StaticText`
+    t =   221.95s         Checking existence of `"Your Station" StaticText`
+    t =   222.02s Checking existence of `"Your Station" StaticText`
+    t =   222.06s Find the "Your Station" StaticText
+    t =   222.10s Find the Target Application 'com.runner.Jukebox'
+    t =   222.13s Checking existence of `Button (First Match)`
+    t =   222.16s Find the Button (First Match)
+    t =   222.19s Waiting 10.0s for Button (First Match) to exist
+    t =   223.23s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   223.23s         Checking existence of `Button (First Match)`
+    t =   223.29s Checking existence of `Button (First Match)`
+    t =   223.32s Find the Button (First Match)
+    t =   223.35s Find the Target Application 'com.runner.Jukebox'
+    t =   223.38s Checking existence of `"Your Station, Play" Button`
+    t =   223.41s Find the "Your Station, Play" Button
+    t =   223.44s Find the Target Application 'com.runner.Jukebox'
+    t =   223.48s Find the "Your Station, Play" Button
+    t =   223.52s Tap "Your Station, Play" Button
+    t =   223.52s     Wait for com.runner.Jukebox to idle
+    t =   223.52s     Find the "Your Station, Play" Button
+    t =   223.55s     Check for interrupting elements affecting "Your Station, Play" Button
+    t =   223.60s     Synthesize event
+<unknown>:0: warning: -[JukeboxUITests.ScreenshotTests testPhone] : This method can lead to UI unresponsiveness if called on the main thread. Consider using the asynchronous activate/deactivate API instead for calls from the main thread.
+    t =   223.92s     Wait for com.runner.Jukebox to idle
+    t =   223.97s Waiting 45.0s for "Pause" Button to exist
+    t =   225.05s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =   225.05s         Checking existence of `"Pause" Button`
+    t =   228.32s Added attachment named '25-home-playing'
+PICTURE: 25-home-playing
+    t =   228.35s Waiting 5.0s for StaticText (First Match) to exist
+    t =   229.40s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =   229.40s         Checking existence of `StaticText (First Match)`
+    t =   229.47s Waiting 10.0s for StaticText (First Match) to exist
+    t =   230.49s     Checking `Expect predicate `existsNoRetry == 1` for object StaticText (First Match)`
+    t =   230.49s         Checking existence of `StaticText (First Match)`
+    t =   230.54s Checking existence of `StaticText (First Match)`
+    t =   230.58s Find the StaticText (First Match)
+    t =   230.62s Find the Target Application 'com.runner.Jukebox'
+    t =   230.66s Checking existence of `"On air" StaticText`
+    t =   230.70s Find the "On air" StaticText
+    t =   230.74s Find the Target Application 'com.runner.Jukebox'
+    t =   230.78s Find the "On air" StaticText
+    t =   230.82s Tap "On air" StaticText
+    t =   230.82s     Wait for com.runner.Jukebox to idle
+    t =   230.83s     Find the "On air" StaticText
+    t =   230.87s     Check for interrupting elements affecting "On air" StaticText
+    t =   230.91s     Synthesize event
+    t =   231.20s     Wait for com.runner.Jukebox to idle
+    t =   231.21s Waiting 8.0s for "Close" Button to exist
+    t =   232.25s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   232.25s         Checking existence of `"Close" Button`
+    t =   232.41s         Capturing element debug description
+    t =   233.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   233.22s         Checking existence of `"Close" Button`
+    t =   233.37s         Capturing element debug description
+    t =   234.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   234.22s         Checking existence of `"Close" Button`
+    t =   234.35s         Capturing element debug description
+    t =   235.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   235.27s         Checking existence of `"Close" Button`
+    t =   235.41s         Capturing element debug description
+    t =   236.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   236.27s         Checking existence of `"Close" Button`
+    t =   236.41s         Capturing element debug description
+    t =   237.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   237.22s         Checking existence of `"Close" Button`
+    t =   237.37s         Capturing element debug description
+    t =   238.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   238.27s         Checking existence of `"Close" Button`
+    t =   238.42s         Capturing element debug description
+    t =   239.21s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   239.21s         Checking existence of `"Close" Button`
+    t =   239.35s         Capturing element debug description
+    t =   239.35s     Checking existence of `"Close" Button`
+    t =   239.47s Collecting debug information to assist test failure triage
+    t =   239.48s     Requesting snapshot of accessibility hierarchy for app with pid 3137
+    t =   239.55s Waiting 3.0s for "mini-player" Button to exist
+    t =   240.59s     Checking `Expect predicate `existsNoRetry == 1` for object "mini-player" Button`
+    t =   240.59s         Checking existence of `"mini-player" Button`
+    t =   240.60s Tap "mini-player" Button
+    t =   240.60s     Wait for com.runner.Jukebox to idle
+    t =   240.61s     Find the "mini-player" Button
+    t =   240.62s     Check for interrupting elements affecting "mini-player" Button
+    t =   240.66s     Synthesize event
+    t =   240.95s     Wait for com.runner.Jukebox to idle
+    t =   240.99s Waiting 8.0s for "Close" Button to exist
+    t =   242.03s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   242.03s         Checking existence of `"Close" Button`
+    t =   245.37s Added attachment named '26-now-playing'
+PICTURE: 26-now-playing
+    t =   245.43s Waiting 10.0s for "Lyrics" Button to exist
+    t =   246.45s     Checking `Expect predicate `existsNoRetry == 1` for object "Lyrics" Button`
+    t =   246.45s         Checking existence of `"Lyrics" Button`
+    t =   246.50s Checking existence of `"Lyrics" Button`
+    t =   246.52s Find the "Lyrics" Button
+    t =   246.54s Find the Target Application 'com.runner.Jukebox'
+    t =   246.58s Checking existence of `"quote.bubble" Button`
+    t =   246.60s Find the "quote.bubble" Button
+    t =   246.62s Find the Target Application 'com.runner.Jukebox'
+    t =   246.66s Find the "quote.bubble" Button
+    t =   246.68s Tap "quote.bubble" Button
+    t =   246.68s     Wait for com.runner.Jukebox to idle
+    t =   246.68s     Find the "quote.bubble" Button
+    t =   246.70s     Check for interrupting elements affecting "quote.bubble" Button
+    t =   246.75s     Synthesize event
+    t =   247.05s     Wait for com.runner.Jukebox to idle
+    t =   250.35s Added attachment named '27-lyrics'
+PICTURE: 27-lyrics
+    t =   250.41s Waiting 10.0s for "Lyrics" Button to exist
+    t =   251.46s     Checking `Expect predicate `existsNoRetry == 1` for object "Lyrics" Button`
+    t =   251.47s         Checking existence of `"Lyrics" Button`
+    t =   251.51s Checking existence of `"Lyrics" Button`
+    t =   251.53s Find the "Lyrics" Button
+    t =   251.55s Find the Target Application 'com.runner.Jukebox'
+    t =   251.59s Checking existence of `"quote.bubble" Button`
+    t =   251.61s Find the "quote.bubble" Button
+    t =   251.63s Find the Target Application 'com.runner.Jukebox'
+    t =   251.67s Find the "quote.bubble" Button
+    t =   251.70s Tap "quote.bubble" Button
+    t =   251.70s     Wait for com.runner.Jukebox to idle
+    t =   251.70s     Find the "quote.bubble" Button
+    t =   251.72s     Check for interrupting elements affecting "quote.bubble" Button
+    t =   251.77s     Synthesize event
+    t =   252.05s     Wait for com.runner.Jukebox to idle
+    t =   252.06s Waiting 10.0s for "Up Next" Button to exist
+    t =   253.06s     Checking `Expect predicate `existsNoRetry == 1` for object "Up Next" Button`
+    t =   253.06s         Checking existence of `"Up Next" Button`
+    t =   253.10s Checking existence of `"Up Next" Button`
+    t =   253.12s Find the "Up Next" Button
+    t =   253.15s Find the Target Application 'com.runner.Jukebox'
+    t =   253.18s Checking existence of `"list.bullet" Button`
+    t =   253.21s Find the "list.bullet" Button
+    t =   253.23s Find the Target Application 'com.runner.Jukebox'
+    t =   253.27s Find the "list.bullet" Button
+    t =   253.30s Tap "list.bullet" Button
+    t =   253.30s     Wait for com.runner.Jukebox to idle
+    t =   253.30s     Find the "list.bullet" Button
+    t =   253.32s     Check for interrupting elements affecting "list.bullet" Button
+    t =   253.37s     Synthesize event
+    t =   253.65s     Wait for com.runner.Jukebox to idle
+    t =   255.95s Added attachment named '28-queue'
+PICTURE: 28-queue
+    t =   256.00s Waiting 10.0s for "Up Next" Button to exist
+    t =   257.05s     Checking `Expect predicate `existsNoRetry == 1` for object "Up Next" Button`
+    t =   257.05s         Checking existence of `"Up Next" Button`
+    t =   257.09s Checking existence of `"Up Next" Button`
+    t =   257.12s Find the "Up Next" Button
+    t =   257.14s Find the Target Application 'com.runner.Jukebox'
+    t =   257.21s Checking existence of `"list.bullet" Button`
+    t =   257.23s Find the "list.bullet" Button
+    t =   257.25s Find the Target Application 'com.runner.Jukebox'
+    t =   257.30s Find the "list.bullet" Button
+    t =   257.32s Tap "list.bullet" Button
+    t =   257.32s     Wait for com.runner.Jukebox to idle
+    t =   257.32s     Find the "list.bullet" Button
+    t =   257.34s     Check for interrupting elements affecting "list.bullet" Button
+    t =   257.40s     Synthesize event
+    t =   257.70s     Wait for com.runner.Jukebox to idle
+    t =   257.70s Waiting 3.0s for "Close" Button to exist
+    t =   258.75s     Checking `Expect predicate `existsNoRetry == 1` for object "Close" Button`
+    t =   258.75s         Checking existence of `"Close" Button`
+    t =   258.77s Checking existence of `"Close" Button`
+    t =   258.78s Find the "Close" Button
+    t =   258.80s Find the Target Application 'com.runner.Jukebox'
+    t =   258.83s Checking existence of `"chevron.down" Button`
+    t =   258.84s Find the "chevron.down" Button
+    t =   258.86s Find the Target Application 'com.runner.Jukebox'
+    t =   258.90s Find the "chevron.down" Button
+    t =   258.91s Tap "chevron.down" Button
+    t =   258.91s     Wait for com.runner.Jukebox to idle
+    t =   258.91s     Find the "chevron.down" Button
+    t =   258.92s     Check for interrupting elements affecting "chevron.down" Button
+    t =   258.98s     Synthesize event
+    t =   259.27s     Wait for com.runner.Jukebox to idle
+    t =   261.63s Waiting 5.0s for "tab.library" Button to exist
+    t =   262.66s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.library" Button`
+    t =   262.67s         Checking existence of `"tab.library" Button`
+    t =   262.71s Checking existence of `"tab.library" Button`
+    t =   262.73s Find the "tab.library" Button
+    t =   262.75s Waiting 1.0s for "tab.library" Button to exist
+    t =   263.75s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.library" Button`
+    t =   263.76s         Checking existence of `"tab.library" Button`
+    t =   263.79s     Checking existence of `"tab.library" Button`
+    t =   263.81s Checking existence of `"tab.library" Button`
+    t =   263.83s Find the "tab.library" Button
+    t =   263.85s Find the Target Application 'com.runner.Jukebox'
+    t =   263.88s Checking existence of `"tab.library" Button`
+    t =   263.90s Find the "tab.library" Button
+    t =   263.92s Find the Target Application 'com.runner.Jukebox'
+    t =   263.95s Find the "tab.library" Button
+    t =   263.97s Tap "tab.library" Button
+    t =   263.97s     Wait for com.runner.Jukebox to idle
+    t =   263.97s     Find the "tab.library" Button
+    t =   263.99s     Check for interrupting elements affecting "tab.library" Button
+    t =   264.03s     Synthesize event
+    t =   264.32s     Wait for com.runner.Jukebox to idle
+    t =   266.82s Added attachment named '29-mini-player'
+PICTURE: 29-mini-player
+    t =   266.85s Waiting 5.0s for "tab.radio" Button to exist
+    t =   267.86s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.radio" Button`
+    t =   267.87s         Checking existence of `"tab.radio" Button`
+    t =   267.91s Checking existence of `"tab.radio" Button`
+    t =   267.92s Find the "tab.radio" Button
+    t =   267.95s Waiting 1.0s for "tab.radio" Button to exist
+    t =   268.96s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.radio" Button`
+    t =   268.96s         Checking existence of `"tab.radio" Button`
+    t =   269.00s     Checking existence of `"tab.radio" Button`
+    t =   269.02s Checking existence of `"tab.radio" Button`
+    t =   269.03s Find the "tab.radio" Button
+    t =   269.05s Find the Target Application 'com.runner.Jukebox'
+    t =   269.07s Checking existence of `"tab.radio" Button`
+    t =   269.09s Find the "tab.radio" Button
+    t =   269.10s Find the Target Application 'com.runner.Jukebox'
+    t =   269.12s Find the "tab.radio" Button
+    t =   269.15s Tap "tab.radio" Button
+    t =   269.15s     Wait for com.runner.Jukebox to idle
+    t =   269.15s     Find the "tab.radio" Button
+    t =   269.16s     Check for interrupting elements affecting "tab.radio" Button
+    t =   269.19s     Synthesize event
+    t =   269.48s     Wait for com.runner.Jukebox to idle
+    t =   271.97s Added attachment named '30-radio-on-air'
+PICTURE: 30-radio-on-air
+    t =   271.99s Waiting 10.0s for Button (First Match) to exist
+    t =   273.00s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   273.00s         Checking existence of `Button (First Match)`
+    t =   273.05s Checking existence of `Button (First Match)`
+    t =   273.08s Find the Button (First Match)
+    t =   273.12s Find the Target Application 'com.runner.Jukebox'
+    t =   273.15s Checking existence of `"Your Station, Not played yet" Button`
+    t =   273.19s Find the "Your Station, Not played yet" Button
+    t =   273.22s Find the Target Application 'com.runner.Jukebox'
+    t =   273.25s Find the "Your Station, Not played yet" Button
+    t =   273.30s Tap "Your Station, Not played yet" Button
+    t =   273.30s     Wait for com.runner.Jukebox to idle
+    t =   273.30s     Find the "Your Station, Not played yet" Button
+    t =   273.34s     Check for interrupting elements affecting "Your Station, Not played yet" Button
+    t =   273.37s     Synthesize event
+    t =   273.66s     Wait for com.runner.Jukebox to idle
+    t =   274.04s Checking existence of `"New Picks" Button`
+    t =   274.15s Checking existence of `StaticText (First Match)`
+    t =   277.43s Added attachment named '31-station-on-air'
+PICTURE: 31-station-on-air
+    t =   277.46s Waiting 3.0s for Button (First Match) to exist
+    t =   278.50s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   278.50s         Checking existence of `Button (First Match)`
+    t =   278.54s Waiting 1.0s for Button (First Match) to exist
+    t =   279.55s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   279.55s         Checking existence of `Button (First Match)`
+    t =   279.59s     Checking existence of `Button (First Match)`
+    t =   279.61s Checking existence of `Button (First Match)`
+    t =   279.63s Find the Button (First Match)
+    t =   279.65s Find the Target Application 'com.runner.Jukebox'
+    t =   279.67s Checking existence of `"BackButton" Button`
+    t =   279.69s Find the "BackButton" Button
+    t =   279.70s Find the Target Application 'com.runner.Jukebox'
+    t =   279.73s Find the "BackButton" Button
+    t =   279.76s Tap "BackButton" Button
+    t =   279.76s     Wait for com.runner.Jukebox to idle
+    t =   279.76s     Find the "BackButton" Button
+    t =   279.78s     Check for interrupting elements affecting "BackButton" Button
+    t =   279.81s     Synthesize event
+    t =   280.10s     Wait for com.runner.Jukebox to idle
+    t =   281.92s Waiting 10.0s for "Radio" NavigationBar to exist
+    t =   282.96s     Checking `Expect predicate `existsNoRetry == 1` for object "Radio" NavigationBar`
+    t =   282.96s         Checking existence of `"Radio" NavigationBar`
+    t =   283.00s Waiting 5.0s for "tab.library" Button to exist
+    t =   284.01s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.library" Button`
+    t =   284.01s         Checking existence of `"tab.library" Button`
+    t =   284.03s Checking existence of `"tab.library" Button`
+    t =   284.05s Find the "tab.library" Button
+    t =   284.07s Waiting 1.0s for "tab.library" Button to exist
+    t =   285.08s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.library" Button`
+    t =   285.08s         Checking existence of `"tab.library" Button`
+    t =   285.11s     Checking existence of `"tab.library" Button`
+    t =   285.13s Checking existence of `"tab.library" Button`
+    t =   285.15s Find the "tab.library" Button
+    t =   285.17s Find the Target Application 'com.runner.Jukebox'
+    t =   285.19s Checking existence of `"tab.library" Button`
+    t =   285.21s Find the "tab.library" Button
+    t =   285.23s Find the Target Application 'com.runner.Jukebox'
+    t =   285.25s Find the "tab.library" Button
+    t =   285.28s Tap "tab.library" Button
+    t =   285.28s     Wait for com.runner.Jukebox to idle
+    t =   285.28s     Find the "tab.library" Button
+    t =   285.29s     Check for interrupting elements affecting "tab.library" Button
+    t =   285.33s     Synthesize event
+    t =   285.62s     Wait for com.runner.Jukebox to idle
+    t =   287.91s Waiting 10.0s for "Albums" Button to exist
+    t =   288.95s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" Button`
+    t =   288.95s         Checking existence of `"Albums" Button`
+    t =   289.01s Checking existence of `"Albums" Button`
+    t =   289.05s Find the "Albums" Button
+    t =   289.09s Find the Target Application 'com.runner.Jukebox'
+    t =   289.11s Checking existence of `"Albums" Button`
+    t =   289.15s Find the "Albums" Button
+    t =   289.19s Find the Target Application 'com.runner.Jukebox'
+    t =   289.20s Find the "Albums" Button
+    t =   289.25s Tap "Albums" Button
+    t =   289.25s     Wait for com.runner.Jukebox to idle
+    t =   289.25s     Find the "Albums" Button
+    t =   289.29s     Check for interrupting elements affecting "Albums" Button
+    t =   289.31s     Synthesize event
+    t =   289.60s     Wait for com.runner.Jukebox to idle
+    t =   289.96s Waiting 8.0s for "Albums" NavigationBar to exist
+    t =   291.01s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" NavigationBar`
+    t =   291.01s         Checking existence of `"Albums" NavigationBar`
+    t =   293.06s Waiting 3.0s for Button (First Match) to exist
+    t =   294.11s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   294.11s         Checking existence of `Button (First Match)`
+    t =   294.18s         Capturing element debug description
+    t =   295.06s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   295.07s         Checking existence of `Button (First Match)`
+    t =   295.14s         Capturing element debug description
+    t =   296.06s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   296.06s         Checking existence of `Button (First Match)`
+    t =   296.14s         Capturing element debug description
+    t =   296.14s     Checking existence of `Button (First Match)`
+    t =   296.19s Collecting debug information to assist test failure triage
+    t =   296.19s     Requesting snapshot of accessibility hierarchy for app with pid 3137
+    t =   296.24s Swipe up Target Application 'com.runner.Jukebox'
+    t =   296.24s     Wait for com.runner.Jukebox to idle
+    t =   296.25s     Find the Target Application 'com.runner.Jukebox'
+    t =   296.27s     Check for interrupting elements affecting "Jukebox" Application
+    t =   296.29s     Synthesize event
+    t =   296.78s     Wait for com.runner.Jukebox to idle
+    t =   298.72s Waiting 1.5s for Button (First Match) to exist
+    t =   299.75s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   299.75s         Checking existence of `Button (First Match)`
+    t =   299.84s         Capturing element debug description
+    t =   300.23s     Checking existence of `Button (First Match)`
+    t =   300.31s Collecting debug information to assist test failure triage
+    t =   300.31s     Requesting snapshot of accessibility hierarchy for app with pid 3137
+    t =   300.36s Swipe up Target Application 'com.runner.Jukebox'
+    t =   300.36s     Wait for com.runner.Jukebox to idle
+    t =   300.36s     Find the Target Application 'com.runner.Jukebox'
+    t =   300.38s     Check for interrupting elements affecting "Jukebox" Application
+    t =   300.41s     Synthesize event
+    t =   300.90s     Wait for com.runner.Jukebox to idle
+    t =   302.83s Waiting 1.5s for Button (First Match) to exist
+    t =   303.85s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   303.85s         Checking existence of `Button (First Match)`
+    t =   303.92s Waiting 10.0s for Button (First Match) to exist
+    t =   304.95s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   304.95s         Checking existence of `Button (First Match)`
+    t =   304.99s Checking existence of `Button (First Match)`
+    t =   305.04s Find the Button (First Match)
+    t =   305.08s Find the Target Application 'com.runner.Jukebox'
+    t =   305.11s Checking existence of `"Lantern Hours (25th Anniversary), The Lanterns" Button`
+    t =   305.15s Find the "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   305.19s Find the Target Application 'com.runner.Jukebox'
+    t =   305.22s Checking existence of `"Lantern Hours (25th Anniversary), The Lanterns" Button`
+    t =   305.26s Find the "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   305.30s Find the Target Application 'com.runner.Jukebox'
+    t =   305.33s Swipe up Target Application 'com.runner.Jukebox'
+    t =   305.33s     Wait for com.runner.Jukebox to idle
+    t =   305.33s     Find the Target Application 'com.runner.Jukebox'
+    t =   305.35s     Check for interrupting elements affecting "Jukebox" Application
+    t =   305.38s     Synthesize event
+    t =   305.80s     Wait for com.runner.Jukebox to idle
+    t =   308.94s Checking existence of `"Lantern Hours (25th Anniversary), The Lanterns" Button`
+    t =   309.00s Find the "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   309.04s Find the Target Application 'com.runner.Jukebox'
+    t =   309.07s Checking existence of `"Lantern Hours (25th Anniversary), The Lanterns" Button`
+    t =   309.10s Find the "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   309.15s Find the Target Application 'com.runner.Jukebox'
+    t =   309.17s Find the "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   309.22s Tap "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   309.22s     Wait for com.runner.Jukebox to idle
+    t =   309.22s     Find the "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   309.26s     Check for interrupting elements affecting "Lantern Hours (25th Anniversary), The Lanterns" Button
+    t =   309.29s     Synthesize event
+    t =   309.58s     Wait for com.runner.Jukebox to idle
+    t =   312.95s Waiting 10.0s for "page.versions" Button to exist
+    t =   314.01s     Checking `Expect predicate `existsNoRetry == 1` for object "page.versions" Button`
+    t =   314.02s         Checking existence of `"page.versions" Button`
+    t =   314.11s Checking existence of `"page.versions" Button`
+    t =   314.17s Find the "page.versions" Button
+    t =   314.23s Find the Target Application 'com.runner.Jukebox'
+    t =   314.26s Checking existence of `"page.versions" Button`
+    t =   314.32s Find the "page.versions" Button
+    t =   314.38s Find the Target Application 'com.runner.Jukebox'
+    t =   314.40s Find the "page.versions" Button
+    t =   314.47s Tap "page.versions" Button
+    t =   314.47s     Wait for com.runner.Jukebox to idle
+    t =   314.47s     Find the "page.versions" Button
+    t =   314.53s     Check for interrupting elements affecting "page.versions" Button
+    t =   314.56s     Synthesize event
+    t =   314.85s     Wait for com.runner.Jukebox to idle
+    t =   318.16s Added attachment named '32-album-versions-menu'
+PICTURE: 32-album-versions-menu
+    t =   318.18s Waiting 3.0s for "Remastered" Button to exist
+    t =   319.20s     Checking `Expect predicate `existsNoRetry == 1` for object "Remastered" Button`
+    t =   319.20s         Checking existence of `"Remastered" Button`
+    t =   319.24s Checking existence of `"Remastered" Button`
+    t =   319.26s Find the "Remastered" Button
+    t =   319.28s Find the Target Application 'com.runner.Jukebox'
+    t =   319.30s Checking existence of `"Remastered" Button`
+    t =   319.32s Find the "Remastered" Button
+    t =   319.34s Find the Target Application 'com.runner.Jukebox'
+    t =   319.36s Find the "Remastered" Button
+    t =   319.38s Tap "Remastered" Button
+    t =   319.39s     Wait for com.runner.Jukebox to idle
+    t =   319.39s     Find the "Remastered" Button
+    t =   319.40s     Check for interrupting elements affecting "Remastered" Button
+    t =   319.44s     Synthesize event
+    t =   319.73s     Wait for com.runner.Jukebox to idle
+    t =   321.69s Added attachment named '33-album-versions-off'
+PICTURE: 33-album-versions-off
+    t =   321.71s Tap Target Application 'com.runner.Jukebox'[0.50, 0.30]
+    t =   321.71s     Wait for com.runner.Jukebox to idle
+    t =   321.71s     Find the Target Application 'com.runner.Jukebox'
+    t =   321.74s     Check for interrupting elements affecting "Jukebox" Application
+    t =   321.77s     Synthesize event
+    t =   321.78s         Find the Target Application 'com.runner.Jukebox'
+    t =   321.80s         Find the Target Application 'com.runner.Jukebox'
+    t =   321.83s         Find the Target Application 'com.runner.Jukebox'
+    t =   322.15s     Wait for com.runner.Jukebox to idle
+    t =   324.29s Swipe up Target Application 'com.runner.Jukebox'
+    t =   324.29s     Wait for com.runner.Jukebox to idle
+    t =   324.29s     Find the Target Application 'com.runner.Jukebox'
+    t =   324.35s     Check for interrupting elements affecting "Jukebox" Application
+    t =   324.38s     Synthesize event
+    t =   324.81s     Wait for com.runner.Jukebox to idle
+    t =   327.41s Swipe up Target Application 'com.runner.Jukebox'
+    t =   327.41s     Wait for com.runner.Jukebox to idle
+    t =   327.42s     Find the Target Application 'com.runner.Jukebox'
+    t =   327.47s     Check for interrupting elements affecting "Jukebox" Application
+    t =   327.51s     Synthesize event
+    t =   327.93s     Wait for com.runner.Jukebox to idle
+    t =   330.43s Swipe up Target Application 'com.runner.Jukebox'
+    t =   330.43s     Wait for com.runner.Jukebox to idle
+    t =   330.44s     Find the Target Application 'com.runner.Jukebox'
+    t =   330.49s     Check for interrupting elements affecting "Jukebox" Application
+    t =   330.53s     Synthesize event
+    t =   330.95s     Wait for com.runner.Jukebox to idle
+    t =   333.64s Added attachment named '34-album-bottom'
+PICTURE: 34-album-bottom
+    t =   333.66s Waiting 3.0s for Button (First Match) to exist
+    t =   334.71s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   334.71s         Checking existence of `Button (First Match)`
+    t =   334.75s Waiting 1.0s for Button (First Match) to exist
+    t =   335.76s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   335.77s         Checking existence of `Button (First Match)`
+    t =   335.80s     Checking existence of `Button (First Match)`
+    t =   335.82s Checking existence of `Button (First Match)`
+    t =   335.84s Find the Button (First Match)
+    t =   335.86s Find the Target Application 'com.runner.Jukebox'
+    t =   335.89s Checking existence of `"BackButton" Button`
+    t =   335.91s Find the "BackButton" Button
+    t =   335.94s Find the Target Application 'com.runner.Jukebox'
+    t =   335.97s Find the "BackButton" Button
+    t =   336.00s Tap "BackButton" Button
+    t =   336.00s     Wait for com.runner.Jukebox to idle
+    t =   336.00s     Find the "BackButton" Button
+    t =   336.02s     Check for interrupting elements affecting "BackButton" Button
+    t =   336.06s     Synthesize event
+    t =   336.36s     Wait for com.runner.Jukebox to idle
+    t =   338.22s Waiting 10.0s for "Albums" NavigationBar to exist
+    t =   339.26s     Checking `Expect predicate `existsNoRetry == 1` for object "Albums" NavigationBar`
+    t =   339.26s         Checking existence of `"Albums" NavigationBar`
+    t =   339.30s Waiting 3.0s for Button (First Match) to exist
+    t =   340.35s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   340.35s         Checking existence of `Button (First Match)`
+    t =   340.38s Waiting 1.0s for Button (First Match) to exist
+    t =   341.39s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   341.39s         Checking existence of `Button (First Match)`
+    t =   341.43s     Checking existence of `Button (First Match)`
+    t =   341.45s Checking existence of `Button (First Match)`
+    t =   341.47s Find the Button (First Match)
+    t =   341.50s Find the Target Application 'com.runner.Jukebox'
+    t =   341.52s Checking existence of `"BackButton" Button`
+    t =   341.54s Find the "BackButton" Button
+    t =   341.56s Find the Target Application 'com.runner.Jukebox'
+    t =   341.59s Find the "BackButton" Button
+    t =   341.62s Tap "BackButton" Button
+    t =   341.62s     Wait for com.runner.Jukebox to idle
+    t =   341.62s     Find the "BackButton" Button
+    t =   341.64s     Check for interrupting elements affecting "BackButton" Button
+    t =   341.67s     Synthesize event
+    t =   341.97s     Wait for com.runner.Jukebox to idle
+    t =   343.77s Waiting 10.0s for "Library" NavigationBar to exist
+    t =   344.80s     Checking `Expect predicate `existsNoRetry == 1` for object "Library" NavigationBar`
+    t =   344.80s         Checking existence of `"Library" NavigationBar`
+    t =   344.84s Waiting 5.0s for "tab.search" Button to exist
+    t =   345.86s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.search" Button`
+    t =   345.86s         Checking existence of `"tab.search" Button`
+    t =   345.89s Checking existence of `"tab.search" Button`
+    t =   345.90s Find the "tab.search" Button
+    t =   345.93s Waiting 1.0s for "tab.search" Button to exist
+    t =   346.93s     Checking `Expect predicate `existsNoRetry == 1` for object "tab.search" Button`
+    t =   346.93s         Checking existence of `"tab.search" Button`
+    t =   346.97s     Checking existence of `"tab.search" Button`
+    t =   347.00s Checking existence of `"tab.search" Button`
+    t =   347.01s Find the "tab.search" Button
+    t =   347.03s Find the Target Application 'com.runner.Jukebox'
+    t =   347.05s Checking existence of `"tab.search" Button`
+    t =   347.07s Find the "tab.search" Button
+    t =   347.09s Find the Target Application 'com.runner.Jukebox'
+    t =   347.11s Find the "tab.search" Button
+    t =   347.13s Tap "tab.search" Button
+    t =   347.14s     Wait for com.runner.Jukebox to idle
+    t =   347.14s     Find the "tab.search" Button
+    t =   347.15s     Check for interrupting elements affecting "tab.search" Button
+    t =   347.18s     Synthesize event
+    t =   347.47s     Wait for com.runner.Jukebox to idle
+    t =   349.82s Waiting 8.0s for SearchField (First Match) to exist
+    t =   350.86s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =   350.86s         Checking existence of `SearchField (First Match)`
+    t =   350.89s Waiting 10.0s for SearchField (First Match) to exist
+    t =   351.93s     Checking `Expect predicate `existsNoRetry == 1` for object SearchField (First Match)`
+    t =   351.93s         Checking existence of `SearchField (First Match)`
+    t =   351.98s Find the SearchField (First Match)
+    t =   352.01s Tap "Artists, albums, songs" SearchField
+    t =   352.01s     Wait for com.runner.Jukebox to idle
+    t =   352.01s     Find the "Artists, albums, songs" SearchField
+    t =   352.04s     Check for interrupting elements affecting "Artists, albums, songs" SearchField
+    t =   352.07s     Synthesize event
+    t =   352.36s     Wait for com.runner.Jukebox to idle
+    t =   354.02s Find the "Artists, albums, songs" SearchField
+    t =   354.10s Type 'Amsterdam' into "Artists, albums, songs" SearchField
+    t =   354.10s     Wait for com.runner.Jukebox to idle
+    t =   354.10s     Find the "Artists, albums, songs" SearchField
+    t =   354.15s     Check for interrupting elements affecting "Artists, albums, songs" SearchField
+    t =   354.18s     Synthesize event
+    t =   354.54s     Wait for com.runner.Jukebox to idle
+    t =   357.24s Added attachment named '35-search'
+PICTURE: 35-search
+    t =   357.27s Added attachment named 'missed-phone'
+    t =   357.29s Tear Down
+Test Case '-[JukeboxUITests.ScreenshotTests testPhone]' passed (357.507 seconds).
+Test Suite 'ScreenshotTests' passed at 2026-11-26 12:09:36.350.
+	 Executed 1 test, with 0 failures (0 unexpected) in 357.507 (357.525) seconds
+Test Suite 'JukeboxUITests.xctest' passed at 2026-11-26 12:09:36.355.
+	 Executed 1 test, with 0 failures (0 unexpected) in 357.507 (357.530) seconds
+Test Suite 'Selected tests' passed at 2026-11-26 12:09:36.356.
+	 Executed 1 test, with 0 failures (0 unexpected) in 357.507 (357.532) seconds
+2026-11-26 12:09:48.100 xcodebuild[3038:41075236] [MT] IDETestOperationsObserverDebug: 383.871 elapsed -- Testing started completed.
+2026-11-26 12:09:48.100 xcodebuild[3038:41075236] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-26 12:09:48.100 xcodebuild[3038:41075236] [MT] IDETestOperationsObserverDebug: 383.871 sec, +383.871 sec -- end
+
+Test session results, code coverage, and logs:
+	~/actions-runner-5/_work/Jukebox/Jukebox/build/screenshots/iphone-dark.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

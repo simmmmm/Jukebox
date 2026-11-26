@@ -1,0 +1,793 @@
+Command line invocation:
+    /Applications/Xcode_26.6.app/Contents/Developer/usr/bin/xcodebuild test-without-building -project Jukebox.xcodeproj -scheme Jukebox -destination platform=macOS -derivedDataPath build/screenshots/derived-runner "-only-testing:JukeboxUITests/MacScreenshotTests/testMac" -resultBundlePath build/screenshots/runner-dark.xcresult -parallel-testing-enabled NO -test-timeouts-enabled YES -default-test-execution-time-allowance 570 -maximum-test-execution-time-allowance 570
+
+Resolve Package Graph
+
+
+Resolved source packages:
+  JukeboxKit: /Users/runner/work/Jukebox/Jukebox/JukeboxKit
+
+Writing result bundle at path:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/runner-dark.xcresult
+
+--- xcodebuild: WARNING: Using the first of multiple matching destinations:
+{ platform:macOS, arch:arm64, id:9242d4985311b64fd13886a3036a39c89c98b8cf, name:My runner }
+{ platform:macOS, arch:x86_64, id:9242d4985311b64fd13886a3036a39c89c98b8cf, name:My runner }
+2026-11-19 13:11:23.410288+0000 JukeboxUITests-Runner[9129:29575] [Default] Running tests...
+Test Suite 'Selected tests' started at 2026-11-19 13:11:23.638.
+Test Suite 'JukeboxUITests.xctest' started at 2026-11-19 13:11:23.639.
+Test Suite 'MacScreenshotTests' started at 2026-11-19 13:11:23.639.
+Test Case '-[JukeboxUITests.MacScreenshotTests testMac]' started.
+    t =     0.00s Start Test at 2026-11-19 13:11:23.640
+    t =     0.04s Set Up
+The screen of every PICTURE: 1600 x 1200 points, 1.0 pixels a point
+2026-11-19 13:11:24.288 xcodebuild[8864:28751] [MT] IDELaunchParametersSnapshot: The operation couldn’t be completed. (DebuggerLLDB.DebuggerVersionStore.StoreError error 0.)
+2026-11-19 13:11:24.288 xcodebuild[8864:28751] [MT] IDELaunchParametersSnapshot: no debugger version
+    t =     0.07s Open com.runner.Jukebox
+    t =     0.07s     Launch com.runner.Jukebox
+    t =     1.68s         Wait for accessibility to load
+    t =     2.89s         Setting up automation session
+    t =     3.03s         Wait for com.runner.Jukebox to idle
+    t =     3.05s Checking existence of `"place.home" Any`
+    t =     3.34s Checking existence of `"signIn.address" Any`
+    t =     3.39s Checking existence of `"place.home" Any`
+    t =     3.51s Checking existence of `"signIn.address" Any`
+    t =     3.54s Waiting 10.0s for "signIn.address" Any to exist
+    t =     4.56s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.address" Any`
+    t =     4.56s         Checking existence of `"signIn.address" Any`
+    t =     4.59s Waiting 1.0s for "signIn.address" Any to exist
+    t =     5.59s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.address" Any`
+    t =     5.59s         Checking existence of `"signIn.address" Any`
+    t =     5.60s     Checking existence of `"signIn.address" Any`
+    t =     5.62s Find the "signIn.address" Any
+    t =     5.64s Click "signIn.address" TextField
+    t =     5.64s     Wait for com.runner.Jukebox to idle
+    t =     5.65s     Find the "signIn.address" TextField
+    t =     5.66s     Check for interrupting elements affecting "signIn.address" TextField
+    t =     5.68s     Synthesize event
+    t =     6.00s     Wait for com.runner.Jukebox to idle
+    t =     6.81s Type 'a' key with modifiers '⌘' (0x10)
+    t =     6.81s     Wait for com.runner.Jukebox to idle
+    t =     6.81s     Find the "signIn.address" Any
+    t =     6.84s     Check for interrupting elements affecting "signIn.address" TextField
+    t =     6.87s     Synthesize event
+    t =     6.98s     Wait for com.runner.Jukebox to idle
+    t =     6.98s Type 'localhost:8096' into "signIn.address" TextField
+    t =     6.98s     Wait for com.runner.Jukebox to idle
+    t =     6.99s     Find the "signIn.address" TextField
+    t =     7.00s     Check for interrupting elements affecting "signIn.address" TextField
+    t =     7.02s     Synthesize event
+    t =     7.50s     Wait for com.runner.Jukebox to idle
+    t =     7.50s Waiting 10.0s for "signIn.user" Any to exist
+    t =     8.53s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.user" Any`
+    t =     8.53s         Checking existence of `"signIn.user" Any`
+    t =     8.55s Waiting 1.0s for "signIn.user" Any to exist
+    t =     9.55s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.user" Any`
+    t =     9.55s         Checking existence of `"signIn.user" Any`
+    t =     9.57s     Checking existence of `"signIn.user" Any`
+    t =     9.59s Find the "signIn.user" Any
+    t =     9.62s Click "signIn.user" TextField
+    t =     9.62s     Wait for com.runner.Jukebox to idle
+    t =     9.62s     Find the "signIn.user" TextField
+    t =     9.64s     Check for interrupting elements affecting "signIn.user" TextField
+    t =     9.65s     Synthesize event
+    t =    10.03s     Wait for com.runner.Jukebox to idle
+    t =    10.84s Type 'a' key with modifiers '⌘' (0x10)
+    t =    10.84s     Wait for com.runner.Jukebox to idle
+    t =    10.84s     Find the "signIn.user" Any
+    t =    10.85s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    10.86s     Synthesize event
+    t =    10.92s     Wait for com.runner.Jukebox to idle
+    t =    10.92s Type 'test' into "signIn.user" TextField
+    t =    10.92s     Wait for com.runner.Jukebox to idle
+    t =    10.92s     Find the "signIn.user" TextField
+    t =    10.94s     Check for interrupting elements affecting "signIn.user" TextField
+    t =    10.95s     Synthesize event
+    t =    11.07s     Wait for com.runner.Jukebox to idle
+    t =    11.07s Waiting 10.0s for "signIn.password" Any to exist
+    t =    12.09s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.password" Any`
+    t =    12.09s         Checking existence of `"signIn.password" Any`
+    t =    12.11s Waiting 1.0s for "signIn.password" Any to exist
+    t =    13.11s     Checking `Expect predicate `existsNoRetry == 1` for object "signIn.password" Any`
+    t =    13.11s         Checking existence of `"signIn.password" Any`
+    t =    13.12s     Checking existence of `"signIn.password" Any`
+    t =    13.14s Find the "signIn.password" Any
+    t =    13.16s Click "signIn.password" SecureTextField
+    t =    13.16s     Wait for com.runner.Jukebox to idle
+    t =    13.16s     Find the "signIn.password" SecureTextField
+    t =    13.18s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =    13.19s     Synthesize event
+    t =    13.56s     Wait for com.runner.Jukebox to idle
+    t =    14.37s Type 'a' key with modifiers '⌘' (0x10)
+    t =    14.37s     Wait for com.runner.Jukebox to idle
+    t =    14.37s     Find the "signIn.password" Any
+    t =    14.41s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =    14.42s     Found 1 interrupting element:
+    t =    14.42s Other at {{537.0, 668.0}, {104.0, 37.0}} from Target Application 'com.runner.Jukebox'
+    t =    14.42s     Invoking UI interruption monitors for Other at {{537.0, 668.0}, {104.0, 37.0}} from Target Application 'com.runner.Jukebox'
+    t =    14.42s Checking for user permission dialogs...
+    t =    14.42s             Checking existence of `StaticText (Elements matching predicate 'value MATCHES[c] ".+ would like ((to|full) access|to find) .+"')`
+    t =    14.47s             Checking existence of `StaticText (Elements matching predicate 'title CONTAINS[c] "Trust This "')`
+    t =    14.50s Checking for Bluetooth Setup Assistant...
+    t =    14.50s             Find the Other at {{537.0, 668.0}, {104.0, 37.0}}
+    t =    14.52s Checking for Notification Center Banners...
+    t =    14.52s Checking for basic alerts
+    t =    14.53s             Checking existence of `"SafariPlatformSupportAutoCompleteWindow" Window`
+    t =    14.55s             Find the "SafariPlatformSupportAutoCompleteWindow" Window
+    t =    14.58s             Find the "SafariPlatformSupportAutoCompleteWindow" Window
+    t =    14.61s No monitors handled UI interruption, checking to see if element still exists...
+    t =    14.61s             Checking existence of `"SafariPlatformSupportAutoCompleteWindow" Window`
+    t =    14.64s Did not handle the interruption, but will attempt to continue…
+    t =    14.64s     Synthesize event
+    t =    14.69s     Wait for com.runner.Jukebox to idle
+    t =    14.69s Type 'test' into "signIn.password" SecureTextField
+    t =    14.69s     Wait for com.runner.Jukebox to idle
+    t =    14.69s     Find the "signIn.password" SecureTextField
+    t =    14.71s     Check for interrupting elements affecting "signIn.password" SecureTextField
+    t =    14.72s     Found 1 interrupting element:
+    t =    14.72s Other at {{537.0, 668.0}, {104.0, 37.0}} from Target Application 'com.runner.Jukebox'
+    t =    14.72s     Invoking UI interruption monitors for Other at {{537.0, 668.0}, {104.0, 37.0}} from Target Application 'com.runner.Jukebox'
+    t =    14.72s Checking for user permission dialogs...
+    t =    14.72s             Checking existence of `StaticText (Elements matching predicate 'value MATCHES[c] ".+ would like ((to|full) access|to find) .+"')`
+    t =    14.76s             Checking existence of `StaticText (Elements matching predicate 'title CONTAINS[c] "Trust This "')`
+    t =    14.79s Checking for Bluetooth Setup Assistant...
+    t =    14.79s             Find the Other at {{537.0, 668.0}, {104.0, 37.0}}
+    t =    14.81s Checking for Notification Center Banners...
+    t =    14.81s Checking for basic alerts
+    t =    14.82s             Checking existence of `"SafariPlatformSupportAutoCompleteWindow" Window`
+    t =    14.84s             Find the "SafariPlatformSupportAutoCompleteWindow" Window
+    t =    14.87s             Find the "SafariPlatformSupportAutoCompleteWindow" Window
+    t =    14.90s No monitors handled UI interruption, checking to see if element still exists...
+    t =    14.90s             Checking existence of `"SafariPlatformSupportAutoCompleteWindow" Window`
+    t =    14.93s Did not handle the interruption, but will attempt to continue…
+    t =    14.93s     Synthesize event
+    t =    15.04s     Wait for com.runner.Jukebox to idle
+    t =    15.04s Type '↩' key (XCUIKeyboardKeyReturn) with no modifiers
+    t =    15.04s     Wait for com.runner.Jukebox to idle
+    t =    15.04s     Find the Target Application 'com.runner.Jukebox'
+    t =    15.07s     Check for interrupting elements affecting "Jukebox" Application
+    t =    15.07s     Synthesize event
+    t =    15.11s     Wait for com.runner.Jukebox to idle
+    t =    15.22s Waiting 45.0s for "place.home" Any to exist
+    t =    16.27s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =    16.27s         Checking existence of `"place.home" Any`
+    t =    16.36s Waiting 60.0s for "place.home" Any to exist
+    t =    17.39s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =    17.39s         Checking existence of `"place.home" Any`
+    t =    17.44s Checking existence of `"Your Station" StaticText`
+    t =    17.48s Checking existence of `"Mixes" StaticText`
+    t =    18.05s Checking existence of `"Your Station" StaticText`
+    t =    18.10s Checking existence of `"Mixes" StaticText`
+    t =    18.65s Checking existence of `"Your Station" StaticText`
+    t =    18.71s Checking existence of `"Mixes" StaticText`
+    t =    19.26s Checking existence of `"Your Station" StaticText`
+    t =    19.31s Checking existence of `"Mixes" StaticText`
+    t =    19.86s Checking existence of `"Your Station" StaticText`
+    t =    19.92s Checking existence of `"Mixes" StaticText`
+    t =    20.46s Checking existence of `"Your Station" StaticText`
+    t =    20.51s Checking existence of `"Mixes" StaticText`
+    t =    21.05s Checking existence of `"Your Station" StaticText`
+    t =    21.09s Checking existence of `"Mixes" StaticText`
+    t =    21.64s Checking existence of `"Your Station" StaticText`
+    t =    21.68s Checking existence of `"Mixes" StaticText`
+    t =    22.22s Checking existence of `"Your Station" StaticText`
+    t =    22.30s Checking existence of `"Mixes" StaticText`
+    t =    22.87s Checking existence of `"Your Station" StaticText`
+    t =    22.92s Checking existence of `"Mixes" StaticText`
+    t =    23.46s Checking existence of `"Your Station" StaticText`
+    t =    23.53s Checking existence of `"Mixes" StaticText`
+    t =    24.08s Checking existence of `"Your Station" StaticText`
+    t =    24.12s Checking existence of `"Mixes" StaticText`
+    t =    24.67s Checking existence of `"Your Station" StaticText`
+    t =    24.71s Checking existence of `"Mixes" StaticText`
+    t =    25.26s Checking existence of `"Your Station" StaticText`
+    t =    25.30s Checking existence of `"Mixes" StaticText`
+    t =    25.85s Checking existence of `"Your Station" StaticText`
+    t =    25.89s Checking existence of `"Mixes" StaticText`
+    t =    26.44s Checking existence of `"Your Station" StaticText`
+    t =    26.49s Checking existence of `"Mixes" StaticText`
+    t =    27.04s Checking existence of `"Your Station" StaticText`
+    t =    27.09s Checking existence of `"Mixes" StaticText`
+    t =    27.64s Checking existence of `"Your Station" StaticText`
+    t =    27.71s Checking existence of `"Mixes" StaticText`
+    t =    28.26s Checking existence of `"Your Station" StaticText`
+    t =    28.30s Checking existence of `"Mixes" StaticText`
+    t =    28.85s Checking existence of `"Your Station" StaticText`
+    t =    28.89s Checking existence of `"Mixes" StaticText`
+    t =    29.44s Checking existence of `"Your Station" StaticText`
+    t =    29.49s Checking existence of `"Mixes" StaticText`
+    t =    30.04s Checking existence of `"Your Station" StaticText`
+    t =    30.10s Checking existence of `"Mixes" StaticText`
+    t =    30.65s Checking existence of `"Your Station" StaticText`
+    t =    30.71s Checking existence of `"Mixes" StaticText`
+    t =    31.26s Checking existence of `"Your Station" StaticText`
+    t =    31.31s Checking existence of `"Mixes" StaticText`
+    t =    31.87s Checking existence of `"Your Station" StaticText`
+    t =    31.97s Checking existence of `"Mixes" StaticText`
+    t =    32.53s Checking existence of `"Your Station" StaticText`
+    t =    32.58s Checking existence of `"Mixes" StaticText`
+    t =    33.12s Checking existence of `"Your Station" StaticText`
+    t =    33.17s Checking existence of `"Mixes" StaticText`
+    t =    33.72s Checking existence of `"Your Station" StaticText`
+    t =    33.77s Checking existence of `"Mixes" StaticText`
+    t =    34.32s Checking existence of `"Your Station" StaticText`
+    t =    34.40s Checking existence of `"Mixes" StaticText`
+    t =    34.94s Checking existence of `"Your Station" StaticText`
+    t =    34.98s Checking existence of `"Mixes" StaticText`
+    t =    35.52s Checking existence of `"Your Station" StaticText`
+    t =    35.57s Checking existence of `"Mixes" StaticText`
+    t =    36.11s Checking existence of `"Your Station" StaticText`
+    t =    36.19s Checking existence of `"Mixes" StaticText`
+    t =    36.73s Checking existence of `"Your Station" StaticText`
+    t =    36.77s Checking existence of `"Mixes" StaticText`
+    t =    37.32s Checking existence of `"Your Station" StaticText`
+    t =    37.37s Checking existence of `"Mixes" StaticText`
+    t =    37.91s Checking existence of `"Your Station" StaticText`
+    t =    37.96s Checking existence of `"Mixes" StaticText`
+    t =    38.51s Checking existence of `"Your Station" StaticText`
+    t =    38.55s Checking existence of `"Mixes" StaticText`
+    t =    39.10s Checking existence of `"Your Station" StaticText`
+    t =    39.17s Checking existence of `"Mixes" StaticText`
+    t =    39.72s Checking existence of `"Your Station" StaticText`
+    t =    39.80s Checking existence of `"Mixes" StaticText`
+    t =    40.34s Checking existence of `"Your Station" StaticText`
+    t =    40.43s Checking existence of `"Mixes" StaticText`
+    t =    40.98s Checking existence of `"Your Station" StaticText`
+    t =    41.02s Checking existence of `"Mixes" StaticText`
+    t =    41.57s Checking existence of `"Your Station" StaticText`
+    t =    41.67s Checking existence of `"Mixes" StaticText`
+    t =    42.23s Checking existence of `"Your Station" StaticText`
+    t =    42.28s Checking existence of `"Mixes" StaticText`
+    t =    42.83s Checking existence of `"Your Station" StaticText`
+    t =    42.87s Checking existence of `"Mixes" StaticText`
+    t =    43.42s Checking existence of `"Your Station" StaticText`
+    t =    43.51s Checking existence of `"Mixes" StaticText`
+    t =    44.10s Checking existence of `"Your Station" StaticText`
+    t =    44.16s Checking existence of `"Mixes" StaticText`
+    t =    44.71s Checking existence of `"Your Station" StaticText`
+    t =    44.80s Checking existence of `"Mixes" StaticText`
+    t =    45.35s Checking existence of `"Your Station" StaticText`
+    t =    45.40s Checking existence of `"Mixes" StaticText`
+    t =    45.94s Checking existence of `"Your Station" StaticText`
+    t =    46.01s Checking existence of `"Mixes" StaticText`
+    t =    46.56s Checking existence of `"Your Station" StaticText`
+    t =    46.66s Checking existence of `"Mixes" StaticText`
+    t =    47.20s Checking existence of `"Your Station" StaticText`
+    t =    47.27s Checking existence of `"Mixes" StaticText`
+    t =    47.82s Checking existence of `"Your Station" StaticText`
+    t =    47.91s Checking existence of `"Mixes" StaticText`
+    t =    48.46s Checking existence of `"Your Station" StaticText`
+    t =    48.54s Checking existence of `"Mixes" StaticText`
+    t =    49.08s Checking existence of `"Your Station" StaticText`
+    t =    49.17s Checking existence of `"Mixes" StaticText`
+    t =    49.71s Checking existence of `"Your Station" StaticText`
+    t =    49.76s Checking existence of `"Mixes" StaticText`
+    t =    50.30s Checking existence of `"Your Station" StaticText`
+    t =    50.36s Checking existence of `"Mixes" StaticText`
+    t =    50.91s Checking existence of `"Your Station" StaticText`
+    t =    50.95s Checking existence of `"Mixes" StaticText`
+    t =    51.50s Checking existence of `"Your Station" StaticText`
+    t =    51.55s Checking existence of `"Mixes" StaticText`
+    t =    52.10s Checking existence of `"Your Station" StaticText`
+    t =    52.16s Checking existence of `"Mixes" StaticText`
+    t =    52.71s Checking existence of `"Your Station" StaticText`
+    t =    52.80s Checking existence of `"Mixes" StaticText`
+    t =    53.35s Checking existence of `"Your Station" StaticText`
+    t =    53.42s Checking existence of `"Mixes" StaticText`
+    t =    53.97s Checking existence of `"Your Station" StaticText`
+    t =    54.04s Checking existence of `"Mixes" StaticText`
+    t =    54.58s Checking existence of `"Your Station" StaticText`
+    t =    54.62s Checking existence of `"Mixes" StaticText`
+    t =    55.17s Checking existence of `"Your Station" StaticText`
+    t =    55.22s Checking existence of `"Mixes" StaticText`
+    t =    55.76s Checking existence of `"Your Station" StaticText`
+    t =    55.84s Checking existence of `"Mixes" StaticText`
+    t =    56.38s Checking existence of `"Your Station" StaticText`
+    t =    56.43s Checking existence of `"Mixes" StaticText`
+    t =    56.97s Checking existence of `"Your Station" StaticText`
+    t =    57.06s Checking existence of `"Mixes" StaticText`
+    t =    57.61s Checking existence of `"Your Station" StaticText`
+    t =    57.68s Checking existence of `"Mixes" StaticText`
+    t =    58.23s Checking existence of `"Your Station" StaticText`
+    t =    58.30s Checking existence of `"Mixes" StaticText`
+    t =    58.85s Checking existence of `"Your Station" StaticText`
+    t =    58.89s Checking existence of `"Mixes" StaticText`
+    t =    59.44s Checking existence of `"Your Station" StaticText`
+    t =    59.52s Checking existence of `"Mixes" StaticText`
+    t =    60.07s Checking existence of `"Your Station" StaticText`
+    t =    60.16s Checking existence of `"Mixes" StaticText`
+    t =    60.72s Checking existence of `"Your Station" StaticText`
+    t =    60.79s Checking existence of `"Mixes" StaticText`
+    t =    61.34s Checking existence of `"Your Station" StaticText`
+    t =    61.42s Checking existence of `"Mixes" StaticText`
+    t =    61.97s Checking existence of `"Your Station" StaticText`
+    t =    62.02s Checking existence of `"Mixes" StaticText`
+    t =    62.57s Checking existence of `"Your Station" StaticText`
+    t =    62.63s Checking existence of `"Mixes" StaticText`
+    t =    63.18s Checking existence of `"Your Station" StaticText`
+    t =    63.22s Checking existence of `"Mixes" StaticText`
+    t =    63.77s Checking existence of `"Your Station" StaticText`
+    t =    63.84s Checking existence of `"Mixes" StaticText`
+    t =    64.40s Checking existence of `"Your Station" StaticText`
+    t =    64.49s Checking existence of `"Mixes" StaticText`
+    t =    65.04s Checking existence of `"Your Station" StaticText`
+    t =    65.11s Checking existence of `"Mixes" StaticText`
+    t =    65.65s Checking existence of `"Your Station" StaticText`
+    t =    65.70s Checking existence of `"Mixes" StaticText`
+    t =    66.28s Checking existence of `"Your Station" StaticText`
+    t =    66.32s Checking existence of `"Mixes" StaticText`
+    t =    66.86s Checking existence of `"Your Station" StaticText`
+    t =    66.92s Checking existence of `"Mixes" StaticText`
+    t =    67.47s Checking existence of `"Your Station" StaticText`
+    t =    67.52s Checking existence of `"Mixes" StaticText`
+    t =    68.07s Checking existence of `"Your Station" StaticText`
+    t =    68.71s Checking existence of `"Mixes" StaticText`
+    t =    69.32s Checking existence of `"Your Station" StaticText`
+    t =    69.37s Checking existence of `"Mixes" StaticText`
+    t =    69.92s Checking existence of `"Your Station" StaticText`
+    t =    69.97s Checking existence of `"Mixes" StaticText`
+    t =    70.52s Checking existence of `"Your Station" StaticText`
+    t =    70.56s Checking existence of `"Mixes" StaticText`
+    t =    71.11s Checking existence of `"Your Station" StaticText`
+    t =    71.15s Checking existence of `"Mixes" StaticText`
+    t =    71.70s Checking existence of `"Your Station" StaticText`
+    t =    71.74s Checking existence of `"Mixes" StaticText`
+    t =    72.29s Checking existence of `"Your Station" StaticText`
+    t =    72.33s Checking existence of `"Mixes" StaticText`
+    t =    72.88s Checking existence of `"Your Station" StaticText`
+    t =    72.94s Checking existence of `"Mixes" StaticText`
+    t =    73.49s Checking existence of `"Your Station" StaticText`
+    t =    73.54s Checking existence of `"Mixes" StaticText`
+    t =    74.09s Checking existence of `"Your Station" StaticText`
+    t =    74.14s Checking existence of `"Mixes" StaticText`
+    t =    74.69s Checking existence of `"Your Station" StaticText`
+    t =    74.74s Checking existence of `"Mixes" StaticText`
+    t =    75.28s Checking existence of `"Your Station" StaticText`
+    t =    75.32s Checking existence of `"Mixes" StaticText`
+    t =    75.86s Checking existence of `"Your Station" StaticText`
+    t =    75.92s Checking existence of `"Mixes" StaticText`
+    t =    76.47s Checking existence of `"Your Station" StaticText`
+    t =    76.52s Checking existence of `"Mixes" StaticText`
+    t =    77.06s Checking existence of `"Your Station" StaticText`
+    t =    77.14s Checking existence of `"Mixes" StaticText`
+    t =    77.69s Checking existence of `"Your Station" StaticText`
+    t =    77.76s Checking existence of `"Mixes" StaticText`
+    t =    77.80s Checking existence of `"Your Station" StaticText`
+    t =    77.84s Checking existence of `"Mixes" StaticText`
+MISSED: after the start: Home: the library did not load within 60 s (no Your Station, no Mixes)
+    t =    77.90s Waiting 3.0s for "place.albums" Any to exist
+    t =    78.92s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =    78.92s         Checking existence of `"place.albums" Any`
+    t =    78.97s Waiting 1.0s for "place.albums" Any to exist
+    t =    79.97s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =    79.97s         Checking existence of `"place.albums" Any`
+    t =    80.03s     Checking existence of `"place.albums" Any`
+    t =    80.08s Find the "place.albums" Any
+    t =    80.14s Click "place.albums" Button
+    t =    80.14s     Wait for com.runner.Jukebox to idle
+    t =    80.14s     Find the "place.albums" Button
+    t =    80.19s     Check for interrupting elements affecting "place.albums" Button
+    t =    80.20s     Synthesize event
+    t =    80.72s     Wait for com.runner.Jukebox to idle
+    t =    82.74s Waiting 3.0s for Button (First Match) to exist
+    t =    83.79s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    83.79s         Checking existence of `Button (First Match)`
+    t =    83.83s Checking existence of `Button (First Match)`
+    t =    83.86s Find the Button (First Match)
+    t =    83.90s Waiting 1.0s for Button (First Match) to exist
+    t =    84.90s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =    84.90s         Checking existence of `Button (First Match)`
+    t =    84.93s     Checking existence of `Button (First Match)`
+    t =    84.96s Find the Button (First Match)
+    t =    85.01s Click "Dust Windows, Blue Room Trio" Button
+    t =    85.01s     Wait for com.runner.Jukebox to idle
+    t =    85.01s     Find the "Dust Windows, Blue Room Trio" Button
+    t =    85.04s     Check for interrupting elements affecting "Dust Windows, Blue Room Trio" Button
+    t =    85.05s     Synthesize event
+    t =    85.59s     Wait for com.runner.Jukebox to idle
+    t =    88.60s Waiting 10.0s for "Play" Button to exist
+    t =    89.64s     Checking `Expect predicate `existsNoRetry == 1` for object "Play" Button`
+    t =    89.64s         Checking existence of `"Play" Button`
+    t =    89.67s Get number of matches for: Elements matching predicate '"Play" IN identifiers'
+    t =    89.74s Checking existence of `"Play" Button`
+    t =    89.78s Find the "Play" Button
+    t =    89.82s Waiting 1.0s for "Play" Button to exist
+    t =    90.83s     Checking `Expect predicate `existsNoRetry == 1` for object "Play" Button`
+    t =    90.83s         Checking existence of `"Play" Button`
+    t =    90.84s     Checking existence of `"Play" Button`
+    t =    90.86s Find the "Play" Button
+    t =    90.87s Click "Play" Button
+    t =    90.87s     Wait for com.runner.Jukebox to idle
+    t =    90.87s     Find the "Play" Button
+    t =    90.88s     Check for interrupting elements affecting "Play" Button
+    t =    90.89s     Synthesize event
+    t =    91.41s     Wait for com.runner.Jukebox to idle
+    t =    91.45s Waiting 45.0s for "Pause" Button to exist
+    t =    92.47s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =    92.47s         Checking existence of `"Pause" Button`
+    t =    95.48s Waiting 3.0s for "place.home" Any to exist
+    t =    96.50s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =    96.50s         Checking existence of `"place.home" Any`
+    t =    96.58s Waiting 1.0s for "place.home" Any to exist
+    t =    97.59s     Checking `Expect predicate `existsNoRetry == 1` for object "place.home" Any`
+    t =    97.59s         Checking existence of `"place.home" Any`
+    t =    97.65s     Checking existence of `"place.home" Any`
+    t =    97.72s Find the "place.home" Any
+    t =    97.98s Click "place.home" Button
+    t =    97.98s     Wait for com.runner.Jukebox to idle
+    t =   109.30s     Find the "place.home" Button
+    t =   109.40s     Check for interrupting elements affecting "place.home" Button
+    t =   109.77s     Synthesize event
+    t =   110.40s     Wait for com.runner.Jukebox to idle
+    t =   112.41s Checking existence of `Window (First Match)`
+    t =   112.42s Hover over Window (First Match)[0.50, 0.01]
+    t =   112.42s     Wait for com.runner.Jukebox to idle
+    t =   112.43s     Find the Window (First Match)
+    t =   112.44s     Check for interrupting elements affecting "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   112.45s     Synthesize event
+    t =   112.45s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   112.47s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   112.58s     Wait for com.runner.Jukebox to idle
+    t =   113.29s Checking existence of `"SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window`
+    t =   113.30s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   113.43s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   113.50s Added attachment named '01-home-playing'
+PICTURE: 01-home-playing (1440 x 900 px, the window 1440 x 900 points)
+    t =   113.50s Waiting 3.0s for "place.albums" Any to exist
+    t =   114.51s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   114.51s         Checking existence of `"place.albums" Any`
+    t =   114.57s Waiting 1.0s for "place.albums" Any to exist
+    t =   115.57s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   115.57s         Checking existence of `"place.albums" Any`
+    t =   115.67s     Checking existence of `"place.albums" Any`
+    t =   115.72s Find the "place.albums" Any
+    t =   115.77s Click "place.albums" Button
+    t =   115.77s     Wait for com.runner.Jukebox to idle
+    t =   115.77s     Find the "place.albums" Button
+    t =   115.83s     Check for interrupting elements affecting "place.albums" Button
+    t =   115.85s     Synthesize event
+    t =   116.32s     Wait for com.runner.Jukebox to idle
+    t =   118.33s Checking existence of `Window (First Match)`
+    t =   118.33s Hover over Window (First Match)[0.50, 0.01]
+    t =   118.33s     Wait for com.runner.Jukebox to idle
+    t =   118.34s     Find the Window (First Match)
+    t =   118.34s     Check for interrupting elements affecting "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   118.35s     Synthesize event
+    t =   118.35s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   118.35s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   118.46s     Wait for com.runner.Jukebox to idle
+    t =   119.18s Checking existence of `"SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window`
+    t =   119.18s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   119.25s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   119.33s Added attachment named '02-albums'
+PICTURE: 02-albums (1440 x 900 px, the window 1440 x 900 points)
+    t =   119.34s Waiting 4.0s for "bar.upNext" Any to exist
+    t =   120.34s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   120.34s         Checking existence of `"bar.upNext" Any`
+    t =   120.37s Waiting 1.0s for "bar.upNext" Any to exist
+    t =   121.37s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.upNext" Any`
+    t =   121.37s         Checking existence of `"bar.upNext" Any`
+    t =   121.39s     Checking existence of `"bar.upNext" Any`
+    t =   121.40s Find the "bar.upNext" Any
+    t =   121.42s Click "bar.upNext" Button
+    t =   121.42s     Wait for com.runner.Jukebox to idle
+    t =   121.42s     Find the "bar.upNext" Button
+    t =   121.44s     Check for interrupting elements affecting "bar.upNext" Button
+    t =   121.44s     Synthesize event
+    t =   121.91s     Wait for com.runner.Jukebox to idle
+    t =   124.43s Waiting 3.0s for Button (First Match) to exist
+    t =   125.46s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   125.46s         Checking existence of `Button (First Match)`
+    t =   125.52s Checking existence of `Button (First Match)`
+    t =   125.55s Find the Button (First Match)
+    t =   125.71s Waiting 1.0s for Button (First Match) to exist
+    t =   126.72s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   126.72s         Checking existence of `Button (First Match)`
+    t =   126.76s     Checking existence of `Button (First Match)`
+    t =   126.81s Find the Button (First Match)
+    t =   127.06s Click "Dust Parades, Hexagon Lights" Button
+    t =   127.06s     Wait for com.runner.Jukebox to idle
+    t =   164.70s     Find the "Dust Parades, Hexagon Lights" Button
+    t =   164.83s     Check for interrupting elements affecting "Dust Parades, Hexagon Lights" Button
+    t =   165.15s     Synthesize event
+    t =   165.70s     Wait for com.runner.Jukebox to idle
+    t =   168.71s Checking existence of `Window (First Match)`
+    t =   168.71s Hover over Window (First Match)[0.50, 0.01]
+    t =   168.71s     Wait for com.runner.Jukebox to idle
+    t =   168.72s     Find the Window (First Match)
+    t =   168.73s     Check for interrupting elements affecting "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   168.74s     Synthesize event
+    t =   168.74s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   168.75s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   168.87s     Wait for com.runner.Jukebox to idle
+    t =   169.58s Checking existence of `"SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window`
+    t =   169.59s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   169.67s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   169.75s Added attachment named '03-album-up-next'
+PICTURE: 03-album-up-next (1440 x 900 px, the window 1440 x 900 points)
+    t =   169.75s Waiting 4.0s for "bar.song" Any to exist
+    t =   170.79s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   170.79s         Checking existence of `"bar.song" Any`
+    t =   170.81s Waiting 1.0s for "bar.song" Any to exist
+    t =   171.82s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   171.82s         Checking existence of `"bar.song" Any`
+    t =   171.83s     Checking existence of `"bar.song" Any`
+    t =   171.84s Find the "bar.song" Any
+    t =   171.87s Click "bar.song" Button
+    t =   171.87s     Wait for com.runner.Jukebox to idle
+    t =   171.88s     Find the "bar.song" Button
+    t =   171.89s     Check for interrupting elements affecting "bar.song" Button
+    t =   171.91s     Synthesize event
+    t =   172.49s     Wait for com.runner.Jukebox to idle
+    t =   172.50s Waiting 8.0s for "nowPlaying.close" Any to exist
+    t =   173.53s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   173.53s         Checking existence of `"nowPlaying.close" Any`
+    t =   177.58s Checking existence of `Window (First Match)`
+    t =   177.59s Hover over Window (First Match)[0.50, 0.01]
+    t =   177.59s     Wait for com.runner.Jukebox to idle
+    t =   182.02s     Find the Window (First Match)
+    t =   182.12s     Check for interrupting elements affecting "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   182.44s     Synthesize event
+    t =   182.44s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   182.56s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   182.70s     Wait for com.runner.Jukebox to idle
+    t =   183.42s Checking existence of `"SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window`
+    t =   183.42s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   183.57s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   183.75s Added attachment named '04-now-playing'
+PICTURE: 04-now-playing (1440 x 900 px, the window 1440 x 900 points)
+    t =   183.75s Checking existence of `"nowPlaying.close" Any`
+    t =   183.78s Waiting 1.0s for "nowPlaying.close" Any to exist
+    t =   184.79s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   184.80s         Checking existence of `"nowPlaying.close" Any`
+    t =   184.83s     Checking existence of `"nowPlaying.close" Any`
+    t =   184.85s Find the "nowPlaying.close" Any
+    t =   184.90s Click "nowPlaying.close" Button
+    t =   184.90s     Wait for com.runner.Jukebox to idle
+    t =   184.90s     Find the "nowPlaying.close" Button
+    t =   184.92s     Check for interrupting elements affecting "nowPlaying.close" Button
+    t =   184.95s     Synthesize event
+    t =   185.52s     Wait for com.runner.Jukebox to idle
+    t =   187.53s Checking existence of `"nowPlaying.close" Any`
+    t =   187.88s Checking existence of `"nowPlaying.close" Any`
+    t =   188.12s Waiting 3.0s for "place.albums" Any to exist
+    t =   189.16s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   189.16s         Checking existence of `"place.albums" Any`
+    t =   189.27s Waiting 1.0s for "place.albums" Any to exist
+    t =   190.27s     Checking `Expect predicate `existsNoRetry == 1` for object "place.albums" Any`
+    t =   190.27s         Checking existence of `"place.albums" Any`
+    t =   190.42s     Checking existence of `"place.albums" Any`
+    t =   190.55s Find the "place.albums" Any
+    t =   190.77s Click "place.albums" Button
+    t =   190.77s     Wait for com.runner.Jukebox to idle
+    t =   190.78s     Find the "place.albums" Button
+    t =   190.90s     Check for interrupting elements affecting "place.albums" Button
+    t =   190.93s     Synthesize event
+    t =   191.41s     Wait for com.runner.Jukebox to idle
+    t =   193.48s Waiting 3.0s for Button (First Match) to exist
+    t =   194.52s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   194.52s         Checking existence of `Button (First Match)`
+    t =   194.63s Checking existence of `Button (First Match)`
+    t =   194.71s Find the Button (First Match)
+    t =   194.92s Waiting 1.0s for Button (First Match) to exist
+    t =   195.92s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   195.93s         Checking existence of `Button (First Match)`
+    t =   196.02s     Checking existence of `Button (First Match)`
+    t =   196.12s Find the Button (First Match)
+    t =   196.24s Click "Glass Hearts, MC Polder" Button
+    t =   196.24s     Wait for com.runner.Jukebox to idle
+    t =   196.24s     Find the "Glass Hearts, MC Polder" Button
+    t =   196.35s     Check for interrupting elements affecting "Glass Hearts, MC Polder" Button
+    t =   196.65s     Synthesize event
+    t =   197.42s     Wait for com.runner.Jukebox to idle
+    t =   257.44s         App event loop idle notification not received, will attempt to continue.
+    t =   265.48s Waiting 10.0s for "Play" Button to exist
+    t =   266.51s     Checking `Expect predicate `existsNoRetry == 1` for object "Play" Button`
+    t =   266.51s         Checking existence of `"Play" Button`
+    t =   266.56s Get number of matches for: Elements matching predicate '"Play" IN identifiers'
+    t =   266.87s Checking existence of `"Play" Button`
+    t =   266.98s Find the "Play" Button
+    t =   267.07s Waiting 1.0s for "Play" Button to exist
+    t =   268.07s     Checking `Expect predicate `existsNoRetry == 1` for object "Play" Button`
+    t =   268.07s         Checking existence of `"Play" Button`
+    t =   268.10s     Checking existence of `"Play" Button`
+    t =   268.12s Find the "Play" Button
+    t =   268.25s Click "Play" Button
+    t =   268.25s     Wait for com.runner.Jukebox to idle
+    t =   272.04s     Find the "Play" Button
+    t =   272.07s     Check for interrupting elements affecting "Play" Button
+    t =   272.35s     Synthesize event
+    t =   272.95s     Wait for com.runner.Jukebox to idle
+    t =   281.93s Waiting 45.0s for "Pause" Button to exist
+    t =   282.98s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =   282.98s         Checking existence of `"Pause" Button`
+    t =   286.01s Waiting 15.0s for Any (First Match) to exist
+    t =   287.05s     Checking `Expect predicate `existsNoRetry == 1` for object Any (First Match)`
+    t =   287.05s         Checking existence of `Any (First Match)`
+    t =   287.07s Waiting 4.0s for "bar.lyrics" Any to exist
+    t =   288.11s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   288.11s         Checking existence of `"bar.lyrics" Any`
+    t =   288.15s Waiting 1.0s for "bar.lyrics" Any to exist
+    t =   289.15s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   289.15s         Checking existence of `"bar.lyrics" Any`
+    t =   289.20s     Checking existence of `"bar.lyrics" Any`
+    t =   289.25s Find the "bar.lyrics" Any
+    t =   289.43s Click "bar.lyrics" Button
+    t =   289.43s     Wait for com.runner.Jukebox to idle
+    t =   298.67s     Find the "bar.lyrics" Button
+    t =   298.71s     Check for interrupting elements affecting "bar.lyrics" Button
+    t =   298.75s     Synthesize event
+    t =   299.26s     Wait for com.runner.Jukebox to idle
+    t =   322.36s Waiting 4.0s for "bar.song" Any to exist
+    t =   323.40s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   323.40s         Checking existence of `"bar.song" Any`
+    t =   323.43s Waiting 1.0s for "bar.song" Any to exist
+    t =   324.43s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.song" Any`
+    t =   324.43s         Checking existence of `"bar.song" Any`
+    t =   324.44s     Checking existence of `"bar.song" Any`
+    t =   324.46s Find the "bar.song" Any
+    t =   324.49s Click "bar.song" Button
+    t =   324.49s     Wait for com.runner.Jukebox to idle
+    t =   324.50s     Find the "bar.song" Button
+    t =   324.52s     Check for interrupting elements affecting "bar.song" Button
+    t =   324.54s     Synthesize event
+    t =   325.17s     Wait for com.runner.Jukebox to idle
+    t =   325.18s Waiting 8.0s for "nowPlaying.close" Any to exist
+    t =   326.21s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   326.21s         Checking existence of `"nowPlaying.close" Any`
+    t =   330.24s Checking existence of `Window (First Match)`
+    t =   330.25s Hover over Window (First Match)[0.50, 0.01]
+    t =   330.25s     Wait for com.runner.Jukebox to idle
+    t =   330.25s     Find the Window (First Match)
+    t =   330.27s     Check for interrupting elements affecting "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   330.28s     Synthesize event
+    t =   330.28s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   330.30s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   330.41s     Wait for com.runner.Jukebox to idle
+    t =   331.12s Checking existence of `"SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window`
+    t =   331.13s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   331.21s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   331.30s Added attachment named '05-now-playing-lyrics'
+PICTURE: 05-now-playing-lyrics (1440 x 900 px, the window 1440 x 900 points)
+    t =   331.31s Checking existence of `"nowPlaying.close" Any`
+    t =   331.32s Waiting 1.0s for "nowPlaying.close" Any to exist
+    t =   332.33s     Checking `Expect predicate `existsNoRetry == 1` for object "nowPlaying.close" Any`
+    t =   332.33s         Checking existence of `"nowPlaying.close" Any`
+    t =   332.35s     Checking existence of `"nowPlaying.close" Any`
+    t =   332.36s Find the "nowPlaying.close" Any
+    t =   332.39s Click "nowPlaying.close" Button
+    t =   332.39s     Wait for com.runner.Jukebox to idle
+    t =   332.39s     Find the "nowPlaying.close" Button
+    t =   332.40s     Check for interrupting elements affecting "nowPlaying.close" Button
+    t =   332.42s     Synthesize event
+    t =   332.95s     Wait for com.runner.Jukebox to idle
+    t =   354.57s Checking existence of `"nowPlaying.close" Any`
+    t =   354.75s Checking existence of `"nowPlaying.close" Any`
+    t =   354.86s Waiting 4.0s for "bar.lyrics" Any to exist
+    t =   355.89s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   355.89s         Checking existence of `"bar.lyrics" Any`
+    t =   355.92s Waiting 1.0s for "bar.lyrics" Any to exist
+    t =   356.92s     Checking `Expect predicate `existsNoRetry == 1` for object "bar.lyrics" Any`
+    t =   356.92s         Checking existence of `"bar.lyrics" Any`
+    t =   356.96s     Checking existence of `"bar.lyrics" Any`
+    t =   356.99s Find the "bar.lyrics" Any
+    t =   357.02s Click "bar.lyrics" Button
+    t =   357.02s     Wait for com.runner.Jukebox to idle
+    t =   357.02s     Find the "bar.lyrics" Button
+    t =   357.03s     Check for interrupting elements affecting "bar.lyrics" Button
+    t =   357.05s     Synthesize event
+    t =   357.47s     Wait for com.runner.Jukebox to idle
+    t =   359.12s Waiting 3.0s for "place.radio" Any to exist
+    t =   360.15s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   360.15s         Checking existence of `"place.radio" Any`
+    t =   360.24s Waiting 1.0s for "place.radio" Any to exist
+    t =   361.24s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   361.24s         Checking existence of `"place.radio" Any`
+    t =   361.32s     Checking existence of `"place.radio" Any`
+    t =   361.38s Find the "place.radio" Any
+    t =   361.63s Click "place.radio" Button
+    t =   361.63s     Wait for com.runner.Jukebox to idle
+    t =   369.39s     Find the "place.radio" Button
+    t =   369.48s     Check for interrupting elements affecting "place.radio" Button
+    t =   369.79s     Synthesize event
+    t =   371.04s     Wait for com.runner.Jukebox to idle
+    t =   373.10s Waiting 10.0s for Button (First Match) to exist
+    t =   374.13s     Checking `Expect predicate `existsNoRetry == 1` for object Button (First Match)`
+    t =   374.14s         Checking existence of `Button (First Match)`
+    t =   374.25s Find the Button (First Match)
+    t =   374.31s Click "Your Station, Not played yet" Button
+    t =   374.31s     Wait for com.runner.Jukebox to idle
+    t =   374.32s     Find the "Your Station, Not played yet" Button
+    t =   374.37s     Check for interrupting elements affecting "Your Station, Not played yet" Button
+    t =   374.38s     Synthesize event
+    t =   375.03s     Wait for com.runner.Jukebox to idle
+    t =   375.12s Waiting 10.0s for "New Picks" Button to exist
+    t =   376.15s     Checking `Expect predicate `existsNoRetry == 1` for object "New Picks" Button`
+    t =   376.15s         Checking existence of `"New Picks" Button`
+    t =   379.26s Waiting 10.0s for "Play" Button to exist
+    t =   380.30s     Checking `Expect predicate `existsNoRetry == 1` for object "Play" Button`
+    t =   380.31s         Checking existence of `"Play" Button`
+    t =   380.40s Get number of matches for: Elements matching predicate '"Play" IN identifiers'
+    t =   380.65s Checking existence of `"Play" Button`
+    t =   380.83s Find the "Play" Button
+    t =   380.94s Waiting 1.0s for "Play" Button to exist
+    t =   381.95s     Checking `Expect predicate `existsNoRetry == 1` for object "Play" Button`
+    t =   381.95s         Checking existence of `"Play" Button`
+    t =   382.03s     Checking existence of `"Play" Button`
+    t =   382.09s Find the "Play" Button
+    t =   382.18s Click "Play" Button
+    t =   382.18s     Wait for com.runner.Jukebox to idle
+    t =   382.19s     Find the "Play" Button
+    t =   382.26s     Check for interrupting elements affecting "Play" Button
+    t =   382.28s     Synthesize event
+    t =   383.04s     Wait for com.runner.Jukebox to idle
+    t =   383.07s Waiting 45.0s for "Pause" Button to exist
+    t =   384.10s     Checking `Expect predicate `existsNoRetry == 1` for object "Pause" Button`
+    t =   384.10s         Checking existence of `"Pause" Button`
+    t =   387.12s Waiting 30.0s for "Stop" Button to exist
+    t =   388.14s     Checking `Expect predicate `existsNoRetry == 1` for object "Stop" Button`
+    t =   388.14s         Checking existence of `"Stop" Button`
+    t =   392.25s Checking existence of `Window (First Match)`
+    t =   392.26s Hover over Window (First Match)[0.50, 0.01]
+    t =   392.26s     Wait for com.runner.Jukebox to idle
+    t =   392.26s     Find the Window (First Match)
+    t =   392.28s     Check for interrupting elements affecting "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   392.30s     Synthesize event
+    t =   392.30s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   392.31s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   392.42s     Wait for com.runner.Jukebox to idle
+    t =   393.14s Checking existence of `"SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window`
+    t =   393.15s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   393.20s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   393.27s Added attachment named '07-station'
+PICTURE: 07-station (1440 x 900 px, the window 1440 x 900 points)
+    t =   393.27s Waiting 3.0s for "place.radio" Any to exist
+    t =   394.30s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   394.30s         Checking existence of `"place.radio" Any`
+    t =   394.40s Waiting 1.0s for "place.radio" Any to exist
+    t =   395.41s     Checking `Expect predicate `existsNoRetry == 1` for object "place.radio" Any`
+    t =   395.41s         Checking existence of `"place.radio" Any`
+    t =   395.49s     Checking existence of `"place.radio" Any`
+    t =   395.57s Find the "place.radio" Any
+    t =   395.75s Click "place.radio" Button
+    t =   395.75s     Wait for com.runner.Jukebox to idle
+    t =   395.75s     Find the "place.radio" Button
+    t =   395.81s     Check for interrupting elements affecting "place.radio" Button
+    t =   395.82s     Synthesize event
+    t =   396.35s     Wait for com.runner.Jukebox to idle
+    t =   398.36s Waiting 30.0s for "Stop" Button to exist
+    t =   399.41s     Checking `Expect predicate `existsNoRetry == 1` for object "Stop" Button`
+    t =   399.42s         Checking existence of `"Stop" Button`
+    t =   402.45s Checking existence of `Window (First Match)`
+    t =   402.46s Hover over Window (First Match)[0.50, 0.01]
+    t =   402.46s     Wait for com.runner.Jukebox to idle
+    t =   402.46s     Find the Window (First Match)
+    t =   402.47s     Check for interrupting elements affecting "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   402.48s     Synthesize event
+    t =   402.48s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   402.49s         Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   402.60s     Wait for com.runner.Jukebox to idle
+    t =   403.33s Checking existence of `"SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window`
+    t =   403.33s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   403.48s Find the "SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<SwiftUI.ModifiedContent<Jukebox.RootView, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppModel>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.Navigator>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AppSettings>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.LibraryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HistoryStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.AudioPlayer>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.RadioController>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.MixStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.OfflineStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.HandoffStore>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<Jukebox.PanelState>>>, SwiftUI._EnvironmentKeyWritingModifier<Swift.Optional<SwiftUI.AnyShapeStyle>>>, SwiftUI._TaskModifier2>, SwiftUI._TaskValueModifier2<Swift.Optional<Foundation.Date>>>, SwiftUI._TaskModifier2>-1-AppWindow-1" Window
+    t =   403.55s Added attachment named '06-radio-on-air'
+PICTURE: 06-radio-on-air (1440 x 900 px, the window 1440 x 900 points)
+    t =   403.56s Added attachment named 'missed-runner'
+    t =   403.58s Tear Down
+Test Case '-[JukeboxUITests.MacScreenshotTests testMac]' passed (403.785 seconds).
+Test Suite 'MacScreenshotTests' passed at 2026-11-19 13:18:07.426.
+	 Executed 1 test, with 0 failures (0 unexpected) in 403.785 (403.787) seconds
+Test Suite 'JukeboxUITests.xctest' passed at 2026-11-19 13:18:07.428.
+	 Executed 1 test, with 0 failures (0 unexpected) in 403.785 (403.789) seconds
+Test Suite 'Selected tests' passed at 2026-11-19 13:18:07.430.
+	 Executed 1 test, with 0 failures (0 unexpected) in 403.785 (403.791) seconds
+2026-11-19 13:18:12.737 xcodebuild[8864:28751] [MT] IDETestOperationsObserverDebug: 410.403 elapsed -- Testing started completed.
+2026-11-19 13:18:12.738 xcodebuild[8864:28751] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-19 13:18:12.738 xcodebuild[8864:28751] [MT] IDETestOperationsObserverDebug: 410.403 sec, +410.403 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/Jukebox/Jukebox/build/screenshots/runner-dark.xcresult
+
+** TEST EXECUTE SUCCEEDED **
+
+Testing started

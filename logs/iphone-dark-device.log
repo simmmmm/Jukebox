@@ -1,0 +1,600 @@
+    };
+    "XC_kAXXCAttributeWindowContextId" = 4148760284;
+    "XC_kAXXCAttributeWindowDisplayId" = 1;
+}
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Received request to fetch matches for query: ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Evaluating query:
+ ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Getting root element snapshot
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Getting snapshot for App element pid: 3137 for query ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Query requires iOS snapshot attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeIdentifier, XC_kAXXCAttributeAutomationType, XC_kAXXCAttributeTraits.
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-26 12:09:32.978 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-26 12:09:32.978 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-26 12:09:32.978 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-26 12:09:32.979 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Got main window <AXUIElementRef 0x11b1e5470> {pid=3137} {uid=[ID:4 hash:0x1062e0400]}
+2026-11-26 12:09:32.979 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Capturing hierarchy with attributes XC_kAXXCAttributeElementType, XC_kAXXCAttributeElementBaseType, XC_kAXXCAttributeParent, XC_kAXXCAttributeIdentifier, XC_kAXXCAttributeAutomationType, XC_kAXXCAttributeTraits
+2026-11-26 12:09:32.979 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Capturing hierarchy with parameters {
+    attributes =     (
+        5003,
+        5004,
+        5002,
+        5019,
+        5058,
+        2004
+    );
+    maxArrayCount = 2147483647;
+    maxChildren = 2147483647;
+    maxDepth = 2147483647;
+    snapshotKeyHonorModalViews = 0;
+    traverseFromParentsToChildren = 1;
+}
+2026-11-26 12:09:32.979 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Snapshot attributes 5003, 5004, 5002, 5019, 5058, 2004
+2026-11-26 12:09:32.998 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Got snapshot for <AXUIElementRef 0x127581b00> {pid=3137} {uid=[ID:1 hash:0x0]}
+2026-11-26 12:09:32.998 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Got app orientation 0
+2026-11-26 12:09:32.998 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Captured accessibility snapshot data in 0.02s
+2026-11-26 12:09:32.998 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Found main window: Window
+2026-11-26 12:09:32.998 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] ScrollView is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-11-26 12:09:32.998 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Preferring automation type 24 instead of legacy element type OTHER derived from class/trait: _UIFloatingBarContainerView:_UIFloatingBarContainerView 8589934592
+2026-11-26 12:09:32.998 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Other is not actually a child of Other, including at this point anyway (rdar://problem/20738636)
+2026-11-26 12:09:32.998 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] App orientation is 0 (not portrait) and UITextEffectsWindow window Window is not main window
+2026-11-26 12:09:32.998 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Leaving frame unchanged for Window: either already correct or we can't detect it.
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] App orientation is 0 (not portrait) and UIRemoteKeyboardWindow window Window is not main window
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Leaving frame unchanged for Window: either already correct or we can't detect it.
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Preferring automation type 20 instead of legacy element type OTHER derived from class/trait: UIAccessibilityElementKBKey:UIAccessibilityElement 8589934649
+2026-11-26 12:09:32.999 E  Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Automation type mismatch; legacy system derived element type 9 from class UIAccessibilityElementKBKey:UIAccessibilityElement, traits 8589934649, but AXAutomationType returned 20 which maps to 20
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Preferring automation type 20 instead of legacy element type OTHER derived from class/trait: UIAccessibilityElementKBKey:UIAccessibilityElement 8589934897
+2026-11-26 12:09:32.999 E  Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Automation type mismatch; legacy system derived element type 9 from class UIAccessibilityElementKBKey:UIAccessibilityElement, traits 8589934897, but AXAutomationType returned 20 which maps to 20
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-26 12:09:32.999 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-26 12:09:32.999 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-26 12:09:32.999 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTElementQuery: set data source for rootElementSnapshot to <XCTAutomationSession: 0x106e2da40>
+2026-11-26 12:09:32.999 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Finding all matches with input Application, pid: 3137 using transformers 
+↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7
+2026-11-26 12:09:33.000 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] [Match All] applied transformer `Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7` to input {(
+    Application, pid: 3137
+)}, found {(
+)}
+2026-11-26 12:09:33.000 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] [Match All] setting out related elements in early return {(
+)}
+2026-11-26 12:09:33.001 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Current tree:
+Application, 0x118db5f40, pid: 3137 <App element pid: 3137>
+  Window (Main), 0x118db7340 <AX element pid: 3137, elementOrHash.elementID: 4398646272.4>
+    Other, 0x118db4dc0 <AX element pid: 3137, elementOrHash.elementID: 4410212352.162>
+    Other, 0x118db5400 <AX element pid: 3137, elementOrHash.elementID: 4410339200.5>
+      Other, 0x118db6f80 <AX element pid: 3137, elementOrHash.elementID: 4410340480.6>
+        Other, 0x118db6080 <AX element pid: 3137, elementOrHash.elementID: 4398582272.7>
+          Other, 0x118db52c0 <AX element pid: 3137, elementOrHash.elementID: 4514599136.8>
+            Other, 0x118db4280 <AX element pid: 3137, elementOrHash.elementID: 4410252288.171>
+              Other, 0x118db5540 <AX element pid: 3137, elementOrHash.elementID: 4665974272.174>
+                Other, 0x118db4a00 <AX element pid: 3137, elementOrHash.elementID: 4998614528.2963>
+                  Other, 0x118db75c0 <AX element pid: 3137, elementOrHash.elementID: 4699527424.2964>
+                    Other, 0x118db6800 <AX element pid: 3137, elementOrHash.elementID: 4835618848.2965>
+                      Other, 0x118db7700 <AX element pid: 3137, elementOrHash.elementID: 4835622528.2966>
+                        Other, 0x118db66c0 <AX element pid: 3137, elementOrHash.elementID: 4409970688.2967>
+                          NavigationBar, 0x118db7d40, identifier: 'Search' <AX element pid: 3137, elementOrHash.elementID: 4666842624.2978>
+                            SearchField, 0x118db6580, Keyboard Focused <AX element pid: 3137, elementOrHash.elementID: 4712696832.2996>
+                              Image, 0x118db4f00, identifier: 'magnifyingglass' <AX element pid: 3137, elementOrHash.elementID: 4500430336.2999>
+                            Button, 0x118db70c0 <AX element pid: 3137, elementOrHash.elementID: 4666940416.3086>
+                          Other, 0x118db6d00 <AX element pid: 3137, elementOrHash.elementID: 4896336832.2979>
+                            Other, 0x118db7ac0 <AX element pid: 3137, elementOrHash.elementID: 4409680384.2997>
+                              Other, 0x118db48c0 <AX element pid: 3137, elementOrHash.elementID: 4711169024.3000>
+                                Other, 0x118db6bc0 <AX element pid: 3137, elementOrHash.elementID: 4921605280.3001>
+                                  ScrollView, 0x118db6440 <AX element pid: 3137, elementOrHash.elementID: 4814726144.3002>
+                                    Other, 0x118db7c00 <AX element pid: 3137, elementOrHash.elementID: 4896331904.3003>
+                                      Other, 0x118db57c0 <AX element pid: 3137, elementOrHash.elementID: 4409084096.3007>
+                                    Other, 0x118db5b80 <AX element pid: 3137, elementOrHash.elementID: 4896326528.3004>
+                                    Other, 0x118db6a80 <AX element pid: 3137, elementOrHash.elementID: 4954598656.3005>
+                                      StaticText, 0x118db7840 <AX element pid: 3137, elementOrHash.elementID: 4835617088.3008>
+                                      Button, 0x118db4780 <AX element pid: 3137, elementOrHash.elementID: 4835614368.3009>
+                                      Other, 0x1229f4dc0 <AX element pid: 3137, elementOrHash.elementID: 4921603040.3010>
+                                        Button, 0x10d0fe6c0 <AX element pid: 3137, elementOrHash.elementID: 4835606528.3012>
+                                        Button, 0x10d0fda40 <AX element pid: 3137, elementOrHash.elementID: 4835609088.3013>
+                                        Button, 0x10d0fdf40 <AX element pid: 3137, elementOrHash.elementID: 4835610208.3014>
+                                        Button, 0x10d0fc3c0 <AX element pid: 3137, elementOrHash.elementID: 4835619168.3015>
+                                        Button, 0x10d0fe440 <AX element pid: 3137, elementOrHash.elementID: 4835620608.3016>
+                                        Button, 0x10d0febc0 <AX element pid: 3137, elementOrHash.elementID: 4835618208.3017>
+                                        Button, 0x118394dc0 <AX element pid: 3137, elementOrHash.elementID: 4835611168.3018>
+                                        Button, 0x118395cc0 <AX element pid: 3137, elementOrHash.elementID: 4835618368.3019>
+                                        Button, 0x118396f80 <AX element pid: 3137, elementOrHash.elementID: 4835610368.3020>
+                                        Button, 0x1183952c0 <AX element pid: 3137, elementOrHash.elementID: 4835620768.3021>
+                                        Button, 0x118396bc0 <AX element pid: 3137, elementOrHash.elementID: 4835608928.3022>
+                                        Button, 0x1183948c0 <AX element pid: 3137, elementOrHash.elementID: 4835612128.3023>
+                                        Button, 0x10d1ffd40 <AX element pid: 3137, elementOrHash.elementID: 4835606688.3024>
+                                        Button, 0x10d1fca00 <AX element pid: 3137, elementOrHash.elementID: 4920672256.3025>
+                                        Button, 0x10d1ff0c0 <AX element pid: 3137, elementOrHash.elementID: 4920677856.3026>
+                                        Button, 0x123cdd400 <AX element pid: 3137, elementOrHash.elementID: 4920674656.3027>
+                                        Button, 0x123cdd7c0 <AX element pid: 3137, elementOrHash.elementID: 4920674816.3028>
+                                        Button, 0x123cdf5c0 <AX element pid: 3137, elementOrHash.elementID: 4921604800.3029>
+                                        Button, 0x123cdea80 <AX element pid: 3137, elementOrHash.elementID: 4921596000.3030>
+                                        Button, 0x1180fed00 <AX element pid: 3137, elementOrHash.elementID: 4921595360.3031>
+                                        Button, 0x1180fca00 <AX element pid: 3137, elementOrHash.elementID: 4921600960.3032>
+                                        Button, 0x1180fc780 <AX element pid: 3137, elementOrHash.elementID: 4921602240.3033>
+                                        Button, 0x118386f80 <AX element pid: 3137, elementOrHash.elementID: 4921603360.3034>
+                                    Other, 0x10d163980 <AX element pid: 3137, elementOrHash.elementID: 4410375680.3006>
+                                      Other, 0x116326800 <AX element pid: 3137, elementOrHash.elementID: 4409090816.3011>
+                                    Other, 0x116327c00 <AX element pid: 3137, elementOrHash.elementID: 4410375680.3006>
+                                      Other, 0x1163248c0 <AX element pid: 3137, elementOrHash.elementID: 4409090816.3011>
+                              Other, 0x116327340 <AX element pid: 3137, elementOrHash.elementID: 4516464512.3087>
+                                Other, 0x1061fe800 <AX element pid: 3137, elementOrHash.elementID: 4409602560.3088>
+                                  Other, 0x10c2766c0 <AX element pid: 3137, elementOrHash.elementID: 4896338176.3089>
+                          Toolbar, 0x10c277200, identifier: 'Toolbar' <AX element pid: 3137, elementOrHash.elementID: 4410118656.2980>
+                            Other, 0x10c2748c0 <AX element pid: 3137, elementOrHash.elementID: 4954587136.2998>
+                        Other, 0x10c276080 <AX element pid: 3137, elementOrHash.elementID: 4999044928.2968>
+                        Button, 0x10c275b80, identifier: 'mini-player' <AX element pid: 3137, elementOrHash.elementID: 4889045792.2969>
+                          Image, 0x10c275e00 <AX element pid: 3137, elementOrHash.elementID: 4999042208.2981>
+                          StaticText, 0x10c2757c0 <AX element pid: 3137, elementOrHash.elementID: 4999047328.2982>
+                          Other, 0x10c276e40 <AX element pid: 3137, elementOrHash.elementID: 4889035072.2983>
+                          StaticText, 0x10c2761c0 <AX element pid: 3137, elementOrHash.elementID: 4889034752.2984>
+                          StaticText, 0x10c275540 <AX element pid: 3137, elementOrHash.elementID: 4889038272.2985>
+                          StaticText, 0x10c277840 <AX element pid: 3137, elementOrHash.elementID: 4889038432.2986>
+                        Button, 0x10c274f00, identifier: 'heart.fill' <AX element pid: 3137, elementOrHash.elementID: 4832734464.2970>
+                        Button, 0x10c2752c0, identifier: 'forward.fill' <AX element pid: 3137, elementOrHash.elementID: 4832732864.2971>
+                        Button, 0x10c277480, identifier: 'play.fill' <AX element pid: 3137, elementOrHash.elementID: 4832724224.2972>
+                        Other, 0x10c275680 <AX element pid: 3137, elementOrHash.elementID: 4832722944.2973>
+              Other, 0x10c274500 <AX element pid: 3137, elementOrHash.elementID: 4666292224.175>
+                Other, 0x10c277340 <AX element pid: 3137, elementOrHash.elementID: 4410080256.184>
+                  Other, 0x10c276a80 <AX element pid: 3137, elementOrHash.elementID: 4691872832.188>
+                  Other, 0x116307c00 <AX element pid: 3137, elementOrHash.elementID: 4410162688.189>
+  Window, 0x116307980 <AX element pid: 3137, elementOrHash.elementID: 4398588672.32>
+    Other, 0x116304dc0 <AX element pid: 3137, elementOrHash.elementID: 4410321408.34>
+      Other, 0x116306300 <AX element pid: 3137, elementOrHash.elementID: 4410322432.36>
+      Other, 0x116304a00 <AX element pid: 3137, elementOrHash.elementID: 4410321920.37>
+        Other, 0x116304b40, identifier: 'inputView' <AX element pid: 3137, elementOrHash.elementID: 4409620480.3038>
+  Window, 0x116306940 <AX element pid: 3137, elementOrHash.elementID: 4712693760.3035>
+    Other, 0x1163048c0 <AX element pid: 3137, elementOrHash.elementID: 4409595904.3036>
+      Other, 0x1163057c0 <AX element pid: 3137, elementOrHash.elementID: 4689922240.3037>
+        Other, 0x116307840, identifier: 'SystemInputAssistantView' <AX element pid: 3137, elementOrHash.elementID: 4514121984.150>
+          Other, 0x116305900 <AX element pid: 3137, elementOrHash.elementID: 4664890176.151>
+            Other, 0x1163070c0, identifier: 'CenterPageView' <AX element pid: 3137, elementOrHash.elementID: 4500430976.152>
+              Other, 0x116305f40 <AX element pid: 3137, elementOrHash.elementID: 4664890624.153>
+                ScrollView, 0x12355a1c0 <AX element pid: 3137, elementOrHash.elementID: 4398109696.155>
+              Other, 0x12355b980 <AX element pid: 3137, elementOrHash.elementID: 4664891968.154>
+                Other, 0x12355b480 <AX element pid: 3137, elementOrHash.elementID: 4410325504.156>
+                  Other, 0x12355ad00 <AX element pid: 3137, elementOrHash.elementID: 4516447488.157>
+                    Other, 0x1235592c0 <AX element pid: 3137, elementOrHash.elementID: 4410324480.158>
+                      Other, 0x123559680 <AX element pid: 3137, elementOrHash.elementID: 4664892864.159>
+                        Button, 0x123559f40 <AX element pid: 3137, elementOrHash.elementID: 4666908160.160>
+                        Button, 0x12355b200 <AX element pid: 3137, elementOrHash.elementID: 4698977024.3084>
+                        Button, 0x1235597c0 <AX element pid: 3137, elementOrHash.elementID: 4514129664.3085>
+        Other, 0x12355b840 <AX element pid: 3137, elementOrHash.elementID: 4689933888.3039>
+          Other, 0x123559b80 <AX element pid: 3137, elementOrHash.elementID: 5012450560.3041>
+            Other, 0x123558f00 <AX element pid: 3137, elementOrHash.elementID: 4953778816.3044>
+        Other, 0x12355bc00 <AX element pid: 3137, elementOrHash.elementID: 4410326016.41>
+          Keyboard, 0x12355a080 <AX element pid: 3137, elementOrHash.elementID: 4514125056.44>
+            Other, 0x12355a300 <AX element pid: 3137, elementOrHash.elementID: 4398655488.48>
+              Other, 0x12355b700, identifier: 'UIKeyboardLayoutStar Preview' <AX element pid: 3137, elementOrHash.elementID: 4398088192.51>
+                Key, 0x123559180 <AX element pid: 3137, elementOrHash.elementID: 4666931424.3047>
+                Key, 0x12355a800 <AX element pid: 3137, elementOrHash.elementID: 4666929984.3048>
+                Key, 0x1235e9400 <AX element pid: 3137, elementOrHash.elementID: 4666929024.3049>
+                Key, 0x1235e8780 <AX element pid: 3137, elementOrHash.elementID: 4666929104.3050>
+                Key, 0x1235eb840 <AX element pid: 3137, elementOrHash.elementID: 4666925824.3051>
+                Key, 0x1235e9e00 <AX element pid: 3137, elementOrHash.elementID: 4666919744.3052>
+                Key, 0x1235ea080 <AX element pid: 3137, elementOrHash.elementID: 4666928224.3053>
+                Key, 0x1235ea940 <AX element pid: 3137, elementOrHash.elementID: 4666917264.3054>
+                Key, 0x1235eb0c0 <AX element pid: 3137, elementOrHash.elementID: 4666917344.3055>
+                Key, 0x1235e8b40 <AX element pid: 3137, elementOrHash.elementID: 4666917584.3056>
+                Key, 0x1235e9180 <AX element pid: 3137, elementOrHash.elementID: 4666918224.3057>
+                Key, 0x1235eb200 <AX element pid: 3137, elementOrHash.elementID: 4666918304.3058>
+                Key, 0x1235eaf80 <AX element pid: 3137, elementOrHash.elementID: 4666918384.3059>
+                Key, 0x1235ea440 <AX element pid: 3137, elementOrHash.elementID: 4666918464.3060>
+                Key, 0x1235e83c0 <AX element pid: 3137, elementOrHash.elementID: 4666917664.3061>
+                Key, 0x1235e9b80 <AX element pid: 3137, elementOrHash.elementID: 4666917744.3062>
+                Key, 0x1235e8140 <AX element pid: 3137, elementOrHash.elementID: 4666917424.3063>
+                Key, 0x1235ea1c0 <AX element pid: 3137, elementOrHash.elementID: 4666917824.3064>
+                Key, 0x1235e9cc0 <AX element pid: 3137, elementOrHash.elementID: 4666919584.3065>
+                Key, 0x1235e97c0 <AX element pid: 3137, elementOrHash.elementID: 4666919504.3066>
+                Key, 0x1235eaa80 <AX element pid: 3137, elementOrHash.elementID: 4666919664.3067>
+                Key, 0x1235ebe80 <AX element pid: 3137, elementOrHash.elementID: 4666916864.3068>
+                Key, 0x1235e9680 <AX element pid: 3137, elementOrHash.elementID: 4666917904.3069>
+                Key, 0x1235eb700 <AX element pid: 3137, elementOrHash.elementID: 4666917984.3070>
+                Key, 0x11830de00 <AX element pid: 3137, elementOrHash.elementID: 4666918064.3071>
+                Button, 0x118d45180, identifier: 'shift', Selected <AX element pid: 3137, elementOrHash.elementID: 4666918144.3072>
+                Key, 0x118d45680 <AX element pid: 3137, elementOrHash.elementID: 4666918624.3073>
+                Key, 0x118d47840 <AX element pid: 3137, elementOrHash.elementID: 4666918704.3074>
+                Key, 0x118d44b40 <AX element pid: 3137, elementOrHash.elementID: 4666918784.3075>
+                Key, 0x118d44640 <AX element pid: 3137, elementOrHash.elementID: 4666919184.3076>
+                Key, 0x118d46940 <AX element pid: 3137, elementOrHash.elementID: 4666919264.3077>
+                Key, 0x118d45b80 <AX element pid: 3137, elementOrHash.elementID: 4666919344.3078>
+                Key, 0x118d44dc0 <AX element pid: 3137, elementOrHash.elementID: 4666919424.3079>
+                Key, 0x118d466c0, identifier: 'delete' <AX element pid: 3137, elementOrHash.elementID: 4666928464.3080>
+                Key, 0x118d44500, identifier: 'more' <AX element pid: 3137, elementOrHash.elementID: 4666928624.3081>
+                Key, 0x118d475c0, identifier: 'space' <AX element pid: 3137, elementOrHash.elementID: 4666928704.3082>
+                Button, 0x118d448c0, identifier: 'Search', Disabled <AX element pid: 3137, elementOrHash.elementID: 4666928784.3083>
+        Other, 0x118d47340 <AX element pid: 3137, elementOrHash.elementID: 4409612288.3040>
+          Button, 0x118d44a00 <AX element pid: 3137, elementOrHash.elementID: 4666948480.3042>
+            StaticText, 0x118d47200 <AX element pid: 3137, elementOrHash.elementID: 4409612800.3045>
+          Button, 0x118d45900, identifier: 'dictation' <AX element pid: 3137, elementOrHash.elementID: 4666943104.3043>
+            StaticText, 0x118d46080 <AX element pid: 3137, elementOrHash.elementID: 4409609216.3046>
+          Button, 0x118d46a80, identifier: 'dictation' <AX element pid: 3137, elementOrHash.elementID: 4666943104.3043>
+            StaticText, 0x118d44280 <AX element pid: 3137, elementOrHash.elementID: 4409609216.3046>
+2026-11-26 12:09:33.002 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Query ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7 found matching snapshots: {(
+)} (error: (null))
+2026-11-26 12:09:33.002 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Replying to query ↪︎ Descendants matching predicate identifier == "NotificationShortLookView" OR elementType == 7 with results: <XCTElementQueryResults: 0x123c559b0> (error: (null))
+2026-11-26 12:09:33.004 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Received attributes request for element: App element pid: 3137. Attributes: (
+    "XC_kAXXCAttributeWindowDisplayId"
+)
+2026-11-26 12:09:33.004 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-26 12:09:33.004 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-26 12:09:33.004 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-26 12:09:33.004 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-26 12:09:33.004 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-26 12:09:33.004 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeWindowDisplayId for App element pid: 3137
+2026-11-26 12:09:33.004 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-26 12:09:33.004 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeWindowDisplayId" = 0;
+}
+2026-11-26 12:09:33.006 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 3137, elementOrHash.elementID: 4712696832.2996. Attributes: (
+    "XC_kAXXCAttributeSystemAutomationProperties"
+)
+2026-11-26 12:09:33.006 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-26 12:09:33.006 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-26 12:09:33.006 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-26 12:09:33.006 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-26 12:09:33.006 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-26 12:09:33.006 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeSystemAutomationProperties for AX element pid: 3137, elementOrHash.elementID: 4712696832.2996
+2026-11-26 12:09:33.006 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-26 12:09:33.006 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Replying with attribute values: {
+}
+2026-11-26 12:09:33.007 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Received attributes request for element: AX element pid: 3137, elementOrHash.elementID: 4398646272.4. Attributes: (
+    "XC_kAXXCAttributeFrame",
+    "XC_kAXXCAttributeWindowDisplayId",
+    "XC_kAXXCAttributeWindowContextId"
+)
+2026-11-26 12:09:33.007 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: about to CFRunLoopPerform
+2026-11-26 12:09:33.007 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting with 30.00s responsiveness timeout
+2026-11-26 12:09:33.007 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: inside CFRunLoopPerform
+2026-11-26 12:09:33.007 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[MT]: MT responded in time (won the race to the busy flag)
+2026-11-26 12:09:33.007 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] XCTPerformOnMainRunLoop[not MT]: waiting 60.00s for work to complete
+2026-11-26 12:09:33.007 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Fetching AX attributes XC_kAXXCAttributeFrame, XC_kAXXCAttributeWindowDisplayId, XC_kAXXCAttributeWindowContextId for AX element pid: 3137, elementOrHash.elementID: 4398646272.4
+2026-11-26 12:09:33.007 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Got attributes, transferring to dictionary for return.
+2026-11-26 12:09:33.007 Df Jukebox[3137:27302dd] [com.apple.dt.xctest:Default] Replying with attribute values: {
+    "XC_kAXXCAttributeFrame" =     {
+        Height = 874;
+        Width = 402;
+        X = 0;
+        Y = 0;
+    };
+    "XC_kAXXCAttributeWindowContextId" = 4148760284;
+    "XC_kAXXCAttributeWindowDisplayId" = 1;
+}
+2026-11-26 12:09:33.013 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.013 Df Jukebox[3137:272c8c5] [com.apple.BackBoard:Keyboard] <compose failure [shared UUID]>
+2026-11-26 12:09:33.013 Df Jukebox[3137:272c8c5] [com.apple.BackBoard:Keyboard] <compose failure [shared UUID]>
+2026-11-26 12:09:33.013 Df Jukebox[3137:272c8c5] [com.apple.BackBoard:Keyboard] <compose failure [shared UUID]>
+2026-11-26 12:09:33.013 Df Jukebox[3137:272c8c5] [com.apple.BackBoard:Keyboard] <compose failure [shared UUID]>
+2026-11-26 12:09:33.015 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.016 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.017 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.017 E  Jukebox[3137:272c8c5] [com.apple.UIKit:UIKBRenderingLog] <compose failure [shared UUID]>
+2026-11-26 12:09:33.017 E  Jukebox[3137:272c8c5] [com.apple.UIKit:UIKBRenderingLog] <compose failure [shared UUID]>
+2026-11-26 12:09:33.017 E  Jukebox[3137:272c8c5] [com.apple.UIKit:UIKBRenderingLog] <compose failure [shared UUID]>
+2026-11-26 12:09:33.017 E  Jukebox[3137:272c8c5] [com.apple.UIKit:UIKBRenderingLog] <compose failure [shared UUID]>
+2026-11-26 12:09:33.017 E  Jukebox[3137:272c8c5] [com.apple.UIKit:UIKBRenderingLog] <compose failure [shared UUID]>
+2026-11-26 12:09:33.017 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.073 Df Jukebox[3137:272c8c5] [com.apple.TextInputUI:KeyboardInputManagerMux] <compose failure [shared UUID]>
+2026-11-26 12:09:33.073 Df Jukebox[3137:272c8c5] [com.apple.TextInputUI:InputSession_Proxy] <compose failure [shared UUID]>
+2026-11-26 12:09:33.074 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.074 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.074 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.074 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.074 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.074 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.074 A  Jukebox[3137:27302dc] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.075 Df Jukebox[3137:27302dc] [com.apple.runningboard:monitor] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:2730426] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:27302dc] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:27302dd] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 A  Jukebox[3137:273042c] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.076 Df Jukebox[3137:273042c] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 A  Jukebox[3137:273042c] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.076 Df Jukebox[3137:273042c] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 A  Jukebox[3137:273042c] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.076 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.076 Df Jukebox[3137:273042c] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 A  Jukebox[3137:273042c] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.077 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 Df Jukebox[3137:273042c] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 A  Jukebox[3137:273042c] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.077 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 Df Jukebox[3137:273042c] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 A  Jukebox[3137:273042c] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.077 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.077 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 Df Jukebox[3137:273042c] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.077 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.078 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.079 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.080 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.081 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.082 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.083 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.084 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.084 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.085 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.085 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.085 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.085 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.085 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.085 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.085 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.086 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.087 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.088 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.089 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.090 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.091 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.092 Df Jukebox[3137:273042a] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.099 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.100 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.101 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.101 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.101 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.125 A  Jukebox[3137:273042a] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.129 A  Jukebox[3137:2730426] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.131 A  Jukebox[3137:2730426] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.134 A  Jukebox[3137:2730426] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.149 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.150 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.150 A  Jukebox[3137:27305ba] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.151 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.151 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.151 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.151 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.151 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.152 A  Jukebox[3137:27305ba] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.152 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.152 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.152 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.152 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.152 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.153 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.153 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.153 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 Df Jukebox[3137:27305ba] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 A  Jukebox[3137:2730426] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.172 Df Jukebox[3137:2730426] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 A  Jukebox[3137:2730426] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.172 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 Df Jukebox[3137:2730426] [com.apple.securityd:SecError] <compose failure [shared UUID]>
+2026-11-26 12:09:33.172 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.173 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.173 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.174 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.174 A  Jukebox[3137:272c8c5] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.174 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.174 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.174 Df Jukebox[3137:272c8c5] [com.apple.UIKit:KeyboardUI] <compose failure [shared UUID]>
+2026-11-26 12:09:33.174 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.175 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.175 Df Jukebox[3137:272c8c5] [com.apple.UIKit:EventDispatch] <compose failure [shared UUID]>
+2026-11-26 12:09:33.175 Df Jukebox[3137:273042c] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.175 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.175 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:273042c] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Summary] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730429] [com.apple.CFNetwork:Default] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.176 Df Jukebox[3137:2730426] [com.apple.network:connection] <compose failure [shared UUID]>
+2026-11-26 12:09:33.183 A  Jukebox[3137:2730429] (C54AD6FA-9FF2-3EDB-9C8A-53A82682D342) 
+2026-11-26 12:09:33.183 Df Jukebox[3137:2730429] [com.apple.runningboard:monitor] <compose failure [shared UUID]>
+2026-11-26 12:09:33.363 Df Jukebox[3137:27305bb] [com.apple.dt.xctest:Default] Received request to notify when the main run loop is idle
+2026-11-26 12:09:33.364 Df Jukebox[3137:27305bb] [com.apple.dt.xctest:Default] Idle notifier finished setting up run loop observer
+2026-11-26 12:09:33.364 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Idle notifier run loop observer fired
+2026-11-26 12:09:33.364 Df Jukebox[3137:272c8c5] [com.apple.dt.xctest:Default] Sending main run loop idle reply
+2026-11-26 12:09:33.364 Df Jukebox[3137:27305bb] [com.apple.dt.xctest:Default] Received request to notify when animations are idle
+2026-11-26 12:09:33.364 Df Jukebox[3137:27305bb] [com.apple.dt.xctest:Default] Sending animations idle reply with error: (null)
+2026-11-26 12:09:36.446 Df Jukebox[3137:27305b8] [com.apple.CoreAnalytics:client] <compose failure [shared UUID]>
