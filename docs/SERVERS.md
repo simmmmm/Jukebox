@@ -437,7 +437,11 @@ lager kan krijgen met slechter internet? Misschien met een vinkje erbij."
 Settings' quality is the target (`QualitySteps`, fed by `PlayQueue`; on by
 default). A slow sign, a wait mid-song or a start of 8 s or more, takes the
 next songs one step down, at most one per song: Original or High, then
-Normal, then 128 (Efficient with `.opusStream`, else Low). The song held
+Normal, then Low. Only on a network that costs data (the mobile network, a
+hotspot, a metered connection): "die toggle alleen voor metered connections
+... op wifi moet het gewoon werken" (26 November 2026, after "echt
+verschrikkelijke kwaliteit" on Wi-Fi). Never down to Efficient by itself:
+Opus is not yet heard on a phone. The song held
 next is asked again, so it is the very next one; the song that waited plays
 on (a converted MP3 has no ranges to reload from). Three streamed songs
 without a sign climb a step back. Not a sign: a wait just after a seek or a

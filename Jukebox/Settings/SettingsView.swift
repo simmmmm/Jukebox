@@ -444,7 +444,9 @@ private struct SettingsPlaybackSection: View {
             // The pickers' quality is the target (QualitySteps); Linux's words.
             Toggle(isOn: $settings.adjustsToConnection) {
                 SettingsDetailLabel(title: "Adjust to the Connection",
-                                    detail: "When a song has to wait for the network, the next ones stream lower until it holds again.")
+                                    detail: runsOnMac
+                                        ? "On a hotspot, when a song has to wait for the network, the next ones stream lower until it holds again."
+                                        : "On cellular, when a song has to wait for the network, the next ones stream lower until it holds again.")
             }
         } footer: {
             // Under the pickers it explains, as Linux's Streaming Quality's.

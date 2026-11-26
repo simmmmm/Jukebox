@@ -58,7 +58,7 @@ enum Preferences {
             settings.cellularQuality = qualities[$0].1
         })
         adw_preferences_group_add(ptr(streaming), toggle(
-            "Adjust to the Connection", "When a song has to wait for the network, the next ones stream lower until it holds again.",
+            "Adjust to the Connection", "On a metered connection, when a song has to wait for the network, the next ones stream lower until it holds again.",
             settings.adjustsToConnection) { settings.adjustsToConnection = $0 })
         adw_preferences_group_set_description(
             ptr(streaming), "Original plays your files as they are. The others have \(app.library.serverKind) convert them to \(app.credentials?.kind.convertedFormat ?? "AAC") at that rate, which uses less data.\(opus ? StreamQuality.efficientNote : "")")

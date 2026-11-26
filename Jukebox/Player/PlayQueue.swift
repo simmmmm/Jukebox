@@ -873,12 +873,20 @@ class PlayQueue {
 
     /// What the next stream is asked at: the target, `streamQuality`, or
     /// lower while the network is too slow for it (QualitySteps).
+    ///
+    /// Only on a network that costs data: "ik denk overigens dat die
+    /// toggle alleen voor metered connections zou moeten werken op wifi
+    /// moet het gewoon werken" (the photographer, 26 November 2026, after
+    /// a morning on Wi-Fi of "echt verschrikkelijke kwaliteit"). And never
+    /// down to Opus by itself: Efficient is not yet heard on a phone, so
+    /// the floor is Low, what every server and player is known to play;
+    /// Efficient is for whoever chooses it.
     var streamingQuality: StreamQuality {
-        guard settings.adjustsToConnection else {
+        guard settings.adjustsToConnection, isNetworkExpensive else {
             qualitySteps.reset()
             return streamQuality
         }
-        return qualitySteps.quality(for: streamQuality, opus: server?.capabilities.contains(.opusStream) == true)
+        return qualitySteps.quality(for: streamQuality, opus: false)
     }
 
     /// The engine began or stopped waiting for the network. A wait that
@@ -890,7 +898,8 @@ class PlayQueue {
     func bufferingChanged(_ waiting: Bool, now: Date = Date()) {
         let stepped: Bool
         if waiting {
-            guard settings.adjustsToConnection, wantsToPlay, playingElsewhere == nil, offline?.isOffline != true,
+            guard settings.adjustsToConnection, isNetworkExpensive, wantsToPlay, playingElsewhere == nil,
+                  offline?.isOffline != true,
                   !engineFetchesNext,
                   let entry = current, offline?.localURL(for: entry.track.id) == nil,
                   now.timeIntervalSince(handSince) >= Self.settled else { return }
@@ -1428,6 +1437,9 @@ class PlayQueue {
     /// one: what it waits for then is not this song's network
     /// (`bufferingChanged`). GStreamer says so; AVQueuePlayer does not.
     var engineFetchesNext: Bool { false }
+    /// The mobile network, a hotspot or Low Data Mode; a metered
+    /// connection on Linux. Each player's own watch says.
+    var isNetworkExpensive: Bool { false }
     /// What the server streams at: the target, which Adjust to the
     /// Connection may stream below (`streamingQuality`).
     var streamQuality: StreamQuality { settings.wifiQuality }

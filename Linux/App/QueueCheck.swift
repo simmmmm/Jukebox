@@ -31,6 +31,9 @@ private final class Bench: PlayQueue {
     /// What the engine was told to hold next, and at what quality.
     var held: UUID?
     var heldAt: StreamQuality?
+    /// A network that costs data, where Adjust to the Connection works.
+    var costly = false
+    override var isNetworkExpensive: Bool { costly }
 
     /// Streamed, as the queue's own would ask it (`noteSound`).
     override func address(of entry: QueueEntry, playSessionID: String) -> URL? {
@@ -313,6 +316,11 @@ enum QueueCheck {
         let a = Bench(settings: AppSettings(defaults: UserDefaults(suiteName: "jukebox-queue-check") ?? .standard),
                       history: HistoryStore())
         a.play(tracks, context: album)
+        a.bufferingChanged(true, now: Date().addingTimeInterval(10))
+        a.bufferingChanged(false, now: Date().addingTimeInterval(11))
+        expect(a.streamingQuality == .original, "on Wi-Fi a wait mid-song changes nothing")
+        a.costly = true
+        a.play(tracks, context: album)
         a.isBuffering = true
         a.isBuffering = false
         expect(a.streamingQuality == .original, "a wait as a song starts is its start, not a slow network")
@@ -333,6 +341,7 @@ enum QueueCheck {
         let flac = (1...3).map { Track(id: "f\($0)", name: "Flac \($0)", duration: 200, container: "flac") }
         let l = Bench(settings: AppSettings(defaults: UserDefaults(suiteName: "jukebox-queue-check") ?? .standard),
                       history: HistoryStore())
+        l.costly = true
         l.play(flac, context: album)
         expect(l.playsLossless, "a FLAC streamed as it is plays lossless")
         l.playsOn = PlayOnDevice(id: "check", name: "Check", kind: .chromecast, address: "")

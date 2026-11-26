@@ -200,8 +200,10 @@ final class AudioPlayer: PlayQueue {
     /// A metered connection streams at its own quality, as the iPhone's
     /// mobile network does (Platform.swift's watch, DataCost). Before, every
     /// network had the Wi-Fi quality, Original unless changed.
+    override var isNetworkExpensive: Bool { offline?.isExpensiveNetwork ?? false }
+
     override var streamQuality: StreamQuality {
-        DataCost.quality(expensive: offline?.isExpensiveNetwork ?? false,
+        DataCost.quality(expensive: isNetworkExpensive,
                          wifi: settings.wifiQuality, cellular: settings.cellularQuality)
     }
 
